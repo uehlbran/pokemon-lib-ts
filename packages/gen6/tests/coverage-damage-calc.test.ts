@@ -1,5 +1,14 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import type {
+  Gender,
+  MoveData,
+  MoveEffect,
+  PokemonType,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -9,15 +18,14 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
   GEN6_TYPE_CHART,
-  createGen6DataManager,
 } from "../src";
-import type { MoveData, MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 
 // ---------------------------------------------------------------------------
@@ -26,100 +34,26 @@ import { calculateGen6Damage } from "../src/Gen6DamageCalc";
 
 const dataManager = createGen6DataManager();
 
+const { burn, badlyPoisoned, flinch, poison } = CORE_STATUS_IDS;
 const {
-  acrobatics,
-  acid,
-  bodySlam,
-  doubleEdge,
-  earthquake,
-  flameCharge,
-  flamethrower,
-  focusBlast,
-  headbutt,
-  hex,
-  machPunch,
-  quickAttack,
-  round,
-  sacredSword,
-  solarBeam,
-  tackle,
-  triAttack,
-  venoshock,
-} = GEN6_MOVE_IDS;
-
-const {
-  adamantOrb,
-  chilanBerry,
-  choiceBand,
-  choiceSpecs,
-  deepSeaScale,
-  deepSeaTooth,
-  eviolite,
-  expertBelt,
-  fireGem,
-  griseousOrb,
-  ironBall,
-  leftovers,
-  lightBall,
-  lustrousOrb,
-  metronome,
-  muscleBand,
-  normalGem,
-  occaBerry,
-  thickClub,
-  wiseGlasses,
-} = GEN6_ITEM_IDS;
-
-const {
-  blaze,
-  defeatist,
-  drySkin,
-  drought,
-  flashFire,
-  flowerGift,
-  guts,
-  heatproof,
-  hugePower,
-  hustle,
-  ironFist,
-  klutz,
-  levitate,
-  moldBreaker,
-  normalize,
-  primordialSea,
-  reckless,
-  rivalry,
-  sapSipper,
-  sandStream,
-  scrappy,
-  sheerForce,
-  simple,
-  slowStart,
-  sniper,
-  technician,
-  teravolt,
-  thickFat,
-  torrent,
-  turboblaze,
-  unburden,
-  voltAbsorb,
-  wonderGuard,
-} = GEN6_ABILITY_IDS;
-
-const {
-  clamperl,
-  dialga,
-  giratina,
-  latias,
-  latios,
-  marowak,
-  palkia,
-  pikachu,
-} = GEN6_SPECIES_IDS;
-const { burn, badlyPoisoned, flinch, paralysis, poison, sleep } = CORE_STATUS_IDS;
-const { electric, fire, flying, ghost, grass, ground, normal, poison: poisonType, psychic, steel, water, dragon, fighting, rock } = CORE_TYPE_IDS;
-const { embargo, magnetRise, substitute } = CORE_VOLATILE_IDS;
+  electric,
+  fire,
+  flying,
+  ghost,
+  grass,
+  ground,
+  normal,
+  psychic,
+  steel,
+  water,
+  dragon,
+  fighting,
+  rock,
+} = CORE_TYPE_IDS;
+const { embargo, magnetRise } = CORE_VOLATILE_IDS;
 const { heavyRain, harshSun, rain, sun } = CORE_WEATHER_IDS;
+const { flashFire, unburden } = GEN6_ABILITY_IDS;
+const { normalGem, occaBerry } = GEN6_ITEM_IDS;
 const GRASSY_TERRAIN = CORE_TERRAIN_IDS.grassy;
 const ZERO_STAT_STAGES = {
   attack: 0,
@@ -143,7 +77,7 @@ function getCanonicalMove(moveId: string) {
   }
 }
 
-function makeActive(overrides: {
+function createSyntheticActivePokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -157,7 +91,7 @@ function makeActive(overrides: {
   heldItem?: string | null;
   status?: string | null;
   speciesId?: number;
-  gender?: "male" | "female" | "genderless";
+  gender?: Gender;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   statStages?: Record<string, number>;
   lastMoveUsed?: string | null;
@@ -182,11 +116,11 @@ function makeActive(overrides: {
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? GEN6_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: (overrides.gender ?? "male") as any,
+      gender: overrides.gender ?? CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -207,7 +141,7 @@ function makeActive(overrides: {
       ...overrides.statStages,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-      types: overrides.types ?? [normal],
+    types: overrides.types ?? [normal],
     ability: overrides.ability ?? GEN6_ABILITY_IDS.none,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
@@ -231,7 +165,7 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
+function createSyntheticMoveData(overrides: {
   id?: string;
   type?: PokemonType;
   category?: "physical" | "special" | "status";
@@ -279,7 +213,7 @@ function makeMove(overrides: {
   } as MoveData;
 }
 
-function makeState(overrides?: {
+function createSyntheticBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   format?: string;
   terrain?: { type: string; turnsLeft: number } | null;
@@ -301,7 +235,7 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeDamageContext(overrides: {
+function createSyntheticDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -310,10 +244,10 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
-    state: overrides.state ?? makeState(),
+    attacker: overrides.attacker ?? createSyntheticActivePokemon({}),
+    defender: overrides.defender ?? createSyntheticActivePokemon({}),
+    move: overrides.move ?? createSyntheticMoveData({}),
+    state: overrides.state ?? createSyntheticBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   };
@@ -328,22 +262,24 @@ const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
 describe("Weather modifiers in damage calc", () => {
   it("given sun weather + fire move, when calculating damage, then fire move gets 1.5x boost", () => {
     // Source: Showdown sim/battle-actions.ts -- sun boosts fire 1.5x (6144/4096)
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const sunResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: fireMove,
-        state: makeState({ weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought } }),
+        state: createSyntheticBattleState({
+          weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought },
+        }),
         seed: 100,
       }),
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -354,22 +290,24 @@ describe("Weather modifiers in damage calc", () => {
 
   it("given sun weather + water move, when calculating damage, then water move gets 0.5x reduction", () => {
     // Source: Showdown sim/battle-actions.ts -- sun weakens water 0.5x (2048/4096)
-    const attacker = makeActive({ types: [water] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [water] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const sunResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: waterMove,
-        state: makeState({ weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought } }),
+        state: createSyntheticBattleState({
+          weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought },
+        }),
         seed: 100,
       }),
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
 
@@ -379,16 +317,16 @@ describe("Weather modifiers in damage calc", () => {
 
   it("given heavy-rain weather + fire move, when calculating damage, then fire move is nullified (0 damage)", () => {
     // Source: Showdown sim/battle-actions.ts -- heavy rain nullifies fire
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: fireMove,
-        state: makeState({
+        state: createSyntheticBattleState({
           weather: { type: heavyRain, turnsLeft: -1, source: GEN6_ABILITY_IDS.primordialSea },
         }),
       }),
@@ -401,16 +339,16 @@ describe("Weather modifiers in damage calc", () => {
 
   it("given harsh-sun weather + water move, when calculating damage, then water move is nullified (0 damage)", () => {
     // Source: Showdown sim/battle-actions.ts -- harsh sun nullifies water
-    const attacker = makeActive({ types: [water] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [water] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const result = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: waterMove,
-        state: makeState({
+        state: createSyntheticBattleState({
           weather: { type: harshSun, turnsLeft: -1, source: GEN6_ABILITY_IDS.desolateLand },
         }),
       }),
@@ -423,16 +361,16 @@ describe("Weather modifiers in damage calc", () => {
 
   it("given harsh-sun weather + fire move, when calculating damage, then fire move gets 1.5x boost (not nullified)", () => {
     // Source: Showdown sim/battle-actions.ts -- harsh sun boosts fire (same as regular sun)
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const harshSunResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: fireMove,
-        state: makeState({
+        state: createSyntheticBattleState({
           weather: { type: harshSun, turnsLeft: -1, source: GEN6_ABILITY_IDS.desolateLand },
         }),
         seed: 100,
@@ -440,7 +378,7 @@ describe("Weather modifiers in damage calc", () => {
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -450,16 +388,16 @@ describe("Weather modifiers in damage calc", () => {
 
   it("given heavy-rain weather + water move, when calculating damage, then water move gets 1.5x boost (not nullified)", () => {
     // Source: Showdown sim/battle-actions.ts -- heavy rain boosts water (same as regular rain)
-    const attacker = makeActive({ types: [water] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [water] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const heavyRainResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: waterMove,
-        state: makeState({
+        state: createSyntheticBattleState({
           weather: { type: heavyRain, turnsLeft: -1, source: GEN6_ABILITY_IDS.primordialSea },
         }),
         seed: 100,
@@ -467,7 +405,7 @@ describe("Weather modifiers in damage calc", () => {
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
 
@@ -482,22 +420,24 @@ describe("Weather modifiers in damage calc", () => {
 // ===========================================================================
 describe("SolarBeam weather penalty", () => {
   it("given SolarBeam in rain, when calculating damage, then power is halved", () => {
-    const attacker = makeActive({ types: [grass] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [grass] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const solarBeam = dataManager.getMove(GEN6_MOVE_IDS.solarBeam);
 
     const rainResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: solarBeam,
-        state: makeState({ weather: { type: rain, turnsLeft: 5, source: GEN6_ABILITY_IDS.drizzle } }),
+        state: createSyntheticBattleState({
+          weather: { type: rain, turnsLeft: 5, source: GEN6_ABILITY_IDS.drizzle },
+        }),
         seed: 100,
       }),
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: solarBeam, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: solarBeam, seed: 100 }),
       typeChart,
     );
 
@@ -507,22 +447,24 @@ describe("SolarBeam weather penalty", () => {
   });
 
   it("given SolarBeam in sun, when calculating damage, then power is NOT halved", () => {
-    const attacker = makeActive({ types: [grass] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [grass] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const solarBeam = dataManager.getMove(GEN6_MOVE_IDS.solarBeam);
 
     const sunResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: solarBeam,
-        state: makeState({ weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought } }),
+        state: createSyntheticBattleState({
+          weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought },
+        }),
         seed: 100,
       }),
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: solarBeam, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: solarBeam, seed: 100 }),
       typeChart,
     );
 
@@ -540,18 +482,28 @@ describe("Pinch abilities in damage calc", () => {
   it("given Blaze + fire move + HP <= floor(maxHP/3), when calculating damage, then 1.5x power", () => {
     // Source: Showdown -- Blaze boosts fire by 1.5x when HP <= floor(maxHP/3)
     // maxHP = 200, threshold = floor(200/3) = 66
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.blaze, types: [fire], hp: 200, currentHp: 66 });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.blaze,
+      types: [fire],
+      hp: 200,
+      currentHp: 66,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const blazeResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fire], hp: 200, currentHp: 66 });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [fire],
+      hp: 200,
+      currentHp: 66,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -562,18 +514,33 @@ describe("Pinch abilities in damage calc", () => {
   it("given Torrent + water move + HP > floor(maxHP/3), when calculating damage, then no boost", () => {
     // Source: Showdown -- Torrent does not activate above threshold
     // maxHP = 200, threshold = 66, currentHp = 100 > 66
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.torrent, types: [water], hp: 200, currentHp: 100 });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.torrent,
+      types: [water],
+      hp: 200,
+      currentHp: 100,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const torrentResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [water], hp: 200, currentHp: 100 });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [water],
+      hp: 200,
+      currentHp: 100,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: waterMove,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -590,18 +557,18 @@ describe("Flash Fire volatile in damage calc", () => {
     // Source: Showdown -- Flash Fire activated: fire moves get 1.5x power
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(flashFire, { turnsLeft: -1 });
-    const attacker = makeActive({ types: [fire], volatiles });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire], volatiles });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const ffResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [fire] });
+    const baseAttacker = createSyntheticActivePokemon({ types: [fire] });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -617,18 +584,24 @@ describe("Flash Fire volatile in damage calc", () => {
 describe("Dry Skin fire weakness in damage calc", () => {
   it("given defender with Dry Skin + fire move, when calculating damage, then power is boosted 1.25x", () => {
     // Source: Showdown -- Dry Skin: fire moves deal 1.25x damage
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.drySkin, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.drySkin,
+      types: [normal],
+    });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const drySkinResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: baseDefender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: baseDefender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -638,18 +611,27 @@ describe("Dry Skin fire weakness in damage calc", () => {
 
   it("given Mold Breaker attacker vs Dry Skin defender + fire move, when calculating damage, then Dry Skin is suppressed", () => {
     // Source: Showdown -- Mold Breaker bypasses Dry Skin
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [fire] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.drySkin, types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.moldBreaker,
+      types: [fire],
+    });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.drySkin,
+      types: [normal],
+    });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const moldResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: baseDefender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: baseDefender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -665,18 +647,29 @@ describe("Dry Skin fire weakness in damage calc", () => {
 describe("Technician in damage calc", () => {
   it("given Technician + move with base power <= 60, when calculating damage, then power is boosted 1.5x", () => {
     // Source: Showdown -- Technician: 1.5x power for moves with BP <= 60
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.technician, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.technician,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const quickAttack = dataManager.getMove(GEN6_MOVE_IDS.quickAttack);
 
     const techResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: quickAttack, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: quickAttack, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: quickAttack, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: quickAttack,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -686,18 +679,24 @@ describe("Technician in damage calc", () => {
 
   it("given Technician + move with base power > 60, when calculating damage, then no boost", () => {
     // Source: Showdown -- Technician only activates for BP <= 60
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.technician, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.technician,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const bodySlam = dataManager.getMove(GEN6_MOVE_IDS.bodySlam);
 
     const techResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: bodySlam, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: bodySlam, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: bodySlam, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: bodySlam, seed: 100 }),
       typeChart,
     );
 
@@ -712,18 +711,29 @@ describe("Technician in damage calc", () => {
 describe("Iron Fist in damage calc", () => {
   it("given Iron Fist + punch move, when calculating damage, then power is boosted 1.2x", () => {
     // Source: Showdown -- Iron Fist: 1.2x power for punching moves
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.ironFist, types: [fighting] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.ironFist,
+      types: [fighting],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const machPunch = dataManager.getMove(GEN6_MOVE_IDS.machPunch);
 
     const ifResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: machPunch, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: machPunch, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fighting] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [fighting],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: machPunch, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: machPunch,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -741,18 +751,32 @@ describe("Reckless in damage calc", () => {
   it("given Reckless + recoil move, when calculating damage, then power is boosted 1.2x", () => {
     // Source: Showdown -- Reckless: 1.2x power for moves with recoil
     const recoilEffect: MoveEffect = { type: "recoil", fraction: 1 / 3 };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.reckless, types: [normal] });
-    const defender = makeActive({ types: [normal] });
-    const doubleEdge = { ...dataManager.getMove(GEN6_MOVE_IDS.doubleEdge), effect: recoilEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.reckless,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const doubleEdge = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.doubleEdge),
+      effect: recoilEffect,
+    } as MoveData;
 
     const recklessResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: doubleEdge, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: doubleEdge, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: doubleEdge, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: doubleEdge,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -776,18 +800,28 @@ describe("Reckless in damage calc", () => {
         },
       ],
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.reckless, types: [normal] });
-    const defender = makeActive({ types: [normal] });
-    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), id: "test-recoil-multi", effect: multiEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.reckless,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const move = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.tackle),
+      id: "test-recoil-multi",
+      effect: multiEffect,
+    } as MoveData;
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move, seed: 100 }),
       typeChart,
     );
 
@@ -803,18 +837,32 @@ describe("Sheer Force in damage calc", () => {
   it("given Sheer Force + move with status-chance effect, when calculating damage, then 1.3x boost", () => {
     // Source: Showdown -- Sheer Force boosts moves with secondary effects by 5325/4096
     const statusChanceEffect: MoveEffect = { type: "status-chance", status: burn, chance: 10 };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [fire] });
-    const defender = makeActive({ types: [normal] });
-    const flamethrower = { ...dataManager.getMove(GEN6_MOVE_IDS.flamethrower), effect: statusChanceEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [fire],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const flamethrower = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.flamethrower),
+      effect: statusChanceEffect,
+    } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: flamethrower, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: flamethrower, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fire] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [fire],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: flamethrower, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: flamethrower,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -830,18 +878,27 @@ describe("Sheer Force in damage calc", () => {
       status: flinch as VolatileStatus,
       chance: 30,
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const defender = makeActive({ types: [normal] });
-    const headbutt = { ...dataManager.getMove(GEN6_MOVE_IDS.headbutt), effect: flinchEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const headbutt = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.headbutt),
+      effect: flinchEffect,
+    } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: headbutt, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: headbutt, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: headbutt, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: headbutt, seed: 100 }),
       typeChart,
     );
 
@@ -851,18 +908,29 @@ describe("Sheer Force in damage calc", () => {
 
   it("given Sheer Force + whitelisted move (tri-attack), when calculating damage, then 1.3x boost", () => {
     // Source: Showdown -- Tri Attack has secondary effects via onHit, whitelisted
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const triAttack = dataManager.getMove(GEN6_MOVE_IDS.triAttack);
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: triAttack, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: triAttack, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: triAttack, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: triAttack,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -880,18 +948,32 @@ describe("Sheer Force in damage calc", () => {
       chance: 100,
       fromSecondary: true,
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [fire] });
-    const defender = makeActive({ types: [normal] });
-    const flameCharge = { ...dataManager.getMove(GEN6_MOVE_IDS.flameCharge), effect: selfBoostEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [fire],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const flameCharge = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.flameCharge),
+      effect: selfBoostEffect,
+    } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: flameCharge, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: flameCharge, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fire] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [fire],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: flameCharge, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: flameCharge,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -908,18 +990,24 @@ describe("Sheer Force in damage calc", () => {
       chance: 50,
       fromSecondary: false,
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const move = { ...dataManager.getMove(GEN6_MOVE_IDS.acid), effect: foeDropEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move, seed: 100 }),
       typeChart,
     );
 
@@ -934,17 +1022,27 @@ describe("Sheer Force in damage calc", () => {
 describe("Conditional power moves in damage calc", () => {
   it("given Venoshock vs poisoned target, when calculating damage, then power doubles", () => {
     // Source: Showdown -- Venoshock: 2x power when target is poisoned
-    const attacker = makeActive({ types: [poison] });
-    const poisonedDefender = makeActive({ types: [normal], status: poison });
-    const healthyDefender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [poison] });
+    const poisonedDefender = createSyntheticActivePokemon({ types: [normal], status: poison });
+    const healthyDefender = createSyntheticActivePokemon({ types: [normal] });
     const venoshock = dataManager.getMove(GEN6_MOVE_IDS.venoshock);
 
     const poisonedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: poisonedDefender, move: venoshock, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: poisonedDefender,
+        move: venoshock,
+        seed: 100,
+      }),
       typeChart,
     );
     const healthyResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: healthyDefender, move: venoshock, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: healthyDefender,
+        move: venoshock,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -955,17 +1053,30 @@ describe("Conditional power moves in damage calc", () => {
 
   it("given Venoshock vs badly-poisoned target, when calculating damage, then power doubles", () => {
     // Source: Showdown -- Venoshock also doubles vs badly-poisoned
-    const attacker = makeActive({ types: [poison] });
-    const badlyPoisonedTarget = makeActive({ types: [normal], status: badlyPoisoned });
-    const healthyDefender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [poison] });
+    const badlyPoisonedTarget = createSyntheticActivePokemon({
+      types: [normal],
+      status: badlyPoisoned,
+    });
+    const healthyDefender = createSyntheticActivePokemon({ types: [normal] });
     const venoshock = dataManager.getMove(GEN6_MOVE_IDS.venoshock);
 
     const bpResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: badlyPoisonedTarget, move: venoshock, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: badlyPoisonedTarget,
+        move: venoshock,
+        seed: 100,
+      }),
       typeChart,
     );
     const healthyResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: healthyDefender, move: venoshock, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: healthyDefender,
+        move: venoshock,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -976,17 +1087,17 @@ describe("Conditional power moves in damage calc", () => {
   it("given Hex vs statused target, when calculating damage, then power doubles", () => {
     // Source: Showdown -- Hex: 2x power when target has any status
     // Use Psychic defender (Ghost is SE vs Psychic) so damage is non-zero
-    const attacker = makeActive({ types: [ghost] });
-    const burnedDefender = makeActive({ types: [psychic], status: burn });
-    const healthyDefender = makeActive({ types: [psychic] });
+    const attacker = createSyntheticActivePokemon({ types: [ghost] });
+    const burnedDefender = createSyntheticActivePokemon({ types: [psychic], status: burn });
+    const healthyDefender = createSyntheticActivePokemon({ types: [psychic] });
     const hex = dataManager.getMove(GEN6_MOVE_IDS.hex);
 
     const statusResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: burnedDefender, move: hex, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: burnedDefender, move: hex, seed: 100 }),
       typeChart,
     );
     const healthyResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: healthyDefender, move: hex, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: healthyDefender, move: hex, seed: 100 }),
       typeChart,
     );
 
@@ -997,17 +1108,25 @@ describe("Conditional power moves in damage calc", () => {
 
   it("given Acrobatics with no held item, when calculating damage, then power doubles", () => {
     // Source: Showdown -- Acrobatics: 2x power when user has no item
-    const attacker = makeActive({ types: [flying], heldItem: null });
-    const itemAttacker = makeActive({ types: [flying], heldItem: GEN6_ITEM_IDS.leftovers });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [flying], heldItem: null });
+    const itemAttacker = createSyntheticActivePokemon({
+      types: [flying],
+      heldItem: GEN6_ITEM_IDS.leftovers,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const acrobatics = dataManager.getMove(GEN6_MOVE_IDS.acrobatics);
 
     const noItemResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: acrobatics, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: acrobatics, seed: 100 }),
       typeChart,
     );
     const withItemResult = calculateGen6Damage(
-      makeDamageContext({ attacker: itemAttacker, defender, move: acrobatics, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: itemAttacker,
+        defender,
+        move: acrobatics,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1023,12 +1142,15 @@ describe("Conditional power moves in damage calc", () => {
 describe("Normalize in damage calc", () => {
   it("given Normalize + fire move, when calculating damage, then type becomes Normal", () => {
     // Source: Showdown -- Normalize makes all moves Normal type
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.normalize, types: [normal] });
-    const defender = makeActive({ types: [ghost] }); // Ghost is immune to Normal
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.normalize,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [ghost] }); // Ghost is immune to Normal
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -1042,12 +1164,15 @@ describe("Normalize in damage calc", () => {
     // Aerilate would change Normal to Flying, but Normalize overrides to Normal
     // This is a hypothetical test since a Pokemon can't have both,
     // but we test the code path where ateBoostApplied is reset to false
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.normalize, types: [normal] });
-    const defender = makeActive({ types: [fighting] }); // Fighting resists Normal
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.normalize,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [fighting] }); // Fighting resists Normal
     const normalMove = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: normalMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: normalMove, seed: 100 }),
       typeChart,
     );
 
@@ -1064,18 +1189,26 @@ describe("Normalize in damage calc", () => {
 describe("Rivalry in damage calc", () => {
   it("given Rivalry + same gender, when calculating damage, then 1.25x boost", () => {
     // Source: Showdown -- Rivalry: same gender = 1.25x damage
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.rivalry, types: [normal], gender: "male" });
-    const defender = makeActive({ types: [normal], gender: "male" });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.rivalry,
+      types: [normal],
+      gender: CORE_GENDERS.male,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal], gender: CORE_GENDERS.male });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const rivalryResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], gender: "male" });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      gender: CORE_GENDERS.male,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1086,18 +1219,26 @@ describe("Rivalry in damage calc", () => {
 
   it("given Rivalry + opposite gender, when calculating damage, then 0.75x reduction", () => {
     // Source: Showdown -- Rivalry: opposite gender = 0.75x damage
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.rivalry, types: [normal], gender: "male" });
-    const defender = makeActive({ types: [normal], gender: "female" });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.rivalry,
+      types: [normal],
+      gender: CORE_GENDERS.male,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal], gender: CORE_GENDERS.female });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const rivalryResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], gender: "male" });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      gender: CORE_GENDERS.male,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1107,18 +1248,29 @@ describe("Rivalry in damage calc", () => {
 
   it("given Rivalry + genderless target, when calculating damage, then no modifier", () => {
     // Source: Showdown -- Rivalry: genderless = no modifier
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.rivalry, types: [normal], gender: "male" });
-    const defender = makeActive({ types: [normal], gender: "genderless" });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.rivalry,
+      types: [normal],
+      gender: CORE_GENDERS.male,
+    });
+    const defender = createSyntheticActivePokemon({
+      types: [normal],
+      gender: CORE_GENDERS.genderless,
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const rivalryResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], gender: "male" });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      gender: CORE_GENDERS.male,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1133,22 +1285,31 @@ describe("Rivalry in damage calc", () => {
 describe("Legend orbs in damage calc", () => {
   it("given Dialga (483) + Adamant Orb + Dragon move, when calculating damage, then ~1.2x boost", () => {
     // Source: Showdown data/items.ts -- Adamant Orb: 4915/4096 for Dialga's Dragon/Steel moves
-    const attacker = makeActive({
+    const attacker = createSyntheticActivePokemon({
       types: [steel, dragon],
       speciesId: GEN6_SPECIES_IDS.dialga,
       heldItem: GEN6_ITEM_IDS.adamantOrb,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const dragonMove = dataManager.getMove(GEN6_MOVE_IDS.dragonPulse);
 
     const orbResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: dragonMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: dragonMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [steel, dragon], speciesId: GEN6_SPECIES_IDS.dialga, heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({
+      types: [steel, dragon],
+      speciesId: GEN6_SPECIES_IDS.dialga,
+      heldItem: null,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: dragonMove, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: dragonMove,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1159,22 +1320,31 @@ describe("Legend orbs in damage calc", () => {
 
   it("given Palkia (484) + Lustrous Orb + Water move, when calculating damage, then ~1.2x boost", () => {
     // Source: Showdown data/items.ts -- Lustrous Orb: 4915/4096 for Palkia's Water/Dragon moves
-    const attacker = makeActive({
+    const attacker = createSyntheticActivePokemon({
       types: [water, dragon],
       speciesId: GEN6_SPECIES_IDS.palkia,
       heldItem: GEN6_ITEM_IDS.lustrousOrb,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const orbResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [water, dragon], speciesId: GEN6_SPECIES_IDS.palkia, heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({
+      types: [water, dragon],
+      speciesId: GEN6_SPECIES_IDS.palkia,
+      heldItem: null,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: waterMove,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1184,22 +1354,31 @@ describe("Legend orbs in damage calc", () => {
 
   it("given Giratina (487) + Griseous Orb + Ghost move, when calculating damage, then ~1.2x boost", () => {
     // Source: Showdown data/items.ts -- Griseous Orb: 4915/4096 for Giratina's Ghost/Dragon moves
-    const attacker = makeActive({
+    const attacker = createSyntheticActivePokemon({
       types: [ghost, dragon],
       speciesId: GEN6_SPECIES_IDS.giratina,
       heldItem: GEN6_ITEM_IDS.griseousOrb,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const ghostMove = dataManager.getMove(GEN6_MOVE_IDS.shadowBall);
 
     const orbResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: ghostMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [ghost, dragon], speciesId: GEN6_SPECIES_IDS.giratina, heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({
+      types: [ghost, dragon],
+      speciesId: GEN6_SPECIES_IDS.giratina,
+      heldItem: null,
+    });
     const _baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: ghostMove, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: ghostMove,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1210,22 +1389,31 @@ describe("Legend orbs in damage calc", () => {
 
   it("given Giratina (487) + Griseous Orb + Ghost move vs Psychic defender, when calculating damage, then ~1.2x boost", () => {
     // Source: Showdown data/items.ts -- Griseous Orb for Giratina
-    const attacker = makeActive({
+    const attacker = createSyntheticActivePokemon({
       types: [ghost, dragon],
       speciesId: GEN6_SPECIES_IDS.giratina,
       heldItem: GEN6_ITEM_IDS.griseousOrb,
     });
-    const defender = makeActive({ types: [psychic] });
+    const defender = createSyntheticActivePokemon({ types: [psychic] });
     const ghostMove = dataManager.getMove(GEN6_MOVE_IDS.shadowBall);
 
     const orbResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: ghostMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: ghostMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [ghost, dragon], speciesId: GEN6_SPECIES_IDS.giratina, heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({
+      types: [ghost, dragon],
+      speciesId: GEN6_SPECIES_IDS.giratina,
+      heldItem: null,
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: ghostMove, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: baseAttacker,
+        defender,
+        move: ghostMove,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1241,12 +1429,15 @@ describe("Legend orbs in damage calc", () => {
 describe("Ability type immunities in damage calc", () => {
   it("given defender with Levitate + ground move, when calculating damage, then immune (0 damage)", () => {
     // Source: Showdown -- Levitate: immune to ground
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.levitate,
+      types: [normal],
+    });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake }),
       typeChart,
     );
 
@@ -1256,16 +1447,19 @@ describe("Ability type immunities in damage calc", () => {
 
   it("given defender with Levitate + Gravity active + ground move, when calculating damage, then Levitate is suppressed", () => {
     // Source: Showdown -- Gravity grounds Levitate users
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.levitate,
+      types: [normal],
+    });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: earthquake,
-        state: makeState({ gravity: { active: true, turnsLeft: 3 } }),
+        state: createSyntheticBattleState({ gravity: { active: true, turnsLeft: 3 } }),
       }),
       typeChart,
     );
@@ -1277,17 +1471,24 @@ describe("Ability type immunities in damage calc", () => {
 
   it("given defender with Levitate + Iron Ball + ground move, when calculating damage, then Levitate is suppressed", () => {
     // Source: Showdown -- Iron Ball grounds Levitate users
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal], heldItem: GEN6_ITEM_IDS.ironBall });
-    const groundedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.levitate,
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.ironBall,
+    });
+    const groundedDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake }),
       typeChart,
     );
     const groundedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: groundedDefender, move: earthquake }),
+      createSyntheticDamageContext({ attacker, defender: groundedDefender, move: earthquake }),
       typeChart,
     );
 
@@ -1297,17 +1498,31 @@ describe("Ability type immunities in damage calc", () => {
 
   it("given Mold Breaker attacker vs Levitate defender + ground move, when calculating damage, then Levitate is bypassed", () => {
     // Source: Showdown -- Mold Breaker bypasses Levitate
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [ground] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
-    const groundedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.moldBreaker,
+      types: [ground],
+    });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.levitate,
+      types: [normal],
+    });
+    const groundedDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
       typeChart,
     );
     const groundedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: groundedDefender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: groundedDefender,
+        move: earthquake,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1319,12 +1534,12 @@ describe("Ability type immunities in damage calc", () => {
     // Source: Showdown -- Magnet Rise: immune to ground
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(magnetRise, { turnsLeft: 5 });
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ types: [normal], volatiles });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({ types: [normal], volatiles });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake }),
       typeChart,
     );
 
@@ -1336,22 +1551,22 @@ describe("Ability type immunities in damage calc", () => {
     // Source: Showdown -- Gravity suppresses Magnet Rise
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(magnetRise, { turnsLeft: 5 });
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ types: [normal], volatiles });
-    const groundedDefender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({ types: [normal], volatiles });
+    const groundedDefender = createSyntheticActivePokemon({ types: [normal] });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: earthquake,
-        state: makeState({ gravity: { active: true, turnsLeft: 3 } }),
+        state: createSyntheticBattleState({ gravity: { active: true, turnsLeft: 3 } }),
       }),
       typeChart,
     );
     const groundedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: groundedDefender, move: earthquake }),
+      createSyntheticDamageContext({ attacker, defender: groundedDefender, move: earthquake }),
       typeChart,
     );
 
@@ -1361,12 +1576,15 @@ describe("Ability type immunities in damage calc", () => {
 
   it("given defender with Volt Absorb + electric move, when calculating damage, then immune (0 damage)", () => {
     // Source: Showdown -- Volt Absorb: immune to electric
-    const attacker = makeActive({ types: [electric] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.voltAbsorb, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [electric] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.voltAbsorb,
+      types: [normal],
+    });
     const thunderbolt = dataManager.getMove(GEN6_MOVE_IDS.thunderbolt);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: thunderbolt }),
+      createSyntheticDamageContext({ attacker, defender, move: thunderbolt }),
       typeChart,
     );
 
@@ -1376,12 +1594,15 @@ describe("Ability type immunities in damage calc", () => {
 
   it("given defender with Sap Sipper + grass move, when calculating damage, then immune (0 damage)", () => {
     // Source: Showdown -- Sap Sipper: immune to grass
-    const attacker = makeActive({ types: [grass] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.sapSipper, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [grass] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sapSipper,
+      types: [normal],
+    });
     const grassMove = dataManager.getMove(GEN6_MOVE_IDS.energyBall);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: grassMove }),
+      createSyntheticDamageContext({ attacker, defender, move: grassMove }),
       typeChart,
     );
 
@@ -1397,12 +1618,15 @@ describe("Ability type immunities in damage calc", () => {
 describe("Scrappy in damage calc", () => {
   it("given Scrappy + Normal move vs Ghost, when calculating damage, then hits (not immune)", () => {
     // Source: Showdown -- Scrappy: Normal/Fighting hit Ghost types
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.scrappy, types: [normal] });
-    const defender = makeActive({ types: [ghost] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.scrappy,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({ types: [ghost] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1413,12 +1637,15 @@ describe("Scrappy in damage calc", () => {
 
   it("given Scrappy + Fighting move vs Ghost, when calculating damage, then hits", () => {
     // Source: Showdown -- Scrappy: Fighting also hits Ghost
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.scrappy, types: [fighting] });
-    const defender = makeActive({ types: [ghost] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.scrappy,
+      types: [fighting],
+    });
+    const defender = createSyntheticActivePokemon({ types: [ghost] });
     const closeCombat = dataManager.getMove(GEN6_MOVE_IDS.closeCombat);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: closeCombat, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: closeCombat, seed: 100 }),
       typeChart,
     );
 
@@ -1434,12 +1661,15 @@ describe("Scrappy in damage calc", () => {
 describe("Wonder Guard in damage calc", () => {
   it("given defender with Wonder Guard + neutral move, when calculating damage, then 0 damage", () => {
     // Source: Showdown -- Wonder Guard: only super-effective moves deal damage
-    const attacker = makeActive({ types: [normal] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.wonderGuard,
+      types: [normal],
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1448,12 +1678,15 @@ describe("Wonder Guard in damage calc", () => {
 
   it("given defender with Wonder Guard + super-effective move, when calculating damage, then deals damage", () => {
     // Source: Showdown -- Wonder Guard: super-effective moves hit
-    const attacker = makeActive({ types: [fighting] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fighting] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.wonderGuard,
+      types: [normal],
+    });
     const closeCombat = dataManager.getMove(GEN6_MOVE_IDS.closeCombat);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: closeCombat, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: closeCombat, seed: 100 }),
       typeChart,
     );
 
@@ -1463,17 +1696,31 @@ describe("Wonder Guard in damage calc", () => {
 
   it("given Mold Breaker vs Wonder Guard + neutral move, when calculating damage, then bypasses Wonder Guard", () => {
     // Source: Showdown -- Mold Breaker bypasses Wonder Guard
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.moldBreaker, types: [normal] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
-    const unguardedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.moldBreaker,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.wonderGuard,
+      types: [normal],
+    });
+    const unguardedDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const unguardedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: unguardedDefender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: unguardedDefender,
+        move: tackle,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -1489,18 +1736,24 @@ describe("Wonder Guard in damage calc", () => {
 describe("Tinted Lens in damage calc", () => {
   it("given Tinted Lens + not-very-effective move, when calculating damage, then damage is doubled", () => {
     // Source: Showdown -- Tinted Lens: doubles damage for NVE moves
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.tintedLens, types: [fire] });
-    const defender = makeActive({ types: [fire] }); // Fire resists Fire
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.tintedLens,
+      types: [fire],
+    });
+    const defender = createSyntheticActivePokemon({ types: [fire] }); // Fire resists Fire
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const tintedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fire] });
+    const baseAttacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [fire],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1512,18 +1765,24 @@ describe("Tinted Lens in damage calc", () => {
 describe("Heatproof in damage calc", () => {
   it("given defender with Heatproof + fire move, when calculating damage, then damage is halved", () => {
     // Source: Showdown data/abilities.ts -- Heatproof: halves fire damage
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.heatproof, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.heatproof,
+      types: [normal],
+    });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const hpResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const baseDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: baseDefender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: baseDefender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1539,18 +1798,21 @@ describe("Heatproof in damage calc", () => {
 describe("Final modifier items in damage calc", () => {
   it("given Expert Belt + super-effective move, when calculating damage, then ~1.2x boost", () => {
     // Source: Showdown data/items.ts -- Expert Belt: 4915/4096 for SE moves
-    const attacker = makeActive({ types: [fire], heldItem: GEN6_ITEM_IDS.expertBelt });
-    const defender = makeActive({ types: [grass] }); // Fire SE vs Grass
+    const attacker = createSyntheticActivePokemon({
+      types: [fire],
+      heldItem: GEN6_ITEM_IDS.expertBelt,
+    });
+    const defender = createSyntheticActivePokemon({ types: [grass] }); // Fire SE vs Grass
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const expertResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [fire], heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({ types: [fire], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1560,18 +1822,21 @@ describe("Final modifier items in damage calc", () => {
 
   it("given Expert Belt + neutral move, when calculating damage, then no boost", () => {
     // Source: Showdown data/items.ts -- Expert Belt only activates for SE
-    const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.expertBelt });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.expertBelt,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const expertResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [normal], heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({ types: [normal], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1580,18 +1845,21 @@ describe("Final modifier items in damage calc", () => {
 
   it("given Muscle Band + physical move, when calculating damage, then ~1.1x boost", () => {
     // Source: Showdown data/items.ts -- Muscle Band: 4505/4096 for physical
-    const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.muscleBand });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.muscleBand,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const bandResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [normal], heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({ types: [normal], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1601,18 +1869,21 @@ describe("Final modifier items in damage calc", () => {
 
   it("given Wise Glasses + special move, when calculating damage, then ~1.1x boost", () => {
     // Source: Showdown data/items.ts -- Wise Glasses: 4505/4096 for special
-    const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.wiseGlasses });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.wiseGlasses,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const glassesResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: swift, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [normal], heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({ types: [normal], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: swift, seed: 100 }),
       typeChart,
     );
 
@@ -1631,18 +1902,22 @@ describe("Metronome item in damage calc", () => {
     // 3 uses = 1 + (3-1)*0.2 = 1.4x
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 3 } });
-    const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.metronome, volatiles });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.metronome,
+      volatiles,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const metResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [normal], heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({ types: [normal], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1654,18 +1929,22 @@ describe("Metronome item in damage calc", () => {
     // Source: Showdown -- Metronome first use: boostSteps = 1 - 1 = 0, no boost
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 1 } });
-    const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.metronome, volatiles });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.metronome,
+      volatiles,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const metResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseAttacker = makeActive({ types: [normal], heldItem: null });
+    const baseAttacker = createSyntheticActivePokemon({ types: [normal], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: baseAttacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1680,12 +1959,16 @@ describe("Metronome item in damage calc", () => {
 describe("Gem consumption and Unburden in damage calc", () => {
   it("given attacker with Unburden + gem that matches move type, when calculating damage, then gem is consumed and Unburden activates", () => {
     // Source: Showdown -- Gem consumed after boosting, triggers Unburden
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.unburden, types: [normal], heldItem: GEN6_ITEM_IDS.normalGem });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.unburden,
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.normalGem,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1698,12 +1981,16 @@ describe("Gem consumption and Unburden in damage calc", () => {
   });
 
   it("given attacker without Unburden + gem consumed, when calculating damage, then no Unburden volatile", () => {
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [fire], heldItem: GEN6_ITEM_IDS.fireGem });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [fire],
+      heldItem: GEN6_ITEM_IDS.fireGem,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1721,8 +2008,8 @@ describe("Gem consumption and Unburden in damage calc", () => {
 describe("Type-resist berry consumption + Unburden on defender", () => {
   it("given defender with Unburden + resist berry that activates, when calculating damage, then berry consumed and Unburden activates", () => {
     // Source: Showdown -- type-resist berry consumed triggers Unburden
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.unburden,
       types: [grass],
       heldItem: GEN6_ITEM_IDS.occaBerry,
@@ -1730,7 +2017,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1743,8 +2030,8 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
 
   it("given defender with Klutz + resist berry, when calculating damage, then berry does NOT activate", () => {
     // Source: Showdown -- Klutz suppresses items
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.klutz,
       types: [grass],
       heldItem: GEN6_ITEM_IDS.occaBerry,
@@ -1752,7 +2039,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1764,8 +2051,8 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
     // Source: Showdown -- Embargo suppresses items
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(embargo, { turnsLeft: 5 });
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({
       types: [grass],
       heldItem: GEN6_ITEM_IDS.occaBerry,
       volatiles,
@@ -1773,7 +2060,7 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -1782,18 +2069,21 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
 
   it("given Chilan Berry + neutral Normal move, when calculating damage, then berry activates (no SE requirement)", () => {
     // Source: Showdown -- Chilan Berry activates on any Normal hit, no SE needed
-    const attacker = makeActive({ types: [normal] });
-    const defender = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.chilanBerry });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const defender = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.chilanBerry,
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const chilanResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
-    const baseDefender = makeActive({ types: [normal], heldItem: null });
+    const baseDefender = createSyntheticActivePokemon({ types: [normal], heldItem: null });
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: baseDefender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: baseDefender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1812,17 +2102,25 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
 describe("Burn + Guts in damage calc", () => {
   it("given burned attacker with Guts using physical move, when calculating damage, then burn penalty is bypassed", () => {
     // Source: Showdown -- Guts bypasses burn damage penalty
-    const burnedGuts = makeActive({ ability: GEN6_ABILITY_IDS.guts, types: [normal], status: burn });
-    const burnedNoGuts = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], status: burn });
-    const defender = makeActive({ types: [normal] });
+    const burnedGuts = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.guts,
+      types: [normal],
+      status: burn,
+    });
+    const burnedNoGuts = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      status: burn,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const gutsResult = calculateGen6Damage(
-      makeDamageContext({ attacker: burnedGuts, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: burnedGuts, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const burnResult = calculateGen6Damage(
-      makeDamageContext({ attacker: burnedNoGuts, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: burnedNoGuts, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1840,17 +2138,25 @@ describe("Burn + Guts in damage calc", () => {
 describe("Attack stat modifiers in damage calc", () => {
   it("given Huge Power + physical move, when calculating damage, then attack is doubled", () => {
     // Source: Showdown -- Huge Power doubles physical attack stat
-    const hugePower = makeActive({ ability: GEN6_ABILITY_IDS.hugePower, types: [normal], attack: 100 });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], attack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const hugePower = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.hugePower,
+      types: [normal],
+      attack: 100,
+    });
+    const base = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      attack: 100,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const hpResult = calculateGen6Damage(
-      makeDamageContext({ attacker: hugePower, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: hugePower, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1861,17 +2167,21 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Choice Band + physical move, when calculating damage, then attack is boosted 1.5x", () => {
     // Source: Showdown data/items.ts -- Choice Band: 1.5x Atk
-    const choiceBand = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.choiceBand, attack: 100 });
-    const base = makeActive({ types: [normal], heldItem: null, attack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const choiceBand = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.choiceBand,
+      attack: 100,
+    });
+    const base = createSyntheticActivePokemon({ types: [normal], heldItem: null, attack: 100 });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const cbResult = calculateGen6Damage(
-      makeDamageContext({ attacker: choiceBand, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: choiceBand, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1881,17 +2191,21 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Choice Specs + special move, when calculating damage, then spAttack is boosted 1.5x", () => {
     // Source: Showdown data/items.ts -- Choice Specs: 1.5x SpAtk
-    const choiceSpecs = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.choiceSpecs, spAttack: 100 });
-    const base = makeActive({ types: [normal], heldItem: null, spAttack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const choiceSpecs = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.choiceSpecs,
+      spAttack: 100,
+    });
+    const base = createSyntheticActivePokemon({ types: [normal], heldItem: null, spAttack: 100 });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const csResult = calculateGen6Damage(
-      makeDamageContext({ attacker: choiceSpecs, defender, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker: choiceSpecs, defender, move: swift, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: swift, seed: 100 }),
       typeChart,
     );
 
@@ -1901,27 +2215,27 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Soul Dew + Latios (381) + special move, when calculating damage, then spAttack is boosted 1.5x", () => {
     // Source: Showdown sim/items.ts -- Soul Dew Gen 3-6: 1.5x SpAtk/SpDef for Lati@s
-    const soulDew = makeActive({
+    const soulDew = createSyntheticActivePokemon({
       types: [dragon, psychic],
       speciesId: GEN6_SPECIES_IDS.latios,
       heldItem: GEN6_ITEM_IDS.soulDew,
       spAttack: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [dragon, psychic],
       speciesId: GEN6_SPECIES_IDS.latios,
       heldItem: null,
       spAttack: 100,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const dragonPulse = dataManager.getMove(GEN6_MOVE_IDS.dragonPulse);
 
     const sdResult = calculateGen6Damage(
-      makeDamageContext({ attacker: soulDew, defender, move: dragonPulse, seed: 100 }),
+      createSyntheticDamageContext({ attacker: soulDew, defender, move: dragonPulse, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: dragonPulse, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: dragonPulse, seed: 100 }),
       typeChart,
     );
 
@@ -1931,27 +2245,27 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Deep Sea Tooth + Clamperl (366) + special move, when calculating damage, then spAttack is doubled", () => {
     // Source: Showdown sim/items.ts -- Deep Sea Tooth: 2x SpAtk for Clamperl
-    const dsTooth = makeActive({
+    const dsTooth = createSyntheticActivePokemon({
       types: [water],
       speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: GEN6_ITEM_IDS.deepSeaTooth,
       spAttack: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [water],
       speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: null,
       spAttack: 100,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const waterMove = dataManager.getMove(GEN6_MOVE_IDS.surf);
 
     const dstResult = calculateGen6Damage(
-      makeDamageContext({ attacker: dsTooth, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker: dsTooth, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: waterMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: waterMove, seed: 100 }),
       typeChart,
     );
 
@@ -1961,27 +2275,27 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Light Ball + Pikachu (25) + physical move, when calculating damage, then attack is doubled", () => {
     // Source: Showdown sim/items.ts -- Light Ball: 2x Atk+SpAtk for Pikachu
-    const lightBall = makeActive({
+    const lightBall = createSyntheticActivePokemon({
       types: [electric],
       speciesId: GEN6_SPECIES_IDS.pikachu,
       heldItem: GEN6_ITEM_IDS.lightBall,
       attack: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [electric],
       speciesId: GEN6_SPECIES_IDS.pikachu,
       heldItem: null,
       attack: 100,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const lbResult = calculateGen6Damage(
-      makeDamageContext({ attacker: lightBall, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: lightBall, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -1991,27 +2305,27 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Thick Club + Marowak (105) + physical move, when calculating damage, then attack is doubled", () => {
     // Source: Showdown sim/items.ts -- Thick Club: 2x Atk for Cubone/Marowak
-    const thickClub = makeActive({
+    const thickClub = createSyntheticActivePokemon({
       types: [ground],
       speciesId: GEN6_SPECIES_IDS.marowak,
       heldItem: GEN6_ITEM_IDS.thickClub,
       attack: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [ground],
       speciesId: GEN6_SPECIES_IDS.marowak,
       heldItem: null,
       attack: 100,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const boneClub = dataManager.getMove(GEN6_MOVE_IDS.boneClub);
 
     const tcResult = calculateGen6Damage(
-      makeDamageContext({ attacker: thickClub, defender, move: boneClub, seed: 100 }),
+      createSyntheticDamageContext({ attacker: thickClub, defender, move: boneClub, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: boneClub, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: boneClub, seed: 100 }),
       typeChart,
     );
 
@@ -2023,22 +2337,26 @@ describe("Attack stat modifiers in damage calc", () => {
     // Source: Showdown data/abilities.ts -- Slow Start: halve Attack for first 5 turns
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(GEN6_ABILITY_IDS.slowStart, { turnsLeft: 5 });
-    const slowStartMon = makeActive({
+    const slowStartMon = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.slowStart,
       types: [normal],
       attack: 100,
       volatiles,
     });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], attack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const base = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      attack: 100,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const ssResult = calculateGen6Damage(
-      makeDamageContext({ attacker: slowStartMon, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: slowStartMon, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2048,29 +2366,29 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Defeatist + HP <= 50%, when calculating damage, then attack/spAttack is halved", () => {
     // Source: Showdown data/abilities.ts -- Defeatist: halve Atk/SpAtk when HP <= 50%
-    const defeatist = makeActive({
+    const defeatist = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.defeatist,
       types: [normal],
       hp: 200,
       currentHp: 100, // exactly 50%
       attack: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.none,
       types: [normal],
       hp: 200,
       currentHp: 100,
       attack: 100,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const defResult = calculateGen6Damage(
-      makeDamageContext({ attacker: defeatist, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: defeatist, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2080,22 +2398,27 @@ describe("Attack stat modifiers in damage calc", () => {
 
   it("given Klutz + Choice Band, when calculating damage, then Choice Band is suppressed", () => {
     // Source: Showdown -- Klutz suppresses held items
-    const klutzCB = makeActive({
+    const klutzCB = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.klutz,
       types: [normal],
       heldItem: GEN6_ITEM_IDS.choiceBand,
       attack: 100,
     });
-    const noItem = makeActive({ ability: GEN6_ABILITY_IDS.klutz, types: [normal], heldItem: null, attack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const noItem = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.klutz,
+      types: [normal],
+      heldItem: null,
+      attack: 100,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const klutzResult = calculateGen6Damage(
-      makeDamageContext({ attacker: klutzCB, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: klutzCB, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const noItemResult = calculateGen6Damage(
-      makeDamageContext({ attacker: noItem, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: noItem, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2111,14 +2434,14 @@ describe("Attack stat modifiers in damage calc", () => {
 describe("Defense stat modifiers in damage calc", () => {
   it("given Deep Sea Scale + Clamperl (366) + special move, when calculating damage, then spDefense is doubled", () => {
     // Source: Showdown sim/items.ts -- Deep Sea Scale: 2x SpDef for Clamperl
-    const attacker = makeActive({ types: [normal] });
-    const dsScale = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const dsScale = createSyntheticActivePokemon({
       types: [water],
       speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: GEN6_ITEM_IDS.deepSeaScale,
       spDefense: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [water],
       speciesId: GEN6_SPECIES_IDS.clamperl,
       heldItem: null,
@@ -2127,11 +2450,11 @@ describe("Defense stat modifiers in damage calc", () => {
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const scaleResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: dsScale, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: dsScale, move: swift, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
       typeChart,
     );
 
@@ -2141,17 +2464,21 @@ describe("Defense stat modifiers in damage calc", () => {
 
   it("given Eviolite + any Pokemon + special move, when calculating damage, then spDefense boosted 1.5x", () => {
     // Source: Showdown data/items.ts -- Eviolite: 1.5x Def/SpDef
-    const attacker = makeActive({ types: [normal] });
-    const eviolite = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.eviolite, spDefense: 100 });
-    const base = makeActive({ types: [normal], heldItem: null, spDefense: 100 });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const eviolite = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.eviolite,
+      spDefense: 100,
+    });
+    const base = createSyntheticActivePokemon({ types: [normal], heldItem: null, spDefense: 100 });
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const evResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: eviolite, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: eviolite, move: swift, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
       typeChart,
     );
 
@@ -2161,23 +2488,25 @@ describe("Defense stat modifiers in damage calc", () => {
 
   it("given Sandstorm + Rock defender + special move, when calculating damage, then spDefense boosted 1.5x", () => {
     // Source: Bulbapedia -- Sandstorm boosts Rock-type SpDef by 50% (Gen 4+)
-    const attacker = makeActive({ types: [normal] });
-    const rockDef = makeActive({ types: [rock], spDefense: 100 });
-    const base = makeActive({ types: [rock], spDefense: 100 });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const rockDef = createSyntheticActivePokemon({ types: [rock], spDefense: 100 });
+    const base = createSyntheticActivePokemon({ types: [rock], spDefense: 100 });
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const sandResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender: rockDef,
         move: swift,
-        state: makeState({ weather: { type: "sand", turnsLeft: 5, source: GEN6_ABILITY_IDS.sandStream } }),
+        state: createSyntheticBattleState({
+          weather: { type: "sand", turnsLeft: 5, source: GEN6_ABILITY_IDS.sandStream },
+        }),
         seed: 100,
       }),
       typeChart,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
       typeChart,
     );
 
@@ -2187,27 +2516,39 @@ describe("Defense stat modifiers in damage calc", () => {
 
   it("given Flower Gift + sun + special move, when calculating damage, then spDefense boosted 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Flower Gift: 1.5x SpDef in sun
-    const attacker = makeActive({ types: [normal] });
-    const flowerGift = makeActive({ ability: GEN6_ABILITY_IDS.flowerGift, types: [grass], spDefense: 100 });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [grass], spDefense: 100 });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const flowerGift = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.flowerGift,
+      types: [grass],
+      spDefense: 100,
+    });
+    const base = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [grass],
+      spDefense: 100,
+    });
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const fgResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender: flowerGift,
         move: swift,
-        state: makeState({ weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought } }),
+        state: createSyntheticBattleState({
+          weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought },
+        }),
         seed: 100,
       }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender: base,
         move: swift,
-        state: makeState({ weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought } }),
+        state: createSyntheticBattleState({
+          weather: { type: sun, turnsLeft: 5, source: GEN6_ABILITY_IDS.drought },
+        }),
         seed: 100,
       }),
       typeChart,
@@ -2219,22 +2560,27 @@ describe("Defense stat modifiers in damage calc", () => {
 
   it("given Marvel Scale + status + physical move, when calculating damage, then defense boosted 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Marvel Scale: 1.5x Def when statused
-    const attacker = makeActive({ types: [normal] });
-    const marvelScale = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const marvelScale = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.marvelScale,
       types: [water],
       status: burn,
       defense: 100,
     });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [water], status: burn, defense: 100 });
+    const base = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [water],
+      status: burn,
+      defense: 100,
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const msResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: marvelScale, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: marvelScale, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: base, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: base, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2244,14 +2590,14 @@ describe("Defense stat modifiers in damage calc", () => {
 
   it("given Soul Dew + Latias (380) defender + special move, when calculating damage, then spDefense boosted 1.5x", () => {
     // Source: Showdown -- Soul Dew Gen 3-6: 1.5x SpDef for Latias
-    const attacker = makeActive({ types: [normal] });
-    const soulDewDef = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const soulDewDef = createSyntheticActivePokemon({
       types: [dragon, psychic],
       speciesId: GEN6_SPECIES_IDS.latias,
       heldItem: GEN6_ITEM_IDS.soulDew,
       spDefense: 100,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [dragon, psychic],
       speciesId: GEN6_SPECIES_IDS.latias,
       heldItem: null,
@@ -2260,11 +2606,11 @@ describe("Defense stat modifiers in damage calc", () => {
     const swift = dataManager.getMove(GEN6_MOVE_IDS.swift);
 
     const sdResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: soulDewDef, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: soulDewDef, move: swift, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: base, move: swift, seed: 100 }),
       typeChart,
     );
 
@@ -2280,7 +2626,7 @@ describe("Defense stat modifiers in damage calc", () => {
 describe("Stat stages in damage calc", () => {
   it("given Simple + +1 attack stage, when calculating damage, then attack stage is doubled to +2", () => {
     // Source: Showdown -- Simple doubles stat stage effects
-    const simple = makeActive({
+    const simple = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.simple,
       types: [normal],
       attack: 100,
@@ -2294,21 +2640,21 @@ describe("Stat stages in damage calc", () => {
         evasion: 0,
       },
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       ability: GEN6_ABILITY_IDS.none,
       types: [normal],
       attack: 100,
       statStages: PLUS_TWO_ATTACK_STAT_STAGES,
     });
-    const defender = makeActive({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const simpleResult = calculateGen6Damage(
-      makeDamageContext({ attacker: simple, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: simple, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2318,24 +2664,37 @@ describe("Stat stages in damage calc", () => {
 
   it("given Unaware defender + attacker with +6 attack, when calculating damage, then attack stages are ignored", () => {
     // Source: Showdown -- Unaware ignores attacker's stat stages
-    const boosted = makeActive({
+    const boosted = createSyntheticActivePokemon({
       types: [normal],
       attack: 100,
       statStages: PLUS_SIX_ATTACK_STAT_STAGES,
     });
-    const base = makeActive({
+    const base = createSyntheticActivePokemon({
       types: [normal],
       attack: 100,
     });
-    const unawareDefender = makeActive({ ability: GEN6_ABILITY_IDS.unaware, types: [normal] });
+    const unawareDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.unaware,
+      types: [normal],
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const unawareResult = calculateGen6Damage(
-      makeDamageContext({ attacker: boosted, defender: unawareDefender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: boosted,
+        defender: unawareDefender,
+        move: tackle,
+        seed: 100,
+      }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender: unawareDefender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: base,
+        defender: unawareDefender,
+        move: tackle,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2345,21 +2704,33 @@ describe("Stat stages in damage calc", () => {
 
   it("given critical hit + negative attack stage, when calculating damage, then negative stage is ignored (treated as 0)", () => {
     // Source: Showdown -- crits ignore negative attack stages
-    const debuffed = makeActive({
+    const debuffed = createSyntheticActivePokemon({
       types: [normal],
       attack: 100,
       statStages: MINUS_THREE_ATTACK_STAT_STAGES,
     });
-    const base = makeActive({ types: [normal], attack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const base = createSyntheticActivePokemon({ types: [normal], attack: 100 });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const critResult = calculateGen6Damage(
-      makeDamageContext({ attacker: debuffed, defender, move: tackle, isCrit: true, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: debuffed,
+        defender,
+        move: tackle,
+        isCrit: true,
+        seed: 100,
+      }),
       typeChart,
     );
     const baseCritResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, isCrit: true, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: base,
+        defender,
+        move: tackle,
+        isCrit: true,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2369,21 +2740,33 @@ describe("Stat stages in damage calc", () => {
 
   it("given critical hit + positive defense stage, when calculating damage, then positive defense stage is ignored", () => {
     // Source: Showdown -- crits ignore positive defense stages
-    const attacker = makeActive({ types: [normal], attack: 100 });
-    const boostedDef = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [normal], attack: 100 });
+    const boostedDef = createSyntheticActivePokemon({
       types: [normal],
       defense: 100,
       statStages: PLUS_SIX_DEFENSE_STAT_STAGES,
     });
-    const baseDef = makeActive({ types: [normal], defense: 100 });
+    const baseDef = createSyntheticActivePokemon({ types: [normal], defense: 100 });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const critBoostedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: boostedDef, move: tackle, isCrit: true, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: boostedDef,
+        move: tackle,
+        isCrit: true,
+        seed: 100,
+      }),
       typeChart,
     );
     const critBaseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: baseDef, move: tackle, isCrit: true, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: baseDef,
+        move: tackle,
+        isCrit: true,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2399,21 +2782,26 @@ describe("Stat stages in damage calc", () => {
 describe("Chip Away / Sacred Sword in damage calc", () => {
   it("given Sacred Sword vs +6 defense, when calculating damage, then defense stages are ignored", () => {
     // Source: Showdown -- Sacred Sword ignores target's defense stages
-    const attacker = makeActive({ types: [fighting], attack: 100 });
-    const boostedDef = makeActive({
+    const attacker = createSyntheticActivePokemon({ types: [fighting], attack: 100 });
+    const boostedDef = createSyntheticActivePokemon({
       types: [normal],
       defense: 100,
       statStages: PLUS_SIX_DEFENSE_STAT_STAGES,
     });
-    const baseDef = makeActive({ types: [normal], defense: 100 });
+    const baseDef = createSyntheticActivePokemon({ types: [normal], defense: 100 });
     const sacredSword = dataManager.getMove(GEN6_MOVE_IDS.sacredSword);
 
     const ssResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: boostedDef, move: sacredSword, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: boostedDef,
+        move: sacredSword,
+        seed: 100,
+      }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: baseDef, move: sacredSword, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: baseDef, move: sacredSword, seed: 100 }),
       typeChart,
     );
 
@@ -2429,22 +2817,22 @@ describe("Chip Away / Sacred Sword in damage calc", () => {
 describe("Spread modifier in damage calc", () => {
   it("given doubles format + all-adjacent-foes move, when calculating damage, then 0.75x damage", () => {
     // Source: Showdown -- spread moves in doubles deal 0.75x damage (3072/4096)
-    const attacker = makeActive({ types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const spreadMove = dataManager.getMove(GEN6_MOVE_IDS.rockSlide);
 
     const doublesResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: spreadMove,
-        state: makeState({ format: "doubles" }),
+        state: createSyntheticBattleState({ format: "doubles" }),
         seed: 100,
       }),
       typeChart,
     );
     const singlesResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: spreadMove,
@@ -2465,17 +2853,32 @@ describe("Spread modifier in damage calc", () => {
 describe("Sniper in damage calc", () => {
   it("given Sniper + critical hit, when calculating damage, then crit is 2.25x (1.5x * 1.5x)", () => {
     // Source: Showdown -- Sniper: additional 1.5x on top of 1.5x crit = 2.25x
-    const sniper = makeActive({ ability: GEN6_ABILITY_IDS.sniper, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const sniper = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sniper,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const sniperCrit = calculateGen6Damage(
-      makeDamageContext({ attacker: sniper, defender, move: tackle, isCrit: true, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: sniper,
+        defender,
+        move: tackle,
+        isCrit: true,
+        seed: 100,
+      }),
       typeChart,
     );
     const baseCrit = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, isCrit: true, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker: base,
+        defender,
+        move: tackle,
+        isCrit: true,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2492,17 +2895,25 @@ describe("Sniper in damage calc", () => {
 describe("Hustle in damage calc", () => {
   it("given Hustle + physical move, when calculating damage, then attack stat boosted 1.5x", () => {
     // Source: Showdown -- Hustle: 1.5x Atk for physical moves
-    const hustle = makeActive({ ability: GEN6_ABILITY_IDS.hustle, types: [normal], attack: 100 });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal], attack: 100 });
-    const defender = makeActive({ types: [normal] });
+    const hustle = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.hustle,
+      types: [normal],
+      attack: 100,
+    });
+    const base = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+      attack: 100,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const hustleResult = calculateGen6Damage(
-      makeDamageContext({ attacker: hustle, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: hustle, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2520,12 +2931,16 @@ describe("Embargo suppressing gems in damage calc", () => {
     // Source: Showdown -- Embargo suppresses items
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(embargo, { turnsLeft: 5 });
-    const attacker = makeActive({ types: [normal], heldItem: GEN6_ITEM_IDS.normalGem, volatiles });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      types: [normal],
+      heldItem: GEN6_ITEM_IDS.normalGem,
+      volatiles,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2541,16 +2956,16 @@ describe("Embargo suppressing gems in damage calc", () => {
 describe("Gravity / Iron Ball type effectiveness override in damage calc", () => {
   it("given Gravity active + ground move vs Flying type, when calculating damage, then Flying immunity is removed", () => {
     // Source: Showdown -- Gravity: Ground moves hit Flying types
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ types: [flying] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({ types: [flying] });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const gravityResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: earthquake,
-        state: makeState({ gravity: { active: true, turnsLeft: 3 } }),
+        state: createSyntheticBattleState({ gravity: { active: true, turnsLeft: 3 } }),
         seed: 100,
       }),
       typeChart,
@@ -2558,7 +2973,7 @@ describe("Gravity / Iron Ball type effectiveness override in damage calc", () =>
 
     // Without gravity, Ground vs Flying = 0 (immune)
     const noGravityResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake }),
       typeChart,
     );
 
@@ -2568,17 +2983,25 @@ describe("Gravity / Iron Ball type effectiveness override in damage calc", () =>
 
   it("given Iron Ball defender + ground move vs Flying type, when calculating damage, then Flying immunity is removed", () => {
     // Source: Showdown -- Iron Ball grounds the holder
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ types: [flying], heldItem: GEN6_ITEM_IDS.ironBall });
-    const groundedDefender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({
+      types: [flying],
+      heldItem: GEN6_ITEM_IDS.ironBall,
+    });
+    const groundedDefender = createSyntheticActivePokemon({ types: [normal] });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
       typeChart,
     );
     const groundedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: groundedDefender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: groundedDefender,
+        move: earthquake,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2594,22 +3017,22 @@ describe("Gravity / Iron Ball type effectiveness override in damage calc", () =>
 describe("Terrain power modifiers in damage calc", () => {
   it("given Electric Terrain + electric move + grounded attacker, when calculating damage, then 1.5x boost", () => {
     // Source: Bulbapedia "Electric Terrain" Gen 6 -- 1.5x Electric for grounded attacker
-    const attacker = makeActive({ types: [electric] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [electric] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const thunderbolt = dataManager.getMove(GEN6_MOVE_IDS.thunderbolt);
 
     const terrainResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: thunderbolt,
-        state: makeState({ terrain: { type: electric, turnsLeft: 5 } }),
+        state: createSyntheticBattleState({ terrain: { type: electric, turnsLeft: 5 } }),
         seed: 100,
       }),
       typeChart,
     );
     const noTerrainResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: thunderbolt, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: thunderbolt, seed: 100 }),
       typeChart,
     );
 
@@ -2619,22 +3042,22 @@ describe("Terrain power modifiers in damage calc", () => {
 
   it("given Grassy Terrain + Earthquake vs grounded target, when calculating damage, then damage is halved", () => {
     // Source: Showdown -- Grassy Terrain halves Earthquake/Bulldoze/Magnitude vs grounded targets
-    const attacker = makeActive({ types: [ground] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [ground] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const grassyResult = calculateGen6Damage(
-      makeDamageContext({
+      createSyntheticDamageContext({
         attacker,
         defender,
         move: earthquake,
-        state: makeState({ terrain: { type: GRASSY_TERRAIN, turnsLeft: 5 } }),
+        state: createSyntheticBattleState({ terrain: { type: GRASSY_TERRAIN, turnsLeft: 5 } }),
         seed: 100,
       }),
       typeChart,
     );
     const noTerrainResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
       typeChart,
     );
 
@@ -2650,26 +3073,36 @@ describe("Terrain power modifiers in damage calc", () => {
 describe("Round ally boost in damage calc", () => {
   it("given ally already used Round this turn, when calculating damage, then power doubles", () => {
     // Source: Showdown -- Round: doubles power if ally used Round earlier
-    const attacker = makeActive({ types: [normal] });
-    const ally = makeActive({ types: [normal], lastMoveUsed: GEN6_MOVE_IDS.round, movedThisTurn: true });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [normal] });
+    const ally = createSyntheticActivePokemon({
+      types: [normal],
+      lastMoveUsed: GEN6_MOVE_IDS.round,
+      movedThisTurn: true,
+    });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const roundMove = dataManager.getMove(GEN6_MOVE_IDS.round);
 
-    const state = makeState({
+    const state = createSyntheticBattleState({
       sides: [{ active: [attacker, ally] }, { active: [defender] }],
     });
 
     const roundResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: roundMove, state, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: roundMove, state, seed: 100 }),
       typeChart,
     );
 
     // Without ally boost
-    const soloState = makeState({
+    const soloState = createSyntheticBattleState({
       sides: [{ active: [attacker] }, { active: [defender] }],
     });
     const soloResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: roundMove, state: soloState, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender,
+        move: roundMove,
+        state: soloState,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2686,17 +3119,20 @@ describe("Round ally boost in damage calc", () => {
 describe("Thick Fat in damage calc (through calculateGen6Damage)", () => {
   it("given defender with Thick Fat + fire move, when calculating damage, then damage is halved", () => {
     // Source: Showdown -- Thick Fat: halves attacker's effective stat for fire/ice
-    const attacker = makeActive({ types: [fire] });
-    const thickFat = makeActive({ ability: GEN6_ABILITY_IDS.thickFat, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const thickFat = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.thickFat,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const tfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: thickFat, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: thickFat, move: fireMove, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: base, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender: base, move: fireMove, seed: 100 }),
       typeChart,
     );
 
@@ -2712,17 +3148,20 @@ describe("Thick Fat in damage calc (through calculateGen6Damage)", () => {
 describe("Reckless with no effect (null)", () => {
   it("given Reckless + move with null effect, when calculating damage, then no Reckless boost", () => {
     // Source: Showdown -- Reckless only activates for moves with recoil effect
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.reckless, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.reckless,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const recklessResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move: tackle, seed: 100 }),
       typeChart,
     );
 
@@ -2745,17 +3184,23 @@ describe("Sheer Force with non-eligible effects", () => {
       chance: 100,
       fromSecondary: false,
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const defender = makeActive({ types: [normal] });
-    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: selfBoostEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const move = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.tackle),
+      effect: selfBoostEffect,
+    } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move, seed: 100 }),
       typeChart,
     );
 
@@ -2769,17 +3214,20 @@ describe("Sheer Force with non-eligible effects", () => {
       status: flinch as VolatileStatus,
       chance: 0,
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: vsEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move, seed: 100 }),
       typeChart,
     );
 
@@ -2796,17 +3244,23 @@ describe("Sheer Force with non-eligible effects", () => {
       chance: 0,
       fromSecondary: false,
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const defender = makeActive({ types: [normal] });
-    const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: foeDropEffect } as MoveData;
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
+    const move = {
+      ...dataManager.getMove(GEN6_MOVE_IDS.tackle),
+      effect: foeDropEffect,
+    } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move, seed: 100 }),
       typeChart,
     );
 
@@ -2828,17 +3282,20 @@ describe("Sheer Force with non-eligible effects", () => {
         },
       ],
     };
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.sheerForce, types: [normal] });
-    const base = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
-    const defender = makeActive({ types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.sheerForce,
+      types: [normal],
+    });
+    const base = createSyntheticActivePokemon({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const defender = createSyntheticActivePokemon({ types: [normal] });
     const move = { ...dataManager.getMove(GEN6_MOVE_IDS.tackle), effect: multiEffect } as MoveData;
 
     const sfResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move, seed: 100 }),
       typeChart,
     );
     const baseResult = calculateGen6Damage(
-      makeDamageContext({ attacker: base, defender, move, seed: 100 }),
+      createSyntheticDamageContext({ attacker: base, defender, move, seed: 100 }),
       typeChart,
     );
 
@@ -2853,17 +3310,31 @@ describe("Sheer Force with non-eligible effects", () => {
 describe("Teravolt / Turboblaze as mold breaker in damage calc", () => {
   it("given Teravolt attacker vs Levitate defender + ground move, when calculating damage, then Levitate bypassed", () => {
     // Source: Showdown -- Teravolt = Mold Breaker
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.teravolt, types: [ground] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.levitate, types: [normal] });
-    const groundedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.teravolt,
+      types: [ground],
+    });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.levitate,
+      types: [normal],
+    });
+    const groundedDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const earthquake = dataManager.getMove(GEN6_MOVE_IDS.earthquake);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: earthquake, seed: 100 }),
       typeChart,
     );
     const groundedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: groundedDefender, move: earthquake, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: groundedDefender,
+        move: earthquake,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2873,17 +3344,31 @@ describe("Teravolt / Turboblaze as mold breaker in damage calc", () => {
 
   it("given Turboblaze attacker vs Wonder Guard defender + neutral move, when calculating damage, then Wonder Guard bypassed", () => {
     // Source: Showdown -- Turboblaze = Mold Breaker
-    const attacker = makeActive({ ability: GEN6_ABILITY_IDS.turboblaze, types: [normal] });
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.wonderGuard, types: [normal] });
-    const unguardedDefender = makeActive({ ability: GEN6_ABILITY_IDS.none, types: [normal] });
+    const attacker = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.turboblaze,
+      types: [normal],
+    });
+    const defender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.wonderGuard,
+      types: [normal],
+    });
+    const unguardedDefender = createSyntheticActivePokemon({
+      ability: GEN6_ABILITY_IDS.none,
+      types: [normal],
+    });
     const tackle = dataManager.getMove(GEN6_MOVE_IDS.tackle);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: tackle, seed: 100 }),
       typeChart,
     );
     const unguardedResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender: unguardedDefender, move: tackle, seed: 100 }),
+      createSyntheticDamageContext({
+        attacker,
+        defender: unguardedDefender,
+        move: tackle,
+        seed: 100,
+      }),
       typeChart,
     );
 
@@ -2900,12 +3385,12 @@ describe("Not-very-effective type effectiveness math", () => {
   it("given 0.25x effectiveness (double resist), when calculating damage, then damage is quartered", () => {
     // Source: Showdown -- 0.25x = floor(floor(damage/2)/2)
     // Fire vs Water/Fire = 0.25x (Fire resists Fire, Water resists Fire)
-    const attacker = makeActive({ types: [fire] });
-    const defender = makeActive({ types: [fire, water] });
+    const attacker = createSyntheticActivePokemon({ types: [fire] });
+    const defender = createSyntheticActivePokemon({ types: [fire, water] });
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
+      createSyntheticDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
 
