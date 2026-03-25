@@ -5,22 +5,32 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
-  DataManager,
   Gender,
   MoveData,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  SeededRandom,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -52,38 +62,33 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // ---------------------------------------------------------------------------
 
 const dataManager = createGen4DataManager();
-const A = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
-const I = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
-const M = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
-const S = CORE_STATUS_IDS;
-const T = CORE_TYPE_IDS;
-const V = CORE_VOLATILE_IDS;
-const W = CORE_WEATHER_IDS;
-const P = GEN4_SPECIES_IDS;
-const N = GEN4_NATURE_IDS;
-const DEFAULT_MOVE = dataManager.getMove(M.tackle);
-const DEFAULT_TYPES: PokemonType[] = [T.normal];
-const GRASS_TYPES: PokemonType[] = [T.grass];
-const WATER_TYPES: PokemonType[] = [T.water];
-const GROUND_TYPES: PokemonType[] = [T.ground];
-const ROCK_TYPES: PokemonType[] = [T.rock];
-const FIRE_TYPES: PokemonType[] = [T.fire];
-const TEST_UID = "test";
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const itemIds = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const moveIds = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const statusIds = CORE_STATUS_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const weatherIds = CORE_WEATHER_IDS;
+const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const speciesIds = GEN4_SPECIES_IDS;
+const defaultSpecies = dataManager.getSpecies(speciesIds.pikachu);
+const defaultMove = dataManager.getMove(moveIds.tackle);
+const DEFAULT_TYPES: PokemonType[] = [typeIds.normal];
+const GRASS_TYPES: PokemonType[] = [typeIds.grass];
+const WATER_TYPES: PokemonType[] = [typeIds.water];
+const GROUND_TYPES: PokemonType[] = [typeIds.ground];
+const ROCK_TYPES: PokemonType[] = [typeIds.rock];
+const FIRE_TYPES: PokemonType[] = [typeIds.fire];
 
-type TestStatus = (typeof S)[keyof typeof S] | null;
+type TestStatus = PrimaryStatus | null;
 type TestMoveSlot = { moveId: string; currentPP: number; maxPP: number; ppUps: number };
 
-function makeMoveSlot(moveId: string): TestMoveSlot {
+function createCanonicalMoveSlot(moveId: (typeof moveIds)[keyof typeof moveIds]): TestMoveSlot {
   const move = dataManager.getMove(moveId);
-  return {
-    moveId,
-    currentPP: move.pp,
-    maxPP: move.pp,
-    ppUps: 0,
-  };
+  return createMoveSlot(move.id, move.pp) as TestMoveSlot;
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -100,41 +105,39 @@ function makePokemonInstance(overrides: {
   moves?: TestMoveSlot[];
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: TEST_UID,
-    speciesId: overrides.speciesId ?? P.pikachu,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: N.hardy,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: overrides.moves ?? [],
-    ability: overrides.ability ?? A.none,
-    abilitySlot: "normal1" as const,
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(4 + species.id), {
+    nature: CORE_NATURE_IDS.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: overrides.gender ?? CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: overrides.status ?? null,
-    friendship: 0,
-    gender: (overrides.gender ?? "male") as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: I.pokeBall,
-    calculatedStats: {
-      hp: maxHp,
-      attack: overrides.attack ?? 100,
-      defense: overrides.defense ?? 100,
-      spAttack: overrides.spAttack ?? 100,
-      spDefense: overrides.spDefense ?? 100,
-      speed: overrides.speed ?? 100,
-    },
-  } as PokemonInstance;
+    pokeball: itemIds.pokeBall,
+    moves: overrides.moves?.map((move) => move.moveId) ?? [defaultMove.id],
+  });
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = overrides.moves ?? [];
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: overrides.speed ?? 100,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   speciesId?: number;
@@ -151,56 +154,36 @@ function makeActivePokemon(overrides: {
   gender?: Gender;
   moves?: TestMoveSlot[];
 }) {
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createSyntheticPokemonInstance({
+    ability: overrides.ability,
+    speciesId: overrides.speciesId,
+    nickname: overrides.nickname,
+    status: overrides.status,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    heldItem: overrides.heldItem,
+    defense: overrides.defense,
+    spDefense: overrides.spDefense,
+    attack: overrides.attack,
+    spAttack: overrides.spAttack,
+    speed: overrides.speed,
+    gender: overrides.gender,
+    moves: overrides.moves,
+  });
+  const activePokemon = createBattleOnFieldPokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...(species.types as PokemonType[])],
+  );
+  activePokemon.ability = overrides.ability ?? abilityIds.none;
   return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      speciesId: overrides.speciesId,
-      nickname: overrides.nickname,
-      status: overrides.status,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      heldItem: overrides.heldItem,
-      defense: overrides.defense,
-      spDefense: overrides.spDefense,
-      attack: overrides.attack,
-      spAttack: overrides.spAttack,
-      speed: overrides.speed,
-      gender: overrides.gender,
-      moves: overrides.moves,
-    }),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? DEFAULT_TYPES,
-    ability: overrides.ability ?? A.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
+    ...activePokemon,
+    types: overrides.types ?? [...(species.types as PokemonType[])],
   };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -217,7 +200,7 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(weather?: {
+function createBattleState(weather?: {
   type: WeatherType;
   turnsLeft: number;
   source: string;
@@ -227,7 +210,7 @@ function makeBattleState(weather?: {
     generation: 4,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: weather ?? null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -249,33 +232,22 @@ function makeBattleState(weather?: {
   } as unknown as BattleState;
 }
 
-function makeMove(type: PokemonType, overrides?: Partial<MoveData>): MoveData {
-  const baseMove = dataManager.getMove(overrides?.id ?? DEFAULT_MOVE.id);
-  return {
-    ...baseMove,
-    id: overrides?.id ?? baseMove.id,
-    displayName: overrides?.displayName ?? baseMove.displayName,
-    type,
-    category: overrides?.category ?? baseMove.category,
-    power: overrides?.power ?? baseMove.power,
-    accuracy: overrides?.accuracy ?? baseMove.accuracy,
-    pp: overrides?.pp ?? baseMove.pp,
-    maxPp: overrides?.maxPp ?? baseMove.maxPp,
-    priority: overrides?.priority ?? baseMove.priority,
-    target: overrides?.target ?? baseMove.target,
-    generation: baseMove.generation,
-    flags: { ...baseMove.flags, ...overrides?.flags },
-    effectChance: overrides?.effectChance ?? baseMove.effectChance,
-    secondaryEffects: overrides?.secondaryEffects ?? baseMove.secondaryEffects,
-    effect: overrides?.effect ?? baseMove.effect,
-    ...overrides,
-  } as unknown as MoveData;
+function createCanonicalMove(moveId: (typeof moveIds)[keyof typeof moveIds]): MoveData {
+  return dataManager.getMove(moveId);
 }
 
-function makeAbilityContext(opts: {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
+  return {
+    ...baseMove,
+    flags: { ...baseMove.flags, ...overrides.flags },
+    ...overrides,
+  } as MoveData;
+}
+
+function createAbilityContext(opts: {
   ability: string;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
   weather?: { type: WeatherType; turnsLeft: number; source: string };
   status?: TestStatus;
   currentHp?: number;
@@ -283,9 +255,10 @@ function makeAbilityContext(opts: {
   rngNextValues?: number[];
   rngChance?: boolean;
   move?: MoveData;
+  trigger?: (typeof triggerIds)[keyof typeof triggerIds];
 }): AbilityContext {
-  const state = makeBattleState(opts.weather);
-  const pokemon = makeActivePokemon({
+  const state = createBattleState(opts.weather);
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     status: opts.status,
@@ -300,7 +273,7 @@ function makeAbilityContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    trigger: "on-switch-in",
+    trigger: opts.trigger ?? triggerIds.onSwitchIn,
     move: opts.move,
     rng: {
       next: () => {
@@ -327,40 +300,40 @@ describe("Leaf Guard — prevent all status in sun", () => {
   it("given Leaf Guard in sun, when status infliction attempted, then status blocked", () => {
     // Source: Bulbapedia — Leaf Guard: "Prevents status conditions in sunny weather"
     // Source: Showdown data/abilities.ts — Leaf Guard onSetStatus
-    const target = makeActivePokemon({ ability: A.leafGuard, types: GRASS_TYPES });
-    const state = makeBattleState({ type: W.sun, turnsLeft: -1, source: A.drought });
+    const target = createOnFieldPokemon({ ability: abilityIds.leafGuard, types: GRASS_TYPES });
+    const state = createBattleState({ type: weatherIds.sun, turnsLeft: -1, source: abilityIds.drought });
 
-    const result = canInflictGen4Status(S.paralysis, target, state);
+    const result = canInflictGen4Status(statusIds.paralysis, target, state);
 
     expect(result).toBe(false);
   });
 
   it("given Leaf Guard NOT in sun, when status infliction attempted, then status applied normally", () => {
     // Source: Bulbapedia — Leaf Guard only activates in harsh sunlight
-    const target = makeActivePokemon({ ability: A.leafGuard, types: GRASS_TYPES });
-    const state = makeBattleState({ type: W.rain, turnsLeft: 5, source: A.drizzle });
+    const target = createOnFieldPokemon({ ability: abilityIds.leafGuard, types: GRASS_TYPES });
+    const state = createBattleState({ type: weatherIds.rain, turnsLeft: 5, source: abilityIds.drizzle });
 
-    const result = canInflictGen4Status(S.paralysis, target, state);
+    const result = canInflictGen4Status(statusIds.paralysis, target, state);
 
     expect(result).toBe(true);
   });
 
   it("given no Leaf Guard in sun, when status infliction attempted, then status applied normally", () => {
     // Triangulation: confirm Leaf Guard is ability-specific, not weather-only
-    const target = makeActivePokemon({ ability: A.overgrow, types: GRASS_TYPES });
-    const state = makeBattleState({ type: W.sun, turnsLeft: -1, source: A.drought });
+    const target = createOnFieldPokemon({ ability: abilityIds.overgrow, types: GRASS_TYPES });
+    const state = createBattleState({ type: weatherIds.sun, turnsLeft: -1, source: abilityIds.drought });
 
-    const result = canInflictGen4Status(S.paralysis, target, state);
+    const result = canInflictGen4Status(statusIds.paralysis, target, state);
 
     expect(result).toBe(true);
   });
 
   it("given Leaf Guard in sun, when burn attempted, then burn also blocked", () => {
     // Source: Bulbapedia — Leaf Guard blocks ALL primary status conditions in sun
-    const target = makeActivePokemon({ ability: A.leafGuard, types: GRASS_TYPES });
-    const state = makeBattleState({ type: W.sun, turnsLeft: -1, source: A.drought });
+    const target = createOnFieldPokemon({ ability: abilityIds.leafGuard, types: GRASS_TYPES });
+    const state = createBattleState({ type: weatherIds.sun, turnsLeft: -1, source: abilityIds.drought });
 
-    const result = canInflictGen4Status(S.burn, target, state);
+    const result = canInflictGen4Status(statusIds.burn, target, state);
 
     expect(result).toBe(false);
   });
@@ -378,10 +351,10 @@ describe("Storm Drain — Gen 4: redirect-only in doubles, no singles immunity",
     //
     // Bug #350/#351: Previous behavior granted Water immunity + SpAtk boost (Gen 5+).
     // Gen 4 Storm Drain does nothing in singles — Water moves deal normal damage.
-    const attacker = makeActivePokemon({ types: WATER_TYPES, spAttack: 100 });
-    const defender = makeActivePokemon({ ability: A.stormDrain, types: GROUND_TYPES });
-    const move = makeMove(T.water, { id: M.surf, power: 90, category: "special" });
-    const state = makeBattleState();
+    const attacker = createOnFieldPokemon({ types: WATER_TYPES, spAttack: 100 });
+    const defender = createOnFieldPokemon({ ability: abilityIds.stormDrain, types: GROUND_TYPES });
+    const move = createCanonicalMove(moveIds.surf);
+    const state = createBattleState();
 
     const damageResult = calculateGen4Damage(
       {
@@ -396,38 +369,40 @@ describe("Storm Drain — Gen 4: redirect-only in doubles, no singles immunity",
     );
 
     // In Gen 4 singles, Storm Drain does NOT grant Water immunity — Water deals normal damage.
-    // Derivation: level=50, spAtk=100, spDef=100, power=90, Water vs Ground = 2x (super effective)
+    // Derivation: level=50, spAtk=100, spDef=100, power=95, Water vs Ground = 2x (super effective)
     //   levelFactor = floor(2*50/5)+2 = 22
-    //   baseDamage = floor(floor((22*90*100)/100)/50) = floor(1980/50) = 39
-    //   +2 = 41; random=100 → floor(41*1.0)=41; STAB (water/water) 1.5x → floor(61.5)=61
-    //   effectiveness 2.0 → floor(61*2) = 122; no items → 122
+    //   baseDamage = floor(floor((22*95*100)/100)/50) = floor(2090/50) = 41
+    //   +2 = 43; random=100 → floor(43*1.0)=43; STAB (water/water) 1.5x → floor(64.5)=64
+    //   effectiveness 2.0 → floor(64*2) = 128; no items → 128
     // Source: Bulbapedia — Storm Drain (Gen 4): "Has no effect in single battles."
     // Source: Gen 4 type chart — Water is super effective against Ground (2x)
-    expect(damageResult.damage).toBe(122);
+    expect(damageResult.damage).toBe(128);
     expect(damageResult.effectiveness).toBe(2);
   });
 
   it("given Storm Drain, when passive-immunity is checked for Water move in singles, then ability does not activate", () => {
     // Source: Bulbapedia — Storm Drain (Gen 4): no effect in singles
     // Triangulation: passive-immunity must return not-activated for Water moves
-    const ctx = makeAbilityContext({
-      ability: A.stormDrain,
+    const ctx = createAbilityContext({
+      ability: abilityIds.stormDrain,
       types: GROUND_TYPES,
-      move: makeMove(T.water, { id: M.surf }),
+      trigger: triggerIds.passiveImmunity,
+      move: createCanonicalMove(moveIds.surf),
     });
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(triggerIds.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
   });
 
   it("given Storm Drain, when hit by non-Water move, then ability does not activate", () => {
     // Triangulation: Storm Drain also does nothing against non-Water moves
-    const ctx = makeAbilityContext({
-      ability: A.stormDrain,
+    const ctx = createAbilityContext({
+      ability: abilityIds.stormDrain,
       types: GROUND_TYPES,
-      move: makeMove(T.fire, { id: M.flamethrower }),
+      trigger: triggerIds.passiveImmunity,
+      move: createCanonicalMove(moveIds.flamethrower),
     });
-    const result = applyGen4Ability("passive-immunity", ctx);
+    const result = applyGen4Ability(triggerIds.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -442,21 +417,21 @@ describe("Klutz — held item has no effect", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     // Source: Showdown data/abilities.ts — Klutz gates item modifiers
     // Test via damage calc: Choice Band should NOT boost attack when holder has Klutz
-    const attacker = makeActivePokemon({
-      ability: A.klutz,
+    const attacker = createOnFieldPokemon({
+      ability: abilityIds.klutz,
       types: DEFAULT_TYPES,
-      heldItem: I.choiceBand,
+      heldItem: itemIds.choiceBand,
       attack: 100,
     });
-    const attackerNoKlutz = makeActivePokemon({
-      ability: A.intimidate,
+    const attackerNoKlutz = createOnFieldPokemon({
+      ability: abilityIds.intimidate,
       types: DEFAULT_TYPES,
-      heldItem: I.choiceBand,
+      heldItem: itemIds.choiceBand,
       attack: 100,
     });
-    const defender = makeActivePokemon({ types: DEFAULT_TYPES, defense: 100 });
-    const move = makeMove(T.normal, { id: M.tackle, power: 80, category: "physical" });
-    const state = makeBattleState();
+    const defender = createOnFieldPokemon({ types: DEFAULT_TYPES, defense: 100 });
+    const move = createCanonicalMove(moveIds.tackle);
+    const state = createBattleState();
     const rng = {
       next: () => 0.5,
       int: (_min: number, _max: number) => 100,
@@ -478,13 +453,13 @@ describe("Klutz — held item has no effect", () => {
 
   it("given Klutz holding Sitrus Berry, when item trigger fires, then Sitrus Berry does NOT heal", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
-    const pokemon = makeActivePokemon({
-      ability: A.klutz,
-      heldItem: I.sitrusBerry,
+    const pokemon = createOnFieldPokemon({
+      ability: abilityIds.klutz,
+      heldItem: itemIds.sitrusBerry,
       currentHp: 50,
       maxHp: 200,
     });
-    const state = makeBattleState();
+    const state = createBattleState();
 
     const result = applyGen4HeldItem("end-of-turn", {
       pokemon,
@@ -497,13 +472,13 @@ describe("Klutz — held item has no effect", () => {
 
   it("given no Klutz holding Sitrus Berry, when HP drops to 50% at end of turn, then Sitrus Berry DOES heal", () => {
     // Triangulation: without Klutz, Sitrus Berry activates normally
-    const pokemon = makeActivePokemon({
-      ability: A.overgrow,
-      heldItem: I.sitrusBerry,
+    const pokemon = createOnFieldPokemon({
+      ability: abilityIds.overgrow,
+      heldItem: itemIds.sitrusBerry,
       currentHp: 50,
       maxHp: 200,
     });
-    const state = makeBattleState();
+    const state = createBattleState();
 
     const result = applyGen4HeldItem("end-of-turn", {
       pokemon,
@@ -519,21 +494,21 @@ describe("Klutz — held item has no effect", () => {
 
   it("given Klutz holding Life Orb, when damage calc runs, then Life Orb 1.3x boost is NOT applied", () => {
     // Source: Showdown data/abilities.ts — Klutz gates all item damage modifiers
-    const attacker = makeActivePokemon({
-      ability: A.klutz,
+    const attacker = createOnFieldPokemon({
+      ability: abilityIds.klutz,
       types: DEFAULT_TYPES,
-      heldItem: I.lifeOrb,
+      heldItem: itemIds.lifeOrb,
       attack: 100,
     });
-    const attackerNoKlutz = makeActivePokemon({
-      ability: A.intimidate,
+    const attackerNoKlutz = createOnFieldPokemon({
+      ability: abilityIds.intimidate,
       types: DEFAULT_TYPES,
-      heldItem: I.lifeOrb,
+      heldItem: itemIds.lifeOrb,
       attack: 100,
     });
-    const defender = makeActivePokemon({ types: DEFAULT_TYPES, defense: 100 });
-    const move = makeMove(T.normal, { id: M.tackle, power: 80, category: "physical" });
-    const state = makeBattleState();
+    const defender = createOnFieldPokemon({ types: DEFAULT_TYPES, defense: 100 });
+    const move = createCanonicalMove(moveIds.tackle);
+    const state = createBattleState();
     const rng = {
       next: () => 0.5,
       int: (_min: number, _max: number) => 100,
@@ -562,16 +537,10 @@ describe("Suction Cups — prevent forced switching", () => {
   it("given Suction Cups defender, when Whirlwind is used, then forced switch is prevented", () => {
     // Source: Bulbapedia — Suction Cups: "Prevents the Pokemon from being forced to switch out"
     // Source: Showdown data/abilities.ts — Suction Cups onDragOut
-    const attacker = makeActivePokemon({ types: DEFAULT_TYPES });
-    const defender = makeActivePokemon({ ability: A.suctionCups, types: ROCK_TYPES });
-    const move = makeMove(T.normal, {
-      id: M.whirlwind,
-      displayName: "Whirlwind",
-      power: null,
-      category: "status",
-      effect: null,
-    });
-    const state = makeBattleState();
+    const attacker = createOnFieldPokemon({ types: DEFAULT_TYPES });
+    const defender = createOnFieldPokemon({ ability: abilityIds.suctionCups, types: ROCK_TYPES });
+    const move = createCanonicalMove(moveIds.whirlwind);
+    const state = createBattleState();
     state.sides[0].active = [attacker as any];
     state.sides[1].active = [defender as any];
 
@@ -592,16 +561,10 @@ describe("Suction Cups — prevent forced switching", () => {
 
   it("given no Suction Cups, when Whirlwind is used, then forced switch succeeds", () => {
     // Triangulation: without Suction Cups, Whirlwind forces switch
-    const attacker = makeActivePokemon({ types: DEFAULT_TYPES });
-    const defender = makeActivePokemon({ ability: A.sturdy, types: ROCK_TYPES });
-    const move = makeMove(T.normal, {
-      id: M.whirlwind,
-      displayName: "Whirlwind",
-      power: null,
-      category: "status",
-      effect: null,
-    });
-    const state = makeBattleState();
+    const attacker = createOnFieldPokemon({ types: DEFAULT_TYPES });
+    const defender = createOnFieldPokemon({ ability: abilityIds.sturdy, types: ROCK_TYPES });
+    const move = createCanonicalMove(moveIds.whirlwind);
+    const state = createBattleState();
     state.sides[0].active = [attacker as any];
     state.sides[1].active = [defender as any];
 
@@ -620,16 +583,10 @@ describe("Suction Cups — prevent forced switching", () => {
 
   it("given Suction Cups defender, when Roar is used, then forced switch is also prevented", () => {
     // Source: Showdown — Suction Cups blocks both Whirlwind and Roar
-    const attacker = makeActivePokemon({ types: DEFAULT_TYPES });
-    const defender = makeActivePokemon({ ability: A.suctionCups, types: ROCK_TYPES });
-    const move = makeMove(T.normal, {
-      id: M.roar,
-      displayName: "Roar",
-      power: null,
-      category: "status",
-      effect: null,
-    });
-    const state = makeBattleState();
+    const attacker = createOnFieldPokemon({ types: DEFAULT_TYPES });
+    const defender = createOnFieldPokemon({ ability: abilityIds.suctionCups, types: ROCK_TYPES });
+    const move = createCanonicalMove(moveIds.roar);
+    const state = createBattleState();
     state.sides[0].active = [attacker as any];
     state.sides[1].active = [defender as any];
 
@@ -654,33 +611,35 @@ describe("Suction Cups — prevent forced switching", () => {
 describe("Stench — Gen 4: no battle effect (flinch is Gen 5+)", () => {
   it("given Stench and RNG < 0.1 (guaranteed flinch check), when on-after-move-hit triggers, then flinch is NOT applied (Stench has no Gen 4 battle effect)", () => {
     // Source: Bulbapedia — Stench (Generation IV): "Has no effect in battle."
-    //   The 10% flinch chance was introduced in Generation V.
+    //   The 10% flinch chance was introduced in Generation volatileIds.
     // Source: Showdown — Stench onModifyMove flinch only in Gen 5+ scripts
     //
     // Bug #384: Previous code gave Stench a 10% flinch chance (Gen 5+ behavior).
     // In Gen 4, Stench only reduces wild encounter rate in the overworld.
-    const ctx = makeAbilityContext({
-      ability: A.stench,
+    const ctx = createAbilityContext({
+      ability: abilityIds.stench,
+      trigger: triggerIds.onAfterMoveHit,
       rngNextValues: [0.05], // < 0.1 threshold (would trigger Gen 5+ flinch if bug present)
     });
 
-    const result = applyGen4Ability("on-after-move-hit", ctx);
+    const result = applyGen4Ability(triggerIds.onAfterMoveHit, ctx);
 
     expect(result.activated).toBe(false);
     const flinchEffect = result.effects.find(
-      (e) => e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === V.flinch,
+      (e) => e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === volatileIds.flinch,
     );
     expect(flinchEffect).toBeUndefined();
   });
 
   it("given Stench with any RNG value, when on-after-move-hit triggers, then no flinch is applied (battle-inert in Gen 4)", () => {
     // Triangulation: Stench is always no-op in Gen 4, regardless of RNG
-    const ctx = makeAbilityContext({
-      ability: A.stench,
+    const ctx = createAbilityContext({
+      ability: abilityIds.stench,
+      trigger: triggerIds.onAfterMoveHit,
       rngNextValues: [0.5],
     });
 
-    const result = applyGen4Ability("on-after-move-hit", ctx);
+    const result = applyGen4Ability(triggerIds.onAfterMoveHit, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
@@ -695,18 +654,18 @@ describe("Anticipation — scan opponent moveset for SE/OHKO moves", () => {
   it("given foe has a SE move, when Pokemon with Anticipation switches in, then shudder message appears", () => {
     // Source: Bulbapedia — Anticipation: warns if foe has SE or OHKO move
     // Source: Showdown data/abilities.ts — Anticipation onStart
-    const opponent = makeActivePokemon({
+    const opponent = createOnFieldPokemon({
       types: FIRE_TYPES,
-      moves: [makeMoveSlot(M.flamethrower)],
+      moves: [createCanonicalMoveSlot(moveIds.flamethrower)],
     });
 
-    const ctx = makeAbilityContext({
-      ability: A.anticipation,
+    const ctx = createAbilityContext({
+      ability: abilityIds.anticipation,
       types: GRASS_TYPES, // Fire is SE against Grass
       opponent,
     });
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(triggerIds.onSwitchIn, ctx, dataManager);
 
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("shudder");
@@ -714,36 +673,36 @@ describe("Anticipation — scan opponent moveset for SE/OHKO moves", () => {
 
   it("given foe has only neutral/resisted moves, when Pokemon with Anticipation switches in, then no activation", () => {
     // Triangulation: Anticipation should NOT trigger for neutral/resisted moves
-    const opponent = makeActivePokemon({
+    const opponent = createOnFieldPokemon({
       types: DEFAULT_TYPES,
-      moves: [makeMoveSlot(M.tackle)],
+      moves: [createCanonicalMoveSlot(moveIds.tackle)],
     });
 
-    const ctx = makeAbilityContext({
-      ability: A.anticipation,
+    const ctx = createAbilityContext({
+      ability: abilityIds.anticipation,
       types: DEFAULT_TYPES, // Normal is neutral against Normal
       opponent,
     });
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(triggerIds.onSwitchIn, ctx, dataManager);
 
     expect(result.activated).toBe(false);
   });
 
   it("given foe has an OHKO move, when Pokemon with Anticipation switches in, then shudder message appears", () => {
     // Source: Bulbapedia — Anticipation triggers for OHKO moves regardless of type
-    const opponent = makeActivePokemon({
+    const opponent = createOnFieldPokemon({
       types: GROUND_TYPES,
-      moves: [makeMoveSlot(M.fissure)],
+      moves: [createCanonicalMoveSlot(moveIds.fissure)],
     });
 
-    const ctx = makeAbilityContext({
-      ability: A.anticipation,
-      types: [T.steel], // Ground is SE against Steel, but OHKO should trigger regardless
+    const ctx = createAbilityContext({
+      ability: abilityIds.anticipation,
+      types: [typeIds.steel], // Ground is SE against Steel, but OHKO should trigger regardless
       opponent,
     });
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(triggerIds.onSwitchIn, ctx, dataManager);
 
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("shudder");
@@ -758,18 +717,18 @@ describe("Forewarn — identify strongest move by base power", () => {
   it("given foe has moves of varying power, when Pokemon with Forewarn switches in, then strongest move is revealed", () => {
     // Source: Bulbapedia — Forewarn: reveals opponent's highest base power move
     // Source: Showdown data/abilities.ts — Forewarn onStart
-    const opponent = makeActivePokemon({
+    const opponent = createOnFieldPokemon({
       types: FIRE_TYPES,
-      moves: [makeMoveSlot(M.ember), makeMoveSlot(M.fireBlast)],
+      moves: [createCanonicalMoveSlot(moveIds.ember), createCanonicalMoveSlot(moveIds.fireBlast)],
     });
 
-    const ctx = makeAbilityContext({
-      ability: A.forewarn,
+    const ctx = createAbilityContext({
+      ability: abilityIds.forewarn,
       types: GRASS_TYPES,
       opponent,
     });
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(triggerIds.onSwitchIn, ctx, dataManager);
 
     expect(result.activated).toBe(true);
     // Should mention the strongest move (Fire Blast, 110 BP)
@@ -778,18 +737,18 @@ describe("Forewarn — identify strongest move by base power", () => {
 
   it("given foe has an OHKO move, when Pokemon with Forewarn switches in, then OHKO move treated as 160 BP (revealed as strongest)", () => {
     // Source: Bulbapedia — Forewarn counts OHKO moves as BP 160
-    const opponent = makeActivePokemon({
+    const opponent = createOnFieldPokemon({
       types: GROUND_TYPES,
-      moves: [makeMoveSlot(M.earthquake), makeMoveSlot(M.fissure)],
+      moves: [createCanonicalMoveSlot(moveIds.earthquake), createCanonicalMoveSlot(moveIds.fissure)],
     });
 
-    const ctx = makeAbilityContext({
-      ability: A.forewarn,
-      types: [T.steel],
+    const ctx = createAbilityContext({
+      ability: abilityIds.forewarn,
+      types: [typeIds.steel],
       opponent,
     });
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(triggerIds.onSwitchIn, ctx, dataManager);
 
     expect(result.activated).toBe(true);
     // Should mention Fissure (treated as 160 BP, > Earthquake's 100 BP)
@@ -798,18 +757,18 @@ describe("Forewarn — identify strongest move by base power", () => {
 
   it("given foe has no moves with power, when Pokemon with Forewarn switches in, then no activation", () => {
     // Edge case: foe with only status moves (no base power)
-    const opponent = makeActivePokemon({
-      types: [T.psychic],
-      moves: [makeMoveSlot(M.thunderWave)],
+    const opponent = createOnFieldPokemon({
+      types: [typeIds.psychic],
+      moves: [createCanonicalMoveSlot(moveIds.thunderWave)],
     });
 
-    const ctx = makeAbilityContext({
-      ability: A.forewarn,
+    const ctx = createAbilityContext({
+      ability: abilityIds.forewarn,
       types: DEFAULT_TYPES,
       opponent,
     });
 
-    const result = applyGen4Ability("on-switch-in", ctx, dataManager);
+    const result = applyGen4Ability(triggerIds.onSwitchIn, ctx, dataManager);
 
     expect(result.activated).toBe(false);
   });

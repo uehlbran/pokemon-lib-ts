@@ -1,6 +1,23 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  type AbilityTrigger,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+} from "../../src";
 import { applyGen3Ability } from "../../src/Gen3Abilities";
 
 /**
@@ -15,9 +32,12 @@ import { applyGen3Ability } from "../../src/Gen3Abilities";
  * Source: Bulbapedia -- "Truant causes the Pokemon to use a move only every other turn"
  */
 
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
+const DATA_MANAGER = createGen3DataManager();
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const TYPES = CORE_TYPE_IDS;
+const SLAKING = DATA_MANAGER.getSpecies(GEN3_SPECIES_IDS.slaking);
+const HARDY_NATURE = DATA_MANAGER.getNature(GEN3_NATURE_IDS.hardy).id;
+const TACKLE = DATA_MANAGER.getMove(GEN3_MOVE_IDS.tackle);
 
 function createMockRng() {
   return {
@@ -31,45 +51,68 @@ function createMockRng() {
   };
 }
 
-function createActivePokemon(opts: {
-  types: PokemonType[];
-  ability: string;
+function createPokemonInstance(overrides: {
+  ability?: string;
+  currentHp?: number;
+  maxHp?: number;
   nickname?: string | null;
+  status?: PrimaryStatus | null;
+  types?: PokemonType[];
   volatiles?: Map<string, { turnsLeft: number }>;
-}): ActivePokemon {
-  const stats: StatBlock = {
-    hp: 200,
-    attack: 100,
-    defense: 100,
-    spAttack: 100,
-    spDefense: 100,
-    speed: 100,
-  };
-  const pokemon = {
+}): PokemonInstance {
+  const maxHp = overrides.maxHp ?? 200;
+  return {
     uid: "test",
-    speciesId: 289, // Slaking
-    nickname: opts.nickname === undefined ? "Slaking" : opts.nickname,
+    speciesId: SLAKING.id,
+    nickname: overrides.nickname ?? SLAKING.displayName,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 200,
-    moves: [],
-    ability: opts.ability,
-    abilitySlot: "normal1" as const,
+    nature: HARDY_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    currentHp: overrides.currentHp ?? maxHp,
+    moves: [TACKLE],
+    ability: overrides.ability ?? GEN3_ABILITY_IDS.truant,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
-    status: null,
+    status: overrides.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    calculatedStats: {
+      hp: maxHp,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    },
   } as PokemonInstance;
+}
+
+function createOnFieldPokemon(overrides: {
+  ability?: string;
+  currentHp?: number;
+  maxHp?: number;
+  nickname?: string | null;
+  status?: PrimaryStatus | null;
+  types?: PokemonType[];
+  volatiles?: Map<string, { turnsLeft: number }>;
+}): ActivePokemon {
+  const pokemon = createPokemonInstance({
+    ability: overrides.ability,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    nickname: overrides.nickname,
+    status: overrides.status,
+    types: overrides.types,
+    volatiles: overrides.volatiles,
+  });
 
   return {
     pokemon,
@@ -83,16 +126,19 @@ function createActivePokemon(opts: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: opts.volatiles ?? new Map(),
-    types: opts.types,
-    ability: opts.ability,
+    volatileStatuses: overrides.volatiles ?? new Map(),
+    types: overrides.types ?? [...SLAKING.types],
+    ability: overrides.ability ?? GEN3_ABILITY_IDS.truant,
+    suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
+    lastDamageCategory: null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
     substituteHp: 0,
+    itemKnockedOff: false,
     transformed: false,
     transformedSpecies: null,
     isMega: false,
@@ -101,37 +147,38 @@ function createActivePokemon(opts: {
     isTerastallized: false,
     teraType: null,
     stellarBoostedTypes: [],
+    forcedMove: null,
   } as ActivePokemon;
+}
+
+function createBattleState(): AbilityContext["state"] {
+  return {
+    weather: null,
+  } as AbilityContext["state"];
 }
 
 function createAbilityContext(
   pokemon: ActivePokemon,
-  trigger: "on-before-move" | "on-turn-end",
+  trigger: AbilityTrigger,
 ): AbilityContext {
   return {
     pokemon,
-    state: { weather: null } as AbilityContext["state"],
+    state: createBattleState(),
     rng: createMockRng(),
     trigger,
   } as AbilityContext;
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("Gen 3 Truant -- end-of-turn toggle (#307)", () => {
   it("given Truant Pokemon with no truant-turn volatile, when on-turn-end fires, then truant-turn volatile is set (will loaf next turn)", () => {
     // Source: pret/pokeemerald src/battle_util.c -- Truant toggle at ABILITYEFFECT_ENDTURN
-    // After acting on turn 1, the end-of-turn toggle sets the truant-turn volatile,
-    // so the Pokemon will loaf on turn 2.
-    const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
-      nickname: "Slaking",
+    const pokemon = createOnFieldPokemon({
+      ability: GEN3_ABILITY_IDS.truant,
+      nickname: SLAKING.displayName,
+      types: [...SLAKING.types],
     });
-    const ctx = createAbilityContext(pokemon, "on-turn-end");
-    const result = applyGen3Ability("on-turn-end", ctx);
+    const ctx = createAbilityContext(pokemon, TRIGGERS.onTurnEnd);
+    const result = applyGen3Ability(TRIGGERS.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(true);
@@ -139,99 +186,73 @@ describe("Gen 3 Truant -- end-of-turn toggle (#307)", () => {
 
   it("given Truant Pokemon with truant-turn volatile, when on-turn-end fires, then truant-turn volatile is removed (can act next turn)", () => {
     // Source: pret/pokeemerald src/battle_util.c -- Truant toggle at ABILITYEFFECT_ENDTURN
-    // After loafing on turn 2, the end-of-turn toggle removes the truant-turn volatile,
-    // so the Pokemon can act on turn 3.
     const volatiles = new Map<string, { turnsLeft: number }>([["truant-turn", { turnsLeft: -1 }]]);
-    const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
-      nickname: "Slaking",
+    const pokemon = createOnFieldPokemon({
+      ability: GEN3_ABILITY_IDS.truant,
+      nickname: SLAKING.displayName,
+      types: [...SLAKING.types],
       volatiles,
     });
-    const ctx = createAbilityContext(pokemon, "on-turn-end");
-    const result = applyGen3Ability("on-turn-end", ctx);
+    const ctx = createAbilityContext(pokemon, TRIGGERS.onTurnEnd);
+    const result = applyGen3Ability(TRIGGERS.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(false);
   });
 
-  it("given Truant Pokemon with truant-turn volatile, when on-before-move fires, then movePrevented=true but volatile is NOT removed (toggle is at end-of-turn)", () => {
+  it("given Truant Pokemon with truant-turn volatile, when on-before-move fires, then movePrevented=true but volatile is not removed", () => {
     // Source: pret/pokeemerald src/battle_util.c -- Truant toggle at ABILITYEFFECT_ENDTURN, not at move execution
-    // The on-before-move handler ONLY checks and blocks; it does NOT toggle the volatile.
     const volatiles = new Map<string, { turnsLeft: number }>([["truant-turn", { turnsLeft: -1 }]]);
-    const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
-      nickname: "Slaking",
+    const pokemon = createOnFieldPokemon({
+      ability: GEN3_ABILITY_IDS.truant,
+      nickname: SLAKING.displayName,
+      types: [...SLAKING.types],
       volatiles,
     });
-    const ctx = createAbilityContext(pokemon, "on-before-move");
-    const result = applyGen3Ability("on-before-move", ctx);
+    const ctx = createAbilityContext(pokemon, TRIGGERS.onBeforeMove);
+    const result = applyGen3Ability(TRIGGERS.onBeforeMove, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.movePrevented).toBe(true);
     expect(result.messages[0]).toBe("Slaking is loafing around!");
-    // The volatile is still present -- toggle happens at end-of-turn, not here
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(true);
   });
 
-  it("given paralyzed Truant Pokemon that cannot move on turn 1, when on-turn-end fires, then toggle still advances (counter is turn-based, not move-based)", () => {
+  it("given paralyzed Truant Pokemon that cannot move on turn 1, when on-turn-end fires, then toggle still advances", () => {
     // Source: pret/pokeemerald src/battle_util.c -- Truant toggle at ABILITYEFFECT_ENDTURN
-    // Key scenario: if the Pokemon is paralyzed and can't move, the Truant counter
-    // still advances at end of turn. With the old on-before-move implementation,
-    // the toggle wouldn't fire if the Pokemon was fully paralyzed or asleep.
-    const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
-      nickname: "Slaking",
+    const pokemon = createOnFieldPokemon({
+      ability: GEN3_ABILITY_IDS.truant,
+      nickname: SLAKING.displayName,
+      types: [...SLAKING.types],
     });
-    // Simulate: paralysis prevented movement, so on-before-move was never called.
-    // But on-turn-end still fires.
-    const ctx = createAbilityContext(pokemon, "on-turn-end");
-    const result = applyGen3Ability("on-turn-end", ctx);
+    const ctx = createAbilityContext(pokemon, TRIGGERS.onTurnEnd);
+    const result = applyGen3Ability(TRIGGERS.onTurnEnd, ctx);
 
-    // Toggle should set the truant-turn volatile regardless of move execution
     expect(result.activated).toBe(true);
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(true);
   });
 
   it("given Truant Pokemon, when full act-loaf-act cycle via end-of-turn toggles, then cycle is correct", () => {
     // Source: pret/pokeemerald src/battle_util.c -- Truant toggle at ABILITYEFFECT_ENDTURN
-    // Full cycle test using only the end-of-turn toggle mechanism:
-    // Turn 1: No volatile -> acts -> end-of-turn sets volatile
-    // Turn 2: Has volatile -> loafs -> end-of-turn removes volatile
-    // Turn 3: No volatile -> acts -> end-of-turn sets volatile
-    const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
-      nickname: "Slaking",
+    const pokemon = createOnFieldPokemon({
+      ability: GEN3_ABILITY_IDS.truant,
+      nickname: SLAKING.displayName,
+      types: [...SLAKING.types],
     });
 
-    // Turn 1 start: no volatile -> can act
-    const beforeMove1 = applyGen3Ability(
-      "on-before-move",
-      createAbilityContext(pokemon, "on-before-move"),
-    );
+    const beforeMove1 = applyGen3Ability(TRIGGERS.onBeforeMove, createAbilityContext(pokemon, TRIGGERS.onBeforeMove));
     expect(beforeMove1.movePrevented).toBeUndefined();
-    // Turn 1 end: toggle sets volatile
-    applyGen3Ability("on-turn-end", createAbilityContext(pokemon, "on-turn-end"));
+
+    applyGen3Ability(TRIGGERS.onTurnEnd, createAbilityContext(pokemon, TRIGGERS.onTurnEnd));
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(true);
 
-    // Turn 2 start: has volatile -> loafs
-    const beforeMove2 = applyGen3Ability(
-      "on-before-move",
-      createAbilityContext(pokemon, "on-before-move"),
-    );
+    const beforeMove2 = applyGen3Ability(TRIGGERS.onBeforeMove, createAbilityContext(pokemon, TRIGGERS.onBeforeMove));
     expect(beforeMove2.movePrevented).toBe(true);
-    // Turn 2 end: toggle removes volatile
-    applyGen3Ability("on-turn-end", createAbilityContext(pokemon, "on-turn-end"));
+
+    applyGen3Ability(TRIGGERS.onTurnEnd, createAbilityContext(pokemon, TRIGGERS.onTurnEnd));
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(false);
 
-    // Turn 3 start: no volatile -> can act again
-    const beforeMove3 = applyGen3Ability(
-      "on-before-move",
-      createAbilityContext(pokemon, "on-before-move"),
-    );
+    const beforeMove3 = applyGen3Ability(TRIGGERS.onBeforeMove, createAbilityContext(pokemon, TRIGGERS.onBeforeMove));
     expect(beforeMove3.movePrevented).toBeUndefined();
   });
 });

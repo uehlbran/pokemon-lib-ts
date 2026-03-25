@@ -1,19 +1,29 @@
-import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type { AbilityContext, ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
-  NEUTRAL_NATURES,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+  SeededRandom,
+  type AbilityTrigger,
   type MoveData,
-  type NatureId,
   type PrimaryStatus,
   type PokemonInstance,
   type PokemonType,
+  type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen7DataManager,
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
   GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
   getDisguiseBreakDamage,
@@ -33,9 +43,18 @@ import {
 
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS };
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS };
+const MOVES = GEN7_MOVE_IDS;
 const SPECIES = GEN7_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
-const DEFAULT_NATURE: NatureId = NEUTRAL_NATURES[0] ?? GEN7_NATURE_IDS.hardy;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const DATA_MANAGER = createGen7DataManager();
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN7_NATURE_IDS.hardy).id;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
+const CONTACT_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
+const DISGUISE_BROKEN = "disguise-broken" as const;
+const BATTLE_BOND_TRANSFORMED = "battle-bond-transformed" as const;
+const POWER_CONSTRUCT_TRANSFORMED = "power-construct-transformed" as const;
 
 /**
  * Gen 7 new signature ability tests.
@@ -58,11 +77,11 @@ const DEFAULT_NATURE: NatureId = NEUTRAL_NATURES[0] ?? GEN7_NATURE_IDS.hardy;
 // ---------------------------------------------------------------------------
 
 let nextTestUid = 0;
-function makeTestUid() {
+function createTestUid() {
   return `test-${nextTestUid++}`;
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -73,41 +92,39 @@ function makePokemonInstance(overrides: {
   level?: number;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: makeTestUid(),
-    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
-    nickname: overrides.nickname ?? null,
-    level: overrides.level ?? 50,
-    experience: 0,
+  const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(7), {
     nature: DEFAULT_NATURE,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: "male",
     isShiny: false,
     metLocation: "",
-    metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
     pokeball: ITEMS.pokeBall,
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+  });
+  pokemon.uid = createTestUid();
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
+  pokemon.ability = overrides.ability ?? ABILITIES.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
@@ -117,19 +134,21 @@ function makeActivePokemon(overrides: {
   status?: PrimaryStatus | null;
   heldItem?: string | null;
   level?: number;
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-}) {
+  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
+}): ActivePokemon {
+  const pokemon = createSyntheticPokemonInstance({
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    speciesId: overrides.speciesId,
+    status: overrides.status,
+    heldItem: overrides.heldItem,
+    level: overrides.level,
+  });
+  const species = DATA_MANAGER.getSpecies(pokemon.speciesId);
   return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      speciesId: overrides.speciesId,
-      status: overrides.status,
-      heldItem: overrides.heldItem,
-      level: overrides.level,
-    }),
+    pokemon,
     teamSlot: 0,
     statStages: {
       attack: 0,
@@ -141,8 +160,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [TYPES.normal],
-    ability: overrides.ability ?? ABILITIES.none,
+    types: overrides.types ?? [...species.types],
+    ability: pokemon.ability,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -162,10 +181,10 @@ function makeActivePokemon(overrides: {
     teraType: null,
     stellarBoostedTypes: [],
     forcedMove: null,
-  };
+  } as ActivePokemon;
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -182,13 +201,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 7,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -210,37 +229,26 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(
-  type: PokemonType,
+function createSyntheticMoveFrom(
+  canonicalMove: MoveData,
   opts: {
-    id?: string;
     category?: "physical" | "special" | "status";
     flags?: Record<string, boolean>;
   } = {},
 ): MoveData {
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type,
+    ...canonicalMove,
     category: opts.category ?? "physical",
     power: opts.category === "status" ? 0 : 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "single",
-    generation: 7,
-    flags: opts.flags ?? { contact: true },
-    effectChance: null,
-    secondaryEffects: [],
+    flags: opts.flags ?? canonicalMove.flags,
   } as unknown as MoveData;
 }
 
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
-  trigger: string;
+  trigger: AbilityTrigger;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ActivePokemon;
   move?: MoveData;
   nickname?: string;
   heldItem?: string | null;
@@ -249,10 +257,10 @@ function makeContext(opts: {
   currentHp?: number;
   maxHp?: number;
   level?: number;
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
+  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): AbilityContext {
-  const state = makeBattleState();
-  const pokemon = makeActivePokemon({
+  const state = createBattleState();
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname,
@@ -270,7 +278,7 @@ function makeContext(opts: {
     opponent: opts.opponent,
     state,
     rng: state.rng as any,
-    trigger: opts.trigger as any,
+    trigger: opts.trigger,
     move: opts.move,
   };
 }
@@ -283,12 +291,12 @@ describe("Disguise (Mimikyu)", () => {
   it("given Disguise not broken, when hit by a physical move, then blocks damage and breaks Disguise", () => {
     // Source: Showdown data/abilities.ts -- disguise: onDamage, blocks first hit
     // Source: Bulbapedia "Disguise" -- "The dummy takes the hit for the Pokemon"
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.disguise,
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       nickname: "Mimikyu",
       speciesId: SPECIES.mimikyu,
-      move: makeMove(TYPES.normal),
+      move: CONTACT_MOVE,
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -299,7 +307,7 @@ describe("Disguise (Mimikyu)", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "disguise-broken",
+          volatile: DISGUISE_BROKEN,
         },
         {
           effectType: "damage-reduction",
@@ -313,13 +321,13 @@ describe("Disguise (Mimikyu)", () => {
 
   it("given Disguise already broken, when hit by a move, then does not block damage", () => {
     // Source: Showdown data/abilities.ts -- disguise: only blocks the first hit
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.disguise,
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       nickname: "Mimikyu",
       speciesId: SPECIES.mimikyu,
-      move: makeMove(TYPES.normal),
-      volatiles: new Map([["disguise-broken", { turnsLeft: -1 }]]),
+      move: CONTACT_MOVE,
+      volatiles: new Map<VolatileStatus, { turnsLeft: number }>([[DISGUISE_BROKEN, { turnsLeft: -1 }]]),
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -329,12 +337,12 @@ describe("Disguise (Mimikyu)", () => {
 
   it("given Disguise not broken, when hit by a status move, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- disguise: only activates on damaging moves
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.disguise,
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       nickname: "Mimikyu",
       speciesId: SPECIES.mimikyu,
-      move: makeMove(TYPES.normal, { category: "status" }),
+      move: createSyntheticMoveFrom(CONTACT_MOVE, { category: "status" }),
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -409,9 +417,9 @@ describe("Schooling (Wishiwashi)", () => {
 
   it("given Schooling Wishiwashi at full HP on switch-in, when ability triggers, then reports School Form", () => {
     // Source: Showdown data/abilities.ts -- schooling onStart
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.schooling,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Wishiwashi",
       speciesId: SPECIES.wishiwashi,
       currentHp: 200,
@@ -430,9 +438,9 @@ describe("Schooling (Wishiwashi)", () => {
 
   it("given Schooling Wishiwashi below 25% HP at turn end, when ability triggers, then reports Solo Form", () => {
     // Source: Showdown data/abilities.ts -- schooling onResidual
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.schooling,
-      trigger: "on-turn-end",
+      trigger: TRIGGERS.onTurnEnd,
       nickname: "Wishiwashi",
       speciesId: SPECIES.wishiwashi,
       currentHp: 40,
@@ -468,10 +476,10 @@ describe("Battle Bond (Ash-Greninja)", () => {
   it("given Battle Bond Greninja, when opponent faints, then transforms to Ash-Greninja", () => {
     // Source: Showdown data/abilities.ts -- battlebond: onSourceAfterFaint
     // Source: Bulbapedia "Battle Bond" -- "transforms into Ash-Greninja after causing a faint"
-    const opponent = makeActivePokemon({ ability: ABILITIES.none, currentHp: 0 });
-    const ctx = makeContext({
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.none, currentHp: 0 });
+    const ctx = createAbilityContext({
       ability: ABILITIES.battleBond,
-      trigger: "on-after-move-used",
+      trigger: TRIGGERS.onAfterMoveUsed,
       nickname: "Greninja",
       speciesId: SPECIES.greninja,
       opponent,
@@ -485,7 +493,7 @@ describe("Battle Bond (Ash-Greninja)", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "battle-bond-transformed",
+          volatile: BATTLE_BOND_TRANSFORMED,
         },
       ],
       messages: ["Greninja became Ash-Greninja!"],
@@ -494,10 +502,10 @@ describe("Battle Bond (Ash-Greninja)", () => {
 
   it("given Battle Bond Greninja, when opponent has not fainted, then does not transform", () => {
     // Source: Showdown -- only triggers on KO
-    const opponent = makeActivePokemon({ ability: ABILITIES.none, currentHp: 100 });
-    const ctx = makeContext({
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.none, currentHp: 100 });
+    const ctx = createAbilityContext({
       ability: ABILITIES.battleBond,
-      trigger: "on-after-move-used",
+      trigger: TRIGGERS.onAfterMoveUsed,
       nickname: "Greninja",
       speciesId: SPECIES.greninja,
       opponent,
@@ -510,14 +518,16 @@ describe("Battle Bond (Ash-Greninja)", () => {
 
   it("given Battle Bond Greninja already transformed, when causing another faint, then does not trigger again", () => {
     // Source: Showdown data/abilities.ts -- battlebond: checks if already transformed
-    const opponent = makeActivePokemon({ ability: ABILITIES.none, currentHp: 0 });
-    const ctx = makeContext({
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.none, currentHp: 0 });
+    const ctx = createAbilityContext({
       ability: ABILITIES.battleBond,
-      trigger: "on-after-move-used",
+      trigger: TRIGGERS.onAfterMoveUsed,
       nickname: "Greninja",
       speciesId: SPECIES.greninja,
       opponent,
-      volatiles: new Map([["battle-bond-transformed", { turnsLeft: -1 }]]),
+      volatiles: new Map<VolatileStatus, { turnsLeft: number }>([
+        [BATTLE_BOND_TRANSFORMED, { turnsLeft: -1 }],
+      ]),
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -578,9 +588,9 @@ describe("Shields Down (Minior)", () => {
   it("given Shields Down in Meteor Form, when status is inflicted, then blocks the status", () => {
     // Source: Showdown data/abilities.ts -- shieldsdown: onSetStatus returns false in Meteor Form
     // Source: Bulbapedia "Shields Down" -- "cannot be inflicted with status in Meteor Form"
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.shieldsDown,
-      trigger: "on-status-inflicted",
+      trigger: TRIGGERS.onStatusInflicted,
       nickname: "Minior",
       speciesId: SPECIES.minior,
       currentHp: 200,
@@ -599,9 +609,9 @@ describe("Shields Down (Minior)", () => {
 
   it("given Shields Down in Core Form (below 50% HP), when status is inflicted, then does not block", () => {
     // Source: Showdown -- Core Form can be statused normally
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.shieldsDown,
-      trigger: "on-status-inflicted",
+      trigger: TRIGGERS.onStatusInflicted,
       nickname: "Minior",
       speciesId: SPECIES.minior,
       currentHp: 80,
@@ -615,9 +625,9 @@ describe("Shields Down (Minior)", () => {
 
   it("given Shields Down on switch-in below 50% HP, when ability triggers, then reports shield drop", () => {
     // Source: Showdown data/abilities.ts -- shieldsdown: onStart
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.shieldsDown,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Minior",
       speciesId: SPECIES.minior,
       currentHp: 80,
@@ -665,9 +675,9 @@ describe("Power Construct (Zygarde)", () => {
 
   it("given Power Construct Zygarde at 40% HP on damage taken, when ability triggers, then transforms to Complete Form", () => {
     // Source: Showdown data/abilities.ts -- powerconstruct: onResidual/onDamage
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.powerConstruct,
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       nickname: "Zygarde",
       speciesId: SPECIES.zygarde,
       currentHp: 80,
@@ -682,7 +692,7 @@ describe("Power Construct (Zygarde)", () => {
         {
           effectType: "volatile-inflict",
           target: "self",
-          volatile: "power-construct-transformed",
+          volatile: POWER_CONSTRUCT_TRANSFORMED,
         },
       ],
       messages: ["Zygarde transformed into its Complete Forme!"],
@@ -691,14 +701,16 @@ describe("Power Construct (Zygarde)", () => {
 
   it("given Power Construct Zygarde already transformed, when taking more damage, then does not transform again", () => {
     // Source: Showdown -- once per battle
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.powerConstruct,
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       nickname: "Zygarde",
       speciesId: SPECIES.zygarde,
       currentHp: 30,
       maxHp: 200,
-      volatiles: new Map([["power-construct-transformed", { turnsLeft: -1 }]]),
+      volatiles: new Map<VolatileStatus, { turnsLeft: number }>([
+        [POWER_CONSTRUCT_TRANSFORMED, { turnsLeft: -1 }],
+      ]),
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -708,9 +720,9 @@ describe("Power Construct (Zygarde)", () => {
 
   it("given Power Construct Zygarde at 60% HP, when checking, then does not transform (above 50%)", () => {
     // Source: Showdown -- must be below 50% to trigger
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.powerConstruct,
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       nickname: "Zygarde",
       speciesId: SPECIES.zygarde,
       currentHp: 120,
@@ -731,9 +743,9 @@ describe("Comatose (Komala)", () => {
   it("given Comatose holder, when any status is inflicted, then blocks the status", () => {
     // Source: Showdown data/abilities.ts -- comatose: onSetStatus returns false
     // Source: Bulbapedia "Comatose" -- "cannot be afflicted by a status condition"
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.comatose,
-      trigger: "on-status-inflicted",
+      trigger: TRIGGERS.onStatusInflicted,
       nickname: "Komala",
       speciesId: SPECIES.komala,
     });
@@ -750,9 +762,9 @@ describe("Comatose (Komala)", () => {
 
   it("given Comatose holder, when switching in, then announces drowsing", () => {
     // Source: Showdown data/abilities.ts -- comatose: onStart
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.comatose,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Komala",
       speciesId: SPECIES.komala,
     });
@@ -824,9 +836,9 @@ describe("RKS System (Silvally)", () => {
 
   it("given RKS System and Fire Memory, when switching in, then changes type to Fire", () => {
     // Source: Showdown data/abilities.ts -- rkssystem: onStart sets type
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.rksSystem,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Silvally",
       speciesId: SPECIES.silvally,
       heldItem: ITEMS.fireMemory,
@@ -849,9 +861,9 @@ describe("RKS System (Silvally)", () => {
 
   it("given RKS System and no Memory, when switching in, then does not activate", () => {
     // Source: Showdown -- no Memory = stays Normal (default)
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.rksSystem,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Silvally",
       speciesId: SPECIES.silvally,
     });
@@ -900,9 +912,9 @@ describe("RKS System (Silvally)", () => {
 describe("Receiver / Power of Alchemy", () => {
   it("given Receiver in singles, when any trigger fires, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- receiver: onAllyFaint (doubles-only)
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.receiver,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -912,9 +924,9 @@ describe("Receiver / Power of Alchemy", () => {
 
   it("given Power of Alchemy in singles, when any trigger fires, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- powerofalchemy: onAllyFaint (doubles-only)
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: ABILITIES.powerOfAlchemy,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     });
 
     const result = handleGen7NewAbility(ctx);
