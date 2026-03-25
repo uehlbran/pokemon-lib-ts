@@ -28,6 +28,19 @@ const GEN1_VALID_TYPES = new Set([
 ]);
 
 const GEN1_EXCLUDED_TYPES = ["dark", "steel", "fairy"];
+// Source: National Dex before Gen 2 additions contains exactly 151 species.
+const GEN1_POKEMON_COUNT = 151;
+// Source: Red/Blue/Yellow Charizard base Special is 109 before the Special split.
+const CHARIZARD_GEN1_SPECIAL = 109;
+// Source: Gen 1 move list contains 165 moves, including Sharpen after the data fix.
+const GEN1_MOVE_COUNT = 165;
+const GEN1_TYPE_COUNT = GEN1_VALID_TYPES.size;
+const TEST_GIMMICK_IDS = {
+  dynamax: "dynamax",
+  mega: "mega",
+  tera: "tera",
+  zMove: "z-move",
+} as const;
 
 describe("Gen 1 Pokemon Data Validation", () => {
   // --- Species Count ---
@@ -40,7 +53,7 @@ describe("Gen 1 Pokemon Data Validation", () => {
     const allSpecies = dm.getAllSpecies();
 
     // Assert
-    expect(allSpecies.length).toBe(151);
+    expect(allSpecies).toHaveLength(GEN1_POKEMON_COUNT);
   });
 
   // --- Unified Special Stat ---
@@ -70,8 +83,8 @@ describe("Gen 1 Pokemon Data Validation", () => {
     const charizard = dm.getSpecies(6);
 
     // Assert: Charizard's Gen 1 Special stat is 109 (not 85 from later gen split)
-    expect(charizard.baseStats.spAttack).toBe(109);
-    expect(charizard.baseStats.spDefense).toBe(109);
+    expect(charizard.baseStats.spAttack).toBe(CHARIZARD_GEN1_SPECIAL);
+    expect(charizard.baseStats.spDefense).toBe(CHARIZARD_GEN1_SPECIAL);
   });
 
   // --- No Abilities ---
@@ -139,9 +152,7 @@ describe("Gen 1 Moves Data Validation", () => {
     const allMoves = dm.getAllMoves();
 
     // Assert: Gen 1 has 165 moves (Sharpen was missing and added in bug fix #105)
-    expect(allMoves.length).toBeGreaterThanOrEqual(160);
-    expect(allMoves.length).toBeLessThanOrEqual(166);
-    expect(allMoves.length).toBe(165);
+    expect(allMoves).toHaveLength(GEN1_MOVE_COUNT);
   });
 
   // --- No Excluded Type Moves ---
@@ -253,18 +264,16 @@ describe("Gen 1 Type Chart Validation", () => {
     const chart = dm.getTypeChart();
     const attackingTypes = Object.keys(chart);
 
-    // Act / Assert: 15 attacking types
-    expect(attackingTypes.length).toBe(15);
+    // Act / Assert: Gen 1 has exactly the 15 pre-Dark/Steel/Fairy types.
+    expect(attackingTypes).toHaveLength(GEN1_TYPE_COUNT);
+    expect(new Set(attackingTypes)).toEqual(GEN1_VALID_TYPES);
 
     // Each attacking type should have entries for all 15 defending types
     const chartRecord = chart as Record<string, Record<string, number>>;
     for (const attackType of attackingTypes) {
       const defenseEntries = Object.keys(chartRecord[attackType] ?? {});
-      expect(defenseEntries.length).toBe(15);
-      // Every defending type should be in the set
-      for (const defType of defenseEntries) {
-        expect(GEN1_VALID_TYPES.has(defType)).toBe(true);
-      }
+      expect(defenseEntries).toHaveLength(GEN1_TYPE_COUNT);
+      expect(new Set(defenseEntries)).toEqual(GEN1_VALID_TYPES);
     }
   });
 
@@ -545,11 +554,13 @@ describe("Gen 1 Ruleset Feature Flags", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
 
-    // Act
-    const result = ruleset.getBattleGimmick("mega");
-
     // Assert: Battle gimmicks (Mega, Z-Moves, etc.) didn't exist in Gen 1
-    expect(result).toBeNull();
+    expect([
+      ruleset.getBattleGimmick(TEST_GIMMICK_IDS.mega),
+      ruleset.getBattleGimmick(TEST_GIMMICK_IDS.zMove),
+      ruleset.getBattleGimmick(TEST_GIMMICK_IDS.dynamax),
+      ruleset.getBattleGimmick(TEST_GIMMICK_IDS.tera),
+    ]).toEqual([null, null, null, null]);
   });
 
   it("given Gen1Ruleset, when checking getAvailableHazards, then returns empty array", () => {
@@ -571,7 +582,7 @@ describe("Gen 1 Ruleset Feature Flags", () => {
     const types = ruleset.getAvailableTypes();
 
     // Assert
-    expect(types.length).toBe(15);
+    expect(types).toHaveLength(GEN1_TYPE_COUNT);
     expect(types).not.toContain("dark");
     expect(types).not.toContain("steel");
     expect(types).not.toContain("fairy");
