@@ -23,7 +23,14 @@ import { describe, expect, it } from "vitest";
 import { calculateGen4Damage, TYPE_RESIST_BERRIES } from "../src/Gen4DamageCalc";
 import { applyGen4HeldItem, getPinchBerryThreshold } from "../src/Gen4Items";
 import { executeGen4MoveEffect, getFlingPower, NATURAL_GIFT_TABLE } from "../src/Gen4MoveEffects";
-import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "../src/data/reference-ids";
+import {
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  createGen4DataManager,
+} from "../src";
 import { GEN4_TYPES } from "../src/Gen4TypeChart";
 
 /**
@@ -41,6 +48,8 @@ import { GEN4_TYPES } from "../src/Gen4TypeChart";
 // ---------------------------------------------------------------------------
 // Test helpers (same pattern as wave6a-moves-items.test.ts)
 // ---------------------------------------------------------------------------
+
+const gen4DataManager = createGen4DataManager();
 
 function createMockRng(intReturnValue: number, nextValue = 0) {
   return {
@@ -85,11 +94,11 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: 1,
+    speciesId: GEN4_SPECIES_IDS.bulbasaur,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN4_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
@@ -97,7 +106,7 @@ function createActivePokemon(opts: {
       { moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35 },
       { moveId: CORE_MOVE_IDS.ember, currentPP: 25, maxPP: 25 },
     ],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -108,7 +117,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -133,7 +142,7 @@ function createActivePokemon(opts: {
     statStages: defaultStages,
     volatileStatuses: volatiles,
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -153,28 +162,9 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function getGen4Move(id: string, overrides?: Partial<MoveData>): MoveData {
   return {
-    id,
-    name: id,
-    type: CORE_TYPE_IDS.normal,
-    category: "status",
-    power: 0,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...gen4DataManager.getMove(id),
     ...overrides,
   } as MoveData;
 }
@@ -231,49 +221,6 @@ function createContext(
 ): MoveEffectContext {
   const state = { ...createMinimalBattleState(attacker, defender), ...stateOverrides };
   return { attacker, defender, move, damage: 0, state, rng } as MoveEffectContext;
-}
-
-// -- Damage calc helpers (same pattern as damage-calc.test.ts) --
-
-function createDamageMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 4,
-  } as MoveData;
 }
 
 function createNeutralTypeChart(): TypeChart {
@@ -334,7 +281,7 @@ describe("Natural Gift", () => {
       nickname: "Ambipom",
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.grass] });
-    const move = createMove(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
+    const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -355,7 +302,7 @@ describe("Natural Gift", () => {
       nickname: "Garchomp",
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.flying] });
-    const move = createMove(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
+    const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -370,7 +317,7 @@ describe("Natural Gift", () => {
     // Source: Bulbapedia -- Natural Gift fails if user has no held Berry
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: null });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
+    const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -389,7 +336,7 @@ describe("Natural Gift", () => {
       ability: CORE_ABILITY_IDS.klutz,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
+    const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -409,7 +356,7 @@ describe("Natural Gift", () => {
       volatiles: embargoVolatiles,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
+    const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -426,7 +373,7 @@ describe("Natural Gift", () => {
       heldItem: GEN4_ITEM_IDS.lifeOrb,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
+    const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -471,7 +418,7 @@ describe("Fling", () => {
       nickname: "Weavile",
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
+    const move = getGen4Move(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -492,7 +439,7 @@ describe("Fling", () => {
       nickname: "Ambipom",
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
+    const move = getGen4Move(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -507,7 +454,7 @@ describe("Fling", () => {
     // Source: Bulbapedia -- Fling fails if user has no held item
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: null });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
+    const move = getGen4Move(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -526,7 +473,7 @@ describe("Fling", () => {
       ability: CORE_ABILITY_IDS.klutz,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
+    const move = getGen4Move(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -556,7 +503,7 @@ describe("getFlingPower", () => {
 
   it("given an unknown non-berry item, when getting Fling power, then returns 0 (Fling fails)", () => {
     // Source: Showdown -- items not in the table with no berry suffix have no Fling power
-    expect(getFlingPower("unknown-item")).toBe(0);
+    expect(getFlingPower(CORE_ITEM_IDS.pokeBall)).toBe(0);
   });
 });
 
@@ -580,7 +527,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       heldItem: GEN4_ITEM_IDS.oranBerry,
       nickname: "Roserade",
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -608,7 +555,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       heldItem: GEN4_ITEM_IDS.sitrusBerry,
       nickname: "Blissey",
     });
-    const move = createMove(GEN4_MOVE_IDS.bugBite, { type: CORE_TYPE_IDS.bug, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.bugBite);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -632,7 +579,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.grass],
       heldItem: GEN4_ITEM_IDS.lumBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -650,7 +597,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.liechiBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -671,7 +618,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.ganlonBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -692,7 +639,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.salacBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -713,7 +660,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.petayaBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -734,7 +681,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.apicotBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -750,7 +697,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     // Source: Bulbapedia -- Pluck: "If the target is not holding a Berry, the move functions normally"
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.flying] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: null });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -765,7 +712,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     // Source: Bulbapedia -- Bug Bite/Pluck only steal berries, not other items
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.bug] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.leftovers });
-    const move = createMove(GEN4_MOVE_IDS.bugBite, { type: CORE_TYPE_IDS.bug, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.bugBite);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -786,7 +733,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       heldItem: GEN4_ITEM_IDS.oranBerry,
       ability: CORE_ABILITY_IDS.unburden,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -811,7 +758,7 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.enigmaBerry,
     });
-    const move = createMove(GEN4_MOVE_IDS.pluck, { type: CORE_TYPE_IDS.flying, power: 60, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -835,31 +782,30 @@ describe("Type-resist berries -- damage calc", () => {
     // Source: Bulbapedia -- Occa Berry: "Weakens a supereffective Fire-type attack"
     // Source: Showdown sim/items.ts -- Occa Berry onSourceModifyDamage: 0.5x
     //
-    // Setup: Normal-type attacker (no STAB), fire move (power 80) vs. Grass-type defender (SE 2x)
+    // Setup: Normal-type attacker (no STAB), blaze-kick (power 85) vs. Grass-type defender (SE 2x)
     // L50, Atk=100, Def=100, rng=100 (max roll)
     // levelFactor = floor(2*50/5) + 2 = 22
-    // baseDamage = floor(floor(22 * 80 * 100 / 100) / 50) = floor(35.2) = 35
-    // +2 = 37
-    // random: 100/100 = 1.0 -> 37
-    // no STAB -> 37
-    // SE 2x -> 74
-    // berry 0.5x -> floor(74 * 0.5) = 37
+    // baseDamage = floor(floor(22 * 85 * 100 / 100) / 50) + 2 = 39
+    // random: 100/100 = 1.0 -> 39
+    // no STAB -> 39
+    // SE 2x -> 78
+    // berry 0.5x -> floor(78 * 0.5) = 39
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
     const defender = createActivePokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN4_ITEM_IDS.occaBerry,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.blazeKick);
     const typeChart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
     const rng = createMockRng(100); // max roll
 
     const ctx = createDamageContext({ attacker, defender, move, rng });
     const result = calculateGen4Damage(ctx, typeChart);
 
-    // Without berry: 37 * 2.0 SE = 74
-    // With berry: floor(74 * 0.5) = 37
-    expect(result.damage).toBe(37);
+    // Without berry: 39 * 2.0 SE = 78
+    // With berry: floor(78 * 0.5) = 39
+    expect(result.damage).toBe(39);
     // Berry is consumed (defender's held item is now null)
     expect(defender.pokemon.heldItem).toBeNull();
   });
@@ -868,46 +814,46 @@ describe("Type-resist berries -- damage calc", () => {
     // Source: Bulbapedia -- Yache Berry: "Weakens a supereffective Ice-type attack"
     // Source: Showdown sim/items.ts -- Yache Berry onSourceModifyDamage: 0.5x
     //
-    // Normal-type attacker (no STAB), ice move vs dragon defender (SE 2x)
-    // Same formula as occa test: baseDamage=37, SE=74, berry=37
+    // Normal-type attacker (no STAB), ice-punch (power 75) vs dragon defender (SE 2x)
+    // Same formula as occa test: baseDamage=35, SE=70, berry=35
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
     const defender = createActivePokemon({
       types: [CORE_TYPE_IDS.dragon],
       defense: 100,
       heldItem: GEN4_ITEM_IDS.yacheBerry,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.ice, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.icePunch);
     const typeChart = createTypeChart([[CORE_TYPE_IDS.ice, CORE_TYPE_IDS.dragon, 2]]);
     const rng = createMockRng(100);
 
     const ctx = createDamageContext({ attacker, defender, move, rng });
     const result = calculateGen4Damage(ctx, typeChart);
 
-    // Without berry: 37 * 2 = 74; with berry: floor(74 * 0.5) = 37
-    expect(result.damage).toBe(37);
+    // Without berry: 35 * 2 = 70; with berry: floor(70 * 0.5) = 35
+    expect(result.damage).toBe(35);
     expect(defender.pokemon.heldItem).toBeNull();
   });
 
   it("given defender holds occa-berry but takes neutral fire damage, when calculating damage, then berry does NOT activate", () => {
     // Source: Bulbapedia -- type-resist berries only activate on super effective hits
     // Source: Showdown sim/items.ts -- condition: effectiveness > 1
-    // Normal-type attacker (no STAB), fire move vs normal-type defender (neutral 1x)
-    // baseDamage=37, neutral=37 (no berry reduction because not SE)
+    // Normal-type attacker (no STAB), blaze-kick (power 85) vs normal-type defender (neutral 1x)
+    // baseDamage=39, neutral=39 (no berry reduction because not SE)
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
     const defender = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       defense: 100,
       heldItem: GEN4_ITEM_IDS.occaBerry,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.blazeKick);
     const typeChart = createNeutralTypeChart(); // all 1x
     const rng = createMockRng(100);
 
     const ctx = createDamageContext({ attacker, defender, move, rng });
     const result = calculateGen4Damage(ctx, typeChart);
 
-    // Neutral: baseDamage = 37, * 1.0 = 37 (no berry reduction)
-    expect(result.damage).toBe(37);
+    // Neutral: baseDamage = 39, * 1.0 = 39 (no berry reduction)
+    expect(result.damage).toBe(39);
     // Berry is NOT consumed
     expect(defender.pokemon.heldItem).toBe(GEN4_ITEM_IDS.occaBerry);
   });
@@ -922,7 +868,7 @@ describe("Type-resist berries -- damage calc", () => {
       defense: 100,
       heldItem: GEN4_ITEM_IDS.occaBerry,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.water, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.waterfall);
     const typeChart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.ground, 2]]);
     const rng = createMockRng(100);
 
@@ -938,8 +884,8 @@ describe("Type-resist berries -- damage calc", () => {
   it("given defender has Klutz and holds occa-berry, when hit by SE fire move, then berry does NOT activate", () => {
     // Source: Bulbapedia -- Klutz: prevents use of held items
     // Source: Showdown -- Klutz suppresses type-resist berries
-    // Normal-type attacker (no STAB), fire move vs grass defender (SE 2x), Klutz blocks berry
-    // baseDamage=37, SE=74 (no berry reduction due to Klutz)
+    // Normal-type attacker (no STAB), blaze-kick (power 85) vs grass defender (SE 2x), Klutz blocks berry
+    // baseDamage=39, SE=78 (no berry reduction due to Klutz)
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
     const defender = createActivePokemon({
       types: [CORE_TYPE_IDS.grass],
@@ -947,23 +893,23 @@ describe("Type-resist berries -- damage calc", () => {
       heldItem: GEN4_ITEM_IDS.occaBerry,
       ability: CORE_ABILITY_IDS.klutz,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.blazeKick);
     const typeChart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
     const rng = createMockRng(100);
 
     const ctx = createDamageContext({ attacker, defender, move, rng });
     const result = calculateGen4Damage(ctx, typeChart);
 
-    // No berry reduction: 37 * 2 = 74
-    expect(result.damage).toBe(74);
+    // No berry reduction: 39 * 2 = 78
+    expect(result.damage).toBe(78);
     expect(defender.pokemon.heldItem).toBe(GEN4_ITEM_IDS.occaBerry);
   });
 
   it("given defender has Embargo volatile and holds yache-berry, when hit by SE ice move, then berry does NOT activate", () => {
     // Source: Bulbapedia -- Embargo prevents use of held items
     // Source: Showdown -- Embargo suppresses type-resist berries
-    // Normal-type attacker (no STAB), ice move vs dragon defender (SE 2x), Embargo blocks berry
-    // baseDamage=37, SE=74 (no berry reduction due to Embargo)
+    // Normal-type attacker (no STAB), ice-punch (power 75) vs dragon defender (SE 2x), Embargo blocks berry
+    // baseDamage=35, SE=70 (no berry reduction due to Embargo)
     const embargoVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>(
       [[CORE_VOLATILE_IDS.embargo, { turnsLeft: 3 }]],
     );
@@ -974,15 +920,15 @@ describe("Type-resist berries -- damage calc", () => {
       heldItem: GEN4_ITEM_IDS.yacheBerry,
       volatiles: embargoVolatiles,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.ice, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.icePunch);
     const typeChart = createTypeChart([[CORE_TYPE_IDS.ice, CORE_TYPE_IDS.dragon, 2]]);
     const rng = createMockRng(100);
 
     const ctx = createDamageContext({ attacker, defender, move, rng });
     const result = calculateGen4Damage(ctx, typeChart);
 
-    // No berry reduction: 37 * 2 = 74
-    expect(result.damage).toBe(74);
+    // No berry reduction: 35 * 2 = 70
+    expect(result.damage).toBe(70);
     expect(defender.pokemon.heldItem).toBe(GEN4_ITEM_IDS.yacheBerry);
   });
 
@@ -996,7 +942,7 @@ describe("Type-resist berries -- damage calc", () => {
       heldItem: GEN4_ITEM_IDS.occaBerry,
       ability: CORE_ABILITY_IDS.unburden,
     });
-    const move = createDamageMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "physical" });
+    const move = gen4DataManager.getMove(GEN4_MOVE_IDS.blazeKick);
     const typeChart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
     const rng = createMockRng(100);
 
@@ -1321,7 +1267,7 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
 describe("getPinchBerryThreshold", () => {
   it("given a Pokemon without Gluttony, when checking 0.25 threshold, then returns 0.25", () => {
     // Source: Bulbapedia -- normal pinch berry threshold is 25%
-    expect(getPinchBerryThreshold({ ability: "" }, 0.25)).toBe(0.25);
+    expect(getPinchBerryThreshold({ ability: CORE_ABILITY_IDS.none }, 0.25)).toBe(0.25);
   });
 
   it("given a Pokemon with Gluttony, when checking 0.25 threshold, then returns 0.5", () => {
@@ -1360,7 +1306,7 @@ describe("Jaboca Berry", () => {
       state,
       rng,
       damage: 50,
-      move: { category: "physical" } as MoveData,
+      move: gen4DataManager.getMove(GEN4_MOVE_IDS.tackle),
     });
 
     expect(result.activated).toBe(true);
@@ -1389,7 +1335,7 @@ describe("Jaboca Berry", () => {
       state,
       rng,
       damage: 50,
-      move: { category: "special" } as MoveData,
+      move: gen4DataManager.getMove(GEN4_MOVE_IDS.ember),
     });
 
     expect(result.activated).toBe(false);
@@ -1446,7 +1392,7 @@ describe("Rowap Berry", () => {
       state,
       rng,
       damage: 50,
-      move: { category: "physical" } as MoveData,
+      move: gen4DataManager.getMove(GEN4_MOVE_IDS.tackle),
     });
 
     expect(result.activated).toBe(false);
@@ -1473,7 +1419,7 @@ describe("Rowap Berry", () => {
       state,
       rng,
       damage: 1,
-      move: { category: "special" } as MoveData,
+      move: gen4DataManager.getMove(GEN4_MOVE_IDS.ember),
     });
 
     expect(result.activated).toBe(true);

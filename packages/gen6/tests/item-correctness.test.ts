@@ -1,13 +1,65 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_FIXED_POINT,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
+import {
+  createGen6DataManager,
+  GEN6_ITEM_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
 
 // ---------------------------------------------------------------------------
-// Helper factories (same pattern as damage-calc.test.ts)
+// Helper factories
 // ---------------------------------------------------------------------------
+
+const dataManager = createGen6DataManager();
+const SYNTHETIC_MOVE_BASE = dataManager.getMove(GEN6_MOVE_IDS.tackle);
+
+function getGen6Move(id: string): MoveData {
+  const move = dataManager.getMove(id);
+  return { ...move, flags: { ...move.flags } };
+}
+
+function getGen6Item(id: string) {
+  return dataManager.getItem(id);
+}
+
+function makeSyntheticMove(overrides: {
+  id: string;
+  type: PokemonType;
+  category?: "physical" | "special" | "status";
+  power: number | null;
+  flags?: Partial<MoveData["flags"]>;
+  effect?: MoveData["effect"];
+  critRatio?: number;
+  target?: string;
+}): MoveData {
+  const move = { ...SYNTHETIC_MOVE_BASE } as MoveData;
+  move.id = overrides.id;
+  move.displayName = overrides.id;
+  move.type = overrides.type;
+  move.category = overrides.category ?? "physical";
+  move.power = overrides.power;
+  move.target = overrides.target ?? move.target;
+  move.effect = overrides.effect ?? null;
+  move.critRatio = overrides.critRatio ?? 0;
+  move.flags = {
+    ...move.flags,
+    ...overrides.flags,
+  };
+  move.generation = 6;
+  return move;
+}
 
 function makeActive(overrides: {
   level?: number;
@@ -36,16 +88,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? GEN6_SPECIES_IDS.bulbasaur,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: GEN6_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -56,7 +108,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -70,8 +122,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -92,53 +144,6 @@ function makeActive(overrides: {
     suppressedAbility: null,
     forcedMove: null,
   } as ActivePokemon;
-}
-
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-}): MoveData {
-  return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: overrides.critRatio ?? 0,
-  } as MoveData;
 }
 
 function makeState(overrides?: {
@@ -170,7 +175,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeSyntheticMove({ id: "test-neutral-physical", type: CORE_TYPE_IDS.normal, power: 50 }),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -184,31 +189,27 @@ const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
 // ===========================================================================
 
 describe("Knock Off item removability (issue #610)", () => {
-  it("given a defender holding Eviolite, when Knock Off is used, then it gets the 1.5x damage boost", () => {
-    // Source: Showdown data/items.ts -- Eviolite has NO megaStone property;
-    // it is a standard held item and should be removable by Knock Off.
-    // Source: Bulbapedia "Knock Off" Gen 6 -- 1.5x damage if target holds a removable item;
-    // only Mega Stones are exempt.
-    //
-    // Note: Eviolite also boosts defense by 1.5x, so we compare Knock Off vs a
-    // non-Knock-Off move to isolate the Knock Off boost specifically.
-    const attacker = makeActive({ types: ["dark"], attack: 100 });
-    const defender = makeActive({ heldItem: "eviolite", defense: 100, types: ["normal"] });
-
-    // Knock Off (power 65) with the 1.5x boost -> effective power pokeRound(65, 6144) = 97
-    const knockOff = makeMove({
-      id: "knock-off",
-      type: "dark",
-      power: 65,
-      category: "physical",
+  it("given a defender holding a removable item, when Knock Off is used, then it gets the 1.5x damage boost", () => {
+    // Source: Showdown data/items.ts -- removable items receive the Gen 6 Knock Off boost.
+    // Source: Bulbapedia "Knock Off" Gen 6 -- 1.5x damage if target holds a removable item.
+    // We compare Knock Off against an equally powered synthetic Dark move so the boost is isolated.
+    const attacker = makeActive({
+      speciesId: GEN6_SPECIES_IDS.absol,
+      types: [CORE_TYPE_IDS.dark],
+      attack: 100,
     });
-
-    // A comparable Dark-type move without the Knock Off boost mechanic
-    const darkPulse = makeMove({
-      id: "dark-pulse",
-      type: "dark",
-      power: 65,
-      category: "physical",
+    const defender = makeActive({
+      speciesId: GEN6_SPECIES_IDS.bulbasaur,
+      heldItem: getGen6Item(GEN6_ITEM_IDS.eviolite).id,
+      defense: 100,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    const knockOff = getGen6Move(GEN6_MOVE_IDS.knockOff);
+    const darkStrike = makeSyntheticMove({
+      id: "test-dark-strike",
+      type: CORE_TYPE_IDS.dark,
+      power: knockOff.power,
+      category: knockOff.category,
     });
 
     const knockOffResult = calculateGen6Damage(
@@ -216,36 +217,39 @@ describe("Knock Off item removability (issue #610)", () => {
       typeChart,
     );
 
-    const darkPulseResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: darkPulse, seed: 12345 }),
+    const darkStrikeResult = calculateGen6Damage(
+      makeDamageContext({ attacker, defender, move: darkStrike, seed: 12345 }),
       typeChart,
     );
 
-    // Knock Off should deal more damage than a same-power Dark move because
-    // Eviolite is removable -> 1.5x boost applies.
-    // Before the fix, both would deal equal damage (Eviolite falsely treated as non-removable).
-    expect(knockOffResult.damage).toBeGreaterThan(darkPulseResult.damage);
+    expect(knockOffResult.damage).toBeGreaterThan(darkStrikeResult.damage);
   });
 
-  it("given a defender holding a Mega Stone (charizardite-x), when Knock Off is used, then it does NOT get the 1.5x boost", () => {
-    // Source: Showdown data/items.ts -- charizardite-x has megaStone property;
-    // Mega Stones are not removable and Knock Off does not get the boost.
-    const attacker = makeActive({ types: ["dark"], attack: 100 });
-    const defender = makeActive({ heldItem: "charizardite-x", defense: 100 });
-    const knockOff = makeMove({
-      id: "knock-off",
-      type: "dark",
-      power: 65,
-      category: "physical",
+  it("given a defender holding a Mega Stone, when Knock Off is used, then it does not get the 1.5x boost", () => {
+    // Source: Showdown data/items.ts -- Mega Stones are not removable by Knock Off.
+    const attacker = makeActive({
+      speciesId: GEN6_SPECIES_IDS.absol,
+      types: [CORE_TYPE_IDS.dark],
+      attack: 100,
     });
+    const defender = makeActive({
+      speciesId: GEN6_SPECIES_IDS.charizard,
+      heldItem: getGen6Item(GEN6_ITEM_IDS.charizarditeX).id,
+      defense: 100,
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
+    });
+    const knockOff = getGen6Move(GEN6_MOVE_IDS.knockOff);
 
     const withMegaStone = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
       typeChart,
     );
 
-    // Same setup without held item
-    const defenderNoItem = makeActive({ defense: 100 });
+    const defenderNoItem = makeActive({
+      speciesId: GEN6_SPECIES_IDS.charizard,
+      defense: 100,
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
+    });
     const withoutItem = calculateGen6Damage(
       makeDamageContext({
         attacker,
@@ -256,28 +260,35 @@ describe("Knock Off item removability (issue #610)", () => {
       typeChart,
     );
 
-    // Mega Stone holder should take the same damage as no-item (no boost)
     expect(withMegaStone.damage).toBe(withoutItem.damage);
   });
 
-  it("given a defender holding a Mega Stone ending in 'ite' (venusaurite), when Knock Off is used, then it does NOT get the 1.5x boost", () => {
-    // Source: Showdown data/items.ts -- venusaurite has megaStone property
-    // Triangulation: second Mega Stone test to prove the suffix check still works
-    const attacker = makeActive({ types: ["dark"], attack: 100 });
-    const defender = makeActive({ heldItem: "venusaurite", defense: 100 });
-    const knockOff = makeMove({
-      id: "knock-off",
-      type: "dark",
-      power: 65,
-      category: "physical",
+  it("given a defender holding another Mega Stone, when Knock Off is used, then it does not get the 1.5x boost", () => {
+    // Source: Showdown data/items.ts -- Mega Stones are not removable by Knock Off.
+    // Triangulation: second Mega Stone test to prove the suffix-based rule still holds.
+    const attacker = makeActive({
+      speciesId: GEN6_SPECIES_IDS.absol,
+      types: [CORE_TYPE_IDS.dark],
+      attack: 100,
     });
+    const defender = makeActive({
+      speciesId: GEN6_SPECIES_IDS.venusaur,
+      heldItem: getGen6Item(GEN6_ITEM_IDS.venusaurite).id,
+      defense: 100,
+      types: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
+    });
+    const knockOff = getGen6Move(GEN6_MOVE_IDS.knockOff);
 
     const withMegaStone = calculateGen6Damage(
       makeDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
       typeChart,
     );
 
-    const defenderNoItem = makeActive({ defense: 100 });
+    const defenderNoItem = makeActive({
+      speciesId: GEN6_SPECIES_IDS.venusaur,
+      defense: 100,
+      types: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
+    });
     const withoutItem = calculateGen6Damage(
       makeDamageContext({
         attacker,
@@ -296,22 +307,21 @@ describe("Knock Off item removability (issue #610)", () => {
 // Issue #611: Type-boost items use Math.floor instead of pokeRound
 // ===========================================================================
 
-describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", () => {
-  it("given Charcoal boosting a Fire move with base power 60, when calculating damage, then uses pokeRound(60, 4915) = 72 (not Math.floor(60*4915/4096) = 71)", () => {
-    // Source: Showdown data/items.ts -- Charcoal uses onBasePower with chainModify([4915, 4096])
-    // Source: Showdown sim/battle.ts -- chainModify uses modify() which is pokeRound
-    // Manual derivation:
-    //   Math.floor(60 * 4915 / 4096) = Math.floor(71.997...) = 71 (WRONG)
-    //   pokeRound(60, 4915) = floor((60*4915 + 2047) / 4096) = floor(296947/4096) = floor(72.497...) = 72 (CORRECT)
+describe("type-boost items use pokeRound for the shared fixed-point modifier (issue #611)", () => {
+  it("given Charcoal boosting a Fire move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {
+    // Source: Showdown data/items.ts -- Charcoal uses onBasePower with the shared fixed-point type boost.
+    // Source: Showdown sim/battle.ts -- chainModify uses modify() which is pokeRound.
+    const charcoal = getGen6Item(GEN6_ITEM_IDS.charcoal);
     const attacker = makeActive({
-      types: ["fire"],
+      speciesId: GEN6_SPECIES_IDS.charizard,
+      types: [CORE_TYPE_IDS.fire],
       attack: 100,
-      heldItem: "charcoal",
+      heldItem: charcoal.id,
     });
     const defender = makeActive({ defense: 100 });
-    const fireMove = makeMove({
-      id: "ember",
-      type: "fire",
+    const fireMove = makeSyntheticMove({
+      id: "test-fire-60",
+      type: CORE_TYPE_IDS.fire,
       power: 60,
       category: "physical",
     });
@@ -321,47 +331,27 @@ describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", (
       typeChart,
     );
 
-    // With pokeRound, effective power is 72; with floor, it would be 71.
-    // We verify by computing expected damage for power=72 vs power=71.
-    // The STAB applies too (fire attacker, fire move): pokeRound(baseDmg, 6144) = 1.5x
-    // We just need the result to correspond to the pokeRound path.
-    // Level=50, Atk=100, Def=100:
-    //   levelFactor = floor(2*50/5) + 2 = 22
-    //   With pokeRound power=72: baseDmg = floor(floor(22*72*100/100)/50) + 2
-    //     = floor(floor(158400/100)/50) + 2 -- wait, formula is floor(levelFactor*power*atk/def)/50
-    //     = floor(22*72*100/100) = 1584, floor(1584/50) = 31, + 2 = 33
-    //   With floor power=71: floor(22*71*100/100) = 1562, floor(1562/50) = 31, + 2 = 33
-    // Same at power 71 vs 72 because of the divisor... Let me try higher stats.
-    // Actually the key test is that pokeRound is called, let's just verify the damage is right.
-    // The important thing is: the damage output is consistent with pokeRound(60, 4915)=72
-    // rather than Math.floor(60*4915/4096)=71.
     expect(result.damage).toBeGreaterThan(0);
-
-    // More directly: test that pokeRound(60, 4915) = 72
-    expect(pokeRound(60, 4915)).toBe(72);
-    // And that Math.floor would give a wrong answer:
-    expect(Math.floor((60 * 4915) / 4096)).toBe(71);
+    expect(pokeRound(60, CORE_FIXED_POINT.typeBoost)).toBe(72);
+    expect(Math.floor((60 * CORE_FIXED_POINT.typeBoost) / CORE_FIXED_POINT.identity)).toBe(71);
   });
 
-  it("given Charcoal boosting a Fire move with base power 3, when calculating damage, then uses pokeRound(3, 4915) = 4 (not Math.floor = 3)", () => {
-    // Source: Showdown data/items.ts -- Charcoal chainModify([4915, 4096])
-    // Manual derivation:
-    //   Math.floor(3 * 4915 / 4096) = Math.floor(3.599...) = 3 (WRONG)
-    //   pokeRound(3, 4915) = floor((3*4915 + 2047) / 4096) = floor(16792/4096) = floor(4.099...) = 4 (CORRECT)
-    // This is a more extreme divergence (3 vs 4 = 33% error!)
-    expect(pokeRound(3, 4915)).toBe(4);
-    expect(Math.floor((3 * 4915) / 4096)).toBe(3);
+  it("given Charcoal boosting a Fire move with base power 3, when calculating damage, then uses pokeRound(3, typeBoost) = 4", () => {
+    // Source: Showdown data/items.ts -- Charcoal chainModify uses the shared fixed-point type boost.
+    expect(pokeRound(3, CORE_FIXED_POINT.typeBoost)).toBe(4);
+    expect(Math.floor((3 * CORE_FIXED_POINT.typeBoost) / CORE_FIXED_POINT.identity)).toBe(3);
 
-    // Full damage calc with power=3 Fire move + Charcoal
+    const charcoal = getGen6Item(GEN6_ITEM_IDS.charcoal);
     const attacker = makeActive({
-      types: ["fire"],
+      speciesId: GEN6_SPECIES_IDS.charizard,
+      types: [CORE_TYPE_IDS.fire],
       attack: 100,
-      heldItem: "charcoal",
+      heldItem: charcoal.id,
     });
     const defender = makeActive({ defense: 100 });
-    const fireMove = makeMove({
-      id: "fire-move",
-      type: "fire",
+    const fireMove = makeSyntheticMove({
+      id: "test-fire-3",
+      type: CORE_TYPE_IDS.fire,
       power: 3,
       category: "physical",
     });
@@ -371,29 +361,22 @@ describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", (
       typeChart,
     );
 
-    // With pokeRound(3, 4915)=4 as effective power vs Math.floor=3:
-    // Level=50, Atk=100, Def=100
-    // power=4: levelFactor=22, baseDmg = floor(floor(22*4*100/100)/50)+2 = floor(88/50)+2 = 1+2 = 3
-    // power=3: levelFactor=22, baseDmg = floor(floor(22*3*100/100)/50)+2 = floor(66/50)+2 = 1+2 = 3
-    // Same base damage at this level. But the pokeRound formula is still correct.
     expect(result.damage).toBeGreaterThan(0);
   });
 
-  it("given Adamant Orb boosting Dialga's Dragon move with base power 60, when calculating damage, then uses pokeRound(60, 4915) = 72", () => {
-    // Source: Showdown data/items.ts -- Adamant Orb uses onBasePower chainModify([4915, 4096])
-    // for Dialga's Dragon and Steel moves.
-    // Dialga speciesId = 483
-    // Divergence: floor(60*4915/4096) = 71, pokeRound(60, 4915) = 72
+  it("given Adamant Orb boosting Dialga's Dragon move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {
+    // Source: Showdown data/items.ts -- Adamant Orb uses onBasePower with the shared fixed-point type boost for Dialga.
+    const adamantOrb = getGen6Item(GEN6_ITEM_IDS.adamantOrb);
     const attacker = makeActive({
-      types: ["dragon", "steel"],
+      speciesId: GEN6_SPECIES_IDS.dialga,
+      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.steel],
       attack: 100,
-      heldItem: "adamant-orb",
-      speciesId: 483,
+      heldItem: adamantOrb.id,
     });
-    const defender = makeActive({ defense: 100, types: ["normal"] });
-    const dragonMove = makeMove({
-      id: "dragon-claw",
-      type: "dragon",
+    const defender = makeActive({ defense: 100, types: [CORE_TYPE_IDS.normal] });
+    const dragonMove = makeSyntheticMove({
+      id: "test-dragon-60",
+      type: CORE_TYPE_IDS.dragon,
       power: 60,
       category: "physical",
     });
@@ -403,11 +386,10 @@ describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", (
       typeChart,
     );
 
-    // Without Adamant Orb
     const attackerNoItem = makeActive({
-      types: ["dragon", "steel"],
+      speciesId: GEN6_SPECIES_IDS.dialga,
+      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.steel],
       attack: 100,
-      speciesId: 483,
     });
 
     const withoutOrb = calculateGen6Damage(
@@ -420,23 +402,23 @@ describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", (
       typeChart,
     );
 
-    // With the orb, effective power should be 72 (pokeRound) instead of 71 (floor)
-    // This means more damage with the orb.
     expect(withOrb.damage).toBeGreaterThan(withoutOrb.damage);
+    expect(pokeRound(60, CORE_FIXED_POINT.typeBoost)).toBe(72);
   });
 
-  it("given Splash Plate boosting a Water move with base power 60, when calculating damage, then uses pokeRound(60, 4915) = 72", () => {
-    // Source: Showdown data/items.ts -- Splash Plate uses onBasePower chainModify([4915, 4096])
-    // Triangulation: second Plate test with different type
+  it("given Splash Plate boosting a Water move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {
+    // Source: Showdown data/items.ts -- Splash Plate uses onBasePower with the shared fixed-point type boost.
+    const splashPlate = getGen6Item(GEN6_ITEM_IDS.splashPlate);
     const attacker = makeActive({
-      types: ["water"],
+      speciesId: GEN6_SPECIES_IDS.blastoise,
+      types: [CORE_TYPE_IDS.water],
       attack: 100,
-      heldItem: "splash-plate",
+      heldItem: splashPlate.id,
     });
-    const defender = makeActive({ defense: 100, types: ["normal"] });
-    const waterMove = makeMove({
-      id: "aqua-tail",
-      type: "water",
+    const defender = makeActive({ defense: 100, types: [CORE_TYPE_IDS.normal] });
+    const waterMove = makeSyntheticMove({
+      id: "test-water-60",
+      type: CORE_TYPE_IDS.water,
       power: 60,
       category: "physical",
     });
@@ -446,7 +428,11 @@ describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", (
       typeChart,
     );
 
-    const attackerNoItem = makeActive({ types: ["water"], attack: 100 });
+    const attackerNoItem = makeActive({
+      speciesId: GEN6_SPECIES_IDS.blastoise,
+      types: [CORE_TYPE_IDS.water],
+      attack: 100,
+    });
     const withoutPlate = calculateGen6Damage(
       makeDamageContext({
         attacker: attackerNoItem,
@@ -457,8 +443,7 @@ describe("type-boost items use pokeRound for 4915/4096 modifier (issue #611)", (
       typeChart,
     );
 
-    // With plate, effective power is 72 (pokeRound(60, 4915)), without plate it's 60.
-    // This should result in more damage.
     expect(withPlate.damage).toBeGreaterThan(withoutPlate.damage);
+    expect(pokeRound(60, CORE_FIXED_POINT.typeBoost)).toBe(72);
   });
 });
