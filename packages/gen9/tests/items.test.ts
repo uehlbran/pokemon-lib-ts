@@ -324,16 +324,18 @@ describe("Type-Boost Items", () => {
       );
     });
 
-    // Source: Showdown data/items.ts -- Flame Plate is a plate, boosts Fire
-    it("given Flame Plate with Fire move, when checking boost, then returns 4915", () => {
-      expect(getTypeBoostItem(TEST_ITEM_IDS.flamePlate, TEST_TYPE_IDS.fire)).toBe(
+    // Source: packages/gen9/data/items.json -- Charcoal is present in the shipped Gen 9 bundle
+    // and exercises the same Fire-type boost mechanic under test.
+    it("given Charcoal with Fire move, when checking boost, then returns 4915", () => {
+      expect(getTypeBoostItem(TEST_ITEM_IDS.charcoal, TEST_TYPE_IDS.fire)).toBe(
         TEST_FIXED_POINT.typeBoost,
       );
     });
 
-    // Source: Showdown data/items.ts -- Sea Incense boosts Water
-    it("given Sea Incense with Water move, when checking boost, then returns 4915", () => {
-      expect(getTypeBoostItem(TEST_ITEM_IDS.seaIncense, TEST_TYPE_IDS.water)).toBe(
+    // Source: packages/gen9/data/items.json -- Mystic Water is present in the shipped Gen 9 bundle
+    // and exercises the same Water-type boost mechanic under test.
+    it("given Mystic Water with Water move, when checking boost, then returns 4915", () => {
+      expect(getTypeBoostItem(TEST_ITEM_IDS.mysticWater, TEST_TYPE_IDS.water)).toBe(
         TEST_FIXED_POINT.typeBoost,
       );
     });

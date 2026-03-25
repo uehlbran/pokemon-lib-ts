@@ -7,10 +7,15 @@
  */
 
 export const CORE_FIXED_POINT = {
+  boost12: 4915,
+  boost13: 5325,
+  boost15: 6144,
   half: 2048,
   identity: 4096,
   gemBoost: 5325,
+  resistHalf: 2048,
   spreadModifier: 3072,
+  typeBoost: 4915,
 } as const;
 
 export const CORE_ABILITY_IDS = {
@@ -53,22 +58,43 @@ export const CORE_TERRAIN_IDS = {
 } as const;
 
 export const CORE_TYPE_IDS = {
+  dark: "dark",
+  electric: "electric",
   fire: "fire",
   flying: "flying",
+  ice: "ice",
   ghost: "ghost",
   grass: "grass",
   ground: "ground",
   normal: "normal",
+  poison: "poison",
   steel: "steel",
   water: "water",
 } as const;
 
+export const CORE_STATUS_IDS = {
+  badlyPoisoned: "badly-poisoned",
+  burn: "burn",
+  freeze: "freeze",
+  paralysis: "paralysis",
+  poison: "poison",
+  sleep: "sleep",
+} as const;
+
 export const CORE_VOLATILE_IDS = {
+  confusion: "confusion",
   embargo: "embargo",
   ingrain: "ingrain",
   smackDown: "smackdown",
+  taunt: "taunt",
+  unburden: "unburden",
 } as const;
 
 export const CORE_WEATHER_IDS = {
   harshSun: "harsh-sun",
+  hail: "hail",
+  rain: "rain",
+  sand: "sandstorm",
+  snow: "snow",
+  sun: "sun",
 } as const;

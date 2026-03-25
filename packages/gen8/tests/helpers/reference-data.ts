@@ -1,3 +1,30 @@
+import {
+  CORE_FIXED_POINT,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { createGen8DataManager } from "../../src/data";
+
+const dataManager = createGen8DataManager();
+
+function requireItemId(displayName: string): string {
+  const item = dataManager.getAllItems().find((entry) => entry.displayName === displayName);
+  if (!item) throw new Error(`Gen 8 item "${displayName}" not found in data bundle`);
+  return item.id;
+}
+
+function requireMoveId(displayName: string): string {
+  const move = dataManager.getAllMoves().find((entry) => entry.displayName === displayName);
+  if (!move) throw new Error(`Gen 8 move "${displayName}" not found in data bundle`);
+  return move.id;
+}
+
+function requireAbilityId(displayName: string): string {
+  const ability = dataManager.getAllAbilities().find((entry) => entry.displayName === displayName);
+  if (!ability) throw new Error(`Gen 8 ability "${displayName}" not found in data bundle`);
+  return ability.id;
+}
+
 export const GEN8_TEST_VALUES = {
   battle: {
     singles: "singles",
@@ -12,17 +39,17 @@ export const GEN8_TEST_VALUES = {
     defaultType: "normal",
   },
   abilities: {
-    klutz: "klutz",
+    klutz: requireAbilityId("Klutz"),
   },
   volatiles: {
-    embargo: "embargo",
+    embargo: CORE_VOLATILE_IDS.embargo,
   },
   fixedPoint: {
-    neutral: 4096,
-    boost12: 4915,
-    boost13: 5325,
-    boost15: 6144,
-    resistHalf: 2048,
+    neutral: CORE_FIXED_POINT.identity,
+    boost12: CORE_FIXED_POINT.boost12,
+    boost13: CORE_FIXED_POINT.boost13,
+    boost15: CORE_FIXED_POINT.boost15,
+    resistHalf: CORE_FIXED_POINT.resistHalf,
   },
   expectedAmounts: {
     minimum: 1,
@@ -49,12 +76,12 @@ export const GEN8_TEST_VALUES = {
     airBalloonPop: 400,
   },
   types: {
-    normal: "normal",
-    fire: "fire",
-    water: "water",
-    ice: "ice",
-    poison: "poison",
-    dark: "dark",
+    normal: CORE_TYPE_IDS.normal,
+    fire: CORE_TYPE_IDS.fire,
+    water: CORE_TYPE_IDS.water,
+    ice: CORE_TYPE_IDS.ice,
+    poison: CORE_TYPE_IDS.poison,
+    dark: CORE_TYPE_IDS.dark,
   },
   categories: {
     physical: "physical",
@@ -62,38 +89,35 @@ export const GEN8_TEST_VALUES = {
     status: "status",
   },
   items: {
-    assaultVest: "assault-vest",
-    airBalloon: "air-balloon",
-    blackSludge: "black-sludge",
-    blunderPolicy: "blunder-policy",
-    charcoal: "charcoal",
-    chilanBerry: "chilan-berry",
-    choiceBand: "choice-band",
-    choiceScarf: "choice-scarf",
-    choiceSpecs: "choice-specs",
-    ejectPack: "eject-pack",
-    eviolite: "eviolite",
-    flamePlate: "flame-plate",
-    focusSash: "focus-sash",
-    heavyDutyBoots: "heavy-duty-boots",
-    ironBall: "iron-ball",
-    leftovers: "leftovers",
-    lifeOrb: "life-orb",
-    potion: "potion",
-    mysticWater: "mystic-water",
-    occaBerry: "occa-berry",
-    rockyHelmet: "rocky-helmet",
-    roomService: "room-service",
-    seaIncense: "sea-incense",
-    silkScarf: "silk-scarf",
-    throatSpray: "throat-spray",
-    utilityUmbrella: "utility-umbrella",
-    yacheBerry: "yache-berry",
+    assaultVest: requireItemId("Assault Vest"),
+    airBalloon: requireItemId("Air Balloon"),
+    blackSludge: requireItemId("Black Sludge"),
+    blunderPolicy: requireItemId("Blunder Policy"),
+    charcoal: requireItemId("Charcoal"),
+    chilanBerry: requireItemId("Chilan Berry"),
+    choiceBand: requireItemId("Choice Band"),
+    choiceScarf: requireItemId("Choice Scarf"),
+    choiceSpecs: requireItemId("Choice Specs"),
+    ejectPack: requireItemId("Eject Pack"),
+    eviolite: requireItemId("Eviolite"),
+    focusSash: requireItemId("Focus Sash"),
+    heavyDutyBoots: requireItemId("Heavy-Duty Boots"),
+    ironBall: requireItemId("Iron Ball"),
+    leftovers: requireItemId("Leftovers"),
+    lifeOrb: requireItemId("Life Orb"),
+    mysticWater: requireItemId("Mystic Water"),
+    occaBerry: requireItemId("Occa Berry"),
+    rockyHelmet: requireItemId("Rocky Helmet"),
+    roomService: requireItemId("Room Service"),
+    silkScarf: requireItemId("Silk Scarf"),
+    throatSpray: requireItemId("Throat Spray"),
+    utilityUmbrella: requireItemId("Utility Umbrella"),
+    yacheBerry: requireItemId("Yache Berry"),
   },
   moves: {
-    tackle: "tackle",
-    surf: "surf",
-    flamethrower: "flamethrower",
-    hyperVoice: "hyper-voice",
+    tackle: requireMoveId("Tackle"),
+    surf: requireMoveId("Surf"),
+    flamethrower: requireMoveId("Flamethrower"),
+    hyperVoice: requireMoveId("Hyper Voice"),
   },
 } as const;

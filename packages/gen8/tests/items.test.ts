@@ -301,8 +301,8 @@ describe("getItemDamageModifier", () => {
     expect(result).toBe(FIXED_POINT.boost13);
   });
 
-  it("given unrecognized item, when calculating modifier, then returns 4096 (1.0x)", () => {
-    const result = getItemDamageModifier(ITEMS.potion, {
+  it("given non-damage item, when calculating modifier, then returns 4096 (1.0x)", () => {
+    const result = getItemDamageModifier(ITEMS.leftovers, {
       moveCategory: CATEGORIES.physical,
       moveType: TYPES.normal,
     });
@@ -350,18 +350,20 @@ describe("getTypeBoostItem", () => {
     expect(getTypeBoostItem(ITEMS.mysticWater, TYPES.water)).toBe(FIXED_POINT.boost12);
   });
 
-  // Source: Showdown data/items.ts -- Flame Plate onBasePower: chainModify([4915, 4096])
-  it("given Flame Plate with Fire move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem(ITEMS.flamePlate, TYPES.fire)).toBe(FIXED_POINT.boost12);
+  // Source: packages/gen8/data/items.json -- Charcoal exists in the shipped Gen 8 bundle
+  // and carries the same Fire-type boost mechanic under test.
+  it("given Charcoal with Fire move, when calculating modifier, then returns 4915", () => {
+    expect(getTypeBoostItem(ITEMS.charcoal, TYPES.fire)).toBe(FIXED_POINT.boost12);
   });
 
-  it("given Flame Plate with Water move, when calculating modifier, then returns 4096 (no match)", () => {
-    expect(getTypeBoostItem(ITEMS.flamePlate, TYPES.water)).toBe(FIXED_POINT.neutral);
+  it("given Charcoal with Water move, when calculating modifier, then returns 4096 (no match)", () => {
+    expect(getTypeBoostItem(ITEMS.charcoal, TYPES.water)).toBe(FIXED_POINT.neutral);
   });
 
-  // Source: Showdown data/items.ts -- Sea Incense onBasePower: chainModify([4915, 4096])
-  it("given Sea Incense with Water move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem(ITEMS.seaIncense, TYPES.water)).toBe(FIXED_POINT.boost12);
+  // Source: packages/gen8/data/items.json -- Mystic Water exists in the shipped Gen 8 bundle
+  // and exercises the same Water-type boost mechanic under test.
+  it("given Mystic Water with Water move, when calculating modifier, then returns 4915", () => {
+    expect(getTypeBoostItem(ITEMS.mysticWater, TYPES.water)).toBe(FIXED_POINT.boost12);
   });
 
   it("given non-boost item, when calculating modifier, then returns 4096", () => {
@@ -762,8 +764,8 @@ describe("getConsumableItemEffect", () => {
     expect(result).toBe(null);
   });
 
-  it("given unknown item, when getting effect, then returns null", () => {
-    const result = getConsumableItemEffect(ITEMS.potion, {});
+  it("given passive item, when getting effect, then returns null", () => {
+    const result = getConsumableItemEffect(ITEMS.leftovers, {});
     expect(result).toBe(null);
   });
 });

@@ -1,3 +1,32 @@
+import {
+  CORE_FIXED_POINT,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { createGen9DataManager } from "../../src/data";
+
+const dataManager = createGen9DataManager();
+
+function requireItemId(displayName: string): string {
+  const item = dataManager.getAllItems().find((entry) => entry.displayName === displayName);
+  if (!item) throw new Error(`Gen 9 item "${displayName}" not found in data bundle`);
+  return item.id;
+}
+
+function requireMoveId(displayName: string): string {
+  const move = dataManager.getAllMoves().find((entry) => entry.displayName === displayName);
+  if (!move) throw new Error(`Gen 9 move "${displayName}" not found in data bundle`);
+  return move.id;
+}
+
+function requireAbilityId(displayName: string): string {
+  const ability = dataManager.getAllAbilities().find((entry) => entry.displayName === displayName);
+  if (!ability) throw new Error(`Gen 9 ability "${displayName}" not found in data bundle`);
+  return ability.id;
+}
+
 export const TEST_DEFAULTS = {
   ability: "none",
   abilitySlot: "normal1" as const,
@@ -10,84 +39,82 @@ export const TEST_DEFAULTS = {
 } as const;
 
 export const TEST_FIXED_POINT = {
-  neutral: 4096,
-  typeBoost: 4915,
-  lifeOrb: 5325,
-  choice: 6144,
-  resistBerry: 2048,
+  neutral: CORE_FIXED_POINT.identity,
+  typeBoost: CORE_FIXED_POINT.typeBoost,
+  lifeOrb: CORE_FIXED_POINT.boost13,
+  choice: CORE_FIXED_POINT.boost15,
+  resistBerry: CORE_FIXED_POINT.resistHalf,
 } as const;
 
 export const TEST_ITEM_IDS = {
-  absorbBulb: "absorb-bulb",
-  airBalloon: "air-balloon",
-  aspearBerry: "aspear-berry",
-  assaultVest: "assault-vest",
-  blackSludge: "black-sludge",
-  blunderPolicy: "blunder-policy",
-  boosterEnergy: "booster-energy",
-  cellBattery: "cell-battery",
-  charcoal: "charcoal",
-  cheriBerry: "cheri-berry",
-  chestoBerry: "chesto-berry",
-  chilanBerry: "chilan-berry",
-  choiceBand: "choice-band",
-  choiceScarf: "choice-scarf",
-  choiceSpecs: "choice-specs",
-  covertCloak: "covert-cloak",
-  custapBerry: "custap-berry",
-  dampRock: "damp-rock",
-  ejectButton: "eject-button",
-  ejectPack: "eject-pack",
-  fairyFeather: "fairy-feather",
-  flameOrb: "flame-orb",
-  flamePlate: "flame-plate",
-  focusBand: "focus-band",
-  focusSash: "focus-sash",
-  heatRock: "heat-rock",
-  icyRock: "icy-rock",
-  ironBall: "iron-ball",
-  keeBerry: "kee-berry",
-  kingsRock: "kings-rock",
-  leftovers: "leftovers",
-  liechiBerry: "liechi-berry",
-  lifeOrb: "life-orb",
-  lumBerry: "lum-berry",
-  marangaBerry: "maranga-berry",
-  mentalHerb: "mental-herb",
-  mysticWater: "mystic-water",
-  occaBerry: "occa-berry",
-  oranBerry: "oran-berry",
-  pechaBerry: "pecha-berry",
-  petayaBerry: "petaya-berry",
-  quickClaw: "quick-claw",
-  rawstBerry: "rawst-berry",
-  redCard: "red-card",
-  rockHelmet: "rocky-helmet",
-  roomService: "room-service",
-  roseliBerry: "roseli-berry",
-  safetyGoggles: "safety-goggles",
-  salacBerry: "salac-berry",
-  seaIncense: "sea-incense",
-  shellBell: "shell-bell",
-  sitrusBerry: "sitrus-berry",
-  smoothRock: "smooth-rock",
-  snowball: "snowball",
-  stickyBarb: "sticky-barb",
-  terrainExtender: "terrain-extender",
-  throatSpray: "throat-spray",
-  toxicOrb: "toxic-orb",
-  utilityUmbrella: "utility-umbrella",
-  weaknessPolicy: "weakness-policy",
+  absorbBulb: requireItemId("Absorb Bulb"),
+  airBalloon: requireItemId("Air Balloon"),
+  aspearBerry: requireItemId("Aspear Berry"),
+  assaultVest: requireItemId("Assault Vest"),
+  blackSludge: requireItemId("Black Sludge"),
+  blunderPolicy: requireItemId("Blunder Policy"),
+  boosterEnergy: requireItemId("Booster Energy"),
+  cellBattery: requireItemId("Cell Battery"),
+  charcoal: requireItemId("Charcoal"),
+  cheriBerry: requireItemId("Cheri Berry"),
+  chestoBerry: requireItemId("Chesto Berry"),
+  chilanBerry: requireItemId("Chilan Berry"),
+  choiceBand: requireItemId("Choice Band"),
+  choiceScarf: requireItemId("Choice Scarf"),
+  choiceSpecs: requireItemId("Choice Specs"),
+  covertCloak: requireItemId("Covert Cloak"),
+  custapBerry: requireItemId("Custap Berry"),
+  dampRock: requireItemId("Damp Rock"),
+  ejectButton: requireItemId("Eject Button"),
+  ejectPack: requireItemId("Eject Pack"),
+  fairyFeather: requireItemId("Fairy Feather"),
+  flameOrb: requireItemId("Flame Orb"),
+  focusBand: requireItemId("Focus Band"),
+  focusSash: requireItemId("Focus Sash"),
+  heatRock: requireItemId("Heat Rock"),
+  icyRock: requireItemId("Icy Rock"),
+  ironBall: requireItemId("Iron Ball"),
+  keeBerry: requireItemId("Kee Berry"),
+  kingsRock: requireItemId("King's Rock"),
+  leftovers: requireItemId("Leftovers"),
+  liechiBerry: requireItemId("Liechi Berry"),
+  lifeOrb: requireItemId("Life Orb"),
+  lumBerry: requireItemId("Lum Berry"),
+  marangaBerry: requireItemId("Maranga Berry"),
+  mentalHerb: requireItemId("Mental Herb"),
+  mysticWater: requireItemId("Mystic Water"),
+  occaBerry: requireItemId("Occa Berry"),
+  oranBerry: requireItemId("Oran Berry"),
+  pechaBerry: requireItemId("Pecha Berry"),
+  petayaBerry: requireItemId("Petaya Berry"),
+  quickClaw: requireItemId("Quick Claw"),
+  rawstBerry: requireItemId("Rawst Berry"),
+  redCard: requireItemId("Red Card"),
+  rockHelmet: requireItemId("Rocky Helmet"),
+  roomService: requireItemId("Room Service"),
+  roseliBerry: requireItemId("Roseli Berry"),
+  safetyGoggles: requireItemId("Safety Goggles"),
+  salacBerry: requireItemId("Salac Berry"),
+  shellBell: requireItemId("Shell Bell"),
+  sitrusBerry: requireItemId("Sitrus Berry"),
+  smoothRock: requireItemId("Smooth Rock"),
+  snowball: requireItemId("Snowball"),
+  stickyBarb: requireItemId("Sticky Barb"),
+  terrainExtender: requireItemId("Terrain Extender"),
+  throatSpray: requireItemId("Throat Spray"),
+  toxicOrb: requireItemId("Toxic Orb"),
+  utilityUmbrella: requireItemId("Utility Umbrella"),
+  weaknessPolicy: requireItemId("Weakness Policy"),
 } as const;
 
 export const TEST_MOVE_IDS = {
-  earthquake: "earthquake",
-  flamethrower: "flamethrower",
-  hyperVoice: "hyper-voice",
-  iceBeam: "ice-beam",
-  surf: "surf",
-  tackle: "tackle",
-  thunderbolt: "thunderbolt",
+  earthquake: requireMoveId("Earthquake"),
+  flamethrower: requireMoveId("Flamethrower"),
+  hyperVoice: requireMoveId("Hyper Voice"),
+  iceBeam: requireMoveId("Ice Beam"),
+  surf: requireMoveId("Surf"),
+  tackle: requireMoveId("Tackle"),
+  thunderbolt: requireMoveId("Thunderbolt"),
 } as const;
 
 export const TEST_MOVE_CATEGORIES = {
@@ -97,32 +124,32 @@ export const TEST_MOVE_CATEGORIES = {
 } as const;
 
 export const TEST_TYPE_IDS = {
-  electric: "electric",
+  electric: CORE_TYPE_IDS.electric,
   fairy: "fairy",
-  fire: "fire",
-  grass: "grass",
-  ground: "ground",
-  ice: "ice",
-  normal: "normal",
-  poison: "poison",
-  water: "water",
+  fire: CORE_TYPE_IDS.fire,
+  grass: CORE_TYPE_IDS.grass,
+  ground: CORE_TYPE_IDS.ground,
+  ice: CORE_TYPE_IDS.ice,
+  normal: CORE_TYPE_IDS.normal,
+  poison: CORE_TYPE_IDS.poison,
+  water: CORE_TYPE_IDS.water,
 } as const;
 
 export const TEST_ABILITY_IDS = {
-  gluttony: "gluttony",
-  klutz: "klutz",
+  gluttony: requireAbilityId("Gluttony"),
+  klutz: requireAbilityId("Klutz"),
   none: TEST_DEFAULTS.ability,
-  sheerForce: "sheer-force",
-  unburden: "unburden",
+  sheerForce: requireAbilityId("Sheer Force"),
+  unburden: requireAbilityId("Unburden"),
 } as const;
 
 export const TEST_STATUS_IDS = {
-  badlyPoisoned: "badly-poisoned",
-  burn: "burn",
-  freeze: "freeze",
-  paralysis: "paralysis",
-  poison: "poison",
-  sleep: "sleep",
+  badlyPoisoned: CORE_STATUS_IDS.badlyPoisoned,
+  burn: CORE_STATUS_IDS.burn,
+  freeze: CORE_STATUS_IDS.freeze,
+  paralysis: CORE_STATUS_IDS.paralysis,
+  poison: CORE_STATUS_IDS.poison,
+  sleep: CORE_STATUS_IDS.sleep,
 } as const;
 
 export const TEST_STAT_IDS = {
@@ -144,17 +171,17 @@ export const TEST_TRIGGER_IDS = {
 } as const;
 
 export const TEST_VOLATILE_IDS = {
-  confusion: "confusion",
-  embargo: "embargo",
-  taunt: "taunt",
-  unburden: "unburden",
+  confusion: CORE_VOLATILE_IDS.confusion,
+  embargo: CORE_VOLATILE_IDS.embargo,
+  taunt: CORE_VOLATILE_IDS.taunt,
+  unburden: CORE_VOLATILE_IDS.unburden,
 } as const;
 
 export const TEST_WEATHER_IDS = {
-  rain: "rain",
-  sandstorm: "sandstorm",
-  snow: "snow",
-  sun: "sun",
+  rain: CORE_WEATHER_IDS.rain,
+  sandstorm: CORE_WEATHER_IDS.sand,
+  snow: CORE_WEATHER_IDS.snow,
+  sun: CORE_WEATHER_IDS.sun,
 } as const;
 
 export const TEST_TARGET_IDS = {
