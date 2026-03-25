@@ -23,7 +23,7 @@ const HELPER_SIGNATURE_PATTERNS: ReadonlyArray<{ kind: string; re: RegExp }> = [
 
 const DATA_BACKED_CONTEXT_RE = /\b(?:getMove|getSpecies|getItem|getAbility|getNature|createGen\d+DataManager|DATA_MANAGER)\b/;
 const EXPLICIT_OVERRIDE_RE = /(?:override|synthetic|custom|derived|scenario)/i;
-const PRIMARY_FIELD_KINDS = new Set(["display name", "species base stats", "species abilities"]);
+const PRIMARY_FIELD_KINDS = new Set(["species base stats", "species abilities"]);
 const SPECIES_PAYLOAD_FIELD_KINDS = new Set(["display name", "species base stats", "species abilities", "species gender ratio"]);
 
 function getWindowFieldKinds(lines: string[]): Set<string> {

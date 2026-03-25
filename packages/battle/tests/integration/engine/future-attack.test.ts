@@ -1,13 +1,9 @@
-import type { MoveData, PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createMockMoveSlot } from "../../helpers/move-slot";
-import {
-  CORE_ABILITY_IDS,
-  CORE_END_OF_TURN_EFFECT_IDS,
-  CORE_MOVE_IDS,
-  CORE_TYPE_IDS,
-} from "@pokemon-lib-ts/core";
+import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { CORE_END_OF_TURN_EFFECT_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import type {
   BattleConfig,
   DamageContext,
@@ -68,149 +64,10 @@ class FutureAttackMockRuleset extends MockRuleset {
 }
 
 /**
- * Creates a DataManager with future-sight move data.
+ * Creates a battle test data manager that includes Future Sight alongside the shared mock records.
  */
 function createFutureAttackDataManager(): DataManager {
-  const dm = new DataManager();
-
-  const tackleMoveData: MoveData = {
-    id: CORE_MOVE_IDS.tackle,
-    displayName: "Tackle",
-    type: CORE_TYPE_IDS.normal,
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "A physical attack.",
-    generation: 1,
-  };
-
-  const futureSightMoveData: MoveData = {
-    id: CORE_MOVE_IDS.futureSight,
-    displayName: "Future Sight",
-    type: CORE_TYPE_IDS.psychic,
-    category: "special",
-    power: 120,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "Two turns after this move is used, a hunk of psychic energy attacks the target.",
-    generation: 2,
-  };
-
-  const charizardSpecies: PokemonSpeciesData = {
-    id: 6,
-    name: "charizard",
-    displayName: "Charizard",
-    types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
-    baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-    abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: CORE_ABILITY_IDS.solarPower },
-    genderRatio: 87.5,
-    catchRate: 45,
-    baseExp: 240,
-    expGroup: "medium-slow",
-    evYield: { spAttack: 3 },
-    eggGroups: ["monster", CORE_TYPE_IDS.dragon],
-    learnset: { levelUp: [{ level: 1, move: CORE_MOVE_IDS.tackle }], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1.7, weight: 90.5 },
-    spriteKey: "charizard",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  };
-
-  const blastoiseSpecies: PokemonSpeciesData = {
-    ...charizardSpecies,
-    id: 9,
-    name: "blastoise",
-    displayName: "Blastoise",
-    types: [CORE_TYPE_IDS.water],
-    baseStats: { hp: 79, attack: 83, defense: 100, spAttack: 85, spDefense: 105, speed: 78 },
-    abilities: { normal: [CORE_ABILITY_IDS.torrent], hidden: CORE_ABILITY_IDS.rainDish },
-    spriteKey: "blastoise",
-  };
-
-  const typeChart: Record<string, Record<string, number>> = {};
-  const allTypes = [
-    CORE_TYPE_IDS.normal,
-    CORE_TYPE_IDS.fire,
-    CORE_TYPE_IDS.water,
-    CORE_TYPE_IDS.electric,
-    CORE_TYPE_IDS.grass,
-    CORE_TYPE_IDS.ice,
-    CORE_TYPE_IDS.fighting,
-    CORE_TYPE_IDS.poison,
-    CORE_TYPE_IDS.ground,
-    CORE_TYPE_IDS.flying,
-    CORE_TYPE_IDS.psychic,
-    CORE_TYPE_IDS.bug,
-    CORE_TYPE_IDS.rock,
-    CORE_TYPE_IDS.ghost,
-    CORE_TYPE_IDS.dragon,
-    CORE_TYPE_IDS.dark,
-    CORE_TYPE_IDS.steel,
-    CORE_TYPE_IDS.fairy,
-  ];
-  for (const atk of allTypes) {
-    const row: Record<string, number> = {};
-    typeChart[atk] = row;
-    for (const def of allTypes) {
-      row[def] = 1;
-    }
-  }
-
-  dm.loadFromObjects({
-    pokemon: [charizardSpecies, blastoiseSpecies],
-    moves: [tackleMoveData, futureSightMoveData],
-    typeChart: typeChart as unknown as import("@pokemon-lib-ts/core").TypeChart,
-  });
-
-  return dm;
+  return createMockDataManager();
 }
 
 function createFutureAttackEngine() {
@@ -268,6 +125,8 @@ function createFutureAttackEngine() {
 
   return { engine, ruleset, events };
 }
+
+const SYNTHETIC_MISSING_FUTURE_MOVE_ID = "missing-future-move";
 
 describe("Future Sight end-of-turn processing", () => {
   it("given a pending future attack with turnsLeft=2, when end of turn runs, then the counter decrements to 1 and no damage is dealt", () => {
@@ -541,7 +400,7 @@ describe("Future attack integrity warnings", () => {
         switchOut: false,
         messages: [],
         futureAttack: {
-          moveId: "missing-future-move",
+          moveId: SYNTHETIC_MISSING_FUTURE_MOVE_ID,
           turnsLeft: 2,
           sourceSide: 0,
         },
@@ -557,7 +416,7 @@ describe("Future attack integrity warnings", () => {
         (event) =>
           event.type === "engine-warning" &&
           event.message.includes(
-            'Future attack move "missing-future-move" data missing while scheduling.',
+            `Future attack move "${SYNTHETIC_MISSING_FUTURE_MOVE_ID}" data missing while scheduling.`,
           ),
       ),
     ).toBe(true);
@@ -572,7 +431,7 @@ describe("Future attack integrity warnings", () => {
     engine.start();
 
     engine.state.sides[1].futureAttack = {
-      moveId: "missing-future-move",
+      moveId: SYNTHETIC_MISSING_FUTURE_MOVE_ID,
       turnsLeft: 1,
       damage: 33,
       sourceSide: 0,
@@ -586,14 +445,16 @@ describe("Future attack integrity warnings", () => {
         (event) =>
           event.type === "engine-warning" &&
           event.message.includes(
-            'Future attack move "missing-future-move" data missing while resolving.',
+            `Future attack move "${SYNTHETIC_MISSING_FUTURE_MOVE_ID}" data missing while resolving.`,
           ),
       ),
     ).toBe(true);
 
     const futureSightDamage = events.filter(
       (event) =>
-        event.type === "damage" && "source" in event && event.source === "missing-future-move",
+        event.type === "damage" &&
+        "source" in event &&
+        event.source === SYNTHETIC_MISSING_FUTURE_MOVE_ID,
     );
     expect(futureSightDamage).toHaveLength(1);
     const damageEvent = futureSightDamage[0]!;

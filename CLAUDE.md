@@ -149,6 +149,8 @@ These rules govern **how** tests are written. The Testing Philosophy section abo
 - **Data-backed Fixture Defaults** — do not hardcode fixture defaults like PP, max PP, base power, accuracy, priority, species ids, or similar setup values when the owned move/species/item data already exposes them. Read them from the canonical data surface and make this retrofit retroactive for earlier test files too.
 - **Named Synthetic Scenario Inputs** — when a test needs a deliberately synthetic branch-driving value that does not come from owned data, do not leave it as an unexplained literal. Promote it to a named constant and document why that specific synthetic value is required.
 - **No Duplicated Canonical Payloads** — replacing raw ids with imported constants is not enough if the test still hand-builds a canonical species, move, item, hazard, weather, or end-of-turn payload that already exists elsewhere. Load or import the owned payload instead of rebuilding it locally.
+- **Data-Backed Helpers By Default** — the same rule applies to test helpers, mock data managers, and fixture factories. Helpers like `makeMove`, `createMove`, `makeActive`, `createSpecies`, inline move-slot builders, and mock data-manager loaders must start from owned canonical data by default and apply only narrow, explicitly named synthetic overrides when owned data cannot represent the scenario directly.
+- **No Ambiguous Canonical-vs-Synthetic Helpers** — if a helper can mean either “real canonical record” or “synthetic variant” depending on the call shape, that helper is a regression source and must be split or renamed so the distinction is explicit at both the API and the call site.
 
 ## Source Authority
 

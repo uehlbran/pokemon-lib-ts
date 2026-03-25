@@ -353,6 +353,40 @@ export function createMockDataManager(): DataManager {
     generation: 2,
   };
 
+  const futureSightMoveData: MoveData = {
+    id: "future-sight",
+    displayName: "Future Sight",
+    type: "psychic",
+    category: "special",
+    power: 120,
+    accuracy: 100,
+    pp: 10,
+    priority: 0,
+    target: "adjacent-foe",
+    flags: {
+      contact: false,
+      sound: false,
+      bullet: false,
+      pulse: false,
+      punch: false,
+      bite: false,
+      wind: false,
+      slicing: false,
+      powder: false,
+      protect: false,
+      mirror: false,
+      snatch: false,
+      gravity: false,
+      defrost: false,
+      recharge: false,
+      charge: false,
+      bypassSubstitute: false,
+    },
+    effect: null,
+    description: "Two turns after this move is used, a hunk of psychic energy attacks the target.",
+    generation: 2,
+  };
+
   // Self-targeting status move for Pressure PP cost tests
   // Source: Bulbapedia — "Swords Dance sharply raises the user's Attack stat"
   const swordsDanceMoveData: MoveData = {
@@ -507,6 +541,7 @@ export function createMockDataManager(): DataManager {
       quickAttackMoveData,
       flyMoveData,
       flameWheelMoveData,
+      futureSightMoveData,
       swordsDanceMoveData,
       stealthRockMoveData,
       gravityMoveData,

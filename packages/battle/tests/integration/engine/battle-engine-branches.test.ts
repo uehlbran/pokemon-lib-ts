@@ -10,7 +10,6 @@ import {
 } from "@pokemon-lib-ts/core";
 import { GEN1_MOVE_IDS } from "@pokemon-lib-ts/gen1";
 import { GEN3_MOVE_IDS } from "@pokemon-lib-ts/gen3";
-import { GEN4_MOVE_IDS } from "@pokemon-lib-ts/gen4";
 import { describe, expect, it } from "vitest";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -18,6 +17,7 @@ import type { BattleEvent } from "../../../src/events";
 import type { VolatileStatusState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 function createEngine(overrides?: {
@@ -39,7 +39,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -56,7 +56,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -81,6 +81,19 @@ function createEngine(overrides?: {
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events, dataManager };
+}
+
+const SYNTHETIC_MISSING_MOVE_ID = "nonexistent-move";
+
+function createSyntheticMissingMoveSlot(
+  overrides: Partial<{ currentPP: number; maxPP: number; ppUps: number }> = {},
+) {
+  return {
+    moveId: SYNTHETIC_MISSING_MOVE_ID,
+    currentPP: overrides.currentPP ?? 10,
+    maxPP: overrides.maxPP ?? 15,
+    ppUps: overrides.ppUps ?? 0,
+  };
 }
 
 describe("BattleEngine — branch coverage", () => {
@@ -145,7 +158,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
@@ -175,7 +188,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(9, 50, {
           uid: "slow-mon",
           nickname: "SlowMon",
-          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
@@ -183,7 +196,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(6, 50, {
           uid: "fast-mon",
           nickname: "FastMon",
-          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
@@ -233,7 +246,7 @@ describe("BattleEngine — branch coverage", () => {
       // Set protect on Blastoise
       const blastoise = engine.state.sides[1].active[0];
       const startingHp = blastoise?.pokemon.currentHp;
-      blastoise?.volatileStatuses.set(GEN4_MOVE_IDS.protect, { turnsLeft: 1 });
+      blastoise?.volatileStatuses.set(CORE_VOLATILE_IDS.protect, { turnsLeft: 1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -333,7 +346,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           heldItem: CORE_ITEM_IDS.choiceBand,
           currentHp: 200,
         }),
@@ -378,8 +391,8 @@ describe("BattleEngine — branch coverage", () => {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
-            { moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
-            { moveId: GEN1_MOVE_IDS.scratch, currentPP: 35, maxPP: 35, ppUps: 0 },
+            createMockMoveSlot(CORE_MOVE_IDS.tackle),
+            createMockMoveSlot(GEN1_MOVE_IDS.scratch),
           ],
           calculatedStats: {
             hp: 200,
@@ -421,7 +434,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "nonexistent-move", currentPP: 10, maxPP: 15, ppUps: 0 }],
+          moves: [createSyntheticMissingMoveSlot()],
           currentHp: 200,
         }),
       ];
@@ -436,7 +449,7 @@ describe("BattleEngine — branch coverage", () => {
       expect(moves).toHaveLength(0);
       expect(events).toContainEqual({
         type: "engine-warning",
-        message: 'Move "nonexistent-move" not found in data for Pokémon "6". Slot skipped.',
+        message: `Move "${SYNTHETIC_MISSING_MOVE_ID}" not found in data for Pokémon "6". Slot skipped.`,
       });
     });
 
@@ -447,8 +460,8 @@ describe("BattleEngine — branch coverage", () => {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
-            { moveId: "nonexistent-move", currentPP: 10, maxPP: 15, ppUps: 0 },
-            { moveId: GEN1_MOVE_IDS.scratch, currentPP: 20, maxPP: 20, ppUps: 0 },
+            createSyntheticMissingMoveSlot(),
+            createMockMoveSlot(GEN1_MOVE_IDS.scratch, { currentPP: 20, maxPP: 20 }),
           ],
           currentHp: 200,
         }),
@@ -459,7 +472,7 @@ describe("BattleEngine — branch coverage", () => {
 
       const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
-      active!.forcedMove = { moveIndex: 0, moveId: "nonexistent-move" };
+      active!.forcedMove = { moveIndex: 0, moveId: SYNTHETIC_MISSING_MOVE_ID };
 
       // Act
       const moves = engine.getAvailableMoves(0);
@@ -476,7 +489,7 @@ describe("BattleEngine — branch coverage", () => {
       );
       expect(events).toContainEqual({
         type: "engine-warning",
-        message: 'Move "nonexistent-move" not found in data for Pokémon "6". Slot skipped.',
+        message: `Move "${SYNTHETIC_MISSING_MOVE_ID}" not found in data for Pokémon "6". Slot skipped.`,
       });
     });
   });
@@ -489,7 +502,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "nonexistent-move", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createSyntheticMissingMoveSlot({ currentPP: 35, maxPP: 35 })],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -700,7 +713,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-defrost",
           nickname: "Charizard",
-          moves: [{ moveId: GEN3_MOVE_IDS.flameWheel, currentPP: 25, maxPP: 25, ppUps: 0 }],
+          moves: [createMockMoveSlot(GEN3_MOVE_IDS.flameWheel)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -842,7 +855,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -953,7 +966,7 @@ describe("BattleEngine — branch coverage", () => {
           createTestPokemon(6, 50, {
             uid: "mon-a",
             nickname: "MonA",
-            moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             currentHp: 200,
           }),
         ];
@@ -961,7 +974,7 @@ describe("BattleEngine — branch coverage", () => {
           createTestPokemon(9, 50, {
             uid: "mon-b",
             nickname: "MonB",
-            moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             currentHp: 200,
           }),
         ];
