@@ -1,10 +1,12 @@
+import { CORE_ABILITY_SLOTS, CORE_GENDERS, CORE_ITEM_IDS } from "../constants";
 import type { Gender } from "../entities/gender";
 import type { MoveSlot } from "../entities/move";
 import type { NatureId } from "../entities/nature";
-import type { PokemonCreationOptions, PokemonInstance } from "../entities/pokemon";
+import type { AbilitySlot, PokemonCreationOptions, PokemonInstance } from "../entities/pokemon";
 import type { Learnset, PokemonSpeciesData } from "../entities/species";
 import type { MutableStatBlock, StatBlock } from "../entities/stats";
 import type { SeededRandom } from "../prng/seeded-random";
+import { createFriendship } from "./friendship-inputs";
 
 /** All 25 nature IDs */
 const ALL_NATURES: readonly NatureId[] = [
@@ -49,12 +51,12 @@ function generateUid(rng: SeededRandom): string {
  */
 function getAbilityForSlot(
   species: PokemonSpeciesData,
-  slot: "normal1" | "normal2" | "hidden",
+  slot: AbilitySlot,
 ): string {
-  if (slot === "hidden" && species.abilities.hidden) {
+  if (slot === CORE_ABILITY_SLOTS.hidden && species.abilities.hidden) {
     return species.abilities.hidden;
   }
-  if (slot === "normal2" && species.abilities.normal.length > 1) {
+  if (slot === CORE_ABILITY_SLOTS.normal2 && species.abilities.normal.length > 1) {
     return species.abilities.normal[1] as string;
   }
   return species.abilities.normal[0] as string;
@@ -65,10 +67,10 @@ function getAbilityForSlot(
  * @param genderRatio - % male. -1 = genderless.
  */
 export function determineGender(genderRatio: number, rng: SeededRandom): Gender {
-  if (genderRatio === -1) return "genderless";
-  if (genderRatio === 0) return "female";
-  if (genderRatio === 100) return "male";
-  return rng.int(1, 100) <= genderRatio ? "male" : "female";
+  if (genderRatio === -1) return CORE_GENDERS.genderless;
+  if (genderRatio === 0) return CORE_GENDERS.female;
+  if (genderRatio === 100) return CORE_GENDERS.male;
+  return rng.int(1, 100) <= genderRatio ? CORE_GENDERS.male : CORE_GENDERS.female;
 }
 
 /**
@@ -138,7 +140,9 @@ export function createPokemonInstance(
   // Pick ability
   const abilitySlot =
     options?.abilitySlot ??
-    (species.abilities.normal.length > 1 ? (rng.chance(0.5) ? "normal1" : "normal2") : "normal1");
+    (species.abilities.normal.length > 1
+      ? (rng.chance(0.5) ? CORE_ABILITY_SLOTS.normal1 : CORE_ABILITY_SLOTS.normal2)
+      : CORE_ABILITY_SLOTS.normal1);
   const ability = getAbilityForSlot(species, abilitySlot);
 
   // Determine shininess
@@ -171,14 +175,14 @@ export function createPokemonInstance(
     abilitySlot,
     heldItem: options?.heldItem ?? null,
     status: null,
-    friendship: options?.friendship ?? species.baseFriendship,
+    friendship: createFriendship(options?.friendship ?? species.baseFriendship),
     gender,
     isShiny,
     metLocation: options?.metLocation ?? "unknown",
     metLevel: level,
     originalTrainer: options?.originalTrainer ?? "Player",
     originalTrainerId: options?.originalTrainerId ?? 0,
-    pokeball: options?.pokeball ?? "poke-ball",
+    pokeball: options?.pokeball ?? CORE_ITEM_IDS.pokeBall,
     teraType: options?.teraType ?? species.types[0],
     dynamaxLevel: options?.dynamaxLevel ?? 0,
   };

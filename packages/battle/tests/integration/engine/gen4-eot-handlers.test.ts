@@ -13,6 +13,7 @@
  */
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN4_SPECIES_IDS } from "@pokemon-lib-ts/gen4";
 import { createMockMoveSlot } from "../../helpers/move-slot";
 import {
   CORE_ABILITY_IDS,
@@ -40,6 +41,53 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const gen4EndOfTurnEffectIds = {
+  // Stopgap: these Gen 4 room countdown ids are used by the engine but are not yet exported
+  // from the shared core end-of-turn reference surface.
+  magicRoomCountdown: "magic-room-countdown",
+  wonderRoomCountdown: "wonder-room-countdown",
+} as const;
+
+const defaultAttackerStats = {
+  hp: 160,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 80,
+} as const;
+
+const defaultDefenderStats = {
+  hp: 160,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 120,
+} as const;
+
+function createDefaultAttacker(overrides?: Partial<PokemonInstance>): PokemonInstance {
+  return createTestPokemon(GEN4_SPECIES_IDS.charizard, 50, {
+    uid: "charizard-1",
+    nickname: "Charizard",
+    moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+    calculatedStats: defaultAttackerStats,
+    currentHp: defaultAttackerStats.hp,
+    ...overrides,
+  });
+}
+
+function createDefaultDefender(overrides?: Partial<PokemonInstance>): PokemonInstance {
+  return createTestPokemon(GEN4_SPECIES_IDS.blastoise, 50, {
+    uid: "blastoise-1",
+    nickname: "Blastoise",
+    moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+    calculatedStats: defaultDefenderStats,
+    currentHp: defaultDefenderStats.hp,
+    ...overrides,
+  });
+}
+
 function createEngine(opts?: {
   team1?: PokemonInstance[];
   team2?: PokemonInstance[];
@@ -51,37 +99,11 @@ function createEngine(opts?: {
   const events: BattleEvent[] = [];
 
   const team1 = opts?.team1 ?? [
-    createTestPokemon(6, 50, {
-      uid: "charizard-1",
-      nickname: "Charizard",
-      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
-      calculatedStats: {
-        hp: 160,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 80,
-      },
-      currentHp: 160,
-    }),
+    createDefaultAttacker(),
   ];
 
   const team2 = opts?.team2 ?? [
-    createTestPokemon(9, 50, {
-      uid: "blastoise-1",
-      nickname: "Blastoise",
-      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
-      calculatedStats: {
-        hp: 160,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 120,
-      },
-      currentHp: 160,
-    }),
+    createDefaultDefender(),
   ];
 
   const config: BattleConfig = {
@@ -273,7 +295,7 @@ describe("weather-healing EoT slot", () => {
   it("given a Pokemon with Rain Dish that returns heal effect, when weather-healing EoT runs, then HP increases and heal event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Rain Dish heals 1/16 max HP per turn in rain
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["weather-healing"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.weatherHealing];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "heal", target: "self", value: 10 }],
@@ -433,30 +455,14 @@ describe("toxic-orb-activation EoT slot", () => {
   it("given a Pokemon holding Toxic Orb, when toxic-orb-activation EoT runs, then applyHeldItem is called and status-inflict event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Toxic Orb badly poisons the holder at end of turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation];
     ruleset.setHeldItemResult({
       activated: true,
       effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.badlyPoisoned }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
-        heldItem: CORE_ITEM_IDS.toxicOrb,
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.toxicOrb })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -485,30 +491,14 @@ describe("flame-orb-activation EoT slot", () => {
   it("given a Pokemon holding Flame Orb, when flame-orb-activation EoT runs, then applyHeldItem is called and burn status is inflicted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Flame Orb burns the holder at end of turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["flame-orb-activation"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation];
     ruleset.setHeldItemResult({
       activated: true,
       effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.burn }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
-        heldItem: CORE_ITEM_IDS.flameOrb,
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.flameOrb })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -701,7 +691,7 @@ describe("processAbilityResult — heal effect type", () => {
   it("given an ability result with heal effect targeting self, when processed, then Pokemon HP increases and heal event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Rain Dish / Ice Body produce heal ability effects
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["weather-healing"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.weatherHealing];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "heal", target: "self", value: 20 }],
@@ -754,30 +744,14 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
   it("given an item result with inflict-status effect, when processed, then Pokemon status is set and status-inflict event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Toxic Orb / Flame Orb inflict status via item effects
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation];
     ruleset.setHeldItemResult({
       activated: true,
       effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.poison }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
-        heldItem: CORE_ITEM_IDS.toxicOrb,
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.toxicOrb })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -800,23 +774,7 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
-        heldItem: CORE_ITEM_IDS.blackSludge,
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.blackSludge })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -841,7 +799,7 @@ describe("slow-start-countdown EoT slot", () => {
     const ruleset = new Gen4MockRuleset();
     // Only run slow-start-countdown in EoT (no damage, no weather, etc.)
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -881,7 +839,7 @@ describe("slow-start-countdown EoT slot", () => {
     // Triangulation: verify the countdown decrements by exactly 1 per turn, not all at once
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -912,7 +870,7 @@ describe("slow-start-countdown EoT slot", () => {
     // This tests the fix that removed the ability check from the slow-start-countdown handler
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -943,22 +901,22 @@ describe("slow-start-countdown EoT slot", () => {
 describe("simple volatile countdown EoT slots", () => {
   const removalCases = [
     {
-      effect: "taunt-countdown",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
       volatile: CORE_VOLATILE_IDS.taunt,
       source: 'Bulbapedia — "Taunt lasts for 3 turns in Gen 4"',
     },
     {
-      effect: "heal-block-countdown",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
       volatile: CORE_VOLATILE_IDS.healBlock,
       source: "Bulbapedia / Showdown Gen 4 mod — Heal Block lasts 5 turns",
     },
     {
-      effect: "embargo-countdown",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
       volatile: CORE_VOLATILE_IDS.embargo,
       source: "Bulbapedia / Showdown Gen 4 mod — Embargo lasts 5 turns",
     },
     {
-      effect: "magnet-rise-countdown",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
       volatile: CORE_VOLATILE_IDS.magnetRise,
       source: "Bulbapedia / Showdown Gen 4 mod — Magnet Rise lasts 5 turns",
     },
@@ -997,7 +955,7 @@ describe("simple volatile countdown EoT slots", () => {
     // should decrement by exactly 1 without ending the volatile early.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["disable-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.disableCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1025,7 +983,7 @@ describe("yawn-countdown EoT slot", () => {
     // so the first countdown tick should only decrement the drowsy volatile.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1051,7 +1009,7 @@ describe("yawn-countdown EoT slot", () => {
     // the end of the next turn, so turnsLeft=1 should resolve to sleep on this tick.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1077,7 +1035,7 @@ describe("yawn-countdown EoT slot", () => {
     // target is currently status-free; Yawn still ends even when sleep cannot be applied.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1108,7 +1066,7 @@ describe("room countdown EoT slots", () => {
     // ends once the final countdown tick reaches 0.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["magic-room-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [gen4EndOfTurnEffectIds.magicRoomCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1134,7 +1092,7 @@ describe("room countdown EoT slots", () => {
     // ends once the final countdown tick reaches 0.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["wonder-room-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [gen4EndOfTurnEffectIds.wonderRoomCountdown];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1212,7 +1170,7 @@ describe("Gen 5+ EoT handler stubs", () => {
     // Source: Showdown sim/field.ts — Grassy Terrain heal only applies when terrain is active
     // With no terrain set, the grassy-terrain-heal handler should be a no-op.
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["grassy-terrain-heal"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();

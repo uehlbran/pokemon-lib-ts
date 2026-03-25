@@ -1,13 +1,21 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   SeededRandom,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -42,61 +50,34 @@ import {
 // ---------------------------------------------------------------------------
 
 const gen8Data = createGen8DataManager();
-
-const TEST_IDS = {
-  abilities: {
-    none: CORE_ABILITY_IDS.none,
-    aerilate: GEN8_ABILITY_IDS.aerilate,
-    dragonsMaw: ["dragons", "maw"].join("-"),
-    furCoat: GEN8_ABILITY_IDS.furCoat,
-    galvanize: GEN8_ABILITY_IDS.galvanize,
-    gorillaTactics: GEN8_ABILITY_IDS.gorillaTactics,
-    iceScales: GEN8_ABILITY_IDS.iceScales,
-    intimidate: CORE_ABILITY_IDS.intimidate,
-    ironFist: GEN8_ABILITY_IDS.ironFist,
-    megaLauncher: GEN8_ABILITY_IDS.megaLauncher,
-    multiscale: GEN8_ABILITY_IDS.multiscale,
-    parentalBond: GEN8_ABILITY_IDS.parentalBond,
-    pixilate: GEN8_ABILITY_IDS.pixilate,
-    punkRock: GEN8_ABILITY_IDS.punkRock,
-    refrigerate: GEN8_ABILITY_IDS.refrigerate,
-    sheerForce: GEN8_ABILITY_IDS.sheerForce,
-    shadowShield: GEN8_ABILITY_IDS.shadowShield,
-    steelworker: GEN8_ABILITY_IDS.steelworker,
-    strongJaw: GEN8_ABILITY_IDS.strongJaw,
-    sturdy: CORE_ABILITY_IDS.sturdy,
-    thickFat: GEN8_ABILITY_IDS.thickFat,
-    toughClaws: GEN8_ABILITY_IDS.toughClaws,
-    transistor: GEN8_ABILITY_IDS.transistor,
-  },
-  items: {
-    pokeBall: GEN8_ITEM_IDS.pokeBall,
-  },
-  moves: {
-    tackle: CORE_MOVE_IDS.tackle,
-    thunderbolt: GEN8_MOVE_IDS.thunderbolt,
-    dragonPulse: GEN8_MOVE_IDS.dragonPulse,
-    flamethrower: GEN8_MOVE_IDS.flamethrower,
-    ironHead: GEN8_MOVE_IDS.ironHead,
-  },
-  natures: {
-    hardy: GEN8_NATURE_IDS.hardy,
-  },
-  species: {
-    pikachu: GEN8_SPECIES_IDS.pikachu,
-  },
-  statuses: {
-    burn: CORE_STATUS_IDS.burn,
-    paralysis: CORE_STATUS_IDS.paralysis,
-  },
-  volatiles: {
-    flinch: CORE_VOLATILE_IDS.flinch,
-  },
-  types: CORE_TYPE_IDS,
-  weather: CORE_WEATHER_IDS,
+const itemIds = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const moveIds = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
+const natureIds = GEN8_NATURE_IDS;
+const speciesIds = GEN8_SPECIES_IDS;
+const dragonsMawAbilityId = gen8Data.getSpecies(speciesIds.regidrago).abilities.normal[0];
+const abilityIds = {
+  ...CORE_ABILITY_IDS,
+  ...GEN8_ABILITY_IDS,
+  dragonsMaw: dragonsMawAbilityId,
+} as const;
+const statusIds = CORE_STATUS_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const weatherIds = CORE_WEATHER_IDS;
+const defaultSpecies = gen8Data.getSpecies(speciesIds.eevee);
+const defaultNature = gen8Data.getNature(natureIds.hardy).id;
+const regidragoAbilityId = gen8Data.getSpecies(speciesIds.regidrago).abilities.normal[0]!;
+const defaultCalculatedStats = {
+  hp: 200,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
 } as const;
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -106,115 +87,95 @@ function makeActive(overrides: {
   hp?: number;
   currentHp?: number;
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: string | null;
-  speciesId?: number;
+  ability?: (typeof abilityIds)[keyof typeof abilityIds];
+  heldItem?: (typeof itemIds)[keyof typeof itemIds] | null;
+  status?: (typeof statusIds)[keyof typeof statusIds] | null;
+  speciesId?: (typeof speciesIds)[keyof typeof speciesIds];
   nickname?: string | null;
   movedThisTurn?: boolean;
 }): ActivePokemon {
-  const hp = overrides.hp ?? 200;
-  const attack = overrides.attack ?? 100;
-  const defense = overrides.defense ?? 100;
-  const spAttack = overrides.spAttack ?? 100;
-  const spDefense = overrides.spDefense ?? 100;
-  const speed = overrides.speed ?? 100;
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? TEST_IDS.species.pikachu,
-      nickname: overrides.nickname ?? null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: TEST_IDS.natures.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? TEST_IDS.abilities.none,
-      abilitySlot: "normal1" as const,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: "male" as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: TEST_IDS.items.pokeBall,
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? [TEST_IDS.types.normal],
-    ability: overrides.ability ?? TEST_IDS.abilities.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: overrides.movedThisTurn ?? false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-  } as ActivePokemon;
+  const level = overrides.level ?? 50;
+  const maxHp = overrides.hp ?? defaultCalculatedStats.hp;
+  const species = gen8Data.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, level, new SeededRandom(7), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    isShiny: false,
+    moves: [],
+    heldItem: overrides.heldItem ?? null,
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+  });
+
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: overrides.attack ?? defaultCalculatedStats.attack,
+    defense: overrides.defense ?? defaultCalculatedStats.defense,
+    spAttack: overrides.spAttack ?? defaultCalculatedStats.spAttack,
+    spDefense: overrides.spDefense ?? defaultCalculatedStats.spDefense,
+    speed: overrides.speed ?? defaultCalculatedStats.speed,
+  };
+
+  const active = createBattleOnFieldPokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...(species.types as PokemonType[])],
+  );
+  active.ability = overrides.ability ?? abilityIds.none;
+  active.movedThisTurn = overrides.movedThisTurn ?? false;
+  return active;
 }
 
-function makeMove(overrides: {
-  id?: string;
+function createCanonicalMove(moveId: string): MoveData {
+  return gen8Data.getMove(moveId);
+}
+
+function createSyntheticMoveFrom(
+  baseMove: MoveData,
+  overrides: {
   type?: PokemonType;
-  category?: "physical" | "special" | "status";
+  category?: MoveData["category"];
   power?: number | null;
   flags?: Partial<MoveData["flags"]>;
   effect?: MoveData["effect"];
   hasCrashDamage?: boolean;
-}): MoveData {
-  const id = overrides.id ?? TEST_IDS.moves.tackle;
-  const move = gen8Data.getMove(id);
+  id?: string;
+} = {},
+): MoveData {
   return {
-    id,
-    displayName: move.displayName,
-    type: overrides.type ?? move.type,
-    category: overrides.category ?? move.category,
-    power: overrides.power ?? move.power,
-    accuracy: move.accuracy,
-    pp: move.pp,
-    priority: move.priority,
-    target: move.target,
+    ...baseMove,
+    id: overrides.id ?? baseMove.id,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
     flags: {
-      ...move.flags,
+      ...baseMove.flags,
       ...overrides.flags,
     },
-    effect: overrides.effect ?? move.effect,
-    description: move.description,
-    generation: move.generation,
-    critRatio: move.critRatio ?? 0,
-    hasCrashDamage: overrides.hasCrashDamage ?? move.hasCrashDamage ?? false,
+    effect: overrides.effect ?? baseMove.effect,
+    hasCrashDamage: overrides.hasCrashDamage ?? baseMove.hasCrashDamage ?? false,
   } as MoveData;
 }
 
-function makeState(overrides?: {
-  weather?: { type: string; turnsLeft: number; source: string } | null;
+function createBattleState(overrides?: {
+  weather?:
+    | {
+        type: (typeof weatherIds)[keyof typeof weatherIds];
+        turnsLeft: number;
+        source: (typeof abilityIds)[keyof typeof abilityIds];
+      }
+    | null;
 }): BattleState {
   return {
     weather: overrides?.weather ?? null,
@@ -230,30 +191,32 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeCtx(overrides: {
-  ability: string;
+function createAbilityContext(overrides: {
+  ability: (typeof abilityIds)[keyof typeof abilityIds];
   move?: MoveData;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
+  status?: (typeof statusIds)[keyof typeof statusIds] | null;
   types?: PokemonType[];
   nickname?: string | null;
   opponent?: ActivePokemon;
-  weather?: string | null;
+  weather?: (typeof weatherIds)[keyof typeof weatherIds] | null;
 }): AbilityContext {
   const hp = overrides.maxHp ?? 200;
   return {
-    pokemon: makeActive({
+    pokemon: createOnFieldPokemon({
       ability: overrides.ability,
       currentHp: overrides.currentHp ?? hp,
       hp: hp,
       status: overrides.status ?? null,
-      types: overrides.types ?? [TEST_IDS.types.normal],
+      types: overrides.types,
       nickname: overrides.nickname ?? null,
     }),
-    opponent: overrides.opponent ?? makeActive({}),
-    state: makeState(
-      overrides.weather ? { weather: { type: overrides.weather, turnsLeft: 5, source: "" } } : {},
+    opponent: overrides.opponent ?? createOnFieldPokemon({}),
+    state: createBattleState(
+      overrides.weather
+        ? { weather: { type: overrides.weather, turnsLeft: 5, source: abilityIds.none } }
+        : {},
     ),
     rng: new SeededRandom(42),
     trigger: "on-damage-calc",
@@ -274,16 +237,16 @@ describe("Gen 8 Damage Abilities", () => {
       // CORE_FIXED_POINT.boost13 / CORE_FIXED_POINT.identity = 1.2998046875
       const effect: MoveEffect = {
         type: "status-chance",
-        status: TEST_IDS.statuses.burn,
+        status: statusIds.burn,
         chance: 10,
       };
-      const mult = getSheerForceMultiplier(TEST_IDS.abilities.sheerForce, effect);
+      const mult = getSheerForceMultiplier(abilityIds.sheerForce, effect);
       expect(mult).toBe(CORE_FIXED_POINT.boost13 / CORE_FIXED_POINT.identity);
     });
 
     it("given a move without secondary effects, when Sheer Force is active, then returns 1.0x", () => {
       // Source: Showdown data/abilities.ts -- sheerforce: only boosts moves with secondaries
-      const mult = getSheerForceMultiplier(TEST_IDS.abilities.sheerForce, null);
+      const mult = getSheerForceMultiplier(abilityIds.sheerForce, null);
       expect(mult).toBe(1);
     });
 
@@ -291,27 +254,27 @@ describe("Gen 8 Damage Abilities", () => {
       // Source: Showdown scripts.ts -- if move.hasSheerForce, skip Life Orb recoil
       const effect: MoveEffect = {
         type: "status-chance",
-        status: TEST_IDS.statuses.paralysis,
+        status: statusIds.paralysis,
         chance: 30,
       };
-      expect(sheerForceSuppressesLifeOrb(TEST_IDS.abilities.sheerForce, effect)).toBe(true);
+      expect(sheerForceSuppressesLifeOrb(abilityIds.sheerForce, effect)).toBe(true);
     });
 
     it("given non-Sheer-Force ability, when checking Life Orb suppression, then returns false", () => {
       const effect: MoveEffect = {
         type: "status-chance",
-        status: TEST_IDS.statuses.burn,
+        status: statusIds.burn,
         chance: 10,
       };
-      expect(sheerForceSuppressesLifeOrb(TEST_IDS.abilities.ironFist, effect)).toBe(false);
+      expect(sheerForceSuppressesLifeOrb(abilityIds.ironFist, effect)).toBe(false);
     });
 
     it("given the dispatcher, when Sheer Force user uses eligible move, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- sheerforce
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.sheerForce,
-        move: makeMove({
-          effect: { type: "status-chance", status: TEST_IDS.statuses.burn, chance: 10 },
+      const ctx = createAbilityContext({
+        ability: abilityIds.sheerForce,
+        move: createSyntheticMoveFrom(createCanonicalMove(moveIds.tackle), {
+          effect: { type: "status-chance", status: statusIds.burn, chance: 10 },
         }),
       });
       const result = handleGen8DamageCalcAbility(ctx);
@@ -319,9 +282,9 @@ describe("Gen 8 Damage Abilities", () => {
     });
 
     it("given the dispatcher, when Sheer Force user uses non-eligible move, then returns activated:false", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.sheerForce,
-        move: makeMove({ effect: null }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.sheerForce,
+        move: createCanonicalMove(moveIds.tackle),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -333,17 +296,17 @@ describe("Gen 8 Damage Abilities", () => {
   describe("Tough Claws", () => {
     it("given a contact move, when Tough Claws is active, then returns 5325/4096 (~1.3x)", () => {
       // Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, 4096])
-      const mult = getToughClawsMultiplier(TEST_IDS.abilities.toughClaws, true);
+      const mult = getToughClawsMultiplier(abilityIds.toughClaws, true);
       expect(mult).toBe(CORE_FIXED_POINT.boost13 / CORE_FIXED_POINT.identity);
     });
 
     it("given a non-contact move, when Tough Claws is active, then returns 1.0x", () => {
-      const mult = getToughClawsMultiplier(TEST_IDS.abilities.toughClaws, false);
+      const mult = getToughClawsMultiplier(abilityIds.toughClaws, false);
       expect(mult).toBe(1);
     });
 
     it("given a different ability, when checking Tough Claws for contact move, then returns 1.0x", () => {
-      const mult = getToughClawsMultiplier(TEST_IDS.abilities.ironFist, true);
+      const mult = getToughClawsMultiplier(abilityIds.ironFist, true);
       expect(mult).toBe(1);
     });
   });
@@ -353,12 +316,12 @@ describe("Gen 8 Damage Abilities", () => {
   describe("Strong Jaw", () => {
     it("given a bite move, when Strong Jaw is active, then returns 1.5x", () => {
       // Source: Showdown data/abilities.ts -- strongjaw: chainModify(1.5)
-      const mult = getStrongJawMultiplier(TEST_IDS.abilities.strongJaw, true);
+      const mult = getStrongJawMultiplier(abilityIds.strongJaw, true);
       expect(mult).toBe(1.5);
     });
 
     it("given a non-bite move, when Strong Jaw is active, then returns 1.0x", () => {
-      const mult = getStrongJawMultiplier(TEST_IDS.abilities.strongJaw, false);
+      const mult = getStrongJawMultiplier(abilityIds.strongJaw, false);
       expect(mult).toBe(1);
     });
   });
@@ -368,12 +331,12 @@ describe("Gen 8 Damage Abilities", () => {
   describe("Mega Launcher", () => {
     it("given a pulse move, when Mega Launcher is active, then returns 1.5x", () => {
       // Source: Showdown data/abilities.ts -- megalauncher: chainModify(1.5)
-      const mult = getMegaLauncherMultiplier(TEST_IDS.abilities.megaLauncher, true);
+      const mult = getMegaLauncherMultiplier(abilityIds.megaLauncher, true);
       expect(mult).toBe(1.5);
     });
 
     it("given a non-pulse move, when Mega Launcher is active, then returns 1.0x", () => {
-      const mult = getMegaLauncherMultiplier(TEST_IDS.abilities.megaLauncher, false);
+      const mult = getMegaLauncherMultiplier(abilityIds.megaLauncher, false);
       expect(mult).toBe(1);
     });
   });
@@ -383,23 +346,23 @@ describe("Gen 8 Damage Abilities", () => {
   describe("Multiscale", () => {
     it("given full HP, when Multiscale is active, then returns 0.5x", () => {
       // Source: Showdown data/abilities.ts -- multiscale: at full HP, halve damage
-      const mult = getMultiscaleMultiplier(TEST_IDS.abilities.multiscale, 200, 200);
+      const mult = getMultiscaleMultiplier(abilityIds.multiscale, 200, 200);
       expect(mult).toBe(CORE_FIXED_POINT.half / CORE_FIXED_POINT.identity);
     });
 
     it("given less than full HP, when Multiscale is active, then returns 1.0x", () => {
-      const mult = getMultiscaleMultiplier(TEST_IDS.abilities.multiscale, 199, 200);
+      const mult = getMultiscaleMultiplier(abilityIds.multiscale, 199, 200);
       expect(mult).toBe(1);
     });
 
     it("given Shadow Shield at full HP, when checking multiplier, then returns 0.5x", () => {
       // Source: Showdown data/abilities.ts -- shadowshield: same as multiscale
-      const mult = getMultiscaleMultiplier(TEST_IDS.abilities.shadowShield, 300, 300);
+      const mult = getMultiscaleMultiplier(abilityIds.shadowShield, 300, 300);
       expect(mult).toBe(CORE_FIXED_POINT.half / CORE_FIXED_POINT.identity);
     });
 
     it("given a different ability, when checking Multiscale, then returns 1.0x", () => {
-      const mult = getMultiscaleMultiplier(TEST_IDS.abilities.intimidate, 200, 200);
+      const mult = getMultiscaleMultiplier(abilityIds.intimidate, 200, 200);
       expect(mult).toBe(1);
     });
   });
@@ -409,12 +372,12 @@ describe("Gen 8 Damage Abilities", () => {
   describe("Fur Coat", () => {
     it("given a physical move, when Fur Coat is active, then returns 2.0x defense multiplier", () => {
       // Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
-      const mult = getFurCoatMultiplier(TEST_IDS.abilities.furCoat, true);
+      const mult = getFurCoatMultiplier(abilityIds.furCoat, true);
       expect(mult).toBe(2);
     });
 
     it("given a special move, when Fur Coat is active, then returns 1.0x", () => {
-      const mult = getFurCoatMultiplier(TEST_IDS.abilities.furCoat, false);
+      const mult = getFurCoatMultiplier(abilityIds.furCoat, false);
       expect(mult).toBe(1);
     });
   });
@@ -425,34 +388,34 @@ describe("Gen 8 Damage Abilities", () => {
     it("given Pixilate and a Normal move, when checking type override, then returns Fairy + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- pixilate Gen 7+: chainModify([4915, 4096])
       // CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity = 1.1999...
-      const result = getAteAbilityOverride(TEST_IDS.abilities.pixilate, TEST_IDS.types.normal);
-      expect(result).toEqual({ type: TEST_IDS.types.fairy, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      const result = getAteAbilityOverride(abilityIds.pixilate, typeIds.normal);
+      expect(result).toEqual({ type: typeIds.fairy, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
     });
 
     it("given Aerilate and a Normal move, when checking type override, then returns Flying + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- aerilate Gen 7+: chainModify([4915, 4096])
-      const result = getAteAbilityOverride(TEST_IDS.abilities.aerilate, TEST_IDS.types.normal);
-      expect(result).toEqual({ type: TEST_IDS.types.flying, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      const result = getAteAbilityOverride(abilityIds.aerilate, typeIds.normal);
+      expect(result).toEqual({ type: typeIds.flying, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
     });
 
     it("given Refrigerate and a Normal move, when checking type override, then returns Ice + 1.2x", () => {
-      const result = getAteAbilityOverride(TEST_IDS.abilities.refrigerate, TEST_IDS.types.normal);
-      expect(result).toEqual({ type: TEST_IDS.types.ice, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      const result = getAteAbilityOverride(abilityIds.refrigerate, typeIds.normal);
+      expect(result).toEqual({ type: typeIds.ice, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
     });
 
     it("given Galvanize and a Normal move, when checking type override, then returns Electric + 1.2x", () => {
-      const result = getAteAbilityOverride(TEST_IDS.abilities.galvanize, TEST_IDS.types.normal);
-      expect(result).toEqual({ type: TEST_IDS.types.electric, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      const result = getAteAbilityOverride(abilityIds.galvanize, typeIds.normal);
+      expect(result).toEqual({ type: typeIds.electric, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
     });
 
     it("given Pixilate and a Fire move (non-Normal), when checking type override, then returns null", () => {
       // Source: -ate abilities only change Normal moves
-      const result = getAteAbilityOverride(TEST_IDS.abilities.pixilate, TEST_IDS.types.fire);
+      const result = getAteAbilityOverride(abilityIds.pixilate, typeIds.fire);
       expect(result).toBeNull();
     });
 
     it("given a non-ate ability and Normal move, when checking type override, then returns null", () => {
-      const result = getAteAbilityOverride(TEST_IDS.abilities.intimidate, TEST_IDS.types.normal);
+      const result = getAteAbilityOverride(abilityIds.intimidate, typeIds.normal);
       expect(result).toBeNull();
     });
   });
@@ -462,16 +425,16 @@ describe("Gen 8 Damage Abilities", () => {
   describe("Parental Bond", () => {
     it("given Parental Bond and a powered move, when checking eligibility, then returns true", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: Gen 7+ secondHit 0.25
-      expect(isParentalBondEligible(TEST_IDS.abilities.parentalBond, 50, null)).toBe(true);
+      expect(isParentalBondEligible(abilityIds.parentalBond, 50, null)).toBe(true);
     });
 
     it("given Parental Bond and a multi-hit move, when checking eligibility, then returns false", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: excluded for multi-hit
-      expect(isParentalBondEligible(TEST_IDS.abilities.parentalBond, 50, "multi-hit")).toBe(false);
+      expect(isParentalBondEligible(abilityIds.parentalBond, 50, "multi-hit")).toBe(false);
     });
 
     it("given Parental Bond and a zero-power move, when checking eligibility, then returns false", () => {
-      expect(isParentalBondEligible(TEST_IDS.abilities.parentalBond, 0, null)).toBe(false);
+      expect(isParentalBondEligible(abilityIds.parentalBond, 0, null)).toBe(false);
     });
 
     it("given second hit multiplier, then it equals 0.25 (25%)", () => {
@@ -487,29 +450,29 @@ describe("Gen 8 Damage Abilities", () => {
     it("given a physical move, when Gorilla Tactics is active, then returns 6144/4096 (1.5x)", () => {
       // Source: Showdown data/abilities.ts -- gorillatactics: onModifyAtk, chainModify(1.5)
       // CORE_FIXED_POINT.boost15 / CORE_FIXED_POINT.identity = 1.5
-      const mult = getGorillaTacticsMultiplier(TEST_IDS.abilities.gorillaTactics, "physical");
+      const mult = getGorillaTacticsMultiplier(abilityIds.gorillaTactics, moveCategories.physical);
       expect(mult).toBe(CORE_FIXED_POINT.boost15 / CORE_FIXED_POINT.identity);
     });
 
     it("given a special move, when Gorilla Tactics is active, then returns 1.0x", () => {
       // Source: Showdown data/abilities.ts -- gorillatactics: only boosts physical Attack
-      const mult = getGorillaTacticsMultiplier(TEST_IDS.abilities.gorillaTactics, "special");
+      const mult = getGorillaTacticsMultiplier(abilityIds.gorillaTactics, moveCategories.special);
       expect(mult).toBe(1);
     });
 
     it("given the dispatcher, when Gorilla Tactics user uses physical move, then returns activated:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.gorillaTactics,
-        move: makeMove({ category: "physical" }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.gorillaTactics,
+        move: createCanonicalMove(moveIds.tackle),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given the dispatcher, when Gorilla Tactics user uses special move, then returns activated:false", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.gorillaTactics,
-        move: makeMove({ category: "special" }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.gorillaTactics,
+        move: createCanonicalMove(moveIds.thunderbolt),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -522,28 +485,28 @@ describe("Gen 8 Damage Abilities", () => {
     it("given an Electric move, when Transistor is active, then returns 6144/4096 (1.5x)", () => {
       // Source: Showdown data/abilities.ts -- transistor: chainModify(1.5) in Gen 8
       // Source: Bulbapedia "Transistor" -- "powers up Electric-type moves by 50%"
-      const mult = getTransistorMultiplier(TEST_IDS.abilities.transistor, TEST_IDS.types.electric);
+      const mult = getTransistorMultiplier(abilityIds.transistor, typeIds.electric);
       expect(mult).toBe(CORE_FIXED_POINT.boost15 / CORE_FIXED_POINT.identity);
     });
 
     it("given a non-Electric move, when Transistor is active, then returns 1.0x", () => {
-      const mult = getTransistorMultiplier(TEST_IDS.abilities.transistor, TEST_IDS.types.fire);
+      const mult = getTransistorMultiplier(abilityIds.transistor, typeIds.fire);
       expect(mult).toBe(1);
     });
 
     it("given the dispatcher, when Transistor user uses Thunderbolt, then returns activated:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.transistor,
-        move: makeMove({ type: TEST_IDS.types.electric, id: TEST_IDS.moves.thunderbolt }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.transistor,
+        move: createCanonicalMove(moveIds.thunderbolt),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given the dispatcher, when Transistor user uses Flamethrower, then returns activated:false", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.transistor,
-        move: makeMove({ type: TEST_IDS.types.fire, id: TEST_IDS.moves.flamethrower }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.transistor,
+        move: createCanonicalMove(moveIds.flamethrower),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -556,19 +519,19 @@ describe("Gen 8 Damage Abilities", () => {
     it("given a Dragon move, when Dragon's Maw is active, then returns 6144/4096 (1.5x)", () => {
       // Source: Showdown data/abilities.ts -- dragonsmaw: chainModify(1.5)
       // Source: Bulbapedia "Dragon's Maw" -- "powers up Dragon-type moves by 50%"
-      const mult = getDragonsMawMultiplier(TEST_IDS.abilities.dragonsMaw, TEST_IDS.types.dragon);
+      const mult = getDragonsMawMultiplier(regidragoAbilityId, typeIds.dragon);
       expect(mult).toBe(CORE_FIXED_POINT.boost15 / CORE_FIXED_POINT.identity);
     });
 
     it("given a non-Dragon move, when Dragon's Maw is active, then returns 1.0x", () => {
-      const mult = getDragonsMawMultiplier(TEST_IDS.abilities.dragonsMaw, TEST_IDS.types.fire);
+      const mult = getDragonsMawMultiplier(regidragoAbilityId, typeIds.fire);
       expect(mult).toBe(1);
     });
 
     it("given the dispatcher, when Dragon's Maw user uses Dragon Pulse, then returns activated:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.dragonsMaw,
-        move: makeMove({ type: TEST_IDS.types.dragon, id: TEST_IDS.moves.dragonPulse }),
+      const ctx = createAbilityContext({
+        ability: regidragoAbilityId,
+        move: createCanonicalMove(moveIds.dragonPulse),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -581,36 +544,36 @@ describe("Gen 8 Damage Abilities", () => {
     it("given a sound move, when Punk Rock attacker checks outgoing multiplier, then returns 5325/4096 (~1.3x)", () => {
       // Source: Showdown data/abilities.ts -- punkrock: onBasePower, chainModify([5325, 4096])
       // Source: Bulbapedia "Punk Rock" -- "boosts the power of sound-based moves by 30%"
-      const mult = getPunkRockMultiplier(TEST_IDS.abilities.punkRock, true);
+      const mult = getPunkRockMultiplier(abilityIds.punkRock, true);
       expect(mult).toBe(CORE_FIXED_POINT.boost13 / CORE_FIXED_POINT.identity);
     });
 
     it("given a non-sound move, when Punk Rock attacker checks outgoing multiplier, then returns 1.0x", () => {
-      const mult = getPunkRockMultiplier(TEST_IDS.abilities.punkRock, false);
+      const mult = getPunkRockMultiplier(abilityIds.punkRock, false);
       expect(mult).toBe(1);
     });
 
     it("given a sound move, when Punk Rock defender checks incoming multiplier, then returns 0.5x", () => {
       // Source: Showdown data/abilities.ts -- punkrock: onSourceModifyDamage, chainModify(0.5)
       // Source: Bulbapedia "Punk Rock" -- "halves the damage taken from sound-based moves"
-      const mult = getPunkRockIncomingMultiplier(TEST_IDS.abilities.punkRock, true);
+      const mult = getPunkRockIncomingMultiplier(abilityIds.punkRock, true);
       expect(mult).toBe(CORE_FIXED_POINT.half / CORE_FIXED_POINT.identity);
     });
 
     it("given a non-sound move, when Punk Rock defender checks incoming multiplier, then returns 1.0x", () => {
-      const mult = getPunkRockIncomingMultiplier(TEST_IDS.abilities.punkRock, false);
+      const mult = getPunkRockIncomingMultiplier(abilityIds.punkRock, false);
       expect(mult).toBe(1);
     });
 
     it("given a different ability, when checking Punk Rock outgoing, then returns 1.0x", () => {
-      const mult = getPunkRockMultiplier(TEST_IDS.abilities.intimidate, true);
+      const mult = getPunkRockMultiplier(abilityIds.intimidate, true);
       expect(mult).toBe(1);
     });
 
     it("given the dispatcher, when Punk Rock user uses sound move, then returns activated:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.punkRock,
-        move: makeMove({ flags: { sound: true } }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.punkRock,
+        move: createCanonicalMove(moveIds.hyperVoice),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -623,33 +586,33 @@ describe("Gen 8 Damage Abilities", () => {
     it("given a special move, when Ice Scales defender is active, then returns 0.5x", () => {
       // Source: Showdown data/abilities.ts -- icescales: onSourceModifyDamage, chainModify(0.5)
       // Source: Bulbapedia "Ice Scales" -- "halves the damage taken from special moves"
-      const mult = getIceScalesMultiplier(TEST_IDS.abilities.iceScales, "special");
+      const mult = getIceScalesMultiplier(abilityIds.iceScales, moveCategories.special);
       expect(mult).toBe(CORE_FIXED_POINT.half / CORE_FIXED_POINT.identity);
     });
 
     it("given a physical move, when Ice Scales defender is active, then returns 1.0x", () => {
-      const mult = getIceScalesMultiplier(TEST_IDS.abilities.iceScales, "physical");
+      const mult = getIceScalesMultiplier(abilityIds.iceScales, moveCategories.physical);
       expect(mult).toBe(1);
     });
 
     it("given a different ability, when checking Ice Scales for special move, then returns 1.0x", () => {
-      const mult = getIceScalesMultiplier(TEST_IDS.abilities.thickFat, "special");
+      const mult = getIceScalesMultiplier(abilityIds.thickFat, moveCategories.special);
       expect(mult).toBe(1);
     });
 
     it("given the dispatcher, when Ice Scales defender is hit by special move, then returns activated:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.iceScales,
-        move: makeMove({ category: "special" }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.iceScales,
+        move: createCanonicalMove(moveIds.thunderbolt),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
 
     it("given the dispatcher, when Ice Scales defender is hit by physical move, then returns activated:false", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.iceScales,
-        move: makeMove({ category: "physical" }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.iceScales,
+        move: createCanonicalMove(moveIds.tackle),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -662,19 +625,19 @@ describe("Gen 8 Damage Abilities", () => {
     it("given a Steel move, when Steelworker is active, then returns 6144/4096 (1.5x)", () => {
       // Source: Showdown data/abilities.ts -- steelworker: chainModify(1.5)
       // Source: Bulbapedia "Steelworker" -- "powers up Steel-type moves by 50%"
-      const mult = getSteelworkerMultiplier(TEST_IDS.abilities.steelworker, TEST_IDS.types.steel);
+      const mult = getSteelworkerMultiplier(abilityIds.steelworker, typeIds.steel);
       expect(mult).toBe(CORE_FIXED_POINT.boost15 / CORE_FIXED_POINT.identity);
     });
 
     it("given a non-Steel move, when Steelworker is active, then returns 1.0x", () => {
-      const mult = getSteelworkerMultiplier(TEST_IDS.abilities.steelworker, TEST_IDS.types.fire);
+      const mult = getSteelworkerMultiplier(abilityIds.steelworker, typeIds.fire);
       expect(mult).toBe(1);
     });
 
     it("given the dispatcher, when Steelworker user uses Steel move, then returns activated:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.steelworker,
-        move: makeMove({ type: TEST_IDS.types.steel, id: TEST_IDS.moves.ironHead }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.steelworker,
+        move: createCanonicalMove(moveIds.ironHead),
       });
       const result = handleGen8DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -688,7 +651,7 @@ describe("Gen 8 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- sturdy onDamage (priority -30)
       const maxHp = 200;
       const lethalDamage = 300;
-      const capped = getSturdyDamageCap(TEST_IDS.abilities.sturdy, lethalDamage, maxHp, maxHp);
+      const capped = getSturdyDamageCap(abilityIds.sturdy, lethalDamage, maxHp, maxHp);
       expect(capped).toBe(maxHp - 1);
     });
 
@@ -696,31 +659,33 @@ describe("Gen 8 Damage Abilities", () => {
       const lethalDamage = 300;
       const currentHp = 150;
       const maxHp = 200;
-      const capped = getSturdyDamageCap(TEST_IDS.abilities.sturdy, lethalDamage, currentHp, maxHp);
+      const capped = getSturdyDamageCap(abilityIds.sturdy, lethalDamage, currentHp, maxHp);
       expect(capped).toBe(lethalDamage);
     });
 
     it("given Sturdy at full HP and non-lethal damage, when checking cap, then does not cap", () => {
       const damage = 50;
       const hp = 200;
-      const capped = getSturdyDamageCap(TEST_IDS.abilities.sturdy, damage, hp, hp);
+      const capped = getSturdyDamageCap(abilityIds.sturdy, damage, hp, hp);
       expect(capped).toBe(damage);
     });
 
     it("given Sturdy and an OHKO move, when checking block, then returns true", () => {
       // Source: Showdown data/abilities.ts -- sturdy onTryHit
       const ohkoEffect: MoveEffect = { type: "ohko" };
-      expect(sturdyBlocksOHKO(TEST_IDS.abilities.sturdy, ohkoEffect)).toBe(true);
+      expect(sturdyBlocksOHKO(abilityIds.sturdy, ohkoEffect)).toBe(true);
     });
 
     it("given Sturdy and a non-OHKO move, when checking block, then returns false", () => {
-      expect(sturdyBlocksOHKO(TEST_IDS.abilities.sturdy, null)).toBe(false);
+      expect(sturdyBlocksOHKO(abilityIds.sturdy, null)).toBe(false);
     });
 
     it("given the immunity dispatcher, when Sturdy faces OHKO move, then returns movePrevented:true", () => {
-      const ctx = makeCtx({
-        ability: TEST_IDS.abilities.sturdy,
-        move: makeMove({ effect: { type: "ohko" } }),
+      const ctx = createAbilityContext({
+        ability: abilityIds.sturdy,
+        move: createSyntheticMoveFrom(createCanonicalMove(moveIds.tackle), {
+          effect: { type: "ohko" },
+        }),
       });
       const result = handleGen8DamageImmunityAbility(ctx);
       expect(result.activated).toBe(true);
@@ -735,7 +700,7 @@ describe("Gen 8 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- sheerforce: volatile with chance
       const effect: MoveEffect = {
         type: "volatile-status",
-        volatile: TEST_IDS.volatiles.flinch,
+        volatile: volatileIds.flinch,
         chance: 30,
       };
       expect(hasSheerForceEligibleEffect(effect)).toBe(true);

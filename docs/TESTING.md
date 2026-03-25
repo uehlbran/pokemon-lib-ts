@@ -14,6 +14,7 @@ Code examples for the test types used in this project. For testing philosophy, c
 - For generation-specific ids, import from the generation package's exported data-backed `GENN_*_IDS` references derived from `packages/genN/data/*.json`.
 - For shared cross-generation mechanic constants, import the owned core surface instead of duplicating literals in the test.
 - For shared cross-generation domain literals like move categories, import the owned core surface instead of duplicating handwritten strings in the test.
+- For bounded shared domain literals like genders and ability slots, import the owned core surface instead of duplicating handwritten strings in the test.
 - For generation-specific mechanic constants, import the owning generation package's exported surface instead of inventing file-local literals.
 - For generation-specific entities, also verify they actually exist in the generation under test. Matching strings across generations are not enough; source them from the generation's own exports or data manager instead of reusing another generation's reference surface.
 - Keep generation semantics honest when using shared constants: for Gen 1-3, damaging move category is generation-derived from the type split, not canonical per-move Gen 4+ metadata. Do not backport later-generation category assumptions into early-generation canonical tests.
@@ -32,6 +33,7 @@ Code examples for the test types used in this project. For testing philosophy, c
 - For stat inputs, prefer validated helper surfaces such as `createIvs`, `createEvs`, `createDvs`, and `createStatExp` over raw inline object literals when those helpers exist.
 - Stat input validation should use shared generic `ValidationFailure` / `ValidationResult` naming instead of type-prefixed names like `EvValidationIssue`.
 - Validation should be explicit and reusable, but the default creation path must still reject invalid value objects rather than relying on later call sites to notice the bad state.
+- Apply the same validated-input rule to other bounded per-instance values like friendship. If the code is creating a Pokemon instance, negative friendship or values above `255` should be rejected by the normal creation path instead of leaking through as raw numbers.
 - If the code needs min/max/cap values like the IV/EV/DV/Stat Exp limits, import owned constants instead of scattering literals like `31`, `252`, `510`, `15`, or `65535` through tests.
 - If a value object or bounded domain helper exists for IVs, EVs, DVs, or Stat Exp, direct raw object construction is no longer the default path in touched code. Use the validated creator and its owned constants instead.
 - Examples: type effectiveness from the exported type chart, move metadata from the generation data bundle, item metadata from the generated per-gen references, and owned fixed-point constants from core.

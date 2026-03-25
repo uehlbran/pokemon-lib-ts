@@ -136,6 +136,18 @@ export const CORE_MOVE_CATEGORIES = {
   status: "status",
 } as const;
 
+export const CORE_ABILITY_SLOTS = {
+  normal1: "normal1",
+  normal2: "normal2",
+  hidden: "hidden",
+} as const;
+
+export const CORE_GENDERS = {
+  male: "male",
+  female: "female",
+  genderless: "genderless",
+} as const;
+
 export const CORE_NATURE_IDS = {
   adamant: "adamant",
   bashful: "bashful",

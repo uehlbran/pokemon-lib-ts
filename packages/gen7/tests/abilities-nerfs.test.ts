@@ -1,10 +1,17 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
   SeededRandom,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
   type MoveData,
+  type MoveCategory,
   type PokemonType,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -29,27 +36,32 @@ import {
 // ---------------------------------------------------------------------------
 
 const dataManager = createGen7DataManager();
-const A = GEN7_ABILITY_IDS;
-const I = GEN7_ITEM_IDS;
-const M = GEN7_MOVE_IDS;
-const N = GEN7_NATURE_IDS;
-const S = GEN7_SPECIES_IDS;
-const T = CORE_TYPE_IDS;
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
+const itemIds = GEN7_ITEM_IDS;
+const moveIds = GEN7_MOVE_IDS;
+const natureIds = GEN7_NATURE_IDS;
+const speciesIds = GEN7_SPECIES_IDS;
+const typeIds = CORE_TYPE_IDS;
 const NONE_ABILITY = CORE_ABILITY_IDS.none;
-const BASE_MOVE = dataManager.getMove(M.tackle);
+const tackle = dataManager.getMove(moveIds.tackle);
+const growl = dataManager.getMove(moveIds.growl);
+const flamethrower = dataManager.getMove(moveIds.flamethrower);
+const drainPunch = dataManager.getMove(moveIds.drainPunch);
+const acrobatics = dataManager.getMove(moveIds.acrobatics);
 const ATE_ABILITY_MULTIPLIER = CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity;
 const ATE_ABILITY_PREVIOUS_GEN_MULTIPLIER = CORE_FIXED_POINT.boost13 / CORE_FIXED_POINT.identity;
-const DEFAULT_NATURE = N.hardy;
-const DEFAULT_SPECIES = S.bulbasaur;
+const moveCategories = {
+  physical: tackle.category,
+  special: flamethrower.category,
+  status: growl.category,
+} as const satisfies Record<MoveCategory, MoveCategory>;
+const DEFAULT_NATURE = natureIds.hardy;
+const DEFAULT_SPECIES = dataManager.getSpecies(speciesIds.bulbasaur);
 const DEFAULT_HP = 200;
 const DEFAULT_LEVEL = 50;
-const DEFAULT_UID = "test";
-const DEFAULT_POKEBALL = I.pokeBall;
-const DEFAULT_ABILITY_SLOT = "normal1" as const;
-const DEFAULT_GENDER = "male" as const;
 const DEFAULT_NICKNAME = null;
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -73,32 +85,30 @@ function makeActive(overrides: {
   const spAttack = overrides.spAttack ?? 100;
   const spDefense = overrides.spDefense ?? 100;
   const speed = overrides.speed ?? 100;
+  const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? DEFAULT_LEVEL, new SeededRandom(7), {
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    heldItem: overrides.heldItem ?? null,
+    isShiny: false,
+    metLocation: "test",
+    originalTrainer: "test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+  });
+  pokemon.moves = [createMoveSlot(tackle.id, tackle.pp)];
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = overrides.ability ?? NONE_ABILITY;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.nickname = overrides.nickname ?? DEFAULT_NICKNAME;
+  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
+
   return {
-    pokemon: {
-      uid: DEFAULT_UID,
-      speciesId: overrides.speciesId ?? DEFAULT_SPECIES,
-      nickname: overrides.nickname ?? DEFAULT_NICKNAME,
-      level: overrides.level ?? DEFAULT_LEVEL,
-      experience: 0,
-      nature: DEFAULT_NATURE,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? NONE_ABILITY,
-      abilitySlot: DEFAULT_ABILITY_SLOT,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: DEFAULT_GENDER as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: DEFAULT_POKEBALL,
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
-    },
+    pokemon,
     teamSlot: 0,
     statStages: {
       attack: 0,
@@ -110,7 +120,7 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? [T.normal],
+    types: overrides.types ?? [...species.types],
     ability: overrides.ability ?? NONE_ABILITY,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -134,35 +144,7 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  displayName?: string;
-}): MoveData {
-  const moveId = overrides.id ?? M.tackle;
-  const moveData = dataManager.getMove(moveId);
-  return {
-    ...BASE_MOVE,
-    ...moveData,
-    id: moveId,
-    displayName: overrides.displayName ?? moveData.displayName,
-    type: overrides.type ?? moveData.type,
-    category: overrides.category ?? moveData.category,
-    power: overrides.power ?? moveData.power,
-    flags: {
-      ...moveData.flags,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? moveData.effect,
-    generation: moveData.generation,
-  } as MoveData;
-}
-
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -177,7 +159,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeCtx(overrides: {
+function createAbilityContext(overrides: {
   ability: string;
   trigger:
     | "on-damage-calc"
@@ -202,11 +184,11 @@ function makeCtx(overrides: {
 }): AbilityContext {
   const hp = overrides.maxHp ?? DEFAULT_HP;
   return {
-    pokemon: makeActive({
+    pokemon: createOnFieldPokemon({
       ability: overrides.ability,
       currentHp: overrides.currentHp ?? hp,
       hp: hp,
-      types: overrides.types ?? [T.normal],
+      types: overrides.types ?? [typeIds.normal],
       nickname: overrides.nickname ?? DEFAULT_NICKNAME,
       attack: overrides.attack,
       defense: overrides.defense,
@@ -215,8 +197,8 @@ function makeCtx(overrides: {
       speed: overrides.speed,
       turnsOnField: overrides.turnsOnField,
     }),
-    opponent: overrides.opponent ?? makeActive({}),
-    state: makeState(),
+    opponent: overrides.opponent ?? createOnFieldPokemon({}),
+    state: createBattleState(),
     rng: new SeededRandom(42),
     trigger: overrides.trigger,
     move: overrides.move,
@@ -237,7 +219,7 @@ describe("Gen 7 Ability Nerfs", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 pixilate: chainModify([CORE_FIXED_POINT.boost12, CORE_FIXED_POINT.identity])
       // Source: Showdown data/mods/gen6/abilities.ts -- Gen 6 pixilate: chainModify([CORE_FIXED_POINT.boost13, CORE_FIXED_POINT.identity])
       // Source: Bulbapedia "Pixilate" -- "From Generation VII onward, the power bonus was reduced from 1.3x to 1.2x."
-      const override = getAteAbilityOverride(A.pixilate, T.normal);
+      const override = getAteAbilityOverride(abilityIds.pixilate, typeIds.normal);
       expect(override).not.toBeNull();
       expect(override!.multiplier).toBe(ATE_ABILITY_MULTIPLIER);
       // Verify it is NOT the Gen 6 value
@@ -246,14 +228,14 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Aerilate in Gen 7, when converting Normal move, then multiplier matches the Gen 7 owned boost", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 aerilate: same as pixilate
-      const override = getAteAbilityOverride(A.aerilate, T.normal);
+      const override = getAteAbilityOverride(abilityIds.aerilate, typeIds.normal);
       expect(override).not.toBeNull();
       expect(override!.multiplier).toBe(ATE_ABILITY_MULTIPLIER);
     });
 
     it("given Refrigerate in Gen 7, when converting Normal move, then multiplier matches the Gen 7 owned boost", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 refrigerate: same as pixilate
-      const override = getAteAbilityOverride(A.refrigerate, T.normal);
+      const override = getAteAbilityOverride(abilityIds.refrigerate, typeIds.normal);
       expect(override).not.toBeNull();
       expect(override!.multiplier).toBe(ATE_ABILITY_MULTIPLIER);
     });
@@ -261,24 +243,24 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Galvanize (new Gen 7), when converting Normal move, then multiplier matches the Gen 7 owned boost", () => {
       // Source: Showdown data/abilities.ts -- galvanize: Normal -> Electric, chainModify([CORE_FIXED_POINT.boost12, CORE_FIXED_POINT.identity])
       // Source: Bulbapedia "Galvanize" -- "introduced in Gen 7, 1.2x power bonus"
-      const override = getAteAbilityOverride(A.galvanize, T.normal);
+      const override = getAteAbilityOverride(abilityIds.galvanize, typeIds.normal);
       expect(override).not.toBeNull();
-      expect(override!.type).toBe(T.electric);
+      expect(override!.type).toBe(typeIds.electric);
       expect(override!.multiplier).toBe(ATE_ABILITY_MULTIPLIER);
     });
 
     it("given Pixilate handler with Normal move, when on-damage-calc triggers, then activated:true with type-change to fairy", () => {
       // Source: Showdown data/abilities.ts -- pixilate: Normal -> Fairy
-      const ctx = makeCtx({
-        ability: A.pixilate,
+      const ctx = createAbilityContext({
+        ability: abilityIds.pixilate,
         trigger: "on-damage-calc",
-        move: makeMove({ type: T.normal }),
+        move: tackle,
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0].effectType).toBe("type-change");
       if (result.effects[0].effectType === "type-change") {
-        expect(result.effects[0].types).toEqual([T.fairy]);
+        expect(result.effects[0].types).toEqual([typeIds.fairy]);
       }
     });
   });
@@ -316,41 +298,77 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Prankster user using a status move vs Dark-type, then isPranksterBlockedByDarkType returns true", () => {
       // Source: Showdown data/abilities.ts -- Prankster Gen 7: dark targets immune to boosted status
       // Source: Bulbapedia "Prankster" Gen 7 -- "status moves fail against Dark-type targets"
-      expect(isPranksterBlockedByDarkType(A.prankster, "status", [T.dark])).toBe(true);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.dark],
+        ),
+      ).toBe(true);
     });
 
     it("given Prankster user using a status move vs Dark/Fairy-type, then blocked (partial Dark typing)", () => {
       // Source: Showdown data/abilities.ts -- checks if target has Dark type
-      expect(isPranksterBlockedByDarkType(A.prankster, "status", [T.dark, T.fairy])).toBe(true);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.dark, typeIds.fairy],
+        ),
+      ).toBe(true);
     });
 
     it("given Prankster user using a physical move vs Dark-type, then NOT blocked (non-status)", () => {
       // Source: Showdown data/abilities.ts -- only status moves are blocked
-      expect(isPranksterBlockedByDarkType(A.prankster, "physical", [T.dark])).toBe(false);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.physical,
+          [typeIds.dark],
+        ),
+      ).toBe(false);
     });
 
     it("given Prankster user using a special move vs Dark-type, then NOT blocked (non-status)", () => {
       // Source: Showdown data/abilities.ts -- only status moves are blocked
-      expect(isPranksterBlockedByDarkType(A.prankster, "special", [T.dark])).toBe(false);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.special,
+          [typeIds.dark],
+        ),
+      ).toBe(false);
     });
 
     it("given Prankster user using a status move vs Normal-type, then NOT blocked (non-Dark)", () => {
       // Source: Showdown data/abilities.ts -- only Dark-type targets
-      expect(isPranksterBlockedByDarkType(A.prankster, "status", [T.normal])).toBe(false);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.normal],
+        ),
+      ).toBe(false);
     });
 
     it("given non-Prankster ability using status move vs Dark-type, then NOT blocked", () => {
       // Only Prankster triggers this check
-      expect(isPranksterBlockedByDarkType(A.keenEye, "status", [T.dark])).toBe(false);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.keenEye,
+          moveCategories.status,
+          [typeIds.dark],
+        ),
+      ).toBe(false);
     });
 
     it("given Prankster handler on-priority-check with status move, then returns activated:true (priority still granted)", () => {
       // Source: Showdown data/abilities.ts -- Prankster DOES grant priority; the immunity
       // is a separate check during move execution. The move gains priority but then fails.
-      const ctx = makeCtx({
-        ability: A.prankster,
+      const ctx = createAbilityContext({
+        ability: abilityIds.prankster,
         trigger: "on-priority-check",
-        move: makeMove({ category: "status", type: T.normal }),
+        move: growl,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -366,31 +384,39 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Gale Wings at full HP with Flying move, then isGaleWingsActive returns true", () => {
       // Source: Showdown data/abilities.ts -- galeWings Gen 7: hp === maxhp
       // Source: Bulbapedia "Gale Wings" Gen 7 -- "only activates when at full HP"
-      expect(isGaleWingsActive(A.galeWings, T.flying, DEFAULT_HP, DEFAULT_HP)).toBe(true);
+      expect(
+        isGaleWingsActive(abilityIds.galeWings, typeIds.flying, DEFAULT_HP, DEFAULT_HP),
+      ).toBe(true);
     });
 
     it("given Gale Wings at 199/200 HP with Flying move, then isGaleWingsActive returns false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: strictly requires full HP
       // This is the key Gen 7 nerf: even 1 HP of damage disables Gale Wings.
-      expect(isGaleWingsActive(A.galeWings, T.flying, 199, DEFAULT_HP)).toBe(false);
+      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, 199, DEFAULT_HP)).toBe(
+        false,
+      );
     });
 
     it("given Gale Wings at 1/200 HP with Flying move, then isGaleWingsActive returns false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: hp < maxhp -> no boost
-      expect(isGaleWingsActive(A.galeWings, T.flying, 1, DEFAULT_HP)).toBe(false);
+      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, 1, DEFAULT_HP)).toBe(
+        false,
+      );
     });
 
     it("given Gale Wings at full HP with non-Flying move, then isGaleWingsActive returns false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: only Flying-type moves
-      expect(isGaleWingsActive(A.galeWings, T.fire, DEFAULT_HP, DEFAULT_HP)).toBe(false);
+      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.fire, DEFAULT_HP, DEFAULT_HP)).toBe(
+        false,
+      );
     });
 
     it("given Gale Wings handler at full HP with Flying move on-priority-check, then activated:true", () => {
       // Source: Showdown data/abilities.ts -- galeWings: onModifyPriority +1
-      const ctx = makeCtx({
-        ability: A.galeWings,
+      const ctx = createAbilityContext({
+        ability: abilityIds.galeWings,
         trigger: "on-priority-check",
-        move: makeMove({ type: T.flying }),
+        move: acrobatics,
         currentHp: DEFAULT_HP,
         maxHp: DEFAULT_HP,
       });
@@ -402,10 +428,10 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Gale Wings handler below full HP with Flying move on-priority-check, then activated:false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: Gen 7 hp check
       // The Gen 7 nerf: priority is NOT granted when below full HP.
-      const ctx = makeCtx({
-        ability: A.galeWings,
+      const ctx = createAbilityContext({
+        ability: abilityIds.galeWings,
         trigger: "on-priority-check",
-        move: makeMove({ type: T.flying }),
+        move: acrobatics,
         currentHp: 150,
         maxHp: DEFAULT_HP,
       });
@@ -422,15 +448,15 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Beast Boost user KOs opponent with Attack as highest stat, then raises Attack by 1", () => {
       // Source: Showdown data/abilities.ts -- beastboost: onSourceAfterFaint
       // Source: Bulbapedia "Beast Boost" -- "raises the user's highest stat by one stage"
-      const ctx = makeCtx({
-        ability: A.beastBoost,
+      const ctx = createAbilityContext({
+        ability: abilityIds.beastBoost,
         trigger: "on-after-move-used",
         attack: 150,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
         speed: 100,
-        opponent: makeActive({ currentHp: 0, hp: DEFAULT_HP }),
+        opponent: createOnFieldPokemon({ currentHp: 0, hp: DEFAULT_HP }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -444,15 +470,15 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Beast Boost user KOs opponent with Speed as highest stat, then raises Speed by 1", () => {
       // Source: Showdown data/abilities.ts -- beastboost: picks highest stat
-      const ctx = makeCtx({
-        ability: A.beastBoost,
+      const ctx = createAbilityContext({
+        ability: abilityIds.beastBoost,
         trigger: "on-after-move-used",
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
         speed: 180,
-        opponent: makeActive({ currentHp: 0, hp: DEFAULT_HP }),
+        opponent: createOnFieldPokemon({ currentHp: 0, hp: DEFAULT_HP }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -464,15 +490,15 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Beast Boost user KOs opponent with SpAtk as highest stat, then raises SpAtk by 1", () => {
       // Source: Showdown data/abilities.ts -- beastboost: checks spa
-      const ctx = makeCtx({
-        ability: A.beastBoost,
+      const ctx = createAbilityContext({
+        ability: abilityIds.beastBoost,
         trigger: "on-after-move-used",
         attack: 90,
         defense: 90,
         spAttack: 200,
         spDefense: 90,
         speed: 90,
-        opponent: makeActive({ currentHp: 0, hp: DEFAULT_HP }),
+        opponent: createOnFieldPokemon({ currentHp: 0, hp: DEFAULT_HP }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -486,15 +512,15 @@ describe("Gen 7 Ability Nerfs", () => {
       // Source: Showdown data/abilities.ts -- beastboost: iteration order is atk, def, spa, spd, spe
       // When all stats are equal, Attack wins because it is checked first and no subsequent
       // stat is strictly greater.
-      const ctx = makeCtx({
-        ability: A.beastBoost,
+      const ctx = createAbilityContext({
+        ability: abilityIds.beastBoost,
         trigger: "on-after-move-used",
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
         speed: 100,
-        opponent: makeActive({ currentHp: 0, hp: DEFAULT_HP }),
+        opponent: createOnFieldPokemon({ currentHp: 0, hp: DEFAULT_HP }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -505,11 +531,11 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Beast Boost user when opponent is NOT fainted, then activated:false", () => {
       // Source: Showdown data/abilities.ts -- beastboost: only on faint
-      const ctx = makeCtx({
-        ability: A.beastBoost,
+      const ctx = createAbilityContext({
+        ability: abilityIds.beastBoost,
         trigger: "on-after-move-used",
         attack: 150,
-        opponent: makeActive({ currentHp: 100, hp: DEFAULT_HP }),
+        opponent: createOnFieldPokemon({ currentHp: 100, hp: DEFAULT_HP }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -517,8 +543,8 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Beast Boost, then message includes the stat name", () => {
       // Source: Showdown battle-actions.ts -- boost messages
-      const ctx = makeCtx({
-        ability: A.beastBoost,
+      const ctx = createAbilityContext({
+        ability: abilityIds.beastBoost,
         trigger: "on-after-move-used",
         nickname: "Pheromosa",
         attack: 100,
@@ -526,7 +552,7 @@ describe("Gen 7 Ability Nerfs", () => {
         spAttack: 100,
         spDefense: 100,
         speed: 200,
-        opponent: makeActive({ currentHp: 0, hp: DEFAULT_HP }),
+        opponent: createOnFieldPokemon({ currentHp: 0, hp: DEFAULT_HP }),
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.messages[0]).toContain("Beast Boost");
@@ -542,10 +568,10 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Stamina user hit by a physical move, then raises Defense by 1", () => {
       // Source: Showdown data/abilities.ts -- Stamina onDamagingHit
       // Source: Bulbapedia "Stamina" -- "+1 Defense when hit by a damage-dealing move"
-      const ctx = makeCtx({
-        ability: A.stamina,
+      const ctx = createAbilityContext({
+        ability: abilityIds.stamina,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "physical" }),
+        move: tackle,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -559,10 +585,10 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Stamina user hit by a special move, then raises Defense by 1 (triggers on all damaging moves)", () => {
       // Source: Showdown data/abilities.ts -- Stamina: triggers on both physical and special
-      const ctx = makeCtx({
-        ability: A.stamina,
+      const ctx = createAbilityContext({
+        ability: abilityIds.stamina,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "special" }),
+        move: flamethrower,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -574,10 +600,10 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Stamina user hit by a status move, then activated:false (status moves don't trigger)", () => {
       // Source: Showdown data/abilities.ts -- Stamina: only damaging moves
-      const ctx = makeCtx({
-        ability: A.stamina,
+      const ctx = createAbilityContext({
+        ability: abilityIds.stamina,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "status" }),
+        move: growl,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -585,11 +611,11 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Stamina, then message mentions Stamina and Defense", () => {
       // Source: Showdown battle-actions.ts -- ability activation messages
-      const ctx = makeCtx({
-        ability: A.stamina,
+      const ctx = createAbilityContext({
+        ability: abilityIds.stamina,
         trigger: "on-damage-taken",
         nickname: "Mudsdale",
-        move: makeMove({ category: "physical" }),
+        move: tackle,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.messages[0]).toContain("Stamina");
@@ -606,10 +632,10 @@ describe("Gen 7 Ability Nerfs", () => {
       // Source: Showdown data/abilities.ts -- Weak Armor Gen 7: spe +2
       // Source: Showdown data/mods/gen6/abilities.ts -- Weak Armor Gen 5-6: spe +1
       // Source: Bulbapedia "Weak Armor" -- "From Generation VII onwards, Speed is raised by 2"
-      const ctx = makeCtx({
-        ability: A.weakArmor,
+      const ctx = createAbilityContext({
+        ability: abilityIds.weakArmor,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "physical" }),
+        move: tackle,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
@@ -632,10 +658,10 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Weak Armor user hit by special move, then activated:false (physical only)", () => {
       // Source: Showdown data/abilities.ts -- Weak Armor: only physical moves
-      const ctx = makeCtx({
-        ability: A.weakArmor,
+      const ctx = createAbilityContext({
+        ability: abilityIds.weakArmor,
         trigger: "on-damage-taken",
-        move: makeMove({ category: "special" }),
+        move: flamethrower,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(false);
@@ -650,44 +676,40 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Triage with Drain Punch, then priority bonus is +3", () => {
       // Source: Showdown data/abilities.ts -- triage: onModifyPriority +3
       // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-      expect(getTriagePriorityBonus(A.triage, M.drainPunch, "drain")).toBe(3);
+      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.drainPunch, "drain")).toBe(3);
     });
 
     it("given Triage with Roost (recovery move), then priority bonus is +3", () => {
       // Source: Showdown data/abilities.ts -- triage: includes recovery moves
-      expect(getTriagePriorityBonus(A.triage, M.roost, null)).toBe(3);
+      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.roost, null)).toBe(3);
     });
 
     it("given Triage with Giga Drain, then priority bonus is +3", () => {
       // Source: Showdown data/abilities.ts -- triage: drain moves
-      expect(getTriagePriorityBonus(A.triage, M.gigaDrain, "drain")).toBe(3);
+      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.gigaDrain, "drain")).toBe(3);
     });
 
     it("given Triage with Floral Healing (Gen 7 move), then priority bonus is +3", () => {
       // Source: Showdown data/abilities.ts -- triage: includes Floral Healing
-      expect(getTriagePriorityBonus(A.triage, M.floralHealing, null)).toBe(3);
+      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.floralHealing, null)).toBe(3);
     });
 
     it("given Triage with Tackle (non-healing move), then priority bonus is 0", () => {
       // Source: Showdown data/abilities.ts -- triage: only healing moves get bonus
-      expect(getTriagePriorityBonus(A.triage, M.tackle, null)).toBe(0);
+      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.tackle, null)).toBe(0);
     });
 
     it("given non-Triage ability with healing move, then priority bonus is 0", () => {
       // Only Triage provides this bonus
-      expect(getTriagePriorityBonus(A.adaptability, M.drainPunch, "drain")).toBe(0);
+      expect(getTriagePriorityBonus(abilityIds.adaptability, moveIds.drainPunch, "drain")).toBe(0);
     });
 
     it("given Triage handler on-priority-check with healing move, then activated:true", () => {
       // Source: Showdown data/abilities.ts -- triage: onModifyPriority
-      const ctx = makeCtx({
-        ability: A.triage,
+      const ctx = createAbilityContext({
+        ability: abilityIds.triage,
         trigger: "on-priority-check",
-        move: makeMove({
-          id: M.drainPunch,
-          type: T.fighting,
-          effect: { type: "drain", drainPercent: 50 },
-        }),
+        move: drainPunch,
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);

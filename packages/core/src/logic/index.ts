@@ -30,6 +30,12 @@ export {
   getExpToNextLevel,
 } from "./experience";
 export {
+  createFriendship,
+  MAX_FRIENDSHIP,
+  MIN_FRIENDSHIP,
+  validateFriendship,
+} from "./friendship-inputs";
+export {
   calculateStatExpContribution,
   gen1to2FullParalysisCheck,
   gen1to4MultiHitRoll,

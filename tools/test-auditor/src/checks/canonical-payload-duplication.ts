@@ -50,6 +50,9 @@ export function checkCanonicalPayloadDuplication(ctx: FileContext): Finding[] {
 
       const contextLines = ctx.lines.slice(Math.max(0, index - 4), Math.min(ctx.lines.length, index + 5));
       const contextWindow = contextLines.join("\n");
+      const explicitIntentWindow = ctx.lines
+        .slice(Math.max(0, index - 20), Math.min(ctx.lines.length, index + 3))
+        .join("\n");
       const windowKinds = getWindowFieldKinds(contextLines);
       const looksLikeCanonicalRecord =
         PRIMARY_FIELD_KINDS.has(pattern.kind) ||
@@ -61,7 +64,7 @@ export function checkCanonicalPayloadDuplication(ctx: FileContext): Finding[] {
         continue;
       }
 
-      if (EXPLICIT_OVERRIDE_RE.test(contextWindow)) {
+      if (EXPLICIT_OVERRIDE_RE.test(explicitIntentWindow)) {
         continue;
       }
 

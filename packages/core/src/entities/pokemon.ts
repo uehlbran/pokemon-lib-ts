@@ -5,6 +5,8 @@ import type { MutableStatBlock, StatBlock } from "./stats";
 import type { PrimaryStatus } from "./status";
 import type { PokemonType } from "./types";
 
+export type AbilitySlot = "normal1" | "normal2" | "hidden";
+
 export interface PokemonInstance {
   /** Unique identifier for this individual */
   readonly uid: string;
@@ -40,7 +42,7 @@ export interface PokemonInstance {
   ability: string;
 
   /** Which ability slot this is from */
-  readonly abilitySlot: "normal1" | "normal2" | "hidden";
+  readonly abilitySlot: AbilitySlot;
 
   /** Held item ID (null = no item) */
   heldItem: string | null;
@@ -194,7 +196,7 @@ export interface PokemonCreationOptions {
   nature: NatureId;
   ivs: StatBlock;
   evs: MutableStatBlock;
-  abilitySlot: "normal1" | "normal2" | "hidden";
+  abilitySlot: AbilitySlot;
   gender: Gender;
   isShiny: boolean;
   moves: string[]; // Move IDs — if empty, uses latest level-up moves

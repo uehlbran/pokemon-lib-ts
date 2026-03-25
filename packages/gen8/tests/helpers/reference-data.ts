@@ -1,5 +1,11 @@
 import {
+  CORE_ABILITY_SLOTS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
+  CORE_NATURE_IDS,
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -31,14 +37,14 @@ export const GEN8_TEST_VALUES = {
   },
   pokemon: {
     uid: "test",
-    nature: "hardy",
-    ability: "none",
-    abilitySlot: "normal1",
-    gender: "male",
-    pokeball: "pokeball",
-    defaultType: "normal",
+    nature: CORE_NATURE_IDS.hardy,
+    ability: CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    defaultType: CORE_TYPE_IDS.normal,
   },
-  abilities: {
+  abilityIds: {
     klutz: requireAbilityId("Klutz"),
   },
   volatiles: {
@@ -84,9 +90,9 @@ export const GEN8_TEST_VALUES = {
     dark: CORE_TYPE_IDS.dark,
   },
   categories: {
-    physical: "physical",
-    special: "special",
-    status: "status",
+    physical: CORE_MOVE_CATEGORIES.physical,
+    special: CORE_MOVE_CATEGORIES.special,
+    status: CORE_MOVE_CATEGORIES.status,
   },
   items: {
     assaultVest: requireItemId("Assault Vest"),
