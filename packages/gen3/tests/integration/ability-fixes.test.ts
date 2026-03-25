@@ -13,6 +13,8 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { GEN3_NATURE_IDS } from "../../src";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
 import {
@@ -21,6 +23,7 @@ import {
   isWeatherSuppressedGen3,
   WEATHER_SUPPRESSING_ABILITIES,
 } from "../../src/Gen3Abilities";
+import { GEN3_ABILITY_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 import { applyGen3WeatherEffects } from "../../src/Gen3Weather";
@@ -66,8 +69,8 @@ function createActivePokemon(opts: {
   hp?: number;
   currentHp?: number;
   types: PokemonType[];
-  status?: "burn" | "poison" | "paralysis" | "freeze" | "sleep" | "badly-poisoned" | null;
-  ability?: string;
+  status?: (typeof CORE_STATUS_IDS)[keyof typeof CORE_STATUS_IDS] | null;
+  ability?: (typeof GEN3_ABILITY_IDS)[keyof typeof GEN3_ABILITY_IDS];
   heldItem?: string | null;
   nickname?: string | null;
   speciesId?: number;
@@ -83,12 +86,12 @@ function createActivePokemon(opts: {
   };
 
   const pokemon = {
-    uid: "test",
+    uid: "gen3-test",
     speciesId: opts.speciesId ?? 1,
     nickname: opts.nickname === undefined ? null : opts.nickname,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN3_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? opts.hp ?? 200,
@@ -141,7 +144,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(type: PokemonType, power: number, id = "test-move"): MoveData {
+function createMove(type: PokemonType, power: number, id = GEN3_MOVE_IDS.tackle): MoveData {
   return {
     id,
     displayName: "Test Move",
@@ -179,23 +182,23 @@ function createMove(type: PokemonType, power: number, id = "test-move"): MoveDat
 
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -212,7 +215,7 @@ function createAbilityContext(opts: {
   opponent?: ActivePokemon;
   weather?: { type: string; turnsLeft: number; source: string } | null;
 }): AbilityContext {
-  const opponent = opts.opponent ?? createActivePokemon({ types: ["normal"] });
+  const opponent = opts.opponent ?? createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
   return {
     pokemon: opts.pokemon,
     opponent,
@@ -325,54 +328,54 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
     it("given Clear Body, when checking any stat drop, then returns true (blocks all drops)", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:6987-6993
       //   ABILITY_CLEAR_BODY blocks all opponent-caused stat drops
-      expect(isGen3StatDropBlocked("clear-body", "attack")).toBe(true);
-      expect(isGen3StatDropBlocked("clear-body", "defense")).toBe(true);
-      expect(isGen3StatDropBlocked("clear-body", "spAttack")).toBe(true);
-      expect(isGen3StatDropBlocked("clear-body", "spDefense")).toBe(true);
-      expect(isGen3StatDropBlocked("clear-body", "speed")).toBe(true);
-      expect(isGen3StatDropBlocked("clear-body", "accuracy")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "attack")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "defense")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "spAttack")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "spDefense")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "speed")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "accuracy")).toBe(true);
     });
 
     // --- White Smoke ---
     it("given White Smoke, when checking any stat drop, then returns true (blocks all drops)", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:6987-6993
       //   ABILITY_WHITE_SMOKE blocks all opponent-caused stat drops (same as Clear Body)
-      expect(isGen3StatDropBlocked("white-smoke", "attack")).toBe(true);
-      expect(isGen3StatDropBlocked("white-smoke", "defense")).toBe(true);
-      expect(isGen3StatDropBlocked("white-smoke", "speed")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, "attack")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, "defense")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, "speed")).toBe(true);
     });
 
     // --- Hyper Cutter ---
     it("given Hyper Cutter, when checking Attack drop, then returns true", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:7014-7021
       //   ABILITY_HYPER_CUTTER blocks Attack drops only
-      expect(isGen3StatDropBlocked("hyper-cutter", "attack")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "attack")).toBe(true);
     });
 
     it("given Hyper Cutter, when checking non-Attack drop, then returns false", () => {
       // Source: pret/pokeemerald — Hyper Cutter only protects Attack
-      expect(isGen3StatDropBlocked("hyper-cutter", "defense")).toBe(false);
-      expect(isGen3StatDropBlocked("hyper-cutter", "speed")).toBe(false);
-      expect(isGen3StatDropBlocked("hyper-cutter", "spAttack")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "defense")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "speed")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "spAttack")).toBe(false);
     });
 
     // --- Keen Eye ---
     it("given Keen Eye, when checking Accuracy drop, then returns true", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:7023-7030
       //   ABILITY_KEEN_EYE blocks Accuracy drops only
-      expect(isGen3StatDropBlocked("keen-eye", "accuracy")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "accuracy")).toBe(true);
     });
 
     it("given Keen Eye, when checking non-Accuracy drop, then returns false", () => {
       // Source: pret/pokeemerald — Keen Eye only protects Accuracy
-      expect(isGen3StatDropBlocked("keen-eye", "attack")).toBe(false);
-      expect(isGen3StatDropBlocked("keen-eye", "defense")).toBe(false);
-      expect(isGen3StatDropBlocked("keen-eye", "evasion")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "attack")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "defense")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "evasion")).toBe(false);
     });
 
     // --- No blocking ability ---
     it("given no blocking ability, when checking any stat drop, then returns false", () => {
-      expect(isGen3StatDropBlocked("blaze", "attack")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.blaze, "attack")).toBe(false);
       expect(isGen3StatDropBlocked("", "attack")).toBe(false);
     });
   });
@@ -382,13 +385,13 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:4141-4145
       //   Intimidate's Attack drop is blocked by Clear Body
       const intimidator = createActivePokemon({
-        types: ["normal"],
-        ability: "intimidate",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.intimidate,
         nickname: "Mightyena",
       });
       const defender = createActivePokemon({
-        types: ["steel"],
-        ability: "clear-body",
+        types: [CORE_TYPE_IDS.steel],
+        ability: GEN3_ABILITY_IDS.clearBody,
         nickname: "Metagross",
       });
       const ctx = createAbilityContext({ pokemon: intimidator, opponent: defender });
@@ -406,13 +409,13 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:4141-4145
       //   Intimidate's Attack drop is also blocked by Hyper Cutter
       const intimidator = createActivePokemon({
-        types: ["normal"],
-        ability: "intimidate",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.intimidate,
         nickname: "Mightyena",
       });
       const defender = createActivePokemon({
-        types: ["water"],
-        ability: "hyper-cutter",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.hyperCutter,
         nickname: "Kingler",
       });
       const ctx = createAbilityContext({ pokemon: intimidator, opponent: defender });
@@ -427,13 +430,13 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
     it("given opponent has White Smoke, when Intimidate triggers, then Attack drop is blocked", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:4141-4145
       const intimidator = createActivePokemon({
-        types: ["normal"],
-        ability: "intimidate",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.intimidate,
         nickname: "Mightyena",
       });
       const defender = createActivePokemon({
-        types: ["fire"],
-        ability: "white-smoke",
+        types: [CORE_TYPE_IDS.fire],
+        ability: GEN3_ABILITY_IDS.whiteSmoke,
         nickname: "Torkoal",
       });
       const ctx = createAbilityContext({ pokemon: intimidator, opponent: defender });
@@ -448,13 +451,13 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
     it("given opponent has no blocking ability, when Intimidate triggers, then Attack drops normally", () => {
       // Source: pret/pokeemerald — Intimidate lowers Attack by 1 when not blocked
       const intimidator = createActivePokemon({
-        types: ["normal"],
-        ability: "intimidate",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.intimidate,
         nickname: "Mightyena",
       });
       const defender = createActivePokemon({
-        types: ["normal"],
-        ability: "blaze",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.blaze,
         nickname: "Blaziken",
       });
       const ctx = createAbilityContext({ pokemon: intimidator, opponent: defender });
@@ -475,41 +478,41 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
 
 describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
   describe("WEATHER_SUPPRESSING_ABILITIES constant", () => {
-    it("contains cloud-nine and air-lock", () => {
+    it("given the weather-suppressing set, when queried, then it contains Cloud Nine and Air Lock", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
-      expect(WEATHER_SUPPRESSING_ABILITIES.has("cloud-nine")).toBe(true);
-      expect(WEATHER_SUPPRESSING_ABILITIES.has("air-lock")).toBe(true);
+      expect(WEATHER_SUPPRESSING_ABILITIES.has(GEN3_ABILITY_IDS.cloudNine)).toBe(true);
+      expect(WEATHER_SUPPRESSING_ABILITIES.has(GEN3_ABILITY_IDS.airLock)).toBe(true);
     });
 
-    it("does not contain non-weather abilities", () => {
-      expect(WEATHER_SUPPRESSING_ABILITIES.has("drizzle")).toBe(false);
-      expect(WEATHER_SUPPRESSING_ABILITIES.has("drought")).toBe(false);
+    it("given the weather-suppressing set, when queried, then it excludes non-weather abilities", () => {
+      expect(WEATHER_SUPPRESSING_ABILITIES.has(GEN3_ABILITY_IDS.drizzle)).toBe(false);
+      expect(WEATHER_SUPPRESSING_ABILITIES.has(GEN3_ABILITY_IDS.drought)).toBe(false);
     });
   });
 
   describe("isWeatherSuppressedGen3", () => {
     it("given pokemon has Cloud Nine, when checking weather suppression, then returns true", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT
-      const cloudNine = createActivePokemon({ types: ["normal"], ability: "cloud-nine" });
-      const normal = createActivePokemon({ types: ["normal"], ability: "blaze" });
+      const cloudNine = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.cloudNine });
+      const normal = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.blaze });
       expect(isWeatherSuppressedGen3(cloudNine, normal)).toBe(true);
     });
 
     it("given opponent has Air Lock, when checking weather suppression, then returns true", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT
-      const normal = createActivePokemon({ types: ["normal"], ability: "blaze" });
-      const airLock = createActivePokemon({ types: ["flying"], ability: "air-lock" });
+      const normal = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.blaze });
+      const airLock = createActivePokemon({ types: [CORE_TYPE_IDS.flying], ability: GEN3_ABILITY_IDS.airLock });
       expect(isWeatherSuppressedGen3(normal, airLock)).toBe(true);
     });
 
     it("given neither has weather-suppressing ability, when checking, then returns false", () => {
-      const a = createActivePokemon({ types: ["normal"], ability: "blaze" });
-      const b = createActivePokemon({ types: ["normal"], ability: "torrent" });
+      const a = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.blaze });
+      const b = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.torrent });
       expect(isWeatherSuppressedGen3(a, b)).toBe(false);
     });
 
     it("given pokemon is undefined, when opponent has Cloud Nine, then returns true", () => {
-      const cloudNine = createActivePokemon({ types: ["normal"], ability: "cloud-nine" });
+      const cloudNine = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.cloudNine });
       expect(isWeatherSuppressedGen3(undefined, cloudNine)).toBe(true);
     });
   });
@@ -526,17 +529,17 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       //   Type effectiveness: 1.0 (neutral chart)
       //   Random: 100/100 = 1.0 → 55
       const attacker = createActivePokemon({
-        types: ["water"],
-        ability: "cloud-nine",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.cloudNine,
         attack: 100,
         level: 50,
       });
       const defender = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
         defense: 100,
       });
-      const move = createMove("water", 80, "surf");
+      const move = createMove(CORE_TYPE_IDS.water, 80, GEN3_MOVE_IDS.surf);
       const rng = createMockRng(100);
       const contextNoWeather = createDamageContext({
         attacker,
@@ -550,7 +553,7 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
         defender,
         move,
         rng,
-        weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+        weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
       });
 
       const typeChart = createNeutralTypeChart();
@@ -565,24 +568,24 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
       // Sun normally boosts Fire moves by 1.5x. Air Lock should negate this.
       const attacker = createActivePokemon({
-        types: ["fire"],
-        ability: "blaze",
+        types: [CORE_TYPE_IDS.fire],
+        ability: GEN3_ABILITY_IDS.blaze,
         attack: 100,
         level: 50,
       });
       const defender = createActivePokemon({
-        types: ["normal"],
-        ability: "air-lock",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.airLock,
         defense: 100,
       });
-      const move = createMove("fire", 80, "flamethrower");
+      const move = createMove(CORE_TYPE_IDS.fire, 80, GEN3_MOVE_IDS.flamethrower);
       const rng = createMockRng(100);
       const ctxWithSun = createDamageContext({
         attacker,
         defender,
         move,
         rng,
-        weather: { type: "sun", turnsLeft: 5, source: "drought" },
+        weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: GEN3_ABILITY_IDS.drought },
       });
       const ctxNoWeather = createDamageContext({
         attacker,
@@ -603,24 +606,24 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
     it("given no weather-suppressing ability and rain active, when using Water move, then rain boost IS applied", () => {
       // Control test: confirm rain boost works when no suppression
       const attacker = createActivePokemon({
-        types: ["water"],
-        ability: "torrent",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.torrent,
         attack: 100,
         level: 50,
       });
       const defender = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
         defense: 100,
       });
-      const move = createMove("water", 80, "surf");
+      const move = createMove(CORE_TYPE_IDS.water, 80, GEN3_MOVE_IDS.surf);
       const rng = createMockRng(100);
       const ctxRain = createDamageContext({
         attacker,
         defender,
         move,
         rng,
-        weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+        weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
       });
       const ctxNoWeather = createDamageContext({
         attacker,
@@ -644,19 +647,19 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT check
       // Cloud Nine suppresses sandstorm chip damage
       const cloudNiner = createActivePokemon({
-        types: ["normal"],
-        ability: "cloud-nine",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.cloudNine,
         nickname: "Golduck",
       });
       const normalMon = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
         nickname: "Rattata",
       });
       const state = createBattleStateWithWeather(cloudNiner, normalMon, {
-        type: "sand",
+        type: CORE_WEATHER_IDS.sand,
         turnsLeft: 5,
-        source: "sand-stream",
+        source: GEN3_ABILITY_IDS.sandStream,
       });
 
       const results = applyGen3WeatherEffects(state);
@@ -668,17 +671,17 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
     it("given Air Lock holder on field and hail active, when applying weather effects, then no chip damage", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT check
       const airLocker = createActivePokemon({
-        types: ["flying", "dragon"],
-        ability: "air-lock",
+        types: [CORE_TYPE_IDS.flying, CORE_TYPE_IDS.dragon],
+        ability: GEN3_ABILITY_IDS.airLock,
         nickname: "Rayquaza",
       });
       const normalMon = createActivePokemon({
-        types: ["fire"],
+        types: [CORE_TYPE_IDS.fire],
         ability: "",
         nickname: "Charmander",
       });
       const state = createBattleStateWithWeather(airLocker, normalMon, {
-        type: "hail",
+        type: CORE_WEATHER_IDS.hail,
         turnsLeft: 5,
         source: "hail-move",
       });
@@ -691,21 +694,21 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
     it("given no weather-suppressing ability and sandstorm active, when applying weather effects, then chip damage occurs", () => {
       // Control: sandstorm should deal chip damage to non-immune types
       const normalMon = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
         nickname: "Rattata",
         hp: 160,
       });
       const otherMon = createActivePokemon({
-        types: ["fire"],
+        types: [CORE_TYPE_IDS.fire],
         ability: "",
         nickname: "Charmander",
         hp: 160,
       });
       const state = createBattleStateWithWeather(normalMon, otherMon, {
-        type: "sand",
+        type: CORE_WEATHER_IDS.sand,
         turnsLeft: 5,
-        source: "sand-stream",
+        source: GEN3_ABILITY_IDS.sandStream,
       });
 
       const results = applyGen3WeatherEffects(state);
@@ -713,7 +716,9 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // Both non-immune types should take 1/16 max HP chip
       // 160 / 16 = 10
       expect(results.length).toBe(2);
+      // Source: 160 HP / 16 = 10 damage per target for sandstorm chip damage.
       expect(results[0]!.damage).toBe(10);
+      // Source: both non-immune battlers take the same 10 HP chip damage.
       expect(results[1]!.damage).toBe(10);
     });
   });
@@ -728,11 +733,11 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // With Cloud Nine, Thunder uses its base 70% accuracy.
       // We use an RNG roll of 71 which would miss at 70% accuracy.
       const attacker = createActivePokemon({
-        types: ["electric"],
-        ability: "cloud-nine",
+        types: [CORE_TYPE_IDS.electric],
+        ability: GEN3_ABILITY_IDS.cloudNine,
       });
       const defender = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
       });
 
@@ -741,12 +746,12 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
         attacker,
         defender,
         move: {
-          id: "thunder",
+          id: GEN3_MOVE_IDS.thunder,
           accuracy: 70,
-          type: "electric",
+          type: CORE_TYPE_IDS.electric,
         } as MoveData,
         state: {
-          weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+          weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
         } as BattleState,
         rng,
       } as AccuracyContext;
@@ -761,11 +766,11 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
     it("given no weather suppression and rain active, when Thunder used, then auto-hit", () => {
       // Control: Thunder should auto-hit in rain without suppression
       const attacker = createActivePokemon({
-        types: ["electric"],
-        ability: "static",
+        types: [CORE_TYPE_IDS.electric],
+        ability: GEN3_ABILITY_IDS.static,
       });
       const defender = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
       });
 
@@ -774,12 +779,12 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
         attacker,
         defender,
         move: {
-          id: "thunder",
+          id: GEN3_MOVE_IDS.thunder,
           accuracy: 70,
-          type: "electric",
+          type: CORE_TYPE_IDS.electric,
         } as MoveData,
         state: {
-          weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+          weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
         } as BattleState,
         rng,
       } as AccuracyContext;
@@ -796,25 +801,25 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // effective accuracy 80 and a roll of 81 would miss. But with Air Lock
       // suppressing weather, Sand Veil doesn't activate and 81 <= 100 hits.
       const attacker = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
       });
       const defender = createActivePokemon({
-        types: ["ground"],
-        ability: "sand-veil",
+        types: [CORE_TYPE_IDS.ground],
+        ability: GEN3_ABILITY_IDS.sandVeil,
       });
 
       const rng = createMockRng(81);
       const context: AccuracyContext = {
-        attacker: { ...attacker, ability: "air-lock" } as ActivePokemon,
+        attacker: { ...attacker, ability: GEN3_ABILITY_IDS.airLock } as ActivePokemon,
         defender,
         move: {
-          id: "tackle",
+          id: GEN3_MOVE_IDS.tackle,
           accuracy: 100,
-          type: "normal",
+          type: CORE_TYPE_IDS.normal,
         } as MoveData,
         state: {
-          weather: { type: "sand", turnsLeft: 5, source: "sand-stream" },
+          weather: { type: CORE_WEATHER_IDS.sand, turnsLeft: 5, source: GEN3_ABILITY_IDS.sandStream },
         } as BattleState,
         rng,
       } as AccuracyContext;
@@ -832,22 +837,22 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT
       // If weather is suppressed, Rain Dish should not activate.
       const rainDisher = createActivePokemon({
-        types: ["water"],
-        ability: "rain-dish",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.rainDish,
         nickname: "Ludicolo",
         hp: 200,
         currentHp: 150,
       });
       // The opponent has Cloud Nine which suppresses weather
       const cloudNiner = createActivePokemon({
-        types: ["normal"],
-        ability: "cloud-nine",
+        types: [CORE_TYPE_IDS.normal],
+        ability: GEN3_ABILITY_IDS.cloudNine,
         nickname: "Golduck",
       });
       const ctx = createAbilityContext({
         pokemon: rainDisher,
         opponent: cloudNiner,
-        weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+        weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
       });
 
       const result = applyGen3Ability("on-turn-end", ctx);
@@ -860,20 +865,20 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       // Source: pret/pokeemerald — Rain Dish heals 1/16 max HP in rain
       // 200 / 16 = 12
       const rainDisher = createActivePokemon({
-        types: ["water"],
-        ability: "rain-dish",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.rainDish,
         nickname: "Ludicolo",
         hp: 200,
         currentHp: 150,
       });
       const opponent = createActivePokemon({
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
         ability: "",
       });
       const ctx = createAbilityContext({
         pokemon: rainDisher,
         opponent,
-        weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+        weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
       });
 
       const result = applyGen3Ability("on-turn-end", ctx);
@@ -887,8 +892,8 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
     it("given Cloud Nine holder switches in, then announces weather negation", () => {
       // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ON_SWITCHIN
       const cloudNiner = createActivePokemon({
-        types: ["water"],
-        ability: "cloud-nine",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.cloudNine,
         nickname: "Golduck",
       });
       const ctx = createAbilityContext({ pokemon: cloudNiner });
@@ -902,8 +907,8 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
     it("given Air Lock holder switches in, then announces weather negation", () => {
       // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ON_SWITCHIN
       const airLocker = createActivePokemon({
-        types: ["flying", "dragon"],
-        ability: "air-lock",
+        types: [CORE_TYPE_IDS.flying, CORE_TYPE_IDS.dragon],
+        ability: GEN3_ABILITY_IDS.airLock,
         nickname: "Rayquaza",
       });
       const ctx = createAbilityContext({ pokemon: airLocker });
@@ -924,75 +929,75 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
   it("given Castform with Forecast switches in during sun, then type changes to Fire", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_FORECAST / GetCastformForm
     const castform = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
       pokemon: castform,
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: GEN3_ABILITY_IDS.drought },
     });
 
     const result = applyGen3Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "type-change", target: "self", types: ["fire"] },
+      { effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.fire] },
     ]);
   });
 
   it("given Castform with Forecast switches in during rain, then type changes to Water", () => {
     // Source: pret/pokeemerald — Forecast: Rain → Water type
     const castform = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
       pokemon: castform,
-      weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
     });
 
     const result = applyGen3Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "type-change", target: "self", types: ["water"] },
+      { effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.water] },
     ]);
   });
 
   it("given Castform with Forecast switches in during hail, then type changes to Ice", () => {
     // Source: pret/pokeemerald — Forecast: Hail → Ice type
     const castform = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
       pokemon: castform,
-      weather: { type: "hail", turnsLeft: 5, source: "hail-move" },
+      weather: { type: CORE_WEATHER_IDS.hail, turnsLeft: 5, source: "hail-move" },
     });
 
     const result = applyGen3Ability("on-switch-in", ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ effectType: "type-change", target: "self", types: ["ice"] }]);
+    expect(result.effects).toEqual([{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] }]);
   });
 
   it("given Castform with Forecast switches in during sandstorm, then stays Normal", () => {
     // Source: pret/pokeemerald — Forecast: Sandstorm → Normal (no change)
     const castform = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const ctx = createAbilityContext({
       pokemon: castform,
-      weather: { type: "sand", turnsLeft: 5, source: "sand-stream" },
+      weather: { type: CORE_WEATHER_IDS.sand, turnsLeft: 5, source: GEN3_ABILITY_IDS.sandStream },
     });
 
     const result = applyGen3Ability("on-switch-in", ctx);
@@ -1004,8 +1009,8 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
   it("given Castform with Forecast switches in with no weather, then stays Normal", () => {
     // Source: pret/pokeemerald — Forecast: no weather → Normal
     const castform = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
@@ -1023,20 +1028,20 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     // Source: pret/pokeemerald — Forecast respects WEATHER_HAS_EFFECT check
     // Cloud Nine suppresses weather, so Forecast treats it as no weather → Normal
     const castform = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
     const cloudNiner = createActivePokemon({
-      types: ["normal"],
-      ability: "cloud-nine",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.cloudNine,
       nickname: "Golduck",
     });
     const ctx = createAbilityContext({
       pokemon: castform,
       opponent: cloudNiner,
-      weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN3_ABILITY_IDS.drizzle },
     });
 
     const result = applyGen3Ability("on-switch-in", ctx);
@@ -1075,9 +1080,9 @@ describe("Gen 3 Baton Pass batonPass flag (#347)", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Baton Pass
     // Source: Bulbapedia — "Baton Pass passes stat stage changes and certain
     //   volatile statuses (Substitute, Focus Energy, etc.) to the replacement"
-    const attacker = createActivePokemon({ types: ["bug"], ability: "speed-boost" });
-    const defender = createActivePokemon({ types: ["normal"], ability: "" });
-    const move = dataManager.getMove("baton-pass");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.bug], ability: GEN3_ABILITY_IDS.speedBoost });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: "" });
+    const move = dataManager.getMove(GEN3_MOVE_IDS.batonPass);
 
     const context = createMoveContext(attacker, defender, move!);
     const result = ruleset.executeMoveEffect(context);
@@ -1089,10 +1094,10 @@ describe("Gen 3 Baton Pass batonPass flag (#347)", () => {
   it("given a non-Baton-Pass switch-out move, when executeMoveEffect called, then batonPass is not true", () => {
     // Control: a generic switch-out move that is NOT baton-pass should NOT set batonPass.
     // We use a synthetic move with switch-out effect.
-    const attacker = createActivePokemon({ types: ["normal"], ability: "" });
-    const defender = createActivePokemon({ types: ["normal"], ability: "" });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: "" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: "" });
     const move = {
-      ...createMove("normal", 0, "fake-switch-move"),
+      ...createMove(CORE_TYPE_IDS.normal, 0, GEN3_MOVE_IDS.tackle),
       category: "status" as const,
       accuracy: null,
       power: null,
@@ -1118,13 +1123,13 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
     // There is NO blocklist — Wonder Guard, Forecast, etc. are all copyable.
     // The blocklist was added in Gen 4+.
     const tracer = createActivePokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN3_ABILITY_IDS.trace,
       nickname: "Gardevoir",
     });
     const opponent = createActivePokemon({
-      types: ["bug", "ghost"],
-      ability: "wonder-guard",
+      types: [CORE_TYPE_IDS.bug, CORE_TYPE_IDS.ghost],
+      ability: GEN3_ABILITY_IDS.wonderGuard,
       nickname: "Shedinja",
     });
     const ctx = createAbilityContext({ pokemon: tracer, opponent });
@@ -1133,20 +1138,20 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "ability-change", target: "self", newAbility: "wonder-guard" },
+      { effectType: "ability-change", target: "self", newAbility: GEN3_ABILITY_IDS.wonderGuard },
     ]);
   });
 
   it("given opponent has Forecast, when Trace triggers, then copies Forecast", () => {
     // Source: pret/pokeemerald — no blocklist in Gen 3
     const tracer = createActivePokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN3_ABILITY_IDS.trace,
       nickname: "Gardevoir",
     });
     const opponent = createActivePokemon({
-      types: ["normal"],
-      ability: "forecast",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.forecast,
       speciesId: 351, // Castform's national dex number
       nickname: "Castform",
     });
@@ -1156,7 +1161,7 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "ability-change", target: "self", newAbility: "forecast" },
+      { effectType: "ability-change", target: "self", newAbility: GEN3_ABILITY_IDS.forecast },
     ]);
   });
 
@@ -1164,13 +1169,13 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
     // Source: pret/pokeemerald — only check is ability != ABILITY_NONE and != ABILITY_TRACE
     // (implementation guard to prevent infinite loop)
     const tracer = createActivePokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN3_ABILITY_IDS.trace,
       nickname: "Gardevoir",
     });
     const opponent = createActivePokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN3_ABILITY_IDS.trace,
       nickname: "Alakazam",
     });
     const ctx = createAbilityContext({ pokemon: tracer, opponent });
@@ -1183,12 +1188,12 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
   it("given opponent has no ability, when Trace triggers, then does not activate", () => {
     // Source: pret/pokeemerald — Trace requires opponent to have a non-empty ability
     const tracer = createActivePokemon({
-      types: ["psychic"],
-      ability: "trace",
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN3_ABILITY_IDS.trace,
       nickname: "Gardevoir",
     });
     const opponent = createActivePokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       ability: "",
       nickname: "Ditto",
     });

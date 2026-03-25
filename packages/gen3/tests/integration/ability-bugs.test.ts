@@ -11,8 +11,11 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN3_NATURE_IDS } from "../../src";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
+import { GEN3_ABILITY_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 
@@ -55,8 +58,8 @@ function createActivePokemon(opts: {
   hp?: number;
   currentHp?: number;
   types: PokemonType[];
-  status?: "burn" | "poison" | "paralysis" | "freeze" | "sleep" | "badly-poisoned" | null;
-  ability?: string;
+  status?: (typeof CORE_STATUS_IDS)[keyof typeof CORE_STATUS_IDS] | null;
+  ability?: (typeof GEN3_ABILITY_IDS)[keyof typeof GEN3_ABILITY_IDS];
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
@@ -70,12 +73,12 @@ function createActivePokemon(opts: {
   };
 
   const pokemon = {
-    uid: "test",
+    uid: "gen3-test",
     speciesId: 1,
     nickname: null,
     level: opts.level,
     experience: 0,
-    nature: "hardy",
+    nature: GEN3_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? opts.hp ?? 200,
@@ -129,7 +132,7 @@ function createActivePokemon(opts: {
 }
 
 /** Create a move mock with the given type and power. */
-function createMove(type: PokemonType, power: number, id = "test-move"): MoveData {
+function createMove(type: PokemonType, power: number, id = GEN3_MOVE_IDS.tackle): MoveData {
   return {
     id,
     displayName: "Test Move",
@@ -168,23 +171,23 @@ function createMove(type: PokemonType, power: number, id = "test-move"): MoveDat
 /** All-neutral type chart for 17 Gen 3 types. */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -294,8 +297,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 120,
         currentHp: 40,
-        types: ["fire"],
-        ability: "blaze",
+        types: [CORE_TYPE_IDS.fire],
+        ability: GEN3_ABILITY_IDS.blaze,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -303,12 +306,12 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
       // Ember is fire-type, special in Gen 3 but we'll use a fire physical move for simplicity
       // Actually fire is special in Gen 3. Let's check — fire type = special in Gen 3
       // So it uses spAttack vs spDefense. Both are 100. Same result.
-      const move = createMove("fire", 40, "ember");
+      const move = createMove(CORE_TYPE_IDS.fire, 40, GEN3_MOVE_IDS.ember);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -334,8 +337,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 120,
         currentHp: 41,
-        types: ["fire"],
-        ability: "blaze",
+        types: [CORE_TYPE_IDS.fire],
+        ability: GEN3_ABILITY_IDS.blaze,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -343,9 +346,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("fire", 40, "ember");
+      const move = createMove(CORE_TYPE_IDS.fire, 40, GEN3_MOVE_IDS.ember);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -369,8 +372,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 120,
         currentHp: 40,
-        types: ["fire"],
-        ability: "blaze",
+        types: [CORE_TYPE_IDS.fire],
+        ability: GEN3_ABILITY_IDS.blaze,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -378,10 +381,10 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
       // Normal type = physical in Gen 3
-      const move = createMove("normal", 35, "tackle");
+      const move = createMove(CORE_TYPE_IDS.normal, 35, GEN3_MOVE_IDS.tackle);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -409,8 +412,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 150,
         currentHp: 50,
-        types: ["grass"],
-        ability: "overgrow",
+        types: [CORE_TYPE_IDS.grass],
+        ability: GEN3_ABILITY_IDS.overgrow,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -418,9 +421,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("grass", 55, "razor-leaf");
+      const move = createMove(CORE_TYPE_IDS.grass, 55, GEN3_MOVE_IDS.razorLeaf);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -445,8 +448,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 150,
         currentHp: 51,
-        types: ["grass"],
-        ability: "overgrow",
+        types: [CORE_TYPE_IDS.grass],
+        ability: GEN3_ABILITY_IDS.overgrow,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -454,9 +457,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("grass", 55, "razor-leaf");
+      const move = createMove(CORE_TYPE_IDS.grass, 55, GEN3_MOVE_IDS.razorLeaf);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -485,8 +488,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 200,
         currentHp: 66,
-        types: ["water"],
-        ability: "torrent",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.torrent,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -494,9 +497,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("water", 40, "water-gun");
+      const move = createMove(CORE_TYPE_IDS.water, 40, GEN3_MOVE_IDS.waterGun);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -514,8 +517,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 200,
         currentHp: 67,
-        types: ["water"],
-        ability: "torrent",
+        types: [CORE_TYPE_IDS.water],
+        ability: GEN3_ABILITY_IDS.torrent,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -523,9 +526,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("water", 40, "water-gun");
+      const move = createMove(CORE_TYPE_IDS.water, 40, GEN3_MOVE_IDS.waterGun);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -555,8 +558,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 300,
         currentHp: 100,
-        types: ["bug", "fighting"],
-        ability: "swarm",
+        types: [CORE_TYPE_IDS.bug, CORE_TYPE_IDS.fighting],
+        ability: GEN3_ABILITY_IDS.swarm,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -564,9 +567,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("bug", 120, "megahorn");
+      const move = createMove(CORE_TYPE_IDS.bug, 120, GEN3_MOVE_IDS.megahorn);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -587,8 +590,8 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         spDefense: 100,
         hp: 300,
         currentHp: 101,
-        types: ["bug", "fighting"],
-        ability: "swarm",
+        types: [CORE_TYPE_IDS.bug, CORE_TYPE_IDS.fighting],
+        ability: GEN3_ABILITY_IDS.swarm,
       });
       const defender = createActivePokemon({
         level: 50,
@@ -596,9 +599,9 @@ describe("Gen 3 Pinch Abilities — Overgrow, Blaze, Torrent, Swarm (#139)", () 
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       });
-      const move = createMove("bug", 120, "megahorn");
+      const move = createMove(CORE_TYPE_IDS.bug, 120, GEN3_MOVE_IDS.megahorn);
       const ctx = createDamageContext({ attacker, defender, move });
       const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -619,7 +622,7 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
     // Source: Bulbapedia — "Marvel Scale: If the Pokemon has a status condition, its Defense stat is 1.5x."
     // Source: pret/pokeemerald ABILITY_MARVEL_SCALE
     //
-    // Attacker is "fighting" type using "normal" 80BP physical move (no STAB).
+    // Attacker is CORE_TYPE_IDS.fighting type using CORE_TYPE_IDS.normal 80BP physical move (no STAB).
     // Defender has Defense 100, Marvel Scale with burn -> effective def = floor(100 * 1.5) = 150
     // L50, Atk=100 vs Def=150, max roll:
     //   levelFactor = floor(2*50/5) + 2 = 22
@@ -633,7 +636,7 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"], // no STAB with normal move
+      types: [CORE_TYPE_IDS.fighting], // no STAB with normal move
     });
     const defender = createActivePokemon({
       level: 50,
@@ -641,11 +644,11 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "marvel-scale",
-      status: "burn",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.burn,
     });
-    const move = createMove("normal", 80, "body-slam");
+    const move = createMove(CORE_TYPE_IDS.normal, 80, GEN3_MOVE_IDS.bodySlam);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -666,7 +669,7 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"], // no STAB with normal move
+      types: [CORE_TYPE_IDS.fighting], // no STAB with normal move
     });
     const defender = createActivePokemon({
       level: 50,
@@ -674,11 +677,11 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "marvel-scale",
-      status: "paralysis",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.paralysis,
     });
-    const move = createMove("normal", 80, "body-slam");
+    const move = createMove(CORE_TYPE_IDS.normal, 80, GEN3_MOVE_IDS.bodySlam);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -694,7 +697,7 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"], // no STAB with normal move
+      types: [CORE_TYPE_IDS.fighting], // no STAB with normal move
     });
     const defender = createActivePokemon({
       level: 50,
@@ -702,10 +705,10 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "marvel-scale",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.marvelScale,
     });
-    const move = createMove("normal", 80, "body-slam");
+    const move = createMove(CORE_TYPE_IDS.normal, 80, GEN3_MOVE_IDS.bodySlam);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -723,7 +726,7 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["ground"], // no STAB with fire move
+      types: [CORE_TYPE_IDS.ground], // no STAB with fire move
     });
     const defender = createActivePokemon({
       level: 50,
@@ -731,12 +734,12 @@ describe("Gen 3 Marvel Scale — Defense boost when statused (#140)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "marvel-scale",
-      status: "poison",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.poison,
     });
     // Fire is special in Gen 3 — uses SpDef, not Defense. Marvel Scale doesn't apply.
-    const move = createMove("fire", 80, "flamethrower");
+    const move = createMove(CORE_TYPE_IDS.fire, 80, GEN3_MOVE_IDS.flamethrower);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -765,7 +768,7 @@ describe("Gen 3 Marvel Scale — Integer math fix (#155)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -773,11 +776,11 @@ describe("Gen 3 Marvel Scale — Integer math fix (#155)", () => {
       defense: 133,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "marvel-scale",
-      status: "burn",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.burn,
     });
-    const move = createMove("normal", 80, "body-slam");
+    const move = createMove(CORE_TYPE_IDS.normal, 80, GEN3_MOVE_IDS.bodySlam);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -799,7 +802,7 @@ describe("Gen 3 Marvel Scale — Integer math fix (#155)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -807,11 +810,11 @@ describe("Gen 3 Marvel Scale — Integer math fix (#155)", () => {
       defense: 67,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
-      ability: "marvel-scale",
-      status: "paralysis",
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.paralysis,
     });
-    const move = createMove("normal", 80, "body-slam");
+    const move = createMove(CORE_TYPE_IDS.normal, 80, GEN3_MOVE_IDS.bodySlam);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen3Damage(ctx, createNeutralTypeChart());
 
@@ -834,8 +837,8 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["rock", "ground"],
-      ability: "rock-head",
+      types: [CORE_TYPE_IDS.rock, CORE_TYPE_IDS.ground],
+      ability: GEN3_ABILITY_IDS.rockHead,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -843,9 +846,9 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = dataManager.getMove("double-edge");
+    const move = dataManager.getMove(GEN3_MOVE_IDS.doubleEdge);
     const rng = createMockRng(0);
     const context = createMoveEffectContext(attacker, defender, move, 99, rng);
 
@@ -863,7 +866,7 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -871,9 +874,9 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = dataManager.getMove("double-edge");
+    const move = dataManager.getMove(GEN3_MOVE_IDS.doubleEdge);
     const rng = createMockRng(0);
     const context = createMoveEffectContext(attacker, defender, move, 99, rng);
 
@@ -895,8 +898,8 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       spAttack: 100,
       spDefense: 100,
       hp: 200,
-      types: ["rock", "ground"],
-      ability: "rock-head",
+      types: [CORE_TYPE_IDS.rock, CORE_TYPE_IDS.ground],
+      ability: GEN3_ABILITY_IDS.rockHead,
     });
     // calculateStruggleRecoil in Gen 3 returns floor(damageDealt / 4)
     // Rock Head should NOT prevent this
@@ -914,8 +917,8 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
-      ability: "rock-head",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.rockHead,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -923,9 +926,9 @@ describe("Gen 3 Rock Head — recoil prevention (#144)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = dataManager.getMove("take-down");
+    const move = dataManager.getMove(GEN3_MOVE_IDS.takeDown);
     const rng = createMockRng(0);
     const context = createMoveEffectContext(attacker, defender, move, 80, rng);
 
