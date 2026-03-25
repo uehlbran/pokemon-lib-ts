@@ -7,9 +7,13 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_STATUS_IDS,
   CORE_WEATHER_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   type Gender,
   type PokemonInstance,
   type PokemonType,
@@ -38,19 +42,13 @@ import { applyGen5HeldItem } from "../src/Gen5Items";
  *   `pokemon.setItem(pokemon.lastItem)`
  */
 
-const HARVEST_BERRY_VOLATILE = `${GEN5_ABILITY_IDS.harvest}-${String.fromCharCode(
-  98,
-  101,
-  114,
-  114,
-  121,
-)}` as const;
+const HARVEST_BERRY_VOLATILE = `${GEN5_ABILITY_IDS.harvest}-berry` as const;
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   uid?: string;
   speciesId?: number;
   nickname?: string | null;
@@ -74,11 +72,11 @@ function makePokemonInstance(overrides: {
     currentHp: overrides.currentHp ?? maxHp,
     moves: [],
     ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
     friendship: 0,
-    gender: (overrides.gender ?? "male") as const,
+    gender: overrides.gender ?? CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -96,7 +94,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   uid?: string;
   ability?: string;
   types?: PokemonType[];
@@ -110,7 +108,7 @@ function makeActivePokemon(overrides: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       uid: overrides.uid,
       ability: overrides.ability,
       speciesId: overrides.speciesId,
@@ -156,7 +154,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeBattleState(overrides?: {
+function createBattleState(overrides?: {
   format?: "singles" | "doubles";
   weather?: { type: string; turnsLeft: number; source: string } | null;
   sides?: [BattleSide, BattleSide];
@@ -248,13 +246,13 @@ function simulateConsumeEffect(pokemon: ActivePokemon, itemResult: ItemResult): 
   }
 }
 
-function makeAbilityContext(opts: {
+function createAbilityContext(opts: {
   pokemon: ActivePokemon;
   trigger: string;
   rngNextValues?: number[];
   weather?: { type: string; turnsLeft: number; source: string } | null;
 }): AbilityContext {
-  const state = makeBattleState({ weather: opts.weather });
+  const state = createBattleState({ weather: opts.weather });
 
   let nextIndex = 0;
   const rngNextValues = opts.rngNextValues;
@@ -293,7 +291,7 @@ describe("Harvest berry tracking integration", () => {
     // Source: Showdown data/items.ts -- sitrus-berry: isBerry: true
 
     // Step 1: Create a pokemon holding a Sitrus Berry at low HP
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.harvest,
       heldItem: GEN5_ITEM_IDS.sitrusBerry,
       currentHp: 80,
@@ -301,9 +299,9 @@ describe("Harvest berry tracking integration", () => {
     });
 
     // Step 2: Trigger the Sitrus Berry via the item pipeline
-    const itemResult = applyGen5HeldItem("end-of-turn", {
+    const itemResult = applyGen5HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: {
         next: () => 0,
         int: () => 1,
@@ -329,9 +327,9 @@ describe("Harvest berry tracking integration", () => {
     expect(harvestData?.data?.berryId).toBe(GEN5_ITEM_IDS.sitrusBerry);
 
     // Step 4: Trigger Harvest at end of turn with rng = 0.3 (< 0.5, passes 50% check)
-    const abilityCtx = makeAbilityContext({
+    const abilityCtx = createAbilityContext({
       pokemon,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
       rngNextValues: [0.3],
     });
     const harvestResult = handleGen5RemainingAbility(abilityCtx);
@@ -350,7 +348,7 @@ describe("Harvest berry tracking integration", () => {
     // Source: Showdown data/abilities.ts -- harvest: randomChance(1, 2) = 50%
     // rng.next() returns 0.7 >= 0.5 => fails the 50% check
 
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.harvest,
       heldItem: GEN5_ITEM_IDS.sitrusBerry,
       currentHp: 80,
@@ -358,9 +356,9 @@ describe("Harvest berry tracking integration", () => {
     });
 
     // Trigger and consume the berry
-    const itemResult = applyGen5HeldItem("end-of-turn", {
+    const itemResult = applyGen5HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: {
         next: () => 0,
         int: () => 1,
@@ -376,9 +374,9 @@ describe("Harvest berry tracking integration", () => {
     expect(pokemon.volatileStatuses.has(HARVEST_BERRY_VOLATILE)).toBe(true);
 
     // Trigger Harvest with rng = 0.7 (>= 0.5, fails the 50% check)
-    const abilityCtx = makeAbilityContext({
+    const abilityCtx = createAbilityContext({
       pokemon,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
       rngNextValues: [0.7],
     });
     const harvestResult = handleGen5RemainingAbility(abilityCtx);
@@ -391,7 +389,7 @@ describe("Harvest berry tracking integration", () => {
     //   this.field.isWeather(['sunnyday', 'desolateland']) => 100% chance
     // Source: Bulbapedia -- Harvest: "Always restores the Berry in sunlight."
 
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.harvest,
       heldItem: GEN5_ITEM_IDS.sitrusBerry,
       currentHp: 80,
@@ -399,9 +397,9 @@ describe("Harvest berry tracking integration", () => {
     });
 
     // Trigger and consume the berry
-    const itemResult = applyGen5HeldItem("end-of-turn", {
+    const itemResult = applyGen5HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: {
         next: () => 0,
         int: () => 1,
@@ -416,9 +414,9 @@ describe("Harvest berry tracking integration", () => {
     simulateConsumeEffect(pokemon, itemResult);
 
     // Trigger Harvest with sun active and rng = 0.9 (would fail without sun)
-    const abilityCtx = makeAbilityContext({
+    const abilityCtx = createAbilityContext({
       pokemon,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
       rngNextValues: [0.9],
       weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: GEN5_ABILITY_IDS.drought },
     });
@@ -437,7 +435,7 @@ describe("Harvest berry tracking integration", () => {
     // Source: Showdown data/abilities.ts -- harvest: pokemon.lastItem must be a berry
     // No consume happened, so no harvest-berry volatile exists.
 
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.harvest,
       heldItem: null,
       currentHp: 100,
@@ -447,9 +445,9 @@ describe("Harvest berry tracking integration", () => {
     // No berry was consumed -- volatile is not set
     expect(pokemon.volatileStatuses.has(HARVEST_BERRY_VOLATILE)).toBe(false);
 
-    const abilityCtx = makeAbilityContext({
+    const abilityCtx = createAbilityContext({
       pokemon,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
       rngNextValues: [0.1], // Would pass the 50% check, but no berry to restore
     });
     const harvestResult = handleGen5RemainingAbility(abilityCtx);
@@ -461,7 +459,7 @@ describe("Harvest berry tracking integration", () => {
     // Source: Showdown data/abilities.ts -- harvest only tracks berry items
     // Source: BattleEngine processItemResult -- only sets volatile for items ending in "-berry"
 
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.harvest,
       heldItem: GEN5_ITEM_IDS.whiteHerb,
     });
@@ -484,16 +482,16 @@ describe("Harvest berry tracking integration", () => {
     // Source: Showdown data/abilities.ts -- harvest works with any berry, not just Sitrus
     // Source: Showdown data/items.ts -- lum-berry has isBerry: true
 
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.harvest,
       heldItem: GEN5_ITEM_IDS.lumBerry,
       status: CORE_STATUS_IDS.paralysis,
     });
 
     // Trigger and consume the Lum Berry
-    const itemResult = applyGen5HeldItem("end-of-turn", {
+    const itemResult = applyGen5HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
-      state: makeBattleState(),
+      state: createBattleState(),
       rng: {
         next: () => 0,
         int: () => 1,
@@ -514,9 +512,9 @@ describe("Harvest berry tracking integration", () => {
     );
 
     // Trigger Harvest
-    const abilityCtx = makeAbilityContext({
+    const abilityCtx = createAbilityContext({
       pokemon,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
       rngNextValues: [0.2], // Passes 50% check
     });
     const harvestResult = handleGen5RemainingAbility(abilityCtx);
