@@ -238,7 +238,7 @@ export const CORE_WEATHER_IDS = {
   harshSun: "harsh-sun",
   hail: "hail",
   rain: "rain",
-  sand: "sandstorm",
+  sand: "sand",
   snow: "snow",
   sun: "sun",
 } as const;
