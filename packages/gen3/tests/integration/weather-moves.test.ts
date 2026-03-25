@@ -4,9 +4,18 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager } from "../../src/data";
+import { createGen3DataManager, GEN3_MOVE_IDS, GEN3_NATURE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
@@ -26,6 +35,12 @@ import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const DATA_MANAGER = createGen3DataManager();
+const MOVE_IDS = GEN3_MOVE_IDS;
+const SPECIES_IDS = GEN3_SPECIES_IDS;
+const NATURE_IDS = GEN3_NATURE_IDS;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES_IDS.bulbasaur);
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -59,31 +74,19 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "test-mon",
-    speciesId: 1,
-    nickname: null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.currentHp ?? 200,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+  const pokemon = createPokemonInstance(DEFAULT_SPECIES, opts.level ?? 50, new SeededRandom(3), {
+    nature: NATURE_IDS.hardy,
+    gender: CORE_GENDERS.male,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
-    status: null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    moves: [],
+  });
+  pokemon.nickname = null;
+  pokemon.currentHp = opts.currentHp ?? 200;
+  pokemon.ability = opts.ability ?? CORE_ABILITY_IDS.none;
+  pokemon.heldItem = opts.heldItem ?? null;
+  pokemon.calculatedStats = stats;
 
   return {
     pokemon,
@@ -99,7 +102,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -142,44 +145,11 @@ function createDamageContext(opts: {
   } as DamageContext;
 }
 
-function createMove(opts: {
-  id: string;
-  type: PokemonType;
-  power: number | null;
-  category?: string;
-}): MoveData {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
   return {
-    id: opts.id,
-    displayName: opts.id,
-    type: opts.type,
-    category: opts.category ?? "special",
-    power: opts.power,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 3,
+    ...baseMove,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    ...overrides,
   } as MoveData;
 }
 
@@ -192,7 +162,7 @@ const chart = GEN3_TYPE_CHART;
 describe("Gen 3 SolarBeam power halving in non-sun weather", () => {
   // SolarBeam: grass special, 120 power
   // In Rain/Sand/Hail: power = floor(120/2) = 60
-  const solarBeam = createMove({ id: "solar-beam", type: "grass", power: 120 });
+  const solarBeam = DATA_MANAGER.getMove(MOVE_IDS.solarBeam);
 
   it("given rain weather, when SolarBeam is used, then power is halved to 60", () => {
     // Source: pret/pokeemerald — SolarBeam halved in non-sun weather
@@ -305,12 +275,7 @@ describe("Gen 3 SolarBeam power halving in non-sun weather", () => {
 describe("Gen 3 Weather Ball type and power changes", () => {
   // Weather Ball: normal physical, 50 power (data says "physical" — in Gen 3 normal = physical)
   // In weather: power doubles to 100, type changes to match weather
-  const weatherBall = createMove({
-    id: "weather-ball",
-    type: "normal",
-    power: 50,
-    category: "physical",
-  });
+  const weatherBall = DATA_MANAGER.getMove(MOVE_IDS.weatherBall);
 
   it("given rain weather, when Weather Ball is used, then type becomes water and power doubles to 100", () => {
     // Source: pret/pokeemerald — Weather Ball: power doubles, type becomes water in rain
@@ -520,39 +485,17 @@ function createCustomMoveEffectContext(opts: {
   return {
     attacker: opts.attacker,
     defender: opts.defender,
-    move: {
-      id: opts.moveId,
-      displayName: opts.moveId,
-      type: "normal",
-      category: "status",
-      power: null,
-      accuracy: null,
-      pp: 5,
-      priority: 0,
+    move: createSyntheticMoveFrom(DATA_MANAGER.getMove(opts.moveId), {
+      effect: { type: "custom", handler: opts.moveId },
       target: "self",
+      category: CORE_MOVE_CATEGORIES.status,
       flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
+        ...DATA_MANAGER.getMove(opts.moveId).flags,
         protect: false,
         mirror: false,
         snatch: true,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
       },
-      effect: { type: "custom", handler: opts.moveId },
-      description: "",
-      generation: 3,
-    } as MoveData,
+    }),
     damage: 0,
     state,
     rng: createMockRng(0),
@@ -560,7 +503,7 @@ function createCustomMoveEffectContext(opts: {
 }
 
 describe("Gen 3 Morning Sun / Synthesis / Moonlight weather healing", () => {
-  for (const moveId of ["morning-sun", "synthesis", "moonlight"]) {
+  for (const moveId of [MOVE_IDS.morningSun, MOVE_IDS.synthesis, MOVE_IDS.moonlight]) {
     describe(`${moveId}`, () => {
       it(`given sun weather, when ${moveId} is used, then it heals 2/3 of max HP`, () => {
         // Source: pret/pokeemerald — weather-scaled healing: 2/3 in sun
