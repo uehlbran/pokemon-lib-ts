@@ -21,9 +21,23 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen5DataManager } from "../../src/data";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../../src";
 import { handleGen5SwitchAbility } from "../../src/Gen5AbilitiesSwitch";
 import { GEN5_CRIT_MULTIPLIER } from "../../src/Gen5CritCalc";
 import { Gen5Ruleset } from "../../src/Gen5Ruleset";
@@ -32,6 +46,16 @@ import { applyGen5WeatherEffects } from "../../src/Gen5Weather";
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const DATA_MANAGER = createGen5DataManager();
+const MOVE_IDS = GEN5_MOVE_IDS;
+const SPECIES_IDS = GEN5_SPECIES_IDS;
+const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS } as const;
+const STATUS_IDS = CORE_STATUS_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const WEATHER_IDS = CORE_WEATHER_IDS;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES_IDS.bulbasaur);
+const DEFAULT_MOVE = DATA_MANAGER.getMove(MOVE_IDS.tackle);
 
 function makeActivePokemon(overrides: {
   maxHp?: number;
@@ -45,9 +69,12 @@ function makeActivePokemon(overrides: {
   consecutiveProtects?: number;
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   speciesId?: number;
-  moves?: Array<{ moveId: string; pp: number; maxPp: number }>;
+  moves?: Array<{ moveId: string }>;
 }): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
+  const moveSlots = (overrides.moves ?? [{ moveId: DEFAULT_MOVE.id }]).map((move) =>
+    createMoveSlot(move.moveId, DATA_MANAGER.getMove(move.moveId).pp),
+  );
   return {
     pokemon: {
       calculatedStats: {
@@ -60,13 +87,17 @@ function makeActivePokemon(overrides: {
       },
       currentHp: overrides.currentHp ?? maxHp,
       nickname: overrides.nickname ?? "TestMon",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? DEFAULT_SPECIES.id,
       status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
-      moves: overrides.moves ?? [],
+      moves: moveSlots,
+      nature: GEN5_NATURE_IDS.hardy,
+      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
+      abilitySlot: "normal1",
+      pokeball: CORE_ITEM_IDS.pokeBall,
     },
-    ability: overrides.ability ?? "blaze",
-    types: overrides.types ?? ["normal"],
+    ability: overrides.ability ?? ABILITY_IDS.blaze,
+    types: overrides.types ?? [...DEFAULT_SPECIES.types],
     statStages: {
       attack: 0,
       defense: 0,
@@ -132,13 +163,13 @@ describe("Gen 5 integration: paralysis speed reduction", () => {
       speed: 100,
       status: null,
       nickname: "FastMon",
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: [{ moveId: MOVE_IDS.tackle }],
     });
     const paralyzedMon = makeActivePokemon({
       speed: 100,
-      status: "paralysis",
+      status: STATUS_IDS.paralysis,
       nickname: "SlowMon",
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: [{ moveId: MOVE_IDS.tackle }],
     });
 
     const side0 = makeSide(paralyzedMon, 0);
@@ -167,13 +198,13 @@ describe("Gen 5 integration: paralysis speed reduction", () => {
       speed: 26,
       status: null,
       nickname: "Healthy26",
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: [{ moveId: MOVE_IDS.tackle }],
     });
     const paralyzedMon = makeActivePokemon({
       speed: 100,
-      status: "paralysis",
+      status: STATUS_IDS.paralysis,
       nickname: "Paralyzed100",
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: [{ moveId: MOVE_IDS.tackle }],
     });
 
     const side0 = makeSide(paralyzedMon, 0);
@@ -247,9 +278,9 @@ describe("Gen 5 integration: burn chip damage = 1/8 max HP", () => {
     // Source: Bulbapedia Gen V burn -- "1/8 of maximum HP at the end of each turn"
     // Source: Showdown data/mods/gen5/conditions.ts -- burn.onResidual: Math.floor(p.maxhp/8)
     // Gen 7 changed this to 1/16; in Gen 5 it is still 1/8
-    const pokemon = makeActivePokemon({ maxHp: 160, status: "burn" });
+    const pokemon = makeActivePokemon({ maxHp: 160, status: STATUS_IDS.burn });
 
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS_IDS.burn, state);
 
     // floor(160 / 8) = 20
     expect(damage).toBe(20);
@@ -258,9 +289,9 @@ describe("Gen 5 integration: burn chip damage = 1/8 max HP", () => {
   it("given burned Pokemon with 240 max HP, when applyStatusDamage is called, then takes 30 damage (floor(240/8))", () => {
     // Source: Showdown data/mods/gen5/conditions.ts -- burn.onResidual: Math.floor(p.maxhp/8)
     // Triangulation: different HP value to confirm 1/8 formula, not a hardcoded value
-    const pokemon = makeActivePokemon({ maxHp: 240, status: "burn" });
+    const pokemon = makeActivePokemon({ maxHp: 240, status: STATUS_IDS.burn });
 
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS_IDS.burn, state);
 
     // floor(240 / 8) = 30
     expect(damage).toBe(30);
@@ -275,12 +306,12 @@ describe("Gen 5 integration: sandstorm/hail chip = 1/16 max HP", () => {
   it("given non-immune Pokemon with 160 max HP in sandstorm, when applyGen5WeatherEffects fires, then takes 10 damage (floor(160/16))", () => {
     // Source: Showdown data/mods/gen5/conditions.ts -- sand.onResidual: Math.floor(p.maxhp/16)
     // Source: Bulbapedia -- Sandstorm: "all non-Rock/Ground/Steel Pokemon lose 1/16 max HP"
-    const pokemon = makeActivePokemon({ maxHp: 160, types: ["fire"] });
+    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPE_IDS.fire] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["rock"] }), 1);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPE_IDS.rock] }), 1);
 
     const state = makeState({
-      weather: { type: "sand", turnsLeft: 5 },
+      weather: { type: WEATHER_IDS.sand, turnsLeft: 5 },
       sides: [side0, side1],
     });
 
@@ -296,12 +327,12 @@ describe("Gen 5 integration: sandstorm/hail chip = 1/16 max HP", () => {
     // Source: Showdown data/mods/gen5/conditions.ts -- hail.onResidual: Math.floor(p.maxhp/16)
     // Source: Bulbapedia -- Hail: "all non-Ice Pokemon lose 1/16 max HP per turn"
     // Triangulation: different HP and different weather type
-    const pokemon = makeActivePokemon({ maxHp: 320, types: ["fire"] });
+    const pokemon = makeActivePokemon({ maxHp: 320, types: [TYPE_IDS.fire] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["ice"] }), 1);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPE_IDS.ice] }), 1);
 
     const state = makeState({
-      weather: { type: "hail", turnsLeft: 5 },
+      weather: { type: WEATHER_IDS.hail, turnsLeft: 5 },
       sides: [side0, side1],
     });
 
@@ -342,7 +373,11 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
   it("given a Pokemon with Drizzle, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1 (indefinite, not 5 like Gen 6)", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- Drizzle sets permanent rain (no turn limit)
     // Source: Bulbapedia -- Gen 5: weather from abilities is permanent (Gen 6 changed to 5 turns)
-    const pokemon = makeActivePokemon({ ability: "drizzle", nickname: "Politoed" });
+    const pokemon = makeActivePokemon({
+      ability: ABILITY_IDS.drizzle,
+      nickname: "Politoed",
+      speciesId: SPECIES_IDS.politoed,
+    });
     const ctx = {
       pokemon,
       opponent: null,
@@ -366,7 +401,11 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
   it("given a Pokemon with Drought, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1 (indefinite)", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- Drought sets permanent sun (-1 turns)
     // Triangulation: different ability confirms the -1 pattern across all weather-setting abilities
-    const pokemon = makeActivePokemon({ ability: "drought", nickname: "Ninetales" });
+    const pokemon = makeActivePokemon({
+      ability: ABILITY_IDS.drought,
+      nickname: "Ninetales",
+      speciesId: SPECIES_IDS.ninetales,
+    });
     const ctx = {
       pokemon,
       opponent: null,
@@ -389,7 +428,11 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
 
   it("given a Pokemon with Sand Stream, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- Sand Stream sets permanent sandstorm (-1 turns)
-    const pokemon = makeActivePokemon({ ability: "sand-stream", nickname: "Tyranitar" });
+    const pokemon = makeActivePokemon({
+      ability: GEN5_ABILITY_IDS.sandStream,
+      nickname: "Tyranitar",
+      speciesId: SPECIES_IDS.tyranitar,
+    });
     const ctx = {
       pokemon,
       opponent: null,
@@ -413,7 +456,11 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
   it("given a Pokemon with Snow Warning, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- Snow Warning sets permanent hail (-1 turns)
     // Triangulation: all 4 ability weather setters verified — confirms universal indefinite behavior
-    const pokemon = makeActivePokemon({ ability: "snow-warning", nickname: "Abomasnow" });
+    const pokemon = makeActivePokemon({
+      ability: GEN5_ABILITY_IDS.snowWarning,
+      nickname: "Abomasnow",
+      speciesId: SPECIES_IDS.abomasnow,
+    });
     const ctx = {
       pokemon,
       opponent: null,
@@ -456,20 +503,7 @@ describe("Gen 5 integration: Explosion does not halve target Defense", () => {
     const ctx = {
       attacker,
       defender,
-      move: {
-        id: "explosion",
-        name: "Explosion",
-        type: "normal",
-        category: "physical",
-        power: 250,
-        accuracy: 100,
-        pp: 5,
-        maxPp: 5,
-        priority: 0,
-        target: "normal",
-        effect: { type: "self-faint" },
-        flags: {},
-      },
+      move: DATA_MANAGER.getMove(MOVE_IDS.explosion),
       state,
       rng: new SeededRandom(42),
     } as unknown as MoveEffectContext;
@@ -496,20 +530,7 @@ describe("Gen 5 integration: Explosion does not halve target Defense", () => {
     const ctx = {
       attacker,
       defender,
-      move: {
-        id: "self-destruct",
-        name: "Self-Destruct",
-        type: "normal",
-        category: "physical",
-        power: 200,
-        accuracy: 100,
-        pp: 5,
-        maxPp: 5,
-        priority: 0,
-        target: "normal",
-        effect: { type: "self-faint" },
-        flags: {},
-      },
+      move: DATA_MANAGER.getMove(MOVE_IDS.selfDestruct),
       state,
       rng: new SeededRandom(42),
     } as unknown as MoveEffectContext;
@@ -600,15 +621,15 @@ describe("Gen 5 integration: Prankster priority boost in resolveTurnOrder", () =
       // Source: Showdown data/abilities.ts -- Prankster onModifyPriority: +1 for status moves
       // Both moves have base priority 0. Prankster boosts the status move to priority 1.
       const pranksterMon = makeActivePokemon({
-        ability: "prankster",
+        ability: GEN5_ABILITY_IDS.prankster,
         speed: 50,
         nickname: "Sableye",
-        moves: [{ moveId: "will-o-wisp", pp: 15, maxPp: 15 }],
+        moves: [{ moveId: MOVE_IDS.willOWisp }],
       });
       const fastMon = makeActivePokemon({
         speed: 200,
         nickname: "Opponent",
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [{ moveId: MOVE_IDS.tackle }],
       });
 
       const side0 = makeSide(pranksterMon, 0);
@@ -634,15 +655,15 @@ describe("Gen 5 integration: Prankster priority boost in resolveTurnOrder", () =
     () => {
       // Source: Showdown data/abilities.ts -- Prankster only boosts status moves
       const pranksterMon = makeActivePokemon({
-        ability: "prankster",
+        ability: GEN5_ABILITY_IDS.prankster,
         speed: 50,
         nickname: "Sableye",
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [{ moveId: MOVE_IDS.tackle }],
       });
       const fastMon = makeActivePokemon({
         speed: 200,
         nickname: "Opponent",
-        moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+        moves: [{ moveId: MOVE_IDS.tackle }],
       });
 
       const side0 = makeSide(pranksterMon, 0);

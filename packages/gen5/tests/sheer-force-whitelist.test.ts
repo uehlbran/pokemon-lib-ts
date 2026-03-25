@@ -1,7 +1,21 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_FIXED_POINT,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
 import {
   getSheerForceMultiplier,
   isSheerForceEligibleMove,
@@ -14,6 +28,15 @@ import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 // ---------------------------------------------------------------------------
 // Helper factories (duplicated from damage-calc.test.ts for isolation)
 // ---------------------------------------------------------------------------
+
+const DATA_MANAGER = createGen5DataManager();
+const A = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS } as const;
+const M = GEN5_MOVE_IDS;
+const N = GEN5_NATURE_IDS;
+const SP = GEN5_SPECIES_IDS;
+const ST = CORE_STATUS_IDS;
+const T = CORE_TYPE_IDS;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SP.mew);
 
 function makeActive(overrides: {
   level?: number;
@@ -41,16 +64,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? DEFAULT_SPECIES.id,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: N.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? A.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -61,7 +84,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -75,8 +98,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["psychic"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [...DEFAULT_SPECIES.types],
+    ability: overrides.ability ?? A.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -99,49 +122,16 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-}): MoveData {
+function makeScenarioMove(
+  moveId: (typeof M)[keyof typeof M] = M.tackle,
+  overrides?: Partial<MoveData>,
+): MoveData {
+  const move = DATA_MANAGER.getMove(moveId);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 5,
-    critRatio: overrides.critRatio ?? 0,
+    ...move,
+    ...overrides,
+    flags: overrides?.flags ? { ...move.flags, ...overrides.flags } : { ...move.flags },
+    effect: overrides && "effect" in overrides ? overrides.effect : move.effect,
   } as MoveData;
 }
 
@@ -174,7 +164,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeScenarioMove(),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -189,18 +179,18 @@ describe("isSheerForceWhitelistedMove", () => {
   it("given Tri Attack move ID, when checking whitelist, then returns true", () => {
     // Source: Showdown data/moves.ts -- triattack has secondary.onHit with chance: 20
     //   which qualifies for Sheer Force, but our importer stores effect=null
-    expect(isSheerForceWhitelistedMove("tri-attack")).toBe(true);
+    expect(isSheerForceWhitelistedMove(M.triAttack)).toBe(true);
   });
 
   it("given Earthquake move ID (no secondary), when checking whitelist, then returns false", () => {
     // Source: Showdown data/moves.ts -- earthquake has no secondary field
-    expect(isSheerForceWhitelistedMove("earthquake")).toBe(false);
+    expect(isSheerForceWhitelistedMove(M.earthquake)).toBe(false);
   });
 
   it("given Flamethrower move ID (secondary representable in MoveEffect), when checking whitelist, then returns false", () => {
     // Source: Flamethrower's secondary (10% burn) is representable as status-chance;
     //   it does NOT need to be whitelisted
-    expect(isSheerForceWhitelistedMove("flamethrower")).toBe(false);
+    expect(isSheerForceWhitelistedMove(M.flamethrower)).toBe(false);
   });
 });
 
@@ -213,18 +203,18 @@ describe("isSheerForceEligibleMove", () => {
     // Source: Showdown data/moves.ts -- triattack has secondary with chance: 20
     //   Our data stores effect=null because the onHit function is not serializable
     //   The whitelist compensates for this data limitation
-    expect(isSheerForceEligibleMove(null, "tri-attack")).toBe(true);
+    expect(isSheerForceEligibleMove(null, M.triAttack)).toBe(true);
   });
 
   it("given Flamethrower (status-chance effect, not whitelisted), when checking eligibility, then returns true via effect", () => {
     // Source: Showdown data/moves.ts -- flamethrower secondary: { chance: 10, status: 'brn' }
-    const effect = { type: "status-chance" as const, status: "burn" as const, chance: 10 };
-    expect(isSheerForceEligibleMove(effect, "flamethrower")).toBe(true);
+    const effect = { type: "status-chance" as const, status: ST.burn, chance: 10 };
+    expect(isSheerForceEligibleMove(effect, M.flamethrower)).toBe(true);
   });
 
   it("given Earthquake (effect=null, not whitelisted), when checking eligibility, then returns false", () => {
     // Source: Showdown data/moves.ts -- earthquake has no secondary
-    expect(isSheerForceEligibleMove(null, "earthquake")).toBe(false);
+    expect(isSheerForceEligibleMove(null, M.earthquake)).toBe(false);
   });
 
   it("given Close Combat (self stat drop, not from secondary), when checking eligibility, then returns false", () => {
@@ -236,7 +226,7 @@ describe("isSheerForceEligibleMove", () => {
       stats: { defense: -1, spDefense: -1 },
       chance: 100,
     };
-    expect(isSheerForceEligibleMove(effect, "close-combat")).toBe(false);
+    expect(isSheerForceEligibleMove(effect, M.closeCombat)).toBe(false);
   });
 });
 
@@ -248,27 +238,27 @@ describe("getSheerForceMultiplier with move ID whitelist", () => {
   it("given Sheer Force ability and Tri Attack (effect=null), when getting multiplier, then returns 5325/4096", () => {
     // Source: Showdown data/abilities.ts -- sheerforce: onBasePower chainModify([5325, 4096])
     // Tri Attack qualifies via whitelist because its secondary.onHit is not serializable
-    const result = getSheerForceMultiplier("sheer-force", null, "tri-attack");
-    expect(result).toBeCloseTo(5325 / 4096, 10);
+    const result = getSheerForceMultiplier(A.sheerForce, null, M.triAttack);
+    expect(result).toBeCloseTo(CORE_FIXED_POINT.gemBoost / CORE_FIXED_POINT.identity, 10);
   });
 
   it("given Sheer Force ability and Earthquake (effect=null, no whitelist), when getting multiplier, then returns 1", () => {
     // Source: Showdown data/abilities.ts -- earthquake has no secondaries, no Sheer Force boost
-    const result = getSheerForceMultiplier("sheer-force", null, "earthquake");
+    const result = getSheerForceMultiplier(A.sheerForce, null, M.earthquake);
     expect(result).toBe(1);
   });
 
   it("given non-Sheer-Force ability and Tri Attack, when getting multiplier, then returns 1", () => {
     // Source: Only Sheer Force ability triggers the boost
-    const result = getSheerForceMultiplier("blaze", null, "tri-attack");
+    const result = getSheerForceMultiplier(A.blaze, null, M.triAttack);
     expect(result).toBe(1);
   });
 
   it("given Sheer Force ability and Flamethrower (status-chance effect), when getting multiplier without moveId, then still returns 5325/4096", () => {
     // Backward compatibility: the effect-based check still works without a moveId
-    const effect = { type: "status-chance" as const, status: "burn" as const, chance: 10 };
-    const result = getSheerForceMultiplier("sheer-force", effect);
-    expect(result).toBeCloseTo(5325 / 4096, 10);
+    const effect = { type: "status-chance" as const, status: ST.burn, chance: 10 };
+    const result = getSheerForceMultiplier(A.sheerForce, effect);
+    expect(result).toBeCloseTo(CORE_FIXED_POINT.gemBoost / CORE_FIXED_POINT.identity, 10);
   });
 });
 
@@ -280,17 +270,17 @@ describe("sheerForceSuppressesLifeOrb with move ID whitelist", () => {
   it("given Sheer Force ability and Tri Attack (effect=null), when checking Life Orb suppression, then returns true", () => {
     // Source: Showdown scripts.ts -- if move.hasSheerForce, skip Life Orb recoil
     // Tri Attack sets hasSheerForce=true in Showdown because it has secondaries
-    expect(sheerForceSuppressesLifeOrb("sheer-force", null, "tri-attack")).toBe(true);
+    expect(sheerForceSuppressesLifeOrb(A.sheerForce, null, M.triAttack)).toBe(true);
   });
 
   it("given Sheer Force ability and Earthquake (no secondary), when checking Life Orb suppression, then returns false", () => {
     // Source: Showdown -- Sheer Force only suppresses Life Orb when move has secondaries
-    expect(sheerForceSuppressesLifeOrb("sheer-force", null, "earthquake")).toBe(false);
+    expect(sheerForceSuppressesLifeOrb(A.sheerForce, null, M.earthquake)).toBe(false);
   });
 
   it("given non-Sheer-Force ability and Tri Attack, when checking Life Orb suppression, then returns false", () => {
     // Source: Only Sheer Force suppresses Life Orb recoil
-    expect(sheerForceSuppressesLifeOrb("blaze", null, "tri-attack")).toBe(false);
+    expect(sheerForceSuppressesLifeOrb(A.blaze, null, M.triAttack)).toBe(false);
   });
 });
 
@@ -316,13 +306,9 @@ describe("Sheer Force + Tri Attack in damage calc", () => {
     //   STAB? attacker is psychic, move is normal => no STAB
     //   Type effectiveness: normal vs psychic = 1x (neutral)
     //   No burn => final damage = 44
-    const attacker = makeActive({ spAttack: 100, ability: "sheer-force", types: ["psychic"] });
-    const defender = makeActive({ spDefense: 100, types: ["psychic"] });
-    const move = makeMove({
-      id: "tri-attack",
-      type: "normal",
-      category: "special",
-      power: 80,
+    const attacker = makeActive({ spAttack: 100, ability: A.sheerForce, types: [T.psychic] });
+    const defender = makeActive({ spDefense: 100, types: [T.psychic] });
+    const move = makeScenarioMove(M.triAttack, {
       flags: { contact: false },
       effect: null, // Our data stores null because Showdown's onHit is not serializable
     });
@@ -345,13 +331,9 @@ describe("Sheer Force + Tri Attack in damage calc", () => {
     //   +2 => 37
     //   random(seed=42) = 94 => floor(37 * 94 / 100) = floor(34.78) = 34
     //   No STAB, neutral type => final damage = 34
-    const attacker = makeActive({ spAttack: 100, ability: "blaze", types: ["psychic"] });
-    const defender = makeActive({ spDefense: 100, types: ["psychic"] });
-    const move = makeMove({
-      id: "tri-attack",
-      type: "normal",
-      category: "special",
-      power: 80,
+    const attacker = makeActive({ spAttack: 100, ability: A.blaze, types: [T.psychic] });
+    const defender = makeActive({ spDefense: 100, types: [T.psychic] });
+    const move = makeScenarioMove(M.triAttack, {
       flags: { contact: false },
       effect: null,
     });
