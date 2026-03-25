@@ -153,50 +153,6 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-  punch?: boolean;
-  contact?: boolean;
-  effect?: MoveEffect | null;
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: opts.contact ?? false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: opts.punch ?? false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: opts.effect ?? null,
-    description: "",
-    generation: 4,
-  } as MoveData;
-}
-
 function createNullState(weather?: string | null): DamageContext["state"] {
   return {
     weather: weather
@@ -298,6 +254,51 @@ const dataManager = createGen4DataManager();
 const ruleset = new Gen4Ruleset(dataManager);
 const ROOM_SUFFIX = GEN4_MOVE_IDS.trickRoom.slice(5);
 
+function getGen4Move(id: string): MoveData {
+  return dataManager.getMove(id);
+}
+
+function createSyntheticScenarioMove(
+  reason: string,
+  opts: {
+    id: string;
+    displayName: string;
+    type: PokemonType;
+    power: number;
+    category?: "physical" | "special" | "status";
+    effect?: MoveEffect | null;
+    accuracy?: number | null;
+    pp?: number;
+    priority?: number;
+    target?: MoveData["target"];
+    flags?: Partial<MoveData["flags"]>;
+    generation?: number;
+  },
+): MoveData {
+  // Intentionally synthetic: this scenario has no generation-valid Gen 4 move payload
+  // with the exact properties needed by the test.
+  expect(reason).toBeTruthy();
+  const baseMove = getGen4Move(GEN4_MOVE_IDS.tackle);
+  return {
+    ...baseMove,
+    id: opts.id,
+    displayName: opts.displayName,
+    type: opts.type,
+    category: opts.category ?? "physical",
+    power: opts.power,
+    accuracy: opts.accuracy ?? 100,
+    pp: opts.pp ?? baseMove.pp,
+    priority: opts.priority ?? 0,
+    target: opts.target ?? "adjacent-foe",
+    flags: {
+      ...baseMove.flags,
+      ...(opts.flags ?? {}),
+    },
+    effect: opts.effect ?? null,
+    generation: (opts.generation ?? 4) as MoveData["generation"],
+  } as MoveData;
+}
+
 // ===========================================================================
 // 1. Skill Link — always hits 5 times
 // ===========================================================================
@@ -357,12 +358,16 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
       heldItem: GEN4_ITEM_IDS.charcoal,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove({
-      type: CORE_TYPE_IDS.fire,
-      power: 55,
-      category: "special",
-      id: "test-55bp-fire",
-    });
+    const move = createSyntheticScenarioMove(
+      "No generation-valid Gen 4 fire special move has exactly 55 base power for this Technician threshold regression.",
+      {
+        id: "test-55bp-fire",
+        displayName: "Synthetic 55 BP Fire",
+        type: CORE_TYPE_IDS.fire,
+        power: 55,
+        category: "special",
+      },
+    );
     const rng = createMockRng(100); // no random reduction (100/100 = 1.0)
     const state = createNullState();
 
@@ -413,12 +418,7 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
       heldItem: GEN4_ITEM_IDS.charcoal,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove({
-      type: CORE_TYPE_IDS.fire,
-      power: 40,
-      category: "special",
-      id: "test-40bp-fire",
-    });
+    const move = getGen4Move(GEN4_MOVE_IDS.ember);
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -507,13 +507,7 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
     // With Reckless incorrectly boosted: floor(floor(22*60)/50)+2=26, STAB: floor(26*1.5)=39 (WRONG)
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN4_ABILITY_IDS.reckless });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const struggleMove = createMove({
-      type: CORE_TYPE_IDS.normal,
-      power: 50,
-      category: "physical",
-      id: GEN4_MOVE_IDS.struggle,
-      effect: null,
-    });
+    const struggleMove = getGen4Move(GEN4_MOVE_IDS.struggle);
     const plainAttacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: CORE_ABILITY_IDS.none });
     const rng = createMockRng(100);
     const state = createNullState();
@@ -558,13 +552,7 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
       ability: GEN4_ABILITY_IDS.reckless,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const doubleEdge = createMove({
-      type: CORE_TYPE_IDS.normal,
-      power: 120,
-      category: "physical",
-      id: GEN4_MOVE_IDS.doubleEdge,
-      effect: { type: "recoil", fraction: 1 / 3 },
-    });
+    const doubleEdge = getGen4Move(GEN4_MOVE_IDS.doubleEdge);
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -661,7 +649,7 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     //   Random (100/100=1.0): 55; STAB (normal/normal): floor(55*1.5) = 82
     //   count=7 → numConsecutive=6 → multiplier=1.6 → floor(37*1.6)=59; STAB: floor(59*1.5)=88
     const metronomeVolatiles = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 6, moveId: GEN4_MOVE_IDS.tackle } }],
+      ["metronome-count", { turnsLeft: -1, data: { count: 6, moveId: GEN4_MOVE_IDS.hyperFang } }],
     ]);
     const attacker = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
@@ -670,12 +658,7 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
       volatileStatuses: metronomeVolatiles,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove({
-      type: CORE_TYPE_IDS.normal,
-      power: 80,
-      category: "physical",
-      id: GEN4_MOVE_IDS.tackle,
-    });
+    const move = getGen4Move(GEN4_MOVE_IDS.hyperFang);
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -686,7 +669,7 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
 
     // count=7: numConsecutive=6 → multiplier=1.6 (no cap per Showdown)
     const metronomeVolatiles7 = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 7, moveId: GEN4_MOVE_IDS.tackle } }],
+      ["metronome-count", { turnsLeft: -1, data: { count: 7, moveId: GEN4_MOVE_IDS.hyperFang } }],
     ]);
     const attacker7 = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
@@ -719,7 +702,7 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     //   baseDmg = 37; Metronome Phase 2: floor(37*1.1) = floor(40.7) = 40
     //   Random (100/100=1.0): 40; STAB (normal/normal): floor(40*1.5) = 60
     const metronomeVolatiles = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 2, moveId: GEN4_MOVE_IDS.tackle } }],
+      ["metronome-count", { turnsLeft: -1, data: { count: 2, moveId: GEN4_MOVE_IDS.hyperFang } }],
     ]);
     const attacker = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
@@ -728,12 +711,7 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
       volatileStatuses: metronomeVolatiles,
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createMove({
-      type: CORE_TYPE_IDS.normal,
-      power: 80,
-      category: "physical",
-      id: GEN4_MOVE_IDS.tackle,
-    });
+    const move = getGen4Move(GEN4_MOVE_IDS.hyperFang);
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -757,39 +735,21 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     // Verify that if somehow a wonder-room move were dispatched, it produces no special field effect
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const wonderRoomMove: MoveData = {
-      id: `wonder${ROOM_SUFFIX}`,
-      displayName: "Wonder Room",
-      type: CORE_TYPE_IDS.psychic,
-      category: "status",
-      power: 0,
-      accuracy: null,
-      pp: 10,
-      priority: 0,
-      target: "all",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: false,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
+    const wonderRoomMove = createSyntheticScenarioMove(
+      "Wonder Room is Gen 5+ only and therefore has no generation-valid Gen 4 data payload.",
+      {
+        id: `wonder${ROOM_SUFFIX}`,
+        displayName: "Wonder Room",
+        type: CORE_TYPE_IDS.psychic,
+        category: "status",
+        power: 0,
+        accuracy: null,
+        pp: 10,
+        target: "all",
+        flags: { protect: false, mirror: false },
+        generation: 5,
       },
-      effect: null,
-      description: "",
-      generation: 5, // This is Gen 5+ only
-    } as MoveData;
+    );
 
     const state = createNullState();
     const context = {
@@ -814,39 +774,21 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     // Source: Showdown Gen 4 mod — magic-room is not in Gen 4 move list
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const magicRoomMove: MoveData = {
-      id: `magic${ROOM_SUFFIX}`,
-      displayName: "Magic Room",
-      type: CORE_TYPE_IDS.psychic,
-      category: "status",
-      power: 0,
-      accuracy: null,
-      pp: 10,
-      priority: 0,
-      target: "all",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: false,
-        mirror: false,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
+    const magicRoomMove = createSyntheticScenarioMove(
+      "Magic Room is Gen 5+ only and therefore has no generation-valid Gen 4 data payload.",
+      {
+        id: `magic${ROOM_SUFFIX}`,
+        displayName: "Magic Room",
+        type: CORE_TYPE_IDS.psychic,
+        category: "status",
+        power: 0,
+        accuracy: null,
+        pp: 10,
+        target: "all",
+        flags: { protect: false, mirror: false },
+        generation: 5,
       },
-      effect: null,
-      description: "",
-      generation: 5, // This is Gen 5+ only
-    } as MoveData;
+    );
 
     const state = createNullState();
     const context = {
@@ -1003,7 +945,7 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
       spDefense: 100,
       types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock],
     });
-    const move = createMove({ type: CORE_TYPE_IDS.water, power: 40, category: "special" });
+    const move = getGen4Move(GEN4_MOVE_IDS.waterGun);
     const rng = createMockRng(100); // no random reduction
     const state = createNullState();
 
@@ -1032,7 +974,7 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
       spDefense: 100,
       types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock],
     });
-    const move = createMove({ type: CORE_TYPE_IDS.water, power: 40, category: "special" });
+    const move = getGen4Move(GEN4_MOVE_IDS.waterGun);
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -1078,7 +1020,7 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
       ability: GEN4_ABILITY_IDS.marvelScale,
       status: CORE_STATUS_IDS.paralysis,
     });
-    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 40, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.scratch);
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -1120,7 +1062,7 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
       ability: CORE_ABILITY_IDS.shedSkin, // different ability — no Defense boost
       status: CORE_STATUS_IDS.paralysis,
     });
-    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 40, category: "physical" });
+    const move = getGen4Move(GEN4_MOVE_IDS.scratch);
     const rng = createMockRng(100);
     const state = createNullState();
 

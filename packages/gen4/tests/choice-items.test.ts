@@ -11,9 +11,26 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  GEN4_TYPES,
+} from "../src";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
@@ -30,6 +47,19 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const SPECIES = GEN4_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
+
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const STRENGTH = DATA_MANAGER.getMove(MOVES.strength);
+const LAVA_PLUME = DATA_MANAGER.getMove(MOVES.lavaPlume);
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -53,10 +83,10 @@ function createActivePokemon(opts: {
   currentHp?: number;
   speed?: number;
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
+  ability?: PokemonInstance["ability"];
+  heldItem?: PokemonInstance["heldItem"];
   status?: PokemonInstance["status"];
-  speciesId?: number;
+  speciesId?: PokemonInstance["speciesId"];
   hasFlashFire?: boolean;
 }): ActivePokemon {
   const level = opts.level ?? 50;
@@ -72,16 +102,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
     nickname: null,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
-    moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-    ability: opts.ability ?? "",
+    moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
+    ability: opts.ability ?? ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -92,13 +122,13 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
   const volatileStatuses = new Map<string, { turnsLeft: number }>();
   if (opts.hasFlashFire) {
-    volatileStatuses.set("flash-fire", { turnsLeft: -1 });
+    volatileStatuses.set(VOLATILES.flashFire, { turnsLeft: -1 });
   }
 
   return {
@@ -114,8 +144,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses,
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [TYPES.normal],
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -134,78 +164,79 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-}): MoveData {
+function getMove(id: MoveData["id"], overrides?: Partial<MoveData>): MoveData {
+  const move = DATA_MANAGER.getMove(id);
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 4,
+    ...move,
+    ...overrides,
   } as MoveData;
 }
 
+function createTurnOrderState(
+  left: ActivePokemon,
+  right: ActivePokemon,
+  rng: SeededRandom,
+): BattleState {
+  return {
+    phase: "turn-resolve",
+    generation: 4,
+    format: "singles",
+    turnNumber: 1,
+    sides: [
+      {
+        index: 0,
+        trainer: null,
+        team: [left.pokemon],
+        active: [left],
+        hazards: [],
+        screens: [],
+        tailwind: { active: false, turnsLeft: 0 },
+        luckyChant: { active: false, turnsLeft: 0 },
+        wish: null,
+        futureAttack: null,
+        faintCount: 0,
+        gimmickUsed: false,
+      },
+      {
+        index: 1,
+        trainer: null,
+        team: [right.pokemon],
+        active: [right],
+        hazards: [],
+        screens: [],
+        tailwind: { active: false, turnsLeft: 0 },
+        luckyChant: { active: false, turnsLeft: 0 },
+        wish: null,
+        futureAttack: null,
+        faintCount: 0,
+        gimmickUsed: false,
+      },
+    ],
+    weather: null,
+    terrain: null,
+    trickRoom: { active: false, turnsLeft: 0 },
+    magicRoom: { active: false, turnsLeft: 0 },
+    wonderRoom: { active: false, turnsLeft: 0 },
+    gravity: { active: false, turnsLeft: 0 },
+    turnHistory: [],
+    rng,
+    ended: false,
+    winner: null,
+  } as unknown as BattleState;
+}
+
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  for (const atk of GEN4_TYPES) {
     chart[atk] = {};
-    for (const def of types) {
+    for (const def of GEN4_TYPES) {
       (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
   return chart as TypeChart;
 }
 
-function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
+function createMockState(weather?: BattleState["weather"] | null) {
   return {
     weather: weather ?? null,
   } as DamageContext["state"];
@@ -217,7 +248,7 @@ function createDamageContext(opts: {
   move: MoveData;
   isCrit?: boolean;
   rng?: ReturnType<typeof createMockRng>;
-  weather?: { type: string; turnsLeft: number; source: string } | null;
+  weather?: BattleState["weather"] | null;
 }): DamageContext {
   return {
     attacker: opts.attacker,
@@ -239,18 +270,18 @@ describe("Gen 4 Choice Band damage modifier", () => {
   // Source: Showdown sim/items.ts — Choice Band onModifyAtk
 
   it("given attacker holding Choice Band using physical move with Atk=100, when damage calc, then Attack is multiplied by 1.5 producing higher damage", () => {
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, neutral type chart
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Strength, Atk=100, Def=100, rng=100, neutral type chart
+    //   Attacker types=[fighting], move type=normal → no STAB
     //   With Choice Band: Atk becomes floor(150*100/100)=150
     //     levelFactor=22, baseDmg=floor(floor(22*80*150/100)/50)+2=floor(2640/50)+2=52+2=54
     // Source: inline formula derivation
     const attacker = createActivePokemon({
       attack: 100,
-      heldItem: "choice-band",
-      types: ["fighting"],
+      heldItem: ITEMS.choiceBand,
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = getMove(MOVES.strength);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
@@ -258,18 +289,18 @@ describe("Gen 4 Choice Band damage modifier", () => {
   });
 
   it("given attacker holding Choice Band using physical move with Atk=50, when damage calc, then Attack is multiplied by 1.5 producing higher damage", () => {
-    // Derivation: L50, power=80, Atk=50, Def=100, rng=100
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Strength, Atk=50, Def=100, rng=100
+    //   Attacker types=[fighting], move type=normal → no STAB
     //   With Choice Band: Atk=floor(150*50/100)=75
     //     baseDmg=floor(floor(22*80*75/100)/50)+2=floor(1320/50)+2=26+2=28
     // Source: inline formula derivation — triangulation case with different Atk stat
     const attacker = createActivePokemon({
       attack: 50,
-      heldItem: "choice-band",
-      types: ["fighting"],
+      heldItem: ITEMS.choiceBand,
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = getMove(MOVES.strength);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
@@ -278,16 +309,16 @@ describe("Gen 4 Choice Band damage modifier", () => {
 
   it("given attacker holding Choice Band using special move, when damage calc, then no Attack boost applied", () => {
     // Source: Bulbapedia — Choice Band only boosts physical moves
-    // Derivation: L50, power=80, SpAtk=100, SpDef=100, rng=100
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Lava Plume, SpAtk=100, SpDef=100, rng=100
+    //   Attacker types=[fighting], move type=fire → no STAB
     //   Special move ignores Choice Band: baseDmg=floor(floor(22*80*100/100)/50)+2=37
     const attacker = createActivePokemon({
       spAttack: 100,
-      heldItem: "choice-band",
-      types: ["fighting"],
+      heldItem: ITEMS.choiceBand,
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const move = getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
@@ -306,18 +337,18 @@ describe("Gen 4 Choice Specs damage modifier", () => {
   // Source: Showdown sim/items.ts — Choice Specs onModifySpA
 
   it("given attacker holding Choice Specs using special move with SpAtk=100, when damage calc, then SpAtk is multiplied by 1.5", () => {
-    // Derivation: L50, power=80, SpAtk=100, SpDef=100, rng=100
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Lava Plume, SpAtk=100, SpDef=100, rng=100
+    //   Attacker types=[fighting], move type=fire → no STAB
     //   With Choice Specs: SpAtk=floor(150*100/100)=150
     //     baseDmg=floor(floor(22*80*150/100)/50)+2=floor(2640/50)+2=52+2=54
     // Source: inline formula derivation
     const attacker = createActivePokemon({
       spAttack: 100,
-      heldItem: "choice-specs",
-      types: ["fighting"],
+      heldItem: ITEMS.choiceSpecs,
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const move = getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
@@ -325,18 +356,18 @@ describe("Gen 4 Choice Specs damage modifier", () => {
   });
 
   it("given attacker holding Choice Specs using special move with SpAtk=80, when damage calc, then SpAtk is multiplied by 1.5", () => {
-    // Derivation: L50, power=80, SpAtk=80, SpDef=100, rng=100
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Lava Plume, SpAtk=80, SpDef=100, rng=100
+    //   Attacker types=[fighting], move type=fire → no STAB
     //   With Choice Specs: SpAtk=floor(150*80/100)=120
     //     baseDmg=floor(floor(22*80*120/100)/50)+2=floor(2112/50)+2=42+2=44
     // Source: inline formula derivation — triangulation with SpAtk=80
     const attacker = createActivePokemon({
       spAttack: 80,
-      heldItem: "choice-specs",
-      types: ["fighting"],
+      heldItem: ITEMS.choiceSpecs,
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "special" });
+    const move = getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
@@ -345,16 +376,16 @@ describe("Gen 4 Choice Specs damage modifier", () => {
 
   it("given attacker holding Choice Specs using physical move, then no SpAtk boost applied", () => {
     // Source: Bulbapedia — Choice Specs only boosts special moves
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Strength, Atk=100, Def=100, rng=100
+    //   Attacker types=[fighting], move type=normal → no STAB
     //   Physical move ignores Choice Specs: baseDmg=37
     const attacker = createActivePokemon({
       attack: 100,
-      heldItem: "choice-specs",
-      types: ["fighting"],
+      heldItem: ITEMS.choiceSpecs,
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = getMove(MOVES.strength);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
@@ -374,185 +405,17 @@ describe("Gen 4 Choice Scarf speed modifier", () => {
   it("given a Pokemon holding Choice Scarf with 100 base speed, when resolving turn order, then Scarf holder moves first over 140 speed non-holder", () => {
     // Source: Bulbapedia — Choice Scarf: 1.5x Speed
     // Derivation: 100 speed * 1.5 = 150 effective speed > 140
-    const ruleset = new Gen4Ruleset(createGen4DataManager());
+    const ruleset = new Gen4Ruleset(DATA_MANAGER);
     const rng = new SeededRandom(42);
-
-    const scarfPokemon: PokemonInstance = {
-      uid: "scarf",
-      speciesId: 1,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: 200,
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      ability: "",
-      abilitySlot: "normal1" as const,
-      heldItem: "choice-scarf",
-      status: null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp: 200,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 100,
-      },
-    } as PokemonInstance;
-
-    const fastPokemon: PokemonInstance = {
-      uid: "fast",
-      speciesId: 2,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: 200,
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      ability: "",
-      abilitySlot: "normal1" as const,
-      heldItem: null,
-      status: null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp: 200,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 140,
-      },
-    } as PokemonInstance;
-
-    const activeScarfHolder: ActivePokemon = {
-      pokemon: scarfPokemon,
-      teamSlot: 0,
-      statStages: {
-        attack: 0,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
-      volatileStatuses: new Map(),
-      types: ["normal"],
-      ability: "",
-      lastMoveUsed: null,
-      lastDamageTaken: 0,
-      lastDamageType: null,
-      turnsOnField: 0,
-      movedThisTurn: false,
-      consecutiveProtects: 0,
-      substituteHp: 0,
-      transformed: false,
-      transformedSpecies: null,
-      isMega: false,
-      isDynamaxed: false,
-      dynamaxTurnsLeft: 0,
-      isTerastallized: false,
-      teraType: null,
-      stellarBoostedTypes: [],
-    } as ActivePokemon;
-
-    const activeFast: ActivePokemon = {
-      pokemon: fastPokemon,
-      teamSlot: 0,
-      statStages: {
-        attack: 0,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
-      volatileStatuses: new Map(),
-      types: ["normal"],
-      ability: "",
-      lastMoveUsed: null,
-      lastDamageTaken: 0,
-      lastDamageType: null,
-      turnsOnField: 0,
-      movedThisTurn: false,
-      consecutiveProtects: 0,
-      substituteHp: 0,
-      transformed: false,
-      transformedSpecies: null,
-      isMega: false,
-      isDynamaxed: false,
-      dynamaxTurnsLeft: 0,
-      isTerastallized: false,
-      teraType: null,
-      stellarBoostedTypes: [],
-    } as ActivePokemon;
-
-    const state = {
-      phase: "turn-resolve",
-      generation: 4,
-      format: "singles",
-      turnNumber: 1,
-      sides: [
-        {
-          index: 0,
-          trainer: null,
-          team: [scarfPokemon],
-          active: [activeScarfHolder],
-          hazards: [],
-          screens: [],
-          tailwind: { active: false, turnsLeft: 0 },
-          luckyChant: { active: false, turnsLeft: 0 },
-          wish: null,
-          futureAttack: null,
-          faintCount: 0,
-          gimmickUsed: false,
-        },
-        {
-          index: 1,
-          trainer: null,
-          team: [fastPokemon],
-          active: [activeFast],
-          hazards: [],
-          screens: [],
-          tailwind: { active: false, turnsLeft: 0 },
-          luckyChant: { active: false, turnsLeft: 0 },
-          wish: null,
-          futureAttack: null,
-          faintCount: 0,
-          gimmickUsed: false,
-        },
-      ],
-      weather: null,
-      terrain: null,
-      trickRoom: { active: false, turnsLeft: 0 },
-      magicRoom: { active: false, turnsLeft: 0 },
-      wonderRoom: { active: false, turnsLeft: 0 },
-      gravity: { active: false, turnsLeft: 0 },
-      turnHistory: [],
-      rng,
-      ended: false,
-      winner: null,
-    } as unknown as BattleState;
+    const activeScarfHolder = createActivePokemon({
+      speed: 100,
+      heldItem: ITEMS.choiceScarf,
+    });
+    const activeFast = createActivePokemon({
+      speciesId: SPECIES.ivysaur,
+      speed: 140,
+    });
+    const state = createTurnOrderState(activeScarfHolder, activeFast, rng);
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -568,185 +431,17 @@ describe("Gen 4 Choice Scarf speed modifier", () => {
   it("given a Pokemon holding Choice Scarf with 80 base speed, when resolving turn order, then Scarf holder has 120 effective speed and moves first over 110 speed non-holder", () => {
     // Source: Bulbapedia — Choice Scarf: 1.5x Speed
     // Derivation: 80 speed * 1.5 = 120 effective speed > 110
-    const ruleset = new Gen4Ruleset(createGen4DataManager());
+    const ruleset = new Gen4Ruleset(DATA_MANAGER);
     const rng = new SeededRandom(42);
-
-    const scarfPokemon: PokemonInstance = {
-      uid: "scarf2",
-      speciesId: 1,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: 200,
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      ability: "",
-      abilitySlot: "normal1" as const,
-      heldItem: "choice-scarf",
-      status: null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp: 200,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 80,
-      },
-    } as PokemonInstance;
-
-    const mediumPokemon: PokemonInstance = {
-      uid: "medium",
-      speciesId: 2,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: 200,
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      ability: "",
-      abilitySlot: "normal1" as const,
-      heldItem: null,
-      status: null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp: 200,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 110,
-      },
-    } as PokemonInstance;
-
-    const activeScarfHolder: ActivePokemon = {
-      pokemon: scarfPokemon,
-      teamSlot: 0,
-      statStages: {
-        attack: 0,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
-      volatileStatuses: new Map(),
-      types: ["normal"],
-      ability: "",
-      lastMoveUsed: null,
-      lastDamageTaken: 0,
-      lastDamageType: null,
-      turnsOnField: 0,
-      movedThisTurn: false,
-      consecutiveProtects: 0,
-      substituteHp: 0,
-      transformed: false,
-      transformedSpecies: null,
-      isMega: false,
-      isDynamaxed: false,
-      dynamaxTurnsLeft: 0,
-      isTerastallized: false,
-      teraType: null,
-      stellarBoostedTypes: [],
-    } as ActivePokemon;
-
-    const activeMedium: ActivePokemon = {
-      pokemon: mediumPokemon,
-      teamSlot: 0,
-      statStages: {
-        attack: 0,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
-      volatileStatuses: new Map(),
-      types: ["normal"],
-      ability: "",
-      lastMoveUsed: null,
-      lastDamageTaken: 0,
-      lastDamageType: null,
-      turnsOnField: 0,
-      movedThisTurn: false,
-      consecutiveProtects: 0,
-      substituteHp: 0,
-      transformed: false,
-      transformedSpecies: null,
-      isMega: false,
-      isDynamaxed: false,
-      dynamaxTurnsLeft: 0,
-      isTerastallized: false,
-      teraType: null,
-      stellarBoostedTypes: [],
-    } as ActivePokemon;
-
-    const state = {
-      phase: "turn-resolve",
-      generation: 4,
-      format: "singles",
-      turnNumber: 1,
-      sides: [
-        {
-          index: 0,
-          trainer: null,
-          team: [scarfPokemon],
-          active: [activeScarfHolder],
-          hazards: [],
-          screens: [],
-          tailwind: { active: false, turnsLeft: 0 },
-          luckyChant: { active: false, turnsLeft: 0 },
-          wish: null,
-          futureAttack: null,
-          faintCount: 0,
-          gimmickUsed: false,
-        },
-        {
-          index: 1,
-          trainer: null,
-          team: [mediumPokemon],
-          active: [activeMedium],
-          hazards: [],
-          screens: [],
-          tailwind: { active: false, turnsLeft: 0 },
-          luckyChant: { active: false, turnsLeft: 0 },
-          wish: null,
-          futureAttack: null,
-          faintCount: 0,
-          gimmickUsed: false,
-        },
-      ],
-      weather: null,
-      terrain: null,
-      trickRoom: { active: false, turnsLeft: 0 },
-      magicRoom: { active: false, turnsLeft: 0 },
-      wonderRoom: { active: false, turnsLeft: 0 },
-      gravity: { active: false, turnsLeft: 0 },
-      turnHistory: [],
-      rng,
-      ended: false,
-      winner: null,
-    } as unknown as BattleState;
+    const activeScarfHolder = createActivePokemon({
+      speed: 80,
+      heldItem: ITEMS.choiceScarf,
+    });
+    const activeMedium = createActivePokemon({
+      speciesId: SPECIES.ivysaur,
+      speed: 110,
+    });
+    const state = createTurnOrderState(activeScarfHolder, activeMedium, rng);
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -769,59 +464,59 @@ describe("Gen 4 Flash Fire volatile damage boost", () => {
   //   while it is in effect"
   // Source: Showdown data/abilities.ts — Flash Fire onBasePowerPriority
 
-  it("given attacker with flash-fire volatile using Fire move with power=80, when damage calc, then base power is boosted by 1.5x (case 1: Atk=100)", () => {
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, neutral type chart
+  it("given attacker with flash-fire volatile using Lava Plume, when damage calc, then damage is boosted by 1.5x (case 1: SpAtk=100)", () => {
+    // Derivation: L50 Lava Plume, SpAtk=100, SpDef=100, rng=100, neutral type chart
     //   Flash Fire is now a damage modifier (ModifyDamagePhase1), not base power.
     //   Source: Showdown data/mods/gen4/abilities.ts — Flash Fire onModifyDamagePhase1
     //   baseDmg = floor(floor(22*80*100/100)/50) = 35
     //   Flash Fire: floor(35*1.5) = 52; +2 = 54
     // Source: inline formula derivation
-    const attacker = createActivePokemon({ attack: 100, hasFlashFire: true });
-    const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "physical" });
+    const attacker = createActivePokemon({ spAttack: 100, hasFlashFire: true });
+    const defender = createActivePokemon({ spDefense: 100 });
+    const move = getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
     expect(result.damage).toBe(54);
   });
 
-  it("given attacker with flash-fire volatile using Fire move with power=60, when damage calc, then base power is boosted by 1.5x (case 2: Atk=120)", () => {
-    // Derivation: L50, power=60, Atk=120, Def=100, rng=100
+  it("given attacker with flash-fire volatile using Lava Plume, when damage calc, then damage is boosted by 1.5x (case 2: SpAtk=120)", () => {
+    // Derivation: L50 Lava Plume, SpAtk=120, SpDef=100, rng=100
     //   Flash Fire is now a damage modifier (ModifyDamagePhase1), not base power.
     //   Source: Showdown data/mods/gen4/abilities.ts — Flash Fire onModifyDamagePhase1
-    //   baseDmg = floor(floor(22*60*120/100)/50) = floor(1584/50) = 31
-    //   Flash Fire: floor(31*1.5) = 46; +2 = 48
-    // Source: inline formula derivation — triangulation with different power and Atk
-    const attacker = createActivePokemon({ attack: 120, hasFlashFire: true });
-    const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "fire", power: 60, category: "physical" });
+    //   baseDmg = floor(floor(22*80*120/100)/50) = floor(2112/50) = 42
+    //   Flash Fire: floor(42*1.5) = 63; +2 = 65
+    // Source: inline formula derivation — triangulation with different SpAtk
+    const attacker = createActivePokemon({ spAttack: 120, hasFlashFire: true });
+    const defender = createActivePokemon({ spDefense: 100 });
+    const move = getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
-    expect(result.damage).toBe(48);
+    expect(result.damage).toBe(65);
   });
 
-  it("given attacker with flash-fire volatile using non-Fire move, then no power boost", () => {
+  it("given attacker with flash-fire volatile using Strength, then no power boost", () => {
     // Source: Bulbapedia — Flash Fire only boosts Fire-type moves
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, normal move, no boost
-    //   Attacker types=["fighting"], move type="normal" → no STAB
+    // Derivation: L50 Strength, Atk=100, Def=100, rng=100, normal move, no boost
+    //   Attacker types=[fighting], move type=normal → no STAB
     //   baseDmg=floor(floor(22*80*100/100)/50)+2=37
-    const attacker = createActivePokemon({ attack: 100, hasFlashFire: true, types: ["fighting"] });
+    const attacker = createActivePokemon({ attack: 100, hasFlashFire: true, types: [TYPES.fighting] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = getMove(MOVES.strength);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
     expect(result.damage).toBe(37);
   });
 
-  it("given attacker WITHOUT flash-fire volatile using Fire move, then no power boost", () => {
+  it("given attacker without flash-fire volatile using Lava Plume, then no power boost", () => {
     // Source: Bulbapedia — Flash Fire volatile must be active for the boost
-    // Derivation: L50, power=80, Atk=100, Def=100, rng=100, fire type, no volatile
+    // Derivation: L50 Lava Plume, SpAtk=100, SpDef=100, rng=100, fire type, no volatile
     //   baseDmg=floor(floor(22*80*100/100)/50)+2=37
-    const attacker = createActivePokemon({ attack: 100 }); // no hasFlashFire
-    const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "physical" });
+    const attacker = createActivePokemon({ spAttack: 100 });
+    const defender = createActivePokemon({ spDefense: 100 });
+    const move = getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, createNeutralTypeChart());
 
