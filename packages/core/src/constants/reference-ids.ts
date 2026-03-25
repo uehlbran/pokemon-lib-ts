@@ -141,6 +141,7 @@ export const CORE_GIMMICK_IDS = {
 } as const;
 
 export const CORE_END_OF_TURN_EFFECT_IDS = {
+  bind: "bind",
   defrost: "defrost",
   disableCountdown: "disable-countdown",
   encoreCountdown: "encore-countdown",
@@ -151,7 +152,10 @@ export const CORE_END_OF_TURN_EFFECT_IDS = {
   grassyTerrainHeal: "grassy-terrain-heal",
   healBlockCountdown: "heal-block-countdown",
   healingItems: "healing-items",
+  leftovers: "leftovers",
   magnetRiseCountdown: "magnet-rise-countdown",
+  mysteryBerry: "mystery-berry",
+  perishSong: "perish-song",
   safeguardCountdown: "safeguard-countdown",
   screenCountdown: "screen-countdown",
   slowStartCountdown: "slow-start-countdown",
