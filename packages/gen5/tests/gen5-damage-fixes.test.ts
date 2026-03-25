@@ -1,9 +1,37 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  NEUTRAL_NATURES,
+  type MoveData,
+  type PokemonType,
+  type PrimaryStatus,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
 import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
+
+const dataManager = createGen5DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS };
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN5_ITEM_IDS };
+const MOVES = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS };
+const SPECIES = GEN5_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN5_NATURE_IDS.hardy;
 
 // ---------------------------------------------------------------------------
 // Helper factories — same pattern as damage-calc.test.ts
@@ -24,7 +52,7 @@ function makeActive(overrides: {
   status?: string | null;
   speciesId?: number;
   gender?: "male" | "female" | "genderless";
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
+  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
   const attack = overrides.attack ?? 100;
@@ -35,27 +63,27 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: (overrides.gender ?? "male") as any,
+      gender: (overrides.gender ?? "male") as "male" | "female" | "genderless",
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -68,9 +96,9 @@ function makeActive(overrides: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["psychic"],
-    ability: overrides.ability ?? "none",
+    volatileStatuses: overrides.volatiles ?? new Map<VolatileStatus, { turnsLeft: number }>(),
+    types: overrides.types ?? [TYPES.psychic],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -93,51 +121,35 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
+function makeMove(id: string): MoveData {
+  return dataManager.getMove(id);
+}
+
+function makeSyntheticMove(overrides: {
+  baseId: string;
+  type: PokemonType;
+  category: "physical" | "special" | "status";
+  power: number | null;
   flags?: Partial<MoveData["flags"]>;
   effect?: MoveData["effect"];
   critRatio?: number;
   hasCrashDamage?: boolean;
 }): MoveData {
+  // Why: These are intentional boundary-only payloads. Gen 5 has canonical
+  // source moves for the base ids, but not for every exact power/category
+  // combination this regression suite needs to probe.
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    ...dataManager.getMove(overrides.baseId),
+    type: overrides.type,
+    category: overrides.category,
+    power: overrides.power,
     flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...dataManager.getMove(overrides.baseId).flags,
       ...overrides.flags,
     },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 5,
-    critRatio: overrides.critRatio ?? 0,
-    hasCrashDamage: overrides.hasCrashDamage ?? false,
+    effect: overrides.effect ?? dataManager.getMove(overrides.baseId).effect,
+    critRatio: overrides.critRatio ?? dataManager.getMove(overrides.baseId).critRatio,
+    hasCrashDamage: overrides.hasCrashDamage ?? dataManager.getMove(overrides.baseId).hasCrashDamage,
   } as MoveData;
 }
 
@@ -170,7 +182,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeMove(MOVES.tackle),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -194,9 +206,14 @@ describe("#643 — type-boost items and Plates use pokeRound rounding", () => {
     //   baseDamage = floor(floor(22*72*200/100)/50)+2 = floor(3168/50)+2 = 63+2 = 65
     // With seed 36 (random roll = 100): baseDamage * 100 / 100 = 65
     // Fire vs Psychic = 1x, no STAB: finalDamage = 65
-    const attacker = makeActive({ attack: 200, heldItem: "charcoal" });
+    const attacker = makeActive({ attack: 200, heldItem: ITEMS.charcoal });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 60, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 60,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // With pokeRound (correct): power=72 -> damage=65
@@ -208,9 +225,14 @@ describe("#643 — type-boost items and Plates use pokeRound rounding", () => {
     // Source: Showdown data/items.ts — Flame Plate: chainModify([4915, 4096])
     // Same math as Charcoal: pokeRound(60, 4915) = 72 vs floor(60*4915/4096) = 71
     // Damage with power=72: 65; damage with power=71: 64
-    const attacker = makeActive({ attack: 200, heldItem: "flame-plate" });
+    const attacker = makeActive({ attack: 200, heldItem: ITEMS.flamePlate });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 60, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 60,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     expect(result.damage).toBe(65);
@@ -219,9 +241,14 @@ describe("#643 — type-boost items and Plates use pokeRound rounding", () => {
   it("given non-matching type-boost item, when calculating damage, then no power boost applied", () => {
     // Source: Showdown data/items.ts — type-boost items only boost matching type
     // Charcoal boosts Fire, not Water
-    const attacker = makeActive({ attack: 200, heldItem: "charcoal" });
+    const attacker = makeActive({ attack: 200, heldItem: ITEMS.charcoal });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "water", power: 60, category: "special" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.waterPulse,
+      type: TYPES.water,
+      category: "special",
+      power: 60,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // Power stays 60, SpAtk=100, Def=100
@@ -240,14 +267,9 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     // pokeRound(75, 4915) = floor((75*4915 + 2047) / 4096) = floor(370672/4096) = 90
     // Math.floor(75*1.2) = Math.floor(90) = 90 — same for this input
     // Both produce 90 at power=75; this tests the correct implementation path
-    const attacker = makeActive({ attack: 100, ability: "iron-fist" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.ironFist });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({
-      type: "fire",
-      power: 75,
-      category: "physical",
-      flags: { punch: true },
-    });
+    const move = makeMove(MOVES.firePunch);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=90, Atk=100, Def=100, L50:
@@ -258,10 +280,11 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
   it("given Iron Fist with 50BP punching move, when calculating damage, then power uses pokeRound(50, 4915)=60", () => {
     // Source: Showdown data/abilities.ts — iron-fist: chainModify(1.2) = 4915/4096
     // pokeRound(50, 4915) = floor((50*4915 + 2047) / 4096) = floor(247797/4096) = 60
-    const attacker = makeActive({ attack: 100, ability: "iron-fist" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.ironFist });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({
-      type: "fire",
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
       power: 50,
       category: "physical",
       flags: { punch: true },
@@ -277,8 +300,14 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     // pokeRound(43, 5120) = floor((43*5120 + 2047) / 4096) = floor(222207/4096) = 54
     // Math.floor(43*1.25) = Math.floor(53.75) = 53 — DIFFERENT
     const attacker = makeActive({ attack: 200 });
-    const defender = makeActive({ defense: 100, ability: "dry-skin" });
-    const move = makeMove({ type: "fire", power: 43, category: "physical" });
+    const defender = makeActive({ defense: 100, ability: ABILITIES.drySkin });
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
+      power: 43,
+      category: "physical",
+      flags: { punch: false },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=54, Atk=200, Def=100:
@@ -293,8 +322,13 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     // pokeRound(60, 5120) = floor((60*5120 + 2047) / 4096) = floor(309247/4096) = 75
     // Math.floor(60*1.25) = Math.floor(75) = 75 — same for this value
     const attacker = makeActive({ attack: 100 });
-    const defender = makeActive({ defense: 100, ability: "dry-skin" });
-    const move = makeMove({ type: "fire", power: 60, category: "physical" });
+    const defender = makeActive({ defense: 100, ability: ABILITIES.drySkin });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 60,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=75: baseDamage = floor(floor(22*75*100/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
@@ -305,9 +339,15 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     // Source: Showdown data/abilities.ts — rivalry same gender: chainModify(1.25) = 5120/4096
     // pokeRound(43, 5120) = floor((43*5120 + 2047) / 4096) = floor(222207/4096) = 54
     // Math.floor(43*1.25) = Math.floor(53.75) = 53 — DIFFERENT
-    const attacker = makeActive({ attack: 200, ability: "rivalry", gender: "male" });
+    const attacker = makeActive({ attack: 200, ability: ABILITIES.rivalry, gender: "male" });
     const defender = makeActive({ defense: 100, gender: "male" });
-    const move = makeMove({ type: "fire", power: 43, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
+      power: 43,
+      category: "physical",
+      flags: { punch: false },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=54, Atk=200, Def=100:
@@ -319,9 +359,15 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     // Source: Showdown data/abilities.ts — rivalry opposite gender: chainModify(0.75) = 3072/4096
     // pokeRound(57, 3072) = floor((57*3072 + 2047) / 4096) = floor(177151/4096) = 43
     // Math.floor(57*0.75) = Math.floor(42.75) = 42 — DIFFERENT
-    const attacker = makeActive({ attack: 200, ability: "rivalry", gender: "male" });
+    const attacker = makeActive({ attack: 200, ability: ABILITIES.rivalry, gender: "male" });
     const defender = makeActive({ defense: 100, gender: "female" });
-    const move = makeMove({ type: "fire", power: 57, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
+      power: 57,
+      category: "physical",
+      flags: { punch: false },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=43, Atk=200, Def=100:
@@ -335,9 +381,15 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     // Source: Showdown data/abilities.ts — technician: chainModify(1.5) = 6144/4096
     // pokeRound(50, 6144) = floor((50*6144 + 2047) / 4096) = floor(309247/4096) = 75
     // Math.floor(50*1.5) = 75 — same for this input
-    const attacker = makeActive({ attack: 100, ability: "technician" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.technician });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
+      power: 50,
+      category: "physical",
+      flags: { punch: true },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=75: baseDamage = floor(floor(22*75*100/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
@@ -347,9 +399,14 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
   it("given Technician with 60BP move, when calculating damage, then Technician applies (60 <= 60)", () => {
     // Source: Showdown data/abilities.ts — technician applies to moves with base power <= 60
     // pokeRound(60, 6144) = floor((60*6144 + 2047) / 4096) = floor(370687/4096) = 90
-    const attacker = makeActive({ attack: 100, ability: "technician" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.technician });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 60, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 60,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=90: baseDamage = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
@@ -369,10 +426,15 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     // baseDamage = floor(floor(22*50*150/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
     const attacker = makeActive({
       attack: 100,
-      volatiles: new Map([["flash-fire", { turnsLeft: -1 }]]),
+      volatiles: new Map([[ABILITIES.flashFire, { turnsLeft: -1 }]]),
     });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 50,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     expect(result.damage).toBe(35);
@@ -382,10 +444,15 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     // Source: Showdown data/abilities.ts — flash-fire only boosts Fire-type moves
     const attacker = makeActive({
       attack: 100,
-      volatiles: new Map([["flash-fire", { turnsLeft: -1 }]]),
+      volatiles: new Map([[ABILITIES.flashFire, { turnsLeft: -1 }]]),
     });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "water", power: 50, category: "special" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.waterPulse,
+      type: TYPES.water,
+      category: "special",
+      power: 50,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // No boost: SpAtk=100, power=50
@@ -399,9 +466,14 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     // Atk = floor(100 * 150 / 100) = 150
     // power stays 50
     // baseDamage = floor(floor(22*50*150/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
-    const attacker = makeActive({ attack: 100, ability: "blaze", hp: 300, currentHp: 99 });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.blaze, hp: 300, currentHp: 99 });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 50,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     expect(result.damage).toBe(35);
@@ -417,13 +489,18 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     // Grass vs Psychic = 1x: 52
     const attacker = makeActive({
       spAttack: 100,
-      ability: "overgrow",
+      ability: ABILITIES.overgrow,
       hp: 300,
       currentHp: 100,
-      types: ["grass"],
+      types: [TYPES.grass],
     });
     const defender = makeActive({ spDefense: 100 });
-    const move = makeMove({ type: "grass", power: 50, category: "special" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.grassKnot,
+      type: TYPES.grass,
+      power: 50,
+      category: "special",
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     expect(result.damage).toBe(52);
@@ -432,9 +509,14 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
   it("given Blaze above HP threshold with Fire move, when calculating damage, then no boost applied", () => {
     // Source: Showdown data/abilities.ts — blaze activates only at HP <= floor(maxHP/3)
     // HP=300, currentHp=101 -> threshold = floor(300/3) = 100 -> 101 > 100 -> NOT active
-    const attacker = makeActive({ attack: 100, ability: "blaze", hp: 300, currentHp: 101 });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.blaze, hp: 300, currentHp: 101 });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 50,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // No boost: Atk=100, power=50
@@ -451,15 +533,9 @@ describe("#641 — Reckless hasCrashDamage", () => {
   it("given Reckless with hasCrashDamage=true (Jump Kick 100BP), when calculating damage, then 1.2x boost applies via pokeRound(100, 4915)=120", () => {
     // Source: Showdown data/abilities.ts — reckless: if (move.recoil || move.hasCrashDamage)
     // pokeRound(100, 4915) = floor((100*4915 + 2047) / 4096) = floor(493547/4096) = 120
-    const attacker = makeActive({ attack: 100, ability: "reckless" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.reckless });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({
-      id: "jump-kick",
-      type: "fighting",
-      power: 100,
-      category: "physical",
-      hasCrashDamage: true,
-    });
+    const move = makeMove(MOVES.jumpKick);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=120, Atk=100, Def=100, L50
@@ -472,15 +548,9 @@ describe("#641 — Reckless hasCrashDamage", () => {
   it("given Reckless with hasCrashDamage=true (High Jump Kick 130BP), when calculating damage, then 1.2x boost applies", () => {
     // Source: Showdown data/abilities.ts — reckless: if (move.recoil || move.hasCrashDamage)
     // pokeRound(130, 4915) = floor((130*4915 + 2047) / 4096) = floor(640997/4096) = 156
-    const attacker = makeActive({ attack: 100, ability: "reckless" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.reckless });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({
-      id: "high-jump-kick",
-      type: "fighting",
-      power: 130,
-      category: "physical",
-      hasCrashDamage: true,
-    });
+    const move = makeMove(MOVES.highJumpKick);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=156, Atk=100, Def=100
@@ -491,10 +561,11 @@ describe("#641 — Reckless hasCrashDamage", () => {
 
   it("given Reckless with hasCrashDamage=false and no recoil, when calculating damage, then no boost applied", () => {
     // Source: Showdown data/abilities.ts — reckless requires recoil OR hasCrashDamage
-    const attacker = makeActive({ attack: 100, ability: "reckless" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.reckless });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({
-      type: "fire",
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
       power: 100,
       category: "physical",
       hasCrashDamage: false,
@@ -509,10 +580,11 @@ describe("#641 — Reckless hasCrashDamage", () => {
   it("given Reckless with recoil move (not crash), when calculating damage, then 1.2x boost still applies", () => {
     // Source: Showdown data/abilities.ts — reckless: move.recoil counts
     // pokeRound(80, 4915) = floor((80*4915 + 2047) / 4096) = floor(395247/4096) = 96
-    const attacker = makeActive({ attack: 100, ability: "reckless" });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.reckless });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({
-      type: "fire",
+    const move = makeSyntheticMove({
+      baseId: MOVES.firePunch,
+      type: TYPES.fire,
       power: 80,
       category: "physical",
       effect: { type: "recoil", percent: 33 },
@@ -534,11 +606,16 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     // SpAtk = floor(120 * 150 / 100) = 180
     // power=50
     // baseDamage = floor(floor(22*50*180/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
-    const attacker = makeActive({ spAttack: 120, ability: "solar-power", types: ["fire"] });
+    const attacker = makeActive({ spAttack: 120, ability: ABILITIES.solarPower, types: [TYPES.fire] });
     const defender = makeActive({ spDefense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "special" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "special",
+      power: 50,
+    });
     const state = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      weather: { type: WEATHER.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = makeDamageContext({ attacker, defender, move, state, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
@@ -560,9 +637,14 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
 
   it("given Solar Power user with special move NOT in sun, when calculating damage, then SpAtk is NOT boosted", () => {
     // Source: Showdown data/abilities.ts — solar-power only activates in sun/harsh-sun
-    const attacker = makeActive({ spAttack: 120, ability: "solar-power", types: ["fire"] });
+    const attacker = makeActive({ spAttack: 120, ability: ABILITIES.solarPower, types: [TYPES.fire] });
     const defender = makeActive({ spDefense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "special" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "special",
+      power: 50,
+    });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // SpAtk stays 120 (no sun)
@@ -573,11 +655,16 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
 
   it("given Solar Power user with physical move in sun, when calculating damage, then Atk is NOT boosted (SpAtk only)", () => {
     // Source: Showdown data/abilities.ts — solar-power only boosts SpAtk, not Atk
-    const attacker = makeActive({ attack: 120, ability: "solar-power" });
+    const attacker = makeActive({ attack: 120, ability: ABILITIES.solarPower });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 50,
+    });
     const state = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      weather: { type: WEATHER.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = makeDamageContext({ attacker, defender, move, state, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
@@ -593,11 +680,16 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     // Atk = floor(120 * 150 / 100) = 180
     // power=50
     // baseDamage = floor(floor(22*50*180/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
-    const attacker = makeActive({ attack: 120, ability: "flower-gift" });
+    const attacker = makeActive({ attack: 120, ability: ABILITIES.flowerGift });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 50,
+    });
     const state = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      weather: { type: WEATHER.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = makeDamageContext({ attacker, defender, move, state, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
@@ -610,11 +702,16 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
 
   it("given Flower Gift user with special move in sun, when calculating damage, then SpAtk is NOT boosted (Atk only)", () => {
     // Source: Showdown data/abilities.ts — flower-gift only boosts Atk, not SpAtk
-    const attacker = makeActive({ spAttack: 120, ability: "flower-gift" });
+    const attacker = makeActive({ spAttack: 120, ability: ABILITIES.flowerGift });
     const defender = makeActive({ spDefense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "special" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "special",
+      power: 50,
+    });
     const state = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      weather: { type: WEATHER.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = makeDamageContext({ attacker, defender, move, state, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
@@ -627,11 +724,16 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
 
   it("given Flower Gift in harsh-sun, when calculating damage, then Atk is 1.5x", () => {
     // Source: Showdown data/abilities.ts — flower-gift activates in sun AND harsh-sun
-    const attacker = makeActive({ attack: 120, ability: "flower-gift" });
+    const attacker = makeActive({ attack: 120, ability: ABILITIES.flowerGift });
     const defender = makeActive({ defense: 100 });
-    const move = makeMove({ type: "fire", power: 50, category: "physical" });
+    const move = makeSyntheticMove({
+      baseId: MOVES.flameWheel,
+      type: TYPES.fire,
+      category: "physical",
+      power: 50,
+    });
     const state = makeState({
-      weather: { type: "harsh-sun", turnsLeft: 5, source: "desolate-land" },
+      weather: { type: WEATHER.harshSun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = makeDamageContext({ attacker, defender, move, state, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
