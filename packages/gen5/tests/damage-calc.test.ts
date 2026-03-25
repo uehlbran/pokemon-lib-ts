@@ -1,10 +1,12 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_FIXED_POINT,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_WEATHER_IDS,
+  CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -33,6 +35,7 @@ const SPECIES = GEN5_SPECIES_IDS;
 const STATUSES = CORE_STATUS_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const TYPES = CORE_TYPE_IDS;
+type PokemonGender = (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
 // ---------------------------------------------------------------------------
 // Scenario helpers
 // ---------------------------------------------------------------------------
@@ -60,7 +63,7 @@ function makeScenarioActive(overrides: {
   status?: PrimaryStatus | null;
   speciesId?: number;
   nature?: string;
-  gender?: "male" | "female" | "genderless";
+  gender?: PokemonGender;
   volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
@@ -82,11 +85,11 @@ function makeScenarioActive(overrides: {
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? ABILITIES.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: (overrides.gender ?? "male") as "male" | "female" | "genderless",
+      gender: overrides.gender ?? CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -167,7 +170,7 @@ function makeScenarioMove(overrides: {
   } as MoveData;
 }
 
-function makeState(overrides?: {
+function createSyntheticBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   format?: string;
 }): BattleState {
@@ -197,7 +200,7 @@ function makeDamageContext(overrides: {
     attacker: overrides.attacker ?? makeScenarioActive({}),
     defender: overrides.defender ?? makeScenarioActive({}),
     move: overrides.move ?? makeScenarioMove({}),
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createSyntheticBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   };
@@ -598,7 +601,9 @@ describe("Gen 5 damage calc -- weather", () => {
     const attacker = makeScenarioActive({ spAttack: 100 });
     const defender = makeScenarioActive({ spDefense: 100 });
     const move = makeScenarioMove({ type: TYPES.water, power: 50, category: "special" });
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
@@ -614,7 +619,9 @@ describe("Gen 5 damage calc -- weather", () => {
     const attacker = makeScenarioActive({ attack: 100 });
     const defender = makeScenarioActive({ defense: 100 });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
@@ -631,7 +638,9 @@ describe("Gen 5 damage calc -- weather", () => {
     const attacker = makeScenarioActive({ spAttack: 100 });
     const defender = makeScenarioActive({ spDefense: 100 });
     const move = makeScenarioMove({ type: TYPES.water, power: 50, category: "special" });
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
@@ -689,7 +698,7 @@ describe("Gen 5 damage calc -- spread modifier", () => {
     // isSpread is determined by the context. We need to signal spread somehow.
     // Let's check how the damage calc detects spread moves...
     // For now, spread moves are a doubles format detail. We'll test via the format.
-    const state = makeState({ format: "doubles" });
+    const state = createSyntheticBattleState({ format: "doubles" });
     const _ctx = makeDamageContext({ attacker, defender, move, state });
     // The spread modifier is only applied when move.target is "all-adjacent-foes" or similar
     // and format is doubles. Let's make a spread move.
@@ -973,7 +982,9 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
     const attacker = makeScenarioActive({ spAttack: 100 });
     const defender = makeScenarioActive({ spDefense: 100, types: [TYPES.rock] });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "special" });
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.sand, turnsLeft: 5, source: ABILITIES.sandStream } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.sand, turnsLeft: 5, source: ABILITIES.sandStream },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
@@ -997,7 +1008,9 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const attacker = makeScenarioActive({ spAttack: 100 });
     const defender = makeScenarioActive({ spDefense: 100 });
     const move = makeScenarioMove({ id: MOVES.solarBeam, type: TYPES.grass, power: 120, category: "special" });
-    const state = makeState({ weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
+    });
     const ctx = makeDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
@@ -1154,8 +1167,8 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Rivalry ability with same gender, when calculating damage, then power is 1.25x", () => {
     // Source: Showdown data/abilities.ts -- Rivalry same gender = 1.25x
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.rivalry, gender: "male" });
-    const defender = makeScenarioActive({ defense: 100, gender: "male" });
+    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.rivalry, gender: CORE_GENDERS.male });
+    const defender = makeScenarioActive({ defense: 100, gender: CORE_GENDERS.male });
     const move = makeScenarioMove({ type: TYPES.fire, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -1168,8 +1181,8 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Rivalry ability with opposite gender, when calculating damage, then power is 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Rivalry opposite gender = 0.75x
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.rivalry, gender: "male" });
-    const defender = makeScenarioActive({ defense: 100, gender: "female" });
+    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.rivalry, gender: CORE_GENDERS.male });
+    const defender = makeScenarioActive({ defense: 100, gender: CORE_GENDERS.female });
     const move = makeScenarioMove({ type: TYPES.fire, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
