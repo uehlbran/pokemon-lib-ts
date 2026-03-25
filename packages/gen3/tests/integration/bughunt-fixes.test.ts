@@ -15,13 +15,51 @@ import type { ActivePokemon, DamageContext, MoveEffectContext } from "@pokemon-l
 import type {
   MoveData,
   PokemonInstance,
+  PrimaryStatus,
   PokemonType,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+  GEN3_TYPES,
+  createGen3DataManager,
+} from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { executeGen3MoveEffect } from "../../src/Gen3MoveEffects";
+
+const DATA_MANAGER = createGen3DataManager();
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = GEN3_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS };
+const SPECIES = GEN3_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = {
+  charged: CORE_VOLATILE_IDS.charged,
+  mudSport: GEN3_MOVE_IDS.mudSport,
+  waterSport: GEN3_MOVE_IDS.waterSport,
+} as const;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN3_NATURE_IDS.hardy;
+const THUNDERBOLT = DATA_MANAGER.getMove(MOVES.thunderbolt);
+const FLAMETHROWER = DATA_MANAGER.getMove(MOVES.flamethrower);
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const CHARGE = DATA_MANAGER.getMove(MOVES.charge);
+const MUD_SPORT = DATA_MANAGER.getMove(MOVES.mudSport);
+const WATER_SPORT = DATA_MANAGER.getMove(MOVES.waterSport);
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -46,11 +84,11 @@ function createActivePokemon(opts: {
   spAttack?: number;
   spDefense?: number;
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: "burn" | null;
+  ability?: PokemonInstance["ability"];
+  heldItem?: PokemonInstance["heldItem"];
+  status?: PrimaryStatus | null;
   statStages?: Partial<Record<string, number>>;
-  volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
+  volatileStatuses?: ActivePokemon["volatileStatuses"];
 }): ActivePokemon {
   const stats: StatBlock = {
     hp: 200,
@@ -63,16 +101,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: "TestMon",
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
-    moves: [{ moveId: "thunderbolt", currentPp: 15, maxPp: 15 }],
-    ability: opts.ability ?? "",
+    moves: [createMoveSlot(THUNDERBOLT.id, THUNDERBOLT.pp)],
+    ability: opts.ability ?? ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -83,7 +121,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -100,8 +138,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: opts.volatileStatuses ?? new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [TYPES.normal],
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -121,71 +159,29 @@ function createActivePokemon(opts: {
 }
 
 function createMove(
-  type: PokemonType,
-  power: number,
-  id = "test-move",
-  effect: MoveData["effect"] = null,
+  move: MoveData,
+  overrides: Partial<Pick<MoveData, "power" | "effect">> = {},
 ): MoveData {
   return {
-    id,
-    displayName: "Test Move",
-    type,
-    category: "physical", // ignored in Gen 3 (type-based split)
-    power,
+    ...move,
+    power: overrides.power ?? move.power,
+    effect: overrides.effect ?? move.effect,
     accuracy: 100,
-    pp: 35,
     priority: 0,
     target: "adjacent-foe",
     flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...move.flags,
     },
-    effect,
-    description: "",
     generation: 3,
   } as MoveData;
 }
 
 /** All-neutral type chart for 17 Gen 3 types. */
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  for (const atk of GEN3_TYPES) {
     chart[atk] = {};
-    for (const def of types) {
+    for (const def of GEN3_TYPES) {
       (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
@@ -233,18 +229,18 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
     //
     // Strategy: compare damage with "charged" volatile vs without.
     // Doubling power should roughly double the damage (all else equal).
-    const chargedVolatiles = new Map([["charged", { turnsLeft: 2 }]]);
+    const chargedVolatiles = new Map([[VOLATILES.charged, { turnsLeft: 2 }]]);
     const attackerCharged = createActivePokemon({
       spAttack: 100,
-      types: ["electric"],
+      types: [TYPES.electric],
       volatileStatuses: chargedVolatiles,
     });
     const attackerNormal = createActivePokemon({
       spAttack: 100,
-      types: ["electric"],
+      types: [TYPES.electric],
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove("electric", 80, "thunderbolt");
+    const move = createMove(THUNDERBOLT);
     const typeChart = createNeutralTypeChart();
 
     const chargedResult = calculateGen3Damage(
@@ -256,33 +252,26 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
       typeChart,
     );
 
-    // The chargedResult should use power=160 and normalResult uses power=80.
-    // With STAB (electric type attacker), both get 1.5x.
-    // The damage ratio should be close to 2x (exact match depends on rounding).
-    // Gen 3 formula: baseDamage = floor(floor((2*50/5+2) * power * SpAtk / SpDef) / 50) + 2
-    //   Normal:  floor(floor(22 * 80 * 100 / 100) / 50) + 2 = floor(176000/100/50)+2 = floor(35.2)+2 = 35+2 = 37
-    //   Charged: floor(floor(22 * 160 * 100 / 100) / 50) + 2 = floor(352000/100/50)+2 = floor(70.4)+2 = 70+2 = 72
-    //   With rng=100 (no penalty): stays same. Then STAB 1.5x:
-    //   Normal: floor(37*1.5) = 55; Charged: floor(72*1.5) = 108
-    //   Type effectiveness 1x: stays same.
-    // Actually let me just verify the ratio: charged should be roughly 2x normal.
-    expect(chargedResult.damage).toBeGreaterThan(normalResult.damage);
-    // More precisely, the charged damage should be about double
-    expect(chargedResult.damage).toBeGreaterThanOrEqual(Math.floor(normalResult.damage * 1.8));
+    // Thunderbolt is 95 BP in Gen 3.
+    // Normal: floor(floor(22*95*100/100)/50)+2 = 43; STAB => floor(43*1.5)=64
+    // Charged: power doubles to 190, giving floor(floor(22*190*100/100)/50)+2 = 85; STAB => 127
+    expect(normalResult.damage).toBe(64);
+    expect(chargedResult.damage).toBe(127);
+    expect(attackerCharged.volatileStatuses.has(VOLATILES.charged)).toBe(false);
   });
 
   it('given an attacker with the "charged" volatile, when using a non-Electric-type move, then power is NOT doubled', () => {
     // Source: pret/pokeemerald — Charge only affects Electric-type moves
     // Source: Bulbapedia "Charge" — "doubles the power of the next Electric-type move"
-    const chargedVolatiles = new Map([["charged", { turnsLeft: 2 }]]);
+    const chargedVolatiles = new Map([[VOLATILES.charged, { turnsLeft: 2 }]]);
     const attacker = createActivePokemon({
       spAttack: 100,
-      types: ["electric"],
+      types: [TYPES.electric],
       volatileStatuses: chargedVolatiles,
     });
     const defender = createActivePokemon({ spDefense: 100 });
     // Fire type move — NOT electric, so Charge should not apply
-    const move = createMove("fire", 80, "flamethrower");
+    const move = createMove(FLAMETHROWER);
     const typeChart = createNeutralTypeChart();
 
     const result = calculateGen3Damage(
@@ -291,12 +280,12 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
     );
 
     // The "charged" volatile should still be present (not consumed for non-Electric moves)
-    expect(attacker.volatileStatuses.has("charged")).toBe(true);
+    expect(attacker.volatileStatuses.has(VOLATILES.charged)).toBe(true);
 
     // Damage should be the same as without Charge (power=80, not doubled)
     const attackerNoCharge = createActivePokemon({
       spAttack: 100,
-      types: ["electric"],
+      types: [TYPES.electric],
     });
     const normalResult = calculateGen3Damage(
       createDamageContext({ attacker: attackerNoCharge, defender, move }),
@@ -305,14 +294,14 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
     expect(result.damage).toBe(normalResult.damage);
   });
 
-  it('given the Charge move is used, when the move effect handler runs, then "charged" volatile is set with turnsLeft=2', () => {
+  it(
+    `given the Charge move is used, when the move effect handler runs, then "${VOLATILES.charged}" volatile is set with turnsLeft=2`,
+    () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE
     // Source: Bulbapedia "Charge" — also raises SpDef by 1 stage in Gen 3
-    const attacker = createActivePokemon({ types: ["electric"] });
+    const attacker = createActivePokemon({ types: [TYPES.electric] });
     const defender = createActivePokemon({});
-    const chargeMove = createMove("electric", 0, "charge", {
-      type: "charge",
-    } as MoveData["effect"]);
+    const chargeMove = createMove(CHARGE);
 
     const ctx = {
       attacker,
@@ -328,7 +317,7 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
     // The handler should set the "charged" volatile on the attacker
     expect(result).not.toBeNull();
     if (result) {
-      expect(result.selfVolatileInflicted).toBe("charged");
+      expect(result.selfVolatileInflicted).toBe(VOLATILES.charged);
       expect(result.selfVolatileData?.turnsLeft).toBe(2);
       // Gen 3 Charge also raises SpDef by 1
       expect(result.statChanges).toEqual(
@@ -337,7 +326,8 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
         ]),
       );
     }
-  });
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -352,12 +342,12 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
       //
       // Strategy: compare damage with mud-sport vs without. Power should be halved.
       const mudSportUser = createActivePokemon({
-        types: ["ground"],
-        volatileStatuses: new Map([["mud-sport", { turnsLeft: -1 }]]),
+        types: [TYPES.ground],
+        volatileStatuses: new Map([[VOLATILES.mudSport, { turnsLeft: -1 }]]),
       });
-      const attacker = createActivePokemon({ spAttack: 100, types: ["electric"] });
+      const attacker = createActivePokemon({ spAttack: 100, types: [TYPES.electric] });
       const defender = createActivePokemon({ spDefense: 100 });
-      const move = createMove("electric", 80, "thunderbolt");
+      const move = createMove(THUNDERBOLT);
       const typeChart = createNeutralTypeChart();
 
       // With mud-sport active on the field
@@ -381,23 +371,22 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
         typeChart,
       );
 
-      // Mud Sport halves the electric power: 80 -> 40
-      // The damage with Mud Sport should be roughly half
-      expect(mudSportResult.damage).toBeLessThan(normalResult.damage);
-      // More precisely, approximately half (floor rounding may cause slight differences)
-      expect(mudSportResult.damage).toBeLessThanOrEqual(Math.ceil(normalResult.damage / 2) + 1);
+      // Thunderbolt is 95 BP in Gen 3. Mud Sport halves move power with floor rounding: 95 -> 47.
+      // Neutral baseline is 64 damage; halved-power result is 33.
+      expect(normalResult.damage).toBe(64);
+      expect(mudSportResult.damage).toBe(33);
     });
 
     it("given mud-sport is active, when a non-Electric move is used, then power is NOT affected", () => {
       // Source: pret/pokeemerald — Mud Sport only affects Electric-type moves
       const mudSportUser = createActivePokemon({
-        types: ["ground"],
-        volatileStatuses: new Map([["mud-sport", { turnsLeft: -1 }]]),
+        types: [TYPES.ground],
+        volatileStatuses: new Map([[VOLATILES.mudSport, { turnsLeft: -1 }]]),
       });
-      const attacker = createActivePokemon({ attack: 100, types: ["fire"] });
+      const attacker = createActivePokemon({ attack: 100, types: [TYPES.fire] });
       const defender = createActivePokemon({ defense: 100 });
       // Normal type move — not affected by Mud Sport
-      const move = createMove("normal", 80, "tackle");
+      const move = createMove(TACKLE);
       const typeChart = createNeutralTypeChart();
 
       const withMudSport = calculateGen3Damage(
@@ -420,11 +409,9 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
 
     it("given Mud Sport move is used, when the move effect handler runs, then mud-sport volatile is set", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_MUD_SPORT
-      const attacker = createActivePokemon({ types: ["ground"] });
+      const attacker = createActivePokemon({ types: [TYPES.ground] });
       const defender = createActivePokemon({});
-      const mudSportMove = createMove("ground", 0, "mud-sport", {
-        type: "mud-sport",
-      } as MoveData["effect"]);
+      const mudSportMove = createMove(MUD_SPORT);
 
       const ctx = {
         attacker,
@@ -439,7 +426,7 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
 
       expect(result).not.toBeNull();
       if (result) {
-        expect(result.selfVolatileInflicted).toBe("mud-sport");
+        expect(result.selfVolatileInflicted).toBe(VOLATILES.mudSport);
         expect(result.messages).toEqual(
           expect.arrayContaining([expect.stringContaining("Electricity's power was weakened!")]),
         );
@@ -452,12 +439,12 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
       // Source: pret/pokeemerald src/battle_util.c — Water Sport checks both sides
       // Source: Showdown data/moves.ts -- watersport: volatileStatus halves Fire power
       const waterSportUser = createActivePokemon({
-        types: ["water"],
-        volatileStatuses: new Map([["water-sport", { turnsLeft: -1 }]]),
+        types: [TYPES.water],
+        volatileStatuses: new Map([[VOLATILES.waterSport, { turnsLeft: -1 }]]),
       });
-      const attacker = createActivePokemon({ spAttack: 100, types: ["fire"] });
+      const attacker = createActivePokemon({ spAttack: 100, types: [TYPES.fire] });
       const defender = createActivePokemon({ spDefense: 100 });
-      const move = createMove("fire", 80, "flamethrower");
+      const move = createMove(FLAMETHROWER);
       const typeChart = createNeutralTypeChart();
 
       // With water-sport active on the field
@@ -477,20 +464,21 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
         typeChart,
       );
 
-      // Water Sport halves fire power: 80 -> 40
-      expect(waterSportResult.damage).toBeLessThan(normalResult.damage);
-      expect(waterSportResult.damage).toBeLessThanOrEqual(Math.ceil(normalResult.damage / 2) + 1);
+      // Flamethrower is 95 BP in Gen 3. Water Sport halves move power with floor rounding: 95 -> 47.
+      // Neutral baseline is 64 damage; halved-power result is 33.
+      expect(normalResult.damage).toBe(64);
+      expect(waterSportResult.damage).toBe(33);
     });
 
     it("given water-sport is active, when a non-Fire move is used, then power is NOT affected", () => {
       // Source: pret/pokeemerald — Water Sport only affects Fire-type moves
       const waterSportUser = createActivePokemon({
-        types: ["water"],
-        volatileStatuses: new Map([["water-sport", { turnsLeft: -1 }]]),
+        types: [TYPES.water],
+        volatileStatuses: new Map([[VOLATILES.waterSport, { turnsLeft: -1 }]]),
       });
-      const attacker = createActivePokemon({ attack: 100, types: ["normal"] });
+      const attacker = createActivePokemon({ attack: 100, types: [TYPES.normal] });
       const defender = createActivePokemon({ defense: 100 });
-      const move = createMove("normal", 80, "tackle");
+      const move = createMove(TACKLE);
       const typeChart = createNeutralTypeChart();
 
       const withWaterSport = calculateGen3Damage(
@@ -513,11 +501,9 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
 
     it("given Water Sport move is used, when the move effect handler runs, then water-sport volatile is set", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_WATER_SPORT
-      const attacker = createActivePokemon({ types: ["water"] });
+      const attacker = createActivePokemon({ types: [TYPES.water] });
       const defender = createActivePokemon({});
-      const waterSportMove = createMove("water", 0, "water-sport", {
-        type: "water-sport",
-      } as MoveData["effect"]);
+      const waterSportMove = createMove(WATER_SPORT);
 
       const ctx = {
         attacker,
@@ -532,7 +518,7 @@ describe("Bug #705: Mud Sport halves Electric damage; Water Sport halves Fire da
 
       expect(result).not.toBeNull();
       if (result) {
-        expect(result.selfVolatileInflicted).toBe("water-sport");
+        expect(result.selfVolatileInflicted).toBe(VOLATILES.waterSport);
         expect(result.messages).toEqual(
           expect.arrayContaining([expect.stringContaining("Fire's power was weakened!")]),
         );
