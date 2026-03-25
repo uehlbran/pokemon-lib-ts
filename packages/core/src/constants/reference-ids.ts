@@ -168,6 +168,13 @@ export const CORE_ABILITY_TRIGGER_IDS = {
   onFlinch: "on-flinch",
 } as const;
 
+export const CORE_ITEM_TRIGGER_IDS = {
+  endOfTurn: "end-of-turn",
+  onDamageTaken: "on-damage-taken",
+  onContact: "on-contact",
+  onHit: "on-hit",
+} as const;
+
 export const CORE_GENDERS = {
   male: "male",
   female: "female",
