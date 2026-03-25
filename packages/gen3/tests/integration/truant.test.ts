@@ -1,5 +1,12 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN3_ABILITY_IDS } from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
 import { applyGen3Ability } from "../../src/Gen3Abilities";
 
@@ -59,11 +66,11 @@ function createActivePokemon(opts: {
     currentHp: 200,
     moves: [],
     ability: opts.ability,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -108,7 +115,9 @@ function createActivePokemon(opts: {
 
 function createAbilityContext(
   pokemon: ActivePokemon,
-  trigger: "on-before-move" | "on-turn-end" = "on-before-move",
+  trigger:
+    | typeof CORE_ABILITY_TRIGGER_IDS.onBeforeMove
+    | typeof CORE_ABILITY_TRIGGER_IDS.onTurnEnd = CORE_ABILITY_TRIGGER_IDS.onBeforeMove,
 ): AbilityContext {
   return {
     pokemon,
@@ -127,12 +136,12 @@ describe("Gen 3 Truant", () => {
     // Source: pret/pokeemerald -- Truant toggle at ABILITYEFFECT_ENDTURN, not at move execution
     // Source: Bulbapedia -- "On the turn after using a move, Truant prevents the Pokemon from acting"
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.truant,
       nickname: "Slaking",
     });
     const ctx = createAbilityContext(pokemon);
-    const result = applyGen3Ability("on-before-move", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onBeforeMove, ctx);
 
     // Move proceeds (activated = false means no blocking)
     expect(result.activated).toBe(false);
@@ -146,13 +155,13 @@ describe("Gen 3 Truant", () => {
     // Source: Bulbapedia -- "Truant causes the Pokemon to loaf around every other turn"
     const volatiles = new Map<string, { turnsLeft: number }>([["truant-turn", { turnsLeft: -1 }]]);
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.truant,
       nickname: "Slaking",
       volatiles,
     });
     const ctx = createAbilityContext(pokemon);
-    const result = applyGen3Ability("on-before-move", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onBeforeMove, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.movePrevented).toBe(true);
@@ -165,29 +174,44 @@ describe("Gen 3 Truant", () => {
     // Source: pret/pokeemerald -- ABILITY_TRUANT alternates act/loaf via ABILITYEFFECT_ENDTURN
     // Full cycle: on-before-move (check) -> move executes -> on-turn-end (toggle)
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "truant",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.truant,
       nickname: "Slaking",
     });
 
     // Turn 1: No volatile -> can act
-    const beforeMove1 = applyGen3Ability("on-before-move", createAbilityContext(pokemon));
+    const beforeMove1 = applyGen3Ability(
+      CORE_ABILITY_TRIGGER_IDS.onBeforeMove,
+      createAbilityContext(pokemon),
+    );
     expect(beforeMove1.activated).toBe(false);
     expect(beforeMove1.movePrevented).toBeUndefined();
     // End of turn 1: toggle sets volatile
-    applyGen3Ability("on-turn-end", createAbilityContext(pokemon, "on-turn-end"));
+    applyGen3Ability(
+      CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+      createAbilityContext(pokemon, CORE_ABILITY_TRIGGER_IDS.onTurnEnd),
+    );
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(true);
 
     // Turn 2: Has volatile -> loafs
-    const beforeMove2 = applyGen3Ability("on-before-move", createAbilityContext(pokemon));
+    const beforeMove2 = applyGen3Ability(
+      CORE_ABILITY_TRIGGER_IDS.onBeforeMove,
+      createAbilityContext(pokemon),
+    );
     expect(beforeMove2.activated).toBe(true);
     expect(beforeMove2.movePrevented).toBe(true);
     // End of turn 2: toggle removes volatile
-    applyGen3Ability("on-turn-end", createAbilityContext(pokemon, "on-turn-end"));
+    applyGen3Ability(
+      CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+      createAbilityContext(pokemon, CORE_ABILITY_TRIGGER_IDS.onTurnEnd),
+    );
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(false);
 
     // Turn 3: No volatile -> can act again
-    const beforeMove3 = applyGen3Ability("on-before-move", createAbilityContext(pokemon));
+    const beforeMove3 = applyGen3Ability(
+      CORE_ABILITY_TRIGGER_IDS.onBeforeMove,
+      createAbilityContext(pokemon),
+    );
     expect(beforeMove3.activated).toBe(false);
     expect(beforeMove3.movePrevented).toBeUndefined();
   });
@@ -195,12 +219,12 @@ describe("Gen 3 Truant", () => {
   it("given non-Truant Pokemon, when on-before-move fires, then no effect", () => {
     // Non-Truant abilities should not trigger on-before-move blocking
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "huge-power",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.hugePower,
       nickname: "Azumarill",
     });
     const ctx = createAbilityContext(pokemon);
-    const result = applyGen3Ability("on-before-move", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onBeforeMove, ctx);
     expect(result.activated).toBe(false);
     expect(result.movePrevented).toBeUndefined();
   });
