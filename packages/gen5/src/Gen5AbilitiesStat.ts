@@ -12,7 +12,6 @@ import type { MoveCategory } from "@pokemon-lib-ts/core";
  *   - Prankster: +1 priority to status moves (on-priority-check)
  *   - Moxie: +1 Attack when user KOs a target (on-after-move-used)
  *   - Defiant: +2 Attack when any stat is lowered by opponent (on-stat-change)
- *   - Competitive: +2 SpAtk when any stat is lowered by opponent (on-stat-change)
  *   - Justified: +1 Attack when hit by Dark-type move (on-damage-taken)
  *   - Contrary: ALL stat changes are reversed (on-stat-change)
  *   - Weak Armor: -1 Def, +1 Speed on physical contact hit (on-damage-taken)
@@ -175,11 +174,10 @@ function handleAfterMoveUsed(abilityId: string, ctx: AbilityContext): AbilityRes
  * Handle "on-stat-change" abilities.
  *
  * Defiant: +2 Attack when any stat is lowered by opponent.
- * Competitive: +2 SpAtk when any stat is lowered by opponent.
  * Contrary: ALL stat changes are reversed (boosts become drops, drops become boosts).
  * Simple: ALL stat changes are doubled.
  *
- * Source: Showdown data/abilities.ts -- Defiant/Competitive onAfterEachBoost
+ * Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost
  * Source: Showdown data/abilities.ts -- Contrary onChangeBoost: multiply by -1
  * Source: Showdown data/abilities.ts -- Simple onChangeBoost: multiply by 2
  */
@@ -187,8 +185,6 @@ function handleStatChange(abilityId: string, ctx: AbilityContext): AbilityResult
   switch (abilityId) {
     case "defiant":
       return handleDefiant(ctx);
-    case "competitive":
-      return handleCompetitive(ctx);
     case "contrary":
       return handleContrary();
     case "simple":
@@ -227,36 +223,6 @@ function handleDefiant(ctx: AbilityContext): AbilityResult {
     activated: true,
     effects: [effect],
     messages: [`${name}'s Defiant sharply raised its Attack!`],
-  };
-}
-
-/**
- * Competitive: +2 SpAtk when any of the user's stats are lowered by an opponent.
- *
- * Must gate on: the change is a drop (stages < 0) AND caused by the opponent.
- * Competitive does NOT trigger on self-caused drops or boosts.
- *
- * Source: Showdown data/abilities.ts -- Competitive onAfterEachBoost
- *   Same gating logic as Defiant — only opponent-caused drops trigger it.
- * Source: Bulbapedia -- Competitive: "+2 SpAtk when any stat lowered by opponent"
- */
-function handleCompetitive(ctx: AbilityContext): AbilityResult {
-  // Require opponent-caused stat DROP (stages < 0, source === "opponent")
-  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
-    return INACTIVE;
-  }
-
-  const name = getName(ctx);
-  const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "spAttack",
-    stages: 2,
-  };
-  return {
-    activated: true,
-    effects: [effect],
-    messages: [`${name}'s Competitive sharply raised its Special Attack!`],
   };
 }
 
