@@ -6,13 +6,19 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createMoveSlot,
   NEUTRAL_NATURES,
   SeededRandom,
-  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -45,22 +51,25 @@ function createMockRng(intReturnValue: number): SeededRandomType {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DATA_MANAGER = createGen4DataManager()
-const ABILITIES = CORE_ABILITY_IDS
-const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const
-const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const
-const SPECIES = GEN4_SPECIES_IDS
-const TYPES = CORE_TYPE_IDS
-const WEATHER = CORE_WEATHER_IDS
-const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const SPECIES = GEN4_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const abilitySlots = CORE_ABILITY_SLOTS;
+const genders = CORE_GENDERS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
 
-const TACKLE = DATA_MANAGER.getMove(MOVES.tackle)
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
 
 function makeRuleset(): Gen4Ruleset {
   return new Gen4Ruleset(DATA_MANAGER);
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   maxHp?: number;
   status?: PokemonInstance["status"];
   heldItem?: PokemonInstance["heldItem"];
@@ -72,16 +81,16 @@ function makePokemonInstance(overrides: {
     level: 50,
     experience: 0,
     nature: DEFAULT_NATURE,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: overrides.maxHp ?? 200,
     moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
     ability: ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: abilitySlots.normal1,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: genders.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -99,7 +108,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   maxHp?: number;
   status?: PokemonInstance["status"];
   types?: PokemonType[];
@@ -108,7 +117,7 @@ function makeActivePokemon(overrides: {
   movedThisTurn?: boolean;
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       maxHp: overrides.maxHp,
       status: overrides.status,
       heldItem: overrides.heldItem,
@@ -156,16 +165,16 @@ function makeCtx(overrides: {
   weather?: (typeof WEATHER)[keyof typeof WEATHER] | null;
   attackerItem?: PokemonInstance["heldItem"];
   defenderItem?: PokemonInstance["heldItem"];
-  moveCategory?: "physical" | "special" | "status";
+  moveCategory?: (typeof moveCategories)[keyof typeof moveCategories];
   seed?: number;
   rng?: SeededRandomType;
   defenderMovedThisTurn?: boolean;
 }): AccuracyContext {
-  const attacker = makeActivePokemon({
+  const attacker = createSyntheticOnFieldPokemon({
     ability: overrides.attackerAbility ?? "",
     heldItem: overrides.attackerItem,
   });
-  const defender = makeActivePokemon({
+  const defender = createSyntheticOnFieldPokemon({
     ability: overrides.defenderAbility ?? "",
     heldItem: overrides.defenderItem,
     movedThisTurn: overrides.defenderMovedThisTurn ?? false,
@@ -185,9 +194,7 @@ function makeCtx(overrides: {
       category: overrides.moveCategory ?? move.category,
     } as AccuracyContext["move"],
     state: {
-      weather: overrides.weather
-        ? { type: overrides.weather, turnsLeft: 5, source: null }
-        : null,
+      weather: overrides.weather ? { type: overrides.weather, turnsLeft: 5, source: null } : null,
     } as AccuracyContext["state"],
     rng: overrides.rng ?? new SeededRandom(overrides.seed ?? 1),
   };

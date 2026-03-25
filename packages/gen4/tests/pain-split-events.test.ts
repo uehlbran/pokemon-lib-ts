@@ -1,8 +1,13 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  createFriendship,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen4Ruleset } from "../src";
-import { createGen4DataManager } from "../src/data";
+import { createGen4DataManager, GEN4_MOVE_IDS, Gen4Ruleset } from "../src";
 
 /**
  * Gen 4 Pain Split -- event stream tests.
@@ -30,6 +35,11 @@ function createMockRng(intReturnValue: number, chanceResult = false) {
     setState: () => {},
   };
 }
+
+const abilitySlots = CORE_ABILITY_SLOTS;
+const genders = CORE_GENDERS;
+const itemIds = CORE_ITEM_IDS;
+const moveIds = GEN4_MOVE_IDS;
 
 function createActivePokemon(opts: {
   types: PokemonType[];
@@ -63,17 +73,17 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: abilitySlots.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: genders.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: itemIds.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -186,7 +196,7 @@ describe("Gen 4 Pain Split -- event stream result fields (#311)", () => {
       maxHp: 100,
       currentHp: 80,
     });
-    const move = dataManager.getMove("pain-split");
+    const move = dataManager.getMove(moveIds.painSplit);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -198,7 +208,7 @@ describe("Gen 4 Pain Split -- event stream result fields (#311)", () => {
     expect(result.customDamage).toEqual({
       target: "defender",
       amount: 30,
-      source: "pain-split",
+      source: moveIds.painSplit,
     });
     // No recoil on attacker (attacker gained HP)
     expect(result.recoilDamage).toBe(0);
@@ -219,7 +229,7 @@ describe("Gen 4 Pain Split -- event stream result fields (#311)", () => {
       maxHp: 100,
       currentHp: 20,
     });
-    const move = dataManager.getMove("pain-split");
+    const move = dataManager.getMove(moveIds.painSplit);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -250,7 +260,7 @@ describe("Gen 4 Pain Split -- event stream result fields (#311)", () => {
       maxHp: 200,
       currentHp: 100,
     });
-    const move = dataManager.getMove("pain-split");
+    const move = dataManager.getMove(moveIds.painSplit);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -280,7 +290,7 @@ describe("Gen 4 Pain Split -- event stream result fields (#311)", () => {
       maxHp: 100,
       currentHp: 60,
     });
-    const move = dataManager.getMove("pain-split");
+    const move = dataManager.getMove(moveIds.painSplit);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 

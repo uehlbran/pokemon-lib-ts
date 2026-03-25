@@ -1,13 +1,30 @@
 import type { PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
-import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  calculateStatExpContribution,
+  createDvs,
+  createFriendship,
+  createStatExp,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager, GEN1_NATURE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { calculateGen1Stats } from "../../src/Gen1StatCalc";
 
 // ---------------------------------------------------------------------------
 // Minimal mock helpers
 // ---------------------------------------------------------------------------
 
-function makeSpecies(baseStats: {
+const dataManager = createGen1DataManager();
+const typeIds = CORE_TYPE_IDS;
+const abilitySlots = CORE_ABILITY_SLOTS;
+const genders = CORE_GENDERS;
+const itemIds = CORE_ITEM_IDS;
+const defaultSpecies = dataManager.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
+
+function createSyntheticSpecies(baseStats: {
   hp: number;
   attack: number;
   defense: number;
@@ -16,47 +33,23 @@ function makeSpecies(baseStats: {
   speed: number;
 }): PokemonSpeciesData {
   return {
+    ...defaultSpecies,
     id: 0,
     name: "mock",
     displayName: "Mock",
-    types: ["normal"],
+    types: [typeIds.normal],
     baseStats,
     abilities: { normal: [], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: [],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 0.7, weight: 6.9 },
     spriteKey: "mock",
-    baseFriendship: 70,
+    baseFriendship: createFriendship(70),
     generation: 1,
-    isLegendary: false,
-    isMythical: false,
   } as unknown as PokemonSpeciesData;
 }
 
-function makeInstance(opts: {
+function createSyntheticPokemonInstance(opts: {
   level: number;
-  ivs: {
-    hp: number;
-    attack: number;
-    defense: number;
-    spAttack: number;
-    spDefense: number;
-    speed: number;
-  };
-  evs: {
-    hp: number;
-    attack: number;
-    defense: number;
-    spAttack: number;
-    spDefense: number;
-    speed: number;
-  };
+  ivs: PokemonInstance["ivs"];
+  evs: PokemonInstance["evs"];
 }): PokemonInstance {
   return {
     uid: "test-uid",
@@ -64,47 +57,47 @@ function makeInstance(opts: {
     nickname: null,
     level: opts.level,
     experience: 0,
-    nature: "hardy",
+    nature: GEN1_NATURE_IDS.hardy,
     ivs: opts.ivs,
     evs: opts.evs,
     currentHp: 1,
     moves: [],
     ability: "",
-    abilitySlot: "normal1",
+    abilitySlot: abilitySlots.normal1,
     heldItem: null,
     status: null,
-    friendship: 70,
-    gender: "male",
+    friendship: createFriendship(70),
+    gender: genders.male,
     isShiny: false,
     metLocation: "pallet-town",
     metLevel: opts.level,
     originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "poke-ball",
+    pokeball: itemIds.pokeBall,
   } as unknown as PokemonInstance;
 }
 
 function zeroDvs() {
-  return { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+  return createDvs({ attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 });
 }
 
 function maxDvs() {
-  return { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 };
+  return createDvs();
 }
 
 function zeroStatExp() {
-  return { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+  return createStatExp();
 }
 
 function maxStatExp() {
-  return {
+  return createStatExp({
     hp: 65535,
     attack: 65535,
     defense: 65535,
     spAttack: 65535,
     spDefense: 65535,
     speed: 65535,
-  };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +186,7 @@ describe("calculateStatExpContribution", () => {
 describe("calculateGen1Stats — HP formula", () => {
   it("given Mewtwo (base HP 106, DV 15, StatExp 65535) at level 100, when calculating HP, then returns 416", () => {
     // Arrange — (106+15)*2 + 64 = 306; floor(306*100/100)+100+10 = 306+110 = 416
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 106,
       attack: 110,
       defense: 90,
@@ -201,7 +194,11 @@ describe("calculateGen1Stats — HP formula", () => {
       spDefense: 90,
       speed: 130,
     });
-    const pokemon = makeInstance({ level: 100, ivs: maxDvs(), evs: maxStatExp() });
+    const pokemon = createSyntheticPokemonInstance({
+      level: 100,
+      ivs: maxDvs(),
+      evs: maxStatExp(),
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -210,7 +207,7 @@ describe("calculateGen1Stats — HP formula", () => {
 
   it("given Bulbasaur (base HP 45, DV 0, StatExp 0) at level 50, when calculating HP, then returns 105", () => {
     // Arrange — floor(((45+0)*2+0)*50/100)+50+10 = floor(45)+60 = 105
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 45,
       attack: 49,
       defense: 49,
@@ -218,7 +215,11 @@ describe("calculateGen1Stats — HP formula", () => {
       spDefense: 65,
       speed: 45,
     });
-    const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
+    const pokemon = createSyntheticPokemonInstance({
+      level: 50,
+      ivs: zeroDvs(),
+      evs: zeroStatExp(),
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -227,7 +228,7 @@ describe("calculateGen1Stats — HP formula", () => {
 
   it("given any base/DV/StatExp, when calculating HP at level 100 vs same non-HP stat, then HP is strictly greater", () => {
     // Arrange — HP adds Level+10 vs +5 for non-HP, so diff = Level+10-5 = level+5 > 0
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -235,7 +236,7 @@ describe("calculateGen1Stats — HP formula", () => {
       spDefense: 100,
       speed: 100,
     });
-    const pokemon = makeInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: 8, attack: 8, defense: 8, spAttack: 8, spDefense: 8, speed: 8 },
       evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
@@ -248,7 +249,7 @@ describe("calculateGen1Stats — HP formula", () => {
 
   it("given HP formula, when result involves non-integer division, then result is a floored integer", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 45,
       attack: 49,
       defense: 49,
@@ -256,7 +257,7 @@ describe("calculateGen1Stats — HP formula", () => {
       spDefense: 65,
       speed: 45,
     });
-    const pokemon = makeInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 37,
       ivs: { hp: 7, attack: 7, defense: 7, spAttack: 7, spDefense: 7, speed: 7 },
       evs: { hp: 127, attack: 127, defense: 127, spAttack: 127, spDefense: 127, speed: 127 },
@@ -269,7 +270,7 @@ describe("calculateGen1Stats — HP formula", () => {
 
   it("given increasing level, when calculating HP, then HP increases monotonically", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -277,7 +278,7 @@ describe("calculateGen1Stats — HP formula", () => {
       spDefense: 100,
       speed: 100,
     });
-    const base = makeInstance({ level: 1, ivs: maxDvs(), evs: zeroStatExp() });
+    const base = createSyntheticPokemonInstance({ level: 1, ivs: maxDvs(), evs: zeroStatExp() });
     // Act
     const hp10 = calculateGen1Stats({ ...base, level: 10 } as PokemonInstance, species).hp;
     const hp50 = calculateGen1Stats({ ...base, level: 50 } as PokemonInstance, species).hp;
@@ -295,7 +296,7 @@ describe("calculateGen1Stats — HP formula", () => {
 describe("calculateGen1Stats — non-HP stat formula", () => {
   it("given Mewtwo (base Attack 110, DV 15, StatExp 65535) at level 100, when calculating Attack, then returns 319", () => {
     // Arrange — (110+15)*2+64=314; floor(314*100/100)+5 = 314+5 = 319
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 106,
       attack: 110,
       defense: 90,
@@ -303,7 +304,11 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
       spDefense: 90,
       speed: 130,
     });
-    const pokemon = makeInstance({ level: 100, ivs: maxDvs(), evs: maxStatExp() });
+    const pokemon = createSyntheticPokemonInstance({
+      level: 100,
+      ivs: maxDvs(),
+      evs: maxStatExp(),
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -312,7 +317,7 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
 
   it("given Charizard (base Speed 100, DV 0, StatExp 0) at level 50, when calculating Speed, then returns 105", () => {
     // Arrange — floor(((100+0)*2+0)*50/100)+5 = floor(100)+5 = 105
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 78,
       attack: 84,
       defense: 78,
@@ -320,7 +325,11 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
       spDefense: 85,
       speed: 100,
     });
-    const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
+    const pokemon = createSyntheticPokemonInstance({
+      level: 50,
+      ivs: zeroDvs(),
+      evs: zeroStatExp(),
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -329,7 +338,7 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
 
   it("given stat formula, when result involves non-integer division, then result is a floored integer", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 45,
       attack: 45,
       defense: 45,
@@ -337,7 +346,7 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
       spDefense: 45,
       speed: 45,
     });
-    const pokemon = makeInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 37,
       ivs: { hp: 7, attack: 7, defense: 7, spAttack: 7, spDefense: 7, speed: 7 },
       evs: { hp: 127, attack: 127, defense: 127, spAttack: 127, spDefense: 127, speed: 127 },
@@ -352,7 +361,7 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
 
   it("given increasing level, when calculating non-HP stat, then stat increases monotonically", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -360,7 +369,7 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
       spDefense: 100,
       speed: 100,
     });
-    const base = makeInstance({ level: 1, ivs: maxDvs(), evs: zeroStatExp() });
+    const base = createSyntheticPokemonInstance({ level: 1, ivs: maxDvs(), evs: zeroStatExp() });
     // Act
     const atk10 = calculateGen1Stats({ ...base, level: 10 } as PokemonInstance, species).attack;
     const atk50 = calculateGen1Stats({ ...base, level: 50 } as PokemonInstance, species).attack;
@@ -378,7 +387,7 @@ describe("calculateGen1Stats — non-HP stat formula", () => {
 describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
   it("given same base spAttack and spDefense (Charizard Special=85), when calculating stats, then spAttack equals spDefense", () => {
     // Arrange — In Gen 1 Special is unified; both fields use base=85
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 78,
       attack: 84,
       defense: 78,
@@ -386,7 +395,7 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
       spDefense: 85,
       speed: 100,
     });
-    const pokemon = makeInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
       ivs: { hp: 10, attack: 10, defense: 10, spAttack: 10, spDefense: 10, speed: 10 },
       evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
@@ -403,7 +412,7 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
     const dv = 12;
     const statExp = 30000;
     const level = 75;
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: base,
       attack: base,
       defense: base,
@@ -411,7 +420,7 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
       spDefense: base,
       speed: base,
     });
-    const pokemon = makeInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level,
       ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
       evs: {
@@ -432,7 +441,7 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
   it("given DIFFERENT species spAttack (85) vs spDefense (100) base stats, when calculating stats, then spAttack still equals spDefense (spAttack inputs used for both)", () => {
     // Arrange — if the old independent calculation were used, different base stats would produce
     // different values; this test only passes after Fix 2 forces a unified Special
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 78,
       attack: 84,
       defense: 78,
@@ -440,7 +449,7 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
       spDefense: 100,
       speed: 100,
     });
-    const pokemon = makeInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
       ivs: { hp: 10, attack: 10, defense: 10, spAttack: 10, spDefense: 10, speed: 10 },
       evs: { hp: 1000, attack: 1000, defense: 1000, spAttack: 1000, spDefense: 1000, speed: 1000 },
@@ -459,7 +468,7 @@ describe("calculateGen1Stats — Gen 1 unified Special stat", () => {
 describe("calculateGen1Stats — DV monotonicity", () => {
   it("given increasing DV from 0 to 15, when calculating non-HP stat, then stat is non-decreasing", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -470,7 +479,7 @@ describe("calculateGen1Stats — DV monotonicity", () => {
     const results: number[] = [];
     // Act
     for (let dv = 0; dv <= 15; dv++) {
-      const pokemon = makeInstance({
+      const pokemon = createSyntheticPokemonInstance({
         level: 100,
         ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
         evs: zeroStatExp(),
@@ -489,7 +498,7 @@ describe("calculateGen1Stats — DV monotonicity", () => {
     // Source: pret/pokered home/move_mon.asm lines 109-133
     // HP DV = ((atk&1)<<3)|((def&1)<<2)|((spe&1)<<1)|(spc&1)
     // When all DVs are the same value, HP DV alternates between 0 (even) and 15 (odd).
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -498,12 +507,12 @@ describe("calculateGen1Stats — DV monotonicity", () => {
       speed: 100,
     });
     // Act: dv=0 (all even) → HP DV = 0; dv=1 (all odd) → HP DV = 15
-    const evenPokemon = makeInstance({
+    const evenPokemon = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       evs: zeroStatExp(),
     });
-    const oddPokemon = makeInstance({
+    const oddPokemon = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: 0, attack: 1, defense: 1, spAttack: 1, spDefense: 1, speed: 1 },
       evs: zeroStatExp(),
@@ -520,7 +529,7 @@ describe("calculateGen1Stats — DV monotonicity", () => {
 
   it("given DV < 0 (dv=-1), when calculating stats, then result equals DV=0 (clamped to minimum)", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -528,12 +537,12 @@ describe("calculateGen1Stats — DV monotonicity", () => {
       spDefense: 100,
       speed: 100,
     });
-    const pokemonDv0 = makeInstance({
+    const pokemonDv0 = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       evs: zeroStatExp(),
     });
-    const pokemonDvNeg = makeInstance({
+    const pokemonDvNeg = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: -1, attack: -1, defense: -1, spAttack: -1, spDefense: -1, speed: -1 },
       evs: zeroStatExp(),
@@ -552,7 +561,7 @@ describe("calculateGen1Stats — DV monotonicity", () => {
 
   it("given DV > 15 (dv=16), when calculating stats, then result equals DV=15", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -560,12 +569,12 @@ describe("calculateGen1Stats — DV monotonicity", () => {
       spDefense: 100,
       speed: 100,
     });
-    const pokemonDv15 = makeInstance({
+    const pokemonDv15 = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: zeroStatExp(),
     });
-    const pokemonDv16 = makeInstance({
+    const pokemonDv16 = createSyntheticPokemonInstance({
       level: 100,
       ivs: { hp: 16, attack: 16, defense: 16, spAttack: 16, spDefense: 16, speed: 16 },
       evs: zeroStatExp(),
@@ -590,7 +599,7 @@ describe("calculateGen1Stats — DV monotonicity", () => {
 describe("calculateGen1Stats — StatExp monotonicity", () => {
   it("given increasing StatExp values, when calculating non-HP stat, then stat is non-decreasing", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -602,7 +611,7 @@ describe("calculateGen1Stats — StatExp monotonicity", () => {
     const results: number[] = [];
     // Act
     for (const se of statExpValues) {
-      const pokemon = makeInstance({
+      const pokemon = createSyntheticPokemonInstance({
         level: 100,
         ivs: maxDvs(),
         evs: { hp: se, attack: se, defense: se, spAttack: se, spDefense: se, speed: se },
@@ -619,7 +628,7 @@ describe("calculateGen1Stats — StatExp monotonicity", () => {
 
   it("given increasing StatExp values, when calculating HP, then HP is non-decreasing", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 100,
       attack: 100,
       defense: 100,
@@ -631,7 +640,7 @@ describe("calculateGen1Stats — StatExp monotonicity", () => {
     const results: number[] = [];
     // Act
     for (const se of statExpValues) {
-      const pokemon = makeInstance({
+      const pokemon = createSyntheticPokemonInstance({
         level: 100,
         ivs: maxDvs(),
         evs: { hp: se, attack: se, defense: se, spAttack: se, spDefense: se, speed: se },
@@ -660,7 +669,7 @@ describe("calculateGen1Stats — HP vs non-HP offset", () => {
       { level: 100, dv: 15, statExp: 65535 },
     ];
     for (const { level, dv, statExp } of cases) {
-      const species = makeSpecies({
+      const species = createSyntheticSpecies({
         hp: 100,
         attack: 100,
         defense: 100,
@@ -668,7 +677,7 @@ describe("calculateGen1Stats — HP vs non-HP offset", () => {
         spDefense: 100,
         speed: 100,
       });
-      const pokemon = makeInstance({
+      const pokemon = createSyntheticPokemonInstance({
         level,
         ivs: { hp: dv, attack: dv, defense: dv, spAttack: dv, spDefense: dv, speed: dv },
         evs: {
@@ -698,7 +707,7 @@ describe("calculateGen1Stats — output validity", () => {
   it("given any valid Gen 1 inputs, when calculating stats, then all six stats are positive integers", () => {
     // Arrange
     // Species: Bulbasaur (base HP=45, Atk=49, Def=49, Spc=65, Spe=45), L50, DV=0, StatExp=0
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 45,
       attack: 49,
       defense: 49,
@@ -706,7 +715,11 @@ describe("calculateGen1Stats — output validity", () => {
       spDefense: 65,
       speed: 45,
     });
-    const pokemon = makeInstance({ level: 50, ivs: zeroDvs(), evs: zeroStatExp() });
+    const pokemon = createSyntheticPokemonInstance({
+      level: 50,
+      ivs: zeroDvs(),
+      evs: zeroStatExp(),
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — exact values derived from pret/pokered stat formula:
@@ -729,7 +742,7 @@ describe("calculateGen1Stats — output validity", () => {
 
   it("given minimum possible inputs (base 5, DV 0, StatExp 0, level 1), when calculating stats, then all stats are positive integers", () => {
     // Arrange
-    const species = makeSpecies({
+    const species = createSyntheticSpecies({
       hp: 5,
       attack: 5,
       defense: 5,
@@ -737,7 +750,11 @@ describe("calculateGen1Stats — output validity", () => {
       spDefense: 5,
       speed: 5,
     });
-    const pokemon = makeInstance({ level: 1, ivs: zeroDvs(), evs: zeroStatExp() });
+    const pokemon = createSyntheticPokemonInstance({
+      level: 1,
+      ivs: zeroDvs(),
+      evs: zeroStatExp(),
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — exact values derived from pret/pokered stat formula:
