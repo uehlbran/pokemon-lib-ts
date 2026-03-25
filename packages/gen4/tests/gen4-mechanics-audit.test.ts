@@ -18,15 +18,38 @@
  */
 
 import type { ActivePokemon, BattleState, CritContext } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen4Ruleset } from "../src/Gen4Ruleset";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  Gen4Ruleset,
+} from "../src";
 
 // ---------------------------------------------------------------------------
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+const gen4Data = createGen4DataManager();
+const DEFAULT_SPECIES = gen4Data.getSpecies(GEN4_SPECIES_IDS.bulbasaur);
+const DEFAULT_NATURE = gen4Data.getNature(GEN4_NATURE_IDS.hardy);
+const DEFAULT_BATTLE_TYPES = [CORE_TYPE_IDS.normal];
+const DEFAULT_POKEBALL = GEN4_ITEM_IDS.pokeBall;
+const GEN4_ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS };
+const STATUS_IDS = CORE_STATUS_IDS;
+const END_OF_TURN_EFFECT_IDS = CORE_END_OF_TURN_EFFECT_IDS;
+
+function createActiveBattler(overrides: {
   maxHp?: number;
   speed?: number;
   status?: string | null;
@@ -36,17 +59,48 @@ function makeActivePokemon(overrides: {
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
+  const speed = overrides.speed ?? 100;
+  if (maxHp < 1) {
+    throw new Error(`Test battler maxHp must be positive, got ${maxHp}`);
+  }
+  if (speed < 1) {
+    throw new Error(`Test battler speed must be positive, got ${speed}`);
+  }
   return {
     pokemon: {
-      calculatedStats: { hp: maxHp, speed: overrides.speed ?? 100 },
+      uid: "gen4-audit-battler",
+      speciesId: DEFAULT_SPECIES.id,
+      nickname: DEFAULT_SPECIES.displayName,
+      level: 50,
+      experience: 0,
+      nature: DEFAULT_NATURE.id,
+      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
+      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      moves: [],
+      ability: overrides.ability ?? GEN4_ABILITIES.blaze,
+      abilitySlot: "normal1" as const,
+      friendship: 0,
+      gender: "male" as const,
+      isShiny: false,
+      metLocation: "",
+      metLevel: 1,
+      originalTrainer: "",
+      originalTrainerId: 0,
+      pokeball: DEFAULT_POKEBALL,
+      calculatedStats: {
+        hp: maxHp,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed,
+      },
       currentHp: maxHp,
       status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
-      speciesId: 1,
-      nickname: "TestMon",
     },
-    ability: overrides.ability ?? "blaze",
-    types: overrides.types ?? ["normal"],
+    ability: overrides.ability ?? GEN4_ABILITIES.blaze,
+    types: overrides.types ?? DEFAULT_BATTLE_TYPES,
     statStages: {
       attack: 0,
       defense: 0,
@@ -81,7 +135,7 @@ describe("Gen4Ruleset paralysis speed penalty (0.25x)", () => {
     // Source: Showdown data/mods/gen4/conditions.ts lines 9-13 —
     //   par.onModifySpe: if (!quick-feet) return chainModify(0.25)
     // Gen 3-6 all use 0.25x. Gen 7+ uses 0.5x (BaseRuleset default).
-    const pokemon = makeActivePokemon({ speed: 100, status: "paralysis" });
+    const pokemon = createActiveBattler({ speed: 100, status: STATUS_IDS.paralysis });
     const speed = (
       ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
     ).getEffectiveSpeed(pokemon);
@@ -91,7 +145,7 @@ describe("Gen4Ruleset paralysis speed penalty (0.25x)", () => {
   it("given a paralyzed Pokemon with 80 base speed in Gen4, when getEffectiveSpeed is called, then returns 20 (0.25x)", () => {
     // Source: pret/pokeplatinum — paralysis quarters speed
     // Triangulation: floor(80 * 0.25) = 20
-    const pokemon = makeActivePokemon({ speed: 80, status: "paralysis" });
+    const pokemon = createActiveBattler({ speed: 80, status: STATUS_IDS.paralysis });
     const speed = (
       ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
     ).getEffectiveSpeed(pokemon);
@@ -102,7 +156,11 @@ describe("Gen4Ruleset paralysis speed penalty (0.25x)", () => {
     // Source: Showdown data/mods/gen4/conditions.ts lines 9-13 — Quick Feet skips the 0.25x penalty
     // Source: Bulbapedia -- Quick Feet: "Boosts Speed by 50%; Speed drop from paralysis ignored."
     // Quick Feet is new in Gen 4. At 100 speed: 100 * 1.5 = 150
-    const pokemon = makeActivePokemon({ speed: 100, status: "paralysis", ability: "quick-feet" });
+    const pokemon = createActiveBattler({
+      speed: 100,
+      status: STATUS_IDS.paralysis,
+      ability: GEN4_ABILITIES.quickFeet,
+    });
     const speed = (
       ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
     ).getEffectiveSpeed(pokemon);
@@ -120,32 +178,32 @@ describe("Gen4Ruleset burn damage (1/8 maxHP)", () => {
   it("given a burned Pokemon with 200 maxHP in Gen4, when applyStatusDamage is called, then returns 25 (floor(200/8))", () => {
     // Source: pret/pokeplatinum — burn tick = maxHP / 8
     // Gen 3-6: 1/8 max HP. Gen 7+: 1/16 (BaseRuleset default).
-    const pokemon = makeActivePokemon({ maxHp: 200 });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const pokemon = createActiveBattler({ maxHp: 200 });
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS_IDS.burn, makeState());
     expect(damage).toBe(25);
   });
 
   it("given a burned Pokemon with 160 maxHP in Gen4, when applyStatusDamage is called, then returns 20 (floor(160/8))", () => {
     // Source: pret/pokeplatinum — burn = maxHP / 8
     // Triangulation: floor(160/8) = 20
-    const pokemon = makeActivePokemon({ maxHp: 160 });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const pokemon = createActiveBattler({ maxHp: 160 });
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS_IDS.burn, makeState());
     expect(damage).toBe(20);
   });
 
   it("given a burned Magic Guard Pokemon with 200 maxHP in Gen4, when applyStatusDamage is called, then returns 0", () => {
     // Source: Showdown Gen 4 -- Magic Guard prevents burn damage
     // Source: Bulbapedia -- Magic Guard (Gen 4 introduction): "prevents all indirect damage"
-    const pokemon = makeActivePokemon({ maxHp: 200, ability: "magic-guard" });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const pokemon = createActiveBattler({ maxHp: 200, ability: GEN4_ABILITIES.magicGuard });
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS_IDS.burn, makeState());
     expect(damage).toBe(0);
   });
 
   it("given a burned Heatproof Pokemon with 200 maxHP in Gen4, when applyStatusDamage is called, then returns 12 (1/16)", () => {
     // Source: Showdown Gen4 data/mods/gen4/ -- Heatproof halves burn damage in Gen 4
     // floor(200/16) = 12
-    const pokemon = makeActivePokemon({ maxHp: 200, ability: "heatproof" });
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", makeState());
+    const pokemon = createActiveBattler({ maxHp: 200, ability: GEN4_ABILITIES.heatproof });
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS_IDS.burn, makeState());
     expect(damage).toBe(12);
   });
 });
@@ -278,32 +336,32 @@ describe("Gen4Ruleset getEndOfTurnOrder", () => {
   it("given Gen4, when getEndOfTurnOrder is called, then weather-damage is first", () => {
     // Source: Showdown Gen 4 mod -- weather damage before everything else
     const order = ruleset.getEndOfTurnOrder();
-    expect(order[0]).toBe("weather-damage");
+    expect(order[0]).toBe(END_OF_TURN_EFFECT_IDS.weatherDamage);
   });
 
   it("given Gen4, when getEndOfTurnOrder is called, then leech-seed comes before leftovers", () => {
     // Source: Showdown Gen 4 -- Leech Seed drains before Leftovers recovers
     const order = ruleset.getEndOfTurnOrder();
-    const leechIdx = order.indexOf("leech-seed");
-    const leftoversIdx = order.indexOf("leftovers");
-    expect(leechIdx).toBeGreaterThanOrEqual(0);
-    expect(leftoversIdx).toBeGreaterThanOrEqual(0);
+    const leechIdx = order.indexOf(CORE_MOVE_IDS.leechSeed);
+    const leftoversIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.leftovers);
+    expect(leechIdx).not.toBe(-1);
+    expect(leftoversIdx).not.toBe(-1);
     expect(leechIdx).toBeLessThan(leftoversIdx);
   });
 
   it("given Gen4, when getEndOfTurnOrder is called, then poison-heal comes before status-damage", () => {
     // Source: Showdown Gen 4 -- Poison Heal replaces poison damage, so it fires before status-damage
     const order = ruleset.getEndOfTurnOrder();
-    const phIdx = order.indexOf("poison-heal");
-    const sdIdx = order.indexOf("status-damage");
-    expect(phIdx).toBeGreaterThanOrEqual(0);
-    expect(sdIdx).toBeGreaterThanOrEqual(0);
+    const phIdx = order.indexOf(GEN4_ABILITIES.poisonHeal);
+    const sdIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.statusDamage);
+    expect(phIdx).not.toBe(-1);
+    expect(sdIdx).not.toBe(-1);
     expect(phIdx).toBeLessThan(sdIdx);
   });
 
   it("given Gen4, when getEndOfTurnOrder is called, then includes black-sludge (Gen 4 introduction)", () => {
     // Source: Bulbapedia -- Black Sludge introduced in Gen 4 (Platinum)
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain("black-sludge");
+    expect(order).toContain(GEN4_ITEM_IDS.blackSludge);
   });
 });
