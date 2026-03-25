@@ -27,6 +27,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_FIXED_POINT,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -56,6 +57,7 @@ const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS };
 const FIXED_POINT = CORE_FIXED_POINT;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };
 const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const SPECIES = GEN9_SPECIES_IDS;
 const TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
@@ -177,7 +179,7 @@ function makeCanonicalMove(
 function makeSyntheticMove(
   baseMoveId: (typeof MOVES)[keyof typeof MOVES],
   type: PokemonType,
-  category: "physical" | "special" | "status",
+  category: MoveData["category"],
   power: number | null,
   overrides?: Pick<MoveData, "critRatio" | "effect" | "hasCrashDamage" | "target"> &
     Partial<Pick<MoveData, "flags">>,
@@ -211,41 +213,41 @@ const CANONICAL_DOUBLE_EDGE = () => makeCanonicalMove(MOVES.doubleEdge)
 const CANONICAL_BELCH = () => makeCanonicalMove(MOVES.belch)
 
 const SYNTHETIC_NORMAL_PHYSICAL_50 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 50)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 50)
 const SYNTHETIC_NORMAL_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 80)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 80)
 const SYNTHETIC_NORMAL_PHYSICAL_60 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 60)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 60)
 const SYNTHETIC_NORMAL_PHYSICAL_10 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 10)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 10)
 const SYNTHETIC_FIRE_SPECIAL_90 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 90)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 90)
 const SYNTHETIC_FIRE_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 80)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 80)
 const SYNTHETIC_FIRE_SPECIAL_50 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 50)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 50)
 const SYNTHETIC_WATER_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.surf, TYPES.water, "special", 80)
+  makeSyntheticMove(MOVES.surf, TYPES.water, MOVE_CATEGORIES.special, 80)
 const SYNTHETIC_WATER_SPECIAL_50 = () =>
-  makeSyntheticMove(MOVES.surf, TYPES.water, "special", 50)
+  makeSyntheticMove(MOVES.surf, TYPES.water, MOVE_CATEGORIES.special, 50)
 const SYNTHETIC_FIRE_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "physical", 80)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.physical, 80)
 const SYNTHETIC_FIRE_PHYSICAL_10 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "physical", 10)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.physical, 10)
 const SYNTHETIC_ELECTRIC_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, "special", 80)
+  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, MOVE_CATEGORIES.special, 80)
 const SYNTHETIC_ELECTRIC_SPECIAL_120 = () =>
-  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, "special", 120)
+  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, MOVE_CATEGORIES.special, 120)
 const SYNTHETIC_GRASS_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.energyBall, TYPES.grass, "special", 80)
+  makeSyntheticMove(MOVES.energyBall, TYPES.grass, MOVE_CATEGORIES.special, 80)
 const SYNTHETIC_DRAGON_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.dragonPulse, TYPES.dragon, "special", 80)
+  makeSyntheticMove(MOVES.dragonPulse, TYPES.dragon, MOVE_CATEGORIES.special, 80)
 const SYNTHETIC_ICE_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.iceBeam, TYPES.ice, "special", 80)
+  makeSyntheticMove(MOVES.iceBeam, TYPES.ice, MOVE_CATEGORIES.special, 80)
 const SYNTHETIC_FIGHTING_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.closeCombat, TYPES.fighting, "physical", 80)
+  makeSyntheticMove(MOVES.closeCombat, TYPES.fighting, MOVE_CATEGORIES.physical, 80)
 const SYNTHETIC_GROUND_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.earthquake, TYPES.ground, "physical", 80)
+  makeSyntheticMove(MOVES.earthquake, TYPES.ground, MOVE_CATEGORIES.physical, 80)
 
 function makeState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
@@ -411,7 +413,7 @@ describe("Base damage formula", () => {
   it("given power=0 move, when calculating damage, then returns 0", () => {
     // Source: Showdown -- zero power moves produce no damage
     const ctx = makeDamageContext({
-      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 0),
+      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 0),
     });
     const result = calculateGen9Damage(ctx, typeChart);
     expect(result.damage).toBe(0);
@@ -2122,7 +2124,7 @@ describe("Body Press", () => {
     const ctxTackle = makeDamageContext({
       attacker: makeActive({ attack: 50, defense: 200, types: ["fighting"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeSyntheticMove(MOVES.tackle, TYPES.fighting, "physical", 80),
+      move: makeSyntheticMove(MOVES.tackle, TYPES.fighting, MOVE_CATEGORIES.physical, 80),
       seed: 42,
     });
     const resultTackle = calculateGen9Damage(ctxTackle, typeChart);
@@ -2142,7 +2144,7 @@ describe("Spread moves (doubles)", () => {
     const ctxDoubles = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 80, {
+      move: makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 80, {
         target: "all-adjacent-foes",
       }),
       state: makeState({ format: "doubles" }),
@@ -2153,7 +2155,7 @@ describe("Spread moves (doubles)", () => {
     const ctxSingles = makeDamageContext({
       attacker: makeActive({ spAttack: 100, types: ["fire"] }),
       defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeSyntheticMove(MOVES.flamethrower, TYPES.fire, "special", 80, {
+      move: makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 80, {
         target: "adjacent-foe",
       }),
       state: makeState({ format: "singles" }),
@@ -2564,7 +2566,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxTC = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"], ability: "tough-claws" }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 80, {
+      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 80, {
         flags: { contact: true },
       }),
       seed: 42,
@@ -2574,7 +2576,7 @@ describe("Contact/flag-based ability boosts", () => {
     const ctxNone = makeDamageContext({
       attacker: makeActive({ attack: 100, types: ["normal"] }),
       defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, "physical", 80, {
+      move: makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 80, {
         flags: { contact: true },
       }),
       seed: 42,
@@ -2797,7 +2799,7 @@ describe("DamageResult structure", () => {
     expect(result.randomFactor).toBeLessThanOrEqual(1.0);
     expect(result.breakdown).toBeDefined();
     expect(result.effectiveType).toBe(TYPES.fire);
-    expect(result.effectiveCategory).toBe("physical");
+    expect(result.effectiveCategory).toBe(MOVE_CATEGORIES.physical);
   });
 
   it("given a damage calculation, when checking breakdown, then has all modifier fields", () => {
