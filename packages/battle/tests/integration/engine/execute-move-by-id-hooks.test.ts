@@ -1,6 +1,11 @@
-import type { AbilityTrigger, DamageContext } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  type AbilityTrigger,
+  type DamageContext,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import { createMockMoveSlot } from "../../helpers/move-slot";
 import type {
   AbilityContext,
@@ -118,14 +123,17 @@ class RecursiveHookRuleset extends MockRuleset {
   }
 
   override applyAbility(trigger: AbilityTrigger, _context: AbilityContext) {
-    if (trigger === "passive-immunity") {
+    if (trigger === CORE_ABILITY_TRIGGER_IDS.passiveImmunity) {
       this.passiveImmunityTriggers.push(trigger);
       if (this.options.passiveImmunityActivates) {
         return { activated: true, effects: [], messages: [] };
       }
     }
 
-    if (trigger === "on-damage-taken" || trigger === "on-contact") {
+    if (
+      trigger === CORE_ABILITY_TRIGGER_IDS.onDamageTaken ||
+      trigger === CORE_ABILITY_TRIGGER_IDS.onContact
+    ) {
       this.damageAbilityTriggers.push(trigger);
     }
 
@@ -133,7 +141,11 @@ class RecursiveHookRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string, _context: ItemContext) {
-    if (trigger === "on-damage-taken" || trigger === "on-contact" || trigger === "on-hit") {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onDamageTaken ||
+      trigger === CORE_ITEM_TRIGGER_IDS.onContact ||
+      trigger === CORE_ITEM_TRIGGER_IDS.onHit
+    ) {
       this.itemTriggers.push(trigger);
     }
 
@@ -157,7 +169,7 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(ruleset.passiveImmunityTriggers).toEqual(["passive-immunity"]);
+    expect(ruleset.passiveImmunityTriggers).toEqual([CORE_ABILITY_TRIGGER_IDS.passiveImmunity]);
     expect(ruleset.recursiveEffectCalls).toHaveLength(0);
     expect(ruleset.itemTriggers).toHaveLength(0);
     expect(ruleset.damageAbilityTriggers).toHaveLength(0);
@@ -184,11 +196,18 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     // Source: executeMove() parity contract for recursive moves.
     expect(ruleset.recursiveEffectCalls).toEqual([CORE_MOVE_IDS.tackle]);
     expect(ruleset.itemTriggers).toEqual(
-      expect.arrayContaining(["on-damage-taken", "on-contact", "on-hit"]),
+      expect.arrayContaining([
+        CORE_ITEM_TRIGGER_IDS.onDamageTaken,
+        CORE_ITEM_TRIGGER_IDS.onContact,
+        CORE_ITEM_TRIGGER_IDS.onHit,
+      ]),
     );
     // Source: executeMove() parity contract for recursive moves.
     expect(ruleset.damageAbilityTriggers).toEqual(
-      expect.arrayContaining(["on-damage-taken", "on-contact"]),
+      expect.arrayContaining([
+        CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+        CORE_ABILITY_TRIGGER_IDS.onContact,
+      ]),
     );
   });
 });
