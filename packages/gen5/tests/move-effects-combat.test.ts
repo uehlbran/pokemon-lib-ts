@@ -7,9 +7,17 @@
  */
 
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  type MoveData,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen5DataManager, GEN5_MOVE_IDS, GEN5_NATURE_IDS, GEN5_SPECIES_IDS } from "../src";
 import {
   didAllyFaintLastTurn,
   getAcrobaticsBP,
@@ -37,11 +45,14 @@ const EMPTY_COMBAT_RESULT = {
   messages: [],
 };
 
+const DATA_MANAGER = createGen5DataManager();
+const BASE_SPECIES = DATA_MANAGER.getSpecies(GEN5_SPECIES_IDS.bulbasaur);
+
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function makeScenarioActive(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -68,16 +79,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? BASE_SPECIES.id,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DATA_MANAGER.getNature(GEN5_NATURE_IDS.hardy).id,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -88,7 +99,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -102,8 +113,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [...BASE_SPECIES.types],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -126,45 +137,29 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
+function makeScenarioMove(overrides: {
   id?: string;
   type?: PokemonType;
   category?: "physical" | "special" | "status";
   power?: number | null;
   priority?: number;
 }): MoveData {
+  const baseMove = DATA_MANAGER.getMove(overrides.id ?? GEN5_MOVE_IDS.tackle);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: overrides.priority ?? 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 5,
+    ...baseMove,
+    id: baseMove.id,
+    displayName: baseMove.displayName,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
+    accuracy: baseMove.accuracy,
+    pp: baseMove.pp,
+    priority: overrides.priority ?? baseMove.priority,
+    target: baseMove.target,
+    flags: { ...baseMove.flags },
+    effect: baseMove.effect,
+    description: baseMove.description,
+    generation: baseMove.generation,
   } as MoveData;
 }
 
@@ -221,9 +216,9 @@ function makeContext(overrides: {
   state?: BattleState;
 }): MoveEffectContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    attacker: overrides.attacker ?? makeScenarioActive({}),
+    defender: overrides.defender ?? makeScenarioActive({}),
+    move: overrides.move ?? makeScenarioMove({}),
     damage: overrides.damage ?? 0,
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(42),
@@ -239,7 +234,7 @@ describe("Explosion / Self-Destruct", () => {
     // Source: Showdown gen5/moves.ts -- Explosion no longer halves defense in Gen 5
     // Source: Bulbapedia -- "Starting in Gen V, Explosion no longer halves target's Defense"
     const ctx = makeContext({
-      move: makeMove({ id: "explosion", type: "normal", power: 250 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.explosion, type: CORE_TYPE_IDS.normal, power: 250 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -254,7 +249,7 @@ describe("Explosion / Self-Destruct", () => {
   it("given Self-Destruct in Gen 5, when executed, then the user self-faints", () => {
     // Source: Showdown data/moves.ts -- selfdestruct: same as explosion
     const ctx = makeContext({
-      move: makeMove({ id: "self-destruct", type: "normal", power: 200 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.selfDestruct, type: CORE_TYPE_IDS.normal, power: 200 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -272,7 +267,7 @@ describe("Dragon Tail / Circle Throw", () => {
   it("given Dragon Tail, when it hits, then the defender is forced to switch", () => {
     // Source: Showdown data/moves.ts -- dragontail: forceSwitch: true, priority: -6
     const ctx = makeContext({
-      move: makeMove({ id: "dragon-tail", type: "dragon", power: 60, priority: -6 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.dragonTail, type: CORE_TYPE_IDS.dragon, power: 60, priority: -6 }),
       damage: 30,
     });
 
@@ -286,7 +281,7 @@ describe("Dragon Tail / Circle Throw", () => {
   it("given Circle Throw, when it hits, then the defender is forced to switch", () => {
     // Source: Showdown data/moves.ts -- circlethrow: forceSwitch: true, priority: -6
     const ctx = makeContext({
-      move: makeMove({ id: "circle-throw", type: "fighting", power: 60, priority: -6 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.circleThrow, type: CORE_TYPE_IDS.fighting, power: 60, priority: -6 }),
       damage: 25,
     });
 
@@ -333,10 +328,10 @@ describe("Final Gambit", () => {
   it("given a user with 150 HP, when Final Gambit is used, then deals 150 damage and user faints", () => {
     // Source: Showdown data/moves.ts -- finalgambit:
     //   damageCallback(pokemon) { const damage = pokemon.hp; pokemon.faint(); return damage; }
-    const attacker = makeActive({ hp: 200, currentHp: 150 });
+    const attacker = makeScenarioActive({ hp: 200, currentHp: 150 });
     const ctx = makeContext({
       attacker,
-      move: makeMove({ id: "final-gambit", type: "fighting", power: 0 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.finalGambit, type: CORE_TYPE_IDS.fighting, power: 0 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -346,16 +341,16 @@ describe("Final Gambit", () => {
     expect(result!.customDamage).not.toBeNull();
     expect(result!.customDamage!.amount).toBe(150);
     expect(result!.customDamage!.target).toBe("defender");
-    expect(result!.customDamage!.source).toBe("final-gambit");
+    expect(result!.customDamage!.source).toBe(GEN5_MOVE_IDS.finalGambit);
   });
 
   it("given a user with 1 HP, when Final Gambit is used, then deals 1 damage and user faints", () => {
     // Source: Showdown data/moves.ts -- Final Gambit deals damage equal to user's current HP
     // Edge case: even at 1 HP, it still works (no failure condition for low HP)
-    const attacker = makeActive({ hp: 200, currentHp: 1 });
+    const attacker = makeScenarioActive({ hp: 200, currentHp: 1 });
     const ctx = makeContext({
       attacker,
-      move: makeMove({ id: "final-gambit", type: "fighting", power: 0 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.finalGambit, type: CORE_TYPE_IDS.fighting, power: 0 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -375,7 +370,7 @@ describe("Foul Play", () => {
     // Source: Showdown data/moves.ts -- foulplay: overrideOffensivePokemon: 'target'
     // The effect handler has no secondary effects; the stat swap is damage-calc-level.
     const ctx = makeContext({
-      move: makeMove({ id: "foul-play", type: "dark", power: 95 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.foulPlay, type: CORE_TYPE_IDS.dark, power: 95 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -387,9 +382,9 @@ describe("Foul Play", () => {
   it("given Foul Play against a different target, when handled, then also returns null", () => {
     // Source: Showdown data/moves.ts -- no secondary effects on foul play
     const ctx = makeContext({
-      attacker: makeActive({ attack: 50 }),
-      defender: makeActive({ attack: 200 }),
-      move: makeMove({ id: "foul-play", type: "dark", power: 95 }),
+      attacker: makeScenarioActive({ attack: 50 }),
+      defender: makeScenarioActive({ attack: 200 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.foulPlay, type: CORE_TYPE_IDS.dark, power: 95 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -408,7 +403,7 @@ describe("Shell Smash", () => {
     // Source: Showdown data/moves.ts -- shellsmash:
     //   boosts: { def: -1, spd: -1, atk: 2, spa: 2, spe: 2 }
     const ctx = makeContext({
-      move: makeMove({ id: "shell-smash", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.shellSmash, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -426,10 +421,10 @@ describe("Shell Smash", () => {
 
   it("given Shell Smash with a nicknamed user, when used, then message includes nickname", () => {
     // Source: Showdown -- Shell Smash message verification
-    const attacker = makeActive({ nickname: "Cloyster" });
+    const attacker = makeScenarioActive({ nickname: "Cloyster" });
     const ctx = makeContext({
       attacker,
-      move: makeMove({ id: "shell-smash", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.shellSmash, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -456,7 +451,7 @@ describe("Coil", () => {
   it("given Coil, when used, then raises Atk, Def, and Accuracy by 1", () => {
     // Source: Showdown data/moves.ts -- coil: boosts: { atk: 1, def: 1, accuracy: 1 }
     const ctx = makeContext({
-      move: makeMove({ id: "coil", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.coil, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -471,11 +466,11 @@ describe("Coil", () => {
 
   it("given Coil, when used a second time, then still produces +1 stat changes (clamping is engine's job)", () => {
     // Source: Showdown -- stat stage clamping is separate from effect production
-    const attacker = makeActive({});
+    const attacker = makeScenarioActive({});
     attacker.statStages.attack = 5; // Already high
     const ctx = makeContext({
       attacker,
-      move: makeMove({ id: "coil", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.coil, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -497,7 +492,7 @@ describe("Quiver Dance", () => {
   it("given Quiver Dance, when used, then raises SpAtk, SpDef, and Speed by 1", () => {
     // Source: Showdown data/moves.ts -- quiverdance: boosts: { spa: 1, spd: 1, spe: 1 }
     const ctx = makeContext({
-      move: makeMove({ id: "quiver-dance", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.quiverDance, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -513,7 +508,7 @@ describe("Quiver Dance", () => {
   it("given Quiver Dance, when used, then no other side effects occur", () => {
     // Source: Showdown data/moves.ts -- quiverdance has no secondary effects
     const ctx = makeContext({
-      move: makeMove({ id: "quiver-dance", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.quiverDance, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -536,7 +531,7 @@ describe("Flame Charge", () => {
     // Source: Showdown data/moves.ts -- flamecharge:
     //   secondary: { chance: 100, self: { boosts: { spe: 1 } } }
     const ctx = makeContext({
-      move: makeMove({ id: "flame-charge", type: "fire", power: 50 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.flameCharge, type: CORE_TYPE_IDS.fire, power: 50 }),
       damage: 20,
     });
 
@@ -549,7 +544,7 @@ describe("Flame Charge", () => {
   it("given Flame Charge, when it hits, then only the attacker's Speed is boosted (no defender changes)", () => {
     // Source: Showdown -- Flame Charge only boosts user's Speed
     const ctx = makeContext({
-      move: makeMove({ id: "flame-charge", type: "fire", power: 50 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.flameCharge, type: CORE_TYPE_IDS.fire, power: 50 }),
       damage: 15,
     });
 
@@ -569,7 +564,7 @@ describe("Work Up", () => {
   it("given Work Up, when used, then raises Atk and SpAtk by 1", () => {
     // Source: Showdown data/moves.ts -- workup: boosts: { atk: 1, spa: 1 }
     const ctx = makeContext({
-      move: makeMove({ id: "work-up", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.workUp, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -584,7 +579,7 @@ describe("Work Up", () => {
   it("given Work Up, when used, then no defensive stat changes occur", () => {
     // Source: Showdown -- Work Up only boosts offensive stats
     const ctx = makeContext({
-      move: makeMove({ id: "work-up", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.workUp, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -605,7 +600,7 @@ describe("Hone Claws", () => {
   it("given Hone Claws, when used, then raises Atk and Accuracy by 1", () => {
     // Source: Showdown data/moves.ts -- honeclaws: boosts: { atk: 1, accuracy: 1 }
     const ctx = makeContext({
-      move: makeMove({ id: "hone-claws", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.honeClaws, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -620,7 +615,7 @@ describe("Hone Claws", () => {
   it("given Hone Claws, when used, then does not boost Speed", () => {
     // Source: Showdown -- Hone Claws only boosts Atk and Accuracy
     const ctx = makeContext({
-      move: makeMove({ id: "hone-claws", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.honeClaws, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -643,7 +638,7 @@ describe("Bulk Up", () => {
   it("given Bulk Up, when used, then raises Atk and Def by 1", () => {
     // Source: Showdown data/moves.ts -- bulkup: boosts: { atk: 1, def: 1 }
     const ctx = makeContext({
-      move: makeMove({ id: "bulk-up", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.bulkUp, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -658,7 +653,7 @@ describe("Bulk Up", () => {
   it("given Bulk Up, when used, then does not affect SpAtk or SpDef", () => {
     // Source: Showdown -- Bulk Up is physical only
     const ctx = makeContext({
-      move: makeMove({ id: "bulk-up", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.bulkUp, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -679,7 +674,7 @@ describe("Calm Mind", () => {
   it("given Calm Mind, when used, then raises SpAtk and SpDef by 1", () => {
     // Source: Showdown data/moves.ts -- calmmind: boosts: { spa: 1, spd: 1 }
     const ctx = makeContext({
-      move: makeMove({ id: "calm-mind", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.calmMind, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -694,7 +689,7 @@ describe("Calm Mind", () => {
   it("given Calm Mind, when used, then does not affect Atk or Def", () => {
     // Source: Showdown -- Calm Mind is special only
     const ctx = makeContext({
-      move: makeMove({ id: "calm-mind", category: "status", power: null }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.calmMind, category: "status", power: null }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -869,7 +864,7 @@ describe("Retaliate", () => {
 describe("didAllyFaintLastTurn", () => {
   it("given a faint event on the attacker's side in the last turn, then returns true", () => {
     // Source: Showdown data/moves.ts -- retaliate checks side.faintedLastTurn
-    const attacker = makeActive({});
+    const attacker = makeScenarioActive({});
     const sides = [
       {
         index: 0,
@@ -907,7 +902,7 @@ describe("didAllyFaintLastTurn", () => {
         {
           turn: 1,
           actions: [],
-          events: [{ type: "faint", side: 0, pokemon: "ally-mon" }],
+          events: [{ type: "faint", side: 0, pokemon: GEN5_SPECIES_IDS.bulbasaur }],
         },
       ],
     });
@@ -917,7 +912,7 @@ describe("didAllyFaintLastTurn", () => {
 
   it("given no faint events in the last turn, then returns false", () => {
     // Source: Showdown -- no faint last turn means Retaliate stays at base power
-    const attacker = makeActive({});
+    const attacker = makeScenarioActive({});
     const sides = [
       {
         index: 0,
@@ -955,7 +950,7 @@ describe("didAllyFaintLastTurn", () => {
         {
           turn: 1,
           actions: [],
-          events: [{ type: "damage", side: 0, pokemon: "ally-mon" }],
+          events: [{ type: "damage", side: 0, pokemon: GEN5_SPECIES_IDS.bulbasaur }],
         },
       ],
     });
@@ -965,7 +960,7 @@ describe("didAllyFaintLastTurn", () => {
 
   it("given a faint event on the opponent's side (not attacker's), then returns false", () => {
     // Source: Showdown -- Retaliate only checks the user's own side
-    const attacker = makeActive({});
+    const attacker = makeScenarioActive({});
     const sides = [
       {
         index: 0,
@@ -1003,7 +998,7 @@ describe("didAllyFaintLastTurn", () => {
         {
           turn: 1,
           actions: [],
-          events: [{ type: "faint", side: 1, pokemon: "foe-mon" }],
+          events: [{ type: "faint", side: 1, pokemon: GEN5_SPECIES_IDS.charmander }],
         },
       ],
     });
@@ -1020,29 +1015,33 @@ describe("Smack Down", () => {
   it("given Smack Down hits, when executed, then inflicts smackdown volatile on defender", () => {
     // Source: Showdown data/moves.ts -- smackdown: volatileStatus: 'smackdown'
     const ctx = makeContext({
-      move: makeMove({ id: "smack-down", type: "rock", power: 50 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.smackDown, type: CORE_TYPE_IDS.rock, power: 50 }),
       damage: 25,
     });
 
     const result = handleGen5CombatMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(result!.volatileInflicted).toBe("smackdown");
+    expect(result!.volatileInflicted).toBe(CORE_VOLATILE_IDS.smackDown);
   });
 
   it("given Smack Down, when executed against a flying target, then message says target fell", () => {
     // Source: Showdown data/moves.ts -- smackdown condition onStart message
-    const defender = makeActive({ nickname: "Skarmory", types: ["steel", "flying"] });
+    const defender = makeScenarioActive({
+      nickname: "Skarmory",
+      speciesId: GEN5_SPECIES_IDS.skarmory,
+      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.flying],
+    });
     const ctx = makeContext({
       defender,
-      move: makeMove({ id: "smack-down", type: "rock", power: 50 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.smackDown, type: CORE_TYPE_IDS.rock, power: 50 }),
       damage: 20,
     });
 
     const result = handleGen5CombatMove(ctx);
 
     // Derived from the move id: Gen 5 Smack Down applies the `smackdown` volatile.
-    const expectedVolatile = ctx.move.id.replace("-", "");
+    const expectedVolatile = CORE_VOLATILE_IDS.smackDown;
     expect(result).toEqual({
       ...EMPTY_COMBAT_RESULT,
       volatileInflicted: expectedVolatile,
@@ -1060,7 +1059,7 @@ describe("Low Sweep", () => {
     // Source: Showdown data/moves.ts -- lowsweep:
     //   secondary: { chance: 100, boosts: { spe: -1 } }
     const ctx = makeContext({
-      move: makeMove({ id: "low-sweep", type: "fighting", power: 65 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.lowSweep, type: CORE_TYPE_IDS.fighting, power: 65 }),
       damage: 30,
     });
 
@@ -1073,7 +1072,7 @@ describe("Low Sweep", () => {
   it("given Low Sweep, when executed, then no attacker stat changes occur", () => {
     // Source: Showdown -- Low Sweep only affects defender's Speed
     const ctx = makeContext({
-      move: makeMove({ id: "low-sweep", type: "fighting", power: 65 }),
+      move: makeScenarioMove({ id: GEN5_MOVE_IDS.lowSweep, type: CORE_TYPE_IDS.fighting, power: 65 }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -1092,7 +1091,7 @@ describe("Storm Throw / Frost Breath", () => {
   it("given Storm Throw, when handled by combat move handler, then returns null (willCrit is in move data / crit calc)", () => {
     // Source: Showdown data/moves.ts -- stormthrow: willCrit: true
     // The always-crit behavior is handled by the crit calculation, not the effect handler.
-    const move = makeMove({ id: "storm-throw", type: "fighting", power: 60 });
+    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.stormThrow, type: CORE_TYPE_IDS.fighting, power: 60 });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
@@ -1103,7 +1102,7 @@ describe("Storm Throw / Frost Breath", () => {
 
   it("given Frost Breath, when handled by combat move handler, then returns null (willCrit is in move data / crit calc)", () => {
     // Source: Showdown data/moves.ts -- frostbreath: willCrit: true
-    const move = makeMove({ id: "frost-breath", type: "ice", power: 60 });
+    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.frostBreath, type: CORE_TYPE_IDS.ice, power: 60 });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
@@ -1119,7 +1118,7 @@ describe("Storm Throw / Frost Breath", () => {
 
 describe("Unrecognized moves", () => {
   it("given a move not handled by this module, when called, then returns null", () => {
-    const move = makeMove({ id: "tackle" });
+    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.tackle });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
@@ -1129,13 +1128,13 @@ describe("Unrecognized moves", () => {
   });
 
   it("given Thunderbolt (no special Gen 5 combat effect), when called, then returns null", () => {
-    const move = makeMove({ id: "thunderbolt", type: "electric", power: 90 });
+    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.thunderbolt, type: CORE_TYPE_IDS.electric, power: 90 });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
     expect(result).toBeNull();
     expect(ctx.move.id).toBe(move.id);
-    // Source: makeActive defaults current HP to the max-HP fixture value of 200.
+    // Source: makeScenarioActive defaults current HP to the max-HP fixture value of 200.
     expect(ctx.attacker.pokemon.currentHp).toBe(DEFAULT_TEST_HP);
   });
 });

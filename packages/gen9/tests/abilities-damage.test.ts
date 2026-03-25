@@ -19,9 +19,11 @@
  * Source: Bulbapedia -- individual ability articles
  */
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_FIXED_POINT,
+  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
@@ -30,7 +32,13 @@ import {
   CORE_WEATHER_IDS,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { GEN9_ABILITY_IDS, GEN9_NATURE_IDS } from "../src";
+import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src";
 import { describe, expect, it } from "vitest";
 import {
   getAteAbilityOverride,
@@ -62,20 +70,25 @@ import { calculateGen9Damage, pokeRound } from "../src/Gen9DamageCalc";
 import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 
 // Source: Showdown damage engine fixed-point arithmetic uses 2^12 as the identity modifier.
-const FIXED_POINT_IDENTITY = 2 ** 12;
+const FIXED_POINT_IDENTITY = CORE_FIXED_POINT.identity;
 // Source: Showdown data/abilities.ts -- Gen 7+ -ate abilities use chainModify([4915, 2^12]).
-const GEN7_PLUS_ATE_MODIFIER = 4915 / FIXED_POINT_IDENTITY;
+const GEN7_PLUS_ATE_MODIFIER = CORE_FIXED_POINT.typeBoost / FIXED_POINT_IDENTITY;
 // Source: the local makeActive helper defaults max HP to 2 * 100 unless overridden.
 const DEFAULT_HP_FIXTURE = 2 * 100;
 const A = GEN9_ABILITY_IDS;
+const I = CORE_ITEM_IDS;
+const M = GEN9_MOVE_IDS;
 const N = GEN9_NATURE_IDS;
+const SP = GEN9_SPECIES_IDS;
 const C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
 const S = CORE_STATUS_IDS;
 const W = CORE_WEATHER_IDS;
 const V = CORE_VOLATILE_IDS;
 const TE = CORE_TERRAIN_IDS;
-const PROTEAN_USED_VOLATILE = "protean-used" as VolatileStatus;
+const DATA_MANAGER = createGen9DataManager();
+const DEFAULT_SPECIES_ID = SP.bulbasaur;
+const PROTEAN_USED_VOLATILE = V.proteanUsed;
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as damage-calc.test.ts)
@@ -110,7 +123,7 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: TE.testSource,
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? DEFAULT_SPECIES_ID,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
@@ -120,7 +133,7 @@ function makeActive(overrides: {
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? C.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: `${T.normal}1` as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
@@ -130,7 +143,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: I.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -168,53 +181,62 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-  hasCrashDamage?: boolean;
-}): MoveData {
+function makeCanonicalMove(
+  moveId: (typeof M)[keyof typeof M],
+  overrides?: Partial<MoveData>,
+): MoveData {
+  const baseMove = DATA_MANAGER.getMove(moveId);
   return {
-    id: overrides.id ?? CORE_MOVE_IDS.tackle,
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? T.normal,
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 9,
-    critRatio: overrides.critRatio ?? 0,
-    hasCrashDamage: overrides.hasCrashDamage ?? false,
+    ...baseMove,
+    ...overrides,
+    flags: overrides?.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
   } as MoveData;
+}
+
+/**
+ * Branch-driving synthetic move fixture. Start from a real Gen 9 move record and override only
+ * the intentional scenario fields needed by the test.
+ */
+function makeSyntheticMove(
+  baseMoveId: (typeof M)[keyof typeof M],
+  type: PokemonType,
+  category: "physical" | "special" | "status",
+  power: number | null,
+  overrides?: Partial<MoveData>,
+): MoveData {
+  return makeCanonicalMove(baseMoveId, { ...overrides, type, category, power });
+}
+
+function makeAbilityTestMove(overrides: {
+  moveType?: PokemonType;
+  moveCategory?: "physical" | "special" | "status";
+  movePower?: number | null;
+  moveFlags?: Partial<MoveData["flags"]>;
+  moveEffect?: MoveData["effect"];
+  moveId?: (typeof M)[keyof typeof M];
+}): MoveData {
+  const moveId = overrides.moveId ?? M.tackle;
+  const baseMove = DATA_MANAGER.getMove(moveId);
+  if (
+    overrides.moveType === undefined &&
+    overrides.moveCategory === undefined &&
+    overrides.movePower === undefined &&
+    overrides.moveFlags === undefined &&
+    overrides.moveEffect === undefined
+  ) {
+    return makeCanonicalMove(moveId);
+  }
+  return makeSyntheticMove(
+    moveId,
+    overrides.moveType ?? baseMove.type,
+    overrides.moveCategory ?? baseMove.category,
+    overrides.movePower ?? baseMove.power,
+    {
+      flags: overrides.moveFlags,
+      effect: overrides.moveEffect,
+    },
+  );
 }
 
 function makeState(overrides?: {
@@ -250,7 +272,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeCanonicalMove(M.tackle),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -331,7 +353,9 @@ describe("Supreme Overlord", () => {
     it("given 3 fainted allies, when calculating damage with Supreme Overlord, then power is boosted by ~30%", () => {
       const attacker = makeActive({ ability: A.supremeOverlord, types: [T.dark, T.steel] });
       const defender = makeActive({});
-      const move = makeMove({ type: T.dark, power: 100, flags: { contact: false } });
+      const move = makeSyntheticMove(M.knockOff, T.dark, "physical", 100, {
+        flags: { contact: false },
+      });
 
       const sides = [
         { active: [attacker], faintCount: 3, screens: [] },
@@ -361,9 +385,7 @@ describe("Supreme Overlord", () => {
       // The boosted damage should be noticeably higher
       // Source: Showdown data/abilities.ts:4649 -- powMod[3] = 5325
       const boostedPower = pokeRound(100, SUPREME_OVERLORD_TABLE[3]);
-      const moveEquivalent = makeMove({
-        type: T.dark,
-        power: boostedPower,
+      const moveEquivalent = makeSyntheticMove(M.knockOff, T.dark, "physical", boostedPower, {
         flags: { contact: false },
       });
       const ctxEquivalent = makeDamageContext({
@@ -381,7 +403,9 @@ describe("Supreme Overlord", () => {
     it("given 0 fainted allies, when calculating damage with Supreme Overlord, then no boost applied", () => {
       const attacker = makeActive({ ability: A.supremeOverlord, types: [T.dark, T.steel] });
       const defender = makeActive({});
-      const move = makeMove({ type: T.dark, power: 100, flags: { contact: false } });
+      const move = makeSyntheticMove(M.knockOff, T.dark, "physical", 100, {
+        flags: { contact: false },
+      });
 
       const sides = [
         { active: [attacker], faintCount: 0, screens: [] },
@@ -460,10 +484,7 @@ describe("Orichalcum Pulse", () => {
         types: [T.fire, T.dragon],
       });
       const defender = makeActive({ defense: 100 });
-      const move = makeMove({
-        type: T.fire,
-        power: 80,
-        category: "physical",
+      const move = makeSyntheticMove(M.firePunch, T.fire, "physical", 80, {
         flags: { contact: false },
       });
       const state = makeState({
@@ -498,10 +519,7 @@ describe("Orichalcum Pulse", () => {
         types: [T.fire, T.dragon],
       });
       const defender = makeActive({ defense: 100 });
-      const move = makeMove({
-        type: T.fire,
-        power: 80,
-        category: "physical",
+      const move = makeSyntheticMove(M.firePunch, T.fire, "physical", 80, {
         flags: { contact: false },
       });
       const state = makeState(); // no weather
@@ -546,7 +564,7 @@ describe("Hadron Engine", () => {
     });
 
     it("given Grassy Terrain + Hadron Engine, when getting modifier, then returns FIXED_POINT_IDENTITY (wrong terrain)", () => {
-      const mod = getHadronEngineSpAModifier(A.hadronEngine, "grassy");
+      const mod = getHadronEngineSpAModifier(A.hadronEngine, TE.grassy);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
@@ -564,10 +582,7 @@ describe("Hadron Engine", () => {
         types: [T.electric, T.dragon],
       });
       const defender = makeActive({ spDefense: 100 });
-      const move = makeMove({
-        type: T.electric,
-        power: 80,
-        category: "special",
+      const move = makeSyntheticMove(M.thunderbolt, T.electric, "special", 80, {
         flags: { contact: false },
       });
       const state = makeState({
@@ -791,10 +806,7 @@ describe("Fluffy", () => {
     it("given Fluffy defender hit by physical contact move, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
       const defender = makeActive({ ability: A.fluffy, types: [T.normal] });
-      const move = makeMove({
-        type: T.fighting,
-        power: 100,
-        category: "physical",
+      const move = makeSyntheticMove(M.closeCombat, T.fighting, "physical", 100, {
         flags: { contact: true },
       });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -843,10 +855,7 @@ describe("Ice Scales", () => {
     it("given Ice Scales defender hit by special move, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
       const defender = makeActive({ ability: A.iceScales, types: [T.ice] });
-      const move = makeMove({
-        type: T.fire,
-        power: 100,
-        category: "special",
+      const move = makeSyntheticMove(M.flamethrower, T.fire, "special", 100, {
         flags: { contact: false },
       });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -869,10 +878,7 @@ describe("Ice Scales", () => {
     it("given Ice Scales defender hit by physical move, when calculating damage, then no reduction", () => {
       const attacker = makeActive({});
       const defender = makeActive({ ability: A.iceScales, types: [T.ice] });
-      const move = makeMove({
-        type: T.fire,
-        power: 100,
-        category: "physical",
+      const move = makeSyntheticMove(M.firePunch, T.fire, "physical", 100, {
         flags: { contact: false },
       });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -922,7 +928,9 @@ describe("Multiscale / Shadow Shield", () => {
     it("given Multiscale defender at full HP, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
       const defender = makeActive({ ability: A.multiscale, hp: DEFAULT_HP_FIXTURE, currentHp: DEFAULT_HP_FIXTURE });
-      const move = makeMove({ power: 100, flags: { contact: false } });
+      const move = makeSyntheticMove(M.tackle, T.normal, "physical", 100, {
+        flags: { contact: false },
+      });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultMultiscale = calculateGen9Damage(ctx, typeChart);
 
@@ -942,7 +950,9 @@ describe("Multiscale / Shadow Shield", () => {
     it("given Multiscale defender not at full HP, when calculating damage, then no reduction", () => {
       const attacker = makeActive({});
       const defender = makeActive({ ability: A.multiscale, hp: DEFAULT_HP_FIXTURE, currentHp: 150 });
-      const move = makeMove({ power: 100, flags: { contact: false } });
+      const move = makeSyntheticMove(M.tackle, T.normal, "physical", 100, {
+        flags: { contact: false },
+      });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultMultiscale = calculateGen9Damage(ctx, typeChart);
 
@@ -968,10 +978,7 @@ describe("Tinted Lens", () => {
   it("given Tinted Lens attacker using NVE move, when calculating damage, then damage is doubled", () => {
     const attacker = makeActive({ ability: A.tintedLens, types: [T.fire] });
     const defender = makeActive({ types: [T.water] }); // Fire vs Water = NVE (0.5x)
-    const move = makeMove({
-      type: T.fire,
-      power: 100,
-      category: "special",
+    const move = makeSyntheticMove(M.flamethrower, T.fire, "special", 100, {
       flags: { contact: false },
     });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -994,10 +1001,7 @@ describe("Tinted Lens", () => {
   it("given Tinted Lens attacker using SE move, when calculating damage, then no boost (only NVE)", () => {
     const attacker = makeActive({ ability: A.tintedLens, types: [T.fire] });
     const defender = makeActive({ types: [T.grass] }); // Fire vs Grass = SE (2x)
-    const move = makeMove({
-      type: T.fire,
-      power: 100,
-      category: "special",
+    const move = makeSyntheticMove(M.flamethrower, T.fire, "special", 100, {
       flags: { contact: false },
     });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -1025,10 +1029,7 @@ describe("Filter / Solid Rock", () => {
   it("given Filter defender hit by SE move, when calculating damage, then damage is reduced by 25%", () => {
     const attacker = makeActive({ types: [T.fire] });
     const defender = makeActive({ ability: A.filter, types: [T.grass] });
-    const move = makeMove({
-      type: T.fire,
-      power: 100,
-      category: "special",
+    const move = makeSyntheticMove(M.flamethrower, T.fire, "special", 100, {
       flags: { contact: false },
     });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -1050,9 +1051,7 @@ describe("Filter / Solid Rock", () => {
   it("given Solid Rock defender hit by neutral move, when calculating damage, then no reduction", () => {
     const attacker = makeActive({});
     const defender = makeActive({ ability: A.solidRock, types: [T.rock] });
-    const move = makeMove({
-      type: T.normal,
-      power: 100,
+    const move = makeSyntheticMove(M.tackle, T.normal, "physical", 100, {
       flags: { contact: false },
     });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
@@ -1361,23 +1360,14 @@ describe("handleGen9DamageCalcAbility handler", () => {
     const opponent = overrides.opponentMovedThisTurn
       ? makeActive({ movedThisTurn: true })
       : makeActive({});
-    const move =
-      overrides.movePower !== undefined
-        ? makeMove({
-            id: overrides.moveId,
-            type: overrides.moveType ?? T.normal,
-            category: overrides.moveCategory ?? "physical",
-            power: overrides.movePower,
-            flags: overrides.moveFlags,
-            effect: overrides.moveEffect,
-          })
-        : makeMove({
-            id: overrides.moveId,
-            type: overrides.moveType ?? T.normal,
-            category: overrides.moveCategory ?? "physical",
-            flags: overrides.moveFlags,
-            effect: overrides.moveEffect,
-          });
+    const move = makeAbilityTestMove({
+      moveId: overrides.moveId as (typeof M)[keyof typeof M] | undefined,
+      moveType: overrides.moveType,
+      moveCategory: overrides.moveCategory,
+      movePower: overrides.movePower,
+      moveFlags: overrides.moveFlags,
+      moveEffect: overrides.moveEffect,
+    });
     const faintCount = overrides.attackerFaintCount ?? 0;
     const sides =
       faintCount > 0
@@ -1545,7 +1535,7 @@ describe("handleGen9DamageImmunityAbility handler", () => {
       state: makeState(),
       rng: new SeededRandom(42),
       trigger: "on-damage" as any,
-      move: makeMove({ effect: { type: "ohko" as const } }),
+      move: makeCanonicalMove(M.sheerCold),
     };
     const result = handleGen9DamageImmunityAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1559,7 +1549,7 @@ describe("handleGen9DamageImmunityAbility handler", () => {
       state: makeState(),
       rng: new SeededRandom(42),
       trigger: "on-damage" as any,
-      move: makeMove({}),
+      move: makeCanonicalMove(M.tackle),
     };
     const result = handleGen9DamageImmunityAbility(ctx);
     expect(result.activated).toBe(false);
