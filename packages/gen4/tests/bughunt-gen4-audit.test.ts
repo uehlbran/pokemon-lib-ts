@@ -9,10 +9,23 @@ import type {
   MoveEffect,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  createGen4DataManager,
+} from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { applyGen4HeldItem } from "../src/Gen4Items";
@@ -65,7 +78,7 @@ function createActivePokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   gender?: "male" | "female" | "genderless";
   speciesId?: number;
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -83,16 +96,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
     nickname: null,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: GEN4_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -103,7 +116,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: GEN4_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -120,8 +133,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: opts.volatileStatuses ?? new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [CORE_TYPE_IDS.normal],
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -207,21 +220,21 @@ function createItemContext(opts: {
   currentHp?: number;
   maxHp?: number;
   damage?: number;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
 }): ItemContext {
   const maxHp = opts.maxHp ?? 160;
   const pokemon = {
     uid: "test",
-    speciesId: 1,
+    speciesId: GEN4_SPECIES_IDS.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN4_NATURE_IDS.hardy,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -232,7 +245,7 @@ function createItemContext(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: GEN4_ITEM_IDS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -246,9 +259,9 @@ function createItemContext(opts: {
   return {
     pokemon: {
       pokemon,
-      types: opts.types ?? ["normal"],
+      types: opts.types ?? [CORE_TYPE_IDS.normal],
       volatileStatuses: new Map(),
-      ability: opts.ability ?? "",
+      ability: opts.ability ?? CORE_ABILITY_IDS.none,
       teamSlot: 0,
       statStages: {
         attack: 0,
@@ -283,6 +296,7 @@ function createItemContext(opts: {
 
 const dataManager = createGen4DataManager();
 const ruleset = new Gen4Ruleset(dataManager);
+const ROOM_SUFFIX = GEN4_MOVE_IDS.trickRoom.slice(5);
 
 // ===========================================================================
 // 1. Skill Link — always hits 5 times
@@ -293,7 +307,7 @@ describe("Gen4Ruleset rollMultiHitCount — Skill Link (NEW in Gen 4)", () => {
     // Source: Bulbapedia — Skill Link (Gen 4+): "Makes multi-hit moves always strike 5 times."
     // Source: Showdown Gen 4 mod Gen4Ruleset — if (attacker.ability === 'skill-link') return 5
     // Derivation: regardless of RNG seed, Skill Link always returns 5 hits
-    const attacker = createActivePokemon({ ability: "skill-link" });
+    const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.skillLink });
     const rng1 = createMockRng(0);
     const rng2 = createMockRng(100);
 
@@ -309,7 +323,7 @@ describe("Gen4Ruleset rollMultiHitCount — Skill Link (NEW in Gen 4)", () => {
     // Source: Showdown Gen 4 mod — gen1to4MultiHitRoll returns 2–5
     // Source: Bulbapedia — Multi-hit moves without Skill Link: 2-5 hits (weighted 2:2:1:1)
     // This triangulates that Skill Link's forced-5 path is distinct from the standard path
-    const attacker = createActivePokemon({ ability: "blaze" });
+    const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.blaze });
     const rng = createMockRng(0);
     const result = ruleset.rollMultiHitCount(attacker, rng as any);
     expect([2, 3, 4, 5]).toContain(result);
@@ -338,12 +352,17 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
     //
     // Correct result: 45 (Charcoal gives 65, Technician skips, STAB applies)
     const attacker = createActivePokemon({
-      types: ["fire"],
-      ability: "technician",
-      heldItem: "charcoal",
+      types: [CORE_TYPE_IDS.fire],
+      ability: GEN4_ABILITY_IDS.technician,
+      heldItem: GEN4_ITEM_IDS.charcoal,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "fire", power: 55, category: "special", id: "test-55bp-fire" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove({
+      type: CORE_TYPE_IDS.fire,
+      power: 55,
+      category: "special",
+      id: "test-55bp-fire",
+    });
     const rng = createMockRng(100); // no random reduction (100/100 = 1.0)
     const state = createNullState();
 
@@ -354,8 +373,8 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
 
     // Baseline: same move without Technician or Charcoal
     const attackerPlain = createActivePokemon({
-      types: ["fire"],
-      ability: "blaze",
+      types: [CORE_TYPE_IDS.fire],
+      ability: GEN4_ABILITY_IDS.blaze,
       heldItem: null,
     });
     const resultPlain = calculateGen4Damage(
@@ -389,12 +408,17 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
     // Base damage: floor(floor(22*70)/50)+2 = floor(1540/50)+2 = 30+2 = 32
     // STAB (fire/fire): floor(32*1.5) = 48
     const attacker = createActivePokemon({
-      types: ["fire"],
-      ability: "technician",
-      heldItem: "charcoal",
+      types: [CORE_TYPE_IDS.fire],
+      ability: GEN4_ABILITY_IDS.technician,
+      heldItem: GEN4_ITEM_IDS.charcoal,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "fire", power: 40, category: "special", id: "test-40bp-fire" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove({
+      type: CORE_TYPE_IDS.fire,
+      power: 40,
+      category: "special",
+      id: "test-40bp-fire",
+    });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -425,7 +449,7 @@ describe("applyGen4HeldItem on-damage-taken — Focus Sash unit function (issue 
     // Check: currentHp === maxHp (200 === 200) → true
     //        currentHp - damage (200 - 300 = -100 <= 0) → true → activates
     const ctx = createItemContext({
-      heldItem: "focus-sash",
+      heldItem: GEN4_ITEM_IDS.focusSash,
       maxHp: 200,
       currentHp: 200,
       damage: 300,
@@ -434,14 +458,16 @@ describe("applyGen4HeldItem on-damage-taken — Focus Sash unit function (issue 
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e) => e.type === "survive")).toBe(true);
-    expect(result.effects.some((e) => e.type === "consume" && e.value === "focus-sash")).toBe(true);
+    expect(
+      result.effects.some((e) => e.type === "consume" && e.value === GEN4_ITEM_IDS.focusSash),
+    ).toBe(true);
   });
 
   it("given Focus Sash holder at full HP and a non-KO hit, when item function is called, then does NOT activate (non-lethal)", () => {
     // Source: Bulbapedia — Focus Sash only activates on a would-be KO
     // Derivation: maxHp=200, currentHp=200, damage=50 → 200 - 50 = 150 > 0 → no activation
     const ctx = createItemContext({
-      heldItem: "focus-sash",
+      heldItem: GEN4_ITEM_IDS.focusSash,
       maxHp: 200,
       currentHp: 200,
       damage: 50,
@@ -455,7 +481,7 @@ describe("applyGen4HeldItem on-damage-taken — Focus Sash unit function (issue 
     // Source: Bulbapedia — Focus Sash: "If the holder is at full HP..."
     // Derivation: maxHp=200, currentHp=150 (not full), damage=300 → currentHp !== maxHp → no activation
     const ctx = createItemContext({
-      heldItem: "focus-sash",
+      heldItem: GEN4_ITEM_IDS.focusSash,
       maxHp: 200,
       currentHp: 150,
       damage: 300,
@@ -479,16 +505,16 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
     // base: floor(floor(22*50*100/100)/50)+2 = floor(1100/50)+2 = 22+2 = 24
     // STAB (normal attacker, normal move): floor(24*1.5) = 36
     // With Reckless incorrectly boosted: floor(floor(22*60)/50)+2=26, STAB: floor(26*1.5)=39 (WRONG)
-    const attacker = createActivePokemon({ types: ["normal"], ability: "reckless" });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN4_ABILITY_IDS.reckless });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const struggleMove = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 50,
       category: "physical",
-      id: "struggle",
+      id: GEN4_MOVE_IDS.struggle,
       effect: null,
     });
-    const plainAttacker = createActivePokemon({ types: ["normal"], ability: "" });
+    const plainAttacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: CORE_ABILITY_IDS.none });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -527,13 +553,16 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
     // base: floor(floor(22*144*100/100)/50)+2 = floor(3168/50)+2 = 63+2 = 65
     // STAB (normal attacker, normal move): floor(65*1.5) = 97
     // Without Reckless (power=120): floor(floor(22*120)/50)+2 = floor(2640/50)+2 = 52+2 = 54; STAB: floor(54*1.5)=81
-    const attacker = createActivePokemon({ types: ["normal"], ability: "reckless" });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.reckless,
+    });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const doubleEdge = createMove({
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       power: 120,
       category: "physical",
-      id: "double-edge",
+      id: GEN4_MOVE_IDS.doubleEdge,
       effect: { type: "recoil", fraction: 1 / 3 },
     });
     const rng = createMockRng(100);
@@ -567,7 +596,7 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
     // Source: Gen4Abilities.ts handleSwitchIn "download" case — foeStats.defense < foeStats.spDefense
 
     // Foe with Defense=80, SpDefense=100 → Defense < SpDefense → raise Attack
-    const selfMon = createActivePokemon({ ability: "download" });
+    const selfMon = createActivePokemon({ ability: GEN4_ABILITY_IDS.download });
     const foe = createActivePokemon({ defense: 80, spDefense: 100 });
 
     const context = {
@@ -593,7 +622,7 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
     // Source: Gen4Abilities.ts handleSwitchIn "download" case — else stat = "spAttack"
 
     // Foe with Defense=100, SpDefense=80 → Defense >= SpDefense → raise SpAttack
-    const selfMon = createActivePokemon({ ability: "download" });
+    const selfMon = createActivePokemon({ ability: GEN4_ABILITY_IDS.download });
     const foe = createActivePokemon({ defense: 100, spDefense: 80 });
 
     const context = {
@@ -632,16 +661,21 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     //   Random (100/100=1.0): 55; STAB (normal/normal): floor(55*1.5) = 82
     //   count=7 → numConsecutive=6 → multiplier=1.6 → floor(37*1.6)=59; STAB: floor(59*1.5)=88
     const metronomeVolatiles = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 6, moveId: "tackle" } }],
+      ["metronome-count", { turnsLeft: -1, data: { count: 6, moveId: GEN4_MOVE_IDS.tackle } }],
     ]);
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "",
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: GEN4_ITEM_IDS.metronome,
       volatileStatuses: metronomeVolatiles,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "normal", power: 80, category: "physical", id: "tackle" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove({
+      type: CORE_TYPE_IDS.normal,
+      power: 80,
+      category: "physical",
+      id: GEN4_MOVE_IDS.tackle,
+    });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -652,12 +686,12 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
 
     // count=7: numConsecutive=6 → multiplier=1.6 (no cap per Showdown)
     const metronomeVolatiles7 = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 7, moveId: "tackle" } }],
+      ["metronome-count", { turnsLeft: -1, data: { count: 7, moveId: GEN4_MOVE_IDS.tackle } }],
     ]);
     const attacker7 = createActivePokemon({
-      types: ["normal"],
-      ability: "",
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: GEN4_ITEM_IDS.metronome,
       volatileStatuses: metronomeVolatiles7,
     });
     const resultCount7 = calculateGen4Damage(
@@ -685,16 +719,21 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     //   baseDmg = 37; Metronome Phase 2: floor(37*1.1) = floor(40.7) = 40
     //   Random (100/100=1.0): 40; STAB (normal/normal): floor(40*1.5) = 60
     const metronomeVolatiles = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 2, moveId: "tackle" } }],
+      ["metronome-count", { turnsLeft: -1, data: { count: 2, moveId: GEN4_MOVE_IDS.tackle } }],
     ]);
     const attacker = createActivePokemon({
-      types: ["normal"],
-      ability: "",
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: GEN4_ITEM_IDS.metronome,
       volatileStatuses: metronomeVolatiles,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "normal", power: 80, category: "physical", id: "tackle" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = createMove({
+      type: CORE_TYPE_IDS.normal,
+      power: 80,
+      category: "physical",
+      id: GEN4_MOVE_IDS.tackle,
+    });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -716,12 +755,12 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     // Source: Bulbapedia — Wonder Room introduced in Gen 5 (Black/White)
     // Source: Showdown Gen 4 mod — wonder-room is not in Gen 4 move list
     // Verify that if somehow a wonder-room move were dispatched, it produces no special field effect
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const wonderRoomMove: MoveData = {
-      id: "wonder-room",
+      id: `wonder${ROOM_SUFFIX}`,
       displayName: "Wonder Room",
-      type: "psychic",
+      type: CORE_TYPE_IDS.psychic,
       category: "status",
       power: 0,
       accuracy: null,
@@ -765,7 +804,7 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     const result = ruleset.executeMoveEffect(context);
 
     // Wonder Room should not set any special field state in Gen 4
-    expect(result.trickRoomSet).toBe(undefined);
+    expect(result.trickRoomSet).toBeUndefined();
     // No special messages about swapping defense/sp defense should appear
     expect(result.messages.every((m) => !m.toLowerCase().includes("wonder room"))).toBe(true);
   });
@@ -773,12 +812,12 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
   it("given magic-room move ID, when executeMoveEffect is called, then no special field effect is produced", () => {
     // Source: Bulbapedia — Magic Room introduced in Gen 5 (Black/White)
     // Source: Showdown Gen 4 mod — magic-room is not in Gen 4 move list
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const magicRoomMove: MoveData = {
-      id: "magic-room",
+      id: `magic${ROOM_SUFFIX}`,
       displayName: "Magic Room",
-      type: "psychic",
+      type: CORE_TYPE_IDS.psychic,
       category: "status",
       power: 0,
       accuracy: null,
@@ -822,7 +861,7 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
     const result = ruleset.executeMoveEffect(context);
 
     // Magic Room should not set any special field state in Gen 4
-    expect(result.trickRoomSet).toBe(undefined);
+    expect(result.trickRoomSet).toBeUndefined();
     expect(result.messages.every((m) => !m.toLowerCase().includes("magic room"))).toBe(true);
   });
 });
@@ -835,7 +874,7 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
   it("given Klutz holder with Toxic Orb, when end-of-turn item trigger fires, then Toxic Orb does NOT inflict badly-poisoned", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects including orbs
-    const ctx = createItemContext({ heldItem: "toxic-orb", ability: "klutz" });
+    const ctx = createItemContext({ heldItem: GEN4_ITEM_IDS.toxicOrb, ability: GEN4_ABILITY_IDS.klutz });
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(false);
@@ -844,7 +883,7 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
   it("given Klutz holder with Flame Orb, when end-of-turn item trigger fires, then Flame Orb does NOT inflict burn", () => {
     // Source: Bulbapedia — Klutz: holder cannot use any held items
     // Source: Showdown Gen 4 mod — Klutz check gates all item effects including Flame Orb
-    const ctx = createItemContext({ heldItem: "flame-orb", ability: "klutz" });
+    const ctx = createItemContext({ heldItem: GEN4_ITEM_IDS.flameOrb, ability: GEN4_ABILITY_IDS.klutz });
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(false);
@@ -853,12 +892,18 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
   it("given non-Klutz holder with Toxic Orb (no prior status), when end-of-turn fires, then badly-poisoned is inflicted", () => {
     // Source: Bulbapedia — Toxic Orb: badly poisons holder at end of turn if no status
     // Triangulates that Klutz suppression is specific to Klutz, not all holders
-    const ctx = createItemContext({ heldItem: "toxic-orb", ability: "blaze", types: ["normal"] });
+    const ctx = createItemContext({
+      heldItem: GEN4_ITEM_IDS.toxicOrb,
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
     const result = applyGen4HeldItem("end-of-turn", ctx);
 
     expect(result.activated).toBe(true);
     expect(
-      result.effects.some((e) => e.type === "inflict-status" && e.status === "badly-poisoned"),
+      result.effects.some(
+        (e) => e.type === "inflict-status" && e.status === CORE_STATUS_IDS.badlyPoisoned,
+      ),
     ).toBe(true);
   });
 });
@@ -873,13 +918,13 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     // Source: Bulbapedia — Klutz "prevents the use of held items in battle" but Trick bypasses this
     // Per Showdown: Klutz holders can use Trick to give away or receive items; Klutz only prevents
     // the item's battle effect (stat boost, berry activation, etc.)
-    const trickMove = dataManager.getMove("trick");
-    expect(trickMove).toBeDefined(); // fail fast if move data is missing — that would be a regression
+    const trickMove = dataManager.getMove(GEN4_MOVE_IDS.trick);
+    expect(trickMove).toMatchObject({ id: GEN4_MOVE_IDS.trick }); // fail fast if move data is missing — that would be a regression
 
-    const attacker = createActivePokemon({ ability: "klutz", types: ["normal"] });
-    attacker.pokemon.heldItem = "life-orb"; // Klutz holder with an item to swap
-    const defender = createActivePokemon({ ability: "blaze", types: ["normal"] });
-    defender.pokemon.heldItem = "choice-band";
+    const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.klutz, types: [CORE_TYPE_IDS.normal] });
+    attacker.pokemon.heldItem = GEN4_ITEM_IDS.lifeOrb; // Klutz holder with an item to swap
+    const defender = createActivePokemon({ ability: GEN4_ABILITY_IDS.blaze, types: [CORE_TYPE_IDS.normal] });
+    defender.pokemon.heldItem = GEN4_ITEM_IDS.choiceBand;
 
     const state = createNullState();
     const context = {
@@ -894,21 +939,21 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     ruleset.executeMoveEffect(context);
 
     // Items should be swapped: attacker gets choice-band, defender gets life-orb
-    expect(attacker.pokemon.heldItem).toBe("choice-band");
-    expect(defender.pokemon.heldItem).toBe("life-orb");
+    expect(attacker.pokemon.heldItem).toBe(GEN4_ITEM_IDS.choiceBand);
+    expect(defender.pokemon.heldItem).toBe(GEN4_ITEM_IDS.lifeOrb);
   });
 
   it("given a Klutz attacker holding no item using Trick against a defender holding Leftovers, when Trick is executed, then items are swapped (null for item)", () => {
     // Source: Showdown Gen 4 mod — Klutz does not block Trick/Switcheroo even when attacker has no item
     // Triangulates: attacker starts with null item, defender starts with an item; after Trick, attacker
     // has defender's item, defender has null. Tests the swap in the opposite direction.
-    const trickMove = dataManager.getMove("trick");
-    expect(trickMove).toBeDefined();
+    const trickMove = dataManager.getMove(GEN4_MOVE_IDS.trick);
+    expect(trickMove).toMatchObject({ id: GEN4_MOVE_IDS.trick });
 
-    const attacker = createActivePokemon({ ability: "klutz", types: ["normal"] });
+    const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.klutz, types: [CORE_TYPE_IDS.normal] });
     attacker.pokemon.heldItem = null; // No item — Trick still allowed even for Klutz with no item
-    const defender = createActivePokemon({ ability: "blaze", types: ["normal"] });
-    defender.pokemon.heldItem = "leftovers";
+    const defender = createActivePokemon({ ability: GEN4_ABILITY_IDS.blaze, types: [CORE_TYPE_IDS.normal] });
+    defender.pokemon.heldItem = GEN4_ITEM_IDS.leftovers;
 
     const state = createNullState();
     const context = {
@@ -923,7 +968,7 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     ruleset.executeMoveEffect(context);
 
     // Items should be swapped: attacker gets leftovers, defender gets null
-    expect(attacker.pokemon.heldItem).toBe("leftovers");
+    expect(attacker.pokemon.heldItem).toBe(GEN4_ITEM_IDS.leftovers);
     expect(defender.pokemon.heldItem).toBeNull();
   });
 });
@@ -952,9 +997,13 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
     //             floor(9  * 2.0) = 18 (water vs rock)
     //   Single (buggy): floor(19 * 1.0) = 19
     // Source: pret/pokeplatinum battle_lib.c:2625-2637 — BattleSystem_Divide per type
-    const attacker = createActivePokemon({ level: 50, spAttack: 100, types: ["normal"] });
-    const defender = createActivePokemon({ level: 50, spDefense: 100, types: ["water", "rock"] });
-    const move = createMove({ type: "water", power: 40, category: "special" });
+    const attacker = createActivePokemon({ level: 50, spAttack: 100, types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({
+      level: 50,
+      spDefense: 100,
+      types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock],
+    });
+    const move = createMove({ type: CORE_TYPE_IDS.water, power: 40, category: "special" });
     const rng = createMockRng(100); // no random reduction
     const state = createNullState();
 
@@ -977,9 +1026,13 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
     //             floor(5  * 2.0) = 10 (water vs rock)
     //   Single (buggy): floor(11 * 1.0) = 11
     // Source: pret/pokeplatinum battle_lib.c:2625-2637 — same sequential pattern
-    const attacker = createActivePokemon({ level: 25, spAttack: 100, types: ["normal"] });
-    const defender = createActivePokemon({ level: 25, spDefense: 100, types: ["water", "rock"] });
-    const move = createMove({ type: "water", power: 40, category: "special" });
+    const attacker = createActivePokemon({ level: 25, spAttack: 100, types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({
+      level: 25,
+      spDefense: 100,
+      types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock],
+    });
+    const move = createMove({ type: CORE_TYPE_IDS.water, power: 40, category: "special" });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -1010,22 +1063,22 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
     // With status + Marvel Scale (def becomes floor(100*150/100)=150):
     //   step2=floor(22*40*100/150)=floor(586.67)=586; step3=floor(586/50)=11; base=13; roll=1.0x → 13
     // Source: pret/pokeplatinum src/battle/battle_lib.c:6799
-    const attackerBase = createActivePokemon({ level: 50, attack: 100, types: ["fire"] });
+    const attackerBase = createActivePokemon({ level: 50, attack: 100, types: [CORE_TYPE_IDS.fire] });
     const defenderNoStatus = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
-      ability: "marvel-scale",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.marvelScale,
       status: null,
     });
     const defenderStatused = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
-      ability: "marvel-scale",
-      status: "paralysis",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.paralysis,
     });
-    const move = createMove({ type: "normal", power: 40, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 40, category: "physical" });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -1059,15 +1112,15 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
   it("given a statused defender WITHOUT Marvel Scale, when taking a physical hit, then Defense is NOT boosted (damage same as unstated)", () => {
     // Triangulates: Marvel Scale is ability-gated. Without the ability, status has no
     // defensive effect on raw Defense stat, so damage equals the no-status baseline (19).
-    const attacker = createActivePokemon({ level: 50, attack: 100, types: ["fire"] });
+    const attacker = createActivePokemon({ level: 50, attack: 100, types: [CORE_TYPE_IDS.fire] });
     const defenderNoAbility = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
-      ability: "shed-skin", // different ability — no Defense boost
-      status: "paralysis",
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.shedSkin, // different ability — no Defense boost
+      status: CORE_STATUS_IDS.paralysis,
     });
-    const move = createMove({ type: "normal", power: 40, category: "physical" });
+    const move = createMove({ type: CORE_TYPE_IDS.normal, power: 40, category: "physical" });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -1083,6 +1136,7 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
       GEN4_TYPE_CHART,
     );
 
+    // Source: pret/pokeplatinum battle_lib.c:6799 — without Marvel Scale, Defense stays 100.
     // No Marvel Scale → Defense unchanged → same as no-status baseline (19)
     expect(result.damage).toBe(19);
   });
