@@ -5,20 +5,18 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonSpeciesData,
-  PokemonType,
-} from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  ALL_NATURES,
   getGen12StatStageRatio,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN1_MOVE_IDS } from "../../src";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 import { calculateGen1Stats } from "../../src/Gen1StatCalc";
@@ -33,58 +31,33 @@ import { GEN1_TYPE_CHART } from "../../src/Gen1TypeChart";
 // --- Test Helpers ---
 
 const ruleset = new Gen1Ruleset();
-
-const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
+const DATA_MANAGER = createGen1DataManager();
+const PIKACHU = DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.pikachu);
+const BULBASAUR = DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
+const MEWTWO = DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.mewtwo);
 
 const { burn, paralysis } = CORE_STATUS_IDS;
 const { electric, fire, normal, psychic } = CORE_TYPE_IDS;
-
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
-  return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
-    ...overrides,
-  };
-}
+const ZERO_STAT_STAGES = {
+  hp: 0,
+  attack: 0,
+  defense: 0,
+  spAttack: 0,
+  spDefense: 0,
+  speed: 0,
+  accuracy: 0,
+  evasion: 0,
+} as const;
 
 function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: PIKACHU.id,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: ALL_NATURES[0].id,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
@@ -92,7 +65,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -100,7 +73,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -111,19 +84,10 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       },
     } as PokemonInstance,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: { ...ZERO_STAT_STAGES },
     volatileStatuses: new Map(),
     types: [electric] as PokemonType[],
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -193,38 +157,6 @@ function makeBattleState(
     ended: false,
     winner: null,
   } as BattleState;
-}
-
-function makeSpecies(baseStats: {
-  hp: number;
-  attack: number;
-  defense: number;
-  spAttack: number;
-  spDefense: number;
-  speed: number;
-}): PokemonSpeciesData {
-  return {
-    id: 25,
-    name: "pikachu",
-    displayName: "Pikachu",
-    types: ["electric"],
-    baseStats,
-    abilities: { normal: [], hidden: null },
-    genderRatio: 50,
-    catchRate: 190,
-    baseExp: 82,
-    expGroup: "medium-fast",
-    evYield: {},
-    eggGroups: [],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 0.4, weight: 6.0 },
-    spriteKey: "pikachu",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  } as unknown as PokemonSpeciesData;
 }
 
 // ============================================================================
@@ -311,27 +243,11 @@ describe("#287 — Integer stat stage ratios replace float multipliers", () => {
           speed: 120,
         },
       } as PokemonInstance,
-      statStages: {
-        hp: 0,
-        attack: 0,
-        defense: -1,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
-      types: ["normal"] as PokemonType[],
+      statStages: { ...ZERO_STAT_STAGES, defense: -1 },
+      types: [normal] as PokemonType[],
     });
-    const species = makeSpecies({
-      hp: 100,
-      attack: 100,
-      defense: 60,
-      spAttack: 80,
-      spDefense: 60,
-      speed: 120,
-    });
-    const move = makeMove({ power: 100, type: "normal" as PokemonType });
+    const species = PIKACHU;
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.strength);
     const rng = new SeededRandom(42);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // Two damage rolls: one with stage -1 using the fixed integer formula
@@ -344,15 +260,9 @@ describe("#287 — Integer stat stage ratios replace float multipliers", () => {
       state,
     };
     const result = calculateGen1Damage(context, GEN1_TYPE_CHART, species);
-    // Source: pret/pokered data/battle/stat_modifiers.asm — stage -1 ratio = 66/100
-    // Formula: levelFactor=22, attack=100, defense=floor(200*66/100)=132, power=100
-    //   baseDamage = min(997, floor(floor(22*100*100)/132/50)) + 2
-    //             = min(997, floor(floor(220000/132)/50)) + 2
-    //             = min(997, floor(1666/50)) + 2 = 33 + 2 = 35
-    // Normal vs Normal (defender) = 1x effectiveness, no STAB (attacker is electric)
-    // randomRoll = SeededRandom(42).int(217, 255) = 240
-    // finalDamage = max(1, floor(35*240/255)) = floor(32.94...) = 32
-    expect(result.damage).toBe(32);
+    // Source: pret/pokered data/battle/stat_multipliers.asm — stage -1 ratio is 66/100
+    // Using the real Gen 1 data-backed Strength record with Pikachu as the species fixture.
+    expect(result.damage).toBe(26);
   });
 });
 
@@ -378,7 +288,7 @@ describe("#288 — Min-1 damage check after type effectiveness", () => {
           speed: 10,
         },
       } as PokemonInstance,
-      types: ["fire"] as PokemonType[],
+      types: [fire] as PokemonType[],
     });
     const defender = makeActivePokemon({
       pokemon: {
@@ -393,22 +303,11 @@ describe("#288 — Min-1 damage check after type effectiveness", () => {
         },
       } as PokemonInstance,
       // Fire resists Fire (0.5x) — use single type to test 0.5x
-      types: ["fire"] as PokemonType[],
+      types: [fire] as PokemonType[],
     });
-    const species = makeSpecies({
-      hp: 20,
-      attack: 8,
-      defense: 8,
-      spAttack: 8,
-      spDefense: 8,
-      speed: 10,
-    });
-    // Use a fire move (special in Gen 1) with low power
-    const move = makeMove({
-      power: 10,
-      type: "fire" as PokemonType,
-      category: "special",
-    });
+    const species = BULBASAUR;
+    // Use a real Gen 1 fire move; the assertion only needs resisted damage to stay non-zero.
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.flamethrower);
     const rng = new SeededRandom(42);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     const context: DamageContext = {
@@ -429,7 +328,7 @@ describe("#288 — Min-1 damage check after type effectiveness", () => {
     // Source: pret/pokered — immunity means damage = 0, no min-1 applied
     const attacker = makeActivePokemon();
     const defender = makeActivePokemon({
-      types: ["ghost"] as PokemonType[],
+      types: [CORE_TYPE_IDS.ghost] as PokemonType[],
       pokemon: {
         ...makeActivePokemon().pokemon,
         calculatedStats: {
@@ -442,18 +341,8 @@ describe("#288 — Min-1 damage check after type effectiveness", () => {
         },
       } as PokemonInstance,
     });
-    const species = makeSpecies({
-      hp: 100,
-      attack: 80,
-      defense: 60,
-      spAttack: 80,
-      spDefense: 60,
-      speed: 120,
-    });
-    const move = makeMove({
-      power: 100,
-      type: "normal" as PokemonType,
-    });
+    const species = PIKACHU;
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle);
     const rng = new SeededRandom(42);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     const context: DamageContext = {
@@ -478,21 +367,14 @@ describe("#289 — HP DV derived from other DVs", () => {
   it("given all DVs are 15 (odd), when calculating HP, then HP DV is 15 (all LSBs are 1)", () => {
     // Source: pret/pokered home/move_mon.asm lines 109-133
     // HP_DV = ((15&1)<<3)|((15&1)<<2)|((15&1)<<1)|(15&1) = 8|4|2|1 = 15
-    const species = makeSpecies({
-      hp: 106,
-      attack: 110,
-      defense: 90,
-      spAttack: 154,
-      spDefense: 154,
-      speed: 130,
-    });
+    const species = MEWTWO;
     const pokemon = {
       uid: "mewtwo",
-      speciesId: 150,
+      speciesId: MEWTWO.id,
       nickname: null,
       level: 100,
       experience: 0,
-      nature: "hardy",
+      nature: ALL_NATURES[0].id,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: {
         hp: 65535,
@@ -504,7 +386,7 @@ describe("#289 — HP DV derived from other DVs", () => {
       },
       currentHp: 1,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: null,
       status: null,
@@ -515,7 +397,7 @@ describe("#289 — HP DV derived from other DVs", () => {
       metLevel: 70,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "master-ball",
+      pokeball: CORE_ITEM_IDS.masterBall,
     } as unknown as PokemonInstance;
     const stats = calculateGen1Stats(pokemon, species);
     // HP: floor(((106+15)*2+64)*100/100)+100+10 = floor(306)+110 = 416
@@ -525,23 +407,16 @@ describe("#289 — HP DV derived from other DVs", () => {
 
   it("given all DVs are 0 (even), when calculating HP, then HP DV is 0", () => {
     // Source: pret/pokered home/move_mon.asm — HP_DV = ((0&1)<<3)|((0&1)<<2)|((0&1)<<1)|(0&1) = 0
-    const species = makeSpecies({
-      hp: 45,
-      attack: 49,
-      defense: 49,
-      spAttack: 65,
-      spDefense: 65,
-      speed: 45,
-    });
+    const species = BULBASAUR;
     const pokemon = {
       uid: "bulbasaur",
-      speciesId: 1,
+      speciesId: BULBASAUR.id,
       level: 50,
       ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 1,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       status: null,
     } as unknown as PokemonInstance;
     const stats = calculateGen1Stats(pokemon, species);
@@ -552,56 +427,41 @@ describe("#289 — HP DV derived from other DVs", () => {
   it("given atk=3(odd), def=4(even), spe=5(odd), spc=6(even), when deriving HP DV, then HP DV is 10", () => {
     // Source: pret/pokered home/move_mon.asm
     // HP_DV = ((3&1)<<3)|((4&1)<<2)|((5&1)<<1)|(6&1) = (1<<3)|(0<<2)|(1<<1)|(0) = 8+0+2+0 = 10
-    const species = makeSpecies({
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    });
+    const species = PIKACHU;
     const pokemon = {
       uid: "test",
-      speciesId: 1,
+      speciesId: PIKACHU.id,
       level: 100,
       ivs: { hp: 0, attack: 3, defense: 4, spAttack: 6, spDefense: 6, speed: 5 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 1,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       status: null,
     } as unknown as PokemonInstance;
     const stats = calculateGen1Stats(pokemon, species);
-    // HP DV=10: floor(((100+10)*2+0)*100/100)+100+10 = floor(220)+110 = 330
-    expect(stats.hp).toBe(330);
+    // Data-backed Pikachu record with the derived HP DV = 10.
+    expect(stats.hp).toBe(200);
   });
 
   it("given ivs.hp is set to 15 but other DVs are all 0 (even), when calculating HP, then HP DV is 0 (ignoring ivs.hp)", () => {
     // Source: pret/pokered — HP DV is ALWAYS derived, never stored independently
     // Even if ivs.hp=15, the derived HP DV from all-even other DVs = 0
-    const species = makeSpecies({
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    });
+    const species = PIKACHU;
     const pokemon = {
       uid: "test",
-      speciesId: 1,
+      speciesId: PIKACHU.id,
       level: 100,
       ivs: { hp: 15, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 1,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       status: null,
     } as unknown as PokemonInstance;
     const stats = calculateGen1Stats(pokemon, species);
-    // HP DV derived: ((0&1)<<3)|((0&1)<<2)|((0&1)<<1)|(0&1) = 0
-    // floor(((100+0)*2+0)*100/100)+100+10 = 200+110 = 310
-    expect(stats.hp).toBe(310);
+    // Data-backed Pikachu record with the derived HP DV = 0.
+    expect(stats.hp).toBe(180);
   });
 });
 
@@ -651,11 +511,7 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
         },
       } as PokemonInstance,
     });
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.hornDrill,
-      accuracy: 30,
-      effect: { type: "ohko" },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.hornDrill);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // Run many trials — at least some should hit (if speed check passes, accuracy is 30%)
     const hits = Array.from({ length: 1000 }, (_, i) => i).reduce((count, seed) => {
@@ -707,11 +563,7 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
         evasion: 0,
       },
     });
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.fissure,
-      accuracy: 30,
-      effect: { type: "ohko" },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.fissure);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // All trials should miss — defender's in-battle speed (200) > attacker's (120)
     for (let i = 0; i < 100; i++) {
@@ -750,11 +602,7 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
         },
       } as PokemonInstance,
     });
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.guillotine,
-      accuracy: 30,
-      effect: { type: "ohko" },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.guillotine);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // With equal speed, OHKO should pass speed check and proceed to accuracy (30%)
     const hits = Array.from({ length: 1000 }, (_, i) => i).reduce((count, seed) => {
@@ -797,11 +645,7 @@ describe("#292 + #401 — OHKO moves use in-battle speed and correct comparison"
         status: paralysis,
       } as PokemonInstance,
     });
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.hornDrill,
-      accuracy: 30,
-      effect: { type: "ohko" },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.hornDrill);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     const hits = Array.from({ length: 1000 }, (_, i) => i).reduce((count, seed) => {
       const rng = new SeededRandom(seed);
@@ -837,17 +681,7 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     // This test fails if the implementation uses a 1-100 scale (floor(10*100/100)=10):
     //   on 1-100 scale, rng.int(0,99) would be ~2 too (same seed), still < 10, so it would inflict.
     //   The BOUNDARY test below with roll=27 is the discriminating case.
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.flamethrower,
-      type: fire as PokemonType,
-      category: "special",
-      power: 95,
-      effect: {
-        type: "status-chance",
-        status: burn as any,
-        chance: 10,
-      },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.flamethrower);
     // Arrange
     const rng = new SeededRandom(7);
     // Derivation: SeededRandom(7).int(0, 255) = 2. Threshold = floor(10 * 256 / 100) = 25.
@@ -875,17 +709,7 @@ describe("#296 — Secondary effect chances use 0-255 scale", () => {
     // The REAL discriminator is the BOUNDARY: roll=23 → inflicted on 0-255 scale (23<25) but
     // NOT inflicted on a pure-10% float check (0.090 < 0.10 → inflicted, so that also fires).
     // Together with the roll=2 test, these two prove the threshold is 25/256, not 10/100.
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.flamethrower,
-      type: fire as PokemonType,
-      category: "special",
-      power: 95,
-      effect: {
-        type: "status-chance",
-        status: burn as any,
-        chance: 10,
-      },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.flamethrower);
     // Arrange
     const rng = new SeededRandom(65);
     // Derivation: SeededRandom(65).int(0, 255) = 27. Threshold = 25.
@@ -939,7 +763,7 @@ describe("#303 — Accuracy/evasion stages use integer ratios (Gen 1 stat stage 
       },
     });
     const defender = makeActivePokemon();
-    const move = makeMove({ accuracy: 100 });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // Run trials: threshold 63 → hit rate ≈ 63/256 ≈ 24.6%
     const trials = 10000;
@@ -983,7 +807,7 @@ describe("#303 — Accuracy/evasion stages use integer ratios (Gen 1 stat stage 
         evasion: 1,
       },
     });
-    const move = makeMove({ accuracy: 100 });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle);
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     // Expected threshold: 170/256 ≈ 66.4%
     let hits = 0;
@@ -1077,11 +901,7 @@ describe("#438 — Enemy Psywave allows 0 damage, player Psywave minimum 1", () 
       } as PokemonInstance,
     });
     const defender = makeActivePokemon();
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.psywave,
-      type: psychic as PokemonType,
-      effect: { type: "custom", handler: GEN1_MOVE_IDS.psywave },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.psywave);
     // Place attacker on side 1 (enemy side)
     const state = makeBattleState({ side0Active: defender, side1Active: attacker });
     // Verification: seed 7 deterministically hits the enemy-side 0-damage branch.
@@ -1111,11 +931,7 @@ describe("#438 — Enemy Psywave allows 0 damage, player Psywave minimum 1", () 
       } as PokemonInstance,
     });
     const defender = makeActivePokemon();
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.psywave,
-      type: psychic as PokemonType,
-      effect: { type: "custom", handler: GEN1_MOVE_IDS.psywave },
-    });
+    const move = DATA_MANAGER.getMove(GEN1_MOVE_IDS.psywave);
     // Place attacker on side 0 (player side)
     const state = makeBattleState({ side0Active: attacker, side1Active: defender });
     const trials = 1000;

@@ -1,17 +1,25 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { canInflictGen4Status, Gen4Ruleset } from "../src";
 import { createGen4DataManager } from "../src/data";
-import { GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "../src/data/reference-ids";
+import {
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src/data/reference-ids";
 
 /**
  * Gen 4 Move Effects Tests
@@ -34,7 +42,6 @@ const RAIN = CORE_WEATHER_IDS.rain;
 const SUN = CORE_WEATHER_IDS.sun;
 const SAND = CORE_WEATHER_IDS.sand;
 const HAIL_WEATHER = CORE_WEATHER_IDS.hail;
-const SAND_WEATHER = "sand" as const;
 
 const BURN = CORE_STATUS_IDS.burn;
 const PARALYSIS = CORE_STATUS_IDS.paralysis;
@@ -43,6 +50,9 @@ const FREEZE = CORE_STATUS_IDS.freeze;
 const SLEEP = CORE_STATUS_IDS.sleep;
 const BADLY_POISONED = CORE_STATUS_IDS.badlyPoisoned;
 const FLINCH = CORE_VOLATILE_IDS.flinch;
+const TRAPPED = CORE_VOLATILE_IDS.trapped;
+const BOUND = CORE_VOLATILE_IDS.bound;
+const LEECH_SEED = CORE_VOLATILE_IDS.leechSeed;
 
 const REFLECT_SCREEN = CORE_SCREEN_IDS.reflect;
 const LIGHT_SCREEN_SCREEN = CORE_SCREEN_IDS.lightScreen;
@@ -117,6 +127,13 @@ const FURY_SWIPES = GEN4_MOVE_IDS.furySwipes;
 const FLY = GEN4_MOVE_IDS.fly;
 const TACKLE = GEN4_MOVE_IDS.tackle;
 const FOCUS_ENERGY = GEN4_MOVE_IDS.focusEnergy;
+const BULBASAUR = GEN4_SPECIES_IDS.bulbasaur;
+const HARDY = GEN4_NATURE_IDS.hardy;
+const POKE_BALL = CORE_ITEM_IDS.pokeBall;
+const NO_ABILITY = CORE_ABILITY_IDS.none;
+const SHIELD_DUST = GEN4_ABILITY_IDS.shieldDust;
+const SERENE_GRACE = GEN4_ABILITY_IDS.sereneGrace;
+const ROCK_HEAD = GEN4_ABILITY_IDS.rockHead;
 const SERENE_GRACE_CAP_BASE_CHANCE = 50;
 const SERENE_GRACE_CAPPED_EFFECTIVE_CHANCE = Math.min(SERENE_GRACE_CAP_BASE_CHANCE * 2, 100);
 
@@ -134,13 +151,13 @@ function createMockRng(intReturnValue: number, chanceResult = false) {
 
 function createActivePokemon(opts: {
   types: PokemonType[];
-  status?: string | null;
-  heldItem?: string | null;
+  status?: PokemonInstance["status"];
+  heldItem?: PokemonInstance["heldItem"];
   nickname?: string | null;
   currentHp?: number;
   maxHp?: number;
   level?: number;
-  ability?: string;
+  ability?: ActivePokemon["ability"];
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
@@ -155,16 +172,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: BULBASAUR,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: HARDY,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? NO_ABILITY,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -175,7 +192,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: POKE_BALL,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -194,7 +211,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? NO_ABILITY,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -213,29 +230,23 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function createCanonicalMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const move = dataManager.getMove(id);
   return {
-    id,
-    name: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...move,
     ...overrides,
+    flags: overrides?.flags ? { ...move.flags, ...overrides.flags } : move.flags,
+  } as MoveData;
+}
+
+function createSyntheticMove(id: string, overrides: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(TACKLE);
+  return {
+    ...baseMove,
+    id,
+    displayName: id,
+    ...overrides,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
   } as MoveData;
 }
 
@@ -357,20 +368,20 @@ describe("Gen 4 executeMoveEffect — Weather", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.weatherSet).toEqual({ weather: SAND_WEATHER, turns: 8, source: SANDSTORM });
+    expect(result.weatherSet).toEqual({ weather: SAND, turns: 8, source: SANDSTORM });
   });
 
   it(`given ${HAIL_MOVE} used with Icy Rock, when executeMoveEffect called, then weatherSet = { weather: ${HAIL_WEATHER}, turns: 8 }`, () => {
     // Source: Bulbapedia — Icy Rock extends hail to 8 turns
     const attacker = createActivePokemon({ types: ["ice"], heldItem: ICY_ROCK });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove(HAIL_WEATHER);
+    const move = dataManager.getMove(HAIL_MOVE);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.weatherSet).toEqual({ weather: HAIL_WEATHER, turns: 8, source: HAIL_WEATHER });
+    expect(result.weatherSet).toEqual({ weather: HAIL_WEATHER, turns: 8, source: HAIL_MOVE });
   });
 
   it(`given ${RAIN_DANCE} used with wrong rock (${HEAT_ROCK}), when executeMoveEffect called, then turns = 5 (not 8)`, () => {
@@ -675,7 +686,7 @@ describe("Gen 4 canInflictGen4Status — Type Immunities", () => {
 
   it("given target already has status, when burn is attempted, then burn cannot be inflicted", () => {
     // Source: Showdown Gen 4 — can't stack primary statuses
-    const target = createActivePokemon({ types: ["normal"], status: "sleep" });
+    const target = createActivePokemon({ types: ["normal"], status: SLEEP });
     expect(canInflictGen4Status(BURN, target)).toBe(false);
   });
 });
@@ -686,7 +697,7 @@ describe("Gen 4 executeMoveEffect — Shield Dust", () => {
   it("given defender has Shield Dust, when damaging move has secondary burn effect, then burn is blocked", () => {
     // Source: Showdown Gen 4 — Shield Dust blocks secondary effects
     const attacker = createActivePokemon({ types: ["fire"] });
-    const defender = createActivePokemon({ types: ["normal"], ability: "shield-dust" });
+    const defender = createActivePokemon({ types: ["normal"], ability: SHIELD_DUST });
     const move = dataManager.getMove(FLAMETHROWER); // 10% burn chance
     const rng = createMockRng(0); // Roll would succeed without Shield Dust
     const context = createContext(attacker, defender, move, 80, rng);
@@ -701,7 +712,7 @@ describe("Gen 4 executeMoveEffect — Shield Dust", () => {
     // Source: Showdown Gen 4 — Shield Dust only blocks secondary effects
     // Thunder Wave is a guaranteed status move (status-guaranteed), not secondary
     const attacker = createActivePokemon({ types: ["electric"] });
-    const defender = createActivePokemon({ types: ["normal"], ability: "shield-dust" });
+    const defender = createActivePokemon({ types: ["normal"], ability: SHIELD_DUST });
     const move = dataManager.getMove(THUNDER_WAVE);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -719,7 +730,7 @@ describe("Gen 4 executeMoveEffect — Serene Grace", () => {
   it("given attacker has Serene Grace and roll at 15, when Flamethrower (10% burn), then burn IS inflicted (chance doubled to 20%)", () => {
     // Source: Showdown Gen 4 — Serene Grace doubles secondary effect chance
     // 10% → 20% with Serene Grace; rng.int(0,99)=15 → 15 < 20 → success
-    const attacker = createActivePokemon({ types: ["fire"], ability: "serene-grace" });
+    const attacker = createActivePokemon({ types: ["fire"], ability: SERENE_GRACE });
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove(FLAMETHROWER);
     const rng = createMockRng(15);
@@ -753,9 +764,7 @@ describe("Gen 4 executeMoveEffect — Recoil", () => {
     // Source: Showdown Gen 4 — Double-Edge has 1/3 recoil
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(DOUBLE_EDGE, {
-      effect: { type: "recoil", amount: 1 / 3 },
-    });
+    const move = createCanonicalMove(DOUBLE_EDGE);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 100, rng);
 
@@ -766,11 +775,9 @@ describe("Gen 4 executeMoveEffect — Recoil", () => {
 
   it("given attacker has Rock Head and Double-Edge used, when executeMoveEffect called, then recoilDamage = 0", () => {
     // Source: Showdown Gen 4 — Rock Head prevents recoil
-    const attacker = createActivePokemon({ types: ["normal"], ability: "rock-head" });
+    const attacker = createActivePokemon({ types: ["normal"], ability: ROCK_HEAD });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(DOUBLE_EDGE, {
-      effect: { type: "recoil", amount: 1 / 3 },
-    });
+    const move = createCanonicalMove(DOUBLE_EDGE);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 100, rng);
 
@@ -788,11 +795,7 @@ describe("Gen 4 executeMoveEffect — Drain", () => {
     // Formula: max(1, floor(80 * 0.5)) = 40
     const attacker = createActivePokemon({ types: ["grass"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(GIGA_DRAIN, {
-      type: "grass",
-      category: "special",
-      effect: { type: "drain", amount: 0.5 },
-    });
+    const move = createCanonicalMove(GIGA_DRAIN);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 80, rng);
 
@@ -806,12 +809,8 @@ describe("Gen 4 executeMoveEffect — Drain", () => {
     // Formula: max(1, floor(150 * 0.5)) = 75
     // Triangulation: second test ensures drain formula computes, not a constant return
     const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"], status: "sleep" });
-    const move = createMove(DREAM_EATER, {
-      type: "psychic",
-      category: "special",
-      effect: { type: "drain", amount: 0.5 },
-    });
+    const defender = createActivePokemon({ types: ["normal"], status: SLEEP });
+    const move = createCanonicalMove(DREAM_EATER);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 150, rng);
 
@@ -855,12 +854,7 @@ describe("Gen 4 executeMoveEffect — Heal", () => {
     // Triangulation: ensures the heal case works generically, not just for Roost
     const attacker = createActivePokemon({ types: ["normal"], maxHp: 200, currentHp: 100 });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(RECOVER, {
-      type: "normal",
-      category: "status",
-      power: 0,
-      effect: { type: "heal", amount: 0.5 },
-    });
+    const move = createCanonicalMove(RECOVER);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -1111,12 +1105,7 @@ describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
     });
     const defender = createActivePokemon({ types: ["normal"] });
     // Create synthetic null-effect roost to test handleNullEffectMoves
-    const move = createMove(ROOST, {
-      type: "flying",
-      category: "status",
-      power: 0,
-      effect: null,
-    });
+    const move = createCanonicalMove(ROOST, { effect: null });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -1139,12 +1128,7 @@ describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
       nickname: "Tornadus",
     });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(ROOST, {
-      type: "flying",
-      category: "status",
-      power: 0,
-      effect: null,
-    });
+    const move = createCanonicalMove(ROOST, { effect: null });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -1165,12 +1149,7 @@ describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
       currentHp: 100,
     });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(ROOST, {
-      type: "flying",
-      category: "status",
-      power: 0,
-      effect: null,
-    });
+    const move = createCanonicalMove(ROOST, { effect: null });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -1367,7 +1346,7 @@ describe("Gen 4 executeMoveEffect — Weather-Dependent Healing (Moonlight/Synth
     const defender = createActivePokemon({ types: ["normal"] });
     const move = dataManager.getMove(SYNTHESIS);
     const rng = createMockRng(0);
-    const context = createContext(attacker, defender, move, 0, rng, SAND_WEATHER);
+    const context = createContext(attacker, defender, move, 0, rng, SAND);
 
     const result = ruleset.executeMoveEffect(context);
 
@@ -1460,7 +1439,7 @@ describe("Gen 4 executeMoveEffect — Perish Song", () => {
 // ─── Mean Look / Block ──────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Trapping Moves", () => {
-  it("given Mean Look used, when executeMoveEffect called, then volatileInflicted = 'trapped'", () => {
+  it(`given Mean Look used, when executeMoveEffect called, then volatileInflicted = ${TRAPPED}`, () => {
     // Source: Showdown Gen 4 — Mean Look prevents switching
     const attacker = createActivePokemon({ types: ["ghost"] });
     const defender = createActivePokemon({ types: ["normal"] });
@@ -1470,10 +1449,10 @@ describe("Gen 4 executeMoveEffect — Trapping Moves", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("trapped");
+    expect(result.volatileInflicted).toBe(TRAPPED);
   });
 
-  it("given Block used, when executeMoveEffect called, then volatileInflicted = 'trapped'", () => {
+  it(`given Block used, when executeMoveEffect called, then volatileInflicted = ${TRAPPED}`, () => {
     // Source: Showdown Gen 4 — Block prevents switching
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
@@ -1483,7 +1462,7 @@ describe("Gen 4 executeMoveEffect — Trapping Moves", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("trapped");
+    expect(result.volatileInflicted).toBe(TRAPPED);
   });
 });
 
@@ -1773,7 +1752,7 @@ describe("Gen 4 executeMoveEffect — Wish", () => {
 // ─── Spider Web ─────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Spider Web (trapping)", () => {
-  it("given Spider Web used, when executeMoveEffect called, then volatileInflicted = 'trapped'", () => {
+  it(`given Spider Web used, when executeMoveEffect called, then volatileInflicted = ${TRAPPED}`, () => {
     // Source: Showdown Gen 4 — Spider Web prevents switching (same as Mean Look)
     const attacker = createActivePokemon({ types: ["bug"] });
     const defender = createActivePokemon({ types: ["normal"] });
@@ -1783,7 +1762,7 @@ describe("Gen 4 executeMoveEffect — Spider Web (trapping)", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("trapped");
+    expect(result.volatileInflicted).toBe(TRAPPED);
   });
 });
 
@@ -1814,7 +1793,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // This test covers the intentional no-op branch at line 368 in Gen4MoveEffects.ts.
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(RAPID_SPIN, {
+    const move = createCanonicalMove(RAPID_SPIN, {
       effect: { type: "remove-hazards" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -1833,7 +1812,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // Covers the fixed-damage case arm (line 374) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(SONIC_BOOM, {
+    const move = createCanonicalMove(SONIC_BOOM, {
       effect: { type: "fixed-damage", damage: 20 } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -1851,7 +1830,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // Covers the terrain case arm (line 381) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["electric"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(GEN4_MOVE_IDS.charge, {
+    const move = createCanonicalMove(GEN4_MOVE_IDS.charge, {
       effect: { type: "terrain", terrain: "electric" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -1868,7 +1847,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // Covers the multi-hit case arm (line 382) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(FURY_SWIPES, {
+    const move = createCanonicalMove(FURY_SWIPES, {
       effect: { type: "multi-hit", min: 2, max: 5 } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -1885,7 +1864,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // Covers the two-turn case arm (line 383) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["flying"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(FLY, {
+    const move = createCanonicalMove(FLY, {
       effect: { type: "two-turn", status: "semi-invulnerable" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -1902,7 +1881,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     // Covers the damage case arm (line 377) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(TACKLE, {
+    const move = createCanonicalMove(TACKLE, {
       effect: { type: "damage" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -1924,8 +1903,7 @@ describe("Gen 4 executeMoveEffect — stat-change targeting defender", () => {
     // Covers the effect.target !== "self" branch (line 246) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(GEN4_MOVE_IDS.charm, {
-      category: "status",
+    const move = createCanonicalMove(GEN4_MOVE_IDS.charm, {
       effect: {
         type: "stat-change",
         target: "foe",
@@ -1947,8 +1925,7 @@ describe("Gen 4 executeMoveEffect — stat-change targeting defender", () => {
     // Covers the roll-fails branch (line 239-242) in applyMoveEffect for stat-change
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(GEN4_MOVE_IDS.crunch, {
-      category: "physical",
+    const move = createCanonicalMove(GEN4_MOVE_IDS.crunch, {
       effect: {
         type: "stat-change",
         target: "foe",
@@ -1973,8 +1950,7 @@ describe("Gen 4 executeMoveEffect — volatile-status on status move (guaranteed
     // Covers the 'move.category === status' path (line 290-299) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(FOCUS_ENERGY, {
-      category: "status",
+    const move = createCanonicalMove(FOCUS_ENERGY, {
       effect: {
         type: "volatile-status",
         status: FOCUS_ENERGY,
@@ -2015,10 +1991,9 @@ describe("Gen 4 executeMoveEffect — Serene Grace doubling chance to 100%", () 
     // Source: pret/pokeplatinum — Serene Grace doubles secondary effect chance; min(chance*2, 100)
     // Derived: 50 is the smallest base secondary chance that reaches the 100% cap after doubling.
     // Covers the effectiveChance >= 100 branch (line 185) in rollEffectChance
-    const attacker = createActivePokemon({ types: ["normal"], ability: "serene-grace" });
+    const attacker = createActivePokemon({ types: ["normal"], ability: SERENE_GRACE });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(GEN4_MOVE_IDS.ironHead, {
-      category: "physical",
+    const move = createCanonicalMove(GEN4_MOVE_IDS.ironHead, {
       effect: {
         type: "volatile-status",
         status: FLINCH,
@@ -2045,7 +2020,7 @@ describe("Gen 4 executeMoveEffect — handleNullEffectMoves default case", () =>
     // Covers the default case (line 846-847) in handleNullEffectMoves
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("unknown-null-move", {
+    const move = createSyntheticMove("unknown-null-move", {
       effect: null,
     });
     const rng = createMockRng(0);
@@ -2068,7 +2043,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect default case", () => {
     // Covers the default case (line 618-621) in handleCustomEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("future-custom-move", {
+    const move = createSyntheticMove("future-custom-move", {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2156,7 +2131,7 @@ describe("Gen 4 executeMoveEffect — switch-out effect with opponent target", (
     // Covers the 'switchTarget !== self' branch (line 350-353) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("forced-switch", {
+    const move = createSyntheticMove("forced-switch", {
       effect: {
         type: "switch-out",
         target: "opponent",
@@ -2181,7 +2156,8 @@ describe("Gen 4 executeMoveEffect — multi effect (Scald-style: damage + second
     // Covers the 'multi' case (lines 282-288) in applyMoveEffect
     const attacker = createActivePokemon({ types: ["water"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("scald-fake", {
+    const move = createSyntheticMove("scald-fake", {
+      type: CORE_TYPE_IDS.water,
       category: "special",
       effect: {
         type: "multi",
@@ -2213,11 +2189,7 @@ describe("Gen 4 executeMoveEffect — heal effect with no calculatedStats (fallb
     // Remove calculatedStats to trigger fallback
     (attacker.pokemon as { calculatedStats: null }).calculatedStats = null;
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(RECOVER, {
-      category: "status",
-      power: 0,
-      effect: { type: "heal", amount: 0.5 } as unknown as typeof move.effect,
-    });
+    const move = createCanonicalMove(RECOVER);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -2237,7 +2209,7 @@ describe("Gen 4 executeMoveEffect — switch-out effect using 'who' field", () =
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
     // Synthetic move with switch-out effect using legacy 'who' field (no 'target' field)
-    const move = createMove(BATON_PASS, {
+    const move = createCanonicalMove(BATON_PASS, {
       effect: {
         type: "switch-out",
         who: "self",
@@ -2306,13 +2278,13 @@ describe("Gen 4 executeMoveEffect — Rest in handleNullEffectMoves with no calc
 // ─── handleCustomEffect — dead-code branch coverage via synthetic custom moves ─
 
 describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic custom-effect moves", () => {
-  it("given synthetic custom-effect mean-look move, when used, then volatileInflicted = 'trapped'", () => {
+  it(`given synthetic custom-effect mean-look move, when used, then volatileInflicted = ${TRAPPED}`, () => {
     // Covers handleCustomEffect case 'mean-look' (line 441) with explicit custom effect type
     // In real data mean-look has null effect (handled by handleNullEffectMoves);
     // this synthetic test covers the handleCustomEffect path.
     const attacker = createActivePokemon({ types: ["ghost"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(MEAN_LOOK, {
+    const move = createCanonicalMove(MEAN_LOOK, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2320,14 +2292,14 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("trapped");
+    expect(result.volatileInflicted).toBe(TRAPPED);
   });
 
-  it("given synthetic custom-effect spider-web move, when used, then volatileInflicted = 'trapped'", () => {
+  it(`given synthetic custom-effect spider-web move, when used, then volatileInflicted = ${TRAPPED}`, () => {
     // Covers handleCustomEffect case 'spider-web' (line 442) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["bug"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(SPIDER_WEB, {
+    const move = createCanonicalMove(SPIDER_WEB, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2335,14 +2307,14 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("trapped");
+    expect(result.volatileInflicted).toBe(TRAPPED);
   });
 
-  it("given synthetic custom-effect block move, when used, then volatileInflicted = 'trapped'", () => {
+  it(`given synthetic custom-effect block move, when used, then volatileInflicted = ${TRAPPED}`, () => {
     // Covers handleCustomEffect case 'block' (line 443) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(BLOCK, {
+    const move = createCanonicalMove(BLOCK, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2350,7 +2322,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("trapped");
+    expect(result.volatileInflicted).toBe(TRAPPED);
   });
 
   it("given synthetic custom-effect covet move (no item, defender has item), when used, then item is stolen", () => {
@@ -2366,7 +2338,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
       heldItem: SITRUS_BERRY,
       nickname: "Blissey",
     });
-    const move = createMove(COVET, {
+    const move = createCanonicalMove(COVET, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2382,7 +2354,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'explosion' (line 470) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"], nickname: "Weezing" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(EXPLOSION, {
+    const move = createCanonicalMove(EXPLOSION, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2398,7 +2370,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'self-destruct' (line 471) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"], nickname: "Electrode" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(SELF_DESTRUCT, {
+    const move = createCanonicalMove(SELF_DESTRUCT, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2413,7 +2385,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'haze' (line 479) via synthetic custom effect
     const attacker = createActivePokemon({ types: [POISON] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(HAZE, {
+    const move = createCanonicalMove(HAZE, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2429,7 +2401,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'wish' (line 487) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"], nickname: "Togetic" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(WISH, {
+    const move = createCanonicalMove(WISH, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2444,7 +2416,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'safeguard' (line 497) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"], nickname: "Blissey" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(SAFEGUARD, {
+    const move = createCanonicalMove(SAFEGUARD, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2459,7 +2431,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'lucky-chant' (line 498) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"], nickname: "Clefable" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(LUCKY_CHANT, {
+    const move = createCanonicalMove(LUCKY_CHANT, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2478,7 +2450,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'ingrain' via synthetic custom effect
     const attacker = createActivePokemon({ types: ["grass"], nickname: "Torterra" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(INGRRAIN, {
+    const move = createCanonicalMove(INGRRAIN, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2493,7 +2465,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'aqua-ring' via synthetic custom effect
     const attacker = createActivePokemon({ types: ["water"], nickname: "Vaporeon" });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(AQUA_RING, {
+    const move = createCanonicalMove(AQUA_RING, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2512,7 +2484,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
       nickname: "Chansey",
     });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(REFRESH, {
+    const move = createCanonicalMove(REFRESH, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2528,7 +2500,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'refresh' false-branch (attacker.pokemon.status is null)
     const attacker = createActivePokemon({ types: ["normal"] }); // no status
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(REFRESH, {
+    const move = createCanonicalMove(REFRESH, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2544,7 +2516,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     // Covers handleCustomEffect case 'baton-pass' (line 463) via synthetic custom effect
     const attacker = createActivePokemon({ types: ["normal"] });
     const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove(BATON_PASS, {
+    const move = createCanonicalMove(BATON_PASS, {
       effect: { type: "custom" } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
@@ -2718,7 +2690,7 @@ describe("Gen 4 executeMoveEffect — weather effect with no turns field (defaul
     const attacker = createActivePokemon({ types: ["fire"] }); // no rock item
     const defender = createActivePokemon({ types: ["normal"] });
     // Synthetic weather move with no 'turns' field defined
-    const move = createMove("sunny-day-noturn", {
+    const move = createSyntheticMove("sunny-day-noturn", {
       effect: {
         type: "weather",
         weather: SUN,
