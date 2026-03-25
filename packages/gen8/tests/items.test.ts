@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
-import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_ITEM_TRIGGER_IDS, type PokemonType, type SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { hasHeavyDutyBoots } from "../src/Gen8EntryHazards";
 import {
@@ -130,7 +130,10 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeState(
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
+const NONE = CORE_ABILITY_IDS.none;
+
+function createSyntheticBattleState(
   overrides: {
     weather?: { type: string; turnsLeft: number } | null;
     magicRoom?: { active: boolean; turnsLeft: number } | null;
@@ -171,7 +174,7 @@ function makeContext(overrides: {
 }): ItemContext {
   return {
     pokemon: overrides.pokemon ?? makeActive({}),
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createSyntheticBattleState(),
     rng: overrides.rng ?? makeRng(),
     move: overrides.move,
     damage: overrides.damage,
@@ -756,7 +759,7 @@ describe("getConsumableItemEffect", () => {
   // Source: Showdown data/items.ts -- Eject Pack: force switch on stat decrease
   it("given Eject Pack and stat decreased, when getting effect, then returns consumed with no stat change", () => {
     const result = getConsumableItemEffect(ITEMS.ejectPack, { statChange: -1 });
-    expect(result).toEqual({ stat: "none", stages: 0, consumed: true });
+    expect(result).toEqual({ stat: NONE, stages: 0, consumed: true });
   });
 
   it("given Eject Pack and stat increased, when getting effect, then returns null", () => {
@@ -784,7 +787,7 @@ describe("applyGen8HeldItem", () => {
         currentHp: HP.lifeOrbRecoil,
       });
       const ctx = makeContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 16) = 20
       expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.leftoversHeal320 });
@@ -799,7 +802,7 @@ describe("applyGen8HeldItem", () => {
         types: [TYPES.poison],
       });
       const ctx = makeContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 16) = 20
       expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.blackSludgeHeal320 });
@@ -813,7 +816,7 @@ describe("applyGen8HeldItem", () => {
         types: [TYPES.normal],
       });
       const ctx = makeContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 8) = 40
       expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.blackSludgeDamage320 });
@@ -830,14 +833,14 @@ describe("applyGen8HeldItem", () => {
         currentHp: HP.lifeOrbRecoil,
       });
       const ctx = makeContext({ pokemon, damage: 250 });
-      const result = applyGen8HeldItem("on-damage-taken", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Focus Sash holder NOT at full HP taking lethal damage, when on-damage-taken fires, then does not activate", () => {
       const pokemon = makeActive({ heldItem: ITEMS.focusSash, hp: HP.lifeOrbRecoil, currentHp: 150 });
       const ctx = makeContext({ pokemon, damage: HP.lifeOrbRecoil });
-      const result = applyGen8HeldItem("on-damage-taken", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -849,7 +852,7 @@ describe("applyGen8HeldItem", () => {
         currentHp: HP.lifeOrbRecoil,
       });
       const ctx = makeContext({ pokemon, damage: 50 });
-      const result = applyGen8HeldItem("on-damage-taken", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
         type: "consume",
@@ -867,7 +870,7 @@ describe("applyGen8HeldItem", () => {
         currentHp: HP.airBalloonPop,
       });
       const ctx = makeContext({ pokemon, damage: 1 });
-      const result = applyGen8HeldItem("on-damage-taken", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
         type: "consume",
@@ -885,7 +888,7 @@ describe("applyGen8HeldItem", () => {
         hp: HP.lifeOrbRecoil,
         currentHp: HP.lifeOrbRecoil,
       });
-      const state = makeState();
+      const state = createSyntheticBattleState();
       // Set up sides with the holder and an opponent
       const opponent = makeActive({ hp: HP.rockyHelmetDamage, currentHp: HP.rockyHelmetDamage });
       state.sides[0].active = [pokemon] as any;
@@ -901,7 +904,7 @@ describe("applyGen8HeldItem", () => {
           flags: { contact: true },
         },
       });
-      const result = applyGen8HeldItem("on-contact", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onContact, ctx);
       expect(result.activated).toBe(true);
       // floor(300 / 6) = 50 (opponent's max HP)
       expect(result.effects[0]).toEqual({
@@ -927,7 +930,7 @@ describe("applyGen8HeldItem", () => {
           flags: {},
         },
       });
-      const result = applyGen8HeldItem("on-contact", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onContact, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -945,7 +948,7 @@ describe("applyGen8HeldItem", () => {
         damage: 50,
         move: { id: MOVES.tackle, type: TYPES.normal, category: CATEGORIES.physical, power: 40 },
       });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
       // floor(200 / 10) = 20
       expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.lifeOrbRecoil200 });
@@ -964,7 +967,7 @@ describe("applyGen8HeldItem", () => {
         damage: 80,
         move: { id: MOVES.flamethrower, type: TYPES.fire, category: CATEGORIES.special, power: 90 },
       });
-      const result = applyGen8HeldItem("on-hit", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
       // floor(300 / 10) = 30
       expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.lifeOrbRecoil300 });
@@ -978,10 +981,10 @@ describe("applyGen8HeldItem", () => {
         heldItem: ITEMS.leftovers,
         hp: HP.lifeOrbRecoil,
         currentHp: 100,
-        ability: ABILITIES.klutz,
+        ability: CORE_ABILITY_IDS.klutz,
       });
       const ctx = makeContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -996,7 +999,7 @@ describe("applyGen8HeldItem", () => {
         volatiles,
       });
       const ctx = makeContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
 
@@ -1007,9 +1010,9 @@ describe("applyGen8HeldItem", () => {
         hp: HP.lifeOrbRecoil,
         currentHp: 100,
       });
-      const state = makeState({ magicRoom: { active: true, turnsLeft: 3 } });
+      const state = createSyntheticBattleState({ magicRoom: { active: true, turnsLeft: 3 } });
       const ctx = makeContext({ pokemon, state });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1018,7 +1021,7 @@ describe("applyGen8HeldItem", () => {
     it("given Pokemon with no held item, when applying any trigger, then does not activate", () => {
       const pokemon = makeActive({ heldItem: null });
       const ctx = makeContext({ pokemon });
-      const result = applyGen8HeldItem("end-of-turn", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1039,7 +1042,7 @@ describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
         currentHp: 120,
       });
       const ctx = makeContext({ pokemon });
-      const result = ruleset.applyHeldItem("end-of-turn", ctx);
+      const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(160 / 16) = 10 HP healed
       expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.leftoversHeal160 });
@@ -1049,7 +1052,7 @@ describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
     const ruleset = new Gen8Ruleset();
     const pokemon = makeActive({ heldItem: null });
     const ctx = makeContext({ pokemon });
-    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
   });
 });
