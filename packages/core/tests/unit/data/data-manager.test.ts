@@ -559,13 +559,13 @@ describe("DataManager", () => {
   });
 
   describe("loadFromObjects()", () => {
-    it("sets loaded flag to true after loading", () => {
+    it("given unloaded data manager, when full data is loaded, then the loaded flag becomes true", () => {
       expect(dm.isLoaded()).toBe(false);
       dm.loadFromObjects(createFullData());
       expect(dm.isLoaded()).toBe(true);
     });
 
-    it("loads data with only required fields (no abilities, items, natures)", () => {
+    it("given minimal raw data, when it is loaded, then only the required entity collections are populated", () => {
       dm.loadFromObjects(createMinimalData());
       expect(dm.isLoaded()).toBe(true);
       expect(dm.getAllSpecies()).toHaveLength(1);
@@ -593,7 +593,7 @@ describe("DataManager", () => {
       expect(() => dm.getMove(flamethrower.id)).toThrow();
     });
 
-    it("keeps the last good data if a reload fails midway", () => {
+    it("given a successful load, when a later reload fails validation, then the previous loaded data remains intact", () => {
       dm.loadFromObjects(createFullData());
 
       const invalidData: RawDataObjects = {
@@ -626,13 +626,13 @@ describe("DataManager", () => {
       expect(species.types).toEqual(["grass", "poison"]);
     });
 
-    it("returns correct species for different id", () => {
+    it("given Charmander's species id, when getSpecies is called, then it returns Charmander's fixture stats", () => {
       const species = dm.getSpecies(4);
       expect(species.name).toBe("charmander");
-      expect(species.baseStats.speed).toBe(65);
+      expect(species.baseStats.speed).toBe(charmander.baseStats.speed);
     });
 
-    it("throws for non-existent id", () => {
+    it("given an unknown species id, when getSpecies is called, then it throws a not-found error", () => {
       expect(() => dm.getSpecies(999)).toThrow("Species with id 999 not found");
     });
   });
@@ -647,7 +647,7 @@ describe("DataManager", () => {
       expect(species.id).toBe(1);
     });
 
-    it("is case-insensitive", () => {
+    it("given differently cased species names, when getSpeciesByName is called, then the lookup is case-insensitive", () => {
       const species1 = dm.getSpeciesByName("Bulbasaur");
       const species2 = dm.getSpeciesByName("BULBASAUR");
       const species3 = dm.getSpeciesByName("bUlBaSaUr");
@@ -656,7 +656,7 @@ describe("DataManager", () => {
       expect(species3.id).toBe(1);
     });
 
-    it("throws for non-existent name", () => {
+    it("given an unknown species name, when getSpeciesByName is called, then it throws a not-found error", () => {
       expect(() => dm.getSpeciesByName("missingno")).toThrow('Species "missingno" not found');
     });
   });
@@ -666,10 +666,10 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("returns correct move by id", () => {
+    it("given a loaded move id, when getMove is called, then it returns the matching move fixture", () => {
       const move = dm.getMove("tackle");
       expect(move.displayName).toBe("Tackle");
-      expect(move.power).toBe(40);
+      expect(move.power).toBe(tackle.power);
       expect(move.category).toBe("physical");
     });
 
@@ -705,13 +705,13 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("returns correct item by id", () => {
+    it("given a loaded item id, when getItem is called, then it returns the matching item fixture", () => {
       const item = dm.getItem("potion");
       expect(item.displayName).toBe("Potion");
-      expect(item.price).toBe(200);
+      expect(item.price).toBe(potion.price);
     });
 
-    it("throws for non-existent item", () => {
+    it("given an unknown item id, when getItem is called, then it throws a not-found error", () => {
       expect(() => dm.getItem("master-ball")).toThrow('Item "master-ball" not found');
     });
   });
@@ -721,20 +721,19 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-    it("returns correct nature by id", () => {
+    it("given a loaded nature id, when getNature is called, then it returns the matching nature fixture", () => {
       const nature = dm.getNature("adamant");
       expect(nature.displayName).toBe("Adamant");
       expect(nature.increased).toBe("attack");
       expect(nature.decreased).toBe("spAttack");
     });
 
-    it("returns neutral nature correctly", () => {
+    it("given a neutral nature id, when getNature is called, then both modified stats are null", () => {
       const nature = dm.getNature("hardy");
-      expect(nature.increased).toBeNull();
-      expect(nature.decreased).toBeNull();
+      expect(nature).toEqual(hardy);
     });
 
-    it("throws for non-existent nature", () => {
+    it("given an unknown nature id, when getNature is called, then it throws a not-found error", () => {
       expect(() => dm.getNature("timid")).toThrow('Nature "timid" not found');
     });
   });
@@ -755,7 +754,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllSpecies()", () => {
-    it("returns all loaded species", () => {
+    it("given loaded species data, when getAllSpecies is called, then it returns every loaded species", () => {
       dm.loadFromObjects(createFullData());
       const all = dm.getAllSpecies();
       expect(all).toHaveLength(2);
@@ -764,7 +763,7 @@ describe("DataManager", () => {
       expect(names).toContain("charmander");
     });
 
-    it("returns empty array when no data loaded", () => {
+    it("given no loaded species data, when getAllSpecies is called, then it returns an empty array", () => {
       expect(dm.getAllSpecies()).toHaveLength(0);
     });
   });
@@ -781,7 +780,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllAbilities()", () => {
-    it("returns all loaded abilities", () => {
+    it("given loaded ability data, when getAllAbilities is called, then it returns every loaded ability", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllAbilities()).toHaveLength(1);
       expect(dm.getAllAbilities()[0].id).toBe("overgrow");
@@ -789,7 +788,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllItems()", () => {
-    it("returns all loaded items", () => {
+    it("given loaded item data, when getAllItems is called, then it returns every loaded item", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllItems()).toHaveLength(1);
       expect(dm.getAllItems()[0].id).toBe("potion");
@@ -797,7 +796,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllNatures()", () => {
-    it("returns all loaded natures", () => {
+    it("given loaded nature data, when getAllNatures is called, then it returns every loaded nature", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllNatures()).toHaveLength(2);
     });
@@ -805,27 +804,27 @@ describe("DataManager", () => {
 
   describe("unloaded data access", () => {
     it("throws when getting species before loading", () => {
-      expect(() => dm.getSpecies(1)).toThrow();
+      expect(() => dm.getSpecies(bulbasaur.id)).toThrow();
     });
 
     it("throws when getting species by name before loading", () => {
-      expect(() => dm.getSpeciesByName("bulbasaur")).toThrow();
+      expect(() => dm.getSpeciesByName(bulbasaur.name)).toThrow();
     });
 
     it("throws when getting move before loading", () => {
-      expect(() => dm.getMove("tackle")).toThrow();
+      expect(() => dm.getMove(tackle.id)).toThrow();
     });
 
     it("throws when getting ability before loading", () => {
-      expect(() => dm.getAbility("overgrow")).toThrow();
+      expect(() => dm.getAbility(overgrow.id)).toThrow();
     });
 
-    it("throws when getting item before loading", () => {
-      expect(() => dm.getItem("potion")).toThrow();
+    it("given no loaded item data, when getItem is called, then it throws", () => {
+      expect(() => dm.getItem(potion.id)).toThrow();
     });
 
-    it("throws when getting nature before loading", () => {
-      expect(() => dm.getNature("adamant")).toThrow();
+    it("given no loaded nature data, when getNature is called, then it throws", () => {
+      expect(() => dm.getNature(adamant.id)).toThrow();
     });
 
     it("throws when getting type chart before loading", () => {
