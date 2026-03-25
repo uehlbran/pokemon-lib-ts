@@ -218,6 +218,10 @@ describe("Gen 9 Spikes", () => {
     const mon = makeActive({ types: ["flying"] });
     const result = applyGen9SpikesHazard(mon, 3, false);
     expect(result).toBeNull();
+    expect(applyGen9SpikesHazard(mon, 3, true)).toEqual({
+      damage: 100,
+      message: "TestMon was hurt by the spikes!",
+    });
   });
 
   it("given Spikes and a Levitate Pokemon, when applying, then returns null (immune)", () => {
@@ -225,6 +229,10 @@ describe("Gen 9 Spikes", () => {
     const mon = makeActive({ ability: "levitate" });
     const result = applyGen9SpikesHazard(mon, 3, false);
     expect(result).toBeNull();
+    expect(applyGen9SpikesHazard(makeActive({ ability: "none" }), 3, false)).toEqual({
+      damage: 100,
+      message: "TestMon was hurt by the spikes!",
+    });
   });
 
   it("given Spikes and a Flying-type with Gravity, when applying, then deals damage (Gravity forces grounding)", () => {
@@ -239,6 +247,10 @@ describe("Gen 9 Spikes", () => {
     const mon = makeActive({});
     const result = applyGen9SpikesHazard(mon, 0, false);
     expect(result).toBeNull();
+    expect(applyGen9SpikesHazard(mon, 1, false)).toEqual({
+      damage: 50,
+      message: "TestMon was hurt by the spikes!",
+    });
   });
 
   it("given Spikes result, when checking message, then says 'hurt by the spikes'", () => {
@@ -359,20 +371,20 @@ describe("Gen 9 Toxic Spikes", () => {
     // Source: Showdown -- trySetStatus returns false if already statused
     const burnedMon = makeActive({ types: ["normal"], status: "burn" });
     const result = applyGen9ToxicSpikes(burnedMon, 1, false);
-    expect(result.status).toBeNull();
+    expect(result).toEqual({ absorbed: false, status: null, message: null });
   });
 
   it("given Toxic Spikes and a Flying-type Pokemon, when applying, then no effect (not grounded)", () => {
     // Source: Showdown data/moves.ts -- toxicspikes: grounded-only
     const flyingMon = makeActive({ types: ["flying"] });
     const result = applyGen9ToxicSpikes(flyingMon, 2, false);
-    expect(result.status).toBeNull();
+    expect(result).toEqual({ absorbed: false, status: null, message: null });
   });
 
   it("given 0 layers of Toxic Spikes, when applying, then no effect", () => {
     const mon = makeActive({});
     const result = applyGen9ToxicSpikes(mon, 0, false);
-    expect(result.status).toBeNull();
+    expect(result).toEqual({ absorbed: false, status: null, message: null });
   });
 });
 
@@ -566,6 +578,7 @@ describe("applyGen9EntryHazards", () => {
     const state = makeState();
     const result = applyGen9EntryHazards(mon, side, state, TEST_TYPE_CHART);
     // SR: 50 + Spikes(3 layers): 100 = 150
+    // floor(400 * 1 / 8) + floor(400 * 6 / 24) = 50 + 100 = 150
     expect(result.damage).toBe(150);
     expect(result.statusInflicted).toBe("poison");
     expect(result.statChanges).toHaveLength(1); // Sticky Web -1 Speed
@@ -614,7 +627,12 @@ describe("applyGen9EntryHazards", () => {
     const side = makeSide([{ type: "toxic-spikes", layers: 2 }]);
     const state = makeState();
     const result = applyGen9EntryHazards(magicGuardMon, side, state, TEST_TYPE_CHART);
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      damage: 0,
+      statusInflicted: null,
+      statChanges: [],
+      messages: [],
+    });
   });
 
   // --- Misty Terrain blocks Toxic Spikes status ---
@@ -627,7 +645,12 @@ describe("applyGen9EntryHazards", () => {
       terrain: { type: "misty", turnsLeft: 5, source: "test" },
     });
     const result = applyGen9EntryHazards(mon, side, state, TEST_TYPE_CHART);
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      damage: 0,
+      statusInflicted: null,
+      statChanges: [],
+      messages: [],
+    });
   });
 
   // --- No hazards on side ---
@@ -653,7 +676,8 @@ describe("applyGen9EntryHazards", () => {
     const side = makeSide([{ type: "stealth-rock", layers: 1 }]);
     const state = makeState();
     const result = applyGen9EntryHazards(klutzyMon, side, state, TEST_TYPE_CHART);
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result.damage).toBe(50);
+    expect(result.messages).toEqual(["Pointed stones dug into TestMon!"]);
   });
 
   it("given Sticky Web and a Contrary Pokemon, when applying hazards, then Speed is raised by 1 instead of lowered", () => {
