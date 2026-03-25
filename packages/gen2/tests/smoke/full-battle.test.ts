@@ -2,13 +2,26 @@ import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createGen2DataManager, Gen2Ruleset } from "../../src";
 
 describe("Gen 2 Full Battle Integration", () => {
   const dataManager = createGen2DataManager();
   const ruleset = new Gen2Ruleset();
   let uidCounter = 0;
+
+  const expectedBattleStartStats = {
+    Typhlosion: { hp: 153, attack: 104, defense: 98, spAttack: 129, spDefense: 105, speed: 120 },
+    Feraligatr: { hp: 160, attack: 125, defense: 120, spAttack: 99, spDefense: 103, speed: 98 },
+    Meganium: { hp: 155, attack: 102, defense: 120, spAttack: 103, spDefense: 120, speed: 100 },
+    Umbreon: { hp: 170, attack: 85, defense: 130, spAttack: 80, spDefense: 150, speed: 85 },
+    Steelix: { hp: 150, attack: 105, defense: 220, spAttack: 75, spDefense: 85, speed: 50 },
+    Tyranitar: { hp: 175, attack: 154, defense: 130, spAttack: 115, spDefense: 120, speed: 81 },
+  } as const;
+
+  beforeEach(() => {
+    uidCounter = 0;
+  });
 
   /**
    * Helper to create a Gen 2 PokemonInstance with specific moves.
@@ -71,6 +84,18 @@ describe("Gen 2 Full Battle Integration", () => {
       seed,
     };
     return new BattleEngine(config, ruleset, dataManager);
+  }
+
+  function collectEffectivenessProbe(
+    events: ReturnType<BattleEngine["getEventLog"]>,
+  ): {
+    effectivenessEvents: ReturnType<BattleEngine["getEventLog"]>;
+    damageEvents: ReturnType<BattleEngine["getEventLog"]>;
+  } {
+    return {
+      effectivenessEvents: events.filter((event) => event.type === "effectiveness"),
+      damageEvents: events.filter((event) => event.type === "damage"),
+    };
   }
 
   /**
@@ -179,21 +204,15 @@ describe("Gen 2 Full Battle Integration", () => {
     const events1 = engine1.getEventLog();
 
     // Act: Run battle 2 with identical setup
-    uidCounter = 0; // Reset so UIDs match
+    uidCounter = 0;
     const team1b = createTeam1();
     const team2b = createTeam2();
     const engine2 = createBattle(team1b, team2b, seed);
     runFullBattle(engine2, seed);
     const events2 = engine2.getEventLog();
 
-    // Assert: Event logs must be identical
-    expect(events1.length).toBe(events2.length);
     expect(events1.length).toBeGreaterThan(0);
-
-    for (let i = 0; i < events1.length; i++) {
-      expect(events1[i]?.type).toBe(events2[i]?.type);
-    }
-
+    expect(events1).toEqual(events2);
     expect(engine1.getWinner()).toBe(engine2.getWinner());
   });
 
@@ -211,12 +230,9 @@ describe("Gen 2 Full Battle Integration", () => {
     runFullBattle(engine1, 42);
     runFullBattle(engine2, 99999);
 
-    // Assert
     const events1 = engine1.getEventLog();
     const events2 = engine2.getEventLog();
-    const eventsMatch =
-      events1.length === events2.length && events1.every((e, i) => e.type === events2[i]?.type);
-    expect(eventsMatch).toBe(false);
+    expect(events1).not.toEqual(events2);
   });
 
   it("given a Gen 2 battle, when it starts, then a battle-start event is emitted with generation 2", () => {
@@ -339,11 +355,8 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const faintEvents = events.filter((e) => e.type === "faint");
-    expect(faintEvents.length).toBeGreaterThanOrEqual(1);
-
-    const magikarpFaint = faintEvents.find((e) => e.type === "faint" && e.side === 1);
-    expect(magikarpFaint).toBeDefined();
+    const faintEvents = events.filter((event) => event.type === "faint");
+    expect(faintEvents).toEqual([{ type: "faint", side: 1, pokemon: "Magikarp" }]);
   });
 
   it("given a Gen 2 battle, when the battle ends, then a battle-end event is emitted", () => {
@@ -362,11 +375,8 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const endEvents = events.filter((e) => e.type === "battle-end");
-    expect(endEvents.length).toBe(1);
-    if (endEvents[0]?.type === "battle-end") {
-      expect(endEvents[0]?.winner === 0 || endEvents[0]?.winner === 1).toBe(true);
-    }
+    const endEvents = events.filter((event) => event.type === "battle-end");
+    expect(endEvents).toEqual([{ type: "battle-end", winner: 0 }]);
   });
 
   it("given a Gen 2 battle, when stats are calculated at start, then all Pokemon have calculatedStats", () => {
@@ -378,17 +388,14 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     engine.start();
 
-    // Assert
+    // Derived from the Gen 2 DV=15, Stat Exp=0, level 50 formula for the fixed team fixtures above.
     for (const sideIdx of [0, 1] as const) {
       const team = engine.getTeam(sideIdx);
       for (const pokemon of team) {
-        expect(pokemon.calculatedStats).toBeDefined();
-        expect(pokemon.calculatedStats?.hp).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.attack).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.defense).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.spAttack).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.spDefense).toBeGreaterThan(0);
-        expect(pokemon.calculatedStats?.speed).toBeGreaterThan(0);
+        expect(pokemon.nickname).not.toBeNull();
+        expect(pokemon.calculatedStats).toEqual(
+          expectedBattleStartStats[pokemon.nickname as keyof typeof expectedBattleStartStats],
+        );
       }
     }
   });
@@ -498,12 +505,53 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     const moves = engine.getAvailableMoves(0);
 
-    // Assert
-    expect(moves.length).toBe(4);
-    expect(moves[0]?.moveId).toBe("flamethrower");
-    expect(moves[0]?.type).toBe("fire");
-    expect(moves[0]?.disabled).toBe(false);
-    expect(moves[0]?.pp).toBeGreaterThan(0);
+    // Source: the fixed Typhlosion fixture above carries these four moves in this exact slot order.
+    expect(moves).toEqual([
+      {
+        index: 0,
+        moveId: "flamethrower",
+        displayName: "Flamethrower",
+        type: "fire",
+        category: "special",
+        pp: 15,
+        maxPp: 15,
+        disabled: false,
+        disabledReason: undefined,
+      },
+      {
+        index: 1,
+        moveId: "thunder-punch",
+        displayName: "Thunder Punch",
+        type: "electric",
+        category: "special",
+        pp: 15,
+        maxPp: 15,
+        disabled: false,
+        disabledReason: undefined,
+      },
+      {
+        index: 2,
+        moveId: "earthquake",
+        displayName: "Earthquake",
+        type: "ground",
+        category: "physical",
+        pp: 10,
+        maxPp: 10,
+        disabled: false,
+        disabledReason: undefined,
+      },
+      {
+        index: 3,
+        moveId: "fire-blast",
+        displayName: "Fire Blast",
+        type: "fire",
+        category: "special",
+        pp: 5,
+        maxPp: 5,
+        disabled: false,
+        disabledReason: undefined,
+      },
+    ]);
   });
 
   it("given a battle with 3v3 teams, when getAvailableSwitches is called, then returns correct indices", () => {
@@ -516,10 +564,7 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     const switches = engine.getAvailableSwitches(0);
 
-    // Assert: Active is slot 0, so slots 1 and 2 should be available
-    expect(switches.length).toBe(2);
-    expect(switches).toContain(1);
-    expect(switches).toContain(2);
+    expect(switches).toEqual([1, 2]);
   });
 
   // --- Type Effectiveness Tests ---
@@ -549,12 +594,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    // Crunch (dark) vs Psychic type = super effective (2x)
-    const superEffective = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier >= 2,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Alakazam", source: "crunch" }),
     );
-    expect(superEffective).toBeDefined();
   });
 
   it("given Gen 2, when a Psychic move hits a Dark type, then it has no effect (0x)", () => {
@@ -581,12 +625,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    // Psychic vs Dark = immune (0x)
-    const immune = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier === 0,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Umbreon", source: "psychic" }),
     );
-    expect(immune).toBeDefined();
   });
 
   it("given Gen 2, when a Ghost move hits a Psychic type, then it is super effective (2x — Gen 1 bug fixed)", () => {
@@ -613,12 +656,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    // Shadow Ball (ghost) vs Psychic = 2x (Gen 1 bug fixed)
-    const superEffective = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier >= 2,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Alakazam", source: "shadow-ball" }),
     );
-    expect(superEffective).toBeDefined();
   });
 
   it("given Gen 2, when a Fire move hits a Steel type, then it is super effective (2x)", () => {
@@ -644,12 +686,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    // Fire vs Steel = 2x, Fire vs Ground = 1x -> total = 2x
-    const superEffective = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier >= 2,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Steelix", source: "flamethrower" }),
     );
-    expect(superEffective).toBeDefined();
   });
 
   it("given Gen 2, when a Normal move hits a Steel type, then it is not very effective (0.5x)", () => {
@@ -675,11 +716,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    const notVeryEffective = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier < 1,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0.5 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Steelix", source: "body-slam" }),
     );
-    expect(notVeryEffective).toBeDefined();
   });
 
   // --- Weather Tests (via ruleset, since engine doesn't handle weather-set from moves yet) ---
@@ -714,14 +755,23 @@ describe("Gen 2 Full Battle Integration", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert: Look for weather damage events
+    // Derived from the Gen 2 level-50 stat formula with DVs=15 and Stat Exp=0:
+    // Typhlosion max HP is 153, so sandstorm deals floor(153 / 8) = 19 damage.
     const events = engine.getEventLog();
     const weatherDamageEvents = events.filter(
       (e) => e.type === "damage" && e.source === "weather-sand",
     );
-    // Typhlosion (fire) should take sandstorm damage
-    // Tyranitar (rock/dark) should be immune to sandstorm damage
-    expect(weatherDamageEvents.length).toBeGreaterThanOrEqual(1);
+    expect(weatherDamageEvents).toEqual([
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Typhlosion",
+        amount: 19,
+        currentHp: 81,
+        maxHp: 153,
+        source: "weather-sand",
+      },
+    ]);
   });
 
   it("given Gen 2 weather, when weather countdown reaches 0, then weather-end event is emitted", () => {
@@ -826,10 +876,10 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.type === "heal");
-    expect(healEffect).toBeDefined();
-    expect(healEffect?.value).toBe(10);
     const consumeEffect = result.effects.find((e) => e.type === "consume");
-    expect(consumeEffect).toBeDefined();
+    expect(healEffect).toEqual(expect.objectContaining({ type: "heal", value: 10 }));
+    // Source: Gen 2 Berry restores exactly 10 HP at or below 50% HP.
+    expect(consumeEffect).toEqual(expect.objectContaining({ type: "consume" }));
   });
 
   // --- Entry Hazards Tests ---
@@ -933,11 +983,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    const superEffective = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier >= 2,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Typhlosion", source: "surf" }),
     );
-    expect(superEffective).toBeDefined();
   });
 
   it("given Gen 2, when a not-very-effective Fire move hits a Water type, then effectiveness is < 1", () => {
@@ -963,10 +1013,10 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Assert
     const events = engine.getEventLog();
-    const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    const notVeryEffective = effectivenessEvents.find(
-      (e) => e.type === "effectiveness" && e.multiplier < 1,
+    const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
+    expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0.5 });
+    expect(damageEvents).toContainEqual(
+      expect.objectContaining({ pokemon: "Feraligatr", source: "flamethrower" }),
     );
-    expect(notVeryEffective).toBeDefined();
   });
 });
