@@ -10,50 +10,50 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createGen5DataManager } from "../src/data";
+import { createGen5DataManager, GEN5_MOVE_IDS } from "../src";
 
 describe("Gen 5 pulse flag correctness", () => {
   const dm = createGen5DataManager();
 
   it("given Aura Sphere in Gen 5, when checking flags.pulse, then it is true", () => {
     // Source: Showdown data/moves.ts -- aurasphere: { flags: { pulse: 1 } }
-    const move = dm.getMove("aura-sphere");
+    const move = dm.getMove(GEN5_MOVE_IDS.auraSphere);
     expect(move.flags.pulse).toBe(true);
   });
 
   it("given Dark Pulse in Gen 5, when checking flags.pulse, then it is true", () => {
     // Source: Showdown data/moves.ts -- darkpulse: { flags: { pulse: 1 } }
-    const move = dm.getMove("dark-pulse");
+    const move = dm.getMove(GEN5_MOVE_IDS.darkPulse);
     expect(move.flags.pulse).toBe(true);
   });
 
   it("given Dragon Pulse in Gen 5, when checking flags.pulse, then it is true", () => {
     // Source: Showdown data/moves.ts -- dragonpulse: { flags: { pulse: 1 } }
-    const move = dm.getMove("dragon-pulse");
+    const move = dm.getMove(GEN5_MOVE_IDS.dragonPulse);
     expect(move.flags.pulse).toBe(true);
   });
 
   it("given Heal Pulse in Gen 5, when checking flags.pulse, then it is true", () => {
     // Source: Showdown data/moves.ts -- healpulse: { flags: { pulse: 1 } }
-    const move = dm.getMove("heal-pulse");
+    const move = dm.getMove(GEN5_MOVE_IDS.healPulse);
     expect(move.flags.pulse).toBe(true);
   });
 
   it("given Water Pulse in Gen 5, when checking flags.pulse, then it is true", () => {
     // Source: Showdown data/moves.ts -- waterpulse: { flags: { pulse: 1 } }
-    const move = dm.getMove("water-pulse");
+    const move = dm.getMove(GEN5_MOVE_IDS.waterPulse);
     expect(move.flags.pulse).toBe(true);
   });
 
   it("given Tackle in Gen 5, when checking flags.pulse, then it is false", () => {
     // Source: Showdown data/moves.ts -- tackle does not have pulse flag
-    const move = dm.getMove("tackle");
+    const move = dm.getMove(GEN5_MOVE_IDS.tackle);
     expect(move.flags.pulse).toBe(false);
   });
 
   it("given Thunderbolt in Gen 5, when checking flags.pulse, then it is false", () => {
     // Source: Showdown data/moves.ts -- thunderbolt does not have pulse flag
-    const move = dm.getMove("thunderbolt");
+    const move = dm.getMove(GEN5_MOVE_IDS.thunderbolt);
     expect(move.flags.pulse).toBe(false);
   });
 });
