@@ -6,6 +6,7 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
+import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   MoveEffect,
@@ -16,14 +17,26 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  CORE_MOVE_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen5DataManager, GEN5_ABILITY_IDS, GEN5_ITEM_IDS, GEN5_MOVE_IDS } from "../src";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
 import {
   getSheerForceMultiplier,
   hasSheerForceEligibleEffect,
@@ -47,12 +60,16 @@ const A = GEN5_ABILITY_IDS;
 const I = GEN5_ITEM_IDS;
 const M = GEN5_MOVE_IDS;
 const NONE_ABILITY = CORE_ABILITY_IDS.none;
-const NONE_TYPE = CORE_TYPE_IDS.normal;
+const DEFAULT_SPECIES_ID = GEN5_SPECIES_IDS.pikachu;
+const DEFAULT_NATURE = GEN5_NATURE_IDS.hardy;
+const DEFAULT_POKEBALL = CORE_ITEM_IDS.pokeBall;
+const DEFAULT_TYPE = CORE_TYPE_IDS.electric;
+const DEFAULT_LEVEL = 50;
 const PRIMARY_STATUS = CORE_STATUS_IDS;
-const MOVE_IDS = CORE_MOVE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const LEVITATE_NAME = dataManager.getAbility(A.levitate).displayName;
 const WONDER_GUARD_NAME = dataManager.getAbility(A.wonderGuard).displayName;
+const DEFAULT_TACKLE = dataManager.getMove(M.tackle);
 
 /**
  * Gen 5 Abilities / Items Correctness Audit -- regression tests.
@@ -73,6 +90,8 @@ function makePokemonInstance(overrides: {
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
+  nature?: string;
+  pokeball?: string;
   status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
@@ -80,47 +99,49 @@ function makePokemonInstance(overrides: {
   spDefense?: number;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: "test-uid",
-    speciesId: overrides.speciesId ?? 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? NONE_ABILITY,
-    abilitySlot: "normal1" as const,
-    heldItem: overrides.heldItem ?? null,
-    status: (overrides.status ?? null) as never,
-    friendship: 0,
-    gender: "male" as const,
+  const speciesRecord = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
+  const pokemon = createPokemonInstance(speciesRecord, DEFAULT_LEVEL, new SeededRandom(speciesRecord.id), {
+    nature: overrides.nature ?? DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: "normal1",
+    gender: "male",
     isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    moves: [DEFAULT_TACKLE.id],
+    heldItem: overrides.heldItem ?? null,
+    friendship: speciesRecord.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: overrides.defense ?? 100,
-      spAttack: 100,
-      spDefense: overrides.spDefense ?? 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+    pokeball: overrides.pokeball ?? DEFAULT_POKEBALL,
+  });
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = [createMoveSlot(DEFAULT_TACKLE.id, DEFAULT_TACKLE.pp)];
+  pokemon.ability = overrides.ability ?? NONE_ABILITY;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = (overrides.status ?? null) as never;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: overrides.defense ?? 100,
+    spAttack: 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: 100,
+  };
+  return pokemon;
 }
 
 function makeActivePokemon(overrides: {
+  speciesId?: number;
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
   currentHp?: number;
   maxHp?: number;
   heldItem?: string | null;
+  nature?: string;
+  pokeball?: string;
   turnsOnField?: number;
   statStages?: Partial<Record<string, number>>;
   volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -131,50 +152,40 @@ function makeActivePokemon(overrides: {
   substituteHp?: number;
   itemKnockedOff?: boolean;
 }): ActivePokemon {
-  return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      heldItem: overrides.heldItem,
-      status: overrides.status,
-      defense: overrides.defense,
-      spDefense: overrides.spDefense,
-    }),
-    teamSlot: 0,
-    statStages: {
-      attack: overrides.statStages?.attack ?? 0,
-      defense: overrides.statStages?.defense ?? 0,
-      spAttack: overrides.statStages?.spAttack ?? 0,
-      spDefense: overrides.statStages?.spDefense ?? 0,
-      speed: overrides.statStages?.speed ?? 0,
-      accuracy: overrides.statStages?.accuracy ?? 0,
-      evasion: overrides.statStages?.evasion ?? 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [NONE_TYPE],
-    ability: overrides.ability ?? NONE_ABILITY,
-    suppressedAbility: null,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: overrides.turnsOnField ?? 1,
-    movedThisTurn: overrides.movedThisTurn ?? false,
-    consecutiveProtects: 0,
-    substituteHp: overrides.substituteHp ?? 0,
-    itemKnockedOff: overrides.itemKnockedOff ?? false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
-  } as ActivePokemon;
+  const pokemon = makePokemonInstance({
+    speciesId: overrides.speciesId,
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    heldItem: overrides.heldItem,
+    nature: overrides.nature,
+    pokeball: overrides.pokeball,
+    status: overrides.status,
+    defense: overrides.defense,
+    spDefense: overrides.spDefense,
+  });
+  const active = createActivePokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...dataManager.getSpecies(pokemon.speciesId).types] ?? [DEFAULT_TYPE],
+  );
+  active.statStages = {
+    attack: overrides.statStages?.attack ?? 0,
+    defense: overrides.statStages?.defense ?? 0,
+    spAttack: overrides.statStages?.spAttack ?? 0,
+    spDefense: overrides.statStages?.spDefense ?? 0,
+    speed: overrides.statStages?.speed ?? 0,
+    accuracy: overrides.statStages?.accuracy ?? 0,
+    evasion: overrides.statStages?.evasion ?? 0,
+  };
+  active.volatileStatuses = overrides.volatiles ?? new Map();
+  active.ability = overrides.ability ?? NONE_ABILITY;
+  active.turnsOnField = overrides.turnsOnField ?? 1;
+  active.movedThisTurn = overrides.movedThisTurn ?? false;
+  active.substituteHp = overrides.substituteHp ?? 0;
+  active.itemKnockedOff = overrides.itemKnockedOff ?? false;
+  return active;
 }
 
 function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
@@ -303,7 +314,7 @@ function makeItemContext(opts: {
   types?: PokemonType[];
 }): ItemContext {
   const pokemon = makeActivePokemon({
-      ability: opts.ability ?? NONE_ABILITY,
+    ability: opts.ability ?? NONE_ABILITY,
     heldItem: opts.heldItem,
     currentHp: opts.currentHp,
     maxHp: opts.maxHp,
@@ -464,12 +475,12 @@ describe("Prankster -- Dark-type immunity is Gen 6+, NOT Gen 5", () => {
 
   it("given isPranksterEligible and a status category, then returns true", () => {
     // Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
-    expect(isPranksterEligible("status")).toBe(true);
+    expect(isPranksterEligible(CORE_MOVE_CATEGORIES.status)).toBe(true);
   });
 
   it("given isPranksterEligible and a physical category, then returns false", () => {
     // Triangulation: physical moves do not get priority boost
-    expect(isPranksterEligible("physical")).toBe(false);
+    expect(isPranksterEligible(CORE_MOVE_CATEGORIES.physical)).toBe(false);
   });
 });
 
@@ -889,80 +900,6 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
       //   onBasePower: return this.chainModify(1.5);
       // Gem boost multiplies BASE POWER by 1.5 before the damage formula runs.
       // We use seed 42 with isCrit=false to get a fixed random factor.
-      const makeActiveForDamage = (opts: {
-        ability?: string;
-        heldItem?: string | null;
-        attack?: number;
-        defense?: number;
-        types?: PokemonType[];
-      }) =>
-        ({
-          pokemon: {
-            uid: "t",
-            speciesId: 1,
-            nickname: null,
-            level: 50,
-            experience: 0,
-            nature: "hardy",
-            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-            evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-            currentHp: 200,
-            moves: [],
-    ability: opts.ability ?? NONE_ABILITY,
-            abilitySlot: "normal1" as const,
-            heldItem: opts.heldItem ?? null,
-            status: null,
-            friendship: 0,
-            gender: "male" as const,
-            isShiny: false,
-            metLocation: "",
-            metLevel: 1,
-            originalTrainer: "",
-            originalTrainerId: 0,
-            pokeball: "pokeball",
-            calculatedStats: {
-              hp: 200,
-              attack: opts.attack ?? 100,
-              defense: opts.defense ?? 100,
-              spAttack: 100,
-              spDefense: 100,
-              speed: 100,
-            },
-          },
-          teamSlot: 0,
-          statStages: {
-            attack: 0,
-            defense: 0,
-            spAttack: 0,
-            spDefense: 0,
-            speed: 0,
-            accuracy: 0,
-            evasion: 0,
-          },
-          volatileStatuses: new Map(),
-          types: opts.types ?? [CORE_TYPE_IDS.fire],
-          ability: opts.ability ?? NONE_ABILITY,
-          suppressedAbility: null,
-          lastMoveUsed: null,
-          lastDamageTaken: 0,
-          lastDamageType: null,
-          lastDamageCategory: null,
-          turnsOnField: 1,
-          movedThisTurn: false,
-          consecutiveProtects: 0,
-          substituteHp: 0,
-          itemKnockedOff: false,
-          transformed: false,
-          transformedSpecies: null,
-          isMega: false,
-          isDynamaxed: false,
-          dynamaxTurnsLeft: 0,
-          isTerastallized: false,
-          teraType: null,
-          stellarBoostedTypes: [],
-          forcedMove: null,
-        }) as ActivePokemon;
-
       const baseState = {
         phase: "turn-end",
         generation: 5,
@@ -982,44 +919,22 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
       } as BattleState;
 
       // Ember: base power 40, Fire type, special
-      const fireMove: MoveData = {
-        id: M.ember,
-        displayName: "Ember",
-        type: CORE_TYPE_IDS.fire,
-        category: "special",
-        power: 40,
-        accuracy: 100,
-        pp: 25,
-        priority: 0,
-        target: "adjacent-foe",
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 5,
-        critRatio: 0,
-      } as MoveData;
+      const fireMove = makeMove(M.ember);
 
-      const attacker = makeActiveForDamage({ heldItem: null, types: [CORE_TYPE_IDS.fire] });
-      const attackerWithGem = makeActiveForDamage({ heldItem: I.fireGem, types: [CORE_TYPE_IDS.fire] });
-      const defender = makeActiveForDamage({ types: [CORE_TYPE_IDS.normal] });
+      const attacker = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.charmander,
+        types: [CORE_TYPE_IDS.fire],
+        heldItem: null,
+      });
+      const attackerWithGem = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.charmander,
+        types: [CORE_TYPE_IDS.fire],
+        heldItem: I.fireGem,
+      });
+      const defender = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.squirtle,
+        types: [CORE_TYPE_IDS.water],
+      });
 
       // Use the same seed so random factor is identical
       const ctxBase: DamageContext = {
@@ -1063,74 +978,6 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
       "when calculateGen5Damage is called, then gem does NOT activate (type mismatch)",
     () => {
       // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- gem only boosts matching type
-      const makeActiveForDamage2 = (opts: { heldItem?: string | null; types?: PokemonType[] }) =>
-        ({
-          pokemon: {
-            uid: "t",
-            speciesId: 4,
-            nickname: null,
-            level: 50,
-            experience: 0,
-            nature: "hardy",
-            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-            evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-            currentHp: 200,
-            moves: [],
-            ability: NONE_ABILITY,
-            abilitySlot: "normal1" as const,
-            heldItem: opts.heldItem ?? null,
-            status: null,
-            friendship: 0,
-            gender: "male" as const,
-            isShiny: false,
-            metLocation: "",
-            metLevel: 1,
-            originalTrainer: "",
-            originalTrainerId: 0,
-            pokeball: "pokeball",
-            calculatedStats: {
-              hp: 200,
-              attack: 100,
-              defense: 100,
-              spAttack: 100,
-              spDefense: 100,
-              speed: 100,
-            },
-          },
-          teamSlot: 0,
-          statStages: {
-            attack: 0,
-            defense: 0,
-            spAttack: 0,
-            spDefense: 0,
-            speed: 0,
-            accuracy: 0,
-            evasion: 0,
-          },
-          volatileStatuses: new Map(),
-          types: opts.types ?? [CORE_TYPE_IDS.water],
-          ability: NONE_ABILITY,
-          suppressedAbility: null,
-          lastMoveUsed: null,
-          lastDamageTaken: 0,
-          lastDamageType: null,
-          lastDamageCategory: null,
-          turnsOnField: 1,
-          movedThisTurn: false,
-          consecutiveProtects: 0,
-          substituteHp: 0,
-          itemKnockedOff: false,
-          transformed: false,
-          transformedSpecies: null,
-          isMega: false,
-          isDynamaxed: false,
-          dynamaxTurnsLeft: 0,
-          isTerastallized: false,
-          teraType: null,
-          stellarBoostedTypes: [],
-          forcedMove: null,
-        }) as ActivePokemon;
-
       const baseState2 = {
         phase: "turn-end",
         generation: 5,
@@ -1149,43 +996,17 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
         winner: null,
       } as BattleState;
 
-      const waterMove: MoveData = {
-        id: M.waterGun,
-        displayName: "Water Gun",
-        type: CORE_TYPE_IDS.water,
-        category: "special",
-        power: 40,
-        accuracy: 100,
-        pp: 25,
-        priority: 0,
-        target: "adjacent-foe",
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 5,
-        critRatio: 0,
-      } as MoveData;
+      const waterMove = makeMove(M.waterGun);
 
-      const attackerWithFireGem = makeActiveForDamage2({ heldItem: I.fireGem, types: [CORE_TYPE_IDS.water] });
-      const defender2 = makeActiveForDamage2({ types: [CORE_TYPE_IDS.normal] });
+      const attackerWithFireGem = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.squirtle,
+        types: [CORE_TYPE_IDS.water],
+        heldItem: I.fireGem,
+      });
+      const defender2 = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.pikachu,
+        types: [CORE_TYPE_IDS.electric],
+      });
 
       const ctx: DamageContext = {
         attacker: attackerWithFireGem,
@@ -1347,74 +1168,6 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
       // Source: Bulbapedia -- Eviolite: "Raises Defense and Sp. Defense by 50%"
       // Eviolite boosts the defender's physical Defense by 1.5x in the damage formula.
       // We verify this by computing damage with and without Eviolite using identical contexts.
-      const makeActiveForEviolite = (opts: { heldItem?: string | null }) =>
-        ({
-          pokemon: {
-            uid: "t",
-            speciesId: 1,
-            nickname: null,
-            level: 50,
-            experience: 0,
-            nature: "hardy",
-            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-            evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-            currentHp: 200,
-            moves: [],
-            ability: NONE_ABILITY,
-            abilitySlot: "normal1" as const,
-            heldItem: opts.heldItem ?? null,
-            status: null,
-            friendship: 0,
-            gender: "male" as const,
-            isShiny: false,
-            metLocation: "",
-            metLevel: 1,
-            originalTrainer: "",
-            originalTrainerId: 0,
-            pokeball: "pokeball",
-            calculatedStats: {
-              hp: 200,
-              attack: 100,
-              defense: 100,
-              spAttack: 100,
-              spDefense: 100,
-              speed: 100,
-            },
-          },
-          teamSlot: 0,
-          statStages: {
-            attack: 0,
-            defense: 0,
-            spAttack: 0,
-            spDefense: 0,
-            speed: 0,
-            accuracy: 0,
-            evasion: 0,
-          },
-          volatileStatuses: new Map(),
-          types: [CORE_TYPE_IDS.normal as PokemonType],
-          ability: NONE_ABILITY,
-          suppressedAbility: null,
-          lastMoveUsed: null,
-          lastDamageTaken: 0,
-          lastDamageType: null,
-          lastDamageCategory: null,
-          turnsOnField: 1,
-          movedThisTurn: false,
-          consecutiveProtects: 0,
-          substituteHp: 0,
-          itemKnockedOff: false,
-          transformed: false,
-          transformedSpecies: null,
-          isMega: false,
-          isDynamaxed: false,
-          dynamaxTurnsLeft: 0,
-          isTerastallized: false,
-          teraType: null,
-          stellarBoostedTypes: [],
-          forcedMove: null,
-        }) as ActivePokemon;
-
       const evioliteState = {
         phase: "turn-end",
         generation: 5,
@@ -1434,44 +1187,23 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
       } as BattleState;
 
       // Tackle: base power 50, Normal type, physical
-      const tackle: MoveData = {
-        id: MOVE_IDS.tackle,
-        displayName: "Tackle",
-        type: CORE_TYPE_IDS.normal,
-        category: "physical",
-        power: 50,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe",
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 5,
-        critRatio: 0,
-      } as MoveData;
+      const tackle = makeMove(M.tackle);
 
-      const attacker = makeActiveForEviolite({ heldItem: null });
-      const defenderNoItem = makeActiveForEviolite({ heldItem: null });
-      const defenderEviolite = makeActiveForEviolite({ heldItem: I.eviolite });
+      const attacker = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.charmander,
+        types: [CORE_TYPE_IDS.fire],
+        heldItem: null,
+      });
+      const defenderNoItem = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.charmander,
+        types: [CORE_TYPE_IDS.fire],
+        heldItem: null,
+      });
+      const defenderEviolite = makeActivePokemon({
+        speciesId: GEN5_SPECIES_IDS.charmander,
+        types: [CORE_TYPE_IDS.fire],
+        heldItem: I.eviolite,
+      });
 
       const ctxNoItem: DamageContext = {
         attacker,
