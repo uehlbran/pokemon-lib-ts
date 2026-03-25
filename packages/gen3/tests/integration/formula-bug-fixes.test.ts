@@ -12,7 +12,22 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+  GEN3_TYPES,
+} from "../../src";
 import { createGen3DataManager } from "../../src/data";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { canInflictGen3Status, Gen3Ruleset } from "../../src/Gen3Ruleset";
@@ -33,6 +48,16 @@ import { canInflictGen3Status, Gen3Ruleset } from "../../src/Gen3Ruleset";
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const GEN3_DATA = createGen3DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS };
+const ITEMS = GEN3_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS };
+const NATURES = GEN3_NATURE_IDS;
+const SPECIES = GEN3_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
 
 function makeRuleset(): Gen3Ruleset {
   return new Gen3Ruleset(createGen3DataManager());
@@ -77,16 +102,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
     nickname: null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: NATURES.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -97,7 +122,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -115,7 +140,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -137,69 +162,37 @@ function createActivePokemon(opts: {
 function createMove(
   type: PokemonType,
   power: number,
-  id = "test-move",
+  id = MOVES.tackle,
   overrides?: Partial<MoveData>,
 ): MoveData {
+  const baseMove = GEN3_DATA.getMove(id);
   return {
+    ...baseMove,
     id,
-    displayName: "Test Move",
+    displayName: baseMove.displayName,
     type,
-    category: "physical",
+    category: overrides?.category ?? baseMove.category,
     power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    accuracy: overrides?.accuracy ?? baseMove.accuracy,
+    pp: overrides?.pp ?? baseMove.pp,
+    priority: overrides?.priority ?? baseMove.priority,
+    target: overrides?.target ?? baseMove.target,
     flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...baseMove.flags,
+      ...overrides?.flags,
     },
-    effect: null,
-    description: "",
+    effect: overrides?.effect ?? baseMove.effect,
+    description: overrides?.description ?? baseMove.description,
     generation: 3,
     ...overrides,
   } as MoveData;
 }
 
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  for (const atk of GEN3_TYPES) {
     chart[atk] = {};
-    for (const def of types) {
+    for (const def of GEN3_TYPES) {
       (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
@@ -245,15 +238,15 @@ describe("Regression #322: Electric-type has NO paralysis immunity in Gen 3", ()
     // Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type
     //   paralysis check. Confirmed by Bulbapedia: "In Generation VI onward,
     //   Electric-type Pokemon are immune to paralysis."
-    const target = createActivePokemon({ types: ["electric"] });
-    expect(canInflictGen3Status("paralysis", target)).toBe(true);
+    const target = createActivePokemon({ types: [TYPES.electric] });
+    expect(canInflictGen3Status(STATUSES.paralysis, target)).toBe(true);
   });
 
   it("given dual Electric/Steel type, when checking if paralysis can be inflicted, then returns true", () => {
     // Source: pret/pokeemerald src/battle_util.c — neither Electric nor Steel has
     //   paralysis immunity in Gen 3. Steel only immunizes against poison.
-    const target = createActivePokemon({ types: ["electric", "steel"] });
-    expect(canInflictGen3Status("paralysis", target)).toBe(true);
+    const target = createActivePokemon({ types: [TYPES.electric, TYPES.steel] });
+    expect(canInflictGen3Status(STATUSES.paralysis, target)).toBe(true);
   });
 });
 
@@ -268,8 +261,8 @@ describe("Regression #323: Pokemon CAN act on wake turn in Gen 3", () => {
     // Source: Bulbapedia — "Starting in Generation III, a Pokemon can attack on the
     //   turn it wakes up."
     const ruleset = makeRuleset();
-    const pokemon = createActivePokemon({ types: ["normal"], status: "sleep" });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    const pokemon = createActivePokemon({ types: [TYPES.normal], status: STATUSES.sleep });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
     const state = {} as BattleState;
 
     const canAct = ruleset.processSleepTurn(pokemon, state);
@@ -280,13 +273,13 @@ describe("Regression #323: Pokemon CAN act on wake turn in Gen 3", () => {
   it("given sleeping Pokemon with 3 turns left, when sleep processed, then returns false (still sleeping)", () => {
     // Source: pret/pokeemerald — counter decrements by 1 (3 -> 2), still sleeping
     const ruleset = makeRuleset();
-    const pokemon = createActivePokemon({ types: ["normal"], status: "sleep" });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    const pokemon = createActivePokemon({ types: [TYPES.normal], status: STATUSES.sleep });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
     const state = {} as BattleState;
 
     const canAct = ruleset.processSleepTurn(pokemon, state);
     expect(canAct).toBe(false);
-    expect(pokemon.pokemon.status).toBe("sleep");
+    expect(pokemon.pokemon.status).toBe(STATUSES.sleep);
   });
 });
 
@@ -301,10 +294,10 @@ describe("Regression #327: Focus Energy gives +1 crit stage in Gen 3", () => {
     // Focus Energy = +1 stage. Stage 0 base -> stage 1 = 1/8 crit rate (denominator 8).
     // rng.int(1, 8) === 1 means crit succeeds.
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ types: ["normal"] });
-    attacker.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    attacker.volatileStatuses.set(MOVES.focusEnergy, { turnsLeft: -1 });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(TYPES.normal, 80, MOVES.slash);
 
     const rng = createMockRng(1);
     const context: CritContext = { attacker, defender, move, rng };
@@ -315,10 +308,10 @@ describe("Regression #327: Focus Energy gives +1 crit stage in Gen 3", () => {
     // Source: pret/pokeemerald — Focus Energy = +1 stage, denominator 8.
     // rng.int(1, 8) returning 4 means no crit (only 1 out of 8 crits).
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ types: ["normal"] });
-    attacker.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    attacker.volatileStatuses.set(MOVES.focusEnergy, { turnsLeft: -1 });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(TYPES.normal, 80, MOVES.slash);
 
     const rng = createMockRng(4);
     const context: CritContext = { attacker, defender, move, rng };
@@ -329,10 +322,10 @@ describe("Regression #327: Focus Energy gives +1 crit stage in Gen 3", () => {
     // Source: pret/pokeemerald — Focus Energy (+1) + critRatio 1 = stage 2 = 1/4
     // If Focus Energy were +2, it would be stage 3 = 1/3, different denominator.
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ types: ["normal"] });
-    attacker.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("normal", 80, "slash", { critRatio: 1 });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    attacker.volatileStatuses.set(MOVES.focusEnergy, { turnsLeft: -1 });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(TYPES.normal, 80, MOVES.slash, { critRatio: 1 });
 
     const rng = createMockRng(1);
     const context: CritContext = { attacker, defender, move, rng };
@@ -354,21 +347,21 @@ describe("Regression #332: Type effectiveness applied sequentially with intermed
     // Fire is SPECIAL in Gen 3 (type-based split), so uses spAttack/spDefense.
     // To get base=7: floor(floor(22*60*20/100)/50)+2 = floor(264/50)+2 = 5+2 = 7
     const typeChart = createTypeChart([
-      ["fire", "grass", 2],
-      ["fire", "water", 0.5],
+      [TYPES.fire, TYPES.grass, 2],
+      [TYPES.fire, TYPES.water, 0.5],
     ]);
 
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 20,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
     const defender = createActivePokemon({
       spDefense: 100,
-      types: ["water", "grass"],
+      types: [TYPES.water, TYPES.grass],
     });
 
-    const move = createMove("fire", 60);
+    const move = createMove(TYPES.fire, 60);
     const rng = createMockRng(100);
 
     const context = createDamageContext({ attacker, defender, move, rng });
@@ -385,21 +378,21 @@ describe("Regression #332: Type effectiveness applied sequentially with intermed
     //
     // To get base=11: floor(floor(22*100*22/100)/50)+2 = floor(484/50)+2 = 9+2 = 11
     const typeChart = createTypeChart([
-      ["fire", "water", 0.5],
-      ["fire", "dragon", 0.5],
+      [TYPES.fire, TYPES.water, 0.5],
+      [TYPES.fire, TYPES.dragon, 0.5],
     ]);
 
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 22,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
     const defender = createActivePokemon({
       spDefense: 100,
-      types: ["water", "dragon"],
+      types: [TYPES.water, TYPES.dragon],
     });
 
-    const move = createMove("fire", 100);
+    const move = createMove(TYPES.fire, 100);
     const rng = createMockRng(100);
 
     const context = createDamageContext({ attacker, defender, move, rng });
@@ -431,16 +424,16 @@ describe("Regression #334: Thick Fat applied before stat stages", () => {
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 151,
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { spAttack: 1 },
     });
     const defender = createActivePokemon({
       spDefense: 50,
-      types: ["normal"],
-      ability: "thick-fat",
+      types: [TYPES.normal],
+      ability: ABILITIES.thickFat,
     });
 
-    const move = createMove("fire", 80);
+    const move = createMove(TYPES.fire, 80);
     const rng = createMockRng(100);
 
     const context = createDamageContext({ attacker, defender, move, rng });
@@ -463,16 +456,16 @@ describe("Regression #334: Thick Fat applied before stat stages", () => {
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 150,
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { spAttack: 1 },
     });
     const defender = createActivePokemon({
       spDefense: 50,
-      types: ["normal"],
-      ability: "thick-fat",
+      types: [TYPES.normal],
+      ability: ABILITIES.thickFat,
     });
 
-    const move = createMove("ice", 80);
+    const move = createMove(TYPES.ice, 80);
     const rng = createMockRng(100);
 
     const context = createDamageContext({ attacker, defender, move, rng });
@@ -494,9 +487,9 @@ describe("Regression #337: BrightPowder and Lax Incense reduce accuracy", () => 
     //   HOLD_EFFECT_EVASION_UP: calc = calc * (100-10) / 100 = calc * 90/100
     // Base acc 100 at stage 0: calc = 100. After BrightPowder: floor(100*90/100) = 90.
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "bright-powder" });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal], heldItem: ITEMS.brightPowder });
+    const move = createMove(TYPES.normal, 80, MOVES.slash);
     const state = { weather: null } as BattleState;
 
     const rng = createMockRng(90);
@@ -507,9 +500,9 @@ describe("Regression #337: BrightPowder and Lax Incense reduce accuracy", () => 
   it("given defender holds BrightPowder and move accuracy 100, when roll=91, then misses (91>90)", () => {
     // Source: pret/pokeemerald — same as above, roll 91 > 90 means miss.
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "bright-powder" });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal], heldItem: ITEMS.brightPowder });
+    const move = createMove(TYPES.normal, 80);
     const state = { weather: null } as BattleState;
 
     const rng = createMockRng(91);
@@ -521,9 +514,9 @@ describe("Regression #337: BrightPowder and Lax Incense reduce accuracy", () => 
     // Source: pret/pokeemerald — Lax Incense has same HOLD_EFFECT_EVASION_UP as BrightPowder
     // Source: Bulbapedia — "Lax Incense lowers the opponent's accuracy by 10%"
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "lax-incense" });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal], heldItem: ITEMS.laxIncense });
+    const move = createMove(TYPES.normal, 80);
     const state = { weather: null } as BattleState;
 
     const rng = createMockRng(91);
@@ -543,9 +536,9 @@ describe("Regression #341: Uproar in end-of-turn order", () => {
     const ruleset = makeRuleset();
     const order = ruleset.getEndOfTurnOrder();
 
-    const perishIdx = order.indexOf("perish-song");
-    const uproarIdx = order.indexOf("uproar");
-    const speedBoostIdx = order.indexOf("speed-boost");
+    const perishIdx = order.indexOf(MOVES.perishSong);
+    const uproarIdx = order.indexOf(VOLATILES.uproar);
+    const speedBoostIdx = order.indexOf(ABILITIES.speedBoost);
 
     expect(uproarIdx).toBeGreaterThan(-1);
     expect(uproarIdx).toBeGreaterThan(perishIdx);
@@ -585,7 +578,7 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
    */
 
   function makeOhkoMove(): MoveData {
-    return createMove("normal", 0, "fissure", {
+    return createMove(TYPES.normal, 0, MOVES.fissure, {
       accuracy: 30, // base accuracy for OHKO moves (Fissure, Horn Drill, Guillotine)
       effect: { type: "ohko" },
     });
@@ -595,8 +588,8 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
     // Source: pret/pokeemerald src/battle_script_commands.c:7525-7526
     // Derivation: ohkoAccuracy = 30 + (50 - 40) = 40; hit if roll < 40 → roll 39 < 40 → hits
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
-    const defender = createActivePokemon({ level: 40, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 50, types: [TYPES.normal] });
+    const defender = createActivePokemon({ level: 40, types: [TYPES.normal] });
     const move = makeOhkoMove();
     const state = { weather: null } as BattleState;
 
@@ -609,8 +602,8 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
     // Source: pret/pokeemerald src/battle_script_commands.c:7526 — "< chance" is strict
     // Derivation: ohkoAccuracy = 30 + (50 - 40) = 40; hit if roll < 40 → roll 40 is NOT < 40 → misses
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
-    const defender = createActivePokemon({ level: 40, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 50, types: [TYPES.normal] });
+    const defender = createActivePokemon({ level: 40, types: [TYPES.normal] });
     const move = makeOhkoMove();
     const state = { weather: null } as BattleState;
 
@@ -623,8 +616,8 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
     // Source: pret/pokeemerald src/battle_script_commands.c:7526 — "attackerLevel >= defenderLevel" condition
     // Derivation: 40 < 50 → auto-miss regardless of roll; roll=1 still misses
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ level: 40, types: ["normal"] });
-    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 40, types: [TYPES.normal] });
+    const defender = createActivePokemon({ level: 50, types: [TYPES.normal] });
     const move = makeOhkoMove();
     const state = { weather: null } as BattleState;
 
@@ -637,8 +630,8 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
     // Source: pret/pokeemerald src/battle_script_commands.c:7526 — auto-miss enforced at exact level boundary
     // Derivation: 49 < 50 → auto-miss regardless of roll
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ level: 49, types: ["normal"] });
-    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 49, types: [TYPES.normal] });
+    const defender = createActivePokemon({ level: 50, types: [TYPES.normal] });
     const move = makeOhkoMove();
     const state = { weather: null } as BattleState;
 
@@ -651,8 +644,8 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
     // Source: pret/pokeemerald src/battle_script_commands.c:7525-7526
     // Derivation: ohkoAccuracy = 30 + (50 - 50) = 30; hit if roll < 30 → roll 29 < 30 → hits
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
-    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 50, types: [TYPES.normal] });
+    const defender = createActivePokemon({ level: 50, types: [TYPES.normal] });
     const move = makeOhkoMove();
     const state = { weather: null } as BattleState;
 
@@ -665,8 +658,8 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
     // Source: pret/pokeemerald src/battle_script_commands.c:7526 — strict less-than check
     // Derivation: ohkoAccuracy = 30 + (50 - 50) = 30; hit if roll < 30 → roll 30 NOT < 30 → misses
     const ruleset = makeRuleset();
-    const attacker = createActivePokemon({ level: 50, types: ["normal"] });
-    const defender = createActivePokemon({ level: 50, types: ["normal"] });
+    const attacker = createActivePokemon({ level: 50, types: [TYPES.normal] });
+    const defender = createActivePokemon({ level: 50, types: [TYPES.normal] });
     const move = makeOhkoMove();
     const state = { weather: null } as BattleState;
 
