@@ -1,9 +1,20 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { getGen1CritRate } from "../../src/Gen1CritCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_NATURE_IDS, GEN1_SPECIES_IDS } from "../../src";
 
 /**
  * Gen 1 Mechanics Regression Tests — Bughunt Audit
@@ -19,6 +30,18 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // ---------------------------------------------------------------------------
 
 const ruleset = new Gen1Ruleset();
+const DATA_MANAGER = createGen1DataManager();
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = CORE_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN1_MOVE_IDS } as const;
+const SPECIES = GEN1_SPECIES_IDS;
+const STATUS = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN1_NATURE_IDS.hardy;
+
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const HYPER_BEAM = DATA_MANAGER.getMove(MOVES.hyperBeam);
 
 const DEFAULT_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -42,19 +65,8 @@ const DEFAULT_FLAGS: MoveData["flags"] = {
 
 function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
-    id: "tackle",
-    displayName: "Tackle",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    ...TACKLE,
     flags: DEFAULT_FLAGS,
-    effect: null,
-    description: "A move.",
-    generation: 1,
     ...overrides,
   };
 }
@@ -63,19 +75,19 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
       currentHp: 100,
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: ABILITIES.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -83,7 +95,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -105,8 +117,8 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: [TYPES.electric] as PokemonType[],
+    ability: ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -307,7 +319,7 @@ describe("Gen 1 permanent freeze", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "freeze",
+        status: STATUS.freeze,
       } as PokemonInstance,
     });
     const rng = new SeededRandom(1);
@@ -324,7 +336,7 @@ describe("Gen 1 permanent freeze", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "freeze",
+        status: STATUS.freeze,
       } as PokemonInstance,
     });
     const rng = new SeededRandom(999);
@@ -334,10 +346,10 @@ describe("Gen 1 permanent freeze", () => {
     }
   });
 
-  it("given Gen 1 end-of-turn order, when retrieved, then does not include 'defrost' effect", () => {
+  it(`given Gen 1 end-of-turn order, when retrieved, then does not include ${VOLATILES.defrost} effect`, () => {
     // Source: pret/pokered — no thaw step in Gen 1 EoT processing
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).not.toContain("defrost");
+    expect(order).not.toContain(VOLATILES.defrost);
   });
 });
 
@@ -352,9 +364,9 @@ describe("Gen 1 sleep counter — cannot act on wake turn", () => {
     //   .sleepDone: sets 'enemy can't move this turn' → cannot act
     // Gen 1: wake turn wastes the action. Return false = cannot act.
     const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: "sleep" } as PokemonInstance,
+      pokemon: { ...makeActivePokemon().pokemon, status: STATUS.sleep } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
 
     const state = makeBattleState();
     const canAct = ruleset.processSleepTurn(pokemon, state);
@@ -368,17 +380,17 @@ describe("Gen 1 sleep counter — cannot act on wake turn", () => {
     // Source: pret/pokered — dec a decrements the sleep counter before the zero check
     // Returning false means the Pokemon cannot act this turn.
     const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: "sleep" } as PokemonInstance,
+      pokemon: { ...makeActivePokemon().pokemon, status: STATUS.sleep } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
 
     const state = makeBattleState();
     const canAct = ruleset.processSleepTurn(pokemon, state);
 
     expect(canAct).toBe(false);
-    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+    expect(pokemon.volatileStatuses.get(VOLATILES.sleepCounter)?.turnsLeft).toBe(2);
     // Status remains sleep (not yet at 0)
-    expect(pokemon.pokemon.status).toBe("sleep");
+    expect(pokemon.pokemon.status).toBe(STATUS.sleep);
   });
 
   it("given sleep duration rolled by rollSleepTurns, when result is verified, then range is 1-7 (Gen 1 range)", () => {
@@ -410,7 +422,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "badly-poisoned",
+        status: STATUS.badlyPoisoned,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -421,10 +433,10 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
         },
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 1 } });
+    pokemon.volatileStatuses.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 1 } });
 
     const state = makeBattleState();
-    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS.badlyPoisoned, state);
 
     // 1/16 of 160 = 10
     expect(damage).toBe(10);
@@ -436,7 +448,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "badly-poisoned",
+        status: STATUS.badlyPoisoned,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -447,10 +459,10 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
         },
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 3 } });
+    pokemon.volatileStatuses.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } });
 
     const state = makeBattleState();
-    const damage = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS.badlyPoisoned, state);
 
     // 3/16 of 160 = 30
     expect(damage).toBe(30);
@@ -461,7 +473,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "badly-poisoned",
+        status: STATUS.badlyPoisoned,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -473,10 +485,10 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
       } as PokemonInstance,
     });
     const counterState = { turnsLeft: -1, data: { counter: 2 } };
-    pokemon.volatileStatuses.set("toxic-counter", counterState);
+    pokemon.volatileStatuses.set(VOLATILES.toxicCounter, counterState);
 
     const state = makeBattleState();
-    ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    ruleset.applyStatusDamage(pokemon, STATUS.badlyPoisoned, state);
 
     // Counter should have incremented to 3
     expect(counterState.data.counter).toBe(3);
@@ -487,7 +499,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "poison",
+        status: STATUS.poison,
         calculatedStats: {
           hp: 160,
           attack: 80,
@@ -501,7 +513,7 @@ describe("Gen 1 Toxic counter shared with burn/poison/Leech Seed", () => {
     // No toxic-counter volatile
 
     const state = makeBattleState();
-    const damage = ruleset.applyStatusDamage(pokemon, "poison", state);
+    const damage = ruleset.applyStatusDamage(pokemon, STATUS.poison, state);
 
     // Standard poison: 1/16 of 160 = 10
     expect(damage).toBe(10);
@@ -519,16 +531,16 @@ describe("Gen 1 Toxic counter reset on switch-out", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "badly-poisoned",
+        status: STATUS.badlyPoisoned,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 5 } });
+    pokemon.volatileStatuses.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 5 } });
 
     const state = makeBattleState();
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.pokemon.status).toBe("poison");
-    expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
+    expect(pokemon.pokemon.status).toBe(STATUS.poison);
+    expect(pokemon.volatileStatuses.has(VOLATILES.toxicCounter)).toBe(false);
   });
 
   it("given a burned Pokemon that switches out, when onSwitchOut is called, then burn status is preserved (burn does not reset on switch)", () => {
@@ -536,14 +548,14 @@ describe("Gen 1 Toxic counter reset on switch-out", () => {
     const pokemon = makeActivePokemon({
       pokemon: {
         ...makeActivePokemon().pokemon,
-        status: "burn",
+        status: STATUS.burn,
       } as PokemonInstance,
     });
 
     const state = makeBattleState();
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.pokemon.status).toBe("burn");
+    expect(pokemon.pokemon.status).toBe(STATUS.burn);
   });
 });
 
@@ -557,7 +569,7 @@ describe("Gen 1 paralysis full-para chance", () => {
     // The check is: BattleRandom; cp 25PERCENT; ret nc — paralysis if A < 63
     const rng = new SeededRandom(777);
     const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: "paralysis" } as PokemonInstance,
+      pokemon: { ...makeActivePokemon().pokemon, status: STATUS.paralysis } as PokemonInstance,
     });
 
     let paralyzedCount = 0;
@@ -593,8 +605,7 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
     });
 
     const hyperBeamMove = makeMove({
-      id: "hyper-beam",
-      power: 150,
+      ...HYPER_BEAM,
       flags: { ...DEFAULT_FLAGS, recharge: true },
     });
 
@@ -623,8 +634,7 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
     });
 
     const hyperBeamMove = makeMove({
-      id: "hyper-beam",
-      power: 150,
+      ...HYPER_BEAM,
       flags: { ...DEFAULT_FLAGS, recharge: true },
     });
 
@@ -654,8 +664,7 @@ describe("Gen 1 Hyper Beam recharge skip on KO", () => {
     });
 
     const hyperBeamMove = makeMove({
-      id: "hyper-beam",
-      power: 150,
+      ...HYPER_BEAM,
       flags: { ...DEFAULT_FLAGS, recharge: true },
     });
 
