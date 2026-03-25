@@ -220,7 +220,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given an ice-type target, when freeze is inflicted, then freeze is not applied (ice immunity)", () => {
@@ -233,7 +233,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a poison-type target, when poison is inflicted, then poison is not applied (poison immunity)", () => {
@@ -246,7 +246,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a poison-type target, when badly-poisoned is inflicted, then badly-poisoned is not applied (poison immunity)", () => {
@@ -259,7 +259,7 @@ describe("Gen1Ruleset canInflictStatus (via executeMoveEffect)", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given an electric-type target, when paralysis is inflicted, then paralysis IS applied (Gen 1 quirk)", () => {
@@ -553,7 +553,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
     expect(result.statChanges).toEqual([]);
     expect(result.recoilDamage).toBe(0);
     expect(result.healAmount).toBe(0);
@@ -586,7 +586,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a status-chance effect, when target already has a status, then does not inflict new status", () => {
@@ -606,7 +606,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert: Already has paralysis, can't add burn
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a status-chance effect for burn, when target is fire-type, then status immunity prevents infliction", () => {
@@ -619,7 +619,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   // --- status-guaranteed effect ---
@@ -641,7 +641,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a status-guaranteed effect for freeze on ice-type, when executing, then immunity prevents infliction", () => {
@@ -654,7 +654,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   // --- stat-change effect ---
@@ -859,7 +859,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert: These are handled by damage calculation, not by move effects
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
     expect(result.recoilDamage).toBe(0);
   });
 
@@ -872,7 +872,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given an ohko effect, when executing, then no side-effects are recorded", () => {
@@ -884,7 +884,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a damage effect, when executing, then no side-effects are recorded", () => {
@@ -896,7 +896,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a volatile-status (confusion) effect, when executing, then no primary status is inflicted", () => {
@@ -908,7 +908,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a weather effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
@@ -920,7 +920,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a terrain effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
@@ -932,7 +932,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given an entry-hazard effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
@@ -944,7 +944,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a remove-hazards effect, when executing, then no side-effects are recorded", () => {
@@ -956,7 +956,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a screen effect, when executing, then no side-effects are recorded", () => {
@@ -968,7 +968,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a multi-hit effect, when executing, then no side-effects are recorded", () => {
@@ -980,7 +980,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a two-turn effect, when executing, then no side-effects are recorded", () => {
@@ -992,7 +992,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a switch-out effect, when executing, then no side-effects are recorded (engine-handled)", () => {
@@ -1016,7 +1016,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 
   it("given a custom effect, when executing, then no side-effects are recorded", () => {
@@ -1028,7 +1028,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Act
     const result = ruleset.executeMoveEffect(ctx);
     // Assert
-    expect(result.statusInflicted).toBeNull();
+    expect(result.statusInflicted).toBe(null);
   });
 });
 
@@ -1992,7 +1992,7 @@ describe("Gen1Ruleset no-op methods", () => {
   });
 
   it("given Gen1Ruleset, when calling getBattleGimmick, then returns null", () => {
-    expect(ruleset.getBattleGimmick("mega")).toBeNull();
+    expect(ruleset.getBattleGimmick("mega")).toBe(null);
   });
 
   it("given Gen1Ruleset, when calling getAvailableHazards, then returns empty array", () => {

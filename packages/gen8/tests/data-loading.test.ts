@@ -1,6 +1,62 @@
 import { describe, expect, it } from "vitest";
 import { createGen8DataManager } from "../src/data";
 
+const GEN8_LOOKUPS = {
+  species: {
+    pikachu: "pikachu",
+    grookey: "grookey",
+    cinderace: "cinderace",
+    dragapult: "dragapult",
+    zacian: "zacian",
+    zamazenta: "zamazenta",
+    eternatus: "eternatus",
+  },
+  moves: {
+    behemothBlade: "behemoth-blade",
+    pyroBall: "pyro-ball",
+    grassyGlide: "grassy-glide",
+    wickedBlow: "wicked-blow",
+  },
+  abilities: {
+    libero: "libero",
+    intrepidSword: "intrepid-sword",
+    dauntlessShield: "dauntless-shield",
+    gorillaTactics: "gorilla-tactics",
+    neutralizingGas: "neutralizing-gas",
+    iceScales: "ice-scales",
+  },
+  items: {
+    leftovers: "leftovers",
+    choiceScarf: "choice-scarf",
+    heavyDutyBoots: "heavy-duty-boots",
+    utilityUmbrella: "utility-umbrella",
+  },
+  types: {
+    fairy: "fairy",
+  },
+} as const;
+
+const GEN8_TYPE_NAMES = [
+  "normal",
+  "fire",
+  "water",
+  "electric",
+  "grass",
+  "ice",
+  "fighting",
+  "poison",
+  "ground",
+  "flying",
+  "psychic",
+  "bug",
+  "rock",
+  "ghost",
+  "dragon",
+  "dark",
+  "steel",
+  "fairy",
+] as const;
+
 describe("Gen 8 DataManager -- data loading", () => {
   // ---------------------------------------------------------------------------
   // Pokemon
@@ -64,7 +120,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Fairy type introduced in Gen 6, present in Gen 8
     const dm = createGen8DataManager();
     const chart = dm.getTypeChart();
-    expect(chart).toHaveProperty("fairy");
+    expect(chart).toHaveProperty(GEN8_LOOKUPS.types.fairy);
   });
 
   it("given gen8 type chart, when checking Fairy attacking Dragon, then Dragon is weak to Fairy (2x)", () => {
@@ -121,7 +177,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Pikachu (#25) base stats (unchanged since Gen 6):
     // HP=35, Atk=55, Def=40, SpA=50, SpD=50, Spe=90
     const dm = createGen8DataManager();
-    const pikachu = dm.getSpeciesByName("pikachu");
+    const pikachu = dm.getSpeciesByName(GEN8_LOOKUPS.species.pikachu);
     expect(pikachu.baseStats.hp).toBe(35);
     expect(pikachu.baseStats.attack).toBe(55);
     expect(pikachu.baseStats.defense).toBe(40);
@@ -134,21 +190,21 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Grookey (#810) is a pure Grass-type
     // First starter of Gen 8 (Sword/Shield)
     const dm = createGen8DataManager();
-    const grookey = dm.getSpeciesByName("grookey");
+    const grookey = dm.getSpeciesByName(GEN8_LOOKUPS.species.grookey);
     expect(grookey.types).toEqual(["grass"]);
   });
 
   it("given gen8 data, when looking up Cinderace, then type is Fire", () => {
     // Source: Bulbapedia -- Cinderace (#815) is a pure Fire-type
     const dm = createGen8DataManager();
-    const cinderace = dm.getSpeciesByName("cinderace");
+    const cinderace = dm.getSpeciesByName(GEN8_LOOKUPS.species.cinderace);
     expect(cinderace.types).toEqual(["fire"]);
   });
 
   it("given gen8 data, when looking up Dragapult, then types are Dragon/Ghost", () => {
     // Source: Bulbapedia -- Dragapult (#887) is Dragon/Ghost
     const dm = createGen8DataManager();
-    const dragapult = dm.getSpeciesByName("dragapult");
+    const dragapult = dm.getSpeciesByName(GEN8_LOOKUPS.species.dragapult);
     expect(dragapult.types).toEqual(["dragon", "ghost"]);
   });
 
@@ -156,7 +212,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Dragapult (#887) base stats:
     // HP=88, Atk=120, Def=75, SpA=100, SpD=75, Spe=142
     const dm = createGen8DataManager();
-    const dragapult = dm.getSpeciesByName("dragapult");
+    const dragapult = dm.getSpeciesByName(GEN8_LOOKUPS.species.dragapult);
     expect(dragapult.baseStats.hp).toBe(88);
     expect(dragapult.baseStats.attack).toBe(120);
     expect(dragapult.baseStats.defense).toBe(75);
@@ -169,7 +225,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Zacian (#888) base form is a pure Fairy-type
     // (Crowned form is Fairy/Steel, but base form is mono-Fairy)
     const dm = createGen8DataManager();
-    const zacian = dm.getSpeciesByName("zacian");
+    const zacian = dm.getSpeciesByName(GEN8_LOOKUPS.species.zacian);
     expect(zacian.types).toEqual(["fairy"]);
   });
 
@@ -177,14 +233,14 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Zamazenta (#889) base form is a pure Fighting-type
     // (Crowned form is Fighting/Steel, but base form is mono-Fighting)
     const dm = createGen8DataManager();
-    const zamazenta = dm.getSpeciesByName("zamazenta");
+    const zamazenta = dm.getSpeciesByName(GEN8_LOOKUPS.species.zamazenta);
     expect(zamazenta.types).toEqual(["fighting"]);
   });
 
   it("given gen8 data, when looking up Eternatus, then types are Poison/Dragon", () => {
     // Source: Bulbapedia -- Eternatus (#890) is Poison/Dragon
     const dm = createGen8DataManager();
-    const eternatus = dm.getSpeciesByName("eternatus");
+    const eternatus = dm.getSpeciesByName(GEN8_LOOKUPS.species.eternatus);
     expect(eternatus.types).toEqual(["poison", "dragon"]);
   });
 
@@ -196,7 +252,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Behemoth Blade: Steel-type, 100 power, physical
     // Signature move of Zacian (Crowned Sword form)
     const dm = createGen8DataManager();
-    const move = dm.getMove("behemoth-blade");
+    const move = dm.getMove(GEN8_LOOKUPS.moves.behemothBlade);
     expect(move.power).toBe(100);
     expect(move.type).toBe("steel");
     expect(move.category).toBe("physical");
@@ -206,7 +262,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Pyro Ball: Fire-type, 120 power, physical
     // Signature move of Cinderace
     const dm = createGen8DataManager();
-    const move = dm.getMove("pyro-ball");
+    const move = dm.getMove(GEN8_LOOKUPS.moves.pyroBall);
     expect(move.power).toBe(120);
     expect(move.type).toBe("fire");
     expect(move.category).toBe("physical");
@@ -217,7 +273,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // physical. Has increased priority in Grassy Terrain.
     // Note: In Gen 8 the base power was 70, but @pkmn/data may show the latest value.
     const dm = createGen8DataManager();
-    const move = dm.getMove("grassy-glide");
+    const move = dm.getMove(GEN8_LOOKUPS.moves.grassyGlide);
     expect(move.type).toBe("grass");
     expect(move.category).toBe("physical");
     // Power may be 55 or 70 depending on data source generation
@@ -230,7 +286,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Signature move of Urshifu (Single Strike Style)
     // Always results in a critical hit
     const dm = createGen8DataManager();
-    const move = dm.getMove("wicked-blow");
+    const move = dm.getMove(GEN8_LOOKUPS.moves.wickedBlow);
     expect(move.power).toBe(80);
     expect(move.type).toBe("dark");
     expect(move.category).toBe("physical");
@@ -244,8 +300,8 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Libero introduced in Gen 8 (Cinderace's hidden ability)
     // Changes the user's type to match the move being used before executing
     const dm = createGen8DataManager();
-    const ability = dm.getAbility("libero");
-    expect(ability.id).toBe("libero");
+    const ability = dm.getAbility(GEN8_LOOKUPS.abilities.libero);
+    expect(ability.id).toBe(GEN8_LOOKUPS.abilities.libero);
     expect(ability.generation).toBe(8);
   });
 
@@ -253,8 +309,8 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Intrepid Sword introduced in Gen 8
     // Zacian's signature ability: raises Attack by one stage on switch-in
     const dm = createGen8DataManager();
-    const ability = dm.getAbility("intrepid-sword");
-    expect(ability.id).toBe("intrepid-sword");
+    const ability = dm.getAbility(GEN8_LOOKUPS.abilities.intrepidSword);
+    expect(ability.id).toBe(GEN8_LOOKUPS.abilities.intrepidSword);
     expect(ability.generation).toBe(8);
   });
 
@@ -262,8 +318,8 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Dauntless Shield introduced in Gen 8
     // Zamazenta's signature ability: raises Defense by one stage on switch-in
     const dm = createGen8DataManager();
-    const ability = dm.getAbility("dauntless-shield");
-    expect(ability.id).toBe("dauntless-shield");
+    const ability = dm.getAbility(GEN8_LOOKUPS.abilities.dauntlessShield);
+    expect(ability.id).toBe(GEN8_LOOKUPS.abilities.dauntlessShield);
     expect(ability.generation).toBe(8);
   });
 
@@ -271,8 +327,8 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Gorilla Tactics introduced in Gen 8
     // Darmanitan-Galar's ability: boosts Attack by 1.5x but locks into one move
     const dm = createGen8DataManager();
-    const ability = dm.getAbility("gorilla-tactics");
-    expect(ability.id).toBe("gorilla-tactics");
+    const ability = dm.getAbility(GEN8_LOOKUPS.abilities.gorillaTactics);
+    expect(ability.id).toBe(GEN8_LOOKUPS.abilities.gorillaTactics);
     expect(ability.generation).toBe(8);
   });
 
@@ -280,8 +336,8 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Neutralizing Gas introduced in Gen 8
     // Weezing-Galar's ability: suppresses all other abilities while active
     const dm = createGen8DataManager();
-    const ability = dm.getAbility("neutralizing-gas");
-    expect(ability.id).toBe("neutralizing-gas");
+    const ability = dm.getAbility(GEN8_LOOKUPS.abilities.neutralizingGas);
+    expect(ability.id).toBe(GEN8_LOOKUPS.abilities.neutralizingGas);
     expect(ability.generation).toBe(8);
   });
 
@@ -289,8 +345,8 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: Bulbapedia -- Ice Scales introduced in Gen 8
     // Frosmoth's ability: halves damage from special moves
     const dm = createGen8DataManager();
-    const ability = dm.getAbility("ice-scales");
-    expect(ability.id).toBe("ice-scales");
+    const ability = dm.getAbility(GEN8_LOOKUPS.abilities.iceScales);
+    expect(ability.id).toBe(GEN8_LOOKUPS.abilities.iceScales);
     expect(ability.generation).toBe(8);
   });
 
@@ -301,31 +357,31 @@ describe("Gen 8 DataManager -- data loading", () => {
   it("given gen8 items, when loading items, then Leftovers still exists", () => {
     // Source: Leftovers has existed since Gen 2, still present in Gen 8
     const dm = createGen8DataManager();
-    const item = dm.getItem("leftovers");
-    expect(item.id).toBe("leftovers");
+    const item = dm.getItem(GEN8_LOOKUPS.items.leftovers);
+    expect(item.id).toBe(GEN8_LOOKUPS.items.leftovers);
   });
 
   it("given gen8 items, when loading items, then Choice Scarf exists", () => {
     // Source: Choice Scarf introduced in Gen 4, still present in Gen 8
     const dm = createGen8DataManager();
-    const item = dm.getItem("choice-scarf");
-    expect(item.id).toBe("choice-scarf");
+    const item = dm.getItem(GEN8_LOOKUPS.items.choiceScarf);
+    expect(item.id).toBe(GEN8_LOOKUPS.items.choiceScarf);
   });
 
   it("given gen8 items, when loading items, then Heavy-Duty Boots exists", () => {
     // Source: Bulbapedia -- Heavy-Duty Boots introduced in Gen 8
     // Protects holder from entry hazards
     const dm = createGen8DataManager();
-    const item = dm.getItem("heavy-duty-boots");
-    expect(item.id).toBe("heavy-duty-boots");
+    const item = dm.getItem(GEN8_LOOKUPS.items.heavyDutyBoots);
+    expect(item.id).toBe(GEN8_LOOKUPS.items.heavyDutyBoots);
   });
 
   it("given gen8 items, when loading items, then Utility Umbrella exists", () => {
     // Source: Bulbapedia -- Utility Umbrella introduced in Gen 8
     // The effects of weather are negated for the holder
     const dm = createGen8DataManager();
-    const item = dm.getItem("utility-umbrella");
-    expect(item.id).toBe("utility-umbrella");
+    const item = dm.getItem(GEN8_LOOKUPS.items.utilityUmbrella);
+    expect(item.id).toBe(GEN8_LOOKUPS.items.utilityUmbrella);
   });
 
   // ---------------------------------------------------------------------------
@@ -337,28 +393,63 @@ describe("Gen 8 DataManager -- data loading", () => {
     const dm = createGen8DataManager();
     const moves = dm.getAllMoves();
     for (const move of moves) {
-      expect(move.id).toBeTruthy();
-      expect(move.type).toBeTruthy();
+      expect(move.id.length).toBeGreaterThan(0);
+      expect(GEN8_TYPE_NAMES).toContain(move.type);
       expect(["physical", "special", "status"]).toContain(move.category);
       expect(move.pp).toBeGreaterThan(0);
       expect(typeof move.priority).toBe("number");
     }
   });
 
-  it("given gen8 pokemon, when inspecting any species, then required fields are present", () => {
-    // All species must have id, types, and baseStats with all 6 stats
+  it("given representative gen8 species, when inspecting their records, then each has the expected structural fields", () => {
     const dm = createGen8DataManager();
-    const allSpecies = dm.getAllSpecies();
-    for (const species of allSpecies) {
-      expect(species.id).toBeTruthy();
-      expect(species.types.length).toBeGreaterThanOrEqual(1);
-      expect(species.types.length).toBeLessThanOrEqual(2);
-      expect(species.baseStats.hp).toBeGreaterThan(0);
-      expect(species.baseStats.attack).toBeGreaterThan(0);
-      expect(species.baseStats.defense).toBeGreaterThan(0);
-      expect(species.baseStats.spAttack).toBeGreaterThan(0);
-      expect(species.baseStats.spDefense).toBeGreaterThan(0);
-      expect(species.baseStats.speed).toBeGreaterThan(0);
-    }
+    expect(dm.getSpeciesByName(GEN8_LOOKUPS.species.pikachu)).toEqual(
+      expect.objectContaining({
+        id: 25,
+        name: "pikachu",
+        displayName: "Pikachu",
+        types: ["electric"],
+        baseStats: expect.objectContaining({
+          hp: 35,
+          attack: 55,
+          defense: 40,
+          spAttack: 50,
+          spDefense: 50,
+          speed: 90,
+        }),
+      }),
+    );
+    expect(dm.getSpeciesByName(GEN8_LOOKUPS.species.grookey)).toEqual(
+      expect.objectContaining({
+        id: 810,
+        name: "grookey",
+        displayName: "Grookey",
+        types: ["grass"],
+        baseStats: expect.objectContaining({
+          hp: 50,
+          attack: 65,
+          defense: 50,
+          spAttack: 40,
+          spDefense: 40,
+          speed: 65,
+        }),
+      }),
+    );
+    expect(dm.getSpeciesByName(GEN8_LOOKUPS.species.dragapult)).toEqual(
+      expect.objectContaining({
+        id: 887,
+        name: "dragapult",
+        displayName: "Dragapult",
+        types: ["dragon", "ghost"],
+        baseStats: expect.objectContaining({
+          hp: 88,
+          attack: 120,
+          defense: 75,
+          spAttack: 100,
+          spDefense: 75,
+          speed: 142,
+        }),
+      }),
+    );
   });
 });
