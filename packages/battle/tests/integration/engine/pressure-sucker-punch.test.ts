@@ -1,5 +1,7 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -24,8 +26,8 @@ function createEngine(overrides?: {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 },
+        createMockMoveSlot(CORE_MOVE_IDS.tackle),
+        createMockMoveSlot(CORE_MOVE_IDS.swordsDance),
       ],
       calculatedStats: {
         hp: 200,
@@ -43,7 +45,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -98,11 +100,11 @@ describe("Bug #309 — Pressure + self-target moves", () => {
 
     // Find the call where defender is null — that's the Swords Dance call
     const swordsDanceCall = getPPCostSpy.mock.calls.find((call) => call[1] === null);
-    expect(swordsDanceCall).toBeDefined();
+    expect(swordsDanceCall?.[1]).toBeNull();
 
     // Find the call where defender is not null — that's the Tackle call
     const tackleCall = getPPCostSpy.mock.calls.find((call) => call[1] !== null);
-    expect(tackleCall).toBeDefined();
+    expect(tackleCall?.[1]).not.toBeNull();
   });
 
   it("given opponent has Pressure ability, when attacker uses Tackle (opponent-targeting), then getPPCost receives the opponent as defender", () => {
@@ -130,16 +132,16 @@ describe("Bug #309 — Pressure + self-target moves", () => {
     const ruleset = new MockRuleset();
     // Override getPPCost to simulate Pressure — return 2 when defender has pressure
     vi.spyOn(ruleset, "getPPCost").mockImplementation((_actor, defender, _state) => {
-      return defender?.ability === "pressure" ? 2 : 1;
+      return defender?.ability === CORE_ABILITY_IDS.pressure ? 2 : 1;
     });
 
     const { engine } = createEngine({ ruleset });
     engine.start();
 
-    // Set the opponent's ability to "pressure"
+    // Set the opponent's ability to CORE_ABILITY_IDS.pressure
     const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
-    active1!.ability = "pressure";
+    active1!.ability = CORE_ABILITY_IDS.pressure;
 
     // The attacker has Swords Dance at moveIndex 1
     const active0 = engine.state.sides[0].active[0];
@@ -161,16 +163,16 @@ describe("Bug #309 — Pressure + self-target moves", () => {
     // Arrange — same Pressure simulation as above
     const ruleset = new MockRuleset();
     vi.spyOn(ruleset, "getPPCost").mockImplementation((_actor, defender, _state) => {
-      return defender?.ability === "pressure" ? 2 : 1;
+      return defender?.ability === CORE_ABILITY_IDS.pressure ? 2 : 1;
     });
 
     const { engine } = createEngine({ ruleset });
     engine.start();
 
-    // Set the opponent's ability to "pressure"
+    // Set the opponent's ability to CORE_ABILITY_IDS.pressure
     const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
-    active1!.ability = "pressure";
+    active1!.ability = CORE_ABILITY_IDS.pressure;
 
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
@@ -205,7 +207,7 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     const ruleset = new MockRuleset();
     vi.spyOn(ruleset, "getPPCost").mockImplementation((_actor, defender, _state) => {
       // Simulate Pressure: cost 2 when defender is non-null (opponent targeted)
-      return defender?.ability === "pressure" ? 2 : 1;
+      return defender?.ability === CORE_ABILITY_IDS.pressure ? 2 : 1;
     });
 
     const team1 = [
@@ -213,8 +215,8 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
         uid: "charizard-1",
         nickname: "Charizard",
         moves: [
-          { moveId: "stealth-rock", currentPP: 20, maxPP: 20, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          createMockMoveSlot(CORE_MOVE_IDS.stealthRock),
+          createMockMoveSlot(CORE_MOVE_IDS.tackle),
         ],
         calculatedStats: {
           hp: 200,
@@ -234,7 +236,7 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     // Set opponent's ability to Pressure
     const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
-    active1!.ability = "pressure";
+    active1!.ability = CORE_ABILITY_IDS.pressure;
 
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
@@ -255,7 +257,7 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     // Arrange — create a Pokemon with gravity and a Pressure opponent
     const ruleset = new MockRuleset();
     vi.spyOn(ruleset, "getPPCost").mockImplementation((_actor, defender, _state) => {
-      return defender?.ability === "pressure" ? 2 : 1;
+      return defender?.ability === CORE_ABILITY_IDS.pressure ? 2 : 1;
     });
 
     const team1 = [
@@ -263,8 +265,8 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
         uid: "charizard-1",
         nickname: "Charizard",
         moves: [
-          { moveId: "gravity", currentPP: 5, maxPP: 5, ppUps: 0 },
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
+          createMockMoveSlot(CORE_MOVE_IDS.gravity),
+          createMockMoveSlot(CORE_MOVE_IDS.tackle),
         ],
         calculatedStats: {
           hp: 200,
@@ -284,7 +286,7 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     // Set opponent's ability to Pressure
     const active1 = engine.state.sides[1].active[0];
     expect(active1).not.toBeNull();
-    active1!.ability = "pressure";
+    active1!.ability = CORE_ABILITY_IDS.pressure;
 
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
@@ -318,7 +320,7 @@ describe("Bug #310 — Sucker Punch vs Struggling opponent", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle, { currentPP: 0 })],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -336,19 +338,25 @@ describe("Bug #310 — Sucker Punch vs Struggling opponent", () => {
 
     // Act — side 1 submits a struggle action (no PP left), side 0 uses tackle
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-    engine.submitAction(1, { type: "struggle", side: 1 });
+    engine.submitAction(1, { type: CORE_MOVE_IDS.struggle, side: 1 });
 
     // Assert — both actions resolved; no "move-fail" for side 0 (the attacker)
     // This verifies the engine can handle a struggle action from the defender
     // Source: Showdown — Struggle is a valid action when all PP exhausted
     const moveStarts = events.filter((e) => e.type === "move-start");
-    expect(moveStarts.length).toBeGreaterThanOrEqual(1);
+    expect(moveStarts).toHaveLength(2);
 
     // Verify the struggle action emits a move-start for struggle
     const struggleMoveStart = events.find(
-      (e) => e.type === "move-start" && e.side === 1 && e.move === "struggle",
+      (e) => e.type === "move-start" && e.side === 1 && e.move === CORE_MOVE_IDS.struggle,
     );
-    expect(struggleMoveStart).toBeDefined();
+    expect(struggleMoveStart).toEqual(
+      expect.objectContaining({
+        type: "move-start",
+        side: 1,
+        move: CORE_MOVE_IDS.struggle,
+      }),
+    );
   });
 
   it("given defender submits Struggle action, when currentTurnActions is queried for defender's move, then Struggle is found as physical category", () => {
@@ -359,7 +367,7 @@ describe("Bug #310 — Sucker Punch vs Struggling opponent", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle, { currentPP: 0 })],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -382,7 +390,7 @@ describe("Bug #310 — Sucker Punch vs Struggling opponent", () => {
     // When Charizard's Tackle fires, the engine builds a MoveEffectContext
     // that includes defenderSelectedMove from getDefenderSelectedMove.
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-    engine.submitAction(1, { type: "struggle", side: 1 });
+    engine.submitAction(1, { type: CORE_MOVE_IDS.struggle, side: 1 });
 
     // Assert — executeMoveEffect was called for Tackle (side 0's move)
     // and the context's defenderSelectedMove should show Struggle as physical
@@ -390,9 +398,9 @@ describe("Bug #310 — Sucker Punch vs Struggling opponent", () => {
     expect(executeMoveEffectSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
     const tackleCall = executeMoveEffectSpy.mock.calls[0];
     const context = tackleCall[0];
-    // The defenderSelectedMove should be { id: "struggle", category: "physical" }
+    // The defenderSelectedMove should be { id: CORE_MOVE_IDS.struggle, category: "physical" }
     expect(context.defenderSelectedMove).toEqual({
-      id: "struggle",
+      id: CORE_MOVE_IDS.struggle,
       category: "physical",
     });
   });

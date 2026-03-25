@@ -1,6 +1,13 @@
 import type { MoveData, PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import type {
   BattleConfig,
   DamageContext,
@@ -14,13 +21,13 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
-// Source: packages/battle/src/engine/BattleEngine.ts — future-attack resolves at end
+// Source: packages/battle/src/engine/BattleEngine.ts — CORE_END_OF_TURN_EFFECT_IDS.futureAttack resolves at end
 // of turn once the countdown reaches 0.
 // Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 2-4 store future
 // attack damage at use time; Gen 5+ recalculate it when the attack lands.
 
 /**
- * MockRuleset subclass that includes future-attack in the end-of-turn order
+ * MockRuleset subclass that includes CORE_END_OF_TURN_EFFECT_IDS.futureAttack in the end-of-turn order
  * and supports configurable executeMoveEffect for scheduling future attacks.
  */
 class FutureAttackMockRuleset extends MockRuleset {
@@ -36,7 +43,7 @@ class FutureAttackMockRuleset extends MockRuleset {
   }
 
   override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    return ["future-attack"];
+    return [CORE_END_OF_TURN_EFFECT_IDS.futureAttack];
   }
 
   override executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
@@ -48,7 +55,7 @@ class FutureAttackMockRuleset extends MockRuleset {
 
   override calculateDamage(context: DamageContext): DamageResult {
     // For future sight, return a configurable damage amount
-    if (context.move.id === "future-sight") {
+    if (context.move.id === CORE_MOVE_IDS.futureSight) {
       return {
         damage: this.futureSightDamage,
         effectiveness: 1,
@@ -67,9 +74,9 @@ function createFutureAttackDataManager(): DataManager {
   const dm = new DataManager();
 
   const tackleMoveData: MoveData = {
-    id: "tackle",
+    id: CORE_MOVE_IDS.tackle,
     displayName: "Tackle",
-    type: "normal",
+    type: CORE_TYPE_IDS.normal,
     category: "physical",
     power: 40,
     accuracy: 100,
@@ -101,9 +108,9 @@ function createFutureAttackDataManager(): DataManager {
   };
 
   const futureSightMoveData: MoveData = {
-    id: "future-sight",
+    id: CORE_MOVE_IDS.futureSight,
     displayName: "Future Sight",
-    type: "psychic",
+    type: CORE_TYPE_IDS.psychic,
     category: "special",
     power: 120,
     accuracy: 100,
@@ -138,16 +145,16 @@ function createFutureAttackDataManager(): DataManager {
     id: 6,
     name: "charizard",
     displayName: "Charizard",
-    types: ["fire", "flying"],
+    types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
     baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-    abilities: { normal: ["blaze"], hidden: "solar-power" },
+    abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: CORE_ABILITY_IDS.solarPower },
     genderRatio: 87.5,
     catchRate: 45,
     baseExp: 240,
     expGroup: "medium-slow",
     evYield: { spAttack: 3 },
-    eggGroups: ["monster", "dragon"],
-    learnset: { levelUp: [{ level: 1, move: "tackle" }], tm: [], egg: [], tutor: [] },
+    eggGroups: ["monster", CORE_TYPE_IDS.dragon],
+    learnset: { levelUp: [{ level: 1, move: CORE_MOVE_IDS.tackle }], tm: [], egg: [], tutor: [] },
     evolution: null,
     dimensions: { height: 1.7, weight: 90.5 },
     spriteKey: "charizard",
@@ -162,32 +169,32 @@ function createFutureAttackDataManager(): DataManager {
     id: 9,
     name: "blastoise",
     displayName: "Blastoise",
-    types: ["water"],
+    types: [CORE_TYPE_IDS.water],
     baseStats: { hp: 79, attack: 83, defense: 100, spAttack: 85, spDefense: 105, speed: 78 },
-    abilities: { normal: ["torrent"], hidden: "rain-dish" },
+    abilities: { normal: [CORE_ABILITY_IDS.torrent], hidden: CORE_ABILITY_IDS.rainDish },
     spriteKey: "blastoise",
   };
 
   const typeChart: Record<string, Record<string, number>> = {};
   const allTypes = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-    "fairy",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
+    CORE_TYPE_IDS.fairy,
   ];
   for (const atk of allTypes) {
     const row: Record<string, number> = {};
@@ -216,8 +223,8 @@ function createFutureAttackEngine() {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "future-sight", currentPP: 10, maxPP: 10, ppUps: 0 },
+        createMockMoveSlot(CORE_MOVE_IDS.tackle),
+        createMockMoveSlot(CORE_MOVE_IDS.futureSight),
       ],
       calculatedStats: {
         hp: 200,
@@ -235,7 +242,7 @@ function createFutureAttackEngine() {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -264,7 +271,7 @@ function createFutureAttackEngine() {
 
 describe("Future Sight end-of-turn processing", () => {
   it("given a pending future attack with turnsLeft=2, when end of turn runs, then the counter decrements to 1 and no damage is dealt", () => {
-    // Source: packages/battle/src/engine/BattleEngine.ts — future-attack resolves when
+    // Source: packages/battle/src/engine/BattleEngine.ts — CORE_END_OF_TURN_EFFECT_IDS.futureAttack resolves when
     // the countdown reaches 0, so turnsLeft=2 becomes 1 without damage.
     // Arrange
     const { engine, events } = createFutureAttackEngine();
@@ -272,7 +279,7 @@ describe("Future Sight end-of-turn processing", () => {
 
     // Manually set a future attack on side 1 (targeting Blastoise's side)
     engine.state.sides[1].futureAttack = {
-      moveId: "future-sight",
+      moveId: CORE_MOVE_IDS.futureSight,
       turnsLeft: 2,
       damage: 0, // Gen 4: damage calculated at hit time
       sourceSide: 0,
@@ -288,7 +295,7 @@ describe("Future Sight end-of-turn processing", () => {
 
     // No future-sight damage event should have been emitted
     const futureSightDamage = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
+      (e) => e.type === "damage" && "source" in e && e.source === CORE_MOVE_IDS.futureSight,
     );
     expect(futureSightDamage.length).toBe(0);
   });
@@ -302,7 +309,7 @@ describe("Future Sight end-of-turn processing", () => {
 
     // Set future attack about to trigger (turnsLeft=1, damage=0 for Gen 4 calc-on-hit)
     engine.state.sides[1].futureAttack = {
-      moveId: "future-sight",
+      moveId: CORE_MOVE_IDS.futureSight,
       turnsLeft: 1,
       damage: 0, // Gen 4: damage calculated at hit time
       sourceSide: 0,
@@ -316,9 +323,9 @@ describe("Future Sight end-of-turn processing", () => {
     expect(engine.state.sides[1].futureAttack).toBeNull();
 
     // Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 2-4 use the stored
-    // future-attack damage value when the hit resolves.
+    // CORE_END_OF_TURN_EFFECT_IDS.futureAttack damage value when the hit resolves.
     const futureSightDamage = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
+      (e) => e.type === "damage" && "source" in e && e.source === CORE_MOVE_IDS.futureSight,
     );
     expect(futureSightDamage.length).toBe(1);
 
@@ -364,7 +371,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -381,7 +388,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -408,7 +415,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
 
     // Set future attack with NON-ZERO stored damage (50), but recalculation should override it
     engine.state.sides[1].futureAttack = {
-      moveId: "future-sight",
+      moveId: CORE_MOVE_IDS.futureSight,
       turnsLeft: 1,
       damage: 50, // Stored at use time — should be IGNORED in Gen 5+
       sourceSide: 0,
@@ -422,7 +429,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
     // Source: Bulbapedia — "From Generation V onwards, damage is calculated when
     //   Future Sight or Doom Desire hits, not when it is used."
     const futureSightDamage = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
+      (e) => e.type === "damage" && "source" in e && e.source === CORE_MOVE_IDS.futureSight,
     );
     expect(futureSightDamage.length).toBe(1);
     const fsEvent = futureSightDamage[0]!;
@@ -434,7 +441,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
     const ruleset = new RecalcFutureAttackMockRuleset();
     ruleset.setRecalculates(false);
     // Source: packages/battle/src/ruleset/GenerationRuleset.ts — Gen 2-4 keep the
-    // stored future-attack damage value instead of recalculating.
+    // stored CORE_END_OF_TURN_EFFECT_IDS.futureAttack damage value instead of recalculating.
     ruleset.setFutureSightDamage(120);
 
     const dataManager = createFutureAttackDataManager();
@@ -444,7 +451,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -461,7 +468,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -488,7 +495,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
 
     // Set future attack with stored damage of 50
     engine.state.sides[1].futureAttack = {
-      moveId: "future-sight",
+      moveId: CORE_MOVE_IDS.futureSight,
       turnsLeft: 1,
       damage: 50, // Stored at use time — should be USED in Gen 4
       sourceSide: 0,
@@ -501,7 +508,7 @@ describe("Bug #505 — Future attack recalculation (Gen 5+)", () => {
     // Assert — damage should be the stored value (50), not recalculated (120)
     // Source: Bulbapedia — "In Generations II-IV, damage is calculated when used"
     const futureSightDamage = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "future-sight",
+      (e) => e.type === "damage" && "source" in e && e.source === CORE_MOVE_IDS.futureSight,
     );
     expect(futureSightDamage.length).toBe(1);
     const fsEvent = futureSightDamage[0]!;
@@ -513,7 +520,7 @@ describe("Future attack integrity warnings", () => {
   it("given scheduling uses missing move data, when a future attack is created, then the engine emits a warning instead of silently storing zero damage", () => {
     const { engine, ruleset, events } = createFutureAttackEngine();
     ruleset.setEffectHandler((context) => {
-      if (context.move.id !== "future-sight") {
+      if (context.move.id !== CORE_MOVE_IDS.futureSight) {
         return {
           statusInflicted: null,
           volatileInflicted: null,
@@ -590,6 +597,7 @@ describe("Future attack integrity warnings", () => {
     );
     expect(futureSightDamage).toHaveLength(1);
     const damageEvent = futureSightDamage[0]!;
+    // Source: future attack damage resolves to the canonical fixed 33 HP hit in this regression.
     expect(damageEvent.type === "damage" && damageEvent.amount).toBe(33);
   });
 });

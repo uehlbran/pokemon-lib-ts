@@ -1,9 +1,10 @@
-import type { DataManager, PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, type DataManager, type PokemonInstance, type PokemonSpeciesData } from "@pokemon-lib-ts/core";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
+import { createMockMoveSlot } from "../helpers/move-slot";
 import { MockRuleset } from "../helpers/mock-ruleset";
 
 class TrappedSwitchRuleset extends MockRuleset {
@@ -47,7 +48,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -64,7 +65,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -155,8 +156,10 @@ describe("BattleEngine surface", () => {
       originalPokemon.moves[0]!.currentPP = 1;
       originalPokemon.evs.hp = 200;
 
-      expect(enginePokemon.currentHp).toBe(20);
-      expect(enginePokemon.moves[0]!.currentPP).toBe(35);
+      // Source: createTestPokemon recalculates current HP from the cloned engine-owned stats.
+      expect(enginePokemon.currentHp).toBe(enginePokemon.calculatedStats.hp);
+      // Source: createMockMoveSlot(CORE_MOVE_IDS.tackle) derives Tackle PP from canonical move data.
+      expect(enginePokemon.moves[0]!.currentPP).toBe(createMockMoveSlot(CORE_MOVE_IDS.tackle).currentPP);
       expect(enginePokemon.evs.hp).toBe(0);
     });
 
@@ -204,10 +207,10 @@ describe("BattleEngine surface", () => {
 
     it("given an illegal pokemon, when engine is created, then battle setup fails fast with the validation errors", () => {
       const ruleset = new ValidatingRuleset();
-      ruleset.setInvalidPokemon("charizard-1", ['Move "sketch" is not legal']);
+      ruleset.setInvalidPokemon("charizard-1", [`Move "${CORE_MOVE_IDS.sketch}" is not legal`]);
 
       expect(() => createTestEngine({ ruleset })).toThrow(
-        'BattleEngine: pokemon "Charizard" failed validation: Move "sketch" is not legal',
+        `BattleEngine: pokemon "Charizard" failed validation: Move "${CORE_MOVE_IDS.sketch}" is not legal`,
       );
       expect(ruleset.validationCalls).toEqual([{ speciesId: 6, pokemonUid: "charizard-1" }]);
     });
@@ -219,10 +222,12 @@ describe("BattleEngine surface", () => {
       engine.start();
 
       const moves = engine.getAvailableMoves(0);
+      const tackleSlot = createMockMoveSlot(CORE_MOVE_IDS.tackle);
 
       expect(moves).toHaveLength(1);
-      expect(moves[0]?.moveId).toBe("tackle");
-      expect(moves[0]?.pp).toBe(35);
+      expect(moves[0]?.moveId).toBe(CORE_MOVE_IDS.tackle);
+      // Source: createMockMoveSlot(CORE_MOVE_IDS.tackle) derives the canonical PP value from move data.
+      expect(moves[0]?.pp).toBe(tackleSlot.currentPP);
       expect(moves[0]?.disabled).toBe(false);
     });
 
@@ -231,7 +236,7 @@ describe("BattleEngine surface", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle, { currentPP: 0 })],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -306,13 +311,13 @@ describe("BattleEngine surface", () => {
           uid: "charizard-1",
           nickname: "Charizard",
           currentHp: 0,
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
           currentHp: 150,
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
       ];
       const { engine } = createTestEngine({

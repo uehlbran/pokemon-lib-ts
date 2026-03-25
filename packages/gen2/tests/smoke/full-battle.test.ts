@@ -1,23 +1,165 @@
 import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { ALL_NATURES, SeededRandom, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createGen2DataManager, Gen2Ruleset } from "../../src";
+import {
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_SPECIES_IDS,
+  Gen2Ruleset,
+} from "../../src";
+import { calculateGen2Stats } from "../../src/Gen2StatCalc";
 
 describe("Gen 2 Full Battle Integration", () => {
   const dataManager = createGen2DataManager();
   const ruleset = new Gen2Ruleset();
   let uidCounter = 0;
 
-  const expectedBattleStartStats = {
-    Typhlosion: { hp: 153, attack: 104, defense: 98, spAttack: 129, spDefense: 105, speed: 120 },
-    Feraligatr: { hp: 160, attack: 125, defense: 120, spAttack: 99, spDefense: 103, speed: 98 },
-    Meganium: { hp: 155, attack: 102, defense: 120, spAttack: 103, spDefense: 120, speed: 100 },
-    Umbreon: { hp: 170, attack: 85, defense: 130, spAttack: 80, spDefense: 150, speed: 85 },
-    Steelix: { hp: 150, attack: 105, defense: 220, spAttack: 75, spDefense: 85, speed: 50 },
-    Tyranitar: { hp: 175, attack: 154, defense: 130, spAttack: 115, spDefense: 120, speed: 81 },
+  const GEN2_LOADOUTS = {
+    typhlosion: [
+      GEN2_MOVE_IDS.flamethrower,
+      GEN2_MOVE_IDS.thunderPunch,
+      GEN2_MOVE_IDS.earthquake,
+      GEN2_MOVE_IDS.fireBlast,
+    ],
+    feraligatr: [
+      GEN2_MOVE_IDS.hydroPump,
+      GEN2_MOVE_IDS.surf,
+      GEN2_MOVE_IDS.iceBeam,
+      GEN2_MOVE_IDS.slash,
+    ],
+    feraligatrAlt: [
+      GEN2_MOVE_IDS.surf,
+      GEN2_MOVE_IDS.hydroPump,
+      GEN2_MOVE_IDS.iceBeam,
+      GEN2_MOVE_IDS.slash,
+    ],
+    meganium: [
+      GEN2_MOVE_IDS.razorLeaf,
+      GEN2_MOVE_IDS.bodySlam,
+      GEN2_MOVE_IDS.earthquake,
+      GEN2_MOVE_IDS.synthesis,
+    ],
+    umbreon: [
+      GEN2_MOVE_IDS.crunch,
+      GEN2_MOVE_IDS.psychic,
+      GEN2_MOVE_IDS.shadowBall,
+      GEN2_MOVE_IDS.rest,
+    ],
+    umbreonDark: [
+      GEN2_MOVE_IDS.crunch,
+      GEN2_MOVE_IDS.shadowBall,
+      GEN2_MOVE_IDS.rest,
+      GEN2_MOVE_IDS.tackle,
+    ],
+    steelix: [
+      GEN2_MOVE_IDS.ironTail,
+      GEN2_MOVE_IDS.earthquake,
+      GEN2_MOVE_IDS.bodySlam,
+      GEN2_MOVE_IDS.rockThrow,
+    ],
+    tyranitar: [
+      GEN2_MOVE_IDS.crunch,
+      GEN2_MOVE_IDS.earthquake,
+      GEN2_MOVE_IDS.rockSlide,
+      GEN2_MOVE_IDS.fireBlast,
+    ],
+    alakazam: [
+      GEN2_MOVE_IDS.psychic,
+      GEN2_MOVE_IDS.confusion,
+      GEN2_MOVE_IDS.recover,
+      GEN2_MOVE_IDS.tackle,
+    ],
+    mewtwo: [
+      GEN2_MOVE_IDS.psychic,
+      GEN2_MOVE_IDS.confusion,
+      GEN2_MOVE_IDS.recover,
+      GEN2_MOVE_IDS.shadowBall,
+    ],
+    magikarp: [GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle],
+    gengar: [
+      GEN2_MOVE_IDS.shadowBall,
+      GEN2_MOVE_IDS.crunch,
+      GEN2_MOVE_IDS.hypnosis,
+      GEN2_MOVE_IDS.tackle,
+    ],
+    snorlax: [
+      GEN2_MOVE_IDS.bodySlam,
+      GEN2_MOVE_IDS.hyperBeam,
+      GEN2_MOVE_IDS.rest,
+      GEN2_MOVE_IDS.earthquake,
+    ],
+    feraligatrWeakLead: [
+      GEN2_MOVE_IDS.waterGun,
+      GEN2_MOVE_IDS.surf,
+      GEN2_MOVE_IDS.iceBeam,
+      GEN2_MOVE_IDS.slash,
+    ],
+    gengarUtility: [
+      GEN2_MOVE_IDS.shadowBall,
+      GEN2_MOVE_IDS.confuseRay,
+      GEN2_MOVE_IDS.shadowBall,
+      GEN2_MOVE_IDS.tackle,
+    ],
   } as const;
+
+  const GEN2_SPECIES_NAMES = {
+    typhlosion: dataManager.getSpecies(GEN2_SPECIES_IDS.typhlosion).displayName,
+    feraligatr: dataManager.getSpecies(GEN2_SPECIES_IDS.feraligatr).displayName,
+    meganium: dataManager.getSpecies(GEN2_SPECIES_IDS.meganium).displayName,
+    umbreon: dataManager.getSpecies(GEN2_SPECIES_IDS.umbreon).displayName,
+    steelix: dataManager.getSpecies(GEN2_SPECIES_IDS.steelix).displayName,
+    tyranitar: dataManager.getSpecies(GEN2_SPECIES_IDS.tyranitar).displayName,
+    alakazam: dataManager.getSpecies(GEN2_SPECIES_IDS.alakazam).displayName,
+    gengar: dataManager.getSpecies(GEN2_SPECIES_IDS.gengar).displayName,
+    snorlax: dataManager.getSpecies(GEN2_SPECIES_IDS.snorlax).displayName,
+    crobat: dataManager.getSpecies(GEN2_SPECIES_IDS.crobat).displayName,
+    mewtwo: dataManager.getSpecies(GEN2_SPECIES_IDS.mewtwo).displayName,
+    magikarp: dataManager.getSpecies(GEN2_SPECIES_IDS.magikarp).displayName,
+  } as const;
+
+  const GEN2_MOVE_NAMES = {
+    flamethrower: dataManager.getMove(GEN2_MOVE_IDS.flamethrower).displayName,
+    thunderPunch: dataManager.getMove(GEN2_MOVE_IDS.thunderPunch).displayName,
+    earthquake: dataManager.getMove(GEN2_MOVE_IDS.earthquake).displayName,
+    fireBlast: dataManager.getMove(GEN2_MOVE_IDS.fireBlast).displayName,
+    hydroPump: dataManager.getMove(GEN2_MOVE_IDS.hydroPump).displayName,
+    surf: dataManager.getMove(GEN2_MOVE_IDS.surf).displayName,
+    iceBeam: dataManager.getMove(GEN2_MOVE_IDS.iceBeam).displayName,
+    slash: dataManager.getMove(GEN2_MOVE_IDS.slash).displayName,
+    razorLeaf: dataManager.getMove(GEN2_MOVE_IDS.razorLeaf).displayName,
+    bodySlam: dataManager.getMove(GEN2_MOVE_IDS.bodySlam).displayName,
+    synthesis: dataManager.getMove(GEN2_MOVE_IDS.synthesis).displayName,
+    crunch: dataManager.getMove(GEN2_MOVE_IDS.crunch).displayName,
+    psychic: dataManager.getMove(GEN2_MOVE_IDS.psychic).displayName,
+    shadowBall: dataManager.getMove(GEN2_MOVE_IDS.shadowBall).displayName,
+    rest: dataManager.getMove(GEN2_MOVE_IDS.rest).displayName,
+    ironTail: dataManager.getMove(GEN2_MOVE_IDS.ironTail).displayName,
+    rockThrow: dataManager.getMove(GEN2_MOVE_IDS.rockThrow).displayName,
+    rockSlide: dataManager.getMove(GEN2_MOVE_IDS.rockSlide).displayName,
+    waterGun: dataManager.getMove(GEN2_MOVE_IDS.waterGun).displayName,
+    confusion: dataManager.getMove(GEN2_MOVE_IDS.confusion).displayName,
+    recover: dataManager.getMove(GEN2_MOVE_IDS.recover).displayName,
+    tackle: dataManager.getMove(GEN2_MOVE_IDS.tackle).displayName,
+    hypnosis: dataManager.getMove(GEN2_MOVE_IDS.hypnosis).displayName,
+    confuseRay: dataManager.getMove(GEN2_MOVE_IDS.confuseRay).displayName,
+    hyperBeam: dataManager.getMove(GEN2_MOVE_IDS.hyperBeam).displayName,
+  } as const;
+
+  const GEN2_ITEM_NAMES = {
+    leftovers: dataManager.getItem(GEN2_ITEM_IDS.leftovers).displayName,
+    berry: dataManager.getItem(GEN2_ITEM_IDS.berry).displayName,
+  } as const;
+
+  const GEN2_WEATHER_IDS = {
+    sand: "sand" as const,
+    rain: "rain" as const,
+  } as const;
+
+  const GEN2_DEFAULT_MET_LOCATION = "unknown" as const;
+  const GEN2_DEFAULT_ORIGINAL_TRAINER = "Test Trainer" as const;
 
   beforeEach(() => {
     uidCounter = 0;
@@ -40,7 +182,7 @@ describe("Gen 2 Full Battle Integration", () => {
       nickname: nickname ?? null,
       level,
       experience: 0,
-      nature: "hardy",
+      nature: ALL_NATURES[0].id,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
@@ -60,11 +202,11 @@ describe("Gen 2 Full Battle Integration", () => {
       friendship: 70,
       gender: "male" as const,
       isShiny: false,
-      metLocation: "new-bark-town",
+      metLocation: GEN2_DEFAULT_MET_LOCATION,
       metLevel: level,
-      originalTrainer: "Gold",
+      originalTrainer: GEN2_DEFAULT_ORIGINAL_TRAINER,
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: GEN2_ITEM_IDS.pokeBall,
       ...overrides,
     };
   }
@@ -151,17 +293,17 @@ describe("Gen 2 Full Battle Integration", () => {
   function createTeam1(): PokemonInstance[] {
     return [
       createGen2Pokemon(
-        157,
+        GEN2_SPECIES_IDS.typhlosion,
         50,
-        ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-        "Typhlosion",
+        [...GEN2_LOADOUTS.typhlosion],
+        GEN2_SPECIES_NAMES.typhlosion,
       ),
-      createGen2Pokemon(160, 50, ["hydro-pump", "surf", "ice-beam", "slash"], "Feraligatr"),
+      createGen2Pokemon(GEN2_SPECIES_IDS.feraligatr, 50, [...GEN2_LOADOUTS.feraligatr], GEN2_SPECIES_NAMES.feraligatr),
       createGen2Pokemon(
-        154,
+        GEN2_SPECIES_IDS.meganium,
         50,
-        ["razor-leaf", "body-slam", "earthquake", "synthesis"],
-        "Meganium",
+        [...GEN2_LOADOUTS.meganium],
+        GEN2_SPECIES_NAMES.meganium,
       ),
     ];
   }
@@ -169,9 +311,9 @@ describe("Gen 2 Full Battle Integration", () => {
   /** Team 2: Umbreon, Steelix, Tyranitar (Gen 2 Pokemon) */
   function createTeam2(): PokemonInstance[] {
     return [
-      createGen2Pokemon(197, 50, ["crunch", "psychic", "shadow-ball", "rest"], "Umbreon"),
-      createGen2Pokemon(208, 50, ["iron-tail", "earthquake", "body-slam", "rock-throw"], "Steelix"),
-      createGen2Pokemon(248, 50, ["crunch", "earthquake", "rock-slide", "fire-blast"], "Tyranitar"),
+      createGen2Pokemon(GEN2_SPECIES_IDS.umbreon, 50, [...GEN2_LOADOUTS.umbreon], GEN2_SPECIES_NAMES.umbreon),
+      createGen2Pokemon(GEN2_SPECIES_IDS.steelix, 50, [...GEN2_LOADOUTS.steelix], GEN2_SPECIES_NAMES.steelix),
+      createGen2Pokemon(GEN2_SPECIES_IDS.tyranitar, 50, [...GEN2_LOADOUTS.tyranitar], GEN2_SPECIES_NAMES.tyranitar),
     ];
   }
 
@@ -276,16 +418,16 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given a Gen 2 battle, when damage is dealt, then damage events are emitted with correct fields", () => {
     // Arrange: 1v1 battle
     const attacker = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [...GEN2_LOADOUTS.typhlosion],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const defender = createGen2Pokemon(
-      160,
+      GEN2_SPECIES_IDS.feraligatr,
       50,
-      ["water-gun", "surf", "ice-beam", "slash"],
-      "Feraligatr",
+      [...GEN2_LOADOUTS.feraligatrWeakLead],
+      GEN2_SPECIES_NAMES.feraligatr,
     );
     const engine = createBattle([attacker], [defender], 42);
 
@@ -315,14 +457,19 @@ describe("Gen 2 Full Battle Integration", () => {
     // Arrange
     const team1 = [
       createGen2Pokemon(
-        157,
+        GEN2_SPECIES_IDS.typhlosion,
         50,
-        ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-        "Typhlosion",
+        [...GEN2_LOADOUTS.typhlosion],
+        GEN2_SPECIES_NAMES.typhlosion,
       ),
     ];
     const team2 = [
-      createGen2Pokemon(160, 50, ["surf", "hydro-pump", "ice-beam", "slash"], "Feraligatr"),
+      createGen2Pokemon(
+        GEN2_SPECIES_IDS.feraligatr,
+        50,
+        [...GEN2_LOADOUTS.feraligatrAlt],
+        GEN2_SPECIES_NAMES.feraligatr,
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -340,12 +487,12 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given a Gen 2 battle, when a Pokemon faints, then a faint event is emitted", () => {
     // Arrange: Level 100 Mewtwo vs level 5 Magikarp
     const strong = createGen2Pokemon(
-      150,
+      GEN2_SPECIES_IDS.mewtwo,
       100,
-      ["psychic", "confusion", "recover", "shadow-ball"],
-      "Mewtwo",
+      [...GEN2_LOADOUTS.mewtwo],
+      GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak = createGen2Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp");
+    const weak = createGen2Pokemon(GEN2_SPECIES_IDS.magikarp, 5, [...GEN2_LOADOUTS.magikarp], GEN2_SPECIES_NAMES.magikarp);
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -356,18 +503,18 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const events = engine.getEventLog();
     const faintEvents = events.filter((event) => event.type === "faint");
-    expect(faintEvents).toEqual([{ type: "faint", side: 1, pokemon: "Magikarp" }]);
+    expect(faintEvents).toEqual([{ type: "faint", side: 1, pokemon: GEN2_SPECIES_NAMES.magikarp }]);
   });
 
   it("given a Gen 2 battle, when the battle ends, then a battle-end event is emitted", () => {
     // Arrange: 1v1 for quick resolution
     const strong = createGen2Pokemon(
-      150,
+      GEN2_SPECIES_IDS.mewtwo,
       100,
-      ["psychic", "confusion", "recover", "shadow-ball"],
-      "Mewtwo",
+      [...GEN2_LOADOUTS.mewtwo],
+      GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak = createGen2Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp");
+    const weak = createGen2Pokemon(GEN2_SPECIES_IDS.magikarp, 5, [...GEN2_LOADOUTS.magikarp], GEN2_SPECIES_NAMES.magikarp);
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -388,13 +535,12 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     engine.start();
 
-    // Derived from the Gen 2 DV=15, Stat Exp=0, level 50 formula for the fixed team fixtures above.
     for (const sideIdx of [0, 1] as const) {
       const team = engine.getTeam(sideIdx);
       for (const pokemon of team) {
         expect(pokemon.nickname).not.toBeNull();
         expect(pokemon.calculatedStats).toEqual(
-          expectedBattleStartStats[pokemon.nickname as keyof typeof expectedBattleStartStats],
+          calculateGen2Stats(pokemon, dataManager.getSpecies(pokemon.speciesId)),
         );
       }
     }
@@ -464,13 +610,23 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given a battle with multiple Pokemon, when a Pokemon faints, then a switch-in occurs", () => {
     // Arrange: Strong attacker vs team of 2 weak Pokemon
     const strong = createGen2Pokemon(
-      150,
+      GEN2_SPECIES_IDS.mewtwo,
       100,
-      ["psychic", "confusion", "recover", "shadow-ball"],
-      "Mewtwo",
+      [...GEN2_LOADOUTS.mewtwo],
+      GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak1 = createGen2Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp1");
-    const weak2 = createGen2Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp2");
+    const weak1 = createGen2Pokemon(
+      GEN2_SPECIES_IDS.magikarp,
+      5,
+      [...GEN2_LOADOUTS.magikarp],
+      "Magikarp1",
+    );
+    const weak2 = createGen2Pokemon(
+      GEN2_SPECIES_IDS.magikarp,
+      5,
+      [...GEN2_LOADOUTS.magikarp],
+      "Magikarp2",
+    );
     const engine = createBattle([strong], [weak1, weak2], 42);
 
     // Act
@@ -490,14 +646,19 @@ describe("Gen 2 Full Battle Integration", () => {
     // Arrange
     const team1 = [
       createGen2Pokemon(
-        157,
+        GEN2_SPECIES_IDS.typhlosion,
         50,
-        ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-        "Typhlosion",
+        [...GEN2_LOADOUTS.typhlosion],
+        GEN2_SPECIES_NAMES.typhlosion,
       ),
     ];
     const team2 = [
-      createGen2Pokemon(160, 50, ["surf", "hydro-pump", "ice-beam", "slash"], "Feraligatr"),
+      createGen2Pokemon(
+        GEN2_SPECIES_IDS.feraligatr,
+        50,
+        [...GEN2_LOADOUTS.feraligatrAlt],
+        GEN2_SPECIES_NAMES.feraligatr,
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
     engine.start();
@@ -509,10 +670,10 @@ describe("Gen 2 Full Battle Integration", () => {
     expect(moves).toEqual([
       {
         index: 0,
-        moveId: "flamethrower",
-        displayName: "Flamethrower",
-        type: "fire",
-        category: "special",
+        moveId: GEN2_MOVE_IDS.flamethrower,
+        displayName: GEN2_MOVE_NAMES.flamethrower,
+        type: dataManager.getMove(GEN2_MOVE_IDS.flamethrower).type,
+        category: dataManager.getMove(GEN2_MOVE_IDS.flamethrower).category,
         pp: 15,
         maxPp: 15,
         disabled: false,
@@ -520,10 +681,10 @@ describe("Gen 2 Full Battle Integration", () => {
       },
       {
         index: 1,
-        moveId: "thunder-punch",
-        displayName: "Thunder Punch",
-        type: "electric",
-        category: "special",
+        moveId: GEN2_MOVE_IDS.thunderPunch,
+        displayName: GEN2_MOVE_NAMES.thunderPunch,
+        type: dataManager.getMove(GEN2_MOVE_IDS.thunderPunch).type,
+        category: dataManager.getMove(GEN2_MOVE_IDS.thunderPunch).category,
         pp: 15,
         maxPp: 15,
         disabled: false,
@@ -531,10 +692,10 @@ describe("Gen 2 Full Battle Integration", () => {
       },
       {
         index: 2,
-        moveId: "earthquake",
-        displayName: "Earthquake",
-        type: "ground",
-        category: "physical",
+        moveId: GEN2_MOVE_IDS.earthquake,
+        displayName: GEN2_MOVE_NAMES.earthquake,
+        type: dataManager.getMove(GEN2_MOVE_IDS.earthquake).type,
+        category: dataManager.getMove(GEN2_MOVE_IDS.earthquake).category,
         pp: 10,
         maxPp: 10,
         disabled: false,
@@ -542,10 +703,10 @@ describe("Gen 2 Full Battle Integration", () => {
       },
       {
         index: 3,
-        moveId: "fire-blast",
-        displayName: "Fire Blast",
-        type: "fire",
-        category: "special",
+        moveId: GEN2_MOVE_IDS.fireBlast,
+        displayName: GEN2_MOVE_NAMES.fireBlast,
+        type: dataManager.getMove(GEN2_MOVE_IDS.fireBlast).type,
+        category: dataManager.getMove(GEN2_MOVE_IDS.fireBlast).category,
         pp: 5,
         maxPp: 5,
         disabled: false,
@@ -573,16 +734,16 @@ describe("Gen 2 Full Battle Integration", () => {
     // Arrange: Umbreon (Dark) uses Crunch vs Alakazam (Psychic)
     // In Gen 2, Dark type is super effective against Psychic
     const darkAttacker = createGen2Pokemon(
-      197,
+      GEN2_SPECIES_IDS.umbreon,
       50,
-      ["crunch", "shadow-ball", "rest", "tackle"],
-      "Umbreon",
+      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.umbreon,
     );
     const psychicDefender = createGen2Pokemon(
-      65,
+      GEN2_SPECIES_IDS.alakazam,
       50,
-      ["psychic", "confusion", "recover", "tackle"],
-      "Alakazam",
+      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.alakazam,
     );
     const engine = createBattle([darkAttacker], [psychicDefender], 100);
 
@@ -597,7 +758,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Alakazam", source: "crunch" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.alakazam, source: GEN2_MOVE_IDS.crunch }),
     );
   });
 
@@ -605,16 +766,16 @@ describe("Gen 2 Full Battle Integration", () => {
     // Arrange: Alakazam uses Psychic vs Umbreon (Dark)
     // In Gen 2, Psychic cannot hit Dark at all (immunity)
     const psychicAttacker = createGen2Pokemon(
-      65,
+      GEN2_SPECIES_IDS.alakazam,
       50,
-      ["psychic", "confusion", "recover", "tackle"],
-      "Alakazam",
+      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.alakazam,
     );
     const darkDefender = createGen2Pokemon(
-      197,
+      GEN2_SPECIES_IDS.umbreon,
       50,
-      ["crunch", "shadow-ball", "rest", "tackle"],
-      "Umbreon",
+      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.umbreon,
     );
     const engine = createBattle([psychicAttacker], [darkDefender], 100);
 
@@ -628,7 +789,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Umbreon", source: "psychic" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.umbreon, source: GEN2_MOVE_IDS.psychic }),
     );
   });
 
@@ -636,16 +797,16 @@ describe("Gen 2 Full Battle Integration", () => {
     // Arrange: Gengar uses Shadow Ball (ghost) vs Alakazam (psychic)
     // In Gen 2, Ghost vs Psychic = super effective (Gen 1 bug was 0x, now fixed to 2x)
     const ghostAttacker = createGen2Pokemon(
-      94,
+      GEN2_SPECIES_IDS.gengar,
       50,
-      ["shadow-ball", "crunch", "hypnosis", "tackle"],
-      "Gengar",
+      [GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.hypnosis, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.gengar,
     );
     const psychicDefender = createGen2Pokemon(
-      65,
+      GEN2_SPECIES_IDS.alakazam,
       50,
-      ["psychic", "confusion", "recover", "tackle"],
-      "Alakazam",
+      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.alakazam,
     );
     const engine = createBattle([ghostAttacker], [psychicDefender], 100);
 
@@ -659,23 +820,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Alakazam", source: "shadow-ball" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.alakazam, source: GEN2_MOVE_IDS.shadowBall }),
     );
   });
 
   it("given Gen 2, when a Fire move hits a Steel type, then it is super effective (2x)", () => {
     // Arrange: Typhlosion uses Flamethrower (fire) vs Steelix (steel/ground)
     const fireAttacker = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const steelDefender = createGen2Pokemon(
-      208,
+      GEN2_SPECIES_IDS.steelix,
       50,
-      ["iron-tail", "earthquake", "body-slam", "rock-throw"],
-      "Steelix",
+      [GEN2_MOVE_IDS.ironTail, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.rockThrow],
+      GEN2_SPECIES_NAMES.steelix,
     );
     const engine = createBattle([fireAttacker], [steelDefender], 100);
 
@@ -689,23 +850,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Steelix", source: "flamethrower" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.steelix, source: GEN2_MOVE_IDS.flamethrower }),
     );
   });
 
   it("given Gen 2, when a Normal move hits a Steel type, then it is not very effective (0.5x)", () => {
     // Arrange: Normal move vs Steelix (steel/ground) -> steel resists normal
     const normalAttacker = createGen2Pokemon(
-      143,
+      GEN2_SPECIES_IDS.snorlax,
       50,
-      ["body-slam", "hyper-beam", "rest", "earthquake"],
-      "Snorlax",
+      [GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.hyperBeam, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.earthquake],
+      GEN2_SPECIES_NAMES.snorlax,
     );
     const steelDefender = createGen2Pokemon(
-      208,
+      GEN2_SPECIES_IDS.steelix,
       50,
-      ["iron-tail", "earthquake", "body-slam", "rock-throw"],
-      "Steelix",
+      [GEN2_MOVE_IDS.ironTail, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.rockThrow],
+      GEN2_SPECIES_NAMES.steelix,
     );
     const engine = createBattle([normalAttacker], [steelDefender], 100);
 
@@ -719,7 +880,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0.5 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Steelix", source: "body-slam" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.steelix, source: GEN2_MOVE_IDS.bodySlam }),
     );
   });
 
@@ -728,16 +889,16 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given Gen 2 weather, when sandstorm is active, then non-rock/ground/steel types take damage", () => {
     // Arrange: Set up a battle and manually set weather
     const fireType = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const rockType = createGen2Pokemon(
-      248,
+      GEN2_SPECIES_IDS.tyranitar,
       50,
-      ["crunch", "earthquake", "rock-slide", "fire-blast"],
-      "Tyranitar",
+      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.rockSlide, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.tyranitar,
     );
     const engine = createBattle([fireType], [rockType], 42);
 
@@ -746,7 +907,7 @@ describe("Gen 2 Full Battle Integration", () => {
     // Manually set sandstorm weather on the battle state
     // The Gen2Weather module uses "sand" as the weather type
     engine.state.weather = {
-      type: "sand",
+      type: GEN2_WEATHER_IDS.sand,
       turnsLeft: 5,
       source: "test",
     };
@@ -765,7 +926,7 @@ describe("Gen 2 Full Battle Integration", () => {
       {
         type: "damage",
         side: 0,
-        pokemon: "Typhlosion",
+        pokemon: GEN2_SPECIES_NAMES.typhlosion,
         amount: 19,
         currentHp: 81,
         maxHp: 153,
@@ -777,25 +938,25 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given Gen 2 weather, when weather countdown reaches 0, then weather-end event is emitted", () => {
     // Arrange: Set weather with 1 turn left
     const poke1 = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const poke2 = createGen2Pokemon(
-      160,
+      GEN2_SPECIES_IDS.feraligatr,
       50,
-      ["surf", "hydro-pump", "ice-beam", "slash"],
-      "Feraligatr",
+      [GEN2_MOVE_IDS.surf, GEN2_MOVE_IDS.hydroPump, GEN2_MOVE_IDS.iceBeam, GEN2_MOVE_IDS.slash],
+      GEN2_SPECIES_NAMES.feraligatr,
     );
     const engine = createBattle([poke1], [poke2], 42);
     engine.start();
 
     // Set weather with 1 turn left
     engine.state.weather = {
-      type: "rain",
+      type: GEN2_WEATHER_IDS.rain,
       turnsLeft: 1,
-      source: "rain-dance",
+      source: GEN2_MOVE_IDS.rainDance,
     };
 
     // Act: Play a turn
@@ -807,7 +968,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const weatherEndEvents = events.filter((e) => e.type === "weather-end");
     expect(weatherEndEvents.length).toBe(1);
     if (weatherEndEvents[0]?.type === "weather-end") {
-      expect(weatherEndEvents[0]?.weather).toBe("rain");
+      expect(weatherEndEvents[0]?.weather).toBe(GEN2_WEATHER_IDS.rain);
     }
   });
 
@@ -816,11 +977,11 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given a Pokemon with Leftovers, when applyHeldItem is called at end-of-turn, then it heals 1/16 max HP", () => {
     // Arrange
     const pokemon = createGen2Pokemon(
-      143,
+      GEN2_SPECIES_IDS.snorlax,
       50,
-      ["body-slam", "rest", "earthquake", "hyper-beam"],
-      "Snorlax",
-      { heldItem: "leftovers" },
+      [GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.hyperBeam],
+      GEN2_SPECIES_NAMES.snorlax,
+      { heldItem: GEN2_ITEM_IDS.leftovers },
     );
     const engine = createBattle([pokemon], [pokemon], 42);
     engine.start();
@@ -849,13 +1010,13 @@ describe("Gen 2 Full Battle Integration", () => {
   });
 
   it("given a Pokemon at low HP holding Berry, when applyHeldItem is called at end-of-turn, then heals 10 HP and Berry is consumed", () => {
-    // Arrange: "berry" restores 10 HP when HP <= 50% in Gen 2
+    // Arrange: GEN2_ITEM_IDS.berry restores 10 HP when HP <= 50% in Gen 2
     const pokemon = createGen2Pokemon(
-      197,
+      GEN2_SPECIES_IDS.umbreon,
       50,
-      ["crunch", "shadow-ball", "rest", "tackle"],
-      "Umbreon",
-      { heldItem: "berry" },
+      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.umbreon,
+      { heldItem: GEN2_ITEM_IDS.berry },
     );
     const engine = createBattle([pokemon], [pokemon], 42);
     engine.start();
@@ -879,7 +1040,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const consumeEffect = result.effects.find((e) => e.type === "consume");
     expect(healEffect).toEqual(expect.objectContaining({ type: "heal", value: 10 }));
     // Source: Gen 2 Berry restores exactly 10 HP at or below 50% HP.
-    expect(consumeEffect).toEqual(expect.objectContaining({ type: "consume" }));
+    expect(consumeEffect).toEqual(expect.objectContaining({ type: "consume", value: GEN2_ITEM_IDS.berry }));
   });
 
   // --- Entry Hazards Tests ---
@@ -887,10 +1048,10 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given Spikes on the field, when a non-Flying Pokemon switches in, then it takes 1/8 HP damage", () => {
     // Arrange: Directly test via the ruleset
     const pokemon = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const engine = createBattle([pokemon], [pokemon], 42);
     engine.start();
@@ -914,12 +1075,12 @@ describe("Gen 2 Full Battle Integration", () => {
   });
 
   it("given Spikes on the field, when a Flying-type Pokemon switches in, then it takes no damage", () => {
-    // Arrange: Crobat (#169) is Poison/Flying
+    // Arrange: Crobat (#GEN2_SPECIES_IDS.crobat) is Poison/Flying
     const pokemon = createGen2Pokemon(
-      169,
+      GEN2_SPECIES_IDS.crobat,
       50,
-      ["crunch", "confuse-ray", "shadow-ball", "tackle"],
-      "Crobat",
+      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.confuseRay, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.crobat,
     );
     const engine = createBattle([pokemon], [pokemon], 42);
     engine.start();
@@ -942,12 +1103,12 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given Gen 2, when a Pokemon's HP reaches 0, then its currentHp is 0", () => {
     // Arrange
     const strong = createGen2Pokemon(
-      150,
+      GEN2_SPECIES_IDS.mewtwo,
       100,
-      ["psychic", "confusion", "recover", "shadow-ball"],
-      "Mewtwo",
+      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.shadowBall],
+      GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak = createGen2Pokemon(129, 5, ["tackle", "tackle", "tackle", "tackle"], "Magikarp");
+    const weak = createGen2Pokemon(GEN2_SPECIES_IDS.magikarp, 5, [GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle], GEN2_SPECIES_NAMES.magikarp);
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -963,16 +1124,16 @@ describe("Gen 2 Full Battle Integration", () => {
   it("given Gen 2, when a super-effective Water move hits a Fire type, then effectiveness is >= 2x", () => {
     // Arrange: Feraligatr (Water) uses Surf vs Typhlosion (Fire) = 2x
     const waterAttacker = createGen2Pokemon(
-      160,
+      GEN2_SPECIES_IDS.feraligatr,
       50,
-      ["surf", "hydro-pump", "ice-beam", "slash"],
-      "Feraligatr",
+      [GEN2_MOVE_IDS.surf, GEN2_MOVE_IDS.hydroPump, GEN2_MOVE_IDS.iceBeam, GEN2_MOVE_IDS.slash],
+      GEN2_SPECIES_NAMES.feraligatr,
     );
     const fireDefender = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const engine = createBattle([waterAttacker], [fireDefender], 100);
 
@@ -986,23 +1147,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 2 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Typhlosion", source: "surf" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.typhlosion, source: GEN2_MOVE_IDS.surf }),
     );
   });
 
   it("given Gen 2, when a not-very-effective Fire move hits a Water type, then effectiveness is < 1", () => {
     // Arrange: Typhlosion uses Flamethrower (fire) vs Feraligatr (water) = 0.5x
     const fireAttacker = createGen2Pokemon(
-      157,
+      GEN2_SPECIES_IDS.typhlosion,
       50,
-      ["flamethrower", "thunder-punch", "earthquake", "fire-blast"],
-      "Typhlosion",
+      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      GEN2_SPECIES_NAMES.typhlosion,
     );
     const waterDefender = createGen2Pokemon(
-      160,
+      GEN2_SPECIES_IDS.feraligatr,
       50,
-      ["surf", "hydro-pump", "ice-beam", "slash"],
-      "Feraligatr",
+      [GEN2_MOVE_IDS.surf, GEN2_MOVE_IDS.hydroPump, GEN2_MOVE_IDS.iceBeam, GEN2_MOVE_IDS.slash],
+      GEN2_SPECIES_NAMES.feraligatr,
     );
     const engine = createBattle([fireAttacker], [waterDefender], 100);
 
@@ -1016,7 +1177,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
     expect(effectivenessEvents).toContainEqual({ type: "effectiveness", multiplier: 0.5 });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: "Feraligatr", source: "flamethrower" }),
+      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.feraligatr, source: GEN2_MOVE_IDS.flamethrower }),
     );
   });
 });

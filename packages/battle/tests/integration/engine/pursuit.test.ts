@@ -1,6 +1,8 @@
 import type { PokemonInstance, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
 import { DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -8,7 +10,7 @@ import { createTestPokemon } from "../../../src/utils";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 /**
- * Creates a DataManager pre-loaded with both the standard mock data and a "pursuit" move.
+ * Creates a DataManager pre-loaded with both the standard mock data and a CORE_MOVE_IDS.pursuit move.
  */
 function createDataManagerWithPursuit(): DataManager {
   const dm = new DataManager();
@@ -20,9 +22,9 @@ function createDataManagerWithPursuit(): DataManager {
   });
 
   const pursuitMove = {
-    id: "pursuit",
+    id: CORE_MOVE_IDS.pursuit,
     displayName: "Pursuit",
-    type: "dark" as const,
+    type: CORE_TYPE_IDS.dark as const,
     category: "physical" as const,
     power: 40,
     accuracy: 100,
@@ -58,24 +60,24 @@ function createDataManagerWithPursuit(): DataManager {
   const fullDm = new DataManager();
   // Build the type chart (all neutral)
   const allTypes = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-    "fairy",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
+    CORE_TYPE_IDS.fairy,
   ];
   const typeChart: Record<string, Record<string, number>> = {};
   for (const atk of allTypes) {
@@ -90,15 +92,15 @@ function createDataManagerWithPursuit(): DataManager {
     id: 6,
     name: "charizard",
     displayName: "Charizard",
-    types: ["fire", "flying"] as ["fire", "flying"],
+    types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying] as [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
     baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-    abilities: { normal: ["blaze"], hidden: "solar-power" },
+    abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: CORE_ABILITY_IDS.solarPower },
     genderRatio: 87.5,
     catchRate: 45,
     baseExp: 240,
     expGroup: "medium-slow" as const,
     evYield: { spAttack: 3 },
-    eggGroups: ["monster", "dragon"],
+    eggGroups: ["monster", CORE_TYPE_IDS.dragon],
     learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
     evolution: null,
     dimensions: { height: 1.7, weight: 90.5 },
@@ -113,9 +115,9 @@ function createDataManagerWithPursuit(): DataManager {
     id: 9,
     name: "blastoise",
     displayName: "Blastoise",
-    types: ["water"] as ["water"],
+    types: [CORE_TYPE_IDS.water] as [CORE_TYPE_IDS.water],
     baseStats: { hp: 79, attack: 83, defense: 100, spAttack: 85, spDefense: 105, speed: 78 },
-    abilities: { normal: ["torrent"], hidden: "rain-dish" },
+    abilities: { normal: [CORE_ABILITY_IDS.torrent], hidden: CORE_ABILITY_IDS.rainDish },
     genderRatio: 87.5,
     catchRate: 45,
     baseExp: 239,
@@ -136,15 +138,15 @@ function createDataManagerWithPursuit(): DataManager {
     id: 25,
     name: "pikachu",
     displayName: "Pikachu",
-    types: ["electric"] as ["electric"],
+    types: [CORE_TYPE_IDS.electric] as [CORE_TYPE_IDS.electric],
     baseStats: { hp: 35, attack: 55, defense: 40, spAttack: 50, spDefense: 50, speed: 90 },
-    abilities: { normal: ["static"], hidden: "lightning-rod" },
+    abilities: { normal: [CORE_ABILITY_IDS.static], hidden: CORE_ABILITY_IDS.lightningRod },
     genderRatio: 50,
     catchRate: 190,
     baseExp: 112,
     expGroup: "medium-fast" as const,
     evYield: { speed: 2 },
-    eggGroups: ["field", "fairy"],
+    eggGroups: ["field", CORE_TYPE_IDS.fairy],
     learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
     evolution: null,
     dimensions: { height: 0.4, weight: 6.0 },
@@ -163,9 +165,9 @@ function createDataManagerWithPursuit(): DataManager {
     ] as unknown as PokemonSpeciesData[],
     moves: [
       {
-        id: "tackle",
+        id: CORE_MOVE_IDS.tackle,
         displayName: "Tackle",
-        type: "normal",
+        type: CORE_TYPE_IDS.normal,
         category: "physical",
         power: 40,
         accuracy: 100,
@@ -224,7 +226,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "pursuit", currentPP: 20, maxPP: 20, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.pursuit)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -241,7 +243,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -255,7 +257,7 @@ function createEngine(overrides?: {
     createTestPokemon(25, 50, {
       uid: "pikachu-bench",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 120,
         attack: 80,
@@ -302,8 +304,8 @@ describe("Pursuit — pre-switch execution", () => {
         .map((e, i) => ({ e, i }))
         .filter(({ e }) => e.type === "switch-out");
 
-      // There must be a Pursuit move-start
-      expect(moveStarts.length).toBeGreaterThan(0);
+      // There must be exactly one Pursuit move-start in this sequence
+      expect(moveStarts).toHaveLength(1);
 
       // The first move-start from the action phase must precede side 1's switch-out
       // (side 1 starts with a switch-in at battle start, so we look at the post-start switch-out)
@@ -313,8 +315,8 @@ describe("Pursuit — pre-switch execution", () => {
       });
       const firstActionMoveStart = moveStarts[0];
 
-      expect(firstActionMoveStart).toBeDefined();
-      expect(postStartSwitchOut).toBeDefined();
+      expect(firstActionMoveStart?.e).toEqual(expect.objectContaining({ type: "move-start" }));
+      expect(postStartSwitchOut?.e).toEqual(expect.objectContaining({ type: "switch-out", side: 1 }));
       if (firstActionMoveStart && postStartSwitchOut) {
         // Pursuit (move-start) should appear at or before side 1's switch-out
         expect(firstActionMoveStart.i).toBeLessThanOrEqual(postStartSwitchOut.i);
@@ -334,12 +336,12 @@ describe("Pursuit — pre-switch execution", () => {
 
       // Assert — damage must occur (Pursuit hit the switching Pokemon)
       const damageEvents = events.filter((e) => e.type === "damage");
-      expect(damageEvents.length).toBeGreaterThan(0);
+      expect(damageEvents).toHaveLength(1);
 
       // The Pikachu should have switched in (confirming switch still happened)
       const switchIns = events.filter((e) => e.type === "switch-in");
       // 2 initial + 1 from the switch action
-      expect(switchIns.length).toBeGreaterThanOrEqual(3);
+      expect(switchIns).toHaveLength(3);
     });
   });
 
@@ -357,11 +359,14 @@ describe("Pursuit — pre-switch execution", () => {
 
       // Assert — no switch-out events after start (no switching happened)
       const switchOuts = events.filter((e) => e.type === "switch-out");
-      expect(switchOuts.length).toBe(0);
+      expect(switchOuts).toEqual([]);
 
-      // Both moves fired normally — exactly 2 move-starts
+      // Both moves fired normally in action order, with no pre-switch shortcut.
       const moveStarts = events.filter((e) => e.type === "move-start");
-      expect(moveStarts.length).toBe(2);
+      expect(moveStarts).toEqual([
+        expect.objectContaining({ type: "move-start", side: 0, move: CORE_MOVE_IDS.pursuit }),
+        expect.objectContaining({ type: "move-start", side: 1, move: CORE_MOVE_IDS.tackle }),
+      ]);
     });
   });
 
@@ -379,7 +384,9 @@ describe("Pursuit — pre-switch execution", () => {
 
       // Assert — exactly one move-start event (Pursuit fires once, not twice)
       const moveStarts = events.filter((e) => e.type === "move-start");
-      expect(moveStarts.length).toBe(1);
+      expect(moveStarts).toEqual([
+        expect.objectContaining({ type: "move-start", side: 0, move: CORE_MOVE_IDS.pursuit }),
+      ]);
     });
   });
 
@@ -401,7 +408,7 @@ describe("Pursuit — pre-switch execution", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-gen1",
           nickname: "Charizard",
-          moves: [{ moveId: "pursuit", currentPP: 20, maxPP: 20, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.pursuit)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -418,7 +425,7 @@ describe("Pursuit — pre-switch execution", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-gen1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -432,7 +439,7 @@ describe("Pursuit — pre-switch execution", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-gen1-bench",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,

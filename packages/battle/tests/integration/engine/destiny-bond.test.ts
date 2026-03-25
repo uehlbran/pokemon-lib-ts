@@ -1,5 +1,12 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -18,7 +25,7 @@ function createDestinyBondEngine(opts?: { side0Hp?: number; side1Hp?: number }) 
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -33,7 +40,7 @@ function createDestinyBondEngine(opts?: { side0Hp?: number; side1Hp?: number }) 
     createTestPokemon(25, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -50,7 +57,7 @@ function createDestinyBondEngine(opts?: { side0Hp?: number; side1Hp?: number }) 
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -64,7 +71,7 @@ function createDestinyBondEngine(opts?: { side0Hp?: number; side1Hp?: number }) 
     createTestPokemon(25, 50, {
       uid: "pikachu-2",
       nickname: "Pikachu2",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -103,7 +110,7 @@ describe("Destiny Bond faint check", () => {
     // Set HP after engine.start() — the constructor resets currentHp to calculatedStats.hp
     const active0 = engine.state.sides[0].active[0];
     active0!.pokemon.currentHp = 5;
-    active0!.volatileStatuses.set("destiny-bond", { turnsLeft: -1 });
+    active0!.volatileStatuses.set(CORE_VOLATILE_IDS.destinyBond, { turnsLeft: -1 });
 
     // Act — Blastoise (faster, side 1) attacks first and KOs Charizard
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -130,19 +137,19 @@ describe("Destiny Bond faint check", () => {
     // the opponent's move, not from indirect damage sources
     // Arrange — Charizard has 1 HP, will take status damage (burn)
     const { engine, ruleset, events } = createDestinyBondEngine();
-    // Configure the ruleset to include status-damage in EoT
+    // Configure the ruleset to include CORE_END_OF_TURN_EFFECT_IDS.statusDamage in EoT
     ruleset.setFixedDamage(0); // No damage from moves
 
-    // Override getEndOfTurnOrder to include status-damage
-    ruleset.getEndOfTurnOrder = () => ["status-damage"];
+    // Override getEndOfTurnOrder to include CORE_END_OF_TURN_EFFECT_IDS.statusDamage
+    ruleset.getEndOfTurnOrder = () => [CORE_END_OF_TURN_EFFECT_IDS.statusDamage];
 
     engine.start();
 
     // Set HP after engine.start() — the constructor resets currentHp to calculatedStats.hp
     const active0 = engine.state.sides[0].active[0];
     active0!.pokemon.currentHp = 1;
-    active0!.volatileStatuses.set("destiny-bond", { turnsLeft: -1 });
-    active0!.pokemon.status = "burn";
+    active0!.volatileStatuses.set(CORE_VOLATILE_IDS.destinyBond, { turnsLeft: -1 });
+    active0!.pokemon.status = CORE_STATUS_IDS.burn;
 
     // Act — both sides use moves that deal 0 damage, then burn KOs Charizard at EoT
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

@@ -9,6 +9,13 @@
  */
 import type { PokemonInstance, VolatileStatus } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import type {
   BattleConfig,
   EndOfTurnEffect,
@@ -39,7 +46,7 @@ function createEngine(opts?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -56,7 +63,7 @@ function createEngine(opts?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -88,11 +95,11 @@ function createEngine(opts?: {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * A MockRuleset subclass that includes "uproar" in getEndOfTurnOrder.
+ * A MockRuleset subclass that includes CORE_VOLATILE_IDS.uproar in getEndOfTurnOrder.
  */
 class UproarMockRuleset extends MockRuleset {
   override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    return ["uproar", "status-damage"];
+    return [CORE_VOLATILE_IDS.uproar, CORE_END_OF_TURN_EFFECT_IDS.statusDamage];
   }
 }
 
@@ -106,7 +113,7 @@ describe("#468 — Uproar end-of-turn handler", () => {
     // Set up the uproar volatile on side 1's active Pokemon (Blastoise, faster = moves first)
     const state = engine.getState();
     const blastoise = state.sides[1].active[0];
-    blastoise.volatileStatuses.set("uproar" as VolatileStatus, { turnsLeft: 2 });
+    blastoise.volatileStatuses.set(CORE_VOLATILE_IDS.uproar as VolatileStatus, { turnsLeft: 2 });
 
     events.length = 0;
 
@@ -115,7 +122,7 @@ describe("#468 — Uproar end-of-turn handler", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // After the turn, uproar turnsLeft should have decremented from 2 to 1
-    const uproarData = blastoise.volatileStatuses.get("uproar" as VolatileStatus);
+    const uproarData = blastoise.volatileStatuses.get(CORE_VOLATILE_IDS.uproar as VolatileStatus);
     expect(uproarData).toBeDefined();
     expect(uproarData!.turnsLeft).toBe(1);
   });
@@ -129,7 +136,7 @@ describe("#468 — Uproar end-of-turn handler", () => {
 
     const state = engine.getState();
     const blastoise = state.sides[1].active[0];
-    blastoise.volatileStatuses.set("uproar" as VolatileStatus, { turnsLeft: 1 });
+    blastoise.volatileStatuses.set(CORE_VOLATILE_IDS.uproar as VolatileStatus, { turnsLeft: 1 });
 
     events.length = 0;
 
@@ -137,11 +144,11 @@ describe("#468 — Uproar end-of-turn handler", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // The uproar volatile should be gone
-    expect(blastoise.volatileStatuses.has("uproar" as VolatileStatus)).toBe(false);
+    expect(blastoise.volatileStatuses.has(CORE_VOLATILE_IDS.uproar as VolatileStatus)).toBe(false);
 
     // Should emit a volatile-end event and a message about uproar ending
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "uproar",
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.uproar,
     );
     expect(volatileEndEvents.length).toBeGreaterThan(0);
 
@@ -160,13 +167,13 @@ describe("#468 — Uproar end-of-turn handler", () => {
     const state = engine.getState();
     // Side 1 (Blastoise) has uproar
     const blastoise = state.sides[1].active[0];
-    blastoise.volatileStatuses.set("uproar" as VolatileStatus, { turnsLeft: 3 });
+    blastoise.volatileStatuses.set(CORE_VOLATILE_IDS.uproar as VolatileStatus, { turnsLeft: 3 });
 
     // Side 0 (Charizard) is asleep with enough sleep-counter to survive action phase.
     // Without sleep-counter, MockRuleset.processSleepTurn wakes the Pokemon immediately.
     const charizard = state.sides[0].active[0];
-    charizard.pokemon.status = "sleep";
-    charizard.volatileStatuses.set("sleep-counter" as VolatileStatus, { turnsLeft: 5 });
+    charizard.pokemon.status = CORE_STATUS_IDS.sleep;
+    charizard.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter as VolatileStatus, { turnsLeft: 5 });
 
     events.length = 0;
 
@@ -178,13 +185,13 @@ describe("#468 — Uproar end-of-turn handler", () => {
 
     // Should emit a status-cure event for sleep
     const statusCureEvents = events.filter(
-      (e) => e.type === "status-cure" && "status" in e && e.status === "sleep",
+      (e) => e.type === "status-cure" && "status" in e && e.status === CORE_STATUS_IDS.sleep,
     );
     expect(statusCureEvents.length).toBeGreaterThan(0);
 
     // Should emit a message about waking up due to uproar
     const wakeMessages = events.filter(
-      (e) => e.type === "message" && "text" in e && (e.text as string).includes("uproar"),
+      (e) => e.type === "message" && "text" in e && (e.text as string).includes(CORE_VOLATILE_IDS.uproar),
     );
     expect(wakeMessages.length).toBeGreaterThan(0);
   });
@@ -197,7 +204,7 @@ describe("#468 — Uproar end-of-turn handler", () => {
 /**
  * A MockRuleset subclass that:
  * 1. Returns multiHitCount from executeMoveEffect (always)
- * 2. Returns ["status-damage"] from getPostAttackResidualOrder
+ * 2. Returns [CORE_END_OF_TURN_EFFECT_IDS.statusDamage] from getPostAttackResidualOrder
  *
  * This simulates a multi-hit move hitting a poisoned defender, where
  * poison damage should fire after each hit including the final one.
@@ -224,7 +231,7 @@ class MultiHitMockRuleset extends MockRuleset {
   }
 
   override getPostAttackResidualOrder(): readonly EndOfTurnEffect[] {
-    return ["status-damage"];
+    return [CORE_END_OF_TURN_EFFECT_IDS.statusDamage];
   }
 
   override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
@@ -246,7 +253,7 @@ describe("#470 — Multi-hit final-hit defender residuals", () => {
     // The faster side (side 1, speed=120) attacks the slower side (side 0, speed=80).
     // We want the defender (side 0, Charizard) to be poisoned.
     const charizard = state.sides[0].active[0];
-    charizard.pokemon.status = "poison";
+    charizard.pokemon.status = CORE_STATUS_IDS.poison;
     const charizardMaxHp = charizard.pokemon.calculatedStats!.hp;
     const poisonDmg = Math.max(1, Math.floor(charizardMaxHp / 8));
     // Source: MockRuleset.applyStatusDamage — poison = floor(maxHp / 8), min 1
@@ -262,7 +269,7 @@ describe("#470 — Multi-hit final-hit defender residuals", () => {
       (e) =>
         e.type === "damage" &&
         "source" in e &&
-        e.source === "poison" &&
+        e.source === CORE_STATUS_IDS.poison &&
         "side" in e &&
         e.side === 0,
     );
@@ -295,7 +302,7 @@ describe("#470 — Multi-hit final-hit defender residuals", () => {
 
     const state = engine.getState();
     const charizard = state.sides[0].active[0];
-    charizard.pokemon.status = "burn";
+    charizard.pokemon.status = CORE_STATUS_IDS.burn;
     const charizardMaxHp = charizard.pokemon.calculatedStats!.hp;
     const burnDmg = Math.max(1, Math.floor(charizardMaxHp / 16));
     // Source: MockRuleset.applyStatusDamage — burn = floor(maxHp / 16), min 1
@@ -309,7 +316,7 @@ describe("#470 — Multi-hit final-hit defender residuals", () => {
     // Count burn damage events on Charizard (side 0)
     const burnDamageEvents = events.filter(
       (e) =>
-        e.type === "damage" && "source" in e && e.source === "burn" && "side" in e && e.side === 0,
+        e.type === "damage" && "source" in e && e.source === CORE_STATUS_IDS.burn && "side" in e && e.side === 0,
     );
 
     // 2-hit move: residuals between hit 1 and hit 2 (inside loop), then after hit 2 (the fix).

@@ -12,8 +12,10 @@
  * Source: Showdown sim/battle-actions.ts — gimmick activation, terrain setting
  * Source: Showdown sim/field.ts — Grassy Terrain residual healing
  */
+import { CORE_TERRAIN_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type {
   BattleConfig,
   BattleGimmick,
@@ -45,7 +47,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -62,7 +64,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -174,13 +176,13 @@ describe("gimmick activation hook in executeMove", () => {
         type: "move-start",
         side: 0,
         pokemon: "Charizard",
-        move: "tackle",
+        move: CORE_MOVE_IDS.tackle,
       },
       {
         type: "move-start",
         side: 1,
         pokemon: "Blastoise",
-        move: "tackle",
+        move: CORE_MOVE_IDS.tackle,
       },
     ]);
     expect(events.filter((e) => e.type === "damage")).toEqual([
@@ -191,7 +193,7 @@ describe("gimmick activation hook in executeMove", () => {
         amount: 10,
         currentHp: blastoiseHp - 10,
         maxHp: blastoiseMaxHp,
-        source: "tackle",
+        source: CORE_MOVE_IDS.tackle,
       },
       {
         type: "damage",
@@ -200,7 +202,7 @@ describe("gimmick activation hook in executeMove", () => {
         amount: 10,
         currentHp: charizardHp - 10,
         maxHp: charizardMaxHp,
-        source: "tackle",
+        source: CORE_MOVE_IDS.tackle,
       },
     ]);
   });
@@ -233,13 +235,13 @@ describe("gimmick activation hook in executeMove", () => {
         type: "move-start",
         side: 0,
         pokemon: "Charizard",
-        move: "tackle",
+        move: CORE_MOVE_IDS.tackle,
       },
       {
         type: "move-start",
         side: 1,
         pokemon: "Blastoise",
-        move: "tackle",
+        move: CORE_MOVE_IDS.tackle,
       },
     ]);
     const damageEvents = events.filter((e) => e.type === "damage");
@@ -251,7 +253,7 @@ describe("gimmick activation hook in executeMove", () => {
         amount: 10,
         currentHp: blastoiseHp - 10,
         maxHp: blastoiseMaxHp,
-        source: "tackle",
+        source: CORE_MOVE_IDS.tackle,
       },
       {
         type: "damage",
@@ -260,7 +262,7 @@ describe("gimmick activation hook in executeMove", () => {
         amount: 10,
         currentHp: charizardHp - 10,
         maxHp: charizardMaxHp,
-        source: "tackle",
+        source: CORE_MOVE_IDS.tackle,
       },
     ]);
   });
@@ -325,7 +327,7 @@ describe("grassy terrain heal end-of-turn", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -342,7 +344,7 @@ describe("grassy terrain heal end-of-turn", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -359,7 +361,11 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.start();
 
     // Set grassy terrain on the state
-    engine.getState().terrain = { type: "grassy", turnsLeft: 5, source: "grassy-terrain" };
+    engine.getState().terrain = {
+      type: "grassy",
+      turnsLeft: 5,
+      source: CORE_TERRAIN_IDS.grassyTerrain,
+    };
 
     // Reduce HP to simulate damage (engine may have set currentHp to calculatedStats.hp)
     const state = engine.getState();
@@ -375,7 +381,7 @@ describe("grassy terrain heal end-of-turn", () => {
 
     // Assert — heal events should be present
     const healEvents = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === "grassy-terrain",
+      (e) => e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -387,7 +393,7 @@ describe("grassy terrain heal end-of-turn", () => {
     expect(charizardHeal).toBeDefined();
     if (charizardHeal && charizardHeal.type === "heal") {
       expect(charizardHeal.amount).toBe(12);
-      expect(charizardHeal.source).toBe("grassy-terrain");
+      expect(charizardHeal.source).toBe(CORE_TERRAIN_IDS.grassyTerrain);
     }
   });
 
@@ -410,7 +416,11 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.start();
 
     // Set grassy terrain — Pokemon is at full HP (200/200)
-    engine.getState().terrain = { type: "grassy", turnsLeft: 5, source: "grassy-terrain" };
+    engine.getState().terrain = {
+      type: "grassy",
+      turnsLeft: 5,
+      source: CORE_TERRAIN_IDS.grassyTerrain,
+    };
     events.length = 0;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -421,7 +431,7 @@ describe("grassy terrain heal end-of-turn", () => {
     // Depending on turn resolution order, side 0 might be damaged.
     // To truly test no-overheal, check that no heal event has amount > max missing HP.
     const healEvents = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === "grassy-terrain",
+      (e) => e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     for (const heal of healEvents) {
       if (heal.type === "heal") {
@@ -449,7 +459,11 @@ describe("grassy terrain heal end-of-turn", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    engine.getState().terrain = { type: "grassy", turnsLeft: 5, source: "grassy-terrain" };
+    engine.getState().terrain = {
+      type: "grassy",
+      turnsLeft: 5,
+      source: CORE_TERRAIN_IDS.grassyTerrain,
+    };
     const state = engine.getState();
     const p0 = state.sides[0].active[0];
     if (p0) p0.pokemon.currentHp = 150;
@@ -460,7 +474,7 @@ describe("grassy terrain heal end-of-turn", () => {
 
     // Assert — no grassy-terrain heal event
     const grassyHeals = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === "grassy-terrain",
+      (e) => e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     expect(grassyHeals.length).toBe(0);
   });
@@ -508,7 +522,7 @@ describe("terrain-setting from move effect results", () => {
         terrainSet: {
           terrain: "grassy",
           turns: 5,
-          source: "grassy-terrain",
+          source: CORE_TERRAIN_IDS.grassyTerrain,
         },
       };
     });
@@ -525,7 +539,7 @@ describe("terrain-setting from move effect results", () => {
     expect(engine.getState().terrain).toEqual({
       type: "grassy",
       turnsLeft: 5,
-      source: "grassy-terrain",
+      source: CORE_TERRAIN_IDS.grassyTerrain,
     });
 
     const terrainEvent = events.find((e) => e.type === "terrain-set");
@@ -533,7 +547,7 @@ describe("terrain-setting from move effect results", () => {
     expect(terrainEvent).toEqual({
       type: "terrain-set",
       terrain: "grassy",
-      source: "grassy-terrain",
+      source: CORE_TERRAIN_IDS.grassyTerrain,
     });
   });
 
@@ -561,7 +575,11 @@ describe("terrain-setting from move effect results", () => {
     engine.start();
 
     // Pre-set terrain
-    engine.getState().terrain = { type: "electric", turnsLeft: 3, source: "electric-terrain" };
+    engine.getState().terrain = {
+      type: CORE_TERRAIN_IDS.electric,
+      turnsLeft: 3,
+      source: CORE_TERRAIN_IDS.electricTerrain,
+    };
     events.length = 0;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -574,7 +592,7 @@ describe("terrain-setting from move effect results", () => {
     const terrainEndEvent = events.find((e) => e.type === "terrain-end");
     expect(terrainEndEvent).toEqual({
       type: "terrain-end",
-      terrain: "electric",
+      terrain: CORE_TERRAIN_IDS.electric,
     });
   });
 
@@ -597,7 +615,7 @@ describe("terrain-setting from move effect results", () => {
         terrainSet: {
           terrain: "grassy",
           turns: 5,
-          source: "grassy-terrain",
+          source: CORE_TERRAIN_IDS.grassyTerrain,
         },
       };
     });
@@ -622,7 +640,7 @@ describe("terrain-setting from move effect results", () => {
       terrainSet: {
         terrain: "grassy",
         turns: 5,
-        source: "grassy-terrain",
+        source: CORE_TERRAIN_IDS.grassyTerrain,
       },
     });
     expect(engine.getState().terrain).toBeNull();

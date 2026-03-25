@@ -13,7 +13,9 @@
  */
 
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_END_OF_TURN_EFFECT_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -35,7 +37,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -52,7 +54,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -83,11 +85,11 @@ describe("processEffectResult -- defenderHealAmount (issue #526)", () => {
     // Arrange
     // Source: Bulbapedia -- Present heals the target by 1/4 max HP
     // The target (Blastoise, side 1) should be healed, not the attacker (Charizard, side 0)
-    let callCount = 0;
+    const callState = { count: 0 };
     const ruleset = new MockRuleset();
     ruleset.executeMoveEffect = () => {
-      callCount++;
-      if (callCount === 1) {
+      callState.count++;
+      if (callState.count === 1) {
         // First move (Charizard -> Blastoise): simulate Present heal case
         // 1/4 of 200 max HP = 50 HP heal to defender
         return {
@@ -141,12 +143,12 @@ describe("processEffectResult -- defenderHealAmount (issue #526)", () => {
   it("given defenderHealAmount exceeds missing HP, when move resolves, then heal is capped at max HP", () => {
     // Arrange
     // Source: Standard game mechanic -- heal cannot exceed max HP
-    let callCount = 0;
+    const callState = { count: 0 };
     const ruleset = new MockRuleset();
     ruleset.setFixedDamage(0); // no damage dealt, isolate heal behavior
     ruleset.executeMoveEffect = () => {
-      callCount++;
-      if (callCount === 1) {
+      callState.count++;
+      if (callState.count === 1) {
         return {
           statusInflicted: null,
           volatileInflicted: null,
@@ -202,18 +204,21 @@ describe("processEffectResult -- wishSet (issue #540)", () => {
     //
     // Turn 1: Charizard uses Wish -> wishSet = { healAmount: 100 } (floor(200/2))
     // Turn 2: end-of-turn Wish triggers, heals active Pokemon by 100 HP
-    let turnCount = 0;
+    const turnState = { count: 0 };
     const ruleset = new MockRuleset();
 
     // Override EOT order to include "wish"
-    ruleset.getEndOfTurnOrder = () => ["wish", "status-damage"];
+    ruleset.getEndOfTurnOrder = () => [
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+    ];
 
     // First turn: Charizard returns wishSet
     // Subsequent turns: no effect
     const originalExecute = ruleset.executeMoveEffect.bind(ruleset);
     ruleset.executeMoveEffect = (context) => {
-      turnCount++;
-      if (turnCount === 1) {
+      turnState.count++;
+      if (turnState.count === 1) {
         // Turn 1, first action (Charizard uses Wish)
         return {
           statusInflicted: null,
@@ -255,7 +260,7 @@ describe("processEffectResult -- wishSet (issue #540)", () => {
 
     // Assert -- Wish should have healed during Turn 2's EOT
     const wishHealEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 0 && e.source === "wish",
+      (e) => e.type === "heal" && e.side === 0 && e.source === CORE_END_OF_TURN_EFFECT_IDS.wish,
     );
     expect(wishHealEvents.length).toBe(1);
 
@@ -266,14 +271,17 @@ describe("processEffectResult -- wishSet (issue #540)", () => {
   it("given wishSet is returned, when wish triggers but active Pokemon is at full HP, then no heal event is emitted", () => {
     // Arrange
     // Source: Standard game mechanic -- heal is a no-op at full HP
-    let turnCount = 0;
+    const turnState = { count: 0 };
     const ruleset = new MockRuleset();
-    ruleset.getEndOfTurnOrder = () => ["wish", "status-damage"];
+    ruleset.getEndOfTurnOrder = () => [
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+    ];
     ruleset.setFixedDamage(0); // no damage dealt
 
     ruleset.executeMoveEffect = () => {
-      turnCount++;
-      if (turnCount === 1) {
+      turnState.count++;
+      if (turnState.count === 1) {
         return {
           statusInflicted: null,
           volatileInflicted: null,
@@ -315,7 +323,7 @@ describe("processEffectResult -- wishSet (issue #540)", () => {
 
     // Assert -- no wish heal event because already at full HP
     const wishHealEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 0 && e.source === "wish",
+      (e) => e.type === "heal" && e.side === 0 && e.source === CORE_END_OF_TURN_EFFECT_IDS.wish,
     );
     expect(wishHealEvents.length).toBe(0);
 
