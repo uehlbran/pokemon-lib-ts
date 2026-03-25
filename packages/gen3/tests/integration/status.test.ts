@@ -1,4 +1,5 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -6,7 +7,9 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
+  createPokemonInstance as createCorePokemonInstance,
   createEvs,
+  createFriendship,
   createIvs,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
@@ -38,7 +41,7 @@ function createGen3Ruleset(): Gen3Ruleset {
   return new Gen3Ruleset(dataManager);
 }
 
-function createPokemonInstance(
+function createSyntheticPokemonInstance(
   overrides: {
     maxHp?: number;
     speed?: number;
@@ -50,42 +53,32 @@ function createPokemonInstance(
   const maxHp = overrides.maxHp ?? 200;
   const speed = overrides.speed ?? 100;
   const species = dataManager.getSpecies(overrides.speciesId ?? NINETALES.id);
-
-  return {
-    uid: "test",
-    speciesId: species.id,
-    nickname: null,
-    level: overrides.level ?? 50,
-    experience: 0,
+  const pokemon = createCorePokemonInstance(species, overrides.level ?? 50, new SeededRandom(3), {
     nature: HARDY_NATURE,
-    ivs: createIvs({ hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 }),
-    evs: createEvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
-    currentHp: maxHp,
-    moves: [],
-    ability: CORE_ABILITY_IDS.none,
+    ivs: createIvs(),
+    evs: createEvs(),
     abilitySlot: CORE_ABILITY_SLOTS.normal1,
-    heldItem: null,
-    status: overrides.status ?? null,
-    friendship: 0,
+    friendship: createFriendship(0),
     gender: CORE_GENDERS.male,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
     pokeball: CORE_ITEM_IDS.pokeBall,
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed,
-    },
-  } as PokemonInstance;
+  });
+
+  pokemon.currentHp = maxHp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed,
+  };
+
+  return pokemon;
 }
 
-function createOnFieldPokemon(
+function createSyntheticOnFieldPokemon(
   overrides: {
     maxHp?: number;
     speed?: number;
@@ -95,41 +88,15 @@ function createOnFieldPokemon(
     speciesId?: number;
   } = {},
 ): ActivePokemon {
-  const pokemon = createPokemonInstance(overrides);
+  const pokemon = createSyntheticPokemonInstance(overrides);
   const species = dataManager.getSpecies(pokemon.speciesId);
-
-  return {
+  const onFieldPokemon = createBattleOnFieldPokemon(
     pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? [...species.types],
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+    0,
+    overrides.types ?? [...species.types],
+  );
+  onFieldPokemon.ability = CORE_ABILITY_IDS.none;
+  return onFieldPokemon;
 }
 
 function createBattleSide(index: 0 | 1, active: ActivePokemon) {
@@ -200,7 +167,7 @@ describe("Gen 3 burn damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — burn tick = maxHP / 8
     // Derivation: floor(160 / 8) = 20
     const ruleset = createGen3Ruleset();
-    const mon = createOnFieldPokemon({
+    const mon = createSyntheticOnFieldPokemon({
       maxHp: 160,
       status: CORE_STATUS_IDS.burn,
       speciesId: NINETALES.id,
@@ -212,7 +179,7 @@ describe("Gen 3 burn damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — burn tick = maxHP / 8
     // Derivation: floor(200 / 8) = 25
     const ruleset = createGen3Ruleset();
-    const mon = createOnFieldPokemon({
+    const mon = createSyntheticOnFieldPokemon({
       maxHp: 200,
       status: CORE_STATUS_IDS.burn,
       speciesId: NINETALES.id,
@@ -230,7 +197,7 @@ describe("Gen 3 poison damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — poison tick = maxHP / 8
     // Derivation: floor(160 / 8) = 20
     const ruleset = createGen3Ruleset();
-    const mon = createOnFieldPokemon({
+    const mon = createSyntheticOnFieldPokemon({
       maxHp: 160,
       status: CORE_STATUS_IDS.poison,
       speciesId: NINETALES.id,
@@ -242,7 +209,7 @@ describe("Gen 3 poison damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — poison tick = maxHP / 8
     // Derivation: floor(200 / 8) = 25
     const ruleset = createGen3Ruleset();
-    const mon = createOnFieldPokemon({
+    const mon = createSyntheticOnFieldPokemon({
       maxHp: 200,
       status: CORE_STATUS_IDS.poison,
       speciesId: NINETALES.id,
@@ -258,12 +225,16 @@ describe("Gen 3 poison damage", () => {
 describe("Gen 3 paralysis speed penalty", () => {
   it("given a paralyzed Pokemon with 100 base speed vs a healthy 50-speed Pokemon, when turn order is resolved, then the healthy Pokemon moves first", () => {
     // Source: pret/pokeemerald src/battle_util.c — paralyzed speed = speed / 4
-    const paralyzedMon = createOnFieldPokemon({
+    const paralyzedMon = createSyntheticOnFieldPokemon({
       speed: 100,
       status: CORE_STATUS_IDS.paralysis,
       speciesId: NINETALES.id,
     });
-    const healthyMon = createOnFieldPokemon({ speed: 50, status: null, speciesId: VAPOREON.id });
+    const healthyMon = createSyntheticOnFieldPokemon({
+      speed: 50,
+      status: null,
+      speciesId: VAPOREON.id,
+    });
     const state = createBattleState(paralyzedMon, healthyMon);
     const ruleset = createGen3Ruleset();
 
@@ -291,12 +262,16 @@ describe("Gen 3 paralysis speed penalty", () => {
 
   it("given a paralyzed Pokemon with 100 base speed vs a healthy 20-speed Pokemon, when turn order is resolved, then paralyzed moves first (25 > 20)", () => {
     // Source: pret/pokeemerald src/battle_util.c — paralyzed speed = speed / 4
-    const paralyzedMon = createOnFieldPokemon({
+    const paralyzedMon = createSyntheticOnFieldPokemon({
       speed: 100,
       status: CORE_STATUS_IDS.paralysis,
       speciesId: NINETALES.id,
     });
-    const slowMon = createOnFieldPokemon({ speed: 20, status: null, speciesId: VAPOREON.id });
+    const slowMon = createSyntheticOnFieldPokemon({
+      speed: 20,
+      status: null,
+      speciesId: VAPOREON.id,
+    });
     const state = createBattleState(paralyzedMon, slowMon);
     const ruleset = createGen3Ruleset();
 
@@ -341,7 +316,7 @@ describe("Gen 3 freeze thaw check (20% probability)", () => {
   it("given a frozen Pokemon, when RNG roll is below 0.2 (thaw threshold), then checkFreezeThaw returns true (thawed)", () => {
     // Source: pret/pokeemerald src/battle_util.c — 20% thaw: if(Random()%100 >= 80)
     const ruleset = createGen3Ruleset();
-    const frozenMon = createOnFieldPokemon({
+    const frozenMon = createSyntheticOnFieldPokemon({
       status: CORE_STATUS_IDS.freeze,
       speciesId: NINETALES.id,
     });
@@ -353,7 +328,7 @@ describe("Gen 3 freeze thaw check (20% probability)", () => {
   it("given a frozen Pokemon, when RNG roll is at or above 0.2 (stay frozen), then checkFreezeThaw returns false", () => {
     // Source: pret/pokeemerald src/battle_util.c — 20% thaw: if(Random()%100 >= 80)
     const ruleset = createGen3Ruleset();
-    const frozenMon = createOnFieldPokemon({
+    const frozenMon = createSyntheticOnFieldPokemon({
       status: CORE_STATUS_IDS.freeze,
       speciesId: NINETALES.id,
     });
@@ -365,7 +340,7 @@ describe("Gen 3 freeze thaw check (20% probability)", () => {
   it("given a frozen Pokemon, when RNG roll is well above threshold (0.99), then checkFreezeThaw returns false", () => {
     // Source: pret/pokeemerald src/battle_util.c — 80% chance to stay frozen
     const ruleset = createGen3Ruleset();
-    const frozenMon = createOnFieldPokemon({
+    const frozenMon = createSyntheticOnFieldPokemon({
       status: CORE_STATUS_IDS.freeze,
       speciesId: NINETALES.id,
     });
@@ -382,7 +357,7 @@ describe("Gen 3 freeze thaw check (20% probability)", () => {
     const trials = 200;
 
     for (let i = 0; i < trials; i++) {
-      const frozenMon = createOnFieldPokemon({
+      const frozenMon = createSyntheticOnFieldPokemon({
         status: CORE_STATUS_IDS.freeze,
         speciesId: NINETALES.id,
       });
