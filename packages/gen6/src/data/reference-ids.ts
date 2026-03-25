@@ -581,6 +581,8 @@ export const GEN6_MOVE_IDS = {
   telekinesis: "telekinesis",
   teleport: "teleport",
   thief: "thief",
+  thousandArrows: "thousand-arrows",
+  thousandWaves: "thousand-waves",
   thrash: "thrash",
   thunder: "thunder",
   thunderFang: "thunder-fang",
