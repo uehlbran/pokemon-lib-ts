@@ -169,16 +169,6 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  const base = DATA_MANAGER.getMove(id)
-  return {
-    ...base,
-    id: base.id,
-    name: base.name,
-    ...overrides,
-  } as MoveData;
-}
-
 function createMinimalBattleState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
   return {
     sides: [
@@ -279,14 +269,14 @@ describe("Bug #397 — Normalize does not affect Struggle", () => {
       defense: 100,
     });
     // Non-Struggle Normal move with Normalize against Ghost => 0 damage
-    const normalMove = createMove(MOVES.tackle, { type: TYPES.normal, power: 50, category: "physical" });
+    const normalMove = DATA_MANAGER.getMove(MOVES.cut);
     const ctx1 = createDamageContext({ attacker, defender, move: normalMove });
     const result1 = calculateGen4Damage(ctx1, GEN4_TYPE_CHART);
     expect(result1.damage).toBe(0);
 
     // Struggle with Normalize against Ghost => Struggle is excluded from Normalize
     // In Gen 4, Struggle is typeless ("???"), so it should hit for neutral damage.
-    const struggle = createMove(MOVES.struggle, { type: TYPES.normal, power: 50, category: "physical" });
+    const struggle = DATA_MANAGER.getMove(MOVES.struggle);
     const ctx2 = createDamageContext({ attacker, defender, move: struggle });
     const result2 = calculateGen4Damage(ctx2, GEN4_TYPE_CHART);
     // Struggle bypasses type immunity — damage should be > 0
@@ -316,11 +306,7 @@ describe("Bug #397 — Normalize does not affect Struggle", () => {
       defense: 100,
     });
     // Flamethrower (fire) with Normalize becomes Normal type => gets STAB from Normal attacker
-    const fireMove = createMove(MOVES.flamethrower, {
-      type: TYPES.fire,
-      power: 80,
-      category: "special",
-    });
+    const fireMove = DATA_MANAGER.getMove(MOVES.lavaPlume);
     const ctx = createDamageContext({ attacker, defender, move: fireMove });
     const result = calculateGen4Damage(ctx, GEN4_TYPE_CHART);
     // With Normalize: fire -> normal, Normal attacker gets STAB (1.5x)
@@ -354,7 +340,7 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
       spDefense: 100,
     });
     // Shadow Ball: Ghost, Special, 80 BP
-    const move = createMove(MOVES.shadowBall, { type: TYPES.ghost, power: 80, category: "special" });
+    const move = DATA_MANAGER.getMove(MOVES.shadowBall);
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen4Damage(ctx, GEN4_TYPE_CHART);
 
@@ -384,7 +370,7 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
       types: [TYPES.normal],
       spDefense: 100,
     });
-    const move = createMove(MOVES.dragonPulse, { type: TYPES.dragon, power: 80, category: "special" });
+    const move = DATA_MANAGER.getMove(MOVES.dragonPulse);
     const rng = createMockRng(100);
 
     const resultOrb = calculateGen4Damage(
@@ -399,16 +385,16 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
     // With Griseous Orb, damage should be higher
     expect(resultOrb.damage).toBeGreaterThan(resultNoOrb.damage);
     // Without orb: power=80, baseDmg = floor(floor(22*80*100/100)/50)+2 = 37, STAB = floor(37*1.5) = 55
-    expect(resultNoOrb.damage).toBe(55);
-    // With orb: power = floor(80*4915/4096) = 95, baseDmg = floor(floor(22*95*100/100)/50)+2 = 43, STAB = floor(43*1.5) = 64
-    expect(resultOrb.damage).toBe(64);
+    expect(resultNoOrb.damage).toBe(61);
+    // With orb: power = floor(90*4915/4096) = 107, baseDmg = floor(floor(22*107*100/100)/50)+2 = 49, STAB = floor(49*1.5) = 73
+    expect(resultOrb.damage).toBe(73);
   });
 
   it("given non-Giratina holding Griseous Orb, when calculating damage with Ghost move, then no boost", () => {
     // Source: Showdown Gen 4 mod — Griseous Orb only boosts Giratina (species 487)
     const attacker = createActivePokemon({
       types: [TYPES.ghost],
-      speciesId: 94, // Gengar, not Giratina
+      speciesId: SPECIES.gengar,
       heldItem: ITEMS.griseousOrb,
       spAttack: 100,
     });
@@ -416,11 +402,11 @@ describe("Bug #391 — Griseous Orb base power boost for Giratina", () => {
       types: [TYPES.psychic],
       spDefense: 100,
     });
-    const move = createMove(MOVES.shadowBall, { type: TYPES.ghost, power: 80, category: "special" });
+    const move = DATA_MANAGER.getMove(MOVES.shadowBall);
 
     const attacker2 = createActivePokemon({
       types: [TYPES.ghost],
-      speciesId: 94,
+      speciesId: SPECIES.gengar,
       heldItem: null, // no orb
       spAttack: 100,
     });
@@ -457,13 +443,13 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
     //   baseDmg = floor(floor(22 * 80 * 100 / 100) / 50) + 2 = 37
     const pikachu = createActivePokemon({
       types: [TYPES.electric],
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
       heldItem: ITEMS.lightBall,
       attack: 100,
     });
     const pikachuNoItem = createActivePokemon({
       types: [TYPES.electric],
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
       heldItem: null,
       attack: 100,
     });
@@ -471,7 +457,7 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
       types: [TYPES.normal],
       defense: 100,
     });
-    const move = createMove(MOVES.ironTail, { type: TYPES.steel, power: 80, category: "physical" });
+    const move = DATA_MANAGER.getMove(MOVES.ironTail);
     const rng = createMockRng(100);
 
     const resultBall = calculateGen4Damage(
@@ -483,8 +469,8 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
       GEN4_TYPE_CHART,
     );
 
-    expect(resultNone.damage).toBe(37);
-    expect(resultBall.damage).toBe(72);
+    expect(resultNone.damage).toBe(46);
+    expect(resultBall.damage).toBe(90);
   });
 
   it("given Pikachu holding Light Ball with special move, when calculating damage, then special base power is also doubled", () => {
@@ -494,13 +480,13 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
     //   With:    power = 190, baseDmg = floor(floor(22*190*100/100)/50)+2 = 85, STAB = floor(85*1.5) = 127
     const pikachu = createActivePokemon({
       types: [TYPES.electric],
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
       heldItem: ITEMS.lightBall,
       spAttack: 100,
     });
     const pikachuNoItem = createActivePokemon({
       types: [TYPES.electric],
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
       heldItem: null,
       spAttack: 100,
     });
@@ -508,11 +494,7 @@ describe("Bug #394 — Light Ball doubles base power for Pikachu in Gen 4", () =
       types: [TYPES.normal],
       spDefense: 100,
     });
-    const move = createMove(MOVES.thunderbolt, {
-      type: TYPES.electric,
-      power: 95,
-      category: "special",
-    });
+    const move = DATA_MANAGER.getMove(MOVES.thunderbolt);
     const rng = createMockRng(100);
 
     const resultBall = calculateGen4Damage(
@@ -539,7 +521,7 @@ describe("Bug #416 — Whirlwind/Roar set forcedSwitch field", () => {
     // Bug #416: forcedSwitch field must be set for the engine to process phazing correctly
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const move = createMove(MOVES.whirlwind, { type: TYPES.normal, category: "status", power: 0 });
+    const move = DATA_MANAGER.getMove(MOVES.whirlwind);
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -553,7 +535,7 @@ describe("Bug #416 — Whirlwind/Roar set forcedSwitch field", () => {
     // Source: Showdown Gen 4 — Roar and Whirlwind share the same phazing logic
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const move = createMove(MOVES.roar, { type: TYPES.normal, category: "status", power: 0 });
+    const move = DATA_MANAGER.getMove(MOVES.roar);
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -579,7 +561,7 @@ describe("Bug #417 — Whirlwind/Roar check for Ingrain", () => {
       volatiles: ingrain,
       nickname: "Bulba",
     });
-    const move = createMove(MOVES.whirlwind, { type: TYPES.normal, category: "status", power: 0 });
+    const move = DATA_MANAGER.getMove(MOVES.whirlwind);
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -599,7 +581,7 @@ describe("Bug #417 — Whirlwind/Roar check for Ingrain", () => {
       volatiles: ingrain,
       nickname: "Torterra",
     });
-    const move = createMove(MOVES.roar, { type: TYPES.normal, category: "status", power: 0 });
+    const move = DATA_MANAGER.getMove(MOVES.roar);
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -620,7 +602,7 @@ describe("Bug #418 — Binding move duration is 3-6 (not 4-5)", () => {
     // Our rng.int(3, 6) is inclusive on both bounds = same 3-6 range
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Target" });
-    const move = createMove(MOVES.bind, { type: TYPES.normal, category: "physical", power: 15 });
+    const move = DATA_MANAGER.getMove(MOVES.bind);
     const rng = createMockRng(3); // min of range
     const ctx = createMoveEffectContext(attacker, defender, move, rng);
 
@@ -635,7 +617,7 @@ describe("Bug #418 — Binding move duration is 3-6 (not 4-5)", () => {
     // Triangulation: max duration without Grip Claw
     const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Target" });
-    const move = createMove(MOVES.wrap, { type: TYPES.normal, category: "physical", power: 15 });
+    const move = DATA_MANAGER.getMove(MOVES.wrap);
     const rng = createMockRng(6); // max of range
     const ctx = createMoveEffectContext(attacker, defender, move, rng);
 
@@ -662,7 +644,7 @@ describe("Bug #419 — Rest sets exactly 2-turn sleep via selfVolatileData", () 
       nickname: "Snorlax",
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const move = createMove(MOVES.rest, { type: TYPES.psychic, category: "status", power: 0 });
+    const move = DATA_MANAGER.getMove(MOVES.rest);
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
@@ -680,7 +662,7 @@ describe("Bug #419 — Rest sets exactly 2-turn sleep via selfVolatileData", () 
       maxHp: 300,
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
-    const move = createMove(MOVES.rest, { type: TYPES.psychic, category: "status", power: 0 });
+    const move = DATA_MANAGER.getMove(MOVES.rest);
     const ctx = createMoveEffectContext(attacker, defender, move);
 
     const result = executeGen4MoveEffect(ctx);
