@@ -1,11 +1,30 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  createMoveSlot,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import { createGen1DataManager, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../../src/ai/RandomAI";
 import type { AvailableMove } from "../../../src/context";
 import type { BattleState } from "../../../src/state";
-import { createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const GEN1_DATA_MANAGER = createGen1DataManager();
+const TACKLE_SLOT = createMoveSlot(
+  CORE_MOVE_IDS.tackle,
+  GEN1_DATA_MANAGER.getMove(CORE_MOVE_IDS.tackle).pp,
+);
+const SCRATCH_SLOT = createMoveSlot(
+  CORE_MOVE_IDS.scratch,
+  GEN1_DATA_MANAGER.getMove(CORE_MOVE_IDS.scratch).pp,
+);
+const CHARIZARD_TYPES = [...GEN1_DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.charizard).types];
+const BLASTOISE_TYPES = [...GEN1_DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.blastoise).types];
 
 function createTestState(
   overrides?: Partial<{
@@ -17,12 +36,18 @@ function createTestState(
   const rng = new SeededRandom(42);
 
   const team1 = [
-    createTestPokemon(6, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "tackle", currentPP: overrides?.team1Pp?.[0] ?? 35, maxPP: 35, ppUps: 0 },
-        { moveId: "scratch", currentPP: overrides?.team1Pp?.[1] ?? 35, maxPP: 35, ppUps: 0 },
+        {
+          ...TACKLE_SLOT,
+          currentPP: overrides?.team1Pp?.[0] ?? TACKLE_SLOT.currentPP,
+        },
+        {
+          ...SCRATCH_SLOT,
+          currentPP: overrides?.team1Pp?.[1] ?? SCRATCH_SLOT.currentPP,
+        },
       ],
       calculatedStats: {
         hp: 200,
@@ -33,11 +58,12 @@ function createTestState(
         speed: 120,
       },
       currentHp: overrides?.team1Hp?.[0] ?? 200,
+      ability: CORE_ABILITY_IDS.none,
     }),
-    createTestPokemon(25, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ ...TACKLE_SLOT }],
       calculatedStats: {
         hp: 120,
         attack: 80,
@@ -47,14 +73,15 @@ function createTestState(
         speed: 130,
       },
       currentHp: overrides?.team1Hp?.[1] ?? 120,
+      ability: CORE_ABILITY_IDS.none,
     }),
   ];
 
   const team2 = [
-    createTestPokemon(9, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ ...TACKLE_SLOT }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -64,6 +91,7 @@ function createTestState(
         speed: 80,
       },
       currentHp: overrides?.team2Hp?.[0] ?? 200,
+      ability: CORE_ABILITY_IDS.none,
     }),
   ];
 
@@ -77,38 +105,7 @@ function createTestState(
         index: 0,
         trainer: null,
         team: team1,
-        active: [
-          {
-            pokemon: team1[0] as PokemonInstance,
-            teamSlot: 0,
-            statStages: {
-              hp: 0,
-              attack: 0,
-              defense: 0,
-              spAttack: 0,
-              spDefense: 0,
-              speed: 0,
-              accuracy: 0,
-              evasion: 0,
-            },
-            volatileStatuses: new Map(),
-            types: ["fire", "flying"],
-            ability: "blaze",
-            lastMoveUsed: null,
-            turnsOnField: 1,
-            movedThisTurn: false,
-            consecutiveProtects: 0,
-            substituteHp: 0,
-            transformed: false,
-            transformedSpecies: null,
-            isMega: false,
-            isDynamaxed: false,
-            dynamaxTurnsLeft: 0,
-            isTerastallized: false,
-            teraType: null,
-            stellarBoostedTypes: [],
-          },
-        ],
+        active: [createOnFieldPokemon(team1[0], 0, CHARIZARD_TYPES)],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -122,38 +119,7 @@ function createTestState(
         index: 1,
         trainer: null,
         team: team2,
-        active: [
-          {
-            pokemon: team2[0] as PokemonInstance,
-            teamSlot: 0,
-            statStages: {
-              hp: 0,
-              attack: 0,
-              defense: 0,
-              spAttack: 0,
-              spDefense: 0,
-              speed: 0,
-              accuracy: 0,
-              evasion: 0,
-            },
-            volatileStatuses: new Map(),
-            types: ["water"],
-            ability: "torrent",
-            lastMoveUsed: null,
-            turnsOnField: 1,
-            movedThisTurn: false,
-            consecutiveProtects: 0,
-            substituteHp: 0,
-            transformed: false,
-            transformedSpecies: null,
-            isMega: false,
-            isDynamaxed: false,
-            dynamaxTurnsLeft: 0,
-            isTerastallized: false,
-            teraType: null,
-            stellarBoostedTypes: [],
-          },
-        ],
+        active: [createOnFieldPokemon(team2[0], 0, BLASTOISE_TYPES)],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -187,8 +153,8 @@ function createAvailableMoves(state: BattleState, side: 0 | 1): AvailableMove[] 
     index,
     moveId: slot.moveId,
     displayName: slot.moveId,
-    type: "normal",
-    category: "physical",
+    type: CORE_TYPE_IDS.normal,
+    category: CORE_MOVE_CATEGORIES.physical,
     pp: slot.currentPP,
     maxPp: slot.maxPP,
     disabled: slot.currentPP <= 0,
@@ -218,7 +184,7 @@ describe("RandomAI — edge cases", () => {
     it("given a pokemon with one move at 0 PP and one with PP, when chooseAction is called, then only the move with PP is selected", () => {
       // Arrange
       const ai = new RandomAI();
-      const state = createTestState({ team1Pp: [0, 35] });
+      const state = createTestState({ team1Pp: [0, SCRATCH_SLOT.currentPP] });
       const ruleset = new MockRuleset();
       const _rng = new SeededRandom(42);
 
@@ -246,7 +212,7 @@ describe("RandomAI — edge cases", () => {
     it("given a pokemon with only one move with PP, when chooseAction is called many times, then it always returns that move", () => {
       // Arrange
       const ai = new RandomAI();
-      const state = createTestState({ team1Pp: [35, 0] });
+      const state = createTestState({ team1Pp: [TACKLE_SLOT.currentPP, 0] });
       const ruleset = new MockRuleset();
 
       // Act & Assert
@@ -289,10 +255,10 @@ describe("RandomAI — edge cases", () => {
       const ai = new RandomAI();
       const state = createTestState();
       // Add a third pokemon to team
-      const extraMon = createTestPokemon(9, 50, {
+      const extraMon = createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
         uid: "extra-1",
         nickname: "Extra",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [{ ...TACKLE_SLOT }],
         calculatedStats: {
           hp: 200,
           attack: 100,
