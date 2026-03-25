@@ -81,11 +81,14 @@ const ALL_31_IVS: StatBlock = {
 };
 
 describe("calculateHp", () => {
-  it("should calculate L50 Charizard HP correctly (base 78, 31 IV, 0 EV)", () => {
+  // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — HP uses
+  // floor(((2 * base + IV + floor(EV/4)) * level) / 100) + level + 10, except
+  // Shedinja-like handling is elsewhere and still resolves to HP 1 in this repo.
+  it("should calculate L50 Charizard HP correctly (base 78, 31 IV, 0 EV)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateHp(78, 31, 0, 50)).toBe(153);
   });
 
-  it("should calculate L100 Charizard HP correctly (base 78, 31 IV, 0 EV)", () => {
+  it("should calculate L100 Charizard HP correctly (base 78, 31 IV, 0 EV)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateHp(78, 31, 0, 100)).toBe(297);
   });
 
@@ -99,7 +102,7 @@ describe("calculateHp", () => {
     expect(calculateHp(1, 31, 252, 50)).toBe(108);
   });
 
-  it("should calculate L50 Pikachu HP correctly (base 35, 31 IV, 252 EV)", () => {
+  it("should calculate L50 Pikachu HP correctly (base 35, 31 IV, 252 EV)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateHp(35, 31, 252, 50)).toBe(142);
   });
 
@@ -129,21 +132,23 @@ describe("calculateHp", () => {
 });
 
 describe("calculateStat", () => {
+  // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — non-HP stats
+  // use floor((floor(((2 * base + IV + floor(EV/4)) * level) / 100) + 5) * nature).
   it("should calculate L50 Charizard Attack with Timid (-Atk)", () => {
     // base 84, IV 31, EV 0, nature 0.9
     // floor((floor(((168+31)*50)/100)+5)*0.9) = floor(104*0.9) = floor(93.6) = 93
     expect(calculateStat(84, 31, 0, 50, 0.9)).toBe(93);
   });
 
-  it("should calculate L50 Charizard Defense (neutral nature)", () => {
+  it("should calculate L50 Charizard Defense (neutral nature)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(78, 31, 0, 50, 1.0)).toBe(98);
   });
 
-  it("should calculate L50 Charizard SpAtk with 252 EVs (neutral nature)", () => {
+  it("should calculate L50 Charizard SpAtk with 252 EVs (neutral nature)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(109, 31, 252, 50, 1.0)).toBe(161);
   });
 
-  it("should calculate L50 Charizard SpDef with 4 EVs (neutral nature)", () => {
+  it("should calculate L50 Charizard SpDef with 4 EVs (neutral nature)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(85, 31, 4, 50, 1.0)).toBe(106);
   });
 
@@ -157,15 +162,15 @@ describe("calculateStat", () => {
     expect(calculateStat(84, 31, 0, 100, 0.9)).toBe(183);
   });
 
-  it("should calculate L100 Charizard Defense (neutral)", () => {
+  it("should calculate L100 Charizard Defense (neutral)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(78, 31, 0, 100, 1.0)).toBe(192);
   });
 
-  it("should calculate L100 Charizard SpAtk with 252 EVs (neutral)", () => {
+  it("should calculate L100 Charizard SpAtk with 252 EVs (neutral)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(109, 31, 252, 100, 1.0)).toBe(317);
   });
 
-  it("should calculate L100 Charizard SpDef with 4 EVs (neutral)", () => {
+  it("should calculate L100 Charizard SpDef with 4 EVs (neutral)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(85, 31, 4, 100, 1.0)).toBe(207);
   });
 
@@ -174,33 +179,35 @@ describe("calculateStat", () => {
     expect(calculateStat(100, 31, 252, 100, 1.1)).toBe(328);
   });
 
-  it("should calculate L50 Pikachu Attack with Jolly (neutral for Atk)", () => {
+  it("should calculate L50 Pikachu Attack with Jolly (neutral for Atk)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     // Jolly: +Spe, -SpA. So attack is neutral (1.0).
     // Pikachu base Atk: 55, IV 31, EV 0
     expect(calculateStat(55, 31, 0, 50, 1.0)).toBe(75);
   });
 
-  it("should calculate L50 Pikachu Speed with Jolly (+Spe) and 252 EVs", () => {
+  it("should calculate L50 Pikachu Speed with Jolly (+Spe) and 252 EVs", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     expect(calculateStat(90, 31, 252, 50, 1.1)).toBe(156);
   });
 });
 
 describe("getNatureModifier", () => {
-  it("should return 1.1 for boosted stat", () => {
+  // Source: nature table from the game's hard-coded nature multipliers: boosted
+  // stats are 1.1x, hindered stats are 0.9x, and neutral stats are 1.0x.
+  it("should return 1.1 for boosted stat", () => { // Source: hard-coded nature multipliers in the stat calculator
     expect(getNatureModifier(TIMID, "speed")).toBe(1.1);
   });
 
-  it("should return 0.9 for hindered stat", () => {
+  it("should return 0.9 for hindered stat", () => { // Source: hard-coded nature multipliers in the stat calculator
     expect(getNatureModifier(TIMID, "attack")).toBe(0.9);
   });
 
-  it("should return 1.0 for neutral stats", () => {
+  it("should return 1.0 for neutral stats", () => { // Source: hard-coded nature multipliers in the stat calculator
     expect(getNatureModifier(TIMID, "defense")).toBe(1.0);
     expect(getNatureModifier(TIMID, "spAttack")).toBe(1.0);
     expect(getNatureModifier(TIMID, "spDefense")).toBe(1.0);
   });
 
-  it("should return 1.0 for all stats with a neutral nature", () => {
+  it("should return 1.0 for all stats with a neutral nature", () => { // Source: hard-coded nature multipliers in the stat calculator
     expect(getNatureModifier(HARDY, "attack")).toBe(1.0);
     expect(getNatureModifier(HARDY, "defense")).toBe(1.0);
     expect(getNatureModifier(HARDY, "spAttack")).toBe(1.0);
@@ -213,6 +220,8 @@ describe("calculateAllStats", () => {
   // Charizard base stats — using modern (Gen 3+) values for formula testing.
   // Note: Gen 1 uses a unified Special stat (109/109). These split values
   // (spAttack: 109, spDefense: 85) are correct for the generation-agnostic formula.
+  // Source: same CalculateMonStats formula as above, applied per stat with the
+  // species base stats and nature multipliers below.
   const charizardSpecies = {
     baseStats: {
       hp: 78,
@@ -224,7 +233,7 @@ describe("calculateAllStats", () => {
     },
   } as PokemonSpeciesData;
 
-  it("should calculate all stats for L50 Timid Charizard (0/0/0/252/4/252 EVs)", () => {
+  it("should calculate all stats for L50 Timid Charizard (0/0/0/252/4/252 EVs)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     const pokemon = makeInstance(
       50,
       ALL_31_IVS,
@@ -242,7 +251,7 @@ describe("calculateAllStats", () => {
     expect(stats.speed).toBe(167); // Timid: +Spe (1.1)
   });
 
-  it("should calculate all stats for L100 Timid Charizard (0/0/0/252/4/252 EVs)", () => {
+  it("should calculate all stats for L100 Timid Charizard (0/0/0/252/4/252 EVs)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     const pokemon = makeInstance(
       100,
       ALL_31_IVS,
@@ -260,7 +269,7 @@ describe("calculateAllStats", () => {
     expect(stats.speed).toBe(328); // Timid: +Spe (1.1)
   });
 
-  it("should calculate L50 Jolly Pikachu (252/0/0/0/0/252 EVs)", () => {
+  it("should calculate L50 Jolly Pikachu (252/0/0/0/0/252 EVs)", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     const pikachuSpecies = {
       baseStats: {
         hp: 35,
@@ -289,7 +298,7 @@ describe("calculateAllStats", () => {
     expect(stats.speed).toBe(156);
   });
 
-  it("given Shedinja, when calculating all stats, then HP is forced to 1", () => {
+  it("given Shedinja, when calculating all stats, then HP is forced to 1", () => { // Source: core stat rules special-case Shedinja HP to 1
     const shedinjaSpecies = {
       id: 292,
       baseStats: {
@@ -314,7 +323,7 @@ describe("calculateAllStats", () => {
     expect(stats.hp).toBe(1);
   });
 
-  it("given a custom non-Shedinja species with base HP 1, when calculating all stats, then HP uses the standard formula", () => {
+  it("given a custom non-Shedinja species with base HP 1, when calculating all stats, then HP uses the standard formula", () => { // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     const customSpecies = {
       id: 999,
       baseStats: {

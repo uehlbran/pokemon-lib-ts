@@ -292,6 +292,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=100, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((100+15)*2+64)*100/100)+100+10 = 404.
       expect(stats.hp).toBe(404); // 100*2+204
       expect(stats.attack).toBe(367); // 134*2+99
       expect(stats.defense).toBe(319); // 110*2+99
@@ -316,6 +318,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=106, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((106+15)*2+64)*100/100)+100+10 = 416.
       expect(stats.hp).toBe(416); // 106*2+204
       expect(stats.attack).toBe(319); // 110*2+99
       expect(stats.defense).toBe(279); // 90*2+99
@@ -340,6 +344,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=160, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((160+15)*2+64)*100/100)+100+10 = 524.
       expect(stats.hp).toBe(524); // 160*2+204
       expect(stats.attack).toBe(319); // 110*2+99
       expect(stats.defense).toBe(229); // 65*2+99
@@ -364,6 +370,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=255, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((255+15)*2+64)*100/100)+100+10 = 714.
       expect(stats.hp).toBe(714); // 255*2+204
       expect(stats.attack).toBe(119); // 10*2+99
       expect(stats.defense).toBe(119); // 10*2+99
@@ -388,6 +396,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=106, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((106+15)*2+64)*100/100)+100+10 = 416.
       expect(stats.hp).toBe(416); // 106*2+204
       expect(stats.attack).toBe(279); // 90*2+99
       expect(stats.defense).toBe(359); // 130*2+99
@@ -412,6 +422,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=106, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((106+15)*2+64)*100/100)+100+10 = 416.
       expect(stats.hp).toBe(416); // 106*2+204
       expect(stats.attack).toBe(359); // 130*2+99
       expect(stats.defense).toBe(279); // 90*2+99
@@ -436,6 +448,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=65, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((65+15)*2+64)*100/100)+100+10 = 334.
       expect(stats.hp).toBe(334); // 65*2+204
       expect(stats.attack).toBe(229); // 65*2+99
       expect(stats.defense).toBe(219); // 60*2+99
@@ -460,6 +474,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=95, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((95+15)*2+64)*100/100)+100+10 = 394.
       expect(stats.hp).toBe(394); // 95*2+204
       expect(stats.attack).toBe(229); // 65*2+99
       expect(stats.defense).toBe(319); // 110*2+99
@@ -484,6 +500,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=70, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((70+15)*2+64)*100/100)+100+10 = 344.
       expect(stats.hp).toBe(344); // 70*2+204
       expect(stats.attack).toBe(359); // 130*2+99
       expect(stats.defense).toBe(299); // 100*2+99
@@ -508,6 +526,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=80, DV=15, StatExp=65535, L=100, bonus=64.
+      // HP = floor(((80+15)*2+64)*100/100)+100+10 = 364.
       expect(stats.hp).toBe(364); // 80*2+204
       expect(stats.attack).toBe(349); // 125*2+99
       expect(stats.defense).toBe(249); // 75*2+99
@@ -793,6 +813,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=45, DV=15, StatExp=0, L=50, bonus=0.
+      // HP = floor(((45+15)*2+0)*50/100)+50+10 = 120.
       // Derived HP DV = 15 (not the passed-in ivs.hp=0)
       // HP = floor(((45+15)*2+0)*50/100)+50+10 = floor(120*50/100)+60 = 60+60 = 120
       // Source: formula derivation — base=45, DV=15 (derived), StatExp=0, L=50
@@ -821,6 +843,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=45, DV=0, StatExp=0, L=50, bonus=0.
+      // HP = floor(((45+0)*2+0)*50/100)+50+10 = 105.
       // Derived HP DV = 0 (not the passed-in ivs.hp=15)
       // HP = floor(((45+0)*2+0)*50/100)+50+10 = floor(90*50/100)+60 = 45+60 = 105
       // Source: formula derivation — base=45, DV=0 (derived), StatExp=0, L=50
@@ -850,6 +874,8 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pret/pokecrystal engine/stats.asm -- base=100, DV=10, StatExp=0, L=100, bonus=0.
+      // HP = floor(((100+10)*2+0)*100/100)+100+10 = 330.
       // Derived HP DV = 10
       // HP = floor(((100+10)*2+0)*100/100)+100+10 = 220+110 = 330
       // Source: formula derivation — base=100, DV=10 (derived), StatExp=0, L=100

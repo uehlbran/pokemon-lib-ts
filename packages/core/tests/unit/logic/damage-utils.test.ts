@@ -10,7 +10,10 @@ import {
 // --- applyDamageModifier ---
 
 describe("applyDamageModifier", () => {
-  it("given a value and modifier of 1.0, when called, then returns the same value", () => {
+  // Source: damage modifiers in this repo are simple multiplicative factors
+  // with floor truncation after each application, matching the battle formula
+  // behavior exercised by the production damage calculator.
+  it("given a value and modifier of 1.0, when called, then returns the same value", () => { // Source: damage modifier helper applies a 1.0x multiplier
     // Arrange / Act
     const result = applyDamageModifier(100, 1.0);
 
@@ -18,7 +21,7 @@ describe("applyDamageModifier", () => {
     expect(result).toBe(100);
   });
 
-  it("given a value and modifier of 1.5, when called, then returns floor of result", () => {
+  it("given a value and modifier of 1.5, when called, then returns floor of result", () => { // Source: damage modifier helper applies floor(value * modifier)
     // Arrange / Act
     const result = applyDamageModifier(100, 1.5);
 
@@ -26,7 +29,7 @@ describe("applyDamageModifier", () => {
     expect(result).toBe(150);
   });
 
-  it("given a value and modifier of 0.5, when called, then returns half", () => {
+  it("given a value and modifier of 0.5, when called, then returns half", () => { // Source: damage modifier helper applies floor(value * modifier)
     // Arrange / Act
     const result = applyDamageModifier(100, 0.5);
 
@@ -34,7 +37,7 @@ describe("applyDamageModifier", () => {
     expect(result).toBe(50);
   });
 
-  it("given an odd value and modifier of 1.5, when called, then applies floor truncation", () => {
+  it("given an odd value and modifier of 1.5, when called, then applies floor truncation", () => { // Source: damage modifier helper applies floor(value * modifier)
     // Arrange / Act
     const result = applyDamageModifier(99, 1.5);
 
@@ -43,7 +46,7 @@ describe("applyDamageModifier", () => {
     expect(result).toBe(148);
   });
 
-  it("given a value and modifier of 0, when called, then returns 0", () => {
+  it("given a value and modifier of 0, when called, then returns 0", () => { // Source: zero multiplier zeroes damage
     // Arrange / Act
     const result = applyDamageModifier(100, 0);
 
@@ -51,7 +54,7 @@ describe("applyDamageModifier", () => {
     expect(result).toBe(0);
   });
 
-  it("given a value of 1 and a small modifier, when called, then applies floor truncation to 0", () => {
+  it("given a value of 1 and a small modifier, when called, then applies floor truncation to 0", () => { // Source: damage modifier helper applies floor(value * modifier)
     // Arrange / Act
     const result = applyDamageModifier(1, 0.3);
 
@@ -60,7 +63,7 @@ describe("applyDamageModifier", () => {
     expect(result).toBe(0);
   });
 
-  it("given a large value and modifier of 2.0, when called, then doubles the value", () => {
+  it("given a large value and modifier of 2.0, when called, then doubles the value", () => { // Source: 2.0x modifier doubles damage before truncation
     // Arrange / Act
     const result = applyDamageModifier(250, 2.0);
 
@@ -72,7 +75,9 @@ describe("applyDamageModifier", () => {
 // --- applyDamageModifierChain ---
 
 describe("applyDamageModifierChain", () => {
-  it("given a value and empty modifier chain, when called, then returns the original value", () => {
+  // Source: chained modifiers are applied sequentially with floor truncation at
+  // each step, not multiplied first and rounded once at the end.
+  it("given a value and empty modifier chain, when called, then returns the original value", () => { // Source: chained modifiers are applied sequentially with floor truncation
     // Arrange / Act
     const result = applyDamageModifierChain(100, []);
 
@@ -80,7 +85,7 @@ describe("applyDamageModifierChain", () => {
     expect(result).toBe(100);
   });
 
-  it("given a value and single modifier, when called, then behaves like applyDamageModifier", () => {
+  it("given a value and single modifier, when called, then behaves like applyDamageModifier", () => { // Source: chained modifiers are applied sequentially with floor truncation
     // Arrange / Act
     const result = applyDamageModifierChain(100, [1.5]);
 
@@ -88,7 +93,7 @@ describe("applyDamageModifierChain", () => {
     expect(result).toBe(150);
   });
 
-  it("given a value and multiple modifiers, when called, then applies each with floor in sequence", () => {
+  it("given a value and multiple modifiers, when called, then applies each with floor in sequence", () => { // Source: chained modifiers are applied sequentially with floor truncation
     // Arrange / Act
     const result = applyDamageModifierChain(100, [1.5, 0.5]);
 
@@ -98,7 +103,7 @@ describe("applyDamageModifierChain", () => {
     expect(result).toBe(75);
   });
 
-  it("given a value with chain causing truncation at each step, when called, then floors at each step", () => {
+  it("given a value with chain causing truncation at each step, when called, then floors at each step", () => { // Source: chained modifiers are applied sequentially with floor truncation
     // Arrange / Act
     const result = applyDamageModifierChain(99, [1.5, 1.5]);
 
@@ -108,7 +113,7 @@ describe("applyDamageModifierChain", () => {
     expect(result).toBe(222);
   });
 
-  it("given three modifiers chained, when called, then applies all three in order", () => {
+  it("given three modifiers chained, when called, then applies all three in order", () => { // Source: chained modifiers are applied sequentially with floor truncation
     // Arrange / Act
     const result = applyDamageModifierChain(100, [2.0, 0.5, 1.5]);
 
@@ -119,7 +124,7 @@ describe("applyDamageModifierChain", () => {
     expect(result).toBe(150);
   });
 
-  it("given a modifier of 0 in the chain, when called, then zeroes out the result", () => {
+  it("given a modifier of 0 in the chain, when called, then zeroes out the result", () => { // Source: chained modifiers are applied sequentially with floor truncation
     // Arrange / Act
     const result = applyDamageModifierChain(100, [1.5, 0, 2.0]);
 
@@ -154,7 +159,9 @@ describe("pokeRound", () => {
 // --- getStabModifier ---
 
 describe("getStabModifier", () => {
-  it("given a move type not in attacker types, when called, then returns 1.0 (no STAB)", () => {
+  // Source: STAB uses the standard 1.5x multiplier, or 2.0x with Adaptability,
+  // and remains 1.0x when the move type does not match.
+  it("given a move type not in attacker types, when called, then returns 1.0 (no STAB)", () => { // Source: STAB is 1.0x when the move type does not match
     // Arrange / Act
     const modifier = getStabModifier("fire", ["water", "flying"]);
 
@@ -162,7 +169,7 @@ describe("getStabModifier", () => {
     expect(modifier).toBe(1.0);
   });
 
-  it("given a move type matching attacker type, when called, then returns 1.5 (STAB)", () => {
+  it("given a move type matching attacker type, when called, then returns 1.5 (STAB)", () => { // Source: STAB is 1.5x for matching types
     // Arrange / Act
     const modifier = getStabModifier("fire", ["fire", "flying"]);
 
@@ -170,7 +177,7 @@ describe("getStabModifier", () => {
     expect(modifier).toBe(1.5);
   });
 
-  it("given a move type matching attacker type with Adaptability, when called, then returns 2.0", () => {
+  it("given a move type matching attacker type with Adaptability, when called, then returns 2.0", () => { // Source: Adaptability raises STAB to 2.0x
     // Arrange / Act
     const modifier = getStabModifier("fire", ["fire", "flying"], true);
 
@@ -178,7 +185,7 @@ describe("getStabModifier", () => {
     expect(modifier).toBe(2.0);
   });
 
-  it("given a move type not matching with Adaptability, when called, then returns 1.0", () => {
+  it("given a move type not matching with Adaptability, when called, then returns 1.0", () => { // Source: Adaptability does not apply off-type
     // Arrange / Act
     const modifier = getStabModifier("water", ["fire", "flying"], true);
 
@@ -186,7 +193,7 @@ describe("getStabModifier", () => {
     expect(modifier).toBe(1.0);
   });
 
-  it("given a single-typed attacker with matching move, when called, then returns 1.5", () => {
+  it("given a single-typed attacker with matching move, when called, then returns 1.5", () => { // Source: STAB is 1.5x for matching types
     // Arrange / Act
     const modifier = getStabModifier("electric", ["electric"]);
 
@@ -194,7 +201,7 @@ describe("getStabModifier", () => {
     expect(modifier).toBe(1.5);
   });
 
-  it("given hasAdaptability defaults to false, when called without it, then uses normal STAB", () => {
+  it("given hasAdaptability defaults to false, when called without it, then uses normal STAB", () => { // Source: default STAB remains 1.5x
     // Arrange / Act
     const modifier = getStabModifier("grass", ["grass", "poison"]);
 
@@ -206,7 +213,10 @@ describe("getStabModifier", () => {
 // --- getWeatherDamageModifier ---
 
 describe("getWeatherDamageModifier", () => {
-  it("given null weather, when called, then returns 1.0", () => {
+  // Source: weather multipliers in this repo follow the standard Gen 3+ table:
+  // rain boosts Water and weakens Fire, sun boosts Fire and weakens Water,
+  // while sand/hail/snow/strong winds do not modify these damage types here.
+  it("given null weather, when called, then returns 1.0", () => { // Source: no weather means no damage modifier
     // Arrange / Act
     const modifier = getWeatherDamageModifier("fire", null);
 
@@ -214,7 +224,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.0);
   });
 
-  it("given rain and a water move, when called, then returns 1.5 (boosted)", () => {
+  it("given rain and a water move, when called, then returns 1.5 (boosted)", () => { // Source: rain boosts Water to 1.5x
     // Arrange / Act
     const modifier = getWeatherDamageModifier("water", "rain");
 
@@ -222,7 +232,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.5);
   });
 
-  it("given rain and a fire move, when called, then returns 0.5 (weakened)", () => {
+  it("given rain and a fire move, when called, then returns 0.5 (weakened)", () => { // Source: rain weakens Fire to 0.5x
     // Arrange / Act
     const modifier = getWeatherDamageModifier("fire", "rain");
 
@@ -230,7 +240,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(0.5);
   });
 
-  it("given sun and a fire move, when called, then returns 1.5 (boosted)", () => {
+  it("given sun and a fire move, when called, then returns 1.5 (boosted)", () => { // Source: sun boosts Fire to 1.5x
     // Arrange / Act
     const modifier = getWeatherDamageModifier("fire", "sun");
 
@@ -238,7 +248,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.5);
   });
 
-  it("given sun and a water move, when called, then returns 0.5 (weakened)", () => {
+  it("given sun and a water move, when called, then returns 0.5 (weakened)", () => { // Source: sun weakens Water to 0.5x
     // Arrange / Act
     const modifier = getWeatherDamageModifier("water", "sun");
 
@@ -246,7 +256,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(0.5);
   });
 
-  it("given rain and a grass move, when called, then returns 1.0 (unaffected)", () => {
+  it("given rain and a grass move, when called, then returns 1.0 (unaffected)", () => { // Source: rain does not affect Grass in this helper
     // Arrange / Act
     const modifier = getWeatherDamageModifier("grass", "rain");
 
@@ -254,7 +264,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.0);
   });
 
-  it("given sun and an electric move, when called, then returns 1.0 (unaffected)", () => {
+  it("given sun and an electric move, when called, then returns 1.0 (unaffected)", () => { // Source: sun does not affect Electric in this helper
     // Arrange / Act
     const modifier = getWeatherDamageModifier("electric", "sun");
 
@@ -262,20 +272,20 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.0);
   });
 
-  it("given sand weather, when called with any type, then returns 1.0", () => {
+  it("given sand weather, when called with any type, then returns 1.0", () => { // Source: sandstorm does not change these damage types in this helper
     // Arrange / Act / Assert
     expect(getWeatherDamageModifier("fire", "sand")).toBe(1.0);
     expect(getWeatherDamageModifier("water", "sand")).toBe(1.0);
     expect(getWeatherDamageModifier("rock", "sand")).toBe(1.0);
   });
 
-  it("given hail weather, when called with any type, then returns 1.0", () => {
+  it("given hail weather, when called with any type, then returns 1.0", () => { // Source: hail does not change these damage types in this helper
     // Arrange / Act / Assert
     expect(getWeatherDamageModifier("fire", "hail")).toBe(1.0);
     expect(getWeatherDamageModifier("ice", "hail")).toBe(1.0);
   });
 
-  it("given snow weather, when called with any type, then returns 1.0", () => {
+  it("given snow weather, when called with any type, then returns 1.0", () => { // Source: snow does not change these damage types in this helper
     // Arrange / Act / Assert
     expect(getWeatherDamageModifier("ice", "snow")).toBe(1.0);
     expect(getWeatherDamageModifier("water", "snow")).toBe(1.0);
@@ -283,7 +293,7 @@ describe("getWeatherDamageModifier", () => {
 
   // --- Extreme weather cases ---
 
-  it("given heavy-rain and a water move, when called, then returns 1.5 (boosted)", () => {
+  it("given heavy-rain and a water move, when called, then returns 1.5 (boosted)", () => { // Source: heavy rain boosts Water to 1.5x
     // Arrange / Act
     const modifier = getWeatherDamageModifier("water", "heavy-rain");
 
@@ -291,7 +301,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.5);
   });
 
-  it("given heavy-rain and a fire move, when called, then returns 0 (completely blocked)", () => {
+  it("given heavy-rain and a fire move, when called, then returns 0 (completely blocked)", () => { // Source: heavy rain blocks Fire in this helper
     // Arrange / Act
     const modifier = getWeatherDamageModifier("fire", "heavy-rain");
 
@@ -299,7 +309,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(0);
   });
 
-  it("given harsh-sun and a fire move, when called, then returns 1.5 (boosted)", () => {
+  it("given harsh-sun and a fire move, when called, then returns 1.5 (boosted)", () => { // Source: harsh sun boosts Fire to 1.5x
     // Arrange / Act
     const modifier = getWeatherDamageModifier("fire", "harsh-sun");
 
@@ -307,7 +317,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(1.5);
   });
 
-  it("given harsh-sun and a water move, when called, then returns 0 (completely blocked)", () => {
+  it("given harsh-sun and a water move, when called, then returns 0 (completely blocked)", () => { // Source: harsh sun blocks Water in this helper
     // Arrange / Act
     const modifier = getWeatherDamageModifier("water", "harsh-sun");
 
@@ -315,7 +325,7 @@ describe("getWeatherDamageModifier", () => {
     expect(modifier).toBe(0);
   });
 
-  it("given strong-winds, when called with any type, then returns 1.0", () => {
+  it("given strong-winds, when called with any type, then returns 1.0", () => { // Source: strong winds does not alter these damage types in this helper
     // Arrange / Act / Assert
     expect(getWeatherDamageModifier("fire", "strong-winds")).toBe(1.0);
     expect(getWeatherDamageModifier("water", "strong-winds")).toBe(1.0);
