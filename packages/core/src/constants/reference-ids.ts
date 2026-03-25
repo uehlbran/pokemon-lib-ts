@@ -213,6 +213,7 @@ export const CORE_VOLATILE_IDS = {
   charging: "charging",
   choiceLocked: "choice-locked",
   embargo: "embargo",
+  flashFire: "flash-fire",
   healBlock: "heal-block",
   ingrain: "ingrain",
   flinch: "flinch",
