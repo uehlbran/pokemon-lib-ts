@@ -4,11 +4,28 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_HAZARD_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
-import { Gen4Ruleset } from "../src/Gen4Ruleset";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  Gen4Ruleset,
+} from "../src";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -30,7 +47,11 @@ function createMockRng(opts?: { intReturn?: number; chanceReturn?: boolean }) {
   };
 }
 
-function makePokemonInstance(overrides: {
+const DATA_MANAGER = createGen4DataManager();
+const BASE_SPECIES = DATA_MANAGER.getSpecies(GEN4_SPECIES_IDS.bulbasaur);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN4_NATURE_IDS.hardy).id;
+
+function makeScenarioPokemon(overrides: {
   maxHp?: number;
   status?: PokemonInstance["status"];
   ability?: string;
@@ -39,16 +60,16 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: 1,
+    speciesId: BASE_SPECIES.id,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: maxHp,
     moves: [],
-    ability: overrides.ability ?? "",
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
@@ -59,7 +80,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -71,17 +92,17 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function makeScenarioActive(overrides: {
   maxHp?: number;
   status?: PokemonInstance["status"];
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
-  volatiles?: Map<string, { turnsLeft: number }>;
+  volatiles?: Map<VolatileStatus, { turnsLeft: number }>;
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: makeScenarioPokemon({
       maxHp: overrides.maxHp,
       status: overrides.status,
       ability: overrides.ability,
@@ -98,8 +119,8 @@ function makeActivePokemon(overrides: {
       evasion: overrides.statStages?.evasion ?? 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [...BASE_SPECIES.types],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -179,40 +200,28 @@ function makeBattleState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeMove(overrides?: Partial<MoveData>): MoveData {
+/**
+ * Scenario helper: clone a Gen 4 move record and override only explicitly
+ * synthetic combat fields needed for the test.
+ */
+function makeScenarioMove(overrides?: Partial<MoveData>): MoveData {
+  const baseMove = DATA_MANAGER.getMove(overrides?.id ?? GEN4_MOVE_IDS.tackle);
   return {
-    id: overrides?.id ?? "tackle",
-    displayName: "Tackle",
-    type: overrides?.type ?? "normal",
-    category: overrides?.category ?? "physical",
-    power: overrides?.power ?? 40,
-    accuracy: overrides?.accuracy ?? 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 4,
-    critRatio: overrides?.critRatio ?? 0,
+    ...baseMove,
+    id: baseMove.id,
+    displayName: baseMove.displayName,
+    type: overrides?.type ?? baseMove.type,
+    category: overrides?.category ?? baseMove.category,
+    power: overrides?.power ?? baseMove.power,
+    accuracy: overrides?.accuracy ?? baseMove.accuracy,
+    pp: baseMove.pp,
+    priority: baseMove.priority,
+    target: baseMove.target,
+    flags: overrides?.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: baseMove.effect,
+    description: baseMove.description,
+    generation: baseMove.generation,
+    critRatio: overrides?.critRatio ?? baseMove.critRatio,
   } as MoveData;
 }
 
@@ -228,14 +237,14 @@ describe("#354 processSleepTurn allows action on wake turn", () => {
     //   when time <= 0, cureStatus() and return without "return false",
     //   allowing the Pokemon to act.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    const mon = makeScenarioActive({ status: CORE_STATUS_IDS.sleep });
+    mon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 1 });
 
     const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
 
     expect(canAct).toBe(true);
     expect(mon.pokemon.status).toBeNull();
-    expect(mon.volatileStatuses.has("sleep-counter")).toBe(false);
+    expect(mon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(false);
   });
 
   it("given sleep counter at 2, when processSleepTurn called twice, then first call returns false (still sleeping), second returns true (wakes and acts)", () => {
@@ -244,12 +253,12 @@ describe("#354 processSleepTurn allows action on wake turn", () => {
     // Turn 1: counter 2 -> 1 (still sleeping, returns false)
     // Turn 2: counter 1 -> 0 (wakes up, returns true)
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 2 });
+    const mon = makeScenarioActive({ status: CORE_STATUS_IDS.sleep });
+    mon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 2 });
 
     const canActTurn1 = ruleset.processSleepTurn(mon, STUB_STATE);
     expect(canActTurn1).toBe(false);
-    expect(mon.pokemon.status).toBe("sleep");
+    expect(mon.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
 
     const canActTurn2 = ruleset.processSleepTurn(mon, STUB_STATE);
     expect(canActTurn2).toBe(true);
@@ -292,7 +301,7 @@ describe("#359 Magic Guard prevents full paralysis", () => {
     //   if (!pokemon.hasAbility('magicguard') && this.randomChance(1, 4))
     //   Magic Guard holders skip the full paralysis check entirely.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ ability: "magic-guard", status: "paralysis" });
+    const mon = makeScenarioActive({ ability: GEN4_ABILITY_IDS.magicGuard, status: CORE_STATUS_IDS.paralysis });
     const rng = createMockRng({ chanceReturn: true }); // would trigger paralysis normally
 
     const isFullyParalyzed = ruleset.checkFullParalysis(mon, rng as any);
@@ -305,7 +314,7 @@ describe("#359 Magic Guard prevents full paralysis", () => {
     //   Non-Magic Guard Pokemon have normal 25% full paralysis chance.
     // The rng.chance(0.25) returns true, so the Pokemon is fully paralyzed.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ ability: "blaze", status: "paralysis" });
+    const mon = makeScenarioActive({ ability: CORE_ABILITY_IDS.blaze, status: CORE_STATUS_IDS.paralysis });
     const rng = createMockRng({ chanceReturn: true });
 
     const isFullyParalyzed = ruleset.checkFullParalysis(mon, rng as any);
@@ -324,8 +333,8 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     // Source: Showdown Gen 4 mod -- Gravity grounds for hazard purposes.
     // Flying-type normally immune to Spikes, but Gravity overrides this.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ types: ["flying"], maxHp: 200 });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 1 }]);
+    const mon = makeScenarioActive({ types: [CORE_TYPE_IDS.flying], maxHp: 200 });
+    const side = makeSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.spikes, layers: 1 }]);
     const state = makeBattleState({ gravityActive: true });
 
     const result = ruleset.applyEntryHazards(mon, side as any, state);
@@ -339,13 +348,13 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     // Source: Bulbapedia -- Gravity grounds all Pokemon including Levitate holders.
     // Levitate normally makes a Pokemon immune to Toxic Spikes, but Gravity overrides.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ types: ["normal"], ability: "levitate", maxHp: 200 });
-    const side = makeSideWithHazards(mon, [{ type: "toxic-spikes", layers: 1 }]);
+    const mon = makeScenarioActive({ types: [CORE_TYPE_IDS.normal], ability: CORE_ABILITY_IDS.levitate, maxHp: 200 });
+    const side = makeSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.toxicSpikes, layers: 1 }]);
     const state = makeBattleState({ gravityActive: true });
 
     const result = ruleset.applyEntryHazards(mon, side as any, state);
 
-    expect(result.statusInflicted).toBe("poison");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.poison);
   });
 
   it("given a Flying-type holding Iron Ball, when stepping on Spikes, then takes damage (grounded by Iron Ball)", () => {
@@ -353,8 +362,8 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     // Source: Showdown data/items.ts -- Iron Ball grounds the holder.
     // Flying-type normally immune to Spikes, but Iron Ball overrides.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ types: ["flying"], maxHp: 200, heldItem: "iron-ball" });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 1 }]);
+    const mon = makeScenarioActive({ types: [CORE_TYPE_IDS.flying], maxHp: 200, heldItem: CORE_ITEM_IDS.ironBall });
+    const side = makeSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.spikes, layers: 1 }]);
     const state = makeBattleState();
 
     const result = ruleset.applyEntryHazards(mon, side as any, state);
@@ -367,8 +376,8 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     // Source: Bulbapedia -- Flying-types are immune to Spikes unless grounded.
     // Control test: without grounding effects, Flying-type is immune.
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ types: ["flying"], maxHp: 200 });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 1 }]);
+    const mon = makeScenarioActive({ types: [CORE_TYPE_IDS.flying], maxHp: 200 });
+    const side = makeSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.spikes, layers: 1 }]);
     const state = makeBattleState();
 
     const result = ruleset.applyEntryHazards(mon, side as any, state);
@@ -382,26 +391,22 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
 // ===========================================================================
 
 describe("#376 Unaware takes priority over Simple in damage calc", () => {
-  it("given attacker with Simple (+2 attack stage doubled to +4) vs defender with Unaware, when calculating damage, then Unaware ignores attacker's stages (effective stage = 0)", () => {
-    // Source: Showdown Gen 4 -- Unaware's onAnyModifyBoost sets boosts to 0,
-    //   which runs independently of and overrides Simple's doubling.
-    // We test indirectly through the ruleset's calculateDamage: with Unaware,
-    // the attack boost should be ignored, resulting in lower damage.
+  it("given attacker with Simple (+2 attack stage doubled to +4) vs defender with Unaware, when calculating damage, then Unaware ignores the boosted stages", () => {
+    // Source: specs/battle/05-gen4.md -- Unaware ignores the opposing Pokemon's stat stage changes.
     const ruleset = makeRuleset();
 
-    const attacker = makeActivePokemon({
-      ability: "simple",
-      types: ["normal"],
+    const attacker = makeScenarioActive({
+      ability: CORE_ABILITY_IDS.simple,
+      types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 }, // Simple would double to +4
     });
-    const defender = makeActivePokemon({
-      ability: "unaware",
-      types: ["normal"],
+    const defender = makeScenarioActive({
+      ability: GEN4_ABILITY_IDS.unaware,
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = makeMove({ power: 50, type: "normal", category: "physical" });
+    const move = makeScenarioMove({ power: 50, type: CORE_TYPE_IDS.normal, category: "physical" });
     const rng = createMockRng({ intReturn: 100 }); // max damage roll
 
-    // With Unaware: attacker's attack stages are ignored (effective = 0)
     const resultWithUnaware = ruleset.calculateDamage({
       attacker,
       defender,
@@ -411,10 +416,9 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       isCrit: false,
     });
 
-    // Now test without Unaware: Simple doubles +2 to +4
-    const defenderNoUnaware = makeActivePokemon({
-      ability: "blaze",
-      types: ["normal"],
+    const defenderNoUnaware = makeScenarioActive({
+      ability: CORE_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
     });
     const rng2 = createMockRng({ intReturn: 100 });
     const resultWithoutUnaware = ruleset.calculateDamage({
@@ -426,9 +430,23 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       isCrit: false,
     });
 
-    // With Unaware, damage should be lower (no attack boost)
-    // Without Unaware, Simple doubles +2 to +4 attack stage
-    expect(resultWithUnaware.damage).toBeLessThan(resultWithoutUnaware.damage);
+    const attackerBaseline = makeScenarioActive({
+      ability: CORE_ABILITY_IDS.none,
+      types: [CORE_TYPE_IDS.normal],
+      statStages: { attack: 0 },
+    });
+    const rng3 = createMockRng({ intReturn: 100 });
+    const resultBaseline = ruleset.calculateDamage({
+      attacker: attackerBaseline,
+      defender: makeScenarioActive({ ability: CORE_ABILITY_IDS.blaze, types: [CORE_TYPE_IDS.normal] }),
+      move,
+      state: makeBattleState(),
+      rng: rng3 as any,
+      isCrit: false,
+    });
+
+    expect(resultWithUnaware.damage).toBe(resultBaseline.damage);
+    expect(resultWithoutUnaware.damage).toBeGreaterThan(resultWithUnaware.damage);
   });
 
   it("given attacker with Simple (+1 attack stage) vs defender without Unaware, when calculating damage, then Simple doubles the stage to +2", () => {
@@ -436,18 +454,18 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
     // Control test: Simple works normally when Unaware is not present.
     const ruleset = makeRuleset();
 
-    const attackerSimple = makeActivePokemon({
-      ability: "simple",
-      types: ["normal"],
+    const attackerSimple = makeScenarioActive({
+      ability: CORE_ABILITY_IDS.simple,
+      types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 1 }, // Simple doubles to +2
     });
-    const attackerNormal = makeActivePokemon({
-      ability: "blaze",
-      types: ["normal"],
+    const attackerNormal = makeScenarioActive({
+      ability: CORE_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 }, // Normal +2
     });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const move = makeMove({ power: 50, type: "normal", category: "physical" });
+    const defender = makeScenarioActive({ types: [CORE_TYPE_IDS.normal] });
+    const move = makeScenarioMove({ power: 50, type: CORE_TYPE_IDS.normal, category: "physical" });
     const rng1 = createMockRng({ intReturn: 100 });
     const rng2 = createMockRng({ intReturn: 100 });
 
@@ -486,9 +504,9 @@ describe("#439 Lucky Chant blocks critical hits", () => {
     //   line 7137: (sideConditions & SIDE_CONDITION_LUCKY_CHANT) == FALSE
     // Lucky Chant blocks all crits for the protected side.
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({ ability: "none" });
-    const defender = makeActivePokemon({ ability: "none" });
-    const move = makeMove({ critRatio: 0 });
+    const attacker = makeScenarioActive({ ability: CORE_ABILITY_IDS.none });
+    const defender = makeScenarioActive({ ability: CORE_ABILITY_IDS.none });
+    const move = makeScenarioMove({ critRatio: 0 });
 
     // Defender is on side 1, with Lucky Chant active
     const side0 = makeSide(0, attacker);
@@ -513,9 +531,9 @@ describe("#439 Lucky Chant blocks critical hits", () => {
     // Source: pret/pokeplatinum -- without Lucky Chant, normal crit rules apply.
     // Control test: Lucky Chant inactive, crits should be possible.
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({ ability: "none" });
-    const defender = makeActivePokemon({ ability: "none" });
-    const move = makeMove({ critRatio: 0 });
+    const attacker = makeScenarioActive({ ability: CORE_ABILITY_IDS.none });
+    const defender = makeScenarioActive({ ability: CORE_ABILITY_IDS.none });
+    const move = makeScenarioMove({ critRatio: 0 });
 
     const side0 = makeSide(0, attacker);
     const side1 = makeSide(1, defender);
@@ -544,12 +562,12 @@ describe("#453 Tangled Feet applies 0.5x accuracy multiplier", () => {
     // After Tangled Feet: calc = floor(100 * 0.5) = 50
     // With rng roll = 50, the move should hit (roll <= calc).
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
-      ability: "tangled-feet",
-      volatiles: new Map([["confusion", { turnsLeft: 3 }]]),
+    const attacker = makeScenarioActive({});
+    const defender = makeScenarioActive({
+      ability: GEN4_ABILITY_IDS.tangledFeet,
+      volatiles: new Map([[CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 }]]),
     });
-    const move = makeMove({ accuracy: 100 });
+    const move = makeScenarioMove({ accuracy: 100 });
     const rng = createMockRng({ intReturn: 50 });
 
     const context: AccuracyContext = {
@@ -569,12 +587,12 @@ describe("#453 Tangled Feet applies 0.5x accuracy multiplier", () => {
     // If Tangled Feet used +2 evasion (0.6x), calc would be 60 and rng 51 would hit.
     // This proves the 0.5x multiplier is used, not +2 evasion stage.
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({
-      ability: "tangled-feet",
-      volatiles: new Map([["confusion", { turnsLeft: 3 }]]),
+    const attacker = makeScenarioActive({});
+    const defender = makeScenarioActive({
+      ability: GEN4_ABILITY_IDS.tangledFeet,
+      volatiles: new Map([[CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 }]]),
     });
-    const move = makeMove({ accuracy: 100 });
+    const move = makeScenarioMove({ accuracy: 100 });
     const rng = createMockRng({ intReturn: 51 });
 
     const context: AccuracyContext = {

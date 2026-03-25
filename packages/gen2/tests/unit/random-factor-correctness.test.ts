@@ -7,8 +7,20 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
+import {
+  createGen2DataManager,
+  GEN2_MOVE_IDS,
+  GEN2_NATURE_IDS,
+  GEN2_SPECIES_IDS,
+} from "../../src";
 
 /**
  * Regression tests for the Gen 2 random factor multiplication.
@@ -21,6 +33,10 @@ import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
  *
  * Tracks: GitHub issue #542
  */
+
+const dataManager = createGen2DataManager();
+const TEST_SPECIES = dataManager.getSpecies(GEN2_SPECIES_IDS.magmar);
+const SYNTHETIC_MOVE_BASE = dataManager.getMove(GEN2_MOVE_IDS.tackle);
 
 // ---------------------------------------------------------------------------
 // Test helpers (mirrored from damage-calc.test.ts)
@@ -47,7 +63,7 @@ function createActivePokemon(opts: {
   spAttack: number;
   spDefense: number;
   types: PokemonType[];
-  status?: "burn" | null;
+  status?: typeof CORE_STATUS_IDS.burn | null;
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
@@ -62,16 +78,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: 1,
+    speciesId: TEST_SPECIES.id,
     nickname: null,
     level: opts.level,
     experience: 0,
-    nature: "hardy",
+    nature: GEN2_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
     moves: [],
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -82,7 +98,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -101,7 +117,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -118,89 +134,37 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-/** Create a move mock with the given type and power. */
-function createMove(type: PokemonType, power: number): MoveData {
-  return {
-    id: "test-move",
-    displayName: "Test Move",
-    type,
-    category: "physical",
-    power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 2,
-  } as MoveData;
-}
-
-/** Minimal species data mock. */
-function createSpecies(types: PokemonType[] = ["normal"]): PokemonSpeciesData {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types,
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
+function createSyntheticMove(type: PokemonType, power: number): MoveData {
+  const move = { ...SYNTHETIC_MOVE_BASE } as MoveData;
+  move.id = `synthetic-${type}-${power}`;
+  move.displayName = `Synthetic ${type} ${power}`;
+  move.type = type;
+  move.category = "physical";
+  move.power = power;
+  move.generation = 2;
+  return move;
 }
 
 /** All-neutral type chart for 17 Gen 2 types. */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -243,14 +207,13 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
    * Source: pret/pokecrystal engine/battle/core.asm — integer multiply then divide by 255
    */
   it("given baseDamage=595 and roll=219 (P=150 A=245 D=52), when calculating damage, then uses integer arithmetic yielding 511 not 510", () => {
-    // Arrange — fire-type attacker, normal-type move = no STAB
     const attacker = createActivePokemon({
       level: 100,
       attack: 245,
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     const defender = createActivePokemon({
       level: 100,
@@ -258,11 +221,10 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       defense: 52,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
-    const move = createMove("normal", 150);
+    const move = createSyntheticMove(CORE_TYPE_IDS.normal, 150);
     const chart = createNeutralTypeChart();
-    const species = createSpecies(["fire"]);
     const context: DamageContext = {
       attacker,
       defender,
@@ -272,12 +234,9 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       isCrit: false,
     };
 
-    // Act
-    const result = calculateGen2Damage(context, chart, species);
+    const result = calculateGen2Damage(context, chart, TEST_SPECIES);
 
-    // Assert
     // Source: pret/pokecrystal engine/battle/core.asm — floor((595 * 219) / 255) = 511
-    // The float path Math.floor(595 * (219/255)) incorrectly gives 510
     expect(result.damage).toBe(511);
   });
 
@@ -299,14 +258,13 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
    * Source: pret/pokecrystal engine/battle/core.asm — integer multiply then divide by 255
    */
   it("given baseDamage=595 and roll=219 (P=200 A=219 D=62), when calculating damage, then uses integer arithmetic yielding 511 not 510", () => {
-    // Arrange — fire-type attacker, normal-type move = no STAB
     const attacker = createActivePokemon({
       level: 100,
       attack: 219,
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     const defender = createActivePokemon({
       level: 100,
@@ -314,11 +272,10 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       defense: 62,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
-    const move = createMove("normal", 200);
+    const move = createSyntheticMove(CORE_TYPE_IDS.normal, 200);
     const chart = createNeutralTypeChart();
-    const species = createSpecies(["fire"]);
     const context: DamageContext = {
       attacker,
       defender,
@@ -328,12 +285,9 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       isCrit: false,
     };
 
-    // Act
-    const result = calculateGen2Damage(context, chart, species);
+    const result = calculateGen2Damage(context, chart, TEST_SPECIES);
 
-    // Assert
     // Source: pret/pokecrystal — floor((595 * 219) / 255) = 511
-    // Float path: Math.floor(595 * 0.85882...) = 510 (wrong)
     expect(result.damage).toBe(511);
   });
 
@@ -353,14 +307,13 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
    * Source: pret/pokecrystal engine/battle/core.asm — integer formula at max roll
    */
   it("given baseDamage=37 and max roll 255, when calculating damage, then returns 37", () => {
-    // Arrange — fire-type attacker, normal-type move = no STAB
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["fire"],
+      types: [CORE_TYPE_IDS.fire],
     });
     const defender = createActivePokemon({
       level: 50,
@@ -368,11 +321,10 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       defense: 100,
       spAttack: 100,
       spDefense: 100,
-      types: ["water"],
+      types: [CORE_TYPE_IDS.water],
     });
-    const move = createMove("normal", 80);
+    const move = createSyntheticMove(CORE_TYPE_IDS.normal, 80);
     const chart = createNeutralTypeChart();
-    const species = createSpecies(["fire"]);
     const context: DamageContext = {
       attacker,
       defender,
@@ -382,10 +334,8 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       isCrit: false,
     };
 
-    // Act
-    const result = calculateGen2Damage(context, chart, species);
+    const result = calculateGen2Damage(context, chart, TEST_SPECIES);
 
-    // Assert
     // Source: pret/pokecrystal — floor((37 * 255) / 255) = 37
     expect(result.damage).toBe(37);
   });
