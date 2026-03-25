@@ -212,6 +212,18 @@ function makeContext(overrides: {
   };
 }
 
+function baseMoveResult(overrides: Record<string, unknown>) {
+  return {
+    statusInflicted: null,
+    volatileInflicted: null,
+    statChanges: [],
+    recoilDamage: 0,
+    healAmount: 0,
+    switchOut: false,
+    ...overrides,
+  };
+}
+
 // ===========================================================================
 // isBerry helper
 // ===========================================================================
@@ -316,9 +328,10 @@ describe("Aromatherapy", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    expect(result!.messages).toContain("A soothing aroma wafted through the area!");
+    expect(result).toMatchObject({
+      teamStatusCure: { side: "attacker" },
+      messages: ["A soothing aroma wafted through the area!"],
+    });
   });
 
   it("given Aromatherapy result, when checking, then does NOT reset stat stages", () => {
@@ -330,11 +343,12 @@ describe("Aromatherapy", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // teamStatusCure cures entire team status without resetting stat stages
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    // statStagesReset should not be set
-    expect(result!.statStagesReset).toBeUndefined();
+    expect(result).toEqual(
+      baseMoveResult({
+        teamStatusCure: { side: "attacker" },
+        messages: ["A soothing aroma wafted through the area!"],
+      }),
+    );
   });
 });
 
@@ -351,9 +365,10 @@ describe("Heal Bell", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    expect(result!.messages).toContain("A bell chimed!");
+    expect(result).toMatchObject({
+      teamStatusCure: { side: "attacker" },
+      messages: ["A bell chimed!"],
+    });
   });
 
   it("given Heal Bell result, when checking, then does NOT reset stat stages", () => {
@@ -364,10 +379,12 @@ describe("Heal Bell", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // teamStatusCure cures entire team status without resetting stat stages
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    expect(result!.statStagesReset).toBeUndefined();
+    expect(result).toEqual(
+      baseMoveResult({
+        teamStatusCure: { side: "attacker" },
+        messages: ["A bell chimed!"],
+      }),
+    );
   });
 });
 
@@ -385,8 +402,12 @@ describe("Soak", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.typeChange).toEqual({ target: "defender", types: ["water"] });
+    expect(result).toEqual(
+      baseMoveResult({
+        typeChange: { target: "defender", types: ["water"] },
+        messages: ["The target transformed into the Water type!"],
+      }),
+    );
   });
 
   it("given a Water-type target in Gen 5, when Soak is used, then SUCCEEDS (no Water-type failure check)", () => {
@@ -399,8 +420,12 @@ describe("Soak", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.typeChange).toEqual({ target: "defender", types: ["water"] });
+    expect(result).toEqual(
+      baseMoveResult({
+        typeChange: { target: "defender", types: ["water"] },
+        messages: ["The target transformed into the Water type!"],
+      }),
+    );
   });
 
   it("given a Fire/Flying target, when Soak is used, then changes to pure Water type", () => {
@@ -412,8 +437,12 @@ describe("Soak", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.typeChange).toEqual({ target: "defender", types: ["water"] });
+    expect(result).toEqual(
+      baseMoveResult({
+        typeChange: { target: "defender", types: ["water"] },
+        messages: ["The target transformed into the Water type!"],
+      }),
+    );
   });
 
   it("given a target with Multitype, when Soak is used, then fails", () => {
@@ -426,9 +455,8 @@ describe("Soak", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
     expect(result!.typeChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
   });
 });
 
@@ -447,10 +475,8 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["The target's sitrus-berry was incinerated!"] }));
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(result!.messages[0]).toContain("sitrus-berry");
-    expect(result!.messages[0]).toContain("incinerated");
   });
 
   it("given a target holding a lum-berry, when Incinerate is used, then destroys the berry", () => {
@@ -463,7 +489,7 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["The target's lum-berry was incinerated!"] }));
     expect(defender.pokemon.heldItem).toBeNull();
   });
 
@@ -478,10 +504,8 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // Gem should NOT be destroyed
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
     expect(defender.pokemon.heldItem).toBe("fire-gem");
-    expect(result!.messages).toEqual([]);
   });
 
   it("given a target with no item, when Incinerate is used, then no item is destroyed", () => {
@@ -494,8 +518,7 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toEqual([]);
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
   });
 
   it("given a target holding leftovers, when Incinerate is used, then does not destroy it", () => {
@@ -508,9 +531,8 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
     expect(defender.pokemon.heldItem).toBe("leftovers");
-    expect(result!.messages).toEqual([]);
   });
 
   it("given a target with Unburden holding a berry, when Incinerate is used, then sets unburden volatile", () => {
@@ -525,7 +547,7 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["The target's sitrus-berry was incinerated!"] }));
     expect(defender.pokemon.heldItem).toBeNull();
     expect(defender.volatileStatuses.has("unburden")).toBe(true);
   });
@@ -540,7 +562,7 @@ describe("Incinerate", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["The target's sitrus-berry was incinerated!"] }));
     expect(defender.pokemon.heldItem).toBeNull();
     expect(defender.volatileStatuses.has("unburden")).toBe(false);
   });
@@ -561,8 +583,12 @@ describe("Bestow", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.itemTransfer).toEqual({ from: "attacker", to: "defender" });
+    expect(result).toEqual(
+      baseMoveResult({
+        itemTransfer: { from: "attacker", to: "defender" },
+        messages: ["Audino gave its leftovers to Chansey!"],
+      }),
+    );
   });
 
   it("given target already has an item, when Bestow is used, then fails", () => {
@@ -575,9 +601,8 @@ describe("Bestow", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
     expect(result!.itemTransfer).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
   });
 
   it("given user has no item, when Bestow is used, then fails", () => {
@@ -590,9 +615,8 @@ describe("Bestow", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
     expect(result!.itemTransfer).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
   });
 });
 
@@ -612,10 +636,12 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // Verify the abilityChange field instructs the engine to change the defender's ability
-    expect(result!.abilityChange).toEqual({ target: "defender", ability: "intimidate" });
-    expect(result!.messages[0]).toContain("intimidate");
+    expect(result).toEqual(
+      baseMoveResult({
+        abilityChange: { target: "defender", ability: "intimidate" },
+        messages: ["Serperior acquired intimidate!"],
+      }),
+    );
   });
 
   it("given target already has the same ability, when Entrainment is used, then fails", () => {
@@ -628,8 +654,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given target has Truant, when Entrainment is used, then fails", () => {
@@ -642,8 +667,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given target has Multitype, when Entrainment is used, then fails", () => {
@@ -656,8 +680,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given target has Zen Mode, when Entrainment is used, then fails", () => {
@@ -670,8 +693,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given user has Trace (source-blocked), when Entrainment is used, then fails", () => {
@@ -684,8 +706,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given user has Forecast (source-blocked), when Entrainment is used, then fails", () => {
@@ -698,8 +719,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given user has Illusion (source-blocked), when Entrainment is used, then fails", () => {
@@ -712,8 +732,7 @@ describe("Entrainment", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toMatchObject({ messages: ["But it failed!"] });
   });
 });
 
@@ -757,9 +776,7 @@ describe("Round", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // Round's effect handler returns a normal result; BP doubling is in damage calc
-    expect(result!.messages).toEqual([]);
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
   });
 });
 
@@ -776,7 +793,7 @@ describe("handleGen5StatusMove dispatch", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).toBeNull();
+    expect(result).toEqual(null);
   });
 
   it("given Heal Pulse, when dispatched through handleGen5StatusMove, then returns a heal result", () => {
@@ -788,9 +805,7 @@ describe("handleGen5StatusMove dispatch", () => {
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // 300 * 0.5 = 150, ceil(150) = 150
-    expect(result!.defenderHealAmount).toBe(150);
+    expect(result).toEqual(baseMoveResult({ defenderHealAmount: 150, messages: [] }));
   });
 });
 
@@ -810,9 +825,7 @@ describe("executeGen5MoveEffect integration", () => {
 
     const result = executeGen5MoveEffect(ctx, rng, rollProtectSuccess);
 
-    expect(result).not.toBeNull();
-    // 400 * 0.5 = 200, ceil(200) = 200
-    expect(result!.defenderHealAmount).toBe(200);
+    expect(result).toEqual(baseMoveResult({ defenderHealAmount: 200, messages: [] }));
   });
 
   it("given an unrecognized move, when dispatched through master dispatcher, then returns null", () => {
@@ -825,6 +838,6 @@ describe("executeGen5MoveEffect integration", () => {
 
     const result = executeGen5MoveEffect(ctx, rng, rollProtectSuccess);
 
-    expect(result).toBeNull();
+    expect(result).toEqual(null);
   });
 });
