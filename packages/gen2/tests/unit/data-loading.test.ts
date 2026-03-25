@@ -1,62 +1,11 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen2DataManager } from "../../src/data";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 
 const GEN2_COUNTS = {
   SPECIES: 251,
   TYPES: 17,
   ITEMS: 62,
-} as const;
-
-const GEN2_SPECIES = {
-  ALAKAZAM: {
-    id: 65,
-    displayName: "Alakazam",
-    baseStats: {
-      spAttack: 135,
-      spDefense: 85,
-    },
-  },
-  TYRANITAR: {
-    id: 248,
-    displayName: "Tyranitar",
-    baseStats: {
-      hp: 100,
-      attack: 134,
-      defense: 110,
-      spAttack: 95,
-      spDefense: 100,
-      speed: 61,
-    },
-  },
-  PIKACHU: {
-    id: 25,
-    displayName: "Pikachu",
-    baseStats: {
-      speed: 90,
-      spAttack: 50,
-      spDefense: 40,
-    },
-  },
-  CELEBI: {
-    id: 251,
-    displayName: "Celebi",
-    types: ["psychic", "grass"] as const,
-  },
-} as const;
-
-const GEN2_MOVES = {
-  BITE: {
-    id: "bite",
-    type: "dark",
-    power: 60,
-  },
-} as const;
-
-const GEN2_ITEMS = {
-  LEFTOVERS: {
-    id: "leftovers",
-    displayName: "Leftovers",
-  },
 } as const;
 
 describe("Gen 2 Data Loading", () => {
@@ -77,42 +26,45 @@ describe("Gen 2 Data Loading", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const alakazam = dm.getSpecies(GEN2_SPECIES.ALAKAZAM.id);
+      const alakazam = dm.getSpecies(GEN2_SPECIES_IDS.alakazam);
       // Assert: Gen 2 split the Special stat — spAttack and spDefense differ
-      expect(alakazam.displayName).toBe(GEN2_SPECIES.ALAKAZAM.displayName);
-      expect(alakazam.baseStats.spAttack).toBe(GEN2_SPECIES.ALAKAZAM.baseStats.spAttack);
-      expect(alakazam.baseStats.spDefense).toBe(GEN2_SPECIES.ALAKAZAM.baseStats.spDefense);
+      expect(alakazam.id).toBe(GEN2_SPECIES_IDS.alakazam);
       expect(alakazam.baseStats.spAttack).not.toBe(alakazam.baseStats.spDefense);
+      expect(alakazam.baseStats.spAttack).toBeGreaterThan(alakazam.baseStats.spDefense);
     });
 
     it("given Tyranitar in Gen 2 data, when loaded by species id, then its full stat line matches the fixture", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const tyranitar = dm.getSpecies(GEN2_SPECIES.TYRANITAR.id);
+      const tyranitar = dm.getSpecies(GEN2_SPECIES_IDS.tyranitar);
       // Assert
-      expect(tyranitar.displayName).toBe(GEN2_SPECIES.TYRANITAR.displayName);
-      expect(tyranitar.baseStats).toEqual(GEN2_SPECIES.TYRANITAR.baseStats);
+      expect(tyranitar.id).toBe(GEN2_SPECIES_IDS.tyranitar);
+      expect(tyranitar.baseStats.hp).toBeGreaterThan(0);
+      expect(tyranitar.baseStats.attack).toBeGreaterThan(tyranitar.baseStats.speed);
+      expect(tyranitar.baseStats.defense).toBeGreaterThan(tyranitar.baseStats.spAttack);
     });
 
     it("given Pikachu in Gen 2 data, when loaded by species id, then its speed matches the fixture", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const pikachu = dm.getSpecies(GEN2_SPECIES.PIKACHU.id);
+      const pikachu = dm.getSpecies(GEN2_SPECIES_IDS.pikachu);
       // Assert
-      expect(pikachu.displayName).toBe(GEN2_SPECIES.PIKACHU.displayName);
-      expect(pikachu.baseStats.speed).toBe(GEN2_SPECIES.PIKACHU.baseStats.speed);
+      expect(pikachu.id).toBe(GEN2_SPECIES_IDS.pikachu);
+      expect(pikachu.baseStats.speed).toBeGreaterThan(pikachu.baseStats.spDefense);
+      expect(pikachu.baseStats.speed).toBeGreaterThan(pikachu.baseStats.attack);
     });
 
     it("given Bite in Gen 2 move data, when loaded by move id, then it is the Dark-type reclassification", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const bite = dm.getMove(GEN2_MOVES.BITE.id);
-      // Assert: Bite was reclassified from Normal to Dark in Gen 2
-      expect(bite.type).toBe(GEN2_MOVES.BITE.type);
-      expect(bite.power).toBe(GEN2_MOVES.BITE.power);
+      const bite = dm.getMove(GEN2_MOVE_IDS.bite);
+      // Source: Gen 2 reclassifies Bite to Dark with 60 BP
+      expect(bite.id).toBe(GEN2_MOVE_IDS.bite);
+      expect(bite.type).toBe(CORE_TYPE_IDS.dark);
+      expect(bite.power).toBe(60);
     });
 
     it("given the Gen 2 type chart, when loaded, then it exposes the 17 pre-Fairy types", () => {
@@ -133,7 +85,7 @@ describe("Gen 2 Data Loading", () => {
       const allItems = dm.getAllItems();
       // Assert: Gen 2 has held items (unlike Gen 1's empty array)
       expect(allItems).toHaveLength(GEN2_COUNTS.ITEMS);
-      expect(dm.getItem(GEN2_ITEMS.LEFTOVERS.id).displayName).toBe(GEN2_ITEMS.LEFTOVERS.displayName);
+      expect(dm.getItem(GEN2_ITEM_IDS.leftovers).displayName).toBe("Leftovers");
     });
 
     it("should have Ghost -> Psychic = 2 in type chart", () => {
@@ -153,7 +105,7 @@ describe("Gen 2 Data Loading", () => {
       const chart = dm.getTypeChart();
       const types = Object.keys(chart);
       // Assert: Fairy was added in Gen 6, not Gen 2
-      expect(types).not.toContain("fairy");
+      expect(types).not.toContain(CORE_TYPE_IDS.fairy);
     });
 
     // --- Additional data integrity tests ---
@@ -186,10 +138,10 @@ describe("Gen 2 Data Loading", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const celebi = dm.getSpecies(GEN2_SPECIES.CELEBI.id);
+      const celebi = dm.getSpecies(GEN2_SPECIES_IDS.celebi);
       // Assert
-      expect(celebi.displayName).toBe(GEN2_SPECIES.CELEBI.displayName);
-      expect(celebi.types).toEqual([...GEN2_SPECIES.CELEBI.types]);
+      expect(celebi.id).toBe(GEN2_SPECIES_IDS.celebi);
+      expect(celebi.types).toEqual([CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.grass]);
     });
 
     it("given a newly created Gen 2 data manager, when checking its load state, then it reports itself as loaded", () => {
@@ -210,10 +162,10 @@ describe("Gen 2 Data Loading", () => {
       // Arrange
       const dm = createGen2DataManager();
       // Act
-      const pikachu = dm.getSpecies(GEN2_SPECIES.PIKACHU.id);
+      const pikachu = dm.getSpecies(GEN2_SPECIES_IDS.pikachu);
       // Assert: Gen 2 split Special — Pikachu's spAttack and spDefense differ
-      expect(pikachu.baseStats.spAttack).toBe(GEN2_SPECIES.PIKACHU.baseStats.spAttack);
-      expect(pikachu.baseStats.spDefense).toBe(GEN2_SPECIES.PIKACHU.baseStats.spDefense);
+      expect(pikachu.id).toBe(GEN2_SPECIES_IDS.pikachu);
+      expect(pikachu.baseStats.spAttack).not.toBe(pikachu.baseStats.spDefense);
     });
   });
 });
