@@ -2,14 +2,17 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
   SeededRandom,
+  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen1DataManager, GEN1_MOVE_IDS, Gen1Ruleset } from "../../src";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS, Gen1Ruleset } from "../../src";
 
 /**
  * Gen 1 Move Mechanics Tests
@@ -22,6 +25,23 @@ import { createGen1DataManager, GEN1_MOVE_IDS, Gen1Ruleset } from "../../src";
 
 const ruleset = new Gen1Ruleset();
 const gen1DataManager = createGen1DataManager();
+const MOVES = GEN1_MOVE_IDS;
+const SPECIES = GEN1_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0]!;
+const DEFAULT_SPECIES = gen1DataManager.getSpecies(SPECIES.pikachu);
+const TACKLE = gen1DataManager.getMove(MOVES.tackle);
+const COUNTER = gen1DataManager.getMove(MOVES.counter);
+const WRAP = gen1DataManager.getMove(MOVES.wrap);
+const REFLECT = gen1DataManager.getMove(MOVES.reflect);
+const LIGHT_SCREEN = gen1DataManager.getMove(MOVES.lightScreen);
+const STRENGTH = gen1DataManager.getMove(MOVES.strength);
+const FISSURE = gen1DataManager.getMove(MOVES.fissure);
+const DRAGON_RAGE = gen1DataManager.getMove(MOVES.dragonRage);
+const SEISMIC_TOSS = gen1DataManager.getMove(MOVES.seismicToss);
+const NIGHT_SHADE = gen1DataManager.getMove(MOVES.nightShade);
+const RECOVER = gen1DataManager.getMove(MOVES.recover);
 
 const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   contact: false,
@@ -43,46 +63,69 @@ const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
   bypassSubstitute: false,
 };
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function makeCanonicalMove(
+  moveId: (typeof GEN1_MOVE_IDS)[keyof typeof GEN1_MOVE_IDS],
+  overrides: Partial<MoveData> = {},
+): MoveData {
+  const baseMove = gen1DataManager.getMove(moveId);
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
+    ...baseMove,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
     ...overrides,
   };
 }
 
-function getGen1Move(id: string): MoveData {
+function makeSyntheticSelfTargetingAccuracyProbe(): MoveData {
+  return makeCanonicalMove(MOVES.recover, {
+    // Synthetic probe: Gen 1 self-targeting moves normally have null accuracy.
+    // This forces the 100%-accuracy 1/256 miss exemption path without rebuilding
+    // the rest of the canonical Recover payload from scratch.
+    accuracy: 100,
+  });
+}
+
+function makeSyntheticTrappingMove(): MoveData {
+  return makeCanonicalMove(MOVES.wrap, {
+    // Synthetic probe: Gen 1 move data does not currently encode the trapping
+    // volatile on Wrap directly, but executeMoveEffect coverage here needs the
+    // trapping handler path rather than the raw data record.
+    effect: { type: "volatile-status" as const, status: VOLATILES.bound, chance: 100 },
+  });
+}
+
+function getGen1Move(id: (typeof GEN1_MOVE_IDS)[keyof typeof GEN1_MOVE_IDS]): MoveData {
   return gen1DataManager.getMove(id);
 }
 
 function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+  const statStages = {
+    hp: 0,
+    attack: 0,
+    defense: 0,
+    spAttack: 0,
+    spDefense: 0,
+    speed: 0,
+  } as ActivePokemon["statStages"];
+  statStages.accuracy = 0;
+  statStages.evasion = 0;
+
   return {
     pokemon: {
       uid: "test-uid",
-      speciesId: 25,
+      speciesId: SPECIES.pikachu,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
       currentHp: 100,
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: CORE_ABILITY_IDS.none,
+      ability: "",
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -90,7 +133,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -101,18 +144,9 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       },
     } as PokemonInstance,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages,
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
+    types: [...DEFAULT_SPECIES.types] as PokemonType[],
     ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -189,8 +223,8 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
   const rng = new SeededRandom(42);
   return {
     attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
-    move: makeMove(),
+    defender: makeActivePokemon({ types: [TYPES.normal] }),
+    move: TACKLE,
     damage: 50,
     state: makeBattleState(),
     rng,
@@ -272,12 +306,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
     // Arrange
     const attackerPoke = makeActivePokemon();
     const defenderPoke = makeActivePokemon();
-    const wrapMove = makeMove({
-      id: GEN1_MOVE_IDS.wrap,
-      category: "physical" as const,
-      power: 15,
-      effect: { type: "volatile-status" as const, status: CORE_VOLATILE_IDS.bound, chance: 100 },
-    });
+    const wrapMove = makeSyntheticTrappingMove();
     const context = makeMoveEffectContext({
       attacker: attackerPoke,
       defender: defenderPoke,
@@ -286,7 +315,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert — volatile key is "bound" (bug #101 fix: engine checks "bound" for immobilization)
-    expect(result.volatileInflicted).toBe(CORE_VOLATILE_IDS.bound);
+    expect(result.volatileInflicted).toBe(VOLATILES.bound);
   });
 
   it("given target has 'bound' volatile with turnsLeft=3, when processBoundTurn is called, then returns true (still trapped) and decrements counter", () => {
@@ -298,7 +327,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
 
     // Arrange
     const trapped = makeActivePokemon();
-    trapped.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 3 });
+    trapped.volatileStatuses.set(VOLATILES.bound, { turnsLeft: 3 });
     const state = makeBattleState();
 
     // Act — first tick
@@ -306,7 +335,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
 
     // Assert — still trapped after first decrement (3 → 2)
     expect(stillTrapped).toBe(true);
-    expect(trapped.volatileStatuses.get(CORE_VOLATILE_IDS.bound)?.turnsLeft).toBe(2);
+    expect(trapped.volatileStatuses.get(VOLATILES.bound)?.turnsLeft).toBe(2);
   });
 
   it("given target has 'bound' volatile with turnsLeft=1, when processBoundTurn is called, then returns false (trap expires) and counter reaches 0", () => {
@@ -319,7 +348,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
 
     // Arrange — last turn of trapping
     const trapped = makeActivePokemon();
-    trapped.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 1 });
+    trapped.volatileStatuses.set(VOLATILES.bound, { turnsLeft: 1 });
     const state = makeBattleState();
 
     // Act — final tick
@@ -327,7 +356,7 @@ describe("Gen 1 Trapping moves (Wrap, Bind, etc.)", () => {
 
     // Assert — trap has expired (counter hit 0)
     expect(stillTrapped).toBe(false);
-    expect(trapped.volatileStatuses.get(CORE_VOLATILE_IDS.bound)?.turnsLeft).toBe(0);
+    expect(trapped.volatileStatuses.get(VOLATILES.bound)?.turnsLeft).toBe(0);
   });
 });
 
@@ -340,13 +369,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
     // Gen 1: Reflect is permanent — lasts until Haze or setter switches out, not 5 turns.
     // turnsLeft: -1 is the permanent sentinel — never expires by countdown. (Showdown gen1 moves.ts: no duration field)
     // Arrange
-    const screenMove = makeMove({
-      id: GEN1_MOVE_IDS.reflect,
-      category: "status" as const,
-      power: null,
-      effect: { type: "screen" as const, screen: CORE_SCREEN_IDS.reflect, turns: 5 },
-    });
-    const context = makeMoveEffectContext({ move: screenMove });
+    const context = makeMoveEffectContext({ move: REFLECT });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -358,13 +381,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
     // Gen 1: Light Screen is permanent — no 5-turn countdown. (Showdown gen1 moves.ts)
     // turnsLeft: -1 is the permanent sentinel — never expires by countdown.
     // Arrange
-    const screenMove = makeMove({
-      id: GEN1_MOVE_IDS.lightScreen,
-      category: "status" as const,
-      power: null,
-      effect: { type: "screen" as const, screen: CORE_SCREEN_IDS.lightScreen, turns: 5 },
-    });
-    const context = makeMoveEffectContext({ move: screenMove });
+    const context = makeMoveEffectContext({ move: LIGHT_SCREEN });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -372,13 +389,13 @@ describe("Gen 1 Reflect and Light Screen", () => {
     expect(result.screenSet?.turnsLeft).toBe(-1);
   });
 
-  it("given Reflect is active on the defender side, when a physical move hits, then the doubled defense stat reduces damage from 48 to 25", () => {
+  it("given Reflect is active on the defender side, when Strength hits, then the doubled defense stat reduces damage from 48 to 25", () => {
     // Source: gen1-ground-truth.md §7 — Reflect doubles the defender's Defense stat in Gen 1.
     // With L50, Power 80, Attack 80, Defense 60, no STAB, neutral typing, and max random roll:
     // No Reflect: floor(floor((22 * 80 * 80) / 60) / 50) + 2 = 48
     // Reflect: defense doubles to 120, so floor(floor((22 * 80 * 80) / 120) / 50) + 2 = 25
     const attacker = makeActivePokemon({
-      types: [CORE_TYPE_IDS.electric] as PokemonType[],
+      types: [...DEFAULT_SPECIES.types] as PokemonType[],
       pokemon: {
         ...makeActivePokemon().pokemon,
         calculatedStats: {
@@ -392,7 +409,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
       } as PokemonInstance,
     });
     const defender = makeActivePokemon({
-      types: [CORE_TYPE_IDS.normal] as PokemonType[],
+      types: [TYPES.normal],
       pokemon: {
         ...makeActivePokemon().pokemon,
         calculatedStats: {
@@ -405,13 +422,6 @@ describe("Gen 1 Reflect and Light Screen", () => {
         },
       } as PokemonInstance,
     });
-    const move = makeMove({
-      id: GEN1_MOVE_IDS.bodySlam,
-      type: CORE_TYPE_IDS.normal as const,
-      category: "physical" as const,
-      power: 80,
-      accuracy: 100,
-    });
     const noScreenState = makeBattleState({ side0Active: attacker, side1Active: defender });
     const reflectState = makeBattleState({ side0Active: attacker, side1Active: defender });
     reflectState.sides[1].screens = [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: -1 }];
@@ -420,7 +430,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
     const noReflect = ruleset.calculateDamage({
       attacker,
       defender,
-      move,
+      move: STRENGTH,
       rng: maxRollRng,
       state: noScreenState,
       isCrit: false,
@@ -428,7 +438,7 @@ describe("Gen 1 Reflect and Light Screen", () => {
     const withReflect = ruleset.calculateDamage({
       attacker,
       defender,
-      move,
+      move: STRENGTH,
       rng: maxRollRng,
       state: reflectState,
       isCrit: false,
@@ -441,8 +451,8 @@ describe("Gen 1 Reflect and Light Screen", () => {
   it("given a screen setter switches out, when onSwitchOut runs, then bound is cleared, sleep persists, and side screens are removed", () => {
     // Source: gen1-ground-truth.md §8 — sleep counter persists through switching, while bound and side screens do not.
     const pokemon = makeActivePokemon();
-    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 3 });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.bound, { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
     pokemon.pokemon.status = CORE_STATUS_IDS.sleep;
     const state = makeBattleState({ side0Active: pokemon });
     state.sides[0].screens = [
@@ -452,8 +462,8 @@ describe("Gen 1 Reflect and Light Screen", () => {
 
     ruleset.onSwitchOut(pokemon, state);
 
-    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.bound)).toBe(false);
-    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(3);
+    expect(pokemon.volatileStatuses.has(VOLATILES.bound)).toBe(false);
+    expect(pokemon.volatileStatuses.get(VOLATILES.sleepCounter)?.turnsLeft).toBe(3);
     expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
     expect(state.sides[0].screens).toEqual([]);
   });
@@ -469,28 +479,9 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
     // Source: Gen1Ruleset.doesMoveHit — 30% accuracy converts to floor(30 * 255 / 100) = 76, so roll 0 hits.
     const attacker = makeActivePokemon({
       pokemon: {
+        ...makeActivePokemon().pokemon,
         uid: "attacker",
-        speciesId: 25,
-        nickname: null,
-        level: 50,
-        experience: 0,
-        nature: "hardy",
-        ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-        moves: [{ moveId: GEN1_MOVE_IDS.fissure, currentPP: 5, maxPP: 5, ppUps: 0 }],
-        currentHp: 100,
-        status: null,
-        friendship: 70,
-        heldItem: null,
-        ability: CORE_ABILITY_IDS.none,
-        abilitySlot: "normal1" as const,
-        gender: "male" as const,
-        isShiny: false,
-        metLocation: "pallet-town",
-        metLevel: 5,
-        originalTrainer: "Red",
-        originalTrainerId: 12345,
-        pokeball: "poke-ball",
+        moves: [createMoveSlot(FISSURE.id, FISSURE.pp)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -500,18 +491,7 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
           speed: 200,
         },
       } as PokemonInstance,
-      statStages: {
-        hp: 0,
-        attack: 0,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
-      },
-      volatileStatuses: new Map(),
-      types: ["ground"] as PokemonType[],
+      types: [TYPES.ground],
       ability: CORE_ABILITY_IDS.none,
       lastMoveUsed: null,
       lastDamageTaken: 0,
@@ -527,7 +507,6 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
       isTerastallized: false,
       teraType: null,
       stellarBoostedTypes: [],
-      teamSlot: 0,
     });
     const defender = makeActivePokemon({
       pokemon: {
@@ -542,7 +521,7 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
         },
       } as PokemonInstance,
     });
-    const fissureMove = getGen1Move(GEN1_MOVE_IDS.fissure);
+    const fissureMove = FISSURE;
     const state = makeBattleState();
     const guaranteedHitRng = { int: () => 0 } as unknown as SeededRandom;
 
@@ -584,7 +563,7 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
         },
       } as PokemonInstance,
     });
-    const fissureMove = getGen1Move(GEN1_MOVE_IDS.fissure);
+    const fissureMove = FISSURE;
     const state = makeBattleState();
     const guaranteedHitRng = { int: () => 0 } as unknown as SeededRandom;
 
@@ -603,7 +582,7 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
     const defender = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, currentHp: 150 } as PokemonInstance,
     });
-    const fissureMove = getGen1Move(GEN1_MOVE_IDS.fissure);
+    const fissureMove = FISSURE;
     const context = makeMoveEffectContext({ defender, move: fissureMove });
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -619,13 +598,12 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
 describe("Fixed and level damage moves", () => {
   it("given Dragon Rage (fixed 40 damage), when executeMoveEffect is called, then customDamage is 40", () => {
     // Arrange
-    const dragonRageMove = getGen1Move(GEN1_MOVE_IDS.dragonRage);
-    const context = makeMoveEffectContext({ move: dragonRageMove });
+    const context = makeMoveEffectContext({ move: DRAGON_RAGE });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
     const dragonRageDamage =
-      dragonRageMove.effect?.type === "fixed-damage" ? dragonRageMove.effect.damage : null;
+      DRAGON_RAGE.effect?.type === "fixed-damage" ? DRAGON_RAGE.effect.damage : null;
     expect(result.customDamage?.amount).toBe(dragonRageDamage);
   });
 
@@ -634,8 +612,7 @@ describe("Fixed and level damage moves", () => {
     const attacker = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, level: 50 } as PokemonInstance,
     });
-    const seismicTossMove = getGen1Move(GEN1_MOVE_IDS.seismicToss);
-    const context = makeMoveEffectContext({ attacker, move: seismicTossMove });
+    const context = makeMoveEffectContext({ attacker, move: SEISMIC_TOSS });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -647,8 +624,7 @@ describe("Fixed and level damage moves", () => {
     const attacker = makeActivePokemon({
       pokemon: { ...makeActivePokemon().pokemon, level: 75 } as PokemonInstance,
     });
-    const nightShadeMove = getGen1Move(GEN1_MOVE_IDS.nightShade);
-    const context = makeMoveEffectContext({ attacker, move: nightShadeMove });
+    const context = makeMoveEffectContext({ attacker, move: NIGHT_SHADE });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -667,14 +643,7 @@ describe("Gen 1 self-targeting accuracy exemption", () => {
     // Use a mock RNG that always returns 255 (the miss-triggering roll for normal moves).
     const attacker = makeActivePokemon();
     const defender = makeActivePokemon();
-    const recoverMove = makeMove({
-      id: GEN1_MOVE_IDS.recover,
-      category: "status" as const,
-      power: null,
-      accuracy: 100,
-      target: "self" as const,
-      effect: null,
-    });
+    const recoverMove = makeSyntheticSelfTargetingAccuracyProbe();
     const state = makeBattleState();
     // Roll 255 of 0-255: would miss a normal 100% move but NOT a self-targeting move
     const rng = { int: (_min: number, _max: number) => 255, chance: () => false } as ReturnType<
@@ -690,12 +659,11 @@ describe("Gen 1 self-targeting accuracy exemption", () => {
     // Normal 100% move: threshold=255, roll 255 is NOT < 255 → miss (1/256 bug)
     const attacker = makeActivePokemon();
     const defender = makeActivePokemon();
-    const normalMove = makeMove({ id: "tackle", accuracy: 100, target: "adjacent-foe" });
     const state = makeBattleState();
     const rng = { int: (_min: number, _max: number) => 255, chance: () => false } as ReturnType<
       typeof makeBattleState
     >["rng"];
-    const hit = ruleset.doesMoveHit({ attacker, defender, move: normalMove, state, rng });
+    const hit = ruleset.doesMoveHit({ attacker, defender, move: STRENGTH, state, rng });
     // Roll 255 ≥ threshold 255 → miss
     expect(hit).toBe(false);
   });
@@ -783,7 +751,7 @@ describe("Self-Destruct move", () => {
   it("given Self-Destruct is used, when executeMoveEffect is called with the real move ID, then selfFaint is true", () => {
     // Arrange — load the real move from data so a data regression (wrong handler) would be caught
     const attacker = makeActivePokemon();
-    const selfDestructMove = createGen1DataManager().getMove(GEN1_MOVE_IDS.selfDestruct);
+    const selfDestructMove = createGen1DataManager().getMove(MOVES.selfDestruct);
     const context = makeMoveEffectContext({ attacker, move: selfDestructMove });
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -800,13 +768,7 @@ describe("Gen 1 trapping move duration (weighted)", () => {
   it("given a trapping move across many rolls, when duration is sampled, then distribution matches [2,2,2,3,3,3,4,5] weighting", () => {
     // Weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
     // Run many battles and collect duration counts via SeededRandom
-    const wrapMove = makeMove({
-      id: GEN1_MOVE_IDS.wrap,
-      category: "physical" as const,
-      power: 15,
-      effect: { type: "volatile-status" as const, status: CORE_VOLATILE_IDS.bound, chance: 100 },
-    });
-
+    const wrapMove = makeSyntheticTrappingMove();
     const counts: Record<number, number> = { 2: 0, 3: 0, 4: 0, 5: 0 };
     const iterations = 800;
 
