@@ -201,6 +201,7 @@ export const CORE_VOLATILE_IDS = {
   charged: "charged",
   confusion: "confusion",
   disable: "disable",
+  encore: "encore",
   curse: "curse",
   destinyBond: "destiny-bond",
   charging: "charging",

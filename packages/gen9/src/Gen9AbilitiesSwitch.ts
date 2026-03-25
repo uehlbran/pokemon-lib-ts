@@ -1,5 +1,6 @@
 import type { AbilityContext, AbilityResult, BattleState } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, ScreenType, TerrainType } from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS } from "./data/reference-ids";
 
 /**
  * Gen 9 switch-in, switch-out, contact, and passive ability handlers.
@@ -68,10 +69,10 @@ export const TRACE_UNCOPYABLE_ABILITIES = new Set([
   "quark-drive",
   "orichalcum-pulse",
   "hadron-engine",
-  "embody-aspect-teal",
-  "embody-aspect-hearthflame",
-  "embody-aspect-wellspring",
-  "embody-aspect-cornerstone",
+  GEN9_ABILITY_IDS.embodyAspectTeal,
+  GEN9_ABILITY_IDS.embodyAspectHearthflame,
+  GEN9_ABILITY_IDS.embodyAspectWellspring,
+  GEN9_ABILITY_IDS.embodyAspectCornerstone,
 ]);
 
 /**
@@ -98,10 +99,10 @@ export const UNSUPPRESSABLE_ABILITIES = new Set([
   "quark-drive",
   "orichalcum-pulse",
   "hadron-engine",
-  "embody-aspect-teal",
-  "embody-aspect-hearthflame",
-  "embody-aspect-wellspring",
-  "embody-aspect-cornerstone",
+  GEN9_ABILITY_IDS.embodyAspectTeal,
+  GEN9_ABILITY_IDS.embodyAspectHearthflame,
+  GEN9_ABILITY_IDS.embodyAspectWellspring,
+  GEN9_ABILITY_IDS.embodyAspectCornerstone,
   "good-as-gold",
 ]);
 

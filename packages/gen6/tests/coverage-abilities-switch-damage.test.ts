@@ -13,8 +13,15 @@
  * Source: Showdown data/abilities.ts, Bulbapedia ability articles
  */
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN6_ABILITY_IDS, GEN6_ITEM_IDS, GEN6_MOVE_IDS, GEN6_TYPES } from "@pokemon-lib-ts/gen6";
 import {
   handleGen6DamageCalcAbility,
   handleGen6DamageImmunityAbility,
@@ -24,6 +31,15 @@ import { handleGen6SwitchAbility } from "../src/Gen6AbilitiesSwitch";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const A = GEN6_ABILITY_IDS;
+const I = GEN6_ITEM_IDS;
+const M = GEN6_MOVE_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const V = CORE_VOLATILE_IDS;
+const W = CORE_WEATHER_IDS;
+const G6T = GEN6_TYPES;
 
 let nextTestUid = 0;
 function makeTestUid() {
@@ -75,7 +91,7 @@ function makePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [T.normal],
     ability: overrides.ability ?? "",
     suppressedAbility: null,
     lastMoveUsed: null,
@@ -181,7 +197,7 @@ function makeMove(
     pp: 10,
     maxPp: 10,
     priority: 0,
-    target: "normal",
+    target: T.normal,
     flags: opts?.flags ?? {},
     effect: opts?.effect ?? null,
     critRate: 0,
@@ -240,7 +256,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     // Source: Showdown data/abilities.ts -- Aftermath: 1/4 HP if holder fainted
     const foe = makePokemon({ maxHp: 200 });
     const ctx = makeCtx({
-      ability: "aftermath",
+      ability: A.aftermath,
       trigger: "on-contact",
       currentHp: 0,
       opponent: foe,
@@ -257,7 +273,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     // Source: Showdown -- Aftermath only fires when holder has fainted
     const foe = makePokemon({});
     const ctx = makeCtx({
-      ability: "aftermath",
+      ability: A.aftermath,
       trigger: "on-contact",
       currentHp: 100,
       opponent: foe,
@@ -268,24 +284,24 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
 
   it("given Mummy + attacker with suppressable ability, when on-contact, then changes to Mummy", () => {
     // Source: Showdown data/abilities.ts -- Mummy overwrites attacker ability
-    const foe = makePokemon({ ability: "intimidate" });
+    const foe = makePokemon({ ability: A.intimidate });
     const ctx = makeCtx({
-      ability: "mummy",
+      ability: A.mummy,
       trigger: "on-contact",
       opponent: foe,
     });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(
-      expect.objectContaining({ effectType: "ability-change", newAbility: "mummy" }),
+      expect.objectContaining({ effectType: "ability-change", newAbility: A.mummy }),
     );
   });
 
   it("given Mummy + attacker with Stance Change, when on-contact, then does not overwrite", () => {
     // Source: Showdown -- Stance Change is unsuppressable
-    const foe = makePokemon({ ability: "stance-change" });
+    const foe = makePokemon({ ability: A.stanceChange });
     const ctx = makeCtx({
-      ability: "mummy",
+      ability: A.mummy,
       trigger: "on-contact",
       opponent: foe,
     });
@@ -295,9 +311,9 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
 
   it("given Mummy + attacker already has Mummy, when on-contact, then does not activate", () => {
     // Source: Showdown -- cannot Mummy an already-Mummy Pokemon
-    const foe = makePokemon({ ability: "mummy" });
+    const foe = makePokemon({ ability: A.mummy });
     const ctx = makeCtx({
-      ability: "mummy",
+      ability: A.mummy,
       trigger: "on-contact",
       opponent: foe,
     });
@@ -310,7 +326,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({});
     const state = makeState({ rngNext: 0.1 }); // < 0.3
     const ctx = makeCtx({
-      ability: "poison-touch",
+      ability: A.poisonTouch,
       trigger: "on-contact",
       opponent: foe,
       state,
@@ -318,15 +334,15 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(
-      expect.objectContaining({ effectType: "status-inflict", status: "poison" }),
+      expect.objectContaining({ effectType: "status-inflict", status: S.poison }),
     );
   });
 
   it("given Poison Touch + opponent already statused, when on-contact, then does not activate", () => {
     // Source: Showdown -- cannot inflict status if already statused
-    const foe = makePokemon({ status: "burn" });
+    const foe = makePokemon({ status: S.burn });
     const ctx = makeCtx({
-      ability: "poison-touch",
+      ability: A.poisonTouch,
       trigger: "on-contact",
       opponent: foe,
     });
@@ -336,25 +352,25 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
 
   it("given Pickpocket + defender has no item + attacker has item, when on-contact, then steals", () => {
     // Source: Showdown data/abilities.ts -- Pickpocket steals attacker's item
-    const foe = makePokemon({ heldItem: "life-orb" });
+    const foe = makePokemon({ heldItem: I.lifeOrb });
     const ctx = makeCtx({
-      ability: "pickpocket",
+      ability: A.pickpocket,
       trigger: "on-contact",
       heldItem: null,
       opponent: foe,
     });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("life-orb");
+    expect(result.messages[0]).toContain(I.lifeOrb);
   });
 
   it("given Pickpocket + defender already has item, when on-contact, then does not steal", () => {
     // Source: Showdown -- Pickpocket only works if holder has no item
-    const foe = makePokemon({ heldItem: "life-orb" });
+    const foe = makePokemon({ heldItem: I.lifeOrb });
     const ctx = makeCtx({
-      ability: "pickpocket",
+      ability: A.pickpocket,
       trigger: "on-contact",
-      heldItem: "leftovers",
+      heldItem: I.leftovers,
       opponent: foe,
     });
     const result = handleGen6SwitchAbility("on-contact", ctx);
@@ -366,7 +382,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({ gender: "male" });
     const state = makeState({ rngNext: 0.1 }); // < 0.3
     const ctx = makeCtx({
-      ability: "cute-charm",
+      ability: A.cuteCharm,
       trigger: "on-contact",
       gender: "female",
       opponent: foe,
@@ -375,7 +391,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(
-      expect.objectContaining({ effectType: "volatile-inflict", volatile: "infatuation" }),
+      expect.objectContaining({ effectType: "volatile-inflict", volatile: V.infatuation }),
     );
   });
 
@@ -384,7 +400,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({ gender: "female" });
     const state = makeState({ rngNext: 0.1 });
     const ctx = makeCtx({
-      ability: "cute-charm",
+      ability: A.cuteCharm,
       trigger: "on-contact",
       gender: "female",
       opponent: foe,
@@ -399,7 +415,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({ gender: "genderless" });
     const state = makeState({ rngNext: 0.1 });
     const ctx = makeCtx({
-      ability: "cute-charm",
+      ability: A.cuteCharm,
       trigger: "on-contact",
       gender: "female",
       opponent: foe,
@@ -411,10 +427,10 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
 
   it("given Effect Spore + Grass-type attacker, when on-contact, then does not activate", () => {
     // Source: Showdown Gen 5+ -- Grass types immune to Effect Spore
-    const foe = makePokemon({ types: ["grass"] });
+    const foe = makePokemon({ types: [T.grass] });
     const state = makeState({ rngNext: 0 });
     const ctx = makeCtx({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: foe,
       state,
@@ -425,10 +441,10 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
 
   it("given Effect Spore + Overcoat attacker, when on-contact, then does not activate", () => {
     // Source: Showdown Gen 6 -- Overcoat blocks Effect Spore
-    const foe = makePokemon({ ability: "overcoat" });
+    const foe = makePokemon({ ability: A.overcoat });
     const state = makeState({ rngNext: 0 });
     const ctx = makeCtx({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: foe,
       state,
@@ -443,14 +459,14 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     // roll * 100 = 5 < 10 => sleep
     const state = makeState({ rngNext: 0.05 });
     const ctx = makeCtx({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: foe,
       state,
     });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ status: "sleep" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ status: S.sleep }));
   });
 
   it("given Effect Spore + roll 10-19, when on-contact, then causes paralysis", () => {
@@ -458,14 +474,14 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({});
     const state = makeState({ rngNext: 0.15 }); // 15 < 20
     const ctx = makeCtx({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: foe,
       state,
     });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ status: "paralysis" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ status: S.paralysis }));
   });
 
   it("given Effect Spore + roll 20-29, when on-contact, then causes poison", () => {
@@ -473,14 +489,14 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({});
     const state = makeState({ rngNext: 0.25 }); // 25 < 30
     const ctx = makeCtx({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: foe,
       state,
     });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ status: "poison" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ status: S.poison }));
   });
 
   it("given Effect Spore + roll 30+, when on-contact, then does not activate", () => {
@@ -488,7 +504,7 @@ describe("handleGen6SwitchAbility — on-contact abilities", () => {
     const foe = makePokemon({});
     const state = makeState({ rngNext: 0.5 }); // 50 >= 30
     const ctx = makeCtx({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: foe,
       state,
@@ -506,9 +522,9 @@ describe("handleGen6SwitchAbility — on-switch-out", () => {
   it("given Natural Cure + statused Pokemon, when on-switch-out, then cures status", () => {
     // Source: Showdown data/abilities.ts -- Natural Cure: cures status on switch-out
     const ctx = makeCtx({
-      ability: "natural-cure",
+      ability: A.naturalCure,
       trigger: "on-switch-out",
-      status: "paralysis",
+      status: S.paralysis,
     });
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
     expect(result.activated).toBe(true);
@@ -518,7 +534,7 @@ describe("handleGen6SwitchAbility — on-switch-out", () => {
   it("given Natural Cure + no status, when on-switch-out, then does not activate", () => {
     // Source: Showdown -- no status to cure
     const ctx = makeCtx({
-      ability: "natural-cure",
+      ability: A.naturalCure,
       trigger: "on-switch-out",
     });
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
@@ -536,23 +552,23 @@ describe("handleGen6SwitchAbility — on-damage-taken", () => {
     const foe = makePokemon({});
     const state = makeState({ rngNext: 0.1 }); // < 0.3
     const ctx = makeCtx({
-      ability: "cursed-body",
+      ability: A.cursedBody,
       trigger: "on-damage-taken",
       opponent: foe,
       state,
     });
     const result = handleGen6SwitchAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: "disable" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: V.disable }));
   });
 
   it("given Cursed Body + opponent already disabled, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- cannot double-disable
     const foe = makePokemon({});
-    foe.volatileStatuses.set("disable", { turnsLeft: 4 } as never);
+    foe.volatileStatuses.set(V.disable, { turnsLeft: 4 } as never);
     const state = makeState({ rngNext: 0 });
     const ctx = makeCtx({
-      ability: "cursed-body",
+      ability: A.cursedBody,
       trigger: "on-damage-taken",
       opponent: foe,
       state,
@@ -564,9 +580,9 @@ describe("handleGen6SwitchAbility — on-damage-taken", () => {
   it("given Rattled + bug move, when on-damage-taken, then +1 Speed", () => {
     // Source: Showdown data/abilities.ts -- Rattled: +1 Speed on Bug/Dark/Ghost hit
     const ctx = makeCtx({
-      ability: "rattled",
+      ability: A.rattled,
       trigger: "on-damage-taken",
-      move: makeMove("bug"),
+      move: makeMove(T.bug),
     });
     const result = handleGen6SwitchAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -576,9 +592,9 @@ describe("handleGen6SwitchAbility — on-damage-taken", () => {
   it("given Rattled + ghost move, when on-damage-taken, then +1 Speed", () => {
     // Source: Showdown -- Rattled fires for ghost type
     const ctx = makeCtx({
-      ability: "rattled",
+      ability: A.rattled,
       trigger: "on-damage-taken",
-      move: makeMove("ghost"),
+      move: makeMove(T.ghost),
     });
     const result = handleGen6SwitchAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
@@ -587,9 +603,9 @@ describe("handleGen6SwitchAbility — on-damage-taken", () => {
   it("given Rattled + fire move, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- Rattled only for Bug/Dark/Ghost
     const ctx = makeCtx({
-      ability: "rattled",
+      ability: A.rattled,
       trigger: "on-damage-taken",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = handleGen6SwitchAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(false);
@@ -597,8 +613,8 @@ describe("handleGen6SwitchAbility — on-damage-taken", () => {
 
   it("given Illusion + has illusion volatile, when on-damage-taken, then breaks illusion", () => {
     // Source: Showdown data/abilities.ts -- Illusion breaks on damaging hit
-    const pokemon = makePokemon({ ability: "illusion" });
-    pokemon.volatileStatuses.set("illusion", { turnsLeft: -1 } as never);
+    const pokemon = makePokemon({ ability: A.illusion });
+    pokemon.volatileStatuses.set(A.illusion, { turnsLeft: -1 } as never);
     const ctx = {
       pokemon,
       state: makeState(),
@@ -613,7 +629,7 @@ describe("handleGen6SwitchAbility — on-damage-taken", () => {
   it("given Illusion + no illusion volatile, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- no illusion to break
     const ctx = makeCtx({
-      ability: "illusion",
+      ability: A.illusion,
       trigger: "on-damage-taken",
     });
     const result = handleGen6SwitchAbility("on-damage-taken", ctx);
@@ -630,15 +646,15 @@ describe("handleGen6SwitchAbility — on-status-inflicted", () => {
     // Source: Showdown data/abilities.ts -- Synchronize: passes burn/paralysis/poison
     const foe = makePokemon({});
     const ctx = makeCtx({
-      ability: "synchronize",
+      ability: A.synchronize,
       trigger: "on-status-inflicted",
-      status: "burn",
+      status: S.burn,
       opponent: foe,
     });
     const result = handleGen6SwitchAbility("on-status-inflicted", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(
-      expect.objectContaining({ effectType: "status-inflict", status: "burn" }),
+      expect.objectContaining({ effectType: "status-inflict", status: S.burn }),
     );
   });
 
@@ -646,9 +662,9 @@ describe("handleGen6SwitchAbility — on-status-inflicted", () => {
     // Source: Showdown -- Synchronize does not spread sleep or freeze
     const foe = makePokemon({});
     const ctx = makeCtx({
-      ability: "synchronize",
+      ability: A.synchronize,
       trigger: "on-status-inflicted",
-      status: "sleep",
+      status: S.sleep,
       opponent: foe,
     });
     const result = handleGen6SwitchAbility("on-status-inflicted", ctx);
@@ -664,12 +680,12 @@ describe("handleGen6SwitchAbility — passive-immunity", () => {
   it("given Sweet Veil + sleep move, when passive-immunity, then blocks sleep", () => {
     // Source: Showdown data/abilities.ts -- Sweet Veil: blocks sleep
     const ctx = makeCtx({
-      ability: "sweet-veil",
+      ability: A.sweetVeil,
       trigger: "passive-immunity",
-      move: makeMove("normal", {
-        id: "spore",
+      move: makeMove(T.normal, {
+        id: M.spore,
         category: "status",
-        effect: { type: "status-guaranteed", status: "sleep" },
+        effect: { type: "status-guaranteed", status: S.sleep },
       }),
     });
     const result = handleGen6SwitchAbility("passive-immunity", ctx);
@@ -679,10 +695,10 @@ describe("handleGen6SwitchAbility — passive-immunity", () => {
   it("given Overcoat + powder move, when passive-immunity, then blocks powder", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- Overcoat blocks powder in Gen 6
     const ctx = makeCtx({
-      ability: "overcoat",
+      ability: A.overcoat,
       trigger: "passive-immunity",
-      move: makeMove("grass", {
-        id: "spore",
+      move: makeMove(T.grass, {
+        id: M.spore,
         flags: { powder: true },
         category: "status",
       }),
@@ -694,7 +710,7 @@ describe("handleGen6SwitchAbility — passive-immunity", () => {
   it("given on-accuracy-check trigger with Victory Star, when dispatching, then activates", () => {
     // Source: Showdown -- Victory Star: 1.1x accuracy for all allies
     const ctx = makeCtx({
-      ability: "victory-star",
+      ability: A.victoryStar,
       trigger: "on-accuracy-check",
     });
     const result = handleGen6SwitchAbility("on-accuracy-check", ctx);
@@ -710,7 +726,7 @@ describe("handleGen6SwitchAbility — on-stat-change", () => {
   it("given Big Pecks + defense drop from opponent, when on-stat-change, then blocks it", () => {
     // Source: Showdown data/abilities.ts -- Big Pecks: prevents Defense drops
     const ctx = makeCtx({
-      ability: "big-pecks",
+      ability: A.bigPecks,
       trigger: "on-stat-change",
       statChange: { stages: -1, source: "opponent", stat: "defense" },
     });
@@ -728,7 +744,7 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
     // Source: Showdown data/abilities.ts -- Imposter transforms on switch-in
     const foe = makePokemon({ nickname: "Pikachu" });
     const ctx = makeCtx({
-      ability: "imposter",
+      ability: A.imposter,
       trigger: "on-switch-in",
       opponent: foe,
     });
@@ -740,18 +756,18 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
   it("given Illusion, when on-switch-in, then sets illusion volatile", () => {
     // Source: Showdown data/abilities.ts -- Illusion sets volatile on entry
     const ctx = makeCtx({
-      ability: "illusion",
+      ability: A.illusion,
       trigger: "on-switch-in",
     });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: "illusion" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: A.illusion }));
   });
 
   it("given Stance Change + speciesId 681 (Aegislash), when on-switch-in, then activates", () => {
     // Source: Showdown data/abilities.ts -- Stance Change: Aegislash switch-in
     const ctx = makeCtx({
-      ability: "stance-change",
+      ability: A.stanceChange,
       trigger: "on-switch-in",
       speciesId: 681,
     });
@@ -762,7 +778,7 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
   it("given Stance Change + non-Aegislash, when on-switch-in, then does not activate", () => {
     // Source: Showdown -- Stance Change only for Aegislash
     const ctx = makeCtx({
-      ability: "stance-change",
+      ability: A.stanceChange,
       trigger: "on-switch-in",
       speciesId: 25,
     });
@@ -773,7 +789,7 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
   it("given Teravolt, when on-switch-in, then announces blazing aura", () => {
     // Source: Showdown data/abilities.ts -- Teravolt onStart
     const ctx = makeCtx({
-      ability: "teravolt",
+      ability: A.teravolt,
       trigger: "on-switch-in",
     });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
@@ -784,7 +800,7 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
   it("given Turboblaze, when on-switch-in, then announces blazing aura", () => {
     // Source: Showdown data/abilities.ts -- Turboblaze onStart
     const ctx = makeCtx({
-      ability: "turboblaze",
+      ability: A.turboblaze,
       trigger: "on-switch-in",
     });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
@@ -798,7 +814,7 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
     (foe.pokemon.calculatedStats as { defense: number }).defense = 80;
     (foe.pokemon.calculatedStats as { spDefense: number }).spDefense = 120;
     const ctx = makeCtx({
-      ability: "download",
+      ability: A.download,
       trigger: "on-switch-in",
       opponent: foe,
     });
@@ -813,7 +829,7 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
     (foe.pokemon.calculatedStats as { defense: number }).defense = 120;
     (foe.pokemon.calculatedStats as { spDefense: number }).spDefense = 80;
     const ctx = makeCtx({
-      ability: "download",
+      ability: A.download,
       trigger: "on-switch-in",
       opponent: foe,
     });
@@ -824,22 +840,22 @@ describe("handleGen6SwitchAbility — on-switch-in (additional abilities)", () =
 
   it("given Trace + opponent with copyable ability, when on-switch-in, then copies ability", () => {
     // Source: Showdown data/abilities.ts -- Trace copies opponent's ability
-    const foe = makePokemon({ ability: "intimidate" });
+    const foe = makePokemon({ ability: A.intimidate });
     const ctx = makeCtx({
-      ability: "trace",
+      ability: A.trace,
       trigger: "on-switch-in",
       opponent: foe,
     });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ newAbility: "intimidate" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ newAbility: A.intimidate }));
   });
 
   it("given Trace + opponent with uncopyable ability (Stance Change), when on-switch-in, then fails", () => {
     // Source: Showdown -- Trace cannot copy Stance Change
-    const foe = makePokemon({ ability: "stance-change" });
+    const foe = makePokemon({ ability: A.stanceChange });
     const ctx = makeCtx({
-      ability: "trace",
+      ability: A.trace,
       trigger: "on-switch-in",
       opponent: foe,
     });
@@ -858,9 +874,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
     const foe = makePokemon({});
     foe.movedThisTurn = true;
     const ctx = makeCtx({
-      ability: "analytic",
+      ability: A.analytic,
       trigger: "on-damage-calc",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
       opponent: foe,
     });
     const result = handleGen6DamageCalcAbility(ctx);
@@ -872,9 +888,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
     const foe = makePokemon({});
     foe.movedThisTurn = false;
     const ctx = makeCtx({
-      ability: "analytic",
+      ability: A.analytic,
       trigger: "on-damage-calc",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
       opponent: foe,
     });
     const result = handleGen6DamageCalcAbility(ctx);
@@ -885,9 +901,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
     // Source: Showdown data/abilities.ts -- Sand Force: 1.3x Rock/Ground/Steel in sand
     const state = makeState({ weather: { type: "sand", turnsLeft: 3 } });
     const ctx = makeCtx({
-      ability: "sand-force",
+      ability: A.sandForce,
       trigger: "on-damage-calc",
-      move: makeMove("rock"),
+      move: makeMove(T.rock),
       state,
     });
     const result = handleGen6DamageCalcAbility(ctx);
@@ -898,9 +914,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
     // Source: Showdown -- Sand Force only for Rock/Ground/Steel
     const state = makeState({ weather: { type: "sand", turnsLeft: 3 } });
     const ctx = makeCtx({
-      ability: "sand-force",
+      ability: A.sandForce,
       trigger: "on-damage-calc",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
       state,
     });
     const result = handleGen6DamageCalcAbility(ctx);
@@ -910,10 +926,10 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Adaptability + STAB move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Adaptability: STAB 2x instead of 1.5x
     const ctx = makeCtx({
-      ability: "adaptability",
+      ability: A.adaptability,
       trigger: "on-damage-calc",
-      types: ["fire"],
-      move: makeMove("fire"),
+      types: [T.fire],
+      move: makeMove(T.fire),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -922,10 +938,10 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Adaptability + non-STAB move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Adaptability only boosts STAB
     const ctx = makeCtx({
-      ability: "adaptability",
+      ability: A.adaptability,
       trigger: "on-damage-calc",
-      types: ["water"],
-      move: makeMove("fire"),
+      types: [T.water],
+      move: makeMove(T.fire),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -934,9 +950,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Reckless + recoil move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Reckless: 1.2x for recoil moves
     const ctx = makeCtx({
-      ability: "reckless",
+      ability: A.reckless,
       trigger: "on-damage-calc",
-      move: makeMove("fighting", {
+      move: makeMove(T.fighting, {
         effect: { type: "recoil", fraction: 0.33 },
       }),
     });
@@ -946,10 +962,10 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
 
   it("given Reckless + crash damage move, when on-damage-calc, then activates", () => {
     // Source: Showdown -- Reckless also boosts crash-damage moves
-    const move = makeMove("fighting");
+    const move = makeMove(T.fighting);
     (move as { hasCrashDamage: boolean }).hasCrashDamage = true;
     const ctx = makeCtx({
-      ability: "reckless",
+      ability: A.reckless,
       trigger: "on-damage-calc",
       move,
     });
@@ -960,10 +976,10 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Guts + physical move + status, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Guts: 1.5x Atk when statused
     const ctx = makeCtx({
-      ability: "guts",
+      ability: A.guts,
       trigger: "on-damage-calc",
-      status: "burn",
-      move: makeMove("normal", { category: "physical" }),
+      status: S.burn,
+      move: makeMove(T.normal, { category: "physical" }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -972,9 +988,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Guts + physical move + no status, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Guts requires status condition
     const ctx = makeCtx({
-      ability: "guts",
+      ability: A.guts,
       trigger: "on-damage-calc",
-      move: makeMove("normal", { category: "physical" }),
+      move: makeMove(T.normal, { category: "physical" }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -983,9 +999,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Blaze + fire move + HP below 1/3, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Blaze pinch: 1.5x at <= 1/3 HP
     const ctx = makeCtx({
-      ability: "blaze",
+      ability: A.blaze,
       trigger: "on-damage-calc",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
       currentHp: 50,
       maxHp: 200,
     });
@@ -997,9 +1013,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Blaze + fire move + HP above 1/3, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- pinch abilities only fire at or below 1/3 HP
     const ctx = makeCtx({
-      ability: "blaze",
+      ability: A.blaze,
       trigger: "on-damage-calc",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
       currentHp: 150,
       maxHp: 200,
     });
@@ -1010,9 +1026,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Blaze + water move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Blaze only boosts Fire moves
     const ctx = makeCtx({
-      ability: "blaze",
+      ability: A.blaze,
       trigger: "on-damage-calc",
-      move: makeMove("water"),
+      move: makeMove(T.water),
       currentHp: 50,
       maxHp: 200,
     });
@@ -1023,7 +1039,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Multiscale + full HP, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Multiscale: 0.5x at full HP
     const ctx = makeCtx({
-      ability: "multiscale",
+      ability: A.multiscale,
       trigger: "on-damage-calc",
       currentHp: 200,
       maxHp: 200,
@@ -1035,7 +1051,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Multiscale + not full HP, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Multiscale only at full HP
     const ctx = makeCtx({
-      ability: "multiscale",
+      ability: A.multiscale,
       trigger: "on-damage-calc",
       currentHp: 150,
       maxHp: 200,
@@ -1047,9 +1063,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Thick Fat + fire move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Thick Fat: 0.5x Fire/Ice damage
     const ctx = makeCtx({
-      ability: "thick-fat",
+      ability: A.thickFat,
       trigger: "on-damage-calc",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1058,9 +1074,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Thick Fat + ice move, when on-damage-calc, then activates", () => {
     // Source: Showdown -- Thick Fat covers both Fire and Ice
     const ctx = makeCtx({
-      ability: "thick-fat",
+      ability: A.thickFat,
       trigger: "on-damage-calc",
-      move: makeMove("ice"),
+      move: makeMove(T.ice),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1069,9 +1085,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Thick Fat + water move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Thick Fat only for Fire/Ice
     const ctx = makeCtx({
-      ability: "thick-fat",
+      ability: A.thickFat,
       trigger: "on-damage-calc",
-      move: makeMove("water"),
+      move: makeMove(T.water),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1080,9 +1096,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Marvel Scale + status, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Marvel Scale: 1.5x Def when statused
     const ctx = makeCtx({
-      ability: "marvel-scale",
+      ability: A.marvelScale,
       trigger: "on-damage-calc",
-      status: "paralysis",
+      status: S.paralysis,
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1091,7 +1107,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Marvel Scale + no status, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Marvel Scale requires status
     const ctx = makeCtx({
-      ability: "marvel-scale",
+      ability: A.marvelScale,
       trigger: "on-damage-calc",
     });
     const result = handleGen6DamageCalcAbility(ctx);
@@ -1101,9 +1117,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Fur Coat + physical move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Fur Coat: 2x Def vs physical
     const ctx = makeCtx({
-      ability: "fur-coat",
+      ability: A.furCoat,
       trigger: "on-damage-calc",
-      move: makeMove("normal", { category: "physical" }),
+      move: makeMove(T.normal, { category: "physical" }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1112,9 +1128,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Fur Coat + special move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Fur Coat only for physical
     const ctx = makeCtx({
-      ability: "fur-coat",
+      ability: A.furCoat,
       trigger: "on-damage-calc",
-      move: makeMove("fire", { category: "special" }),
+      move: makeMove(T.fire, { category: "special" }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1123,9 +1139,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Aerilate + normal move, when on-damage-calc, then converts to Flying", () => {
     // Source: Showdown data/abilities.ts -- Aerilate: Normal -> Flying
     const ctx = makeCtx({
-      ability: "aerilate",
+      ability: A.aerilate,
       trigger: "on-damage-calc",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1135,21 +1151,21 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Refrigerate + normal move, when on-damage-calc, then converts to Ice", () => {
     // Source: Showdown data/abilities.ts -- Refrigerate: Normal -> Ice
     const ctx = makeCtx({
-      ability: "refrigerate",
+      ability: A.refrigerate,
       trigger: "on-damage-calc",
-      move: makeMove("normal"),
+      move: makeMove(T.normal),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ types: ["ice"] }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ types: [T.ice] }));
   });
 
   it("given Parental Bond + status move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Parental Bond doesn't apply to status moves
     const ctx = makeCtx({
-      ability: "parental-bond",
+      ability: A.parentalBond,
       trigger: "on-damage-calc",
-      move: makeMove("normal", { category: "status", power: 0 }),
+      move: makeMove(T.normal, { category: "status", power: 0 }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1158,9 +1174,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Parental Bond + multi-hit move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Parental Bond skips multi-hit moves
     const ctx = makeCtx({
-      ability: "parental-bond",
+      ability: A.parentalBond,
       trigger: "on-damage-calc",
-      move: makeMove("normal", {
+      move: makeMove(T.normal, {
         power: 80,
         effect: { type: "multi-hit", minHits: 2, maxHits: 5 },
       }),
@@ -1172,7 +1188,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Sniper on a crit, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Sniper: if crit, chainModify(1.5)
     const ctx = makeCtx({
-      ability: "sniper",
+      ability: A.sniper,
       trigger: "on-damage-calc",
       isCrit: true,
     });
@@ -1183,7 +1199,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Sniper on a non-crit, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Sniper only fires on crits
     const ctx = makeCtx({
-      ability: "sniper",
+      ability: A.sniper,
       trigger: "on-damage-calc",
       isCrit: false,
     });
@@ -1194,7 +1210,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Tinted Lens with NVE move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- Tinted Lens: if typeMod < 0, chainModify(2)
     const ctx = makeCtx({
-      ability: "tinted-lens",
+      ability: A.tintedLens,
       trigger: "on-damage-calc",
       typeEffectiveness: 0.5,
     });
@@ -1205,7 +1221,7 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Tinted Lens with neutral move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Tinted Lens only fires for NVE (typeMod < 0)
     const ctx = makeCtx({
-      ability: "tinted-lens",
+      ability: A.tintedLens,
       trigger: "on-damage-calc",
       typeEffectiveness: 1,
     });
@@ -1216,9 +1232,9 @@ describe("handleGen6DamageCalcAbility — remaining branches", () => {
   it("given Hustle + special move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Hustle only boosts physical moves
     const ctx = makeCtx({
-      ability: "hustle",
+      ability: A.hustle,
       trigger: "on-damage-calc",
-      move: makeMove("fire", { category: "special" }),
+      move: makeMove(T.fire, { category: "special" }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1233,7 +1249,7 @@ describe("Solid Rock / Filter gating", () => {
   it("given Solid Rock + SE move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- solidrock: chainModify(0.75) when typeMod > 0
     const ctx = makeCtx({
-      ability: "solid-rock",
+      ability: A.solidRock,
       trigger: "on-damage-calc",
       typeEffectiveness: 2,
     });
@@ -1245,7 +1261,7 @@ describe("Solid Rock / Filter gating", () => {
   it("given Filter + 4x SE move, when on-damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- filter is identical to solidrock
     const ctx = makeCtx({
-      ability: "filter",
+      ability: A.filter,
       trigger: "on-damage-calc",
       typeEffectiveness: 4,
     });
@@ -1257,7 +1273,7 @@ describe("Solid Rock / Filter gating", () => {
   it("given Solid Rock + neutral move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Solid Rock only activates for SE (typeMod > 0)
     const ctx = makeCtx({
-      ability: "solid-rock",
+      ability: A.solidRock,
       trigger: "on-damage-calc",
       typeEffectiveness: 1,
     });
@@ -1268,7 +1284,7 @@ describe("Solid Rock / Filter gating", () => {
   it("given Filter + NVE move, when on-damage-calc, then does not activate", () => {
     // Source: Showdown -- Filter only activates for SE
     const ctx = makeCtx({
-      ability: "filter",
+      ability: A.filter,
       trigger: "on-damage-calc",
       typeEffectiveness: 0.5,
     });
@@ -1285,10 +1301,10 @@ describe("handleGen6DamageImmunityAbility — Sturdy", () => {
   it("given Sturdy + OHKO move, when on-damage-taken, then blocks the move", () => {
     // Source: Showdown data/abilities.ts -- Sturdy blocks OHKO moves
     const ctx = makeCtx({
-      ability: "sturdy",
+      ability: A.sturdy,
       trigger: "on-damage-taken",
-      move: makeMove("ground", {
-        id: "fissure",
+      move: makeMove(T.ground, {
+        id: M.fissure,
         effect: { type: "ohko" },
       }),
     });
@@ -1300,9 +1316,9 @@ describe("handleGen6DamageImmunityAbility — Sturdy", () => {
   it("given Sturdy + non-OHKO move, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- Sturdy only blocks OHKO
     const ctx = makeCtx({
-      ability: "sturdy",
+      ability: A.sturdy,
       trigger: "on-damage-taken",
-      move: makeMove("fire"),
+      move: makeMove(T.fire),
     });
     const result = handleGen6DamageImmunityAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1311,7 +1327,7 @@ describe("handleGen6DamageImmunityAbility — Sturdy", () => {
   it("given non-Sturdy ability, when on-damage-taken, then does not activate", () => {
     // Source: Showdown -- only Sturdy handles damage immunity
     const ctx = makeCtx({
-      ability: "intimidate",
+      ability: A.intimidate,
       trigger: "on-damage-taken",
     });
     const result = handleGen6DamageImmunityAbility(ctx);

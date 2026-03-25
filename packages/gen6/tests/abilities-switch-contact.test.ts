@@ -1,6 +1,13 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN6_ABILITY_IDS, GEN6_MOVE_IDS, GEN6_TYPES } from "@pokemon-lib-ts/gen6";
 import {
   handleGen6SwitchAbility,
   isBulletproofBlocked,
@@ -31,6 +38,14 @@ import {
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const A = GEN6_ABILITY_IDS;
+const M = GEN6_MOVE_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const V = CORE_VOLATILE_IDS;
+const W = CORE_WEATHER_IDS;
+const G6T = GEN6_TYPES;
 
 let nextTestUid = 0;
 function makeTestUid() {
@@ -117,7 +132,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [T.normal],
     ability: overrides.ability ?? "",
     suppressedAbility: null,
     lastMoveUsed: null,
@@ -273,23 +288,23 @@ describe("Drizzle (Gen 6: 5-turn rain)", () => {
   it("given Drizzle, when on-switch-in, then sets rain for 5 turns", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- drizzle sets 5-turn rain in Gen 6
     // Source: Bulbapedia "Drizzle" Gen VI -- "Summons rain for 5 turns on entry."
-    const ctx = makeContext({ ability: "drizzle", trigger: "on-switch-in" });
+    const ctx = makeContext({ ability: A.drizzle, trigger: "on-switch-in" });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
     expect(weatherEffect).toBeDefined();
-    expect(weatherEffect?.weather).toBe("rain");
+    expect(weatherEffect?.weather).toBe(W.rain);
     // Gen 6 key change: 5 turns, not -1 (permanent)
     expect(weatherEffect?.weatherTurns).toBe(5);
   });
 
   it("given Drizzle, when on-switch-in, then produces expected message", () => {
     // Source: Showdown data/abilities.ts -- drizzle onStart message
-    const ctx = makeContext({ ability: "drizzle", trigger: "on-switch-in", nickname: "Politoed" });
+    const ctx = makeContext({ ability: A.drizzle, trigger: "on-switch-in", nickname: "Politoed" });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Politoed");
-    expect(result.messages[0]).toContain("rain");
+    expect(result.messages[0]).toContain(W.rain);
   });
 });
 
@@ -297,18 +312,18 @@ describe("Drought (Gen 6: 5-turn sun)", () => {
   it("given Drought, when on-switch-in, then sets sun for 5 turns", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- drought sets 5-turn sun in Gen 6
     // Source: Bulbapedia "Drought" Gen VI -- "Summons sunlight for 5 turns on entry."
-    const ctx = makeContext({ ability: "drought", trigger: "on-switch-in" });
+    const ctx = makeContext({ ability: A.drought, trigger: "on-switch-in" });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect?.weather).toBe("sun");
+    expect(weatherEffect?.weather).toBe(W.sun);
     expect(weatherEffect?.weatherTurns).toBe(5);
   });
 
   it("given Drought, when on-switch-in, then Gen 6 weather is 5 turns NOT permanent", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- drought weatherTurns: -1 (Gen 5 permanent)
     // Source: Showdown data/mods/gen6/abilities.ts -- Gen 6 sets weatherTurns: 5
-    const ctx = makeContext({ ability: "drought", trigger: "on-switch-in" });
+    const ctx = makeContext({ ability: A.drought, trigger: "on-switch-in" });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
     expect(weatherEffect?.weatherTurns).not.toBe(-1);
@@ -319,21 +334,21 @@ describe("Drought (Gen 6: 5-turn sun)", () => {
 describe("Sand Stream (Gen 6: 5-turn sandstorm)", () => {
   it("given Sand Stream, when on-switch-in, then sets sandstorm for 5 turns", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- sand-stream sets 5-turn sandstorm in Gen 6
-    const ctx = makeContext({ ability: "sand-stream", trigger: "on-switch-in" });
+    const ctx = makeContext({ ability: A.sandStream, trigger: "on-switch-in" });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect?.weather).toBe("sand");
+    expect(weatherEffect?.weather).toBe(W.sand);
     expect(weatherEffect?.weatherTurns).toBe(5);
   });
 
   it("given Snow Warning, when on-switch-in, then sets hail for 5 turns", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- snow-warning sets 5-turn hail in Gen 6
-    const ctx = makeContext({ ability: "snow-warning", trigger: "on-switch-in" });
+    const ctx = makeContext({ ability: A.snowWarning, trigger: "on-switch-in" });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect?.weather).toBe("hail");
+    expect(weatherEffect?.weather).toBe(W.hail);
     expect(weatherEffect?.weatherTurns).toBe(5);
   });
 });
@@ -347,7 +362,7 @@ describe("Stance Change (Gen 6 new)", () => {
     // Source: Showdown data/abilities.ts -- stancechange onStart for Aegislash
     // Source: Bulbapedia "Stance Change" -- Aegislash changes form based on move used
     const ctx = makeContext({
-      ability: "stance-change",
+      ability: A.stanceChange,
       trigger: "on-switch-in",
       speciesId: 681,
     });
@@ -359,7 +374,7 @@ describe("Stance Change (Gen 6 new)", () => {
     // Stance Change only applies to Aegislash (speciesId 681)
     // Source: Showdown data/abilities.ts -- stancechange: only applied to Aegislash
     const ctx = makeContext({
-      ability: "stance-change",
+      ability: A.stanceChange,
       trigger: "on-switch-in",
       speciesId: 1,
     });
@@ -376,8 +391,8 @@ describe("Intimidate", () => {
   it("given Intimidate, when on-switch-in with opponent, then lowers opponent Attack by 1", () => {
     // Source: Showdown data/abilities.ts -- intimidate: lower opponent Attack by 1
     // Source: Bulbapedia "Intimidate" -- "Lowers the foe's Attack stat by one stage upon entry."
-    const opponent = makeActivePokemon({ ability: "none", types: ["normal"] });
-    const ctx = makeContext({ ability: "intimidate", trigger: "on-switch-in", opponent });
+    const opponent = makeActivePokemon({ ability: A.none, types: [T.normal] });
+    const ctx = makeContext({ ability: A.intimidate, trigger: "on-switch-in", opponent });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     const statEffect = result.effects.find((e) => e.effectType === "stat-change");
@@ -389,8 +404,8 @@ describe("Intimidate", () => {
   it("given Intimidate, when opponent has a Substitute active, then does not activate", () => {
     // Source: Showdown Gen 6 -- Intimidate blocked by Substitute
     // Source: Bulbapedia "Intimidate" -- "Blocked by Substitute"
-    const opponent = makeActivePokemon({ ability: "none", substituteHp: 50 });
-    const ctx = makeContext({ ability: "intimidate", trigger: "on-switch-in", opponent });
+    const opponent = makeActivePokemon({ ability: A.none, substituteHp: 50 });
+    const ctx = makeContext({ ability: A.intimidate, trigger: "on-switch-in", opponent });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(false);
   });
@@ -403,19 +418,19 @@ describe("Intimidate", () => {
 describe("Trace (Gen 6 expanded ban list)", () => {
   it("given Trace, when opponent has a copyable ability, then copies it", () => {
     // Source: Showdown data/abilities.ts -- trace: copies opponent ability on switch-in
-    const opponent = makeActivePokemon({ ability: "swift-swim" });
-    const ctx = makeContext({ ability: "trace", trigger: "on-switch-in", opponent });
+    const opponent = makeActivePokemon({ ability: A.swiftSwim });
+    const ctx = makeContext({ ability: A.trace, trigger: "on-switch-in", opponent });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
     const abilityEffect = result.effects.find((e) => e.effectType === "ability-change");
-    expect(abilityEffect?.newAbility).toBe("swift-swim");
+    expect(abilityEffect?.newAbility).toBe(A.swiftSwim);
   });
 
   it("given Trace, when opponent has Stance Change, then cannot copy (Gen 6 ban)", () => {
     // Source: Bulbapedia "Trace" Gen VI -- "Cannot copy Stance Change, Power Construct"
     // Gen 6 added Stance Change to the uncopyable list
-    const opponent = makeActivePokemon({ ability: "stance-change" });
-    const ctx = makeContext({ ability: "trace", trigger: "on-switch-in", opponent });
+    const opponent = makeActivePokemon({ ability: A.stanceChange });
+    const ctx = makeContext({ ability: A.trace, trigger: "on-switch-in", opponent });
     const result = handleGen6SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(false);
   });
@@ -430,7 +445,7 @@ describe("Regenerator", () => {
     // Source: Showdown data/abilities.ts -- regenerator: heals 1/3 maxHp on switch-out
     // Source: Bulbapedia "Regenerator" -- "Restores 1/3 of its maximum HP upon switching out."
     // floor(300 / 3) = 100
-    const ctx = makeContext({ ability: "regenerator", trigger: "on-switch-out", maxHp: 300 });
+    const ctx = makeContext({ ability: A.regenerator, trigger: "on-switch-out", maxHp: 300 });
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.effectType === "heal");
@@ -440,7 +455,7 @@ describe("Regenerator", () => {
   it("given Regenerator at 1 HP, when on-switch-out, then heals at least 1", () => {
     // Source: Showdown data/abilities.ts -- Math.max(1, floor(maxHp/3))
     // floor(1 / 3) = 0, but clamped to 1
-    const ctx = makeContext({ ability: "regenerator", trigger: "on-switch-out", maxHp: 1 });
+    const ctx = makeContext({ ability: A.regenerator, trigger: "on-switch-out", maxHp: 1 });
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.effectType === "heal");
@@ -453,7 +468,7 @@ describe("Natural Cure", () => {
   it("given Natural Cure with a status condition, when on-switch-out, then cures status", () => {
     // Source: Showdown data/abilities.ts -- naturalcure: cures status on switch-out
     // Source: Bulbapedia "Natural Cure" -- "All status conditions are healed upon switching out."
-    const ctx = makeContext({ ability: "natural-cure", trigger: "on-switch-out", status: "burn" });
+    const ctx = makeContext({ ability: A.naturalCure, trigger: "on-switch-out", status: S.burn });
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]?.effectType).toBe("status-cure");
@@ -461,7 +476,7 @@ describe("Natural Cure", () => {
 
   it("given Natural Cure with no status condition, when on-switch-out, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- naturalcure: only fires if status exists
-    const ctx = makeContext({ ability: "natural-cure", trigger: "on-switch-out", status: null });
+    const ctx = makeContext({ ability: A.naturalCure, trigger: "on-switch-out", status: null });
     const result = handleGen6SwitchAbility("on-switch-out", ctx);
     expect(result.activated).toBe(false);
   });
@@ -476,9 +491,9 @@ describe("Static (on-contact)", () => {
     // Source: Showdown data/abilities.ts -- static: 30% paralysis on contact
     // Source: Bulbapedia "Static" -- "30% chance of paralyzing on contact."
     // rngNext = 0 < 0.3, so paralysis triggers
-    const attacker = makeActivePokemon({ ability: "none" });
+    const attacker = makeActivePokemon({ ability: A.none });
     const ctx = makeContext({
-      ability: "static",
+      ability: A.static,
       trigger: "on-contact",
       opponent: attacker,
       rngNext: 0,
@@ -486,15 +501,15 @@ describe("Static (on-contact)", () => {
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
-    expect(statusEffect?.status).toBe("paralysis");
+    expect(statusEffect?.status).toBe(S.paralysis);
   });
 
   it("given Static, when RNG >= 30%, then does not paralyze", () => {
     // Source: Showdown data/abilities.ts -- static: this.randomChance(3, 10) = 30%
     // rngNext = 0.5 >= 0.3, so no paralysis
-    const attacker = makeActivePokemon({ ability: "none" });
+    const attacker = makeActivePokemon({ ability: A.none });
     const ctx = makeContext({
-      ability: "static",
+      ability: A.static,
       trigger: "on-contact",
       opponent: attacker,
       rngNext: 0.5,
@@ -507,9 +522,9 @@ describe("Static (on-contact)", () => {
 describe("Flame Body (on-contact)", () => {
   it("given Flame Body, when RNG < 30%, then burns attacker", () => {
     // Source: Showdown data/abilities.ts -- flamebody: 30% burn on contact
-    const attacker = makeActivePokemon({ ability: "none" });
+    const attacker = makeActivePokemon({ ability: A.none });
     const ctx = makeContext({
-      ability: "flame-body",
+      ability: A.flameBody,
       trigger: "on-contact",
       opponent: attacker,
       rngNext: 0,
@@ -517,14 +532,14 @@ describe("Flame Body (on-contact)", () => {
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
-    expect(statusEffect?.status).toBe("burn");
+    expect(statusEffect?.status).toBe(S.burn);
   });
 
   it("given Flame Body, when attacker already has status, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- status already present = no status inflict
-    const attacker = makeActivePokemon({ ability: "none", status: "paralysis" });
+    const attacker = makeActivePokemon({ ability: A.none, status: S.paralysis });
     const ctx = makeContext({
-      ability: "flame-body",
+      ability: A.flameBody,
       trigger: "on-contact",
       opponent: attacker,
       rngNext: 0,
@@ -543,9 +558,9 @@ describe("Rough Skin / Iron Barbs (on-contact)", () => {
     // Source: Showdown data/abilities.ts -- roughskin: 1/8 attacker max HP on contact
     // Source: Bulbapedia "Rough Skin" -- "Damages the attacker for 1/8 of its max HP."
     // floor(200 / 8) = 25
-    const attacker = makeActivePokemon({ ability: "none", maxHp: 200 });
+    const attacker = makeActivePokemon({ ability: A.none, maxHp: 200 });
     const ctx = makeContext({
-      ability: "rough-skin",
+      ability: A.roughSkin,
       trigger: "on-contact",
       opponent: attacker,
     });
@@ -558,9 +573,9 @@ describe("Rough Skin / Iron Barbs (on-contact)", () => {
   it("given Iron Barbs, when attacker makes contact, then deals same 1/8 attacker max HP chip", () => {
     // Source: Showdown data/abilities.ts -- ironbarbs: identical to roughskin
     // Source: Bulbapedia "Iron Barbs" -- "Same as Rough Skin."
-    const attacker = makeActivePokemon({ ability: "none", maxHp: 160 });
+    const attacker = makeActivePokemon({ ability: A.none, maxHp: 160 });
     const ctx = makeContext({
-      ability: "iron-barbs",
+      ability: A.ironBarbs,
       trigger: "on-contact",
       opponent: attacker,
     });
@@ -579,18 +594,18 @@ describe("Rough Skin / Iron Barbs (on-contact)", () => {
 describe("Mummy (on-contact)", () => {
   it("given Mummy, when attacker has a copyable ability, then overwrites attacker's ability", () => {
     // Source: Showdown data/abilities.ts -- mummy: changes attacker ability to Mummy on contact
-    const attacker = makeActivePokemon({ ability: "swift-swim" });
-    const ctx = makeContext({ ability: "mummy", trigger: "on-contact", opponent: attacker });
+    const attacker = makeActivePokemon({ ability: A.swiftSwim });
+    const ctx = makeContext({ ability: A.mummy, trigger: "on-contact", opponent: attacker });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     const abilityEffect = result.effects.find((e) => e.effectType === "ability-change");
-    expect(abilityEffect?.newAbility).toBe("mummy");
+    expect(abilityEffect?.newAbility).toBe(A.mummy);
   });
 
   it("given Mummy, when attacker already has Mummy, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- mummy: cannot overwrite Mummy itself
-    const attacker = makeActivePokemon({ ability: "mummy" });
-    const ctx = makeContext({ ability: "mummy", trigger: "on-contact", opponent: attacker });
+    const attacker = makeActivePokemon({ ability: A.mummy });
+    const ctx = makeContext({ ability: A.mummy, trigger: "on-contact", opponent: attacker });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(false);
   });
@@ -600,19 +615,19 @@ describe("Mummy (on-contact)", () => {
     // multitype, stance-change, zen-mode. Wonder Guard is NOT unsuppressable.
     // Bug #672: Previously UNSUPPRESSABLE_ABILITIES included Gen 7+ abilities like
     // wonder-guard, shields-down, power-construct, etc. which don't apply in Gen 6.
-    const attacker = makeActivePokemon({ ability: "wonder-guard" });
-    const ctx = makeContext({ ability: "mummy", trigger: "on-contact", opponent: attacker });
+    const attacker = makeActivePokemon({ ability: A.wonderGuard });
+    const ctx = makeContext({ ability: A.mummy, trigger: "on-contact", opponent: attacker });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(true);
     const abilityEffect = result.effects.find((e) => e.effectType === "ability-change");
-    expect(abilityEffect?.newAbility).toBe("mummy");
+    expect(abilityEffect?.newAbility).toBe(A.mummy);
   });
 
   it("given Mummy, when attacker has Stance Change, then does NOT overwrite (unsuppressable in Gen 6)", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- stance-change: cantsuppress: 1
     // Stance Change IS in the Gen 6 unsuppressable set.
-    const attacker = makeActivePokemon({ ability: "stance-change" });
-    const ctx = makeContext({ ability: "mummy", trigger: "on-contact", opponent: attacker });
+    const attacker = makeActivePokemon({ ability: A.stanceChange });
+    const ctx = makeContext({ ability: A.mummy, trigger: "on-contact", opponent: attacker });
     const result = handleGen6SwitchAbility("on-contact", ctx);
     expect(result.activated).toBe(false);
   });
@@ -627,9 +642,9 @@ describe("Effect Spore (on-contact)", () => {
     // Source: Showdown data/abilities.ts -- effectspore: roll 0-9 = sleep
     // Using rngNext = 0 / 100 = 0 (first roll < 10 → sleep)
     // We mock rng.next() * 100 to be 0
-    const attacker = makeActivePokemon({ ability: "none", types: ["normal"] });
+    const attacker = makeActivePokemon({ ability: A.none, types: [T.normal] });
     const ctxWith0Roll = {
-      pokemon: makeActivePokemon({ ability: "effect-spore" }),
+      pokemon: makeActivePokemon({ ability: A.effectSpore }),
       opponent: attacker,
       state: makeBattleState(),
       trigger: "on-contact",
@@ -637,16 +652,16 @@ describe("Effect Spore (on-contact)", () => {
     } as unknown as AbilityContext;
     const result = handleGen6SwitchAbility("on-contact", ctxWith0Roll);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.status).toBe("sleep");
+    expect(result.effects[0]?.status).toBe(S.sleep);
   });
 
   it("given Effect Spore, when attacker has Overcoat (Gen 6), then does not activate", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- overcoat: blocks Effect Spore in Gen 6
     // Gen 5: Overcoat only blocks weather, NOT Effect Spore
     // Gen 6: Overcoat also blocks powder/spore moves and effects like Effect Spore
-    const attacker = makeActivePokemon({ ability: "overcoat", types: ["normal"] });
+    const attacker = makeActivePokemon({ ability: A.overcoat, types: [T.normal] });
     const ctx = makeContext({
-      ability: "effect-spore",
+      ability: A.effectSpore,
       trigger: "on-contact",
       opponent: attacker,
       rngNext: 0,
@@ -663,9 +678,9 @@ describe("Effect Spore (on-contact)", () => {
 describe("Cursed Body (on-damage-taken)", () => {
   it("given Cursed Body, when RNG < 30%, then disables attacker's last move", () => {
     // Source: Showdown data/abilities.ts -- cursedbody: 30% disable on damage
-    const attacker = makeActivePokemon({ ability: "none" });
+    const attacker = makeActivePokemon({ ability: A.none });
     const ctx = makeContext({
-      ability: "cursed-body",
+      ability: A.cursedBody,
       trigger: "on-damage-taken",
       opponent: attacker,
       rngNext: 0,
@@ -673,15 +688,15 @@ describe("Cursed Body (on-damage-taken)", () => {
     const result = handleGen6SwitchAbility("on-damage-taken", ctx);
     expect(result.activated).toBe(true);
     const volatileEffect = result.effects.find((e) => e.effectType === "volatile-inflict");
-    expect(volatileEffect?.volatile).toBe("disable");
+    expect(volatileEffect?.volatile).toBe(V.disable);
   });
 
   it("given Cursed Body, when attacker already has disable volatile, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- cursedbody: skips if already disabled
-    const disabledVolatiles = new Map([["disable", { turnsLeft: 4 }]]);
-    const attacker = makeActivePokemon({ ability: "none", volatiles: disabledVolatiles });
+    const disabledVolatiles = new Map([[V.disable, { turnsLeft: 4 }]]);
+    const attacker = makeActivePokemon({ ability: A.none, volatiles: disabledVolatiles });
     const ctx = makeContext({
-      ability: "cursed-body",
+      ability: A.cursedBody,
       trigger: "on-damage-taken",
       opponent: attacker,
       rngNext: 0,
@@ -694,9 +709,9 @@ describe("Cursed Body (on-damage-taken)", () => {
 describe("Rattled (on-damage-taken)", () => {
   it("given Rattled, when hit by a Dark move, then raises Speed by 1", () => {
     // Source: Showdown data/abilities.ts -- rattled: +1 Speed from Bug/Dark/Ghost hit
-    const darkMove = makeMove("dark");
+    const darkMove = makeMove(T.dark);
     const ctx = makeContext({
-      ability: "rattled",
+      ability: A.rattled,
       trigger: "on-damage-taken",
       move: darkMove,
     });
@@ -709,9 +724,9 @@ describe("Rattled (on-damage-taken)", () => {
 
   it("given Rattled, when hit by a Fire move, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- rattled: only Bug/Dark/Ghost
-    const fireMove = makeMove("fire");
+    const fireMove = makeMove(T.fire);
     const ctx = makeContext({
-      ability: "rattled",
+      ability: A.rattled,
       trigger: "on-damage-taken",
       move: fireMove,
     });
@@ -728,25 +743,25 @@ describe("Synchronize (on-status-inflicted)", () => {
   it("given Synchronize, when burned by opponent, then inflicts burn on opponent", () => {
     // Source: Showdown data/abilities.ts -- synchronize: spreads burn/paralysis/poison back
     const ctx = makeContext({
-      ability: "synchronize",
+      ability: A.synchronize,
       trigger: "on-status-inflicted",
-      status: "burn",
-      opponent: makeActivePokemon({ ability: "none" }),
+      status: S.burn,
+      opponent: makeActivePokemon({ ability: A.none }),
     });
     const result = handleGen6SwitchAbility("on-status-inflicted", ctx);
     expect(result.activated).toBe(true);
     const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
-    expect(statusEffect?.status).toBe("burn");
+    expect(statusEffect?.status).toBe(S.burn);
     expect(statusEffect?.target).toBe("opponent");
   });
 
   it("given Synchronize, when put to sleep by opponent, then does NOT spread sleep", () => {
     // Source: Showdown data/abilities.ts -- synchronize: only burn/paralysis/poison, not sleep
     const ctx = makeContext({
-      ability: "synchronize",
+      ability: A.synchronize,
       trigger: "on-status-inflicted",
-      status: "sleep",
-      opponent: makeActivePokemon({ ability: "none" }),
+      status: S.sleep,
+      opponent: makeActivePokemon({ ability: A.none }),
     });
     const result = handleGen6SwitchAbility("on-status-inflicted", ctx);
     expect(result.activated).toBe(false);
@@ -762,9 +777,9 @@ describe("Overcoat (Gen 6: blocks powder moves)", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- overcoat: also blocks powder flag
     // Gen 6 change: Overcoat now blocks moves with the powder flag (Sleep Powder, Spore, etc.)
     // Source: Bulbapedia "Overcoat" Gen VI -- "Also protects from powder and spore moves."
-    const powderMove = makeMove("grass", { id: "sleep-powder", flags: { powder: true } });
+    const powderMove = makeMove(T.grass, { id: M.sleepPowder, flags: { powder: true } });
     const ctx = makeContext({
-      ability: "overcoat",
+      ability: A.overcoat,
       trigger: "passive-immunity",
       move: powderMove,
     });
@@ -775,9 +790,9 @@ describe("Overcoat (Gen 6: blocks powder moves)", () => {
   it("given Overcoat, when hit by a non-powder move, then returns no passive-immunity effect", () => {
     // Source: Showdown data/abilities.ts -- overcoat's weather immunity is handled
     // by the weather module, not the passive-immunity hook.
-    const normalMove = makeMove("normal", { flags: {} });
+    const normalMove = makeMove(T.normal, { flags: {} });
     const ctx = makeContext({
-      ability: "overcoat",
+      ability: A.overcoat,
       trigger: "passive-immunity",
       move: normalMove,
     });
@@ -795,9 +810,9 @@ describe("Bulletproof (Gen 6 new)", () => {
   it("given Bulletproof, when hit by Shadow Ball (bullet flag), then blocks it", () => {
     // Source: Showdown data/abilities.ts -- bulletproof: blocks moves with bullet flag
     // Source: Bulbapedia "Bulletproof" -- "Protects the Pokemon from some ball and bomb moves."
-    const shadowBall = makeMove("ghost", { id: "shadow-ball", flags: { bullet: true } });
+    const shadowBall = makeMove(T.ghost, { id: M.shadowBall, flags: { bullet: true } });
     const ctx = makeContext({
-      ability: "bulletproof",
+      ability: A.bulletproof,
       trigger: "passive-immunity",
       move: shadowBall,
     });
@@ -807,9 +822,9 @@ describe("Bulletproof (Gen 6 new)", () => {
 
   it("given Bulletproof, when hit by a non-ball move like Flamethrower, then does not block", () => {
     // Source: Showdown data/abilities.ts -- bulletproof: only blocks flagged ball/bomb moves
-    const flamethrower = makeMove("fire", { id: "flamethrower" });
+    const flamethrower = makeMove(T.fire, { id: M.flamethrower });
     const ctx = makeContext({
-      ability: "bulletproof",
+      ability: A.bulletproof,
       trigger: "passive-immunity",
       move: flamethrower,
     });
@@ -821,17 +836,17 @@ describe("Bulletproof (Gen 6 new)", () => {
 describe("isBulletproofBlocked utility", () => {
   it("given bulletproof ability and move with bullet flag, then returns true", () => {
     // Source: Showdown data/abilities.ts -- bulletproof checks move.flags.bullet
-    expect(isBulletproofBlocked("bulletproof", { bullet: true })).toBe(true);
+    expect(isBulletproofBlocked(A.bulletproof, { bullet: true })).toBe(true);
   });
 
   it("given bulletproof ability and move without bullet flag, then returns false", () => {
     // Source: Showdown data/abilities.ts -- no bullet flag = not blocked
-    expect(isBulletproofBlocked("bulletproof", {})).toBe(false);
+    expect(isBulletproofBlocked(A.bulletproof, {})).toBe(false);
   });
 
   it("given non-bulletproof ability and move with bullet flag, then returns false", () => {
     // Source: Showdown data/abilities.ts -- only bulletproof blocks bullet moves
-    expect(isBulletproofBlocked("blaze", { bullet: true })).toBe(false);
+    expect(isBulletproofBlocked(A.blaze, { bullet: true })).toBe(false);
   });
 });
 
@@ -843,13 +858,13 @@ describe("Sweet Veil (Gen 6 new)", () => {
   it("given Sweet Veil, when targeted by Sleep Powder (sleep effect), then blocks sleep", () => {
     // Source: Showdown data/abilities.ts -- sweetveil: prevents sleep on holder and allies
     // Source: Bulbapedia "Sweet Veil" -- "Prevents the Pokemon and its allies from falling asleep."
-    const sleepPowder = makeMove("grass", {
-      id: "sleep-powder",
+    const sleepPowder = makeMove(T.grass, {
+      id: M.sleepPowder,
       category: "status",
-      effect: { type: "status-guaranteed", status: "sleep" },
+      effect: { type: "status-guaranteed", status: S.sleep },
     });
     const ctx = makeContext({
-      ability: "sweet-veil",
+      ability: A.sweetVeil,
       trigger: "passive-immunity",
       move: sleepPowder,
     });
@@ -859,13 +874,13 @@ describe("Sweet Veil (Gen 6 new)", () => {
 
   it("given Sweet Veil, when targeted by Spore (sleep effect), then also blocks sleep", () => {
     // Source: Bulbapedia "Sweet Veil" -- blocks all sleep-inducing moves
-    const spore = makeMove("grass", {
-      id: "spore",
+    const spore = makeMove(T.grass, {
+      id: M.spore,
       category: "status",
-      effect: { type: "status-guaranteed", status: "sleep" },
+      effect: { type: "status-guaranteed", status: S.sleep },
     });
     const ctx = makeContext({
-      ability: "sweet-veil",
+      ability: A.sweetVeil,
       trigger: "passive-immunity",
       move: spore,
     });
@@ -877,13 +892,13 @@ describe("Sweet Veil (Gen 6 new)", () => {
     // Source: Showdown data/abilities.ts -- Sweet Veil only blocks sleep
     // Bug #668: Previously checked hardcoded move IDs. Now checks move.effect for sleep status.
     // A non-sleep status move should not trigger Sweet Veil.
-    const thunderWave = makeMove("electric", {
-      id: "thunder-wave",
+    const thunderWave = makeMove(T.electric, {
+      id: M.thunderWave,
       category: "status",
-      effect: { type: "status-guaranteed", status: "paralysis" },
+      effect: { type: "status-guaranteed", status: S.paralysis },
     });
     const ctx = makeContext({
-      ability: "sweet-veil",
+      ability: A.sweetVeil,
       trigger: "passive-immunity",
       move: thunderWave,
     });
@@ -894,13 +909,13 @@ describe("Sweet Veil (Gen 6 new)", () => {
   it("given Sweet Veil, when targeted by Yawn (volatile sleep), then blocks it", () => {
     // Source: Showdown data/abilities.ts -- Sweet Veil prevents all forms of sleep, including Yawn
     // Source: Bulbapedia "Sweet Veil" -- prevents sleep; Yawn leads to sleep so it's blocked
-    const yawn = makeMove("normal", {
-      id: "yawn",
+    const yawn = makeMove(T.normal, {
+      id: M.yawn,
       category: "status",
-      effect: { type: "volatile-status", status: "yawn" },
+      effect: { type: "volatile-status", status: M.yawn },
     });
     const ctx = makeContext({
-      ability: "sweet-veil",
+      ability: A.sweetVeil,
       trigger: "passive-immunity",
       move: yawn,
     });
@@ -917,19 +932,19 @@ describe("Flash Fire (passive-immunity)", () => {
   it("given Flash Fire, when hit by a Fire move, then activates and grants boost", () => {
     // Source: Showdown data/abilities.ts -- flashfire: immune to Fire + gains flash-fire boost
     // Source: Bulbapedia "Flash Fire" -- "Powers up Fire moves when hit by Fire-type moves."
-    const fireMove = makeMove("fire");
-    const ctx = makeContext({ ability: "flash-fire", trigger: "passive-immunity", move: fireMove });
+    const fireMove = makeMove(T.fire);
+    const ctx = makeContext({ ability: A.flashFire, trigger: "passive-immunity", move: fireMove });
     const result = handleGen6SwitchAbility("passive-immunity", ctx);
     expect(result.activated).toBe(true);
     const volatileEffect = result.effects.find((e) => e.effectType === "volatile-inflict");
-    expect(volatileEffect?.volatile).toBe("flash-fire");
+    expect(volatileEffect?.volatile).toBe(A.flashFire);
   });
 
   it("given Flash Fire, when hit by a Water move, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- flashfire: only triggers on fire-type moves
-    const waterMove = makeMove("water");
+    const waterMove = makeMove(T.water);
     const ctx = makeContext({
-      ability: "flash-fire",
+      ability: A.flashFire,
       trigger: "passive-immunity",
       move: waterMove,
     });
@@ -943,9 +958,9 @@ describe("Water Absorb (passive-immunity)", () => {
     // Source: Showdown data/abilities.ts -- waterabsorb: Water immune + heal 1/4 HP
     // Source: Bulbapedia "Water Absorb" -- "Heals 1/4 max HP when hit by Water-type moves."
     // floor(200 / 4) = 50
-    const waterMove = makeMove("water");
+    const waterMove = makeMove(T.water);
     const ctx = makeContext({
-      ability: "water-absorb",
+      ability: A.waterAbsorb,
       trigger: "passive-immunity",
       move: waterMove,
       maxHp: 200,
@@ -958,9 +973,9 @@ describe("Water Absorb (passive-immunity)", () => {
 
   it("given Water Absorb, when hit by a Fire move, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- waterabsorb: only water-type
-    const fireMove = makeMove("fire");
+    const fireMove = makeMove(T.fire);
     const ctx = makeContext({
-      ability: "water-absorb",
+      ability: A.waterAbsorb,
       trigger: "passive-immunity",
       move: fireMove,
     });
@@ -972,9 +987,9 @@ describe("Water Absorb (passive-immunity)", () => {
 describe("Sap Sipper (passive-immunity)", () => {
   it("given Sap Sipper, when hit by a Grass move, then raises Attack by 1", () => {
     // Source: Showdown data/abilities.ts -- sapsipper: Grass immune + Attack +1
-    const grassMove = makeMove("grass");
+    const grassMove = makeMove(T.grass);
     const ctx = makeContext({
-      ability: "sap-sipper",
+      ability: A.sapSipper,
       trigger: "passive-immunity",
       move: grassMove,
     });
@@ -987,9 +1002,9 @@ describe("Sap Sipper (passive-immunity)", () => {
 
   it("given Sap Sipper, when hit by a Water move, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- sapsipper: only grass-type
-    const waterMove = makeMove("water");
+    const waterMove = makeMove(T.water);
     const ctx = makeContext({
-      ability: "sap-sipper",
+      ability: A.sapSipper,
       trigger: "passive-immunity",
       move: waterMove,
     });
@@ -1006,7 +1021,7 @@ describe("Big Pecks (on-stat-change)", () => {
   it("given Big Pecks, when Defense is about to be lowered, then blocks the drop", () => {
     // Source: Showdown data/abilities.ts -- bigpecks: blocks Defense drops
     const ctx = makeContext({
-      ability: "big-pecks",
+      ability: A.bigPecks,
       trigger: "on-stat-change",
       statChange: { stat: "defense", stages: -1, source: "opponent" },
     });
@@ -1017,7 +1032,7 @@ describe("Big Pecks (on-stat-change)", () => {
   it("given Big Pecks, when Speed is lowered (not Defense), then does not activate", () => {
     // Source: Showdown data/abilities.ts -- bigpecks: only Defense
     const ctx = makeContext({
-      ability: "big-pecks",
+      ability: A.bigPecks,
       trigger: "on-stat-change",
       statChange: { stat: "speed", stages: -1, source: "opponent" },
     });
@@ -1030,11 +1045,11 @@ describe("Flower Veil (Gen 6 new, on-stat-change)", () => {
   it("given Flower Veil on a Grass-type, when opponent lowers a stat, then blocks the drop", () => {
     // Source: Showdown data/abilities.ts -- flowerveil: blocks stat drops for Grass-type holders
     // Source: Bulbapedia "Flower Veil" -- "Prevents lowering of ally Grass-type Pokemon's stats."
-    const opponent = makeActivePokemon({ ability: "none" });
+    const opponent = makeActivePokemon({ ability: A.none });
     const ctx = makeContext({
-      ability: "flower-veil",
+      ability: A.flowerVeil,
       trigger: "on-stat-change",
-      types: ["grass"],
+      types: [T.grass],
       opponent,
       statChange: { stat: "attack", stages: -1, source: "opponent" },
     });
@@ -1044,11 +1059,11 @@ describe("Flower Veil (Gen 6 new, on-stat-change)", () => {
 
   it("given Flower Veil on a non-Grass-type, when stat is lowered, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- flowerveil: only for Grass types
-    const opponent = makeActivePokemon({ ability: "none" });
+    const opponent = makeActivePokemon({ ability: A.none });
     const ctx = makeContext({
-      ability: "flower-veil",
+      ability: A.flowerVeil,
       trigger: "on-stat-change",
-      types: ["normal"],
+      types: [T.normal],
       opponent,
       statChange: { stat: "attack", stages: -1, source: "opponent" },
     });
@@ -1064,7 +1079,7 @@ describe("Flower Veil (Gen 6 new, on-stat-change)", () => {
 describe("Victory Star (on-accuracy-check)", () => {
   it("given Victory Star, when on-accuracy-check, then activates", () => {
     // Source: Showdown data/abilities.ts -- victorystar: raises accuracy by ~10%
-    const ctx = makeContext({ ability: "victory-star", trigger: "on-accuracy-check" });
+    const ctx = makeContext({ ability: A.victoryStar, trigger: "on-accuracy-check" });
     const result = handleGen6SwitchAbility("on-accuracy-check", ctx);
     expect(result.activated).toBe(true);
   });
@@ -1084,7 +1099,7 @@ describe("isTrappedByAbility utilities", () => {
   it("given Shadow Tag trapper, when trapped has different ability, then isTrapped is true", () => {
     // Source: Showdown data/abilities.ts -- shadowtag: traps unless opponent also has Shadow Tag
     expect(
-      isTrappedByAbility({ ability: "shadow-tag" }, { ability: "none", types: [] }, true),
+      isTrappedByAbility({ ability: "shadow-tag" }, { ability: A.none, types: [] }, true),
     ).toBe(true);
   });
 
@@ -1099,16 +1114,16 @@ describe("isTrappedByAbility utilities", () => {
 describe("isMoldBreakerAbility utility", () => {
   it("given mold-breaker, then isMoldBreaker returns true", () => {
     // Source: Showdown data/abilities.ts -- moldbreaker, teravolt, turboblaze all ignore ability
-    expect(isMoldBreakerAbility("mold-breaker")).toBe(true);
+    expect(isMoldBreakerAbility(A.moldBreaker)).toBe(true);
   });
 
   it("given teravolt, then isMoldBreaker returns true", () => {
     // Source: Showdown data/abilities.ts -- teravolt: onModifyMove: move.ignoreAbility = true
-    expect(isMoldBreakerAbility("teravolt")).toBe(true);
+    expect(isMoldBreakerAbility(A.teravolt)).toBe(true);
   });
 
   it("given levitate, then isMoldBreaker returns false", () => {
     // Source: Showdown data/abilities.ts -- levitate is not a mold-breaker variant
-    expect(isMoldBreakerAbility("levitate")).toBe(false);
+    expect(isMoldBreakerAbility(A.levitate)).toBe(false);
   });
 });

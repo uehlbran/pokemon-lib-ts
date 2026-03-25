@@ -6,9 +6,24 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveEffect, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  MoveEffect,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen5DataManager, GEN5_ABILITY_IDS, GEN5_ITEM_IDS, GEN5_MOVE_IDS } from "../src";
 import {
   getSheerForceMultiplier,
   hasSheerForceEligibleEffect,
@@ -26,6 +41,18 @@ import { handleGen5SwitchAbility, isMoldBreakerAbility } from "../src/Gen5Abilit
 import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { applyGen5HeldItem } from "../src/Gen5Items";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
+
+const dataManager = createGen5DataManager();
+const A = GEN5_ABILITY_IDS;
+const I = GEN5_ITEM_IDS;
+const M = GEN5_MOVE_IDS;
+const NONE_ABILITY = CORE_ABILITY_IDS.none;
+const NONE_TYPE = CORE_TYPE_IDS.normal;
+const PRIMARY_STATUS = CORE_STATUS_IDS;
+const MOVE_IDS = CORE_MOVE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const LEVITATE_NAME = dataManager.getAbility(A.levitate).displayName;
+const WONDER_GUARD_NAME = dataManager.getAbility(A.wonderGuard).displayName;
 
 /**
  * Gen 5 Abilities / Items Correctness Audit -- regression tests.
@@ -46,7 +73,7 @@ function makePokemonInstance(overrides: {
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   defense?: number;
@@ -64,7 +91,7 @@ function makePokemonInstance(overrides: {
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
     moves: [],
-    ability: overrides.ability ?? "none",
+    ability: overrides.ability ?? NONE_ABILITY,
     abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
     status: (overrides.status ?? null) as never,
@@ -96,8 +123,8 @@ function makeActivePokemon(overrides: {
   heldItem?: string | null;
   turnsOnField?: number;
   statStages?: Partial<Record<string, number>>;
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  volatiles?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
+  status?: PrimaryStatus | null;
   defense?: number;
   spDefense?: number;
   movedThisTurn?: boolean;
@@ -126,8 +153,8 @@ function makeActivePokemon(overrides: {
       evasion: overrides.statStages?.evasion ?? 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [NONE_TYPE],
+    ability: overrides.ability ?? NONE_ABILITY,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -199,49 +226,8 @@ function makeBattleState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeMove(overrides?: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Record<string, boolean>;
-  effect?: MoveEffect | null;
-}): MoveData {
-  return {
-    id: overrides?.id ?? "tackle",
-    displayName: overrides?.id ?? "Tackle",
-    type: overrides?.type ?? "normal",
-    category: overrides?.category ?? "physical",
-    power: overrides?.power ?? 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: overrides?.flags?.powder ?? false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides?.flags,
-    },
-    effect: overrides?.effect ?? null,
-    description: "",
-    generation: 5,
-    critRatio: 0,
-  } as MoveData;
+function makeMove(moveId: string): MoveData {
+  return dataManager.getMove(moveId);
 }
 
 function makeAbilityContext(opts: {
@@ -258,7 +244,7 @@ function makeAbilityContext(opts: {
   maxHp?: number;
   heldItem?: string | null;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   movedThisTurn?: boolean;
   substituteHp?: number;
   rng?: {
@@ -317,7 +303,7 @@ function makeItemContext(opts: {
   types?: PokemonType[];
 }): ItemContext {
   const pokemon = makeActivePokemon({
-    ability: opts.ability ?? "none",
+      ability: opts.ability ?? NONE_ABILITY,
     heldItem: opts.heldItem,
     currentHp: opts.currentHp,
     maxHp: opts.maxHp,
@@ -345,7 +331,7 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when hasSheerForceEligibleEffect is called, then returns true",
     () => {
       // Source: Showdown data/abilities.ts -- sheerforce onModifyMove: deletes move.secondaries
-      const effect: MoveEffect = { type: "status-chance", status: "burn", chance: 10 };
+      const effect: MoveEffect = { type: "status-chance", status: PRIMARY_STATUS.burn, chance: 10 };
       expect(hasSheerForceEligibleEffect(effect)).toBe(true);
     },
   );
@@ -389,7 +375,7 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when hasSheerForceEligibleEffect is called, then returns true",
     () => {
       // Source: Showdown data/moves.ts -- Air Slash: secondary flinch (30% chance)
-      const effect: MoveEffect = { type: "volatile-status", volatile: "flinch", chance: 30 };
+      const effect: MoveEffect = { type: "volatile-status", volatile: VOLATILE_IDS.flinch, chance: 30 };
       expect(hasSheerForceEligibleEffect(effect)).toBe(true);
     },
   );
@@ -399,8 +385,8 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when getSheerForceMultiplier is called, then returns 5325/4096 (~1.3x)",
     () => {
       // Source: Showdown data/abilities.ts -- sheerforce onBasePower: chainModify([5325, 4096])
-      const effect: MoveEffect = { type: "status-chance", status: "burn", chance: 10 };
-      const multiplier = getSheerForceMultiplier("sheer-force", effect);
+      const effect: MoveEffect = { type: "status-chance", status: PRIMARY_STATUS.burn, chance: 10 };
+      const multiplier = getSheerForceMultiplier(A.sheerForce, effect);
       expect(multiplier).toBeCloseTo(5325 / 4096, 10);
     },
   );
@@ -410,7 +396,7 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when getSheerForceMultiplier is called, then returns 1.0 (no boost)",
     () => {
       // Triangulation: only moves with eligible secondaries get the boost
-      const multiplier = getSheerForceMultiplier("sheer-force", null);
+      const multiplier = getSheerForceMultiplier(A.sheerForce, null);
       expect(multiplier).toBe(1);
     },
   );
@@ -420,8 +406,8 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when sheerForceSuppressesLifeOrb is called, then returns true",
     () => {
       // Source: Showdown scripts.ts -- if move.hasSheerForce: skip Life Orb recoil
-      const effect: MoveEffect = { type: "status-chance", status: "paralysis", chance: 30 };
-      expect(sheerForceSuppressesLifeOrb("sheer-force", effect)).toBe(true);
+      const effect: MoveEffect = { type: "status-chance", status: PRIMARY_STATUS.paralysis, chance: 30 };
+      expect(sheerForceSuppressesLifeOrb(A.sheerForce, effect)).toBe(true);
     },
   );
 
@@ -430,7 +416,7 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when sheerForceSuppressesLifeOrb is called, then returns false",
     () => {
       // Life Orb recoil only suppressed when SF activates; null effect = no suppression
-      expect(sheerForceSuppressesLifeOrb("sheer-force", null)).toBe(false);
+      expect(sheerForceSuppressesLifeOrb(A.sheerForce, null)).toBe(false);
     },
   );
 });
@@ -444,9 +430,9 @@ describe("Prankster -- Dark-type immunity is Gen 6+, NOT Gen 5", () => {
     // Source: Showdown data/abilities.ts -- Prankster onModifyPriority:
     //   if (move.category === 'Status') return priority + 1
     const ctx = makeAbilityContext({
-      ability: "prankster",
+      ability: A.prankster,
       trigger: "on-priority-check",
-      move: makeMove({ category: "status" }),
+      move: makeMove(M.taunt),
       nickname: "Sableye",
     });
     const result = handleGen5StatAbility(ctx);
@@ -462,11 +448,11 @@ describe("Prankster -- Dark-type immunity is Gen 6+, NOT Gen 5", () => {
     () => {
       // Source: Showdown data/mods/gen5/abilities.ts -- no Dark immunity override for Gen 5
       // Source: Bulbapedia -- Prankster: Dark-type immunity was added in Gen 7
-      const darkOpponent = makeActivePokemon({ types: ["dark"] });
+      const darkOpponent = makeActivePokemon({ types: [CORE_TYPE_IDS.dark] });
       const ctx = makeAbilityContext({
-        ability: "prankster",
+        ability: A.prankster,
         trigger: "on-priority-check",
-        move: makeMove({ category: "status" }),
+        move: makeMove(M.taunt),
         opponent: darkOpponent,
         nickname: "Sableye",
       });
@@ -495,7 +481,7 @@ describe("Contrary -- reverses all stat changes (boosts AND drops)", () => {
   it("given Contrary and an opponent-caused stat drop, when on-stat-change fires, then activates", () => {
     // Source: Showdown data/abilities.ts -- Contrary onChangeBoost: multiply by -1
     const ctx = makeAbilityContext({
-      ability: "contrary",
+      ability: A.contrary,
       trigger: "on-stat-change",
       statChange: { stat: "spAttack", stages: -2, source: "opponent" },
     });
@@ -508,7 +494,7 @@ describe("Contrary -- reverses all stat changes (boosts AND drops)", () => {
     // Source: Showdown -- Contrary reverses ALL changes including self-inflicted
     // Leaf Storm self-drop becomes a +2 SpAtk boost with Contrary
     const ctx = makeAbilityContext({
-      ability: "contrary",
+      ability: A.contrary,
       trigger: "on-stat-change",
       statChange: { stat: "spAttack", stages: -2, source: "self" },
     });
@@ -526,7 +512,7 @@ describe("Simple -- doubles all stat changes (boosts AND drops)", () => {
   it("given Simple and a +1 boost, when on-stat-change fires, then activates", () => {
     // Source: Showdown data/abilities.ts -- Simple onChangeBoost: multiply by 2
     const ctx = makeAbilityContext({
-      ability: "simple",
+      ability: A.simple,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: 1, source: "self" },
     });
@@ -536,7 +522,7 @@ describe("Simple -- doubles all stat changes (boosts AND drops)", () => {
   it("given Simple and a -1 drop, when on-stat-change fires, then activates", () => {
     // Triangulation: drops are also doubled
     const ctx = makeAbilityContext({
-      ability: "simple",
+      ability: A.simple,
       trigger: "on-stat-change",
       statChange: { stat: "defense", stages: -1, source: "opponent" },
     });
@@ -556,7 +542,7 @@ describe("Defiant -- +2 Attack when opponent lowers any stat", () => {
       // Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost:
       //   if (!source.isAlly(target) && boost[stat] < 0) this.boost({atk: 2})
       const ctx = makeAbilityContext({
-        ability: "defiant",
+        ability: A.defiant,
         trigger: "on-stat-change",
         statChange: { stat: "attack", stages: -1, source: "opponent" },
         nickname: "Bisharp",
@@ -579,7 +565,7 @@ describe("Defiant -- +2 Attack when opponent lowers any stat", () => {
       // Source: Showdown -- `if (source && source.isAlly(target)) return;`
       // Self-inflicted drops do NOT trigger Defiant
       const ctx = makeAbilityContext({
-        ability: "defiant",
+        ability: A.defiant,
         trigger: "on-stat-change",
         statChange: { stat: "defense", stages: -1, source: "self" },
       });
@@ -590,7 +576,7 @@ describe("Defiant -- +2 Attack when opponent lowers any stat", () => {
   it("given Defiant and an opponent-caused BOOST, when on-stat-change fires, then does NOT activate", () => {
     // Triangulation: only drops (negative stages) trigger Defiant
     const ctx = makeAbilityContext({
-      ability: "defiant",
+      ability: A.defiant,
       trigger: "on-stat-change",
       statChange: { stat: "attack", stages: 1, source: "opponent" },
     });
@@ -611,7 +597,7 @@ describe("Moxie -- +1 Attack after KOing a Pokemon", () => {
       //   this.boost({atk: 1}, source)
       const faintedOpponent = makeActivePokemon({ currentHp: 0, maxHp: 200 });
       const ctx = makeAbilityContext({
-        ability: "moxie",
+        ability: A.moxie,
         trigger: "on-after-move-used",
         opponent: faintedOpponent,
         nickname: "Krookodile",
@@ -633,7 +619,7 @@ describe("Moxie -- +1 Attack after KOing a Pokemon", () => {
       // Triangulation: Moxie only triggers on KO (HP === 0)
       const livingOpponent = makeActivePokemon({ currentHp: 50, maxHp: 200 });
       const ctx = makeAbilityContext({
-        ability: "moxie",
+        ability: A.moxie,
         trigger: "on-after-move-used",
         opponent: livingOpponent,
       });
@@ -654,7 +640,7 @@ describe("Overcoat -- Gen 5: passive-immunity hook is a no-op for weather", () =
     // Weather immunity is handled by the weather module; passive-immunity is for move immunities.
     // Source: Bulbapedia -- Overcoat (Gen 5): "Protects from sandstorm and hail damage."
     const ctx = makeAbilityContext({
-      ability: "overcoat",
+      ability: A.overcoat,
       trigger: "passive-immunity",
     });
     const result = handleGen5SwitchAbility("passive-immunity", ctx);
@@ -682,9 +668,9 @@ describe("Magic Bounce -- REGRESSION #543: ability not implemented in Gen 5", ()
       // This test documents current (broken) behavior.
       // When #543 is fixed, this test should be updated to expect activated: true.
       const ctx = makeAbilityContext({
-        ability: "magic-bounce",
+        ability: A.magicBounce,
         trigger: "passive-immunity",
-        move: makeMove({ id: "stealth-rock", category: "status" }),
+        move: makeMove(M.stealthRock),
       });
       const result = handleGen5SwitchAbility("passive-immunity", ctx);
 
@@ -701,33 +687,33 @@ describe("Magic Bounce -- REGRESSION #543: ability not implemented in Gen 5", ()
 describe("Mold Breaker / Turboblaze / Teravolt -- all bypass defensive abilities", () => {
   it("given mold-breaker, when isMoldBreakerAbility is called, then returns true", () => {
     // Source: Showdown data/abilities.ts -- moldbreaker onModifyMove: move.ignoreAbility = true
-    expect(isMoldBreakerAbility("mold-breaker")).toBe(true);
+    expect(isMoldBreakerAbility(A.moldBreaker)).toBe(true);
   });
 
   it("given turboblaze, when isMoldBreakerAbility is called, then returns true", () => {
     // Source: Showdown data/abilities.ts -- turboblaze: functionally identical to Mold Breaker
-    expect(isMoldBreakerAbility("turboblaze")).toBe(true);
+    expect(isMoldBreakerAbility(A.turboblaze)).toBe(true);
   });
 
   it("given teravolt, when isMoldBreakerAbility is called, then returns true", () => {
     // Source: Showdown data/abilities.ts -- teravolt: functionally identical to Mold Breaker
-    expect(isMoldBreakerAbility("teravolt")).toBe(true);
+    expect(isMoldBreakerAbility(A.teravolt)).toBe(true);
   });
 
-  it("given levitate (non-mold-breaker), when isMoldBreakerAbility is called, then returns false", () => {
+  it(`given ${LEVITATE_NAME} (non-mold-breaker), when isMoldBreakerAbility is called, then returns false`, () => {
     // Triangulation: regular abilities do not bypass defensive abilities
-    expect(isMoldBreakerAbility("levitate")).toBe(false);
+    expect(isMoldBreakerAbility(A.levitate)).toBe(false);
   });
 
-  it("given wonder-guard (non-mold-breaker), when isMoldBreakerAbility is called, then returns false", () => {
+  it(`given ${WONDER_GUARD_NAME} (non-mold-breaker), when isMoldBreakerAbility is called, then returns false`, () => {
     // Triangulation
-    expect(isMoldBreakerAbility("wonder-guard")).toBe(false);
+    expect(isMoldBreakerAbility(A.wonderGuard)).toBe(false);
   });
 
   it("given Turboblaze switch-in, when on-switch-in fires, then message mentions blazing aura", () => {
     // Source: Showdown data/abilities.ts -- turboblaze onStart: "radiating a blazing aura!"
     const ctx = makeAbilityContext({
-      ability: "turboblaze",
+      ability: A.turboblaze,
       trigger: "on-switch-in",
       nickname: "Reshiram",
     });
@@ -740,7 +726,7 @@ describe("Mold Breaker / Turboblaze / Teravolt -- all bypass defensive abilities
   it("given Teravolt switch-in, when on-switch-in fires, then message mentions bursting aura", () => {
     // Source: Showdown data/abilities.ts -- teravolt onStart: "radiating a bursting aura!"
     const ctx = makeAbilityContext({
-      ability: "teravolt",
+      ability: A.teravolt,
       trigger: "on-switch-in",
       nickname: "Zekrom",
     });
@@ -759,18 +745,18 @@ describe("Serene Grace -- doubles secondary chance; excludes Secret Power in Gen
   it("given Serene Grace and iron-head, when getSereneGraceMultiplier is called, then returns 2", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- serenegrace:
     //   if (move.secondaries && move.id !== 'secretpower') secondary.chance *= 2
-    expect(getSereneGraceMultiplier("serene-grace", "iron-head")).toBe(2);
+    expect(getSereneGraceMultiplier(A.sereneGrace, M.ironHead)).toBe(2);
   });
 
   it("given Serene Grace and Secret Power, when getSereneGraceMultiplier is called, then returns 1", () => {
     // Source: Showdown data/mods/gen5/abilities.ts -- move.id !== 'secretpower' exclusion
     // This is a Gen 5 specific exclusion (Gen 6+ drops this restriction)
-    expect(getSereneGraceMultiplier("serene-grace", "secret-power")).toBe(1);
+    expect(getSereneGraceMultiplier(A.sereneGrace, M.secretPower)).toBe(1);
   });
 
   it("given a non-Serene Grace ability, when getSereneGraceMultiplier is called, then returns 1", () => {
     // Triangulation: other abilities return 1 (no change)
-    expect(getSereneGraceMultiplier("technician", "iron-head")).toBe(1);
+    expect(getSereneGraceMultiplier(A.technician, M.ironHead)).toBe(1);
   });
 });
 
@@ -792,7 +778,7 @@ describe("Harvest -- probability constants verified against Showdown", () => {
   it("given Harvest with no harvest-berry volatile, when on-turn-end fires, then does not activate", () => {
     // Correct: no consumed berry means nothing to harvest
     const ctx = makeAbilityContext({
-      ability: "harvest",
+      ability: A.harvest,
       trigger: "on-turn-end",
       heldItem: null,
     });
@@ -803,9 +789,9 @@ describe("Harvest -- probability constants verified against Showdown", () => {
     // Correct: must have no item to receive a restored berry
     // Source: Showdown -- if (pokemon.hp && !pokemon.item && ...)
     const ctx = makeAbilityContext({
-      ability: "harvest",
+      ability: A.harvest,
       trigger: "on-turn-end",
-      heldItem: "leftovers",
+      heldItem: I.leftovers,
     });
     expect(handleGen5RemainingAbility(ctx).activated).toBe(false);
   });
@@ -826,7 +812,7 @@ describe("Healer -- 30% chance to cure ally status; no-op in singles (not a bug)
     // In singles, adjacentAllies() is always empty -- no ally to heal
     // This is CORRECT behavior, not a bug
     const ctx = makeAbilityContext({
-      ability: "healer",
+      ability: A.healer,
       trigger: "on-turn-end",
       state: makeBattleState({ format: "singles" }),
     });
@@ -846,8 +832,8 @@ describe("Unburden -- REGRESSION #541: stolen item does not trigger Unburden vol
       // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem: addVolatile('unburden')
       // Consume case: current implementation handles this correctly
       const ctx = makeItemContext({
-        ability: "unburden",
-        heldItem: "sitrus-berry",
+        ability: A.unburden,
+        heldItem: I.sitrusBerry,
         currentHp: 50, // below 50% to trigger Sitrus Berry
         maxHp: 200,
       });
@@ -859,7 +845,7 @@ describe("Unburden -- REGRESSION #541: stolen item does not trigger Unburden vol
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
       // Unburden volatile must be set after consumption
-      expect(ctx.pokemon.volatileStatuses.has("unburden")).toBe(true);
+      expect(ctx.pokemon.volatileStatuses.has(VOLATILE_IDS.unburden)).toBe(true);
     },
   );
 
@@ -873,19 +859,19 @@ describe("Unburden -- REGRESSION #541: stolen item does not trigger Unburden vol
       // Knock Off sets itemKnockedOff = true and nulls the item, emitting no "consume" effect.
       // The unburden volatile is therefore never set for stolen items.
       const pokemon = makeActivePokemon({
-        ability: "unburden",
-        heldItem: "choice-band",
+        ability: A.unburden,
+        heldItem: I.choiceBand,
         itemKnockedOff: false,
       });
-      pokemon.pokemon.heldItem = "choice-band";
+      pokemon.pokemon.heldItem = I.choiceBand;
 
       // Simulate Knock Off removing the item
       pokemon.pokemon.heldItem = null;
       pokemon.itemKnockedOff = true;
 
       // BUG: unburden volatile is not set by the current Knock Off handler
-      // Expected after fix: pokemon.volatileStatuses.has("unburden") === true
-      expect(pokemon.volatileStatuses.has("unburden")).toBe(false); // documents the bug
+      // Expected after fix: pokemon.volatileStatuses.has(VOLATILE_IDS.unburden) === true
+      expect(pokemon.volatileStatuses.has(VOLATILE_IDS.unburden)).toBe(false); // documents the bug
     },
   );
 });
@@ -922,7 +908,7 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
             evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
             currentHp: 200,
             moves: [],
-            ability: opts.ability ?? "none",
+    ability: opts.ability ?? NONE_ABILITY,
             abilitySlot: "normal1" as const,
             heldItem: opts.heldItem ?? null,
             status: null,
@@ -954,8 +940,8 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
             evasion: 0,
           },
           volatileStatuses: new Map(),
-          types: opts.types ?? ["fire"],
-          ability: opts.ability ?? "none",
+          types: opts.types ?? [CORE_TYPE_IDS.fire],
+          ability: opts.ability ?? NONE_ABILITY,
           suppressedAbility: null,
           lastMoveUsed: null,
           lastDamageTaken: 0,
@@ -997,9 +983,9 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
 
       // Ember: base power 40, Fire type, special
       const fireMove: MoveData = {
-        id: "ember",
+        id: M.ember,
         displayName: "Ember",
-        type: "fire",
+        type: CORE_TYPE_IDS.fire,
         category: "special",
         power: 40,
         accuracy: 100,
@@ -1031,9 +1017,9 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
         critRatio: 0,
       } as MoveData;
 
-      const attacker = makeActiveForDamage({ heldItem: null, types: ["fire"] });
-      const attackerWithGem = makeActiveForDamage({ heldItem: "fire-gem", types: ["fire"] });
-      const defender = makeActiveForDamage({ types: ["normal"] });
+      const attacker = makeActiveForDamage({ heldItem: null, types: [CORE_TYPE_IDS.fire] });
+      const attackerWithGem = makeActiveForDamage({ heldItem: I.fireGem, types: [CORE_TYPE_IDS.fire] });
+      const defender = makeActiveForDamage({ types: [CORE_TYPE_IDS.normal] });
 
       // Use the same seed so random factor is identical
       const ctxBase: DamageContext = {
@@ -1090,7 +1076,7 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
             evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
             currentHp: 200,
             moves: [],
-            ability: "none",
+            ability: NONE_ABILITY,
             abilitySlot: "normal1" as const,
             heldItem: opts.heldItem ?? null,
             status: null,
@@ -1122,8 +1108,8 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
             evasion: 0,
           },
           volatileStatuses: new Map(),
-          types: opts.types ?? ["water"],
-          ability: "none",
+          types: opts.types ?? [CORE_TYPE_IDS.water],
+          ability: NONE_ABILITY,
           suppressedAbility: null,
           lastMoveUsed: null,
           lastDamageTaken: 0,
@@ -1164,9 +1150,9 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
       } as BattleState;
 
       const waterMove: MoveData = {
-        id: "water-gun",
+        id: M.waterGun,
         displayName: "Water Gun",
-        type: "water",
+        type: CORE_TYPE_IDS.water,
         category: "special",
         power: 40,
         accuracy: 100,
@@ -1198,8 +1184,8 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
         critRatio: 0,
       } as MoveData;
 
-      const attackerWithFireGem = makeActiveForDamage2({ heldItem: "fire-gem", types: ["water"] });
-      const defender2 = makeActiveForDamage2({ types: ["normal"] });
+      const attackerWithFireGem = makeActiveForDamage2({ heldItem: I.fireGem, types: [CORE_TYPE_IDS.water] });
+      const defender2 = makeActiveForDamage2({ types: [CORE_TYPE_IDS.normal] });
 
       const ctx: DamageContext = {
         attacker: attackerWithFireGem,
@@ -1212,7 +1198,7 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
       calculateGen5Damage(ctx, GEN5_TYPE_CHART as Record<string, Record<string, number>>);
 
       // Gem should NOT be consumed when type doesn't match
-      expect(attackerWithFireGem.pokemon.heldItem).toBe("fire-gem");
+      expect(attackerWithFireGem.pokemon.heldItem).toBe(I.fireGem);
     },
   );
 });
@@ -1233,8 +1219,8 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
       // The item handler derives attackerMaxHp from state.sides (falls back to holder's HP = 200).
       // floor(200 / 6) = 33.
       const ctx = makeItemContext({
-        heldItem: "rocky-helmet",
-        move: makeMove({ flags: { contact: true } }),
+        heldItem: I.rockyHelmet,
+        move: makeMove(M.tackle),
         damage: 50,
       });
       const result = applyGen5HeldItem("on-contact", ctx);
@@ -1255,8 +1241,8 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
     () => {
       // Triangulation: only contact moves trigger Rocky Helmet
       const ctx = makeItemContext({
-        heldItem: "rocky-helmet",
-        move: makeMove({ flags: { contact: false } }),
+        heldItem: I.rockyHelmet,
+        move: makeMove(M.ember),
         damage: 50,
       });
       expect(applyGen5HeldItem("on-contact", ctx).activated).toBe(false);
@@ -1271,7 +1257,7 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
 describe("Air Balloon -- pops when holder takes damage from any move", () => {
   it("given Air Balloon holder taking damage > 0, when on-damage-taken fires, then pops (consumed)", () => {
     // Source: Showdown data/items.ts -- Air Balloon onDamagingHit: useItem()
-    const ctx = makeItemContext({ heldItem: "air-balloon", damage: 80 });
+    const ctx = makeItemContext({ heldItem: I.airBalloon, damage: 80 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
 
     expect(result.activated).toBe(true);
@@ -1281,7 +1267,7 @@ describe("Air Balloon -- pops when holder takes damage from any move", () => {
 
   it("given Air Balloon holder taking 0 damage, when on-damage-taken fires, then does NOT pop", () => {
     // Triangulation: 0-damage hits do not pop Air Balloon
-    const ctx = makeItemContext({ heldItem: "air-balloon", damage: 0 });
+    const ctx = makeItemContext({ heldItem: I.airBalloon, damage: 0 });
     expect(applyGen5HeldItem("on-damage-taken", ctx).activated).toBe(false);
   });
 });
@@ -1295,8 +1281,8 @@ describe("Klutz -- suppresses all held item effects", () => {
     // Source: Showdown data/abilities.ts -- Klutz: holder cannot use held items
     // Source: Gen5Items.ts -- Klutz check at top of applyGen5HeldItem
     const ctx = makeItemContext({
-      ability: "klutz",
-      heldItem: "leftovers",
+      ability: A.klutz,
+      heldItem: I.leftovers,
       currentHp: 100,
       maxHp: 200,
     });
@@ -1306,9 +1292,9 @@ describe("Klutz -- suppresses all held item effects", () => {
   it("given a Klutz Pokemon holding Rocky Helmet, when on-contact fires, then does NOT deal damage", () => {
     // Triangulation: Klutz suppresses all triggers, not just healing
     const ctx = makeItemContext({
-      ability: "klutz",
-      heldItem: "rocky-helmet",
-      move: makeMove({ flags: { contact: true } }),
+      ability: A.klutz,
+      heldItem: I.rockyHelmet,
+      move: makeMove(M.tackle),
       damage: 50,
     });
     expect(applyGen5HeldItem("on-contact", ctx).activated).toBe(false);
@@ -1322,7 +1308,7 @@ describe("Klutz -- suppresses all held item effects", () => {
 describe("Red Card and Eject Button -- activate on damage taken", () => {
   it("given Red Card holder taking damage, when on-damage-taken fires, then Red Card is consumed", () => {
     // Source: Showdown data/items.ts -- Red Card onAfterMoveSecondary: source.forceSwitchFlag = true
-    const ctx = makeItemContext({ heldItem: "red-card", damage: 60 });
+    const ctx = makeItemContext({ heldItem: I.redCard, damage: 60 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
 
     expect(result.activated).toBe(true);
@@ -1332,7 +1318,7 @@ describe("Red Card and Eject Button -- activate on damage taken", () => {
 
   it("given Eject Button holder taking damage, when on-damage-taken fires, then Eject Button consumed", () => {
     // Source: Showdown data/items.ts -- Eject Button onAfterMoveSecondary: target.switchFlag = true
-    const ctx = makeItemContext({ heldItem: "eject-button", damage: 60 });
+    const ctx = makeItemContext({ heldItem: I.ejectButton, damage: 60 });
     const result = applyGen5HeldItem("on-damage-taken", ctx);
 
     expect(result.activated).toBe(true);
@@ -1342,7 +1328,7 @@ describe("Red Card and Eject Button -- activate on damage taken", () => {
 
   it("given Red Card holder taking 0 damage, when on-damage-taken fires, then does NOT activate", () => {
     // Triangulation: Red Card requires actual damage
-    const ctx = makeItemContext({ heldItem: "red-card", damage: 0 });
+    const ctx = makeItemContext({ heldItem: I.redCard, damage: 0 });
     expect(applyGen5HeldItem("on-damage-taken", ctx).activated).toBe(false);
   });
 });
@@ -1374,7 +1360,7 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
             evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
             currentHp: 200,
             moves: [],
-            ability: "none",
+            ability: NONE_ABILITY,
             abilitySlot: "normal1" as const,
             heldItem: opts.heldItem ?? null,
             status: null,
@@ -1406,8 +1392,8 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
             evasion: 0,
           },
           volatileStatuses: new Map(),
-          types: ["normal" as PokemonType],
-          ability: "none",
+          types: [CORE_TYPE_IDS.normal as PokemonType],
+          ability: NONE_ABILITY,
           suppressedAbility: null,
           lastMoveUsed: null,
           lastDamageTaken: 0,
@@ -1449,9 +1435,9 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
 
       // Tackle: base power 50, Normal type, physical
       const tackle: MoveData = {
-        id: "tackle",
+        id: MOVE_IDS.tackle,
         displayName: "Tackle",
-        type: "normal",
+        type: CORE_TYPE_IDS.normal,
         category: "physical",
         power: 50,
         accuracy: 100,
@@ -1485,7 +1471,7 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
 
       const attacker = makeActiveForEviolite({ heldItem: null });
       const defenderNoItem = makeActiveForEviolite({ heldItem: null });
-      const defenderEviolite = makeActiveForEviolite({ heldItem: "eviolite" });
+      const defenderEviolite = makeActiveForEviolite({ heldItem: I.eviolite });
 
       const ctxNoItem: DamageContext = {
         attacker,

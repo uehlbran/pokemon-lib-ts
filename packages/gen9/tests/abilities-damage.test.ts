@@ -20,7 +20,17 @@
  */
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS, GEN9_NATURE_IDS } from "../src";
 import { describe, expect, it } from "vitest";
 import {
   getAteAbilityOverride,
@@ -57,10 +67,15 @@ const FIXED_POINT_IDENTITY = 4096;
 const GEN7_PLUS_ATE_MODIFIER = 4915 / FIXED_POINT_IDENTITY;
 // Source: the local makeActive helper defaults max HP to 200 unless overridden.
 const DEFAULT_HP_FIXTURE = 200;
-const TEST_ABILITY_IDS = {
-  blaze: "blaze",
-  sturdy: "sturdy",
-} as const;
+const A = GEN9_ABILITY_IDS;
+const N = GEN9_NATURE_IDS;
+const C = CORE_ABILITY_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const W = CORE_WEATHER_IDS;
+const V = CORE_VOLATILE_IDS;
+const TE = CORE_TERRAIN_IDS;
+const PROTEAN_USED_VOLATILE = "protean-used" as VolatileStatus;
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as damage-calc.test.ts)
@@ -94,17 +109,17 @@ function makeActive(overrides: {
   const speed = overrides.speed ?? 100;
   return {
     pokemon: {
-      uid: "test",
+      uid: TE.testSource,
       speciesId: overrides.speciesId ?? 1,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: N.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? C.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -129,8 +144,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [T.normal],
+    ability: overrides.ability ?? C.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -165,9 +180,9 @@ function makeMove(overrides: {
   hasCrashDamage?: boolean;
 }): MoveData {
   return {
-    id: overrides.id ?? "tackle",
+    id: overrides.id ?? CORE_MOVE_IDS.tackle,
     displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
+    type: overrides.type ?? T.normal,
     category: overrides.category ?? "physical",
     power: overrides.power ?? 50,
     accuracy: 100,
@@ -252,48 +267,48 @@ describe("Supreme Overlord", () => {
   describe("getSupremeOverlordModifier", () => {
     it("given 0 fainted allies and Supreme Overlord, when getting modifier, then returns 4096 (no boost)", () => {
       // Source: Showdown data/abilities.ts:4649 -- powMod[0] = 4096
-      const mod = getSupremeOverlordModifier("supreme-overlord", 0);
-      expect(mod).toBe(4096);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 0);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given 1 fainted ally and Supreme Overlord, when getting modifier, then returns 4506 (~10% boost)", () => {
       // Source: Showdown data/abilities.ts:4649 -- powMod[1] = 4506
-      const mod = getSupremeOverlordModifier("supreme-overlord", 1);
-      expect(mod).toBe(4506);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 1);
+      expect(mod).toBe(SUPREME_OVERLORD_TABLE[1]);
     });
 
     it("given 2 fainted allies and Supreme Overlord, when getting modifier, then returns 4915 (~20% boost)", () => {
       // Source: Showdown data/abilities.ts:4649 -- powMod[2] = 4915
-      const mod = getSupremeOverlordModifier("supreme-overlord", 2);
-      expect(mod).toBe(4915);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 2);
+      expect(mod).toBe(SUPREME_OVERLORD_TABLE[2]);
     });
 
     it("given 3 fainted allies and Supreme Overlord, when getting modifier, then returns 5325 (~30% boost)", () => {
       // Source: Showdown data/abilities.ts:4649 -- powMod[3] = 5325
-      const mod = getSupremeOverlordModifier("supreme-overlord", 3);
-      expect(mod).toBe(5325);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 3);
+      expect(mod).toBe(SUPREME_OVERLORD_TABLE[3]);
     });
 
     it("given 4 fainted allies and Supreme Overlord, when getting modifier, then returns 5734 (~40% boost)", () => {
       // Source: Showdown data/abilities.ts:4649 -- powMod[4] = 5734
-      const mod = getSupremeOverlordModifier("supreme-overlord", 4);
-      expect(mod).toBe(5734);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 4);
+      expect(mod).toBe(SUPREME_OVERLORD_TABLE[4]);
     });
 
     it("given 5 fainted allies and Supreme Overlord, when getting modifier, then returns 6144 (50% cap)", () => {
       // Source: Showdown data/abilities.ts:4649 -- powMod[5] = 6144
-      const mod = getSupremeOverlordModifier("supreme-overlord", 5);
-      expect(mod).toBe(6144);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 5);
+      expect(mod).toBe(SUPREME_OVERLORD_TABLE[5]);
     });
 
     it("given 6 fainted allies (over cap), when getting modifier, then returns 6144 (capped at 5)", () => {
       // Source: Showdown data/abilities.ts:4638 -- Math.min(pokemon.side.totalFainted, 5)
-      const mod = getSupremeOverlordModifier("supreme-overlord", 6);
+      const mod = getSupremeOverlordModifier(A.supremeOverlord, 6);
       expect(mod).toBe(6144);
     });
 
     it("given non-Supreme Overlord ability, when getting modifier, then returns 4096 (no effect)", () => {
-      const mod = getSupremeOverlordModifier(TEST_ABILITY_IDS.blaze, 5);
+      const mod = getSupremeOverlordModifier(C.blaze, 5);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
@@ -314,9 +329,9 @@ describe("Supreme Overlord", () => {
 
   describe("integration with calculateGen9Damage", () => {
     it("given 3 fainted allies, when calculating damage with Supreme Overlord, then power is boosted by ~30%", () => {
-      const attacker = makeActive({ ability: "supreme-overlord", types: ["dark", "steel"] });
+      const attacker = makeActive({ ability: A.supremeOverlord, types: [T.dark, T.steel] });
       const defender = makeActive({});
-      const move = makeMove({ type: "dark", power: 100, flags: { contact: false } });
+      const move = makeMove({ type: T.dark, power: 100, flags: { contact: false } });
 
       const sides = [
         { active: [attacker], faintCount: 3, screens: [] },
@@ -327,7 +342,7 @@ describe("Supreme Overlord", () => {
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
 
       // Compare with no ability
-      const attackerNoAbility = makeActive({ ability: "none", types: ["dark", "steel"] });
+      const attackerNoAbility = makeActive({ ability: C.none, types: [T.dark, T.steel] });
       const sidesNoAbility = [
         { active: [attackerNoAbility], faintCount: 3, screens: [] },
         { active: [defender], faintCount: 0, screens: [] },
@@ -345,20 +360,28 @@ describe("Supreme Overlord", () => {
       // Supreme Overlord with 3 fainted = 5325/4096 ~= 1.2998x boost on base power
       // The boosted damage should be noticeably higher
       // Source: Showdown data/abilities.ts:4649 -- powMod[3] = 5325
-      expect(resultBoosted.damage).toBeGreaterThan(resultNormal.damage);
+      const boostedPower = pokeRound(100, SUPREME_OVERLORD_TABLE[3]);
+      const moveEquivalent = makeMove({
+        type: T.dark,
+        power: boostedPower,
+        flags: { contact: false },
+      });
+      const ctxEquivalent = makeDamageContext({
+        attacker: attackerNoAbility,
+        defender,
+        move: moveEquivalent,
+        state: stateNoAbility,
+        seed: 100,
+      });
+      const resultEquivalent = calculateGen9Damage(ctxEquivalent, typeChart);
 
-      // Verify the ratio is approximately 1.3x (5325/4096)
-      // pokeRound(power, 5325) for power=100: floor((100*5325 + 2047)/4096) = floor(534547/4096) = 130
-      // So effective power = 130 vs 100
-      const ratio = resultBoosted.damage / resultNormal.damage;
-      expect(ratio).toBeGreaterThan(1.25);
-      expect(ratio).toBeLessThan(1.35);
+      expect(resultBoosted.damage).toBe(resultEquivalent.damage);
     });
 
     it("given 0 fainted allies, when calculating damage with Supreme Overlord, then no boost applied", () => {
-      const attacker = makeActive({ ability: "supreme-overlord", types: ["dark", "steel"] });
+      const attacker = makeActive({ ability: A.supremeOverlord, types: [T.dark, T.steel] });
       const defender = makeActive({});
-      const move = makeMove({ type: "dark", power: 100, flags: { contact: false } });
+      const move = makeMove({ type: T.dark, power: 100, flags: { contact: false } });
 
       const sides = [
         { active: [attacker], faintCount: 0, screens: [] },
@@ -368,7 +391,7 @@ describe("Supreme Overlord", () => {
       const ctx = makeDamageContext({ attacker, defender, move, state, seed: 100 });
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
 
-      const attackerNoAbility = makeActive({ ability: "none", types: ["dark", "steel"] });
+      const attackerNoAbility = makeActive({ ability: C.none, types: [T.dark, T.steel] });
       const sidesNoAbility = [
         { active: [attackerNoAbility], faintCount: 0, screens: [] },
         { active: [defender], faintCount: 0, screens: [] },
@@ -397,89 +420,86 @@ describe("Orichalcum Pulse", () => {
   describe("getOrichalcumPulseAtkModifier", () => {
     it("given Sun weather + Orichalcum Pulse, when getting modifier, then returns 5461", () => {
       // Source: Showdown data/abilities.ts:3028 -- chainModify([5461, 4096])
-      const mod = getOrichalcumPulseAtkModifier("orichalcum-pulse", "sun");
+      const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, W.sun);
       expect(mod).toBe(5461);
     });
 
     it("given harsh-sun (Desolate Land) weather + Orichalcum Pulse, when getting modifier, then returns 5461", () => {
       // Source: Showdown data/abilities.ts:3026 -- ['sunnyday', 'desolateland'].includes(...)
-      const mod = getOrichalcumPulseAtkModifier("orichalcum-pulse", "harsh-sun");
+      const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, W.harshSun);
       expect(mod).toBe(5461);
     });
 
     it("given no weather + Orichalcum Pulse, when getting modifier, then returns 4096 (no boost)", () => {
       // 4096 = identity modifier in the 4096-based system (no multiplication effect)
       // Source: Showdown data/abilities.ts -- orichalcumpulse: no modification when not in Sun/Harsh Sun
-      const mod = getOrichalcumPulseAtkModifier("orichalcum-pulse", null);
-      expect(mod).toBe(4096);
+      const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, null);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given rain weather + Orichalcum Pulse, when getting modifier, then returns 4096 (no boost)", () => {
       // 4096 = identity modifier in the 4096-based system (no multiplication effect)
       // Source: Showdown data/abilities.ts -- orichalcumpulse: only activates in ['sunnyday', 'desolateland']
-      const mod = getOrichalcumPulseAtkModifier("orichalcum-pulse", "rain");
-      expect(mod).toBe(4096);
+      const mod = getOrichalcumPulseAtkModifier(A.orichalcumPulse, W.rain);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Orichalcum Pulse ability in sun, when getting modifier, then returns 4096 (no effect)", () => {
       // 4096 = identity modifier in the 4096-based system (no multiplication effect)
       // Source: Showdown data/abilities.ts -- orichalcumpulse: checks ability === 'orichalcumpulse'
-      const mod = getOrichalcumPulseAtkModifier("blaze", "sun");
-      expect(mod).toBe(4096);
+      const mod = getOrichalcumPulseAtkModifier(C.blaze, W.sun);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
 
   describe("integration with calculateGen9Damage", () => {
     it("given Orichalcum Pulse in Sun, when calculating physical damage, then Atk is boosted by ~33.3%", () => {
       const attacker = makeActive({
-        ability: "orichalcum-pulse",
+        ability: A.orichalcumPulse,
         attack: 150,
-        types: ["fire", "dragon"],
+        types: [T.fire, T.dragon],
       });
       const defender = makeActive({ defense: 100 });
       const move = makeMove({
-        type: "fire",
+        type: T.fire,
         power: 80,
         category: "physical",
         flags: { contact: false },
       });
       const state = makeState({
-        weather: { type: "sun", turnsLeft: 5, source: "orichalcum-pulse" },
+        weather: { type: W.sun, turnsLeft: 5, source: A.orichalcumPulse },
       });
       const ctx = makeDamageContext({ attacker, defender, move, state, seed: 100 });
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
 
-      // Without the ability, same stats
-      const attackerNoAbility = makeActive({
-        ability: "none",
-        attack: 150,
-        types: ["fire", "dragon"],
+      // Both get Sun boost on Fire, but Orichalcum Pulse additionally boosts Atk stat.
+      // Source: Showdown -- Orichalcum Pulse: chainModify([5461, 4096]) on Atk.
+      const boostedAttack = pokeRound(150, 5461);
+      const attackerEquivalent = makeActive({
+        ability: C.none,
+        attack: boostedAttack,
+        types: [T.fire, T.dragon],
       });
-      const ctxNoAbility = makeDamageContext({
-        attacker: attackerNoAbility,
+      const ctxEquivalent = makeDamageContext({
+        attacker: attackerEquivalent,
         defender,
         move,
         state,
         seed: 100,
       });
-      const resultNormal = calculateGen9Damage(ctxNoAbility, typeChart);
-
-      // Both get Sun boost on Fire, but Orichalcum Pulse additionally boosts Atk stat
-      // Source: Showdown -- Orichalcum Pulse: chainModify([5461, 4096]) on Atk
-      // Effective Atk: floor((150 * 5461 + 2047) / 4096) = floor(821197/4096) = 200
-      // vs base 150
-      expect(resultBoosted.damage).toBeGreaterThan(resultNormal.damage);
+      const resultEquivalent = calculateGen9Damage(ctxEquivalent, typeChart);
+      expect(resultBoosted.damage).toBe(resultEquivalent.damage);
     });
 
     it("given Orichalcum Pulse with no Sun, when calculating physical damage, then no Atk boost", () => {
       const attacker = makeActive({
-        ability: "orichalcum-pulse",
+        ability: A.orichalcumPulse,
         attack: 150,
-        types: ["fire", "dragon"],
+        types: [T.fire, T.dragon],
       });
       const defender = makeActive({ defense: 100 });
       const move = makeMove({
-        type: "fire",
+        type: T.fire,
         power: 80,
         category: "physical",
         flags: { contact: false },
@@ -489,9 +509,9 @@ describe("Orichalcum Pulse", () => {
       const resultOrichalcum = calculateGen9Damage(ctx, typeChart);
 
       const attackerNoAbility = makeActive({
-        ability: "none",
+        ability: C.none,
         attack: 150,
-        types: ["fire", "dragon"],
+        types: [T.fire, T.dragon],
       });
       const ctxNoAbility = makeDamageContext({
         attacker: attackerNoAbility,
@@ -516,22 +536,22 @@ describe("Hadron Engine", () => {
   describe("getHadronEngineSpAModifier", () => {
     it("given Electric Terrain + Hadron Engine, when getting modifier, then returns 5461", () => {
       // Source: Showdown data/abilities.ts:1735 -- chainModify([5461, 4096])
-      const mod = getHadronEngineSpAModifier("hadron-engine", "electric");
+      const mod = getHadronEngineSpAModifier(A.hadronEngine, TE.electric);
       expect(mod).toBe(5461);
     });
 
     it("given no terrain + Hadron Engine, when getting modifier, then returns 4096 (no boost)", () => {
-      const mod = getHadronEngineSpAModifier("hadron-engine", null);
+      const mod = getHadronEngineSpAModifier(A.hadronEngine, null);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given Grassy Terrain + Hadron Engine, when getting modifier, then returns 4096 (wrong terrain)", () => {
-      const mod = getHadronEngineSpAModifier("hadron-engine", "grassy");
+      const mod = getHadronEngineSpAModifier(A.hadronEngine, "grassy");
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Hadron Engine ability on Electric Terrain, when getting modifier, then returns 4096", () => {
-      const mod = getHadronEngineSpAModifier(TEST_ABILITY_IDS.blaze, "electric");
+      const mod = getHadronEngineSpAModifier(C.blaze, TE.electric);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
@@ -539,27 +559,28 @@ describe("Hadron Engine", () => {
   describe("integration with calculateGen9Damage", () => {
     it("given Hadron Engine on Electric Terrain, when calculating special damage, then SpA is boosted by ~33.3%", () => {
       const attacker = makeActive({
-        ability: "hadron-engine",
+        ability: A.hadronEngine,
         spAttack: 150,
-        types: ["electric", "dragon"],
+        types: [T.electric, T.dragon],
       });
       const defender = makeActive({ spDefense: 100 });
       const move = makeMove({
-        type: "electric",
+        type: T.electric,
         power: 80,
         category: "special",
         flags: { contact: false },
       });
       const state = makeState({
-        terrain: { type: "electric", turnsLeft: 5, source: "hadron-engine" },
+        terrain: { type: TE.electric, turnsLeft: 5, source: A.hadronEngine },
       });
       const ctx = makeDamageContext({ attacker, defender, move, state, seed: 100 });
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
 
+      const boostedSpAttack = pokeRound(150, 5461);
       const attackerNoAbility = makeActive({
-        ability: "none",
-        spAttack: 150,
-        types: ["electric", "dragon"],
+        ability: C.none,
+        spAttack: boostedSpAttack,
+        types: [T.electric, T.dragon],
       });
       const ctxNoAbility = makeDamageContext({
         attacker: attackerNoAbility,
@@ -572,7 +593,7 @@ describe("Hadron Engine", () => {
 
       // Both get Electric Terrain boost on Electric move, but Hadron Engine adds SpA boost
       // Source: Showdown -- Hadron Engine: chainModify([5461, 4096]) on SpA
-      expect(resultBoosted.damage).toBeGreaterThan(resultNormal.damage);
+      expect(resultBoosted.damage).toBe(resultNormal.damage);
     });
   });
 });
@@ -584,53 +605,53 @@ describe("Hadron Engine", () => {
 describe("Protean / Libero (Gen 9 nerf)", () => {
   it("given Protean Pokemon using Fire move for first time this switchin, when handling type change, then type changes to Fire", () => {
     // Source: Showdown data/abilities.ts -- protean: onPrepareHit
-    const pokemon = makeActive({ ability: "protean", types: ["water"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "fire", 0);
+    const pokemon = makeActive({ ability: A.protean, types: [T.water] });
+    const events = handleGen9ProteanTypeChange(pokemon, T.fire, 0);
 
     expect(events.length).toBe(1);
-    expect(events[0].types).toEqual(["fire"]);
-    expect(pokemon.types).toEqual(["fire"]);
-    expect(pokemon.volatileStatuses.has("protean-used" as VolatileStatus)).toBe(true);
+    expect(events[0].types).toEqual([T.fire]);
+    expect(pokemon.types).toEqual([T.fire]);
+    expect(pokemon.volatileStatuses.has(PROTEAN_USED_VOLATILE)).toBe(true);
   });
 
   it("given Protean Pokemon using second move this switchin, when handling type change, then type does NOT change", () => {
     // Source: Showdown data/abilities.ts -- protean: if (this.effectState.protean) return;
-    const pokemon = makeActive({ ability: "protean", types: ["fire"] });
+    const pokemon = makeActive({ ability: A.protean, types: [T.fire] });
     // Simulate first use
-    pokemon.volatileStatuses.set("protean-used" as VolatileStatus, { turnsLeft: -1 });
+    pokemon.volatileStatuses.set(PROTEAN_USED_VOLATILE, { turnsLeft: -1 });
 
-    const events = handleGen9ProteanTypeChange(pokemon, "water", 0);
+    const events = handleGen9ProteanTypeChange(pokemon, T.water, 0);
 
     expect(events.length).toBe(0);
-    expect(pokemon.types).toEqual(["fire"]); // unchanged
+    expect(pokemon.types).toEqual([T.fire]); // unchanged
   });
 
   it("given Libero Pokemon using Grass move, when handling type change, then type changes to Grass", () => {
     // Source: Showdown data/abilities.ts -- libero: same logic as protean
-    const pokemon = makeActive({ ability: "libero", types: ["fire"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "grass", 1);
+    const pokemon = makeActive({ ability: A.libero, types: [T.fire] });
+    const events = handleGen9ProteanTypeChange(pokemon, T.grass, 1);
 
     expect(events.length).toBe(1);
-    expect(events[0].types).toEqual(["grass"]);
-    expect(pokemon.types).toEqual(["grass"]);
+    expect(events[0].types).toEqual([T.grass]);
+    expect(pokemon.types).toEqual([T.grass]);
   });
 
   it("given Protean Pokemon already that type, when handling type change, then no event (already correct type)", () => {
     // Source: Showdown data/abilities.ts -- protean: source.getTypes().join() !== type check
-    const pokemon = makeActive({ ability: "protean", types: ["fire"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "fire", 0);
+    const pokemon = makeActive({ ability: A.protean, types: [T.fire] });
+    const events = handleGen9ProteanTypeChange(pokemon, T.fire, 0);
 
     expect(events.length).toBe(0);
     // protean-used is NOT set if no change happened
-    expect(pokemon.volatileStatuses.has("protean-used" as VolatileStatus)).toBe(false);
+    expect(pokemon.volatileStatuses.has(PROTEAN_USED_VOLATILE)).toBe(false);
   });
 
   it("given non-Protean/Libero Pokemon, when handling type change, then no effect", () => {
-    const pokemon = makeActive({ ability: "blaze", types: ["fire"] });
-    const events = handleGen9ProteanTypeChange(pokemon, "water", 0);
+    const pokemon = makeActive({ ability: C.blaze, types: [T.fire] });
+    const events = handleGen9ProteanTypeChange(pokemon, T.water, 0);
 
     expect(events.length).toBe(0);
-    expect(pokemon.types).toEqual(["fire"]);
+    expect(pokemon.types).toEqual([T.fire]);
   });
 });
 
@@ -641,7 +662,7 @@ describe("Protean / Libero (Gen 9 nerf)", () => {
 describe("Intrepid Sword (Gen 9 nerf)", () => {
   it("given fresh switch-in with Intrepid Sword, when ability triggers, then returns true (should boost Atk +1)", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: onStart: if (pokemon.swordBoost) return; pokemon.swordBoost = true;
-    const pokemon = makeActive({ ability: "intrepid-sword" });
+    const pokemon = makeActive({ ability: A.intrepidSword });
     const result = handleGen9IntrepidSword(pokemon);
 
     expect(result).toBe(true);
@@ -652,7 +673,7 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
   it("given Intrepid Sword already used this battle, when ability would trigger again, then returns false (blocked)", () => {
     // Source: Showdown data/abilities.ts -- intrepidsword: if (pokemon.swordBoost) return;
     // Persistent flag on PokemonInstance prevents re-activation even after switch-out/in
-    const pokemon = makeActive({ ability: "intrepid-sword" });
+    const pokemon = makeActive({ ability: A.intrepidSword });
     pokemon.pokemon.swordBoost = true;
     const result = handleGen9IntrepidSword(pokemon);
 
@@ -660,7 +681,7 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
   });
 
   it("given non-Intrepid Sword ability, when ability check runs, then returns false", () => {
-    const pokemon = makeActive({ ability: "blaze" });
+    const pokemon = makeActive({ ability: C.blaze });
     const result = handleGen9IntrepidSword(pokemon);
 
     expect(result).toBe(false);
@@ -669,7 +690,7 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
   it("given Intrepid Sword activated, when switched out and back in (volatiles cleared), then ability is still blocked (once per battle)", () => {
     // Source: Showdown data/abilities.ts -- swordBoost stored on pokemon (PokemonInstance), not as volatile
     // This verifies the flag persists through switch-out (BaseRuleset.onSwitchOut clears volatileStatuses).
-    const pokemon = makeActive({ ability: "intrepid-sword" });
+    const pokemon = makeActive({ ability: A.intrepidSword });
     handleGen9IntrepidSword(pokemon);
     expect(pokemon.pokemon.swordBoost).toBe(true);
 
@@ -689,7 +710,7 @@ describe("Intrepid Sword (Gen 9 nerf)", () => {
 describe("Dauntless Shield (Gen 9 nerf)", () => {
   it("given fresh switch-in with Dauntless Shield, when ability triggers, then returns true (should boost Def +1)", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: onStart: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
-    const pokemon = makeActive({ ability: "dauntless-shield" });
+    const pokemon = makeActive({ ability: A.dauntlessShield });
     const result = handleGen9DauntlessShield(pokemon);
 
     expect(result).toBe(true);
@@ -700,7 +721,7 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
   it("given Dauntless Shield already used this battle, when ability would trigger again, then returns false (blocked)", () => {
     // Source: Showdown data/abilities.ts -- dauntlessshield: if (pokemon.shieldBoost) return;
     // Persistent flag on PokemonInstance prevents re-activation even after switch-out/in
-    const pokemon = makeActive({ ability: "dauntless-shield" });
+    const pokemon = makeActive({ ability: A.dauntlessShield });
     pokemon.pokemon.shieldBoost = true;
     const result = handleGen9DauntlessShield(pokemon);
 
@@ -708,7 +729,7 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
   });
 
   it("given non-Dauntless Shield ability, when ability check runs, then returns false", () => {
-    const pokemon = makeActive({ ability: "blaze" });
+    const pokemon = makeActive({ ability: C.blaze });
     const result = handleGen9DauntlessShield(pokemon);
 
     expect(result).toBe(false);
@@ -717,7 +738,7 @@ describe("Dauntless Shield (Gen 9 nerf)", () => {
   it("given Dauntless Shield activated, when switched out and back in (volatiles cleared), then ability is still blocked (once per battle)", () => {
     // Source: Showdown data/abilities.ts -- shieldBoost stored on pokemon (PokemonInstance), not as volatile
     // This verifies the flag persists through switch-out (BaseRuleset.onSwitchOut clears volatileStatuses).
-    const pokemon = makeActive({ ability: "dauntless-shield" });
+    const pokemon = makeActive({ ability: A.dauntlessShield });
     handleGen9DauntlessShield(pokemon);
     expect(pokemon.pokemon.shieldBoost).toBe(true);
 
@@ -738,30 +759,30 @@ describe("Fluffy", () => {
   describe("getFluffyModifier", () => {
     it("given Fluffy defender hit by contact non-fire move, when getting modifier, then returns 2048 (0.5x)", () => {
       // Source: Showdown data/abilities.ts -- fluffy: if (move.flags['contact']) mod /= 2
-      const mod = getFluffyModifier("fluffy", "normal", true);
+      const mod = getFluffyModifier(A.fluffy, T.normal, true);
       expect(mod).toBe(2048);
     });
 
     it("given Fluffy defender hit by fire non-contact move, when getting modifier, then returns 8192 (2.0x)", () => {
       // Source: Showdown data/abilities.ts -- fluffy: if (move.type === 'Fire') mod *= 2
-      const mod = getFluffyModifier("fluffy", "fire", false);
+      const mod = getFluffyModifier(A.fluffy, T.fire, false);
       expect(mod).toBe(8192);
     });
 
     it("given Fluffy defender hit by fire contact move, when getting modifier, then returns 4096 (1.0x, cancel out)", () => {
       // Source: Showdown data/abilities.ts -- fluffy: both mods apply and cancel
       // 1 * 2 (fire) / 2 (contact) = 1.0x
-      const mod = getFluffyModifier("fluffy", "fire", true);
-      expect(mod).toBe(4096);
+      const mod = getFluffyModifier(A.fluffy, T.fire, true);
+      expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given Fluffy defender hit by non-fire non-contact move, when getting modifier, then returns 4096 (no effect)", () => {
-      const mod = getFluffyModifier("fluffy", "normal", false);
+      const mod = getFluffyModifier(A.fluffy, T.normal, false);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Fluffy defender, when getting modifier, then returns 4096 regardless", () => {
-      const mod = getFluffyModifier(TEST_ABILITY_IDS.blaze, "fire", true);
+      const mod = getFluffyModifier(C.blaze, T.fire, true);
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
@@ -769,9 +790,9 @@ describe("Fluffy", () => {
   describe("integration with calculateGen9Damage", () => {
     it("given Fluffy defender hit by physical contact move, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: "fluffy", types: ["normal"] });
+      const defender = makeActive({ ability: A.fluffy, types: [T.normal] });
       const move = makeMove({
-        type: "fighting",
+        type: T.fighting,
         power: 100,
         category: "physical",
         flags: { contact: true },
@@ -779,7 +800,7 @@ describe("Fluffy", () => {
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultFluffy = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: "none", types: ["normal"] });
+      const defenderNoAbility = makeActive({ ability: C.none, types: [T.normal] });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -791,7 +812,7 @@ describe("Fluffy", () => {
       // Fluffy halves contact damage, so result should be ~50% of normal (plus SE on normal)
       // Source: Showdown data/abilities.ts -- fluffy: mod /= 2 for contact
       const ratio = resultFluffy.damage / resultNormal.damage;
-      expect(ratio).toBeCloseTo(0.5, 1);
+      expect(resultFluffy.damage).toBe(pokeRound(resultNormal.damage, 2048));
     });
   });
 });
@@ -804,17 +825,17 @@ describe("Ice Scales", () => {
   describe("getIceScalesModifier", () => {
     it("given Ice Scales defender hit by special move, when getting modifier, then returns 2048 (0.5x)", () => {
       // Source: Showdown data/abilities.ts -- icescales: if (move.category === 'Special') chainModify(0.5)
-      const mod = getIceScalesModifier("ice-scales", "special");
+      const mod = getIceScalesModifier(A.iceScales, "special");
       expect(mod).toBe(2048);
     });
 
     it("given Ice Scales defender hit by physical move, when getting modifier, then returns 4096 (no effect)", () => {
-      const mod = getIceScalesModifier("ice-scales", "physical");
+      const mod = getIceScalesModifier(A.iceScales, "physical");
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
 
     it("given non-Ice Scales ability hit by special move, when getting modifier, then returns 4096", () => {
-      const mod = getIceScalesModifier(TEST_ABILITY_IDS.blaze, "special");
+      const mod = getIceScalesModifier(C.blaze, "special");
       expect(mod).toBe(FIXED_POINT_IDENTITY);
     });
   });
@@ -822,9 +843,9 @@ describe("Ice Scales", () => {
   describe("integration with calculateGen9Damage", () => {
     it("given Ice Scales defender hit by special move, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: "ice-scales", types: ["ice"] });
+      const defender = makeActive({ ability: A.iceScales, types: [T.ice] });
       const move = makeMove({
-        type: "fire",
+        type: T.fire,
         power: 100,
         category: "special",
         flags: { contact: false },
@@ -832,7 +853,7 @@ describe("Ice Scales", () => {
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultIceScales = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: "none", types: ["ice"] });
+      const defenderNoAbility = makeActive({ ability: C.none, types: [T.ice] });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -844,14 +865,14 @@ describe("Ice Scales", () => {
       // Ice Scales halves special damage
       // Source: Showdown data/abilities.ts -- icescales onSourceModifyDamage: chainModify(0.5)
       const ratio = resultIceScales.damage / resultNormal.damage;
-      expect(ratio).toBeCloseTo(0.5, 1);
+      expect(resultIceScales.damage).toBe(pokeRound(resultNormal.damage, 2048));
     });
 
     it("given Ice Scales defender hit by physical move, when calculating damage, then no reduction", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: "ice-scales", types: ["ice"] });
+      const defender = makeActive({ ability: A.iceScales, types: [T.ice] });
       const move = makeMove({
-        type: "fire",
+        type: T.fire,
         power: 100,
         category: "physical",
         flags: { contact: false },
@@ -859,7 +880,7 @@ describe("Ice Scales", () => {
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultIceScales = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: "none", types: ["ice"] });
+      const defenderNoAbility = makeActive({ ability: C.none, types: [T.ice] });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -882,32 +903,32 @@ describe("Multiscale / Shadow Shield", () => {
   describe("getMultiscaleMultiplier", () => {
     it("given Multiscale at full HP, when getting multiplier, then returns 0.5", () => {
       // Source: Showdown data/abilities.ts -- multiscale onSourceModifyDamage
-      expect(getMultiscaleMultiplier("multiscale", 200, 200)).toBe(0.5);
+      expect(getMultiscaleMultiplier(A.multiscale, 200, 200)).toBe(0.5);
     });
 
     it("given Multiscale at less than full HP, when getting multiplier, then returns 1", () => {
-      expect(getMultiscaleMultiplier("multiscale", 199, 200)).toBe(1);
+      expect(getMultiscaleMultiplier(A.multiscale, 199, 200)).toBe(1);
     });
 
     it("given Shadow Shield at full HP, when getting multiplier, then returns 0.5", () => {
       // Source: Showdown data/abilities.ts -- shadowshield: same as multiscale
-      expect(getMultiscaleMultiplier("shadow-shield", 100, 100)).toBe(0.5);
+      expect(getMultiscaleMultiplier(A.shadowShield, 100, 100)).toBe(0.5);
     });
 
     it("given non-Multiscale ability at full HP, when getting multiplier, then returns 1", () => {
-      expect(getMultiscaleMultiplier("blaze", 200, 200)).toBe(1);
+      expect(getMultiscaleMultiplier(C.blaze, 200, 200)).toBe(1);
     });
   });
 
   describe("integration with calculateGen9Damage", () => {
     it("given Multiscale defender at full HP, when calculating damage, then damage is halved", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: "multiscale", hp: 200, currentHp: 200 });
+      const defender = makeActive({ ability: A.multiscale, hp: 200, currentHp: 200 });
       const move = makeMove({ power: 100, flags: { contact: false } });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultMultiscale = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: "none", hp: 200, currentHp: 200 });
+      const defenderNoAbility = makeActive({ ability: C.none, hp: 200, currentHp: 200 });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -918,17 +939,17 @@ describe("Multiscale / Shadow Shield", () => {
 
       // Source: Showdown -- Multiscale: pokeRound(damage, 2048) = 0.5x
       const ratio = resultMultiscale.damage / resultNormal.damage;
-      expect(ratio).toBeCloseTo(0.5, 1);
+      expect(resultMultiscale.damage).toBe(pokeRound(resultNormal.damage, 2048));
     });
 
     it("given Multiscale defender not at full HP, when calculating damage, then no reduction", () => {
       const attacker = makeActive({});
-      const defender = makeActive({ ability: "multiscale", hp: 200, currentHp: 150 });
+      const defender = makeActive({ ability: A.multiscale, hp: 200, currentHp: 150 });
       const move = makeMove({ power: 100, flags: { contact: false } });
       const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
       const resultMultiscale = calculateGen9Damage(ctx, typeChart);
 
-      const defenderNoAbility = makeActive({ ability: "none", hp: 200, currentHp: 150 });
+      const defenderNoAbility = makeActive({ ability: C.none, hp: 200, currentHp: 150 });
       const ctxNormal = makeDamageContext({
         attacker,
         defender: defenderNoAbility,
@@ -948,10 +969,10 @@ describe("Multiscale / Shadow Shield", () => {
 
 describe("Tinted Lens", () => {
   it("given Tinted Lens attacker using NVE move, when calculating damage, then damage is doubled", () => {
-    const attacker = makeActive({ ability: "tinted-lens", types: ["fire"] });
-    const defender = makeActive({ types: ["water"] }); // Fire vs Water = NVE (0.5x)
+    const attacker = makeActive({ ability: A.tintedLens, types: [T.fire] });
+    const defender = makeActive({ types: [T.water] }); // Fire vs Water = NVE (0.5x)
     const move = makeMove({
-      type: "fire",
+      type: T.fire,
       power: 100,
       category: "special",
       flags: { contact: false },
@@ -959,7 +980,7 @@ describe("Tinted Lens", () => {
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
     const resultTinted = calculateGen9Damage(ctx, typeChart);
 
-    const attackerNoAbility = makeActive({ ability: "none", types: ["fire"] });
+    const attackerNoAbility = makeActive({ ability: C.none, types: [T.fire] });
     const ctxNormal = makeDamageContext({
       attacker: attackerNoAbility,
       defender,
@@ -970,16 +991,14 @@ describe("Tinted Lens", () => {
 
     // Source: Showdown data/abilities.ts -- tintedlens: damage *= 2 for NVE
     // Tinted Lens doubles NVE damage, making it effectively 1x
-    expect(resultTinted.damage).toBeGreaterThan(resultNormal.damage);
-    const ratio = resultTinted.damage / resultNormal.damage;
-    expect(ratio).toBeCloseTo(2.0, 0);
+    expect(resultTinted.damage).toBe(resultNormal.damage * 2);
   });
 
   it("given Tinted Lens attacker using SE move, when calculating damage, then no boost (only NVE)", () => {
-    const attacker = makeActive({ ability: "tinted-lens", types: ["fire"] });
-    const defender = makeActive({ types: ["grass"] }); // Fire vs Grass = SE (2x)
+    const attacker = makeActive({ ability: A.tintedLens, types: [T.fire] });
+    const defender = makeActive({ types: [T.grass] }); // Fire vs Grass = SE (2x)
     const move = makeMove({
-      type: "fire",
+      type: T.fire,
       power: 100,
       category: "special",
       flags: { contact: false },
@@ -987,7 +1006,7 @@ describe("Tinted Lens", () => {
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
     const resultTinted = calculateGen9Damage(ctx, typeChart);
 
-    const attackerNoAbility = makeActive({ ability: "none", types: ["fire"] });
+    const attackerNoAbility = makeActive({ ability: C.none, types: [T.fire] });
     const ctxNormal = makeDamageContext({
       attacker: attackerNoAbility,
       defender,
@@ -1007,10 +1026,10 @@ describe("Tinted Lens", () => {
 
 describe("Filter / Solid Rock", () => {
   it("given Filter defender hit by SE move, when calculating damage, then damage is reduced by 25%", () => {
-    const attacker = makeActive({ types: ["fire"] });
-    const defender = makeActive({ ability: "filter", types: ["grass"] });
+    const attacker = makeActive({ types: [T.fire] });
+    const defender = makeActive({ ability: A.filter, types: [T.grass] });
     const move = makeMove({
-      type: "fire",
+      type: T.fire,
       power: 100,
       category: "special",
       flags: { contact: false },
@@ -1018,7 +1037,7 @@ describe("Filter / Solid Rock", () => {
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
     const resultFilter = calculateGen9Damage(ctx, typeChart);
 
-    const defenderNoAbility = makeActive({ ability: "none", types: ["grass"] });
+    const defenderNoAbility = makeActive({ ability: C.none, types: [T.grass] });
     const ctxNormal = makeDamageContext({
       attacker,
       defender: defenderNoAbility,
@@ -1028,22 +1047,21 @@ describe("Filter / Solid Rock", () => {
     const resultNormal = calculateGen9Damage(ctxNormal, typeChart);
 
     // Source: Showdown data/abilities.ts -- filter: pokeRound(damage, 3072) = 0.75x
-    const ratio = resultFilter.damage / resultNormal.damage;
-    expect(ratio).toBeCloseTo(0.75, 1);
+    expect(resultFilter.damage).toBe(pokeRound(resultNormal.damage, 3072));
   });
 
   it("given Solid Rock defender hit by neutral move, when calculating damage, then no reduction", () => {
     const attacker = makeActive({});
-    const defender = makeActive({ ability: "solid-rock", types: ["rock"] });
+    const defender = makeActive({ ability: A.solidRock, types: [T.rock] });
     const move = makeMove({
-      type: "normal",
+      type: T.normal,
       power: 100,
       flags: { contact: false },
     });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 100 });
     const resultSolidRock = calculateGen9Damage(ctx, typeChart);
 
-    const defenderNoAbility = makeActive({ ability: "none", types: ["rock"] });
+    const defenderNoAbility = makeActive({ ability: C.none, types: [T.rock] });
     const ctxNormal = makeDamageContext({
       attacker,
       defender: defenderNoAbility,
@@ -1065,61 +1083,61 @@ describe("-ate abilities (Gen 9: 1.2x)", () => {
   describe("getAteAbilityOverride", () => {
     it("given Pixilate with Normal-type move, when checking override, then returns fairy + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- pixilate: Normal -> Fairy + 4915/4096
-      const result = getAteAbilityOverride("pixilate", "normal");
+      const result = getAteAbilityOverride(A.pixilate, T.normal);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe("fairy");
+      expect(result!.type).toBe(T.fairy);
       expect(result!.multiplier).toBeCloseTo(4915 / 4096, 5);
     });
 
     it("given Aerilate with Normal-type move, when checking override, then returns flying + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- aerilate: Normal -> Flying + 4915/4096
-      const result = getAteAbilityOverride("aerilate", "normal");
+      const result = getAteAbilityOverride(A.aerilate, T.normal);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe("flying");
+      expect(result!.type).toBe(T.flying);
     });
 
     it("given Refrigerate with Normal-type move, when checking override, then returns ice + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- refrigerate: Normal -> Ice + 4915/4096
-      const result = getAteAbilityOverride("refrigerate", "normal");
+      const result = getAteAbilityOverride(A.refrigerate, T.normal);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe("ice");
+      expect(result!.type).toBe(T.ice);
     });
 
     it("given Galvanize with Normal-type move, when checking override, then returns electric + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- galvanize: Normal -> Electric + 4915/4096
-      const result = getAteAbilityOverride("galvanize", "normal");
+      const result = getAteAbilityOverride(A.galvanize, T.normal);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe("electric");
+      expect(result!.type).toBe(T.electric);
     });
 
     it("given Pixilate with non-Normal move, when checking override, then returns null", () => {
-      expect(getAteAbilityOverride("pixilate", "fire")).toBeNull();
-      expect(getAteAbilityOverride("pixilate", "normal")).toEqual({
-        type: "fairy",
+      expect(getAteAbilityOverride(A.pixilate, T.fire)).toBeNull();
+      expect(getAteAbilityOverride(A.pixilate, T.normal)).toEqual({
+        type: T.fairy,
         multiplier: GEN7_PLUS_ATE_MODIFIER,
       });
     });
 
     it("given Normalize with Fire-type move, when checking override, then returns normal + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- normalize: all moves become Normal + 1.2x (Gen 7+)
-      const result = getAteAbilityOverride("normalize", "fire");
+      const result = getAteAbilityOverride(A.normalize, T.fire);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe("normal");
+      expect(result!.type).toBe(T.normal);
       expect(result!.multiplier).toBeCloseTo(4915 / 4096, 5);
     });
 
     it("given Liquid Voice with sound-based move, when checking override, then returns water with 1.0x", () => {
       // Source: Showdown data/abilities.ts -- liquidvoice: sound moves become Water (no power boost)
-      const result = getAteAbilityOverride("liquid-voice", "normal", true);
+      const result = getAteAbilityOverride(A.liquidVoice, T.normal, true);
       expect(result).not.toBeNull();
-      expect(result!.type).toBe("water");
+      expect(result!.type).toBe(T.water);
       expect(result!.multiplier).toBe(1);
     });
 
     it("given Liquid Voice with non-sound move, when checking override, then returns null", () => {
-      expect(getAteAbilityOverride("liquid-voice", "normal", false)).toBeNull();
-      expect(getAteAbilityOverride("liquid-voice", "normal", true)).toEqual({
-        type: "water",
+      expect(getAteAbilityOverride(A.liquidVoice, T.normal, false)).toBeNull();
+      expect(getAteAbilityOverride(A.liquidVoice, T.normal, true)).toEqual({
+        type: T.water,
         multiplier: 1,
       });
     });
@@ -1133,23 +1151,23 @@ describe("-ate abilities (Gen 9: 1.2x)", () => {
 describe("Sheer Force", () => {
   it("given Sheer Force with move that has status-chance, when getting multiplier, then returns 5325/4096", () => {
     // Source: Showdown data/abilities.ts -- sheerforce: chainModify([5325, 4096])
-    const mult = getSheerForceMultiplier("sheer-force", {
+    const mult = getSheerForceMultiplier(A.sheerForce, {
       type: "status-chance",
-      status: "burn",
+      status: S.burn,
       chance: 10,
     });
     expect(mult).toBeCloseTo(5325 / 4096, 5);
   });
 
   it("given Sheer Force with move that has no secondary, when getting multiplier, then returns 1", () => {
-    const mult = getSheerForceMultiplier("sheer-force", null);
+    const mult = getSheerForceMultiplier(A.sheerForce, null);
     expect(mult).toBe(1);
   });
 
   it("given non-Sheer Force ability, when getting multiplier, then returns 1", () => {
-    const mult = getSheerForceMultiplier("blaze", {
+    const mult = getSheerForceMultiplier(C.blaze, {
       type: "status-chance",
-      status: "burn",
+      status: S.burn,
       chance: 10,
     });
     expect(mult).toBe(1);
@@ -1157,15 +1175,15 @@ describe("Sheer Force", () => {
 
   it("given Sheer Force with tri-attack (whitelist), when checking eligible, then returns true", () => {
     // Source: Showdown -- tri-attack has custom onHit secondaries
-    expect(isSheerForceEligibleMove(null, "tri-attack")).toBe(true);
+    expect(isSheerForceEligibleMove(null, CORE_MOVE_IDS.triAttack)).toBe(true);
   });
 
   it("given Sheer Force, when checking if Life Orb recoil suppressed, then returns true for eligible move", () => {
     // Source: Showdown scripts.ts -- sheer force suppresses Life Orb recoil
     expect(
-      sheerForceSuppressesLifeOrb("sheer-force", {
+      sheerForceSuppressesLifeOrb(A.sheerForce, {
         type: "status-chance",
-        status: "burn",
+        status: S.burn,
         chance: 10,
       }),
     ).toBe(true);
@@ -1180,33 +1198,33 @@ describe("move-type boosting abilities", () => {
   describe("getToughClawsMultiplier", () => {
     it("given Tough Claws with contact move, when getting multiplier, then returns 5325/4096 (~1.3x)", () => {
       // Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, 4096])
-      expect(getToughClawsMultiplier("tough-claws", true)).toBeCloseTo(5325 / 4096, 5);
+      expect(getToughClawsMultiplier(A.toughClaws, true)).toBeCloseTo(5325 / 4096, 5);
     });
 
     it("given Tough Claws with non-contact move, when getting multiplier, then returns 1", () => {
-      expect(getToughClawsMultiplier("tough-claws", false)).toBe(1);
+      expect(getToughClawsMultiplier(A.toughClaws, false)).toBe(1);
     });
   });
 
   describe("getStrongJawMultiplier", () => {
     it("given Strong Jaw with bite move, when getting multiplier, then returns 1.5", () => {
       // Source: Showdown data/abilities.ts -- strongjaw: chainModify(1.5)
-      expect(getStrongJawMultiplier("strong-jaw", true)).toBe(1.5);
+      expect(getStrongJawMultiplier(A.strongJaw, true)).toBe(1.5);
     });
 
     it("given Strong Jaw with non-bite move, when getting multiplier, then returns 1", () => {
-      expect(getStrongJawMultiplier("strong-jaw", false)).toBe(1);
+      expect(getStrongJawMultiplier(A.strongJaw, false)).toBe(1);
     });
   });
 
   describe("getMegaLauncherMultiplier", () => {
     it("given Mega Launcher with pulse move, when getting multiplier, then returns 1.5", () => {
       // Source: Showdown data/abilities.ts -- megalauncher: chainModify(1.5)
-      expect(getMegaLauncherMultiplier("mega-launcher", true)).toBe(1.5);
+      expect(getMegaLauncherMultiplier(A.megaLauncher, true)).toBe(1.5);
     });
 
     it("given Mega Launcher with non-pulse move, when getting multiplier, then returns 1", () => {
-      expect(getMegaLauncherMultiplier("mega-launcher", false)).toBe(1);
+      expect(getMegaLauncherMultiplier(A.megaLauncher, false)).toBe(1);
     });
   });
 });
@@ -1219,18 +1237,18 @@ describe("Sturdy", () => {
   describe("getSturdyDamageCap", () => {
     it("given Sturdy at full HP with lethal damage, when capping, then returns maxHp - 1", () => {
       // Source: Showdown data/abilities.ts -- sturdy onDamage: maxhp - 1
-      expect(getSturdyDamageCap("sturdy", DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE)).toBe(
+      expect(getSturdyDamageCap(C.sturdy, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE, DEFAULT_HP_FIXTURE)).toBe(
         DEFAULT_HP_FIXTURE - 1,
       );
     });
 
     it("given Sturdy at full HP with non-lethal damage, when capping, then returns original damage", () => {
-      expect(getSturdyDamageCap("sturdy", 100, 200, 200)).toBe(100);
+      expect(getSturdyDamageCap(C.sturdy, 100, 200, 200)).toBe(100);
     });
 
     it("given Sturdy NOT at full HP with lethal damage, when capping, then returns original damage (no cap)", () => {
       // Source: Sturdy only caps at full HP; once currentHp differs from maxHp the damage passes through unchanged.
-      expect(getSturdyDamageCap("sturdy", DEFAULT_HP_FIXTURE, 150, DEFAULT_HP_FIXTURE)).toBe(
+      expect(getSturdyDamageCap(C.sturdy, DEFAULT_HP_FIXTURE, 150, DEFAULT_HP_FIXTURE)).toBe(
         DEFAULT_HP_FIXTURE,
       );
     });
@@ -1238,7 +1256,7 @@ describe("Sturdy", () => {
     it("given non-Sturdy ability, when capping, then returns original damage", () => {
       expect(
         getSturdyDamageCap(
-          TEST_ABILITY_IDS.blaze,
+          C.blaze,
           DEFAULT_HP_FIXTURE,
           DEFAULT_HP_FIXTURE,
           DEFAULT_HP_FIXTURE,
@@ -1250,15 +1268,15 @@ describe("Sturdy", () => {
   describe("sturdyBlocksOHKO", () => {
     it("given Sturdy and OHKO move, when checking, then returns true", () => {
       // Source: Showdown data/abilities.ts -- sturdy onTryHit: OHKO blocked
-      expect(sturdyBlocksOHKO("sturdy", { type: "ohko" })).toBe(true);
+      expect(sturdyBlocksOHKO(C.sturdy, { type: "ohko" })).toBe(true);
     });
 
     it("given Sturdy and non-OHKO move, when checking, then returns false", () => {
-      expect(sturdyBlocksOHKO("sturdy", { type: "drain", percentage: 50 })).toBe(false);
+      expect(sturdyBlocksOHKO(C.sturdy, { type: "drain", percentage: 50 })).toBe(false);
     });
 
     it("given non-Sturdy and OHKO move, when checking, then returns false", () => {
-      expect(sturdyBlocksOHKO(TEST_ABILITY_IDS.blaze, { type: "ohko" })).toBe(false);
+      expect(sturdyBlocksOHKO(C.blaze, { type: "ohko" })).toBe(false);
     });
   });
 });
@@ -1270,15 +1288,15 @@ describe("Sturdy", () => {
 describe("Fur Coat", () => {
   it("given Fur Coat against physical move, when getting multiplier, then returns 2.0", () => {
     // Source: Showdown data/abilities.ts -- furcoat: chainModify(2) on Def for physical
-    expect(getFurCoatMultiplier("fur-coat", true)).toBe(2);
+    expect(getFurCoatMultiplier(A.furCoat, true)).toBe(2);
   });
 
   it("given Fur Coat against special move, when getting multiplier, then returns 1", () => {
-    expect(getFurCoatMultiplier("fur-coat", false)).toBe(1);
+    expect(getFurCoatMultiplier(A.furCoat, false)).toBe(1);
   });
 
   it("given non-Fur Coat ability, when getting multiplier, then returns 1", () => {
-    expect(getFurCoatMultiplier("blaze", true)).toBe(1);
+    expect(getFurCoatMultiplier(C.blaze, true)).toBe(1);
   });
 });
 
@@ -1289,19 +1307,19 @@ describe("Fur Coat", () => {
 describe("Parental Bond", () => {
   it("given Parental Bond with damaging move, when checking eligibility, then returns true", () => {
     // Source: Showdown data/abilities.ts -- parentalbond
-    expect(isParentalBondEligible("parental-bond", 80, null)).toBe(true);
+    expect(isParentalBondEligible(A.parentalBond, 80, null)).toBe(true);
   });
 
   it("given Parental Bond with multi-hit move, when checking eligibility, then returns false", () => {
-    expect(isParentalBondEligible("parental-bond", 80, "multi-hit")).toBe(false);
+    expect(isParentalBondEligible(A.parentalBond, 80, "multi-hit")).toBe(false);
   });
 
   it("given Parental Bond with status move, when checking eligibility, then returns false", () => {
-    expect(isParentalBondEligible("parental-bond", 0, null)).toBe(false);
+    expect(isParentalBondEligible(A.parentalBond, 0, null)).toBe(false);
   });
 
   it("given non-Parental Bond ability, when checking eligibility, then returns false", () => {
-    expect(isParentalBondEligible("blaze", 80, null)).toBe(false);
+    expect(isParentalBondEligible(C.blaze, 80, null)).toBe(false);
   });
 });
 
@@ -1341,7 +1359,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
       overrides.movePower !== undefined
         ? makeMove({
             id: overrides.moveId,
-            type: overrides.moveType ?? "normal",
+            type: overrides.moveType ?? T.normal,
             category: overrides.moveCategory ?? "physical",
             power: overrides.movePower,
             flags: overrides.moveFlags,
@@ -1349,7 +1367,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
           })
         : makeMove({
             id: overrides.moveId,
-            type: overrides.moveType ?? "normal",
+            type: overrides.moveType ?? T.normal,
             category: overrides.moveCategory ?? "physical",
             flags: overrides.moveFlags,
             effect: overrides.moveEffect,
@@ -1363,8 +1381,8 @@ describe("handleGen9DamageCalcAbility handler", () => {
           ]
         : undefined;
     const state = makeState({
-      weather: overrides.weather ? { type: overrides.weather, turnsLeft: 5, source: "test" } : null,
-      terrain: overrides.terrain ? { type: overrides.terrain, turnsLeft: 5, source: "test" } : null,
+      weather: overrides.weather ? { type: overrides.weather, turnsLeft: 5, source: TE.testSource } : null,
+      terrain: overrides.terrain ? { type: overrides.terrain, turnsLeft: 5, source: TE.testSource } : null,
       sides,
     });
 
@@ -1381,47 +1399,47 @@ describe("handleGen9DamageCalcAbility handler", () => {
   it("given Supreme Overlord with 0 fainted allies, when handler called, then does not activate", () => {
     // Source: Showdown data/abilities.ts:4634-4658 -- supremeoverlord onBasePower
     // powMod[0] = 4096 (no boost), so handler should return NO_ACTIVATION
-    const ctx = makeAbilityContext({ abilityId: "supreme-overlord" });
+    const ctx = makeAbilityContext({ abilityId: A.supremeOverlord });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given Supreme Overlord with 2 fainted allies, when handler called, then activates with message", () => {
     // Source: Showdown data/abilities.ts:4649 -- powMod[2] = 4915 (~20% boost)
-    const ctx = makeAbilityContext({ abilityId: "supreme-overlord", attackerFaintCount: 2 });
+    const ctx = makeAbilityContext({ abilityId: A.supremeOverlord, attackerFaintCount: 2 });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages.length).toBeGreaterThan(0);
+    expect(result.messages).toHaveLength(1);
   });
 
   it("given Orichalcum Pulse in Sun, when handler called, then activates", () => {
-    const ctx = makeAbilityContext({ abilityId: "orichalcum-pulse", weather: "sun" });
+    const ctx = makeAbilityContext({ abilityId: A.orichalcumPulse, weather: W.sun });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given Orichalcum Pulse without Sun, when handler called, then does not activate", () => {
-    const ctx = makeAbilityContext({ abilityId: "orichalcum-pulse" });
+    const ctx = makeAbilityContext({ abilityId: A.orichalcumPulse });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given Hadron Engine on Electric Terrain, when handler called, then activates", () => {
-    const ctx = makeAbilityContext({ abilityId: "hadron-engine", terrain: "electric" });
+    const ctx = makeAbilityContext({ abilityId: A.hadronEngine, terrain: TE.electric });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given Hadron Engine without Electric Terrain, when handler called, then does not activate", () => {
-    const ctx = makeAbilityContext({ abilityId: "hadron-engine" });
+    const ctx = makeAbilityContext({ abilityId: A.hadronEngine });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given Fluffy hit by contact non-fire move, when handler called, then activates", () => {
     const ctx = makeAbilityContext({
-      abilityId: "fluffy",
-      moveType: "normal",
+      abilityId: A.fluffy,
+      moveType: T.normal,
       moveFlags: { contact: true },
     });
     const result = handleGen9DamageCalcAbility(ctx);
@@ -1430,8 +1448,8 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Fluffy hit by non-contact non-fire move, when handler called, then does not activate", () => {
     const ctx = makeAbilityContext({
-      abilityId: "fluffy",
-      moveType: "normal",
+      abilityId: A.fluffy,
+      moveType: T.normal,
       moveFlags: { contact: false },
     });
     const result = handleGen9DamageCalcAbility(ctx);
@@ -1440,7 +1458,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Ice Scales hit by special move, when handler called, then activates", () => {
     const ctx = makeAbilityContext({
-      abilityId: "ice-scales",
+      abilityId: A.iceScales,
       moveCategory: "special",
     });
     const result = handleGen9DamageCalcAbility(ctx);
@@ -1449,7 +1467,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Ice Scales hit by physical move, when handler called, then does not activate", () => {
     const ctx = makeAbilityContext({
-      abilityId: "ice-scales",
+      abilityId: A.iceScales,
       moveCategory: "physical",
     });
     const result = handleGen9DamageCalcAbility(ctx);
@@ -1457,22 +1475,22 @@ describe("handleGen9DamageCalcAbility handler", () => {
   });
 
   it("given Technician with 60 power move, when handler called, then activates", () => {
-    const ctx = makeAbilityContext({ abilityId: "technician", movePower: 60 });
+    const ctx = makeAbilityContext({ abilityId: A.technician, movePower: 60 });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given Technician with 70 power move, when handler called, then does not activate", () => {
-    const ctx = makeAbilityContext({ abilityId: "technician", movePower: 70 });
+    const ctx = makeAbilityContext({ abilityId: A.technician, movePower: 70 });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given Adaptability with STAB move, when handler called, then activates", () => {
     const ctx = makeAbilityContext({
-      abilityId: "adaptability",
-      moveType: "fire",
-      types: ["fire"],
+      abilityId: A.adaptability,
+      moveType: T.fire,
+      types: [T.fire],
     });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -1480,9 +1498,9 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Adaptability with non-STAB move, when handler called, then does not activate", () => {
     const ctx = makeAbilityContext({
-      abilityId: "adaptability",
-      moveType: "water",
-      types: ["fire"],
+      abilityId: A.adaptability,
+      moveType: T.water,
+      types: [T.fire],
     });
     const result = handleGen9DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -1490,7 +1508,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Multiscale at full HP, when handler called, then activates", () => {
     const ctx = makeAbilityContext({
-      abilityId: "multiscale",
+      abilityId: A.multiscale,
       currentHp: 200,
       hp: 200,
     });
@@ -1500,7 +1518,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
   it("given Multiscale below full HP, when handler called, then does not activate", () => {
     const ctx = makeAbilityContext({
-      abilityId: "multiscale",
+      abilityId: A.multiscale,
       currentHp: 150,
       hp: 200,
     });
@@ -1515,7 +1533,7 @@ describe("handleGen9DamageCalcAbility handler", () => {
 
 describe("handleGen9DamageImmunityAbility handler", () => {
   it("given Sturdy and OHKO move, when handler called, then move is prevented", () => {
-    const pokemon = makeActive({ ability: "sturdy" });
+    const pokemon = makeActive({ ability: C.sturdy });
     const ctx = {
       pokemon,
       state: makeState(),
@@ -1529,7 +1547,7 @@ describe("handleGen9DamageImmunityAbility handler", () => {
   });
 
   it("given Sturdy and non-OHKO move, when handler called, then not activated", () => {
-    const pokemon = makeActive({ ability: "sturdy" });
+    const pokemon = makeActive({ ability: C.sturdy });
     const ctx = {
       pokemon,
       state: makeState(),
@@ -1549,7 +1567,7 @@ describe("handleGen9DamageImmunityAbility handler", () => {
 describe("hasSheerForceEligibleEffect", () => {
   it("given status-chance effect, then returns true", () => {
     // Source: Showdown -- status-chance is always sheer force eligible
-    expect(hasSheerForceEligibleEffect({ type: "status-chance", status: "burn", chance: 10 })).toBe(
+    expect(hasSheerForceEligibleEffect({ type: "status-chance", status: S.burn, chance: 10 })).toBe(
       true,
     );
   });
@@ -1583,7 +1601,7 @@ describe("hasSheerForceEligibleEffect", () => {
     expect(
       hasSheerForceEligibleEffect({
         type: "volatile-status",
-        status: "flinch",
+        status: V.flinch,
         chance: 30,
       }),
     ).toBe(true);
@@ -1624,7 +1642,7 @@ describe("pokeRound verification for ability modifiers", () => {
   it("Fluffy fire: pokeRound(100, 8192) = 200", () => {
     // Source: Showdown -- Fluffy fire: mod *= 2 => 8192/4096
     // floor((100 * 8192 + 2047) / 4096) = floor(821247/4096) = 200
-    expect(pokeRound(100, 8192)).toBe(200);
+    expect(pokeRound(100, 8192)).toBe(100 * 2);
   });
 
   it("Fluffy contact: pokeRound(100, 2048) = 50", () => {
@@ -1636,6 +1654,6 @@ describe("pokeRound verification for ability modifiers", () => {
   it("Orichalcum Pulse stat: floor((150 * 5461 + 2047) / 4096) = 200", () => {
     // Source: Showdown -- chainModify([5461, 4096]) on Atk stat
     // floor((150 * 5461 + 2047) / 4096) = floor(821197/4096) = 200
-    expect(Math.floor((150 * 5461 + 2047) / 4096)).toBe(200);
+    expect(pokeRound(150, 5461)).toBe(150 + 50);
   });
 });

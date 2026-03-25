@@ -1,5 +1,14 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_MOVE_IDS, GEN9_NATURE_IDS } from "../src";
 import { describe, expect, it } from "vitest";
 import {
   getWeatherDuration,
@@ -11,6 +20,20 @@ import {
   TRACE_UNCOPYABLE_ABILITIES,
   UNSUPPRESSABLE_ABILITIES,
 } from "../src/Gen9AbilitiesSwitch";
+
+const A = GEN9_ABILITY_IDS;
+const I = GEN9_ITEM_IDS;
+const M = GEN9_MOVE_IDS;
+const N = GEN9_NATURE_IDS;
+const C = CORE_ABILITY_IDS;
+const SC = CORE_SCREEN_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const W = CORE_WEATHER_IDS;
+const TE = CORE_TERRAIN_IDS;
+const BASE_WEATHER_DURATION = 5;
+const EXTENDED_WEATHER_DURATION = 8;
+const UNKNOWN_ABILITY = "unknown-ability" as const;
 
 /**
  * Gen 9 switch-in, switch-out, contact, passive, and turn-end ability tests.
@@ -52,7 +75,7 @@ function makePokemonInstance(overrides: {
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: N.hardy,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
@@ -122,7 +145,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [T.normal],
     ability: overrides.ability ?? "",
     suppressedAbility: null,
     lastMoveUsed: null,
@@ -220,32 +243,32 @@ function makeAbilityContext(overrides: {
 describe("getWeatherDuration", () => {
   it("given no held item, when getting weather duration, then returns 5 (base)", () => {
     // Source: Showdown data/items.ts -- base weather duration is 5 turns
-    expect(getWeatherDuration(null, "rain")).toBe(5);
+    expect(getWeatherDuration(null, W.rain)).toBe(BASE_WEATHER_DURATION);
   });
 
   it("given Damp Rock and rain weather, when getting duration, then returns 8", () => {
     // Source: Showdown data/items.ts -- damprock extends rain to 8 turns
-    expect(getWeatherDuration("damp-rock", "rain")).toBe(8);
+    expect(getWeatherDuration(I.dampRock, W.rain)).toBe(EXTENDED_WEATHER_DURATION);
   });
 
   it("given Heat Rock and sun weather, when getting duration, then returns 8", () => {
     // Source: Showdown data/items.ts -- heatrock extends sun to 8 turns
-    expect(getWeatherDuration("heat-rock", "sun")).toBe(8);
+    expect(getWeatherDuration(I.heatRock, W.sun)).toBe(EXTENDED_WEATHER_DURATION);
   });
 
   it("given Smooth Rock and sand weather, when getting duration, then returns 8", () => {
     // Source: Showdown data/items.ts -- smoothrock extends sand to 8 turns
-    expect(getWeatherDuration("smooth-rock", "sand")).toBe(8);
+    expect(getWeatherDuration(I.smoothRock, W.sand)).toBe(EXTENDED_WEATHER_DURATION);
   });
 
   it("given Icy Rock and snow weather, when getting duration, then returns 8", () => {
     // Source: Showdown data/items.ts -- icyrock extends snow to 8 turns (Gen 9: snow replaces hail)
-    expect(getWeatherDuration("icy-rock", "snow")).toBe(8);
+    expect(getWeatherDuration(I.icyRock, W.snow)).toBe(EXTENDED_WEATHER_DURATION);
   });
 
   it("given wrong rock for weather, when getting duration, then returns 5 (base)", () => {
     // Source: Showdown data/items.ts -- Damp Rock only extends rain; sun stays at the base 5 turns.
-    expect(getWeatherDuration("damp-rock", "sun")).toBe(5);
+    expect(getWeatherDuration(I.dampRock, W.sun)).toBe(BASE_WEATHER_DURATION);
   });
 });
 
@@ -257,8 +280,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Intimidate with opponent, when switching in, then lowers opponent Attack by 1", () => {
     // Source: Showdown data/abilities.ts -- Intimidate
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intimidate", nickname: "Gyarados" }),
-      opponent: makeActivePokemon({ types: ["normal"], nickname: "Metagross" }),
+      pokemon: makeActivePokemon({ ability: C.intimidate, nickname: "Gyarados" }),
+      opponent: makeActivePokemon({ types: [T.normal], nickname: "Metagross" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -280,7 +303,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Intimidate with opponent behind Substitute, when switching in, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Intimidate blocked by Substitute
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intimidate" }),
+      pokemon: makeActivePokemon({ ability: C.intimidate }),
       opponent: makeActivePokemon({ substituteHp: 50 }),
       trigger: "on-switch-in",
     });
@@ -290,7 +313,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
 
   it("given Intimidate with no opponent, when switching in, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intimidate" }),
+      pokemon: makeActivePokemon({ ability: C.intimidate }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -299,14 +322,14 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
 
   it("given Pressure, when switching in, then activates with message", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "pressure", nickname: "Mewtwo" }),
+      pokemon: makeActivePokemon({ ability: C.pressure, nickname: "Mewtwo" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
     // Source: Showdown data/abilities.ts -- Download raises one offensive stat by exactly 1 stage.
     expect(result).toEqual({
       activated: true,
-      effects: [{ effectType: "none", target: "self" }],
+      effects: [{ effectType: C.none, target: "self" }],
       messages: ["Mewtwo is exerting its Pressure!"],
     });
   });
@@ -314,7 +337,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Drizzle, when switching in, then sets rain weather", () => {
     // Source: Showdown data/abilities.ts -- Drizzle sets rain
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "drizzle", nickname: "Pelipper" }),
+      pokemon: makeActivePokemon({ ability: C.drizzle, nickname: "Pelipper" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -324,8 +347,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "rain",
-          weatherTurns: 5,
+          weather: W.rain,
+          weatherTurns: BASE_WEATHER_DURATION,
         },
       ],
       messages: ["Pelipper's Drizzle made it rain!"],
@@ -335,8 +358,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Drizzle with Damp Rock, when switching in, then sets rain for 8 turns", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "drizzle",
-        heldItem: "damp-rock",
+        ability: C.drizzle,
+        heldItem: I.dampRock,
         nickname: "Pelipper",
       }),
       trigger: "on-switch-in",
@@ -348,8 +371,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "rain",
-          weatherTurns: 8,
+          weather: W.rain,
+          weatherTurns: EXTENDED_WEATHER_DURATION,
         },
       ],
       messages: ["Pelipper's Drizzle made it rain!"],
@@ -358,7 +381,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
 
   it("given Drought, when switching in, then sets sun weather", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "drought", nickname: "Torkoal" }),
+      pokemon: makeActivePokemon({ ability: C.drought, nickname: "Torkoal" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -368,8 +391,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "sun",
-          weatherTurns: 5,
+          weather: W.sun,
+          weatherTurns: BASE_WEATHER_DURATION,
         },
       ],
       messages: ["Torkoal's Drought intensified the sun's rays!"],
@@ -378,7 +401,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
 
   it("given Sand Stream, when switching in, then sets sand weather", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "sand-stream", nickname: "Tyranitar" }),
+      pokemon: makeActivePokemon({ ability: A.sandStream, nickname: "Tyranitar" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -388,7 +411,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "sand",
+          weather: W.sand,
           weatherTurns: 5,
         },
       ],
@@ -397,10 +420,10 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   });
 
   it("given Snow Warning, when switching in, then sets SNOW weather (not hail)", () => {
-    // Source: Showdown data/abilities.ts -- snowwarning: sets "snow" in Gen 9
+    // Source: Showdown data/abilities.ts -- snowwarning: sets W.snow in Gen 9
     // Source: specs/battle/10-gen9.md -- "Snow replaces Hail"
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "snow-warning", nickname: "Ninetales-Alola" }),
+      pokemon: makeActivePokemon({ ability: A.snowWarning, nickname: "Ninetales-Alola" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -410,7 +433,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "snow",
+          weather: W.snow,
           weatherTurns: 5,
         },
       ],
@@ -422,8 +445,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
     // Source: Icy Rock extends snow duration to 8 turns
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "snow-warning",
-        heldItem: "icy-rock",
+        ability: A.snowWarning,
+        heldItem: I.icyRock,
         nickname: "Ninetales-Alola",
       }),
       trigger: "on-switch-in",
@@ -435,7 +458,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "snow",
+          weather: W.snow,
           weatherTurns: 8,
         },
       ],
@@ -446,7 +469,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Orichalcum Pulse, when switching in, then sets sun weather", () => {
     // Source: Showdown data/abilities.ts:3016-3035
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "orichalcum-pulse", nickname: "Koraidon" }),
+      pokemon: makeActivePokemon({ ability: A.orichalcumPulse, nickname: "Koraidon" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -456,7 +479,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "weather-set",
           target: "field",
-          weather: "sun",
+          weather: W.sun,
           weatherTurns: 5,
         },
       ],
@@ -468,7 +491,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
     // Source: Showdown data/abilities.ts:1725-1742
     const state = makeBattleState();
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "hadron-engine", nickname: "Miraidon" }),
+      pokemon: makeActivePokemon({ ability: A.hadronEngine, nickname: "Miraidon" }),
       trigger: "on-switch-in",
       state,
     });
@@ -479,9 +502,9 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
       messages: ["Miraidon's Hadron Engine set Electric Terrain!"],
     });
     expect(state.terrain).toEqual({
-      type: "electric",
-      turnsLeft: 5,
-      source: "hadron-engine",
+      type: TE.electric,
+      turnsLeft: BASE_WEATHER_DURATION,
+      source: A.hadronEngine,
     });
   });
 
@@ -489,18 +512,18 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
     // Source: Showdown data/items.ts -- Terrain Extender raises terrain duration from 5 turns to 8.
     const state = makeBattleState();
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "hadron-engine", heldItem: "terrain-extender" }),
+      pokemon: makeActivePokemon({ ability: A.hadronEngine, heldItem: I.terrainExtender }),
       trigger: "on-switch-in",
       state,
     });
     handleGen9SwitchAbility("on-switch-in", ctx);
-    expect(state.terrain?.turnsLeft).toBe(8);
+    expect(state.terrain?.turnsLeft).toBe(EXTENDED_WEATHER_DURATION);
   });
 
   it("given Download with opponent lower Defense than SpDef, when switching in, then raises Attack", () => {
     // Source: Showdown data/abilities.ts -- Download
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "download", nickname: "Porygon-Z" }),
+      pokemon: makeActivePokemon({ ability: A.download, nickname: "Porygon-Z" }),
       opponent: makeActivePokemon({
         calculatedStats: {
           hp: 200,
@@ -531,7 +554,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Download with opponent equal/higher Defense, when switching in, then raises SpAttack", () => {
     // Source: Showdown data/abilities.ts -- Download
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "download", nickname: "Porygon-Z" }),
+      pokemon: makeActivePokemon({ ability: A.download, nickname: "Porygon-Z" }),
       opponent: makeActivePokemon({
         calculatedStats: {
           hp: 200,
@@ -562,8 +585,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Trace with copyable opponent ability, when switching in, then copies ability", () => {
     // Source: Showdown data/abilities.ts -- Trace
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "trace", nickname: "Gardevoir" }),
-      opponent: makeActivePokemon({ ability: "intimidate", nickname: "Gyarados" }),
+      pokemon: makeActivePokemon({ ability: A.trace, nickname: "Gardevoir" }),
+      opponent: makeActivePokemon({ ability: C.intimidate, nickname: "Gyarados" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -573,7 +596,7 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
         {
           effectType: "ability-change",
           target: "self",
-          newAbility: "intimidate",
+          newAbility: C.intimidate,
         },
       ],
       messages: ["Gardevoir traced Gyarados's intimidate!"],
@@ -583,8 +606,8 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
   it("given Trace with uncopyable opponent ability (protosynthesis), when switching in, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Trace ban list includes protosynthesis in Gen 9
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "trace" }),
-      opponent: makeActivePokemon({ ability: "protosynthesis" }),
+      pokemon: makeActivePokemon({ ability: A.trace }),
+      opponent: makeActivePokemon({ ability: A.protosynthesis }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -593,13 +616,13 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
 
   it("given Mold Breaker, when switching in, then activates with message", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "mold-breaker", nickname: "Excadrill" }),
+      pokemon: makeActivePokemon({ ability: C.moldBreaker, nickname: "Excadrill" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
     expect(result).toEqual({
       activated: true,
-      effects: [{ effectType: "none", target: "self" }],
+      effects: [{ effectType: C.none, target: "self" }],
       messages: ["Excadrill breaks the mold!"],
     });
   });
@@ -608,44 +631,44 @@ describe("handleGen9SwitchAbility -- on-switch-in", () => {
     // Source: Showdown data/abilities.ts -- Electric Surge
     const state = makeBattleState();
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "electric-surge" }),
+      pokemon: makeActivePokemon({ ability: A.electricSurge }),
       trigger: "on-switch-in",
       state,
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
     expect(result.activated).toBe(true);
-    expect(state.terrain?.type).toBe("electric");
-    expect(state.terrain?.turnsLeft).toBe(5);
+    expect(state.terrain?.type).toBe(TE.electric);
+    expect(state.terrain?.turnsLeft).toBe(BASE_WEATHER_DURATION);
   });
 
   it("given Grassy Surge with Terrain Extender, when switching in, then terrain lasts 8 turns", () => {
     // Source: Showdown data/items.ts -- Terrain Extender raises terrain duration from 5 turns to 8.
     const state = makeBattleState();
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "grassy-surge", heldItem: "terrain-extender" }),
+      pokemon: makeActivePokemon({ ability: A.grassySurge, heldItem: I.terrainExtender }),
       trigger: "on-switch-in",
       state,
     });
     handleGen9SwitchAbility("on-switch-in", ctx);
-    expect(state.terrain?.turnsLeft).toBe(8);
+    expect(state.terrain?.turnsLeft).toBe(EXTENDED_WEATHER_DURATION);
   });
 
   it("given Screen Cleaner, when switching in, then activates with message", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "screen-cleaner", nickname: "Tsareena" }),
+      pokemon: makeActivePokemon({ ability: A.screenCleaner, nickname: "Tsareena" }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
     expect(result).toEqual({
       activated: true,
-      effects: [{ effectType: "none", target: "field" }],
+      effects: [{ effectType: C.none, target: "field" }],
       messages: ["Tsareena's Screen Cleaner removed all screens!"],
     });
   });
 
   it("given unknown ability, when switching in, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "unknown-ability" }),
+      pokemon: makeActivePokemon({ ability: UNKNOWN_ABILITY }),
       trigger: "on-switch-in",
     });
     const result = handleGen9SwitchAbility("on-switch-in", ctx);
@@ -662,7 +685,7 @@ describe("handleGen9SwitchAbility -- on-switch-out", () => {
     // Source: Showdown data/abilities.ts -- Regenerator heals 1/3 max HP
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "regenerator",
+        ability: A.regenerator,
         maxHp: 300,
         currentHp: 100,
         nickname: "Slowbro",
@@ -687,7 +710,7 @@ describe("handleGen9SwitchAbility -- on-switch-out", () => {
     // Triangulation: different max HP
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "regenerator",
+        ability: A.regenerator,
         maxHp: 201,
         currentHp: 50,
         nickname: "Slowbro",
@@ -712,8 +735,8 @@ describe("handleGen9SwitchAbility -- on-switch-out", () => {
     // Source: Showdown data/abilities.ts -- Natural Cure
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "natural-cure",
-        status: "paralysis",
+        ability: C.naturalCure,
+        status: S.paralysis,
         nickname: "Chansey",
       }),
       trigger: "on-switch-out",
@@ -728,7 +751,7 @@ describe("handleGen9SwitchAbility -- on-switch-out", () => {
 
   it("given Natural Cure with no status, when switching out, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "natural-cure" }),
+      pokemon: makeActivePokemon({ ability: C.naturalCure }),
       trigger: "on-switch-out",
     });
     const result = handleGen9SwitchAbility("on-switch-out", ctx);
@@ -744,7 +767,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
   it("given Static with 30% roll, when contacted, then paralyzes attacker", () => {
     // Source: Showdown data/abilities.ts -- Static: 30% paralysis on contact
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "static", nickname: "Pikachu" }),
+      pokemon: makeActivePokemon({ ability: C.static, nickname: "Pikachu" }),
       opponent: makeActivePokemon({ nickname: "Garchomp" }),
       trigger: "on-contact",
       rng: { next: () => 0.1 }, // < 0.3 threshold
@@ -757,7 +780,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "paralysis",
+          status: S.paralysis,
         },
       ],
       messages: ["Pikachu's Static paralyzed the attacker!"],
@@ -766,7 +789,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
 
   it("given Static with roll above 30%, when contacted, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "static" }),
+      pokemon: makeActivePokemon({ ability: C.static }),
       opponent: makeActivePokemon({}),
       trigger: "on-contact",
       rng: { next: () => 0.5 }, // >= 0.3
@@ -778,7 +801,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
   it("given Flame Body with 30% roll, when contacted, then burns attacker", () => {
     // Source: Showdown data/abilities.ts -- Flame Body: 30% burn on contact
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "flame-body", nickname: "Talonflame" }),
+      pokemon: makeActivePokemon({ ability: A.flameBody, nickname: "Talonflame" }),
       opponent: makeActivePokemon({ nickname: "Garchomp" }),
       trigger: "on-contact",
       rng: { next: () => 0.1 },
@@ -791,7 +814,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "burn",
+          status: S.burn,
         },
       ],
       messages: ["Talonflame's Flame Body burned the attacker!"],
@@ -801,7 +824,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
   it("given Poison Point with 30% roll, when contacted, then poisons attacker", () => {
     // Source: Showdown data/abilities.ts -- Poison Point: 30% poison on contact
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "poison-point", nickname: "Nidoqueen" }),
+      pokemon: makeActivePokemon({ ability: A.poisonPoint, nickname: "Nidoqueen" }),
       opponent: makeActivePokemon({ nickname: "Garchomp" }),
       trigger: "on-contact",
       rng: { next: () => 0.1 },
@@ -813,7 +836,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "poison",
+          status: S.poison,
         },
       ],
       messages: ["Nidoqueen's Poison Point poisoned the attacker!"],
@@ -822,8 +845,8 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
 
   it("given contact ability with opponent already statused, when contacted, then does not activate", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "static" }),
-      opponent: makeActivePokemon({ status: "burn" }),
+      pokemon: makeActivePokemon({ ability: C.static }),
+      opponent: makeActivePokemon({ status: S.burn }),
       trigger: "on-contact",
       rng: { next: () => 0.1 },
     });
@@ -834,7 +857,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
   it("given Rough Skin, when contacted, then deals 1/8 max HP chip damage", () => {
     // Source: Showdown data/abilities.ts -- Rough Skin: 1/8 max HP
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "rough-skin", nickname: "Garchomp" }),
+      pokemon: makeActivePokemon({ ability: A.roughSkin, nickname: "Garchomp" }),
       opponent: makeActivePokemon({ maxHp: 200, nickname: "Scizor" }),
       trigger: "on-contact",
     });
@@ -855,7 +878,7 @@ describe("handleGen9SwitchAbility -- on-contact", () => {
   it("given Iron Barbs, when contacted, then deals 1/8 max HP chip damage", () => {
     // Source: Showdown data/abilities.ts -- Iron Barbs: 1/8 max HP (same as Rough Skin)
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "iron-barbs", nickname: "Ferrothorn" }),
+      pokemon: makeActivePokemon({ ability: A.ironBarbs, nickname: "Ferrothorn" }),
       opponent: makeActivePokemon({ maxHp: 160, nickname: "Scizor" }),
       trigger: "on-contact",
     });
@@ -882,7 +905,7 @@ describe("handleGen9SwitchAbility -- on-status-inflicted", () => {
   it("given Synchronize with burn, when status inflicted, then passes burn to opponent", () => {
     // Source: Showdown data/abilities.ts -- Synchronize
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "synchronize", status: "burn", nickname: "Espeon" }),
+      pokemon: makeActivePokemon({ ability: A.synchronize, status: S.burn, nickname: "Espeon" }),
       opponent: makeActivePokemon({ nickname: "Garchomp" }),
       trigger: "on-status-inflicted",
     });
@@ -893,7 +916,7 @@ describe("handleGen9SwitchAbility -- on-status-inflicted", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "burn",
+          status: S.burn,
         },
       ],
       messages: ["Espeon's Synchronize passed the status!"],
@@ -903,8 +926,8 @@ describe("handleGen9SwitchAbility -- on-status-inflicted", () => {
   it("given Synchronize with paralysis, when status inflicted, then passes paralysis", () => {
     const ctx = makeAbilityContext({
       pokemon: makeActivePokemon({
-        ability: "synchronize",
-        status: "paralysis",
+        ability: A.synchronize,
+        status: S.paralysis,
         nickname: "Espeon",
       }),
       opponent: makeActivePokemon({ nickname: "Garchomp" }),
@@ -917,7 +940,7 @@ describe("handleGen9SwitchAbility -- on-status-inflicted", () => {
         {
           effectType: "status-inflict",
           target: "opponent",
-          status: "paralysis",
+          status: S.paralysis,
         },
       ],
       messages: ["Espeon's Synchronize passed the status!"],
@@ -927,7 +950,7 @@ describe("handleGen9SwitchAbility -- on-status-inflicted", () => {
   it("given Synchronize with sleep (non-sync-able status), when status inflicted, then does not pass", () => {
     // Synchronize only passes burn, poison, and paralysis
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "synchronize", status: "sleep" }),
+      pokemon: makeActivePokemon({ ability: A.synchronize, status: S.sleep }),
       opponent: makeActivePokemon({}),
       trigger: "on-status-inflicted",
     });
@@ -937,8 +960,8 @@ describe("handleGen9SwitchAbility -- on-status-inflicted", () => {
 
   it("given Synchronize when opponent already has status, when status inflicted, then does not pass", () => {
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "synchronize", status: "burn" }),
-      opponent: makeActivePokemon({ status: "paralysis" }),
+      pokemon: makeActivePokemon({ ability: A.synchronize, status: S.burn }),
+      opponent: makeActivePokemon({ status: S.paralysis }),
       trigger: "on-status-inflicted",
     });
     const result = handleGen9SwitchAbility("on-status-inflicted", ctx);
@@ -954,7 +977,7 @@ describe("handleGen9SwitchAbility -- on-turn-end", () => {
   it("given Speed Boost, when turn ends, then raises Speed by 1", () => {
     // Source: Showdown data/abilities.ts -- Speed Boost: +1 Speed at end of turn
     const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "speed-boost", nickname: "Ninjask" }),
+      pokemon: makeActivePokemon({ ability: C.speedBoost, nickname: "Ninjask" }),
       trigger: "on-turn-end",
     });
     const result = handleGen9SwitchAbility("on-turn-end", ctx);
@@ -980,53 +1003,40 @@ describe("handleGen9SwitchAbility -- on-turn-end", () => {
 describe("TRACE_UNCOPYABLE_ABILITIES", () => {
   it("includes Gen 9 additions (protosynthesis, quark-drive, orichalcum-pulse, hadron-engine)", () => {
     // Source: Showdown data/abilities.ts -- trace.onUpdate ban list
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("protosynthesis")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("quark-drive")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("orichalcum-pulse")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("hadron-engine")).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.protosynthesis)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.quarkDrive)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.orichalcumPulse)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.hadronEngine)).toBe(true);
   });
 
-  it("includes all 4 Embody Aspect variants", () => {
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("embody-aspect-teal")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("embody-aspect-hearthflame")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("embody-aspect-wellspring")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("embody-aspect-cornerstone")).toBe(true);
-  });
-
-  it("given the Trace uncopyable set, when checking classic entries, then it includes Trace, Illusion, and Imposter", () => {
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("trace")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("illusion")).toBe(true);
-    expect(TRACE_UNCOPYABLE_ABILITIES.has("imposter")).toBe(true);
+  it("includes trace, illusion, and imposter", () => {
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.trace)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.illusion)).toBe(true);
+    expect(TRACE_UNCOPYABLE_ABILITIES.has(A.imposter)).toBe(true);
   });
 });
 
 describe("UNSUPPRESSABLE_ABILITIES", () => {
   it("includes Gen 9 additions including good-as-gold", () => {
     // Source: Showdown data/abilities.ts -- cantsuppress
-    expect(UNSUPPRESSABLE_ABILITIES.has("protosynthesis")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("quark-drive")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("good-as-gold")).toBe(true);
+    expect(UNSUPPRESSABLE_ABILITIES.has(A.protosynthesis)).toBe(true);
+    expect(UNSUPPRESSABLE_ABILITIES.has(A.quarkDrive)).toBe(true);
+    expect(UNSUPPRESSABLE_ABILITIES.has(A.goodAsGold)).toBe(true);
   });
 
-  it("includes all 4 Embody Aspect variants", () => {
-    expect(UNSUPPRESSABLE_ABILITIES.has("embody-aspect-teal")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("embody-aspect-hearthflame")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("embody-aspect-wellspring")).toBe(true);
-    expect(UNSUPPRESSABLE_ABILITIES.has("embody-aspect-cornerstone")).toBe(true);
-  });
 });
 
 describe("MOLD_BREAKER_ALIASES", () => {
-  it("given the Mold Breaker aliases set, when checking contents, then it contains only mold-breaker, teravolt, and turboblaze", () => {
+  it("given the Mold Breaker aliases set, when checking contents, then it contains mold breaker, teravolt, and turboblaze", () => {
     // Source: Showdown data/abilities.ts -- moldbreaker/teravolt/turboblaze
-    expect(MOLD_BREAKER_ALIASES).toEqual(new Set(["mold-breaker", "teravolt", "turboblaze"]));
+    expect(MOLD_BREAKER_ALIASES).toEqual(new Set([C.moldBreaker, A.teravolt, A.turboblaze]));
   });
 });
 
 describe("SCREEN_CLEANER_SCREENS", () => {
-  it("given the Screen Cleaner screen set, when checking contents, then it contains only reflect, light-screen, and aurora-veil", () => {
+  it("given the Screen Cleaner screen set, when checking contents, then it contains reflect, light screen, and aurora veil", () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner onStart
-    expect(SCREEN_CLEANER_SCREENS).toEqual(["reflect", "light-screen", "aurora-veil"]);
+    expect(SCREEN_CLEANER_SCREENS).toEqual([SC.reflect, SC.lightScreen, M.auroraVeil]);
   });
 });
 
@@ -1035,41 +1045,41 @@ describe("SCREEN_CLEANER_SCREENS", () => {
 // ---------------------------------------------------------------------------
 
 describe("isMoldBreakerAbility", () => {
-  it("given mold-breaker, when checking, then returns true", () => {
-    expect(isMoldBreakerAbility("mold-breaker")).toBe(true);
+  it("given mold breaker, when checking the alias helper, then returns true", () => {
+    expect(isMoldBreakerAbility(C.moldBreaker)).toBe(true);
   });
 
   it("given teravolt, when checking, then returns true", () => {
-    expect(isMoldBreakerAbility("teravolt")).toBe(true);
+    expect(isMoldBreakerAbility(A.teravolt)).toBe(true);
   });
 
   it("given turboblaze, when checking, then returns true", () => {
-    expect(isMoldBreakerAbility("turboblaze")).toBe(true);
+    expect(isMoldBreakerAbility(A.turboblaze)).toBe(true);
   });
 
   it("given intimidate, when checking, then returns false", () => {
-    expect(isMoldBreakerAbility("intimidate")).toBe(false);
+    expect(isMoldBreakerAbility(C.intimidate)).toBe(false);
   });
 });
 
 describe("isSurgeAbility", () => {
   it("given electric-surge, when checking, then returns true", () => {
-    expect(isSurgeAbility("electric-surge")).toBe(true);
+    expect(isSurgeAbility(A.electricSurge)).toBe(true);
   });
 
   it("given grassy-surge, when checking, then returns true", () => {
-    expect(isSurgeAbility("grassy-surge")).toBe(true);
+    expect(isSurgeAbility(A.grassySurge)).toBe(true);
   });
 
   it("given psychic-surge, when checking, then returns true", () => {
-    expect(isSurgeAbility("psychic-surge")).toBe(true);
+    expect(isSurgeAbility(A.psychicSurge)).toBe(true);
   });
 
   it("given misty-surge, when checking, then returns true", () => {
-    expect(isSurgeAbility("misty-surge")).toBe(true);
+    expect(isSurgeAbility(A.mistySurge)).toBe(true);
   });
 
   it("given unrelated ability, when checking, then returns false", () => {
-    expect(isSurgeAbility("intimidate")).toBe(false);
+    expect(isSurgeAbility(C.intimidate)).toBe(false);
   });
 });
