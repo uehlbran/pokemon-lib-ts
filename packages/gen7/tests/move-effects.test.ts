@@ -1,7 +1,7 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   calculateSpikyShieldDamage,
   executeGen7MoveEffect,
@@ -13,6 +13,17 @@ import {
   isBlockedBySpikyShield,
   isGen7GrassPowderBlocked,
 } from "../src/Gen7MoveEffects";
+import { Gen7Ruleset } from "../src/Gen7Ruleset";
+
+const EMPTY_EFFECT_RESULT = {
+  statusInflicted: null,
+  volatileInflicted: null,
+  statChanges: [],
+  recoilDamage: 0,
+  healAmount: 0,
+  switchOut: false,
+  messages: [],
+};
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -180,14 +191,14 @@ describe("Gen7 King's Shield -- executeGen7MoveEffect", () => {
     const ctx = makeContext("kings-shield", { attacker: { consecutiveProtects: 3 } });
     const rng = new SeededRandom(42);
 
-    let capturedCount = -1;
+    const protectRollObservation = { count: -1 };
     const captureProtectRoll = (count: number, _rng: SeededRandom): boolean => {
-      capturedCount = count;
+      protectRollObservation.count = count;
       return true;
     };
 
     executeGen7MoveEffect(ctx, rng, captureProtectRoll);
-    expect(capturedCount).toBe(3);
+    expect(protectRollObservation.count).toBe(3);
   });
 });
 
@@ -336,14 +347,14 @@ describe("Gen7 Baneful Bunker -- executeGen7MoveEffect", () => {
     const ctx = makeContext("baneful-bunker", { attacker: { consecutiveProtects: 2 } });
     const rng = new SeededRandom(42);
 
-    let capturedCount = -1;
+    const protectRollObservation = { count: -1 };
     const captureProtectRoll = (count: number, _rng: SeededRandom): boolean => {
-      capturedCount = count;
+      protectRollObservation.count = count;
       return true;
     };
 
     executeGen7MoveEffect(ctx, rng, captureProtectRoll);
-    expect(capturedCount).toBe(2);
+    expect(protectRollObservation.count).toBe(2);
   });
 });
 
@@ -601,6 +612,8 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     // (before the Liquid Ooze check), so no recoil occurs when drain damage is zero.
     // Source: Showdown sim/battle-actions.ts -- drain only triggers when damage > 0
     expect(result).toBeNull();
+    expect(ctx.attacker.pokemon.heldItem).toBeNull();
+    expect(ctx.defender.ability).toBe("liquid-ooze");
   });
 
   it("given move without drain effect, when handling, then returns null", () => {
@@ -615,6 +628,9 @@ describe("Gen7 Drain Effects -- handleDrainEffect", () => {
     const result = handleDrainEffect(ctx);
 
     expect(result).toBeNull();
+    expect(ctx.move.effect).toBeNull();
+    // Source: test fixture above sets ctx.damage to 50; this confirms the no-drain path does not mutate it.
+    expect(ctx.damage).toBe(50);
   });
 
   it("given Leech Life dealing 120 damage with 50% drain, when handling, then heals 60 HP", () => {
@@ -686,6 +702,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
 
     // null means "not handled -- let engine handle normal damage"
     expect(result).toBeNull();
+    expect(ctx.attacker.volatileStatuses.has("flying")).toBe(true);
+    expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given Dig on charge turn, when used, then sets underground volatile and forcedMoveSet", () => {
@@ -778,8 +796,7 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.forcedMoveSet).toBeUndefined();
+    expect(result).toEqual(EMPTY_EFFECT_RESULT);
   });
 
   it("given Solar Blade on charge turn WITH sun, when used, then fires immediately (no forcedMoveSet)", () => {
@@ -799,8 +816,7 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.forcedMoveSet).toBeUndefined();
+    expect(result).toEqual(EMPTY_EFFECT_RESULT);
   });
 
   it("given Solar Blade on charge turn WITHOUT sun, when used, then sets charging volatile", () => {
@@ -870,6 +886,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).toBeNull();
+    expect(ctx.attacker.volatileStatuses.has("shadow-force-charging")).toBe(true);
+    expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given Shadow Force on charge turn, when used, then sets shadow-force-charging volatile", () => {
@@ -937,9 +955,10 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     const rng = new SeededRandom(42);
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
-    expect(result).not.toBeNull();
-    expect(result!.forcedMoveSet).toBeUndefined();
-    expect(result!.messages[0]).toContain("Power Herb");
+    expect(result).toEqual({
+      ...EMPTY_EFFECT_RESULT,
+      messages: ["Pidgeot became fully charged due to its Power Herb!"],
+    });
     // Power Herb is consumed (single-use)
     // Source: Showdown data/items.ts -- powerherb onTryMove: item is consumed after activation
     expect(ctx.attacker.pokemon.heldItem).toBeNull();
@@ -988,6 +1007,8 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
 
     // Should return null (no forced charge) to prevent slot-0 fallback executing wrong move
     expect(result).toBeNull();
+    expect(ctx.attacker.volatileStatuses.size).toBe(0);
+    expect(ctx.attacker.pokemon.moves).toEqual([{ moveId: "tackle" }, { moveId: "roost" }]);
   });
 });
 
@@ -1147,6 +1168,8 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).toBeNull();
+    expect(ctx.attacker.volatileStatuses.size).toBe(0);
+    expect(ctx.move.id).toBe("thunderbolt");
   });
 
   it("given Protect (handled by engine/BaseRuleset), when dispatch called, then returns null", () => {
@@ -1156,6 +1179,8 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     const result = executeGen7MoveEffect(ctx, rng, alwaysSucceedProtect);
 
     expect(result).toBeNull();
+    expect(ctx.attacker.volatileStatuses.size).toBe(0);
+    expect(ctx.move.id).toBe("protect");
   });
 });
 
@@ -1164,14 +1189,7 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
 // ===========================================================================
 
 describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
-  // Share a single Gen7Ruleset instance across all integration tests to avoid
-  // repeated construction (loads 807 Pokemon + 690 moves from JSON) causing
-  // test timeouts on slow CI runners.
-  let ruleset: import("../src/Gen7Ruleset").Gen7Ruleset;
-  beforeAll(async () => {
-    const { Gen7Ruleset } = await import("../src/Gen7Ruleset");
-    ruleset = new Gen7Ruleset();
-  });
+  const ruleset = new Gen7Ruleset();
 
   it("given Gen7Ruleset, when executing King's Shield, then returns kings-shield volatile", () => {
     // Source: Showdown mods/gen7/moves.ts -- kingsshield
@@ -1232,8 +1250,10 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     });
     const result = ruleset.executeMoveEffect(ctx);
 
-    expect(result.messages[0]).toContain("doesn't affect");
-    expect(result.statusInflicted).toBeNull();
+    expect(result).toEqual({
+      ...EMPTY_EFFECT_RESULT,
+      messages: ["It doesn't affect Bulbasaur..."],
+    });
   });
 
   it("given Gen7Ruleset, when executing Sleep Powder against non-Grass, then NOT blocked", () => {
