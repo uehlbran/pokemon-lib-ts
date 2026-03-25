@@ -1,6 +1,22 @@
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { createActivePokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
 
 /**
@@ -20,7 +36,21 @@ import { Gen9Ruleset } from "../src/Gen9Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeActive(
+const dataManager = createGen9DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS } as const;
+const itemIds = CORE_ITEM_IDS;
+const moveIds = GEN9_MOVE_IDS;
+const natureIds = GEN9_NATURE_IDS;
+const speciesIds = GEN9_SPECIES_IDS;
+const defaultSpecies = dataManager.getSpecies(speciesIds.bulbasaur);
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
+
+function createCanonicalMoveSlot(moveId: (typeof moveIds)[keyof typeof moveIds]) {
+  const move = dataManager.getMove(moveId);
+  return createMoveSlot(move.id, move.pp);
+}
+
+function createOnFieldPokemon(
   overrides: {
     speed?: number;
     ability?: string | null;
@@ -31,63 +61,54 @@ function makeActive(
     types?: PokemonType[];
     currentHp?: number;
     maxHp?: number;
+    speciesId?: number;
   } = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    pokemon: {
-      calculatedStats: {
-        hp: maxHp,
-        speed: overrides.speed ?? 100,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-      },
-      currentHp: overrides.currentHp ?? maxHp,
-      status: overrides.status ?? null,
-      heldItem: overrides.heldItem ?? null,
-      level: 50,
-      nickname: null,
-      speciesId: 25,
-      moves: overrides.moves ?? [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
-    },
-    ability: overrides.ability ?? null,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: overrides.speedStage ?? 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    types: overrides.types ?? ["electric"],
-    volatileStatuses: new Map(),
-    teamSlot: 0,
-    substituteHp: 0,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
-    suppressedAbility: null,
-  } as unknown as ActivePokemon;
+  const speciesRecord = overrides.speciesId
+    ? dataManager.getSpecies(overrides.speciesId)
+    : defaultSpecies;
+  const pokemon = createPokemonInstance(speciesRecord, 50, makeRng(), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: "normal1",
+    gender: "male",
+    isShiny: false,
+    moves: [moveIds.tackle],
+    heldItem: overrides.heldItem ?? null,
+    friendship: speciesRecord.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+  });
+
+  pokemon.moves = overrides.moves ?? [createCanonicalMoveSlot(moveIds.tackle)];
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    speed: overrides.speed ?? 100,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+  };
+
+  const active = createActivePokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...(speciesRecord.types as PokemonType[])],
+  );
+  active.ability = overrides.ability ?? abilityIds.none;
+  active.statStages.speed = overrides.speedStage ?? 0;
+  return active;
 }
 
-function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
+function createSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   return {
     index,
     trainer: null,
@@ -104,7 +125,7 @@ function makeSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeBattleState(sideA: BattleSide, sideB: BattleSide): BattleState {
+function createBattleState(sideA: BattleSide, sideB: BattleSide): BattleState {
   return {
     phase: "turn-end",
     generation: 9,
@@ -160,19 +181,19 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       // Both moves have base priority 0. Prankster boosts will-o-wisp to priority 1.
       // Prankster user should always go first regardless of speed.
 
-      const pranksterUser = makeActive({
-        ability: "prankster",
+      const pranksterUser = createOnFieldPokemon({
+        ability: abilityIds.prankster,
         speed: 50, // Slower to prove priority beats speed
-        moves: [{ moveId: "will-o-wisp", currentPP: 15, maxPP: 15 }],
+        moves: [createCanonicalMoveSlot(moveIds.willOWisp)],
       });
-      const opponent = makeActive({
+      const opponent = createOnFieldPokemon({
         speed: 200, // Faster, but lower priority
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [pranksterUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createSide(0, [pranksterUser]);
+      const sideB = createSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -195,19 +216,19 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       // Prankster does not boost physical/special moves.
       // Faster opponent should go first.
 
-      const pranksterUser = makeActive({
-        ability: "prankster",
+      const pranksterUser = createOnFieldPokemon({
+        ability: abilityIds.prankster,
         speed: 50, // Slower
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
-      const opponent = makeActive({
+      const opponent = createOnFieldPokemon({
         speed: 200, // Faster
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [pranksterUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createSide(0, [pranksterUser]);
+      const sideB = createSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -237,22 +258,22 @@ describe("Gen9Ruleset.resolveTurnOrder -- Gale Wings priority boost (#783)", () 
       // Source: Showdown data/abilities.ts -- Gale Wings: +1 to Flying moves at full HP (Gen 7+)
       // Brave Bird has base priority 0; Gale Wings boosts it to +1.
 
-      const galeWingsUser = makeActive({
-        ability: "gale-wings",
+      const galeWingsUser = createOnFieldPokemon({
+        speciesId: speciesIds.charizard,
+        ability: abilityIds.galeWings,
         speed: 50, // Slower to prove priority beats speed
-        moves: [{ moveId: "brave-bird", currentPP: 15, maxPP: 15 }],
-        types: ["normal", "flying"],
+        moves: [createCanonicalMoveSlot(moveIds.braveBird)],
         currentHp: 200,
         maxHp: 200,
       });
-      const opponent = makeActive({
+      const opponent = createOnFieldPokemon({
         speed: 200, // Faster, but lower priority
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [galeWingsUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createSide(0, [galeWingsUser]);
+      const sideB = createSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -274,22 +295,22 @@ describe("Gen9Ruleset.resolveTurnOrder -- Gale Wings priority boost (#783)", () 
       // Source: Showdown data/abilities.ts -- Gale Wings: requires pokemon.hp === pokemon.maxhp
       // In Gen 7+, Gale Wings only works at full HP.
 
-      const galeWingsUser = makeActive({
-        ability: "gale-wings",
+      const galeWingsUser = createOnFieldPokemon({
+        speciesId: speciesIds.charizard,
+        ability: abilityIds.galeWings,
         speed: 50, // Slower
-        moves: [{ moveId: "brave-bird", currentPP: 15, maxPP: 15 }],
-        types: ["normal", "flying"],
+        moves: [createCanonicalMoveSlot(moveIds.braveBird)],
         currentHp: 150, // Not at full HP
         maxHp: 200,
       });
-      const opponent = makeActive({
+      const opponent = createOnFieldPokemon({
         speed: 200, // Faster
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [galeWingsUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createSide(0, [galeWingsUser]);
+      const sideB = createSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -321,19 +342,19 @@ describe("Gen9Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
       // Quick Attack has base priority 1.
       // Triage user should go first (3 > 1).
 
-      const triageUser = makeActive({
-        ability: "triage",
+      const triageUser = createOnFieldPokemon({
+        ability: abilityIds.triage,
         speed: 50, // Slower to prove priority beats speed
-        moves: [{ moveId: "drain-punch", currentPP: 10, maxPP: 10 }],
+        moves: [createCanonicalMoveSlot(moveIds.drainPunch)],
       });
-      const opponent = makeActive({
+      const opponent = createOnFieldPokemon({
         speed: 200, // Faster, but Quick Attack only has +1 priority
-        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30 }],
+        moves: [createCanonicalMoveSlot(moveIds.quickAttack)],
       });
 
-      const sideA = makeSide(0, [triageUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createSide(0, [triageUser]);
+      const sideB = createSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -355,19 +376,19 @@ describe("Gen9Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
       // Source: Showdown data/abilities.ts -- Triage only for move.flags.heal
       // Tackle is not a healing move; Triage should not boost it.
 
-      const triageUser = makeActive({
-        ability: "triage",
+      const triageUser = createOnFieldPokemon({
+        ability: abilityIds.triage,
         speed: 50, // Slower
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
-      const opponent = makeActive({
+      const opponent = createOnFieldPokemon({
         speed: 200, // Faster
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+        moves: [createCanonicalMoveSlot(moveIds.tackle)],
       });
 
-      const sideA = makeSide(0, [triageUser]);
-      const sideB = makeSide(1, [opponent]);
-      const state = makeBattleState(sideA, sideB);
+      const sideA = createSide(0, [triageUser]);
+      const sideB = createSide(1, [opponent]);
+      const state = createBattleState(sideA, sideB);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0, target: 1 },
