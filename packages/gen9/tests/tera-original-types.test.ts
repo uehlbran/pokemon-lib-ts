@@ -15,11 +15,14 @@
 
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { ALL_NATURES, CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen9DataManager, GEN9_ITEM_IDS, GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "../src";
 import { calculateGen9Damage } from "../src/Gen9DamageCalc";
 import { Gen9Terastallization } from "../src/Gen9Terastallization";
 import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
+
+const dataManager = createGen9DataManager();
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as terastallization.test.ts)
@@ -36,16 +39,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test-pokemon",
-      speciesId: 6,
+      speciesId: GEN9_SPECIES_IDS.charizard,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: ALL_NATURES[0].id,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      ability: overrides.ability ?? "blaze",
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      ability: overrides.ability ?? CORE_ABILITY_IDS.blaze,
       abilitySlot: "normal1" as const,
       heldItem: null,
       status: null,
@@ -56,7 +59,7 @@ function makeActive(overrides: {
       metLevel: 50,
       originalTrainer: "Test",
       originalTrainerId: 0,
-      pokeball: "poke-ball",
+      pokeball: GEN9_ITEM_IDS.pokeBall,
       teraType: overrides.teraType,
       calculatedStats: {
         hp: 200,
@@ -79,8 +82,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["fire", "flying"],
-    ability: overrides.ability ?? "blaze",
+    types: overrides.types ?? [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.blaze,
     suppressedAbility: null,
     itemKnockedOff: false,
     lastMoveUsed: null,
@@ -146,8 +149,8 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     // Source: Showdown sim/battle-actions.ts:1770-1785 -- teraOriginalTypes stores pre-Tera typing
     // Before fix: teraOriginalTypes was set AFTER changing pokemon.types, so it stored [fire] instead.
     const pokemon = makeActive({
-      types: ["water", "ground"],
-      teraType: "fire",
+      types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.ground],
+      teraType: CORE_TYPE_IDS.fire,
     });
     const side = makeSide();
     const state = makeState();
@@ -155,18 +158,18 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     tera.activate(pokemon, side, state);
 
     // After activation: pokemon.types should be [fire] (defensive type change)
-    expect(pokemon.types).toEqual(["fire"]);
+    expect(pokemon.types).toEqual([CORE_TYPE_IDS.fire]);
     // teraOriginalTypes stores the ORIGINAL pre-Tera types
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "ground"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.water, CORE_TYPE_IDS.ground]);
     // teraTypes stores the resolved defensive type (non-Stellar: [teraType])
-    expect(pokemon.pokemon.teraTypes).toEqual(["fire"]);
+    expect(pokemon.pokemon.teraTypes).toEqual([CORE_TYPE_IDS.fire]);
   });
 
   it("given a pure Fire Pokemon Terastallizes into Dragon, when getOriginalTypes is checked via teraOriginalTypes, then returns [fire] (pre-Tera type)", () => {
     // Source: Showdown sim/battle-actions.ts -- teraOriginalTypes stores original species types
     const pokemon = makeActive({
-      types: ["fire"],
-      teraType: "dragon",
+      types: [CORE_TYPE_IDS.fire],
+      teraType: CORE_TYPE_IDS.dragon,
     });
     const side = makeSide();
     const state = makeState();
@@ -174,19 +177,19 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     tera.activate(pokemon, side, state);
 
     // Defensive type changes to [dragon]
-    expect(pokemon.types).toEqual(["dragon"]);
+    expect(pokemon.types).toEqual([CORE_TYPE_IDS.dragon]);
     // teraOriginalTypes stores pre-Tera [fire]
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.fire]);
     // teraTypes stores the resolved defensive type (non-Stellar: [teraType])
-    expect(pokemon.pokemon.teraTypes).toEqual(["dragon"]);
+    expect(pokemon.pokemon.teraTypes).toEqual([CORE_TYPE_IDS.dragon]);
   });
 
   it("given a Grass/Poison Pokemon Terastallizes into Grass (same type), when getOriginalTypes is checked, then teraOriginalTypes is [grass, poison] (not just [grass])", () => {
     // Source: Showdown sim/battle.ts -- even when Tera type matches one of the original types,
     // the original dual typing must be preserved for STAB calc.
     const pokemon = makeActive({
-      types: ["grass", "poison"],
-      teraType: "grass",
+      types: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
+      teraType: CORE_TYPE_IDS.grass,
     });
     const side = makeSide();
     const state = makeState();
@@ -194,18 +197,18 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     tera.activate(pokemon, side, state);
 
     // Defensive type: single Tera type
-    expect(pokemon.types).toEqual(["grass"]);
+    expect(pokemon.types).toEqual([CORE_TYPE_IDS.grass]);
     // teraOriginalTypes: original dual types preserved
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["grass", "poison"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison]);
     // teraTypes stores the resolved defensive type (non-Stellar: [teraType])
-    expect(pokemon.pokemon.teraTypes).toEqual(["grass"]);
+    expect(pokemon.pokemon.teraTypes).toEqual([CORE_TYPE_IDS.grass]);
   });
 
   it("given a Fire/Flying Pokemon Terastallizes into Stellar, when getOriginalTypes is checked, then teraOriginalTypes is [fire, flying] and pokemon.types is unchanged", () => {
     // Source: Showdown sim/pokemon.ts -- Stellar Tera retains original defensive types
     // teraOriginalTypes stores original types; teraTypes mirrors originalTypes for Stellar
     const pokemon = makeActive({
-      types: ["fire", "flying"],
+      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
       // "stellar" is a valid Gen 9 Tera type but is not in the PokemonType union
       // (it has no type chart entry and is Gen 9-specific). Cast mirrors the
       // Gen9Terastallization.ts pattern — same rationale as (teraType as string) checks there.
@@ -217,11 +220,11 @@ describe("#756 — Gen9 Terastallization stores pre-Tera types in teraOriginalTy
     tera.activate(pokemon, side, state);
 
     // Stellar: types unchanged
-    expect(pokemon.types).toEqual(["fire", "flying"]);
+    expect(pokemon.types).toEqual([CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     // teraOriginalTypes: original types captured before the (non-)change
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire", "flying"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
     // teraTypes: Stellar resolves to originalTypes (same as teraOriginalTypes)
-    expect(pokemon.pokemon.teraTypes).toEqual(["fire", "flying"]);
+    expect(pokemon.pokemon.teraTypes).toEqual([CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
   });
 });
 
@@ -247,16 +250,16 @@ function makeDmgActive(overrides: {
   return {
     pokemon: {
       uid: "dmg-test",
-      speciesId: 130,
+      speciesId: GEN9_SPECIES_IDS.gyarados,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: ALL_NATURES[0].id,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
       moves: [],
-      ability: "none",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: null,
       status: null,
@@ -267,7 +270,7 @@ function makeDmgActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "poke-ball",
+      pokeball: GEN9_ITEM_IDS.pokeBall,
       teraType: overrides.teraType ?? null,
       calculatedStats: {
         hp: 200,
@@ -291,8 +294,8 @@ function makeDmgActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: "none",
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    ability: CORE_ABILITY_IDS.none,
     suppressedAbility: null,
     itemKnockedOff: false,
     lastMoveUsed: null,
@@ -316,41 +319,13 @@ function makeDmgActive(overrides: {
 }
 
 function makeDmgMove(type: PokemonType, power = 80): MoveData {
-  return {
-    id: `${type}-move`,
-    displayName: `${type} Move`,
-    type,
-    category: "physical",
-    power,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 9,
-    critRatio: 0,
-    hasCrashDamage: false,
-  } as MoveData;
+  const moveId =
+    type === CORE_TYPE_IDS.water
+      ? GEN9_MOVE_IDS.surf
+      : type === CORE_TYPE_IDS.fire
+        ? GEN9_MOVE_IDS.flamethrower
+        : CORE_MOVE_IDS.tackle;
+  return { ...dataManager.getMove(moveId), power } as MoveData;
 }
 
 function makeDmgState(): BattleState {
@@ -379,8 +354,8 @@ describe("calculateGen9Damage — teraOriginalTypes cross-type STAB pipeline", (
     // Water/Flying Tera'd to Fire: Tera type = Fire, originalTypes = [water, flying].
     // Water move: matches teraOriginalTypes[0] but NOT teraType -- cross-type STAB = 1.5x.
     const pokemon = makeDmgActive({
-      types: ["water", "flying"],
-      teraType: "fire",
+      types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying],
+      teraType: CORE_TYPE_IDS.fire,
     });
     const side = makeSide(0);
     const state = makeDmgState();
@@ -389,12 +364,12 @@ describe("calculateGen9Damage — teraOriginalTypes cross-type STAB pipeline", (
     tera.activate(pokemon, side, state);
 
     // After activation: types = ["fire"], teraOriginalTypes = ["water", "flying"]
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "flying"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying]);
 
     const ctx: DamageContext = {
       attacker: pokemon,
-      defender: makeDmgActive({ types: ["normal"], defense: 100 }),
-      move: makeDmgMove("water", 80),
+      defender: makeDmgActive({ types: [CORE_TYPE_IDS.normal], defense: 100 }),
+      move: { ...dataManager.getMove(GEN9_MOVE_IDS.surf), power: 80 } as MoveData,
       state,
       rng: new SeededRandom(42),
       isCrit: false,
@@ -412,20 +387,20 @@ describe("calculateGen9Damage — teraOriginalTypes cross-type STAB pipeline", (
     // Fire Pokemon Tera'd into Fire: teraOriginalTypes = [fire], teraType = fire.
     // Fire move matches BOTH teraOriginalTypes and teraType → 2.0x enhanced STAB.
     const pokemon = makeDmgActive({
-      types: ["fire"],
-      teraType: "fire",
+      types: [CORE_TYPE_IDS.fire],
+      teraType: CORE_TYPE_IDS.fire,
     });
     const side = makeSide(0);
     const state = makeDmgState();
 
     tera.activate(pokemon, side, state);
 
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["fire"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.fire]);
 
     const ctx: DamageContext = {
       attacker: pokemon,
-      defender: makeDmgActive({ types: ["normal"], defense: 100 }),
-      move: makeDmgMove("fire", 80),
+      defender: makeDmgActive({ types: [CORE_TYPE_IDS.normal], defense: 100 }),
+      move: { ...dataManager.getMove(GEN9_MOVE_IDS.flamethrower), power: 80 } as MoveData,
       state,
       rng: new SeededRandom(42),
       isCrit: false,
@@ -440,20 +415,20 @@ describe("calculateGen9Damage — teraOriginalTypes cross-type STAB pipeline", (
     // Water/Flying Tera'd to Fire: teraOriginalTypes = [water, flying], teraType = fire.
     // Fire move: matches teraType but NOT teraOriginalTypes → standard Tera STAB = 1.5x.
     const pokemon = makeDmgActive({
-      types: ["water", "flying"],
-      teraType: "fire",
+      types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying],
+      teraType: CORE_TYPE_IDS.fire,
     });
     const side = makeSide(0);
     const state = makeDmgState();
 
     tera.activate(pokemon, side, state);
 
-    expect(pokemon.pokemon.teraOriginalTypes).toEqual(["water", "flying"]);
+    expect(pokemon.pokemon.teraOriginalTypes).toEqual([CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying]);
 
     const ctx: DamageContext = {
       attacker: pokemon,
-      defender: makeDmgActive({ types: ["normal"], defense: 100 }),
-      move: makeDmgMove("fire", 80),
+      defender: makeDmgActive({ types: [CORE_TYPE_IDS.normal], defense: 100 }),
+      move: { ...dataManager.getMove(GEN9_MOVE_IDS.flamethrower), power: 80 } as MoveData,
       state,
       rng: new SeededRandom(42),
       isCrit: false,
