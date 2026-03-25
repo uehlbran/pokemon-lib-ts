@@ -1,8 +1,17 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { Gender, PokemonInstance, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
-import { ALL_NATURES, SeededRandom, createPokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_HAZARD_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import { createGen4DataManager, GEN4_ABILITY_IDS, GEN4_MOVE_IDS, GEN4_SPECIES_IDS } from "../src";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
 // ---------------------------------------------------------------------------
@@ -10,82 +19,31 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 // ---------------------------------------------------------------------------
 
 const GEN4_DATA = createGen4DataManager();
-const GEN4_ABILITIES = GEN4_DATA.getAllAbilities();
-const GEN4_SPECIES = GEN4_DATA.getAllSpecies();
 
 const DEFAULT_NATURE_ID = ALL_NATURES[0]!.id;
-const DEFAULT_SPECIES_ID = findSpeciesId("Mewtwo");
+const DEFAULT_SPECIES_ID = GEN4_SPECIES_IDS.mewtwo;
 const DEFAULT_POKEBALL = GEN4_DATA.getSpecies(DEFAULT_SPECIES_ID).pokeball;
 
-const TYPE_IDS = {
-  flying: "flying",
-  fire: "fire",
-  ground: "ground",
-  normal: "normal",
-  poison: "poison",
-  steel: "steel",
-} as const;
-
-const STATUS_IDS = {
-  badlyPoisoned: "badly-poisoned",
-  poison: "poison",
-} as const;
-
-const MOVE_CATEGORIES = {
-  physical: "physical",
-  special: "special",
-  status: "status",
-} as const;
-
-const MOVE_IDS = {
-  tackle: "tackle",
-} as const;
-
-const ABILITY_IDS = {
-  compoundEyes: abilityId("Compound Eyes"),
-  levitate: abilityId("Levitate"),
-  noGuard: abilityId("No Guard"),
-} as const;
-
-const HAZARD_IDS = {
-  spikes: "spikes",
-  stealthRock: "stealth-rock",
-  toxicSpikes: "toxic-spikes",
-} as const;
-
-const GENDER_IDS = {
-  female: "female",
-  genderless: "genderless",
-  male: "male",
-} as const;
+const TYPE_IDS = CORE_TYPE_IDS;
+const STATUS_IDS = CORE_STATUS_IDS;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
+const MOVE_IDS = GEN4_MOVE_IDS;
+const ABILITY_IDS = GEN4_ABILITY_IDS;
+const HAZARD_IDS = CORE_HAZARD_IDS;
 
 function createRuleset(): Gen4Ruleset {
   return new Gen4Ruleset(GEN4_DATA);
 }
 
-function findId(entries: readonly { id: string | number; displayName: string }[], displayName: string): string | number {
-  const entry = entries.find((candidate) => candidate.displayName === displayName);
-  if (!entry) {
-    throw new Error(`Missing Gen 4 data entry: ${displayName}`);
-  }
-  return entry.id;
-}
-
-function findSpeciesId(displayName: string): number {
-  return findId(GEN4_SPECIES, displayName) as number;
-}
-
-function abilityId(displayName: string): string {
-  return String(findId(GEN4_ABILITIES, displayName));
-}
-
-function createPokemonInstanceFixture(overrides: {
-  maxHp?: number;
-  status?: PokemonInstance["status"];
-  heldItem?: string | null;
-  gender?: Gender;
-  speciesId?: number;
-} = {}): PokemonInstance {
+function createPokemonInstanceFixture(
+  overrides: {
+    maxHp?: number;
+    status?: PokemonInstance["status"];
+    heldItem?: string | null;
+    gender?: Gender;
+    speciesId?: number;
+  } = {},
+): PokemonInstance {
   const species = GEN4_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
   const maxHp = overrides.maxHp ?? 200;
   const pokemon = createPokemonInstance(species, 50, new SeededRandom(36), {
@@ -109,15 +67,17 @@ function createPokemonInstanceFixture(overrides: {
   return pokemon;
 }
 
-function createActivePokemonFixture(overrides: {
-  maxHp?: number;
-  status?: PokemonInstance["status"];
-  types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  gender?: Gender;
-  speciesId?: number;
-} = {}): ActivePokemon {
+function createActivePokemonFixture(
+  overrides: {
+    maxHp?: number;
+    status?: PokemonInstance["status"];
+    types?: PokemonType[];
+    ability?: string;
+    heldItem?: string | null;
+    gender?: Gender;
+    speciesId?: number;
+  } = {},
+): ActivePokemon {
   const species = GEN4_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
   const pokemon = createPokemonInstanceFixture({
     maxHp: overrides.maxHp,
@@ -129,15 +89,7 @@ function createActivePokemonFixture(overrides: {
   return {
     pokemon,
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
     types: overrides.types ?? [...species.types],
     ability: overrides.ability ?? pokemon.ability,
@@ -308,7 +260,11 @@ describe("Gen4Ruleset applyEntryHazards — Spikes", () => {
   it("given a Levitate Pokemon and Spikes, when switching in, then takes 0 damage (immune)", () => {
     // Source: pret/pokeplatinum — Levitate ability grants Ground immunity, including Spikes
     const ruleset = createRuleset();
-    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal], ability: ABILITY_IDS.levitate });
+    const mon = createActivePokemonFixture({
+      maxHp: 200,
+      types: [TYPE_IDS.normal],
+      ability: ABILITY_IDS.levitate,
+    });
     const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.spikes, layers: 3 }]);
 
     const result = ruleset.applyEntryHazards(
@@ -409,9 +365,9 @@ function createAccuracyContextFixture(overrides: {
   defenderAbility?: string;
   accStage?: number;
   evaStage?: number;
-  weather?: string | null;
+  weather?: WeatherType | null;
   attackerItem?: string | null;
-  moveCategory?: "physical" | "special" | "status";
+  moveCategory?: (typeof MOVE_CATEGORIES)[keyof typeof MOVE_CATEGORIES];
 }): AccuracyContext {
   const attacker = createActivePokemonFixture({ ability: overrides.attackerAbility });
   const defender = createActivePokemonFixture({ ability: overrides.defenderAbility });
@@ -451,14 +407,20 @@ describe("Gen4Ruleset doesMoveHit", () => {
   it("given attacker with No Guard ability, when doesMoveHit, then always returns true", () => {
     // Source: Bulbapedia — No Guard: all moves used by or against the user always hit
     const ruleset = createRuleset();
-    const ctx = createAccuracyContextFixture({ attackerAbility: ABILITY_IDS.noGuard, moveAccuracy: 50 });
+    const ctx = createAccuracyContextFixture({
+      attackerAbility: ABILITY_IDS.noGuard,
+      moveAccuracy: 50,
+    });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
   it("given defender with No Guard ability, when doesMoveHit, then always returns true", () => {
     // Source: Bulbapedia — No Guard: all moves used by or against the user always hit
     const ruleset = createRuleset();
-    const ctx = createAccuracyContextFixture({ defenderAbility: ABILITY_IDS.noGuard, moveAccuracy: 50 });
+    const ctx = createAccuracyContextFixture({
+      defenderAbility: ABILITY_IDS.noGuard,
+      moveAccuracy: 50,
+    });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
@@ -471,7 +433,11 @@ describe("Gen4Ruleset doesMoveHit", () => {
     const _ctx = createAccuracyContextFixture({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
     // With 100% accuracy at stage 0, the move always hits
     const results = Array.from({ length: 20 }, (_, i) => {
-      const localCtx = createAccuracyContextFixture({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
+      const localCtx = createAccuracyContextFixture({
+        moveAccuracy: 100,
+        accStage: 0,
+        evaStage: 0,
+      });
       (localCtx as { rng: unknown }).rng = new SeededRandom(i + 1);
       return ruleset.doesMoveHit(localCtx);
     });
@@ -487,7 +453,11 @@ describe("Gen4Ruleset doesMoveHit", () => {
     // With Compound Eyes:    74 <= 91 → hit
     const ruleset = createRuleset();
 
-    const ctxStandard = createAccuracyContextFixture({ moveAccuracy: 70, accStage: 0, evaStage: 0 });
+    const ctxStandard = createAccuracyContextFixture({
+      moveAccuracy: 70,
+      accStage: 0,
+      evaStage: 0,
+    });
     (ctxStandard as { rng: unknown }).rng = new SeededRandom(2);
     expect(ruleset.doesMoveHit(ctxStandard)).toBe(false);
 
