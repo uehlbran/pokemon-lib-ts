@@ -6,9 +6,14 @@ import type {
   PokemonType,
   StatBlock,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager } from "../../src/data";
-import { Gen3Ruleset } from "../../src/Gen3Ruleset";
+import { createGen3DataManager, GEN3_MOVE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 
 /**
  * Gen 3 Two-Turn Moves, Focus Punch, and Semi-Invulnerable Targeting Tests
@@ -33,9 +38,16 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
+function createMoveInstances(move: MoveData, currentPp = move.pp): MoveInstance[] {
+  return [{ moveId: move.id, currentPp, maxPp: move.pp }] as MoveInstance[];
+}
+
+const UNDERWATER_VOLATILE = "underwater" as const;
+
 function createActivePokemon(opts: {
   types: PokemonType[];
   nickname?: string | null;
+  speciesId?: number;
   moves?: MoveInstance[];
   lastDamageTaken?: number;
   lastDamageCategory?: "physical" | "special" | "status" | null;
@@ -52,7 +64,7 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: opts.speciesId ?? GEN3_SPECIES_IDS.breloom,
     nickname: opts.nickname ?? null,
     level: 50,
     experience: 0,
@@ -177,32 +189,33 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
   it("given SolarBeam with sunny weather, when executeMoveEffect is called, then does NOT return forcedMoveSet", () => {
     // Source: pret/pokeemerald — SolarBeam not charging in sunny weather
     // Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
+    const move = dataManager.getMove(GEN3_MOVE_IDS.solarBeam);
     const attacker = createActivePokemon({
-      types: ["grass"],
-      moves: [{ moveId: "solar-beam", currentPp: 10, maxPp: 10 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.grass],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("solar-beam");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move, {
-      type: "sun",
+      type: CORE_WEATHER_IDS.sun,
       turnsLeft: 3,
-      source: "sunny-day",
+      source: GEN3_MOVE_IDS.sunnyDay,
     });
 
     const result = ruleset.executeMoveEffect(context);
 
     // SolarBeam in sun skips charge — no forcedMoveSet
     expect(result.forcedMoveSet).toBeUndefined();
+    expect(result.messages).toEqual([]);
   });
 
-  it("given SolarBeam without sun, when executeMoveEffect is called, then returns forcedMoveSet with volatile 'charging'", () => {
+  it("given SolarBeam without sun, when executeMoveEffect is called, then returns forcedMoveSet on the charge turn", () => {
     // Source: pret/pokeemerald — SolarBeam charges for one turn without sun
+    const move = dataManager.getMove(GEN3_MOVE_IDS.solarBeam);
     const attacker = createActivePokemon({
-      types: ["grass"],
-      moves: [{ moveId: "solar-beam", currentPp: 10, maxPp: 10 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.grass],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("solar-beam");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move); // no weather
 
     const result = ruleset.executeMoveEffect(context);
@@ -210,90 +223,90 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
     // Source: pret/pokeemerald — SolarBeam charges with "charging" volatile
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "solar-beam",
-      volatileStatus: "charging",
+      moveId: GEN3_MOVE_IDS.solarBeam,
+      volatileStatus: CORE_VOLATILE_IDS.charging,
     });
     expect(result.messages).toContain("The Pokemon is absorbing sunlight!");
   });
 
-  it("given Fly, when executeMoveEffect is called, then returns forcedMoveSet with volatile 'flying'", () => {
+  it("given Fly, when executeMoveEffect is called, then returns forcedMoveSet on the semi-invulnerable turn", () => {
     // Source: pret/pokeemerald — Fly sets "flying" semi-invulnerable volatile
     // Source: Bulbapedia — "Fly allows the user to fly up high on the first turn,
     //   becoming semi-invulnerable, and attack on the second turn."
+    const move = dataManager.getMove(GEN3_MOVE_IDS.fly);
     const attacker = createActivePokemon({
-      types: ["flying"],
-      moves: [{ moveId: "fly", currentPp: 15, maxPp: 15 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.flying],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("fly");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "fly",
-      volatileStatus: "flying",
+      moveId: GEN3_MOVE_IDS.fly,
+      volatileStatus: CORE_VOLATILE_IDS.flying,
     });
     expect(result.messages).toContain("The Pokemon flew up high!");
   });
 
-  it("given Dig, when executeMoveEffect is called, then returns forcedMoveSet with volatile 'underground'", () => {
+  it("given Dig, when executeMoveEffect is called, then returns forcedMoveSet on the underground turn", () => {
     // Source: pret/pokeemerald — Dig sets "underground" semi-invulnerable volatile
+    const move = dataManager.getMove(GEN3_MOVE_IDS.dig);
     const attacker = createActivePokemon({
-      types: ["ground"],
-      moves: [{ moveId: "dig", currentPp: 10, maxPp: 10 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.ground],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("dig");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "dig",
-      volatileStatus: "underground",
+      moveId: GEN3_MOVE_IDS.dig,
+      volatileStatus: CORE_VOLATILE_IDS.underground,
     });
     expect(result.messages).toContain("The Pokemon dug underground!");
   });
 
-  it("given Dive, when executeMoveEffect is called, then returns forcedMoveSet with volatile 'underwater'", () => {
+  it("given Dive, when executeMoveEffect is called, then returns forcedMoveSet on the underwater turn", () => {
     // Source: pret/pokeemerald — Dive sets "underwater" semi-invulnerable volatile
+    const move = dataManager.getMove(GEN3_MOVE_IDS.dive);
     const attacker = createActivePokemon({
-      types: ["water"],
-      moves: [{ moveId: "dive", currentPp: 10, maxPp: 10 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.water],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("dive");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "dive",
-      volatileStatus: "underwater",
+      moveId: GEN3_MOVE_IDS.dive,
+      volatileStatus: UNDERWATER_VOLATILE,
     });
     expect(result.messages).toContain("The Pokemon dived underwater!");
   });
 
-  it("given Skull Bash, when executeMoveEffect is called, then returns forcedMoveSet with volatile 'charging'", () => {
+  it("given Skull Bash, when executeMoveEffect is called, then returns forcedMoveSet on the charge turn", () => {
     // Source: pret/pokeemerald — Skull Bash charges with generic "charging" volatile
+    const move = dataManager.getMove(GEN3_MOVE_IDS.skullBash);
     const attacker = createActivePokemon({
-      types: ["normal"],
-      moves: [{ moveId: "skull-bash", currentPp: 10, maxPp: 10 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.normal],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("skull-bash");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "skull-bash",
-      volatileStatus: "charging",
+      moveId: GEN3_MOVE_IDS.skullBash,
+      volatileStatus: CORE_VOLATILE_IDS.charging,
     });
     expect(result.messages).toContain("The Pokemon lowered its head!");
   });
@@ -301,16 +314,16 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
   it("given SolarBeam in rain, when executeMoveEffect is called, then charges normally (not skipped)", () => {
     // Source: pret/pokeemerald — SolarBeam only skips charge in sun, not in other weather
     // Triangulation: verify rain does NOT skip the charge
+    const move = dataManager.getMove(GEN3_MOVE_IDS.solarBeam);
     const attacker = createActivePokemon({
-      types: ["grass"],
-      moves: [{ moveId: "solar-beam", currentPp: 10, maxPp: 10 }] as MoveInstance[],
+      types: [CORE_TYPE_IDS.grass],
+      moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("solar-beam");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move, {
-      type: "rain",
+      type: CORE_WEATHER_IDS.rain,
       turnsLeft: 3,
-      source: "rain-dance",
+      source: GEN3_MOVE_IDS.rainDance,
     });
 
     const result = ruleset.executeMoveEffect(context);
@@ -318,9 +331,10 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
     // Rain does NOT skip charge — should still get forcedMoveSet
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
-      moveId: "solar-beam",
-      volatileStatus: "charging",
+      moveId: GEN3_MOVE_IDS.solarBeam,
+      volatileStatus: CORE_VOLATILE_IDS.charging,
     });
+    expect(result.messages).toContain("The Pokemon is absorbing sunlight!");
   });
 });
 
@@ -329,13 +343,13 @@ describe("Gen 3 Focus Punch", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Focus Punch/Bide check
     // Source: Bulbapedia — "Focus Punch fails if the user is hit before it attacks"
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       nickname: "Breloom",
       lastDamageTaken: 50,
       lastDamageCategory: "physical",
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("focus-punch");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = dataManager.getMove(GEN3_MOVE_IDS.focusPunch);
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
@@ -350,32 +364,30 @@ describe("Gen 3 Focus Punch", () => {
     // Source: pret/pokeemerald — Focus Punch succeeds when user was not hit
     // Source: Bulbapedia — "If the user is not hit, Focus Punch will execute normally."
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       nickname: "Breloom",
       lastDamageTaken: 0,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("focus-punch");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = dataManager.getMove(GEN3_MOVE_IDS.focusPunch);
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
-    // No failure message — move proceeds normally
-    const hasFailMessage = result.messages.some((m) => m.includes("lost its focus"));
-    expect(hasFailMessage).toBe(false);
+    expect(result.messages).toEqual([]);
   });
 
   it("given Focus Punch and attacker took special damage, when move executes, then still fails", () => {
     // Source: pret/pokeemerald — Focus Punch checks ANY damage taken, not just physical
     // Triangulation: verify special damage also triggers failure
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
       nickname: "Machamp",
       lastDamageTaken: 30,
       lastDamageCategory: "special",
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("focus-punch");
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = dataManager.getMove(GEN3_MOVE_IDS.focusPunch);
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
@@ -385,68 +397,86 @@ describe("Gen 3 Focus Punch", () => {
 });
 
 describe("Gen 3 Semi-Invulnerable Targeting", () => {
-  it("given Thunder vs 'flying' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Thunder vs the Fly volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Thunder can hit Fly targets
     // Source: Bulbapedia — "Thunder can hit a Pokémon during the semi-invulnerable turn of Fly"
-    expect(ruleset.canHitSemiInvulnerable("thunder", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.thunder, CORE_VOLATILE_IDS.flying)).toBe(
+      true,
+    );
   });
 
-  it("given Twister vs 'flying' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Twister vs the Fly volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Twister can hit Fly targets
-    expect(ruleset.canHitSemiInvulnerable("twister", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.twister, CORE_VOLATILE_IDS.flying)).toBe(
+      true,
+    );
   });
 
-  it("given Gust vs 'flying' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Gust vs the Fly volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Gust can hit Fly targets
-    expect(ruleset.canHitSemiInvulnerable("gust", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.gust, CORE_VOLATILE_IDS.flying)).toBe(true);
   });
 
-  it("given Sky Uppercut vs 'flying' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Sky Uppercut vs the Fly volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Sky Uppercut can hit Fly targets
-    expect(ruleset.canHitSemiInvulnerable("sky-uppercut", "flying")).toBe(true);
+    expect(
+      ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.skyUppercut, CORE_VOLATILE_IDS.flying),
+    ).toBe(true);
   });
 
-  it("given Earthquake vs 'underground' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Earthquake vs the Dig volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Earthquake can hit Dig targets
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "underground")).toBe(true);
+    expect(
+      ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.earthquake, CORE_VOLATILE_IDS.underground),
+    ).toBe(true);
   });
 
-  it("given Magnitude vs 'underground' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Magnitude vs the Dig volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Magnitude can hit Dig targets
-    expect(ruleset.canHitSemiInvulnerable("magnitude", "underground")).toBe(true);
+    expect(
+      ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.magnitude, CORE_VOLATILE_IDS.underground),
+    ).toBe(true);
   });
 
-  it("given Surf vs 'underwater' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Surf vs the Dive volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Surf can hit Dive targets
-    expect(ruleset.canHitSemiInvulnerable("surf", "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.surf, UNDERWATER_VOLATILE)).toBe(true);
   });
 
-  it("given Whirlpool vs 'underwater' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given Whirlpool vs the Dive volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Whirlpool can hit Dive targets
-    expect(ruleset.canHitSemiInvulnerable("whirlpool", "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.whirlpool, UNDERWATER_VOLATILE)).toBe(true);
   });
 
-  it("given Flamethrower vs 'flying' volatile, when canHitSemiInvulnerable is called, then returns false", () => {
+  it("given Flamethrower vs the Fly volatile, when canHitSemiInvulnerable is called, then returns false", () => {
     // Source: pret/pokeemerald — only specific moves can hit semi-invulnerable targets
     // Flamethrower cannot hit Fly
-    expect(ruleset.canHitSemiInvulnerable("flamethrower", "flying")).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(CORE_MOVE_IDS.flamethrower, CORE_VOLATILE_IDS.flying),
+    ).toBe(false);
   });
 
-  it("given Thunderbolt vs 'underground' volatile, when canHitSemiInvulnerable is called, then returns false", () => {
+  it("given Thunderbolt vs the Dig volatile, when canHitSemiInvulnerable is called, then returns false", () => {
     // Source: pret/pokeemerald — Thunderbolt cannot hit Dig targets
-    expect(ruleset.canHitSemiInvulnerable("thunderbolt", "underground")).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(CORE_MOVE_IDS.thunderbolt, CORE_VOLATILE_IDS.underground),
+    ).toBe(false);
   });
 
-  it("given Ice Beam vs 'underwater' volatile, when canHitSemiInvulnerable is called, then returns false", () => {
+  it("given Ice Beam vs the Dive volatile, when canHitSemiInvulnerable is called, then returns false", () => {
     // Source: pret/pokeemerald — Ice Beam cannot hit Dive targets
-    expect(ruleset.canHitSemiInvulnerable("ice-beam", "underwater")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.iceBeam, UNDERWATER_VOLATILE)).toBe(false);
   });
 
-  it("given any move vs 'charging' volatile, when canHitSemiInvulnerable is called, then returns true", () => {
+  it("given any move vs the charge volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — charging moves (SolarBeam, Skull Bash, Razor Wind, Sky Attack)
     // do NOT grant semi-invulnerability. Any move can hit a charging Pokemon.
     // canHitSemiInvulnerable returns true for "charging" meaning: "yes, this move can hit."
-    expect(ruleset.canHitSemiInvulnerable("tackle", "charging")).toBe(true);
-    expect(ruleset.canHitSemiInvulnerable("ice-beam", "charging")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(CORE_MOVE_IDS.tackle, CORE_VOLATILE_IDS.charging)).toBe(
+      true,
+    );
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.iceBeam, CORE_VOLATILE_IDS.charging)).toBe(
+      true,
+    );
   });
 });

@@ -1,7 +1,20 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
-import type { PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  type PokemonType,
+  type PrimaryStatus,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen2HeldItem } from "../../src/Gen2Items";
+import {
+  GEN2_ITEM_IDS,
+  GEN2_SPECIES_IDS,
+  createGen2DataManager,
+  applyGen2HeldItem,
+} from "../../src";
 
 /**
  * Gen 2 Held Item Tests
@@ -27,12 +40,35 @@ function createMockRng(chanceResult = false, intResult = 0) {
   };
 }
 
+const dataManager = createGen2DataManager();
+const ITEM_IDS = GEN2_ITEM_IDS;
+const SPECIES_IDS = GEN2_SPECIES_IDS;
+const STATUS_IDS = CORE_STATUS_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+
+function getRestoredHp(itemId: string): number {
+  const description = dataManager.getItem(itemId).description;
+  const match = description.match(/Restores (\d+) HP/);
+  if (!match) {
+    throw new Error(`Expected item ${itemId} to expose a restore amount in its description`);
+  }
+  return Number(match[1]);
+}
+
+const ITEM_HEAL_AMOUNTS = {
+  berry: getRestoredHp(ITEM_IDS.berry),
+  goldBerry: getRestoredHp(ITEM_IDS.goldBerry),
+  berryJuice: getRestoredHp(ITEM_IDS.berryJuice),
+} as const;
+
 /** Create a minimal ActivePokemon mock for item tests. */
 function createMockPokemon(opts: {
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
+  status?: PrimaryStatus | null;
   types?: PokemonType[];
   hasConfusion?: boolean;
 }): ActivePokemon {
@@ -48,11 +84,11 @@ function createMockPokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: SPECIES_IDS.ditto,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
@@ -68,13 +104,13 @@ function createMockPokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEM_IDS.pokeBall,
     calculatedStats: stats,
   };
 
   const volatileStatuses: Map<string, { turnsLeft: number }> = new Map();
   if (opts.hasConfusion) {
-    volatileStatuses.set("confusion", { turnsLeft: 3 });
+    volatileStatuses.set(VOLATILE_IDS.confusion, { turnsLeft: 3 });
   }
 
   return {
@@ -91,7 +127,7 @@ function createMockPokemon(opts: {
       evasion: 0,
     },
     volatileStatuses,
-    types: opts.types ?? ["normal"],
+    types: opts.types ?? [TYPE_IDS.normal],
     ability: "",
     lastMoveUsed: null,
     turnsOnField: 1,
@@ -114,7 +150,7 @@ function createItemContext(opts: {
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
+  status?: PrimaryStatus | null;
   chanceResult?: boolean;
   intResult?: number;
   damage?: number;
@@ -148,7 +184,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding Leftovers, when end-of-turn triggers, then heals 1/16 max HP", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "leftovers",
+        heldItem: ITEM_IDS.leftovers,
         currentHp: 150,
         maxHp: 200,
       });
@@ -166,7 +202,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding Leftovers, when end-of-turn triggers, then Leftovers is NOT consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "leftovers",
+        heldItem: ITEM_IDS.leftovers,
         currentHp: 150,
         maxHp: 200,
       });
@@ -188,7 +224,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon at 50% HP holding Berry, when end-of-turn triggers, then heals 10 HP", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry",
+        heldItem: ITEM_IDS.berry,
         currentHp: 100,
         maxHp: 200,
       });
@@ -200,14 +236,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry heals a fixed 10 HP when HP is at or below 50%
-      expect(healEffect?.value).toBe(10);
+      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.berry);
     });
 
     it("given a Pokemon at 50% HP holding Berry, when end-of-turn triggers, then Berry is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry",
+        heldItem: ITEM_IDS.berry,
         currentHp: 100,
         maxHp: 200,
       });
@@ -219,13 +254,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("berry");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.berry);
     });
 
     it("given a Pokemon above 50% HP holding Berry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry",
+        heldItem: ITEM_IDS.berry,
         currentHp: 150,
         maxHp: 200,
       });
@@ -244,8 +279,8 @@ describe("Gen 2 Held Items", () => {
     it("given a paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then cures paralysis", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "prz-cure-berry",
-        status: "paralysis",
+        heldItem: ITEM_IDS.przCureBerry,
+        status: STATUS_IDS.paralysis,
       });
 
       // Act
@@ -260,8 +295,8 @@ describe("Gen 2 Held Items", () => {
     it("given a paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then PRZCureBerry is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "prz-cure-berry",
-        status: "paralysis",
+        heldItem: ITEM_IDS.przCureBerry,
+        status: STATUS_IDS.paralysis,
       });
 
       // Act
@@ -271,13 +306,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("prz-cure-berry");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.przCureBerry);
     });
 
     it("given a non-paralyzed Pokemon holding PRZCureBerry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "prz-cure-berry",
+        heldItem: ITEM_IDS.przCureBerry,
         status: null,
       });
 
@@ -291,8 +326,8 @@ describe("Gen 2 Held Items", () => {
     it("given a burned Pokemon holding PRZCureBerry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "prz-cure-berry",
-        status: "burn",
+        heldItem: ITEM_IDS.przCureBerry,
+        status: STATUS_IDS.burn,
       });
 
       // Act
@@ -310,7 +345,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon at 50% HP holding Gold Berry, when end-of-turn triggers, then heals 30 HP", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "gold-berry",
+        heldItem: ITEM_IDS.goldBerry,
         currentHp: 100,
         maxHp: 200,
       });
@@ -322,14 +357,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals a fixed 30 HP when HP is at or below 50%
-      expect(healEffect?.value).toBe(30);
+      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.goldBerry);
     });
 
     it("given a Pokemon at 50% HP holding Gold Berry, when end-of-turn triggers, then Gold Berry is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "gold-berry",
+        heldItem: ITEM_IDS.goldBerry,
         currentHp: 100,
         maxHp: 200,
       });
@@ -341,13 +375,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("gold-berry");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.goldBerry);
     });
 
     it("given a Pokemon above 50% HP holding Gold Berry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "gold-berry",
+        heldItem: ITEM_IDS.goldBerry,
         currentHp: 150,
         maxHp: 200,
       });
@@ -362,7 +396,7 @@ describe("Gen 2 Held Items", () => {
     it("given Gold Berry and HP drops to <= 50% after damage, when on-damage-taken triggers, then heals 30 HP", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "gold-berry",
+        heldItem: ITEM_IDS.goldBerry,
         currentHp: 120,
         maxHp: 200,
         damage: 30, // 120 - 30 = 90, which is <= 100 (50% of 200)
@@ -375,14 +409,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals a fixed 30 HP after damage drops HP to 50% or less
-      expect(healEffect?.value).toBe(30);
+      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.goldBerry);
     });
 
     it("given Gold Berry and HP stays above 50% after damage, when on-damage-taken triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "gold-berry",
+        heldItem: ITEM_IDS.goldBerry,
         currentHp: 180,
         maxHp: 200,
         damage: 10, // 180 - 10 = 170, which is > 100 (50% of 200)
@@ -400,7 +433,7 @@ describe("Gen 2 Held Items", () => {
       // When on-damage-taken fires with 10 damage: 80 - 10 = 70, still <= 100
       // But HP was already below the 50% threshold, not crossing it now
       const context = createItemContext({
-        heldItem: "gold-berry",
+        heldItem: ITEM_IDS.goldBerry,
         currentHp: 80,
         maxHp: 200,
         damage: 10, // 80 - 10 = 70, which is <= 100 (50% of 200), but was already below
@@ -420,7 +453,7 @@ describe("Gen 2 Held Items", () => {
     it("given a confused Pokemon holding Bitter Berry, when end-of-turn triggers, then cures confusion", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "bitter-berry",
+        heldItem: ITEM_IDS.bitterBerry,
         hasConfusion: true,
       });
 
@@ -431,13 +464,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure).toBeDefined();
-      expect(volatileCure?.value).toBe("confusion");
+      expect(volatileCure?.value).toBe(VOLATILE_IDS.confusion);
     });
 
     it("given a confused Pokemon holding Bitter Berry, when end-of-turn triggers, then Bitter Berry is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "bitter-berry",
+        heldItem: ITEM_IDS.bitterBerry,
         hasConfusion: true,
       });
 
@@ -448,13 +481,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("bitter-berry");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.bitterBerry);
     });
 
     it("given a non-confused Pokemon holding Bitter Berry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "bitter-berry",
+        heldItem: ITEM_IDS.bitterBerry,
         hasConfusion: false,
       });
 
@@ -472,8 +505,8 @@ describe("Gen 2 Held Items", () => {
     it("given a burned Pokemon holding Miracle Berry, when end-of-turn triggers, then cures burn", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
-        status: "burn",
+        heldItem: ITEM_IDS.miracleBerry,
+        status: STATUS_IDS.burn,
       });
 
       // Act
@@ -488,8 +521,8 @@ describe("Gen 2 Held Items", () => {
     it("given a paralyzed Pokemon holding Miracle Berry, when end-of-turn triggers, then cures paralysis", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
-        status: "paralysis",
+        heldItem: ITEM_IDS.miracleBerry,
+        status: STATUS_IDS.paralysis,
       });
 
       // Act
@@ -504,8 +537,8 @@ describe("Gen 2 Held Items", () => {
     it("given a sleeping Pokemon holding Miracle Berry, when end-of-turn triggers, then cures sleep", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
-        status: "sleep",
+        heldItem: ITEM_IDS.miracleBerry,
+        status: STATUS_IDS.sleep,
       });
 
       // Act
@@ -520,8 +553,8 @@ describe("Gen 2 Held Items", () => {
     it("given a poisoned Pokemon holding Miracle Berry, when end-of-turn triggers, then cures poison", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
-        status: "poison",
+        heldItem: ITEM_IDS.miracleBerry,
+        status: STATUS_IDS.poison,
       });
 
       // Act
@@ -536,7 +569,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon with no status holding Miracle Berry, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
+        heldItem: ITEM_IDS.miracleBerry,
         status: null,
       });
 
@@ -550,8 +583,8 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding Miracle Berry, when it activates, then Miracle Berry is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
-        status: "freeze",
+        heldItem: ITEM_IDS.miracleBerry,
+        status: STATUS_IDS.freeze,
       });
 
       // Act
@@ -561,13 +594,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("miracle-berry");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.miracleBerry);
     });
 
     it("given a confused Pokemon holding Miracle Berry with no primary status, when end-of-turn triggers, then cures confusion", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
+        heldItem: ITEM_IDS.miracleBerry,
         status: null,
         hasConfusion: true,
       });
@@ -579,14 +612,14 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure).toBeDefined();
-      expect(volatileCure?.value).toBe("confusion");
+      expect(volatileCure?.value).toBe(VOLATILE_IDS.confusion);
     });
 
     it("given a confused Pokemon holding Miracle Berry with primary status, when end-of-turn triggers, then cures both", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "miracle-berry",
-        status: "burn",
+        heldItem: ITEM_IDS.miracleBerry,
+        status: STATUS_IDS.burn,
         hasConfusion: true,
       });
 
@@ -599,10 +632,10 @@ describe("Gen 2 Held Items", () => {
       expect(statusCure).toBeDefined();
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure).toBeDefined();
-      expect(volatileCure?.value).toBe("confusion");
+      expect(volatileCure?.value).toBe(VOLATILE_IDS.confusion);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("miracle-berry");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.miracleBerry);
     });
   });
 
@@ -612,8 +645,8 @@ describe("Gen 2 Held Items", () => {
     it("given a burned Pokemon holding Ice Berry, when end-of-turn triggers, then cures burn", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "ice-berry",
-        status: "burn",
+        heldItem: ITEM_IDS.iceBerry,
+        status: STATUS_IDS.burn,
       });
 
       // Act
@@ -632,8 +665,8 @@ describe("Gen 2 Held Items", () => {
     it("given a sleeping Pokemon holding Mint Berry, when end-of-turn triggers, then cures sleep", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "mint-berry",
-        status: "sleep",
+        heldItem: ITEM_IDS.mintBerry,
+        status: STATUS_IDS.sleep,
       });
 
       // Act
@@ -652,8 +685,8 @@ describe("Gen 2 Held Items", () => {
     it("given a frozen Pokemon holding Burnt Berry, when end-of-turn triggers, then cures freeze", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "burnt-berry",
-        status: "freeze",
+        heldItem: ITEM_IDS.burntBerry,
+        status: STATUS_IDS.freeze,
       });
 
       // Act
@@ -672,8 +705,8 @@ describe("Gen 2 Held Items", () => {
     it("given a poisoned Pokemon holding PSNCureBerry, when end-of-turn triggers, then cures poison", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "psn-cure-berry",
-        status: "poison",
+        heldItem: ITEM_IDS.psnCureBerry,
+        status: STATUS_IDS.poison,
       });
 
       // Act
@@ -688,8 +721,8 @@ describe("Gen 2 Held Items", () => {
     it("given a badly-poisoned Pokemon holding PSNCureBerry, when end-of-turn triggers, then cures badly-poisoned", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "psn-cure-berry",
-        status: "badly-poisoned",
+        heldItem: ITEM_IDS.psnCureBerry,
+        status: STATUS_IDS.badlyPoisoned,
       });
 
       // Act
@@ -709,7 +742,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon at 50% HP holding Berry Juice, when end-of-turn triggers, then heals 20 HP", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry-juice",
+        heldItem: ITEM_IDS.berryJuice,
         currentHp: 100,
         maxHp: 200,
       });
@@ -721,14 +754,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals a fixed 20 HP when HP is at or below 50%
-      expect(healEffect?.value).toBe(20);
+      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.berryJuice);
     });
 
     it("given a Pokemon at 50% HP holding Berry Juice, when end-of-turn triggers, then is consumed", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry-juice",
+        heldItem: ITEM_IDS.berryJuice,
         currentHp: 100,
         maxHp: 200,
       });
@@ -740,13 +772,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
       expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe("berry-juice");
+      expect(consumeEffect?.value).toBe(ITEM_IDS.berryJuice);
     });
 
     it("given a Pokemon above 50% HP holding Berry Juice, when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry-juice",
+        heldItem: ITEM_IDS.berryJuice,
         currentHp: 150,
         maxHp: 200,
       });
@@ -767,7 +799,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding Focus Band and RNG roll < 30, when damage would KO, then survives with 1 HP", () => {
       // Arrange: RNG int returns 15 (< 30 threshold → activates)
       const context = createItemContext({
-        heldItem: "focus-band",
+        heldItem: ITEM_IDS.focusBand,
         currentHp: 30,
         maxHp: 200,
         intResult: 15, // 15 < 30, so Focus Band activates
@@ -787,7 +819,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding Focus Band and RNG roll >= 30, when damage would KO, then no activation", () => {
       // Arrange: RNG int returns 200 (>= 30 threshold → does not activate)
       const context = createItemContext({
-        heldItem: "focus-band",
+        heldItem: ITEM_IDS.focusBand,
         currentHp: 30,
         maxHp: 200,
         intResult: 200, // 200 >= 30, so Focus Band does NOT activate
@@ -808,7 +840,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding King's Rock and RNG succeeds (30/256 chance), when on-hit triggers, then returns flinch effect", () => {
       // Arrange: RNG chance returns true (30/256 proc)
       const context = createItemContext({
-        heldItem: "kings-rock",
+        heldItem: ITEM_IDS.kingsRock,
         chanceResult: true,
       });
 
@@ -824,7 +856,7 @@ describe("Gen 2 Held Items", () => {
     it("given a Pokemon holding King's Rock and RNG fails, when on-hit triggers, then no activation", () => {
       // Arrange: RNG chance returns false
       const context = createItemContext({
-        heldItem: "kings-rock",
+        heldItem: ITEM_IDS.kingsRock,
         chanceResult: false,
       });
 
@@ -838,7 +870,7 @@ describe("Gen 2 Held Items", () => {
 
   // --- No Item / Unknown Item ---
 
-  describe("Given no item or unknown item", () => {
+  describe("Given no item or unhandled item", () => {
     it("given a Pokemon with no held item, when any trigger fires, then no activation", () => {
       // Arrange
       const context = createItemContext({ heldItem: null });
@@ -854,9 +886,9 @@ describe("Gen 2 Held Items", () => {
       expect(onHit.activated).toBe(false);
     });
 
-    it("given a Pokemon with an unknown item, when any trigger fires, then no activation", () => {
+    it("given a Pokemon with an unhandled but valid item, when any trigger fires, then no activation", () => {
       // Arrange
-      const context = createItemContext({ heldItem: "mystery-widget" });
+      const context = createItemContext({ heldItem: ITEM_IDS.blackBelt });
 
       // Act
       const endOfTurn = applyGen2HeldItem("end-of-turn", context);
@@ -871,7 +903,7 @@ describe("Gen 2 Held Items", () => {
 
     it("given any item, when an unknown trigger fires, then no activation", () => {
       // Arrange
-      const context = createItemContext({ heldItem: "leftovers" });
+      const context = createItemContext({ heldItem: ITEM_IDS.leftovers });
 
       // Act
       const result = applyGen2HeldItem("unknown-trigger", context);
@@ -887,8 +919,8 @@ describe("Gen 2 Held Items", () => {
     it("given Ice Berry but Pokemon has paralysis (not burn), when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "ice-berry",
-        status: "paralysis",
+        heldItem: ITEM_IDS.iceBerry,
+        status: STATUS_IDS.paralysis,
       });
 
       // Act
@@ -901,8 +933,8 @@ describe("Gen 2 Held Items", () => {
     it("given Mint Berry but Pokemon has burn (not sleep), when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "mint-berry",
-        status: "burn",
+        heldItem: ITEM_IDS.mintBerry,
+        status: STATUS_IDS.burn,
       });
 
       // Act
@@ -915,8 +947,8 @@ describe("Gen 2 Held Items", () => {
     it("given Burnt Berry but Pokemon has poison (not freeze), when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "burnt-berry",
-        status: "poison",
+        heldItem: ITEM_IDS.burntBerry,
+        status: STATUS_IDS.poison,
       });
 
       // Act
@@ -929,8 +961,8 @@ describe("Gen 2 Held Items", () => {
     it("given PSNCureBerry but Pokemon has burn (not poison), when end-of-turn triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "psn-cure-berry",
-        status: "burn",
+        heldItem: ITEM_IDS.psnCureBerry,
+        status: STATUS_IDS.burn,
       });
 
       // Act
@@ -947,7 +979,7 @@ describe("Gen 2 Held Items", () => {
     it("given Berry Juice and HP drops below 50% after damage, when on-damage-taken triggers, then heals 20 HP", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry-juice",
+        heldItem: ITEM_IDS.berryJuice,
         currentHp: 120,
         maxHp: 200,
         damage: 30, // 120 - 30 = 90, which is <= 100 (50% of 200)
@@ -960,14 +992,13 @@ describe("Gen 2 Held Items", () => {
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect).toBeDefined();
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals a fixed 20 HP after damage drops HP to 50% or less
-      expect(healEffect?.value).toBe(20);
+      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.berryJuice);
     });
 
     it("given Berry Juice and HP stays above 50% after damage, when on-damage-taken triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry-juice",
+        heldItem: ITEM_IDS.berryJuice,
         currentHp: 180,
         maxHp: 200,
         damage: 10, // 180 - 10 = 170, which is > 100 (50% of 200)
@@ -983,7 +1014,7 @@ describe("Gen 2 Held Items", () => {
     it("given Berry Juice and damage would KO, when on-damage-taken triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "berry-juice",
+        heldItem: ITEM_IDS.berryJuice,
         currentHp: 30,
         maxHp: 200,
         damage: 50, // 30 - 50 = -20, which is <= 0 (KO)
@@ -1003,7 +1034,7 @@ describe("Gen 2 Held Items", () => {
     it("given Focus Band and damage does not KO, when on-damage-taken triggers, then no activation", () => {
       // Arrange
       const context = createItemContext({
-        heldItem: "focus-band",
+        heldItem: ITEM_IDS.focusBand,
         currentHp: 100,
         maxHp: 200,
         chanceResult: true,
