@@ -1,8 +1,6 @@
 import {
   CORE_ABILITY_IDS,
-  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
-  CORE_TYPE_IDS,
   createMoveSlot,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
@@ -149,17 +147,20 @@ function createAvailableMoves(state: BattleState, side: 0 | 1): AvailableMove[] 
     return [];
   }
 
-  return active.pokemon.moves.map((slot, index) => ({
-    index,
-    moveId: slot.moveId,
-    displayName: slot.moveId,
-    type: CORE_TYPE_IDS.normal,
-    category: CORE_MOVE_CATEGORIES.physical,
-    pp: slot.currentPP,
-    maxPp: slot.maxPP,
-    disabled: slot.currentPP <= 0,
-    disabledReason: slot.currentPP <= 0 ? "No PP remaining" : undefined,
-  }));
+  return active.pokemon.moves.map((slot, index) => {
+    const move = GEN1_DATA_MANAGER.getMove(slot.moveId);
+    return {
+      index,
+      moveId: slot.moveId,
+      displayName: move.displayName,
+      type: move.type,
+      category: move.category,
+      pp: slot.currentPP,
+      maxPp: slot.maxPP,
+      disabled: slot.currentPP <= 0,
+      disabledReason: slot.currentPP <= 0 ? "No PP remaining" : undefined,
+    };
+  });
 }
 
 describe("RandomAI — edge cases", () => {
