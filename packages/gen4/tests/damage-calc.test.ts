@@ -19,10 +19,13 @@ import { describe, expect, it } from "vitest";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
 import {
+  createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_CRIT_MULTIPLIER,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
   GEN4_WEATHER_DAMAGE_MULTIPLIERS,
 } from "../src";
 
@@ -102,16 +105,16 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
     nickname: null,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: GEN4_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
@@ -122,7 +125,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: GEN4_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -140,7 +143,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types ?? [CORE_TYPE_IDS.normal],
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -160,43 +163,71 @@ function createActivePokemon(opts: {
 }
 
 /** Create a move mock with the given type, power, and category. */
+const dataManager = createGen4DataManager();
+const SYNTHETIC_MOVE_BASE = dataManager.getMove(GEN4_MOVE_IDS.tackle);
+
+function resolveRepresentativeGen4MoveId(opts: {
+  type: PokemonType;
+  power: number;
+  category?: "physical" | "special" | "status";
+}): string | null {
+  const category = opts.category ?? "physical";
+  const key = `${opts.type}|${opts.power}|${category}`;
+  switch (key) {
+    case `${CORE_TYPE_IDS.normal}|80|physical`:
+      return GEN4_MOVE_IDS.strength;
+    case `${CORE_TYPE_IDS.water}|80|physical`:
+      return GEN4_MOVE_IDS.waterfall;
+    case `${CORE_TYPE_IDS.water}|95|special`:
+      return GEN4_MOVE_IDS.surf;
+    case `${CORE_TYPE_IDS.fire}|80|special`:
+      return GEN4_MOVE_IDS.lavaPlume;
+    case `${CORE_TYPE_IDS.normal}|40|physical`:
+      return GEN4_MOVE_IDS.scratch;
+    case `${CORE_TYPE_IDS.ground}|100|physical`:
+      return GEN4_MOVE_IDS.earthquake;
+    case `${CORE_TYPE_IDS.grass}|80|special`:
+      return GEN4_MOVE_IDS.energyBall;
+    case `${CORE_TYPE_IDS.electric}|90|special`:
+      return GEN4_MOVE_IDS.thunderbolt;
+    case `${CORE_TYPE_IDS.fire}|100|physical`:
+      return GEN4_MOVE_IDS.sacredFire;
+    case `${CORE_TYPE_IDS.fire}|60|physical`:
+      return GEN4_MOVE_IDS.flameWheel;
+    case `${CORE_TYPE_IDS.normal}|90|physical`:
+      return GEN4_MOVE_IDS.takeDown;
+    case `${CORE_TYPE_IDS.normal}|90|special`:
+      return GEN4_MOVE_IDS.hyperVoice;
+    case `${CORE_TYPE_IDS.normal}|150|physical`:
+      return GEN4_MOVE_IDS.gigaImpact;
+    default:
+      return null;
+  }
+}
+
 function createMove(opts: {
   type: PokemonType;
   power: number;
   category?: "physical" | "special" | "status";
   id?: string;
 }): MoveData {
+  const canonicalMoveId = opts.id ?? resolveRepresentativeGen4MoveId(opts);
+  const baseMove = canonicalMoveId
+    ? (() => {
+        try {
+          return dataManager.getMove(canonicalMoveId);
+        } catch {
+          return SYNTHETIC_MOVE_BASE;
+        }
+      })()
+    : SYNTHETIC_MOVE_BASE;
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
+    ...baseMove,
+    id: opts.id ?? baseMove.id,
+    displayName: baseMove.displayName,
     type: opts.type,
     category: opts.category ?? "physical",
     power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
     generation: 4,
   } as MoveData;
 }
@@ -361,7 +392,12 @@ describe("Gen 4 damage calc — physical/special split", () => {
       category: "physical",
       id: GEN4_MOVE_IDS.waterfall,
     });
-    const surf = createMove({ type: CORE_TYPE_IDS.water, power: 95, category: "special", id: "surf" });
+    const surf = createMove({
+      type: CORE_TYPE_IDS.water,
+      power: 95,
+      category: "special",
+      id: GEN4_MOVE_IDS.surf,
+    });
 
     const waterfallResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: waterfall, rng: createMockRng(100) }),
@@ -2119,7 +2155,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.electric],
       heldItem: CORE_ITEM_IDS.lightBall,
-      speciesId: 25,
+      speciesId: GEN4_SPECIES_IDS.pikachu,
     });
     const noItemPika = createActivePokemon({
       level: 50,
@@ -2128,7 +2164,7 @@ describe("Gen 4 damage calc — items", () => {
       spAttack: 100,
       spDefense: 100,
       types: [CORE_TYPE_IDS.electric],
-      speciesId: 25,
+      speciesId: GEN4_SPECIES_IDS.pikachu,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2178,7 +2214,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.electric],
       heldItem: CORE_ITEM_IDS.lightBall,
-      speciesId: 25,
+      speciesId: GEN4_SPECIES_IDS.pikachu,
     });
     const noItemPika = createActivePokemon({
       level: 50,
@@ -2187,7 +2223,7 @@ describe("Gen 4 damage calc — items", () => {
       spAttack: 100,
       spDefense: 100,
       types: [CORE_TYPE_IDS.electric],
-      speciesId: 25,
+      speciesId: GEN4_SPECIES_IDS.pikachu,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2249,7 +2285,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.psychic],
       heldItem: CORE_ITEM_IDS.soulDew,
-      speciesId: 380,
+      speciesId: GEN4_SPECIES_IDS.latias,
     });
     const noItemLatias = createActivePokemon({
       level: 50,
@@ -2258,7 +2294,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spAttack: 100,
       spDefense: 100,
       types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.psychic],
-      speciesId: 380,
+      speciesId: GEN4_SPECIES_IDS.latias,
     });
     const specialMove = createMove({ type: CORE_TYPE_IDS.water, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
@@ -2297,7 +2333,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.water],
       heldItem: CORE_ITEM_IDS.deepSeaTooth,
-      speciesId: 366,
+      speciesId: GEN4_SPECIES_IDS.clamperl,
     });
     const noItemClamperl = createActivePokemon({
       level: 50,
@@ -2306,7 +2342,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spAttack: 100,
       spDefense: 100,
       types: [CORE_TYPE_IDS.water],
-      speciesId: 366,
+      speciesId: GEN4_SPECIES_IDS.clamperl,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2363,7 +2399,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.water],
       heldItem: CORE_ITEM_IDS.deepSeaScale,
-      speciesId: 366,
+      speciesId: GEN4_SPECIES_IDS.clamperl,
     });
     const noItemClamperl = createActivePokemon({
       level: 50,
@@ -2372,7 +2408,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spAttack: 100,
       spDefense: 100,
       types: [CORE_TYPE_IDS.water],
-      speciesId: 366,
+      speciesId: GEN4_SPECIES_IDS.clamperl,
     });
     const specialMove = createMove({ type: CORE_TYPE_IDS.fire, power: 80, category: "special" });
     const chart = createNeutralTypeChart();
@@ -2411,7 +2447,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.ground],
       heldItem: CORE_ITEM_IDS.thickClub,
-      speciesId: 104,
+      speciesId: GEN4_SPECIES_IDS.cubone,
     });
     const noItemCubone = createActivePokemon({
       level: 50,
@@ -2420,7 +2456,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spAttack: 100,
       spDefense: 100,
       types: [CORE_TYPE_IDS.ground],
-      speciesId: 104,
+      speciesId: GEN4_SPECIES_IDS.cubone,
     });
     const defender = createActivePokemon({
       level: 50,
@@ -2804,7 +2840,12 @@ describe("Gen 4 damage calc — breakdown completeness", () => {
       spDefense: 80,
       types: [CORE_TYPE_IDS.fire],
     });
-    const surf = createMove({ type: CORE_TYPE_IDS.water, power: 95, category: "special", id: "surf" });
+    const surf = createMove({
+      type: CORE_TYPE_IDS.water,
+      power: 95,
+      category: "special",
+      id: GEN4_MOVE_IDS.surf,
+    });
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const result = calculateGen4Damage(
@@ -3271,11 +3312,11 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
-      heldItem: GEN4_MOVE_IDS.metronome,
+      heldItem: GEN4_ITEM_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 2, moveId: "test" },
+      data: { count: 2, moveId: GEN4_MOVE_IDS.strength },
     });
 
     const defender = createActivePokemon({
@@ -3305,11 +3346,11 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
-      heldItem: GEN4_MOVE_IDS.metronome,
+      heldItem: GEN4_ITEM_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 6, moveId: "test" },
+      data: { count: 6, moveId: GEN4_MOVE_IDS.strength },
     });
 
     const defender = createActivePokemon({
@@ -3335,11 +3376,11 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
-      heldItem: GEN4_MOVE_IDS.metronome,
+      heldItem: GEN4_ITEM_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 1, moveId: "test" },
+      data: { count: 1, moveId: GEN4_MOVE_IDS.strength },
     });
 
     const defender = createActivePokemon({
@@ -3367,11 +3408,11 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting],
-      heldItem: GEN4_MOVE_IDS.metronome,
+      heldItem: GEN4_ITEM_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 11, moveId: "test" },
+      data: { count: 11, moveId: GEN4_MOVE_IDS.strength },
     });
 
     const defender = createActivePokemon({
@@ -3401,7 +3442,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 6, moveId: "test" },
+      data: { count: 6, moveId: GEN4_MOVE_IDS.strength },
     });
 
     const defender = createActivePokemon({
@@ -3944,11 +3985,11 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
     const attacker = createActivePokemon({
       attack: 100,
       types: [CORE_TYPE_IDS.fighting],
-      heldItem: GEN4_MOVE_IDS.metronome,
+      heldItem: GEN4_ITEM_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 3, moveId: "test" },
+      data: { count: 3, moveId: GEN4_MOVE_IDS.strength },
     });
     const defender = createActivePokemon({ defense: 100 });
     const move = createMove({ type: CORE_TYPE_IDS.normal, power: 80, category: "physical" });
@@ -3974,11 +4015,11 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
     const attacker = createActivePokemon({
       attack: 100,
       types: [CORE_TYPE_IDS.fighting],
-      heldItem: GEN4_MOVE_IDS.metronome,
+      heldItem: GEN4_ITEM_IDS.metronome,
     });
     attacker.volatileStatuses.set("metronome-count", {
       turnsLeft: -1,
-      data: { count: 2, moveId: "test" },
+      data: { count: 2, moveId: GEN4_MOVE_IDS.strength },
     });
     const defender = createActivePokemon({ defense: 100 });
     const move = createMove({ type: CORE_TYPE_IDS.normal, power: 90, category: "physical" });

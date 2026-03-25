@@ -5,6 +5,7 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
+  createMoveSlot,
   type MoveData,
   type PokemonInstance,
   type PokemonType,
@@ -76,6 +77,15 @@ const T = CORE_TYPE_IDS;
 const ST = CORE_STATUS_IDS;
 const V = CORE_VOLATILE_IDS;
 const NONE = CORE_ABILITY_IDS.none;
+const TACKLE = dataManager.getMove(M.tackle);
+const STRENGTH = dataManager.getMove(M.strength);
+const EMBER = dataManager.getMove(M.ember);
+const FLAME_WHEEL = dataManager.getMove(M.flameWheel);
+const WATER_PULSE = dataManager.getMove(M.waterPulse);
+const ROCK_SLIDE = dataManager.getMove(M.rockSlide);
+const DOUBLE_EDGE = dataManager.getMove(M.doubleEdge);
+const STRUGGLE = dataManager.getMove(M.struggle);
+const TECHNICIAN_FAIL_POWER = 61;
 
 function createActivePokemon(opts: {
   level?: number;
@@ -113,7 +123,7 @@ function createActivePokemon(opts: {
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
+    moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
     ability: opts.ability ?? NONE,
     abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
@@ -164,26 +174,11 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-  punch?: boolean;
-  effect?: MoveData["effect"];
-}): MoveData {
-  const base = dataManager.getMove(opts.id ?? M.tackle);
+function createSyntheticMoveFromData(id: string, overrides: Partial<MoveData>): MoveData {
+  const base = dataManager.getMove(id);
   return {
     ...base,
-    id: opts.id ?? base.id,
-    type: opts.type,
-    category: opts.category ?? base.category,
-    power: opts.power,
-    flags: {
-      ...base.flags,
-      punch: opts.punch ?? base.flags.punch,
-    },
-    effect: opts.effect ?? base.effect,
+    ...overrides,
   } as MoveData;
 }
 
@@ -230,7 +225,7 @@ function createItemContext(opts: {
         ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
         evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
         currentHp: opts.currentHp ?? maxHp,
-        moves: [],
+        moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
         ability: opts.ability ?? NONE,
         abilitySlot: "normal1" as const,
         heldItem: opts.heldItem ?? null,
@@ -328,7 +323,7 @@ describe("Magic Guard + Life Orb interaction", () => {
       types: [T.water], // use non-Normal type to avoid STAB complication
     });
     const defender = createActivePokemon({ defense: 100, types: [T.normal] });
-    const move = createMove({ type: T.normal, power: 80, category: "physical" });
+    const move = STRENGTH;
 
     const withLOResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
@@ -475,7 +470,7 @@ describe("Klutz + items — all triggers suppressed", () => {
       types: [T.water],
     });
     const defender = createActivePokemon({ defense: 100, types: [T.normal] });
-    const move = createMove({ type: T.normal, power: 80, category: "physical" });
+    const move = STRENGTH;
 
     const klutzonResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
@@ -538,7 +533,7 @@ describe("Technician — exact base power boundary (60 vs 61 BP)", () => {
     });
     const noTechAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
     const defender = createActivePokemon({ defense: 100, types: [T.normal] });
-    const move60 = createMove({ type: T.normal, power: 60, category: "physical" });
+    const move60 = FLAME_WHEEL;
 
     const techResult = calculateGen4Damage(
       createDamageContext({
@@ -578,7 +573,10 @@ describe("Technician — exact base power boundary (60 vs 61 BP)", () => {
     });
     const noTechAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
     const defender = createActivePokemon({ defense: 100, types: [T.normal] });
-    const move61 = createMove({ type: T.normal, power: 61, category: "physical" });
+    const move61 = createSyntheticMoveFromData(M.aerialAce, {
+      type: T.normal,
+      power: TECHNICIAN_FAIL_POWER,
+    });
 
     const techResult = calculateGen4Damage(
       createDamageContext({
@@ -652,17 +650,17 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
   it("given Flying-type defender with Charti Berry vs Rock move (SE), when damage calculated, then damage is halved and berry consumed", () => {
     // Source: Bulbapedia — Charti Berry: "Weakens a supereffective Rock-type move against holder."
     // Source: Showdown sim/items.ts — type-resist berries onSourceModifyDamage halve SE damage
-    // Derivation: L50, Rock 80BP, Atk=100, Def=100, rng=100
-    //   baseDmg = floor(floor(22*80*100/100)/50)+2 = 35+2 = 37
-    //   random=37, no STAB, Rock vs Flying = 2x: floor(37*2) = 74
-    //   Charti Berry halves: floor(74*0.5) = 37
+    // Derivation: L50, Rock 75BP, Atk=100, Def=100, rng=100
+    //   baseDmg = floor(floor(22*75*100/100)/50)+2 = 33+2 = 35
+    //   random=35, no STAB, Rock vs Flying = 2x: floor(35*2) = 70
+    //   Charti Berry halves: floor(70*0.5) = 35
     const attacker = createActivePokemon({ attack: 100, types: [T.normal] });
     const defender = createActivePokemon({
       defense: 100,
       types: [T.flying],
       heldItem: I.chartiBerry,
     });
-    const rockMove = createMove({ type: T.rock, power: 80, category: "physical" });
+    const rockMove = ROCK_SLIDE;
 
     const withBerry = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: rockMove, rng: createMockRng(100) }),
@@ -672,16 +670,16 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
     // Berry should be consumed after activation
     expect(defender.pokemon.heldItem).toBeNull();
     // Damage should be halved from the un-berried SE value
-    expect(withBerry.damage).toBe(37);
+    expect(withBerry.damage).toBe(35);
     expect(withBerry.effectiveness).toBe(2);
   });
 
   it("given Flying-type defender WITHOUT Charti Berry vs Rock move (SE), when damage calculated, then full SE damage applied", () => {
     // Triangulation: without the berry, damage is the full 2x SE value
-    // Derivation: 37 base damage × 2 effectiveness = 74
+    // Derivation: 35 base damage × 2 effectiveness = 70
     const attacker = createActivePokemon({ attack: 100, types: [T.normal] });
     const defender = createActivePokemon({ defense: 100, types: [T.flying], heldItem: null });
-    const rockMove = createMove({ type: T.rock, power: 80, category: "physical" });
+    const rockMove = ROCK_SLIDE;
 
     const withoutBerry = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: rockMove, rng: createMockRng(100) }),
@@ -689,7 +687,7 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
     );
 
     // Source: 37 base damage × 2 effectiveness = 74
-    expect(withoutBerry.damage).toBe(74);
+    expect(withoutBerry.damage).toBe(70);
     expect(withoutBerry.effectiveness).toBe(2);
   });
 
@@ -701,7 +699,7 @@ describe("Charti Berry — halves super-effective Rock-type damage", () => {
       types: [T.ground],
       heldItem: I.chartiBerry,
     });
-    const normalMove = createMove({ type: T.normal, power: 80, category: "physical" });
+    const normalMove = STRENGTH;
 
     calculateGen4Damage(
       createDamageContext({ attacker, defender, move: normalMove, rng: createMockRng(100) }),
@@ -777,7 +775,7 @@ describe("Reckless — Struggle is NOT boosted", () => {
     const defender = createActivePokemon({ defense: 100, types: [T.normal] });
 
     // Struggle: effect is null (no MoveEffect)
-    const struggle = createMove({ type: T.normal, power: 50, id: M.struggle, effect: null });
+    const struggle = STRUGGLE;
 
     const recklessResult = calculateGen4Damage(
       createDamageContext({
@@ -816,12 +814,7 @@ describe("Reckless — Struggle is NOT boosted", () => {
     const noAbilityAttacker = createActivePokemon({ ability: NONE, attack: 100, types: [T.water] });
     const defender = createActivePokemon({ defense: 100, types: [T.normal] });
 
-    const doubleEdge = createMove({
-      type: T.normal,
-      power: 120,
-      id: M.doubleEdge,
-      effect: { type: "recoil", amount: 1 / 3 },
-    });
+    const doubleEdge = DOUBLE_EDGE;
 
     const recklessResult = calculateGen4Damage(
       createDamageContext({
@@ -925,7 +918,7 @@ describe("Type-resist Berry + Unburden interaction", () => {
       heldItem: I.chartiBerry,
       ability: A.unburden,
     });
-    const rockMove = createMove({ type: T.rock, power: 80, category: "physical" });
+    const rockMove = ROCK_SLIDE;
 
     expect(defender.volatileStatuses.has(V.unburden)).toBe(false);
 
