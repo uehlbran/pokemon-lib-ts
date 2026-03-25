@@ -3,9 +3,9 @@ import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
-  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
@@ -47,7 +47,7 @@ const moveIds = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
 const speciesIds = GEN6_SPECIES_IDS;
 const statusIds = CORE_STATUS_IDS;
 const typeIds = CORE_TYPE_IDS;
-const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const triggerIds = CORE_ITEM_TRIGGER_IDS;
 const volatileIds = CORE_VOLATILE_IDS;
 const defaultSpecies = dataManager.getSpecies(speciesIds.bulbasaur);
 const defaultNature = dataManager.getNature(GEN6_NATURE_IDS.hardy).id;
@@ -192,7 +192,7 @@ describe("Gen 6 Items -- Klutz and Embargo suppression", () => {
       currentHp: 100,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expectNoActivation(result);
   });
 
@@ -207,7 +207,7 @@ describe("Gen 6 Items -- Klutz and Embargo suppression", () => {
       volatiles,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expectNoActivation(result);
   });
 });
@@ -222,7 +222,7 @@ describe("Gen 6 Items -- Leftovers", () => {
     // Derivation: floor(200 / 16) = 12
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 200, currentHp: 150 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 12 }]);
   });
@@ -232,7 +232,7 @@ describe("Gen 6 Items -- Leftovers", () => {
     // Derivation: floor(100 / 16) = 6
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 100, currentHp: 80 });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 6 }]);
   });
@@ -252,7 +252,7 @@ describe("Gen 6 Items -- Life Orb", () => {
       damage: 50,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-hit", ctx);
+    const result = applyGen6HeldItem(triggerIds.onHit, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 20 }]);
   });
@@ -266,7 +266,7 @@ describe("Gen 6 Items -- Life Orb", () => {
       damage: 80,
       move: dataManager.getMove(moveIds.tackle),
     });
-    const result = applyGen6HeldItem("on-hit", ctx);
+    const result = applyGen6HeldItem(triggerIds.onHit, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 30 }]);
   });
@@ -289,7 +289,7 @@ describe("Gen 6 Items -- Life Orb", () => {
         effect: { type: "status-chance", status: statusIds.burn, chance: 10 },
       }),
     });
-    const result = applyGen6HeldItem("on-hit", ctx);
+    const result = applyGen6HeldItem(triggerIds.onHit, ctx);
     expectNoActivation(result);
   });
 });
@@ -713,7 +713,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       currentHp: 200,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: statusIds.burn }]);
   });
@@ -727,7 +727,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       currentHp: 200,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expectNoActivation(result);
   });
 
@@ -740,7 +740,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       currentHp: 200,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { type: "inflict-status", target: "self", status: statusIds.badlyPoisoned },
@@ -756,7 +756,7 @@ describe("Gen 6 Items -- Status Orbs", () => {
       currentHp: 200,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expectNoActivation(result);
   });
 });
@@ -776,7 +776,7 @@ describe("Gen 6 Items -- Black Sludge", () => {
       currentHp: 150,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 12 }]);
   });
@@ -791,7 +791,7 @@ describe("Gen 6 Items -- Black Sludge", () => {
       currentHp: 200,
     });
     const ctx = createItemContext({ pokemon });
-    const result = applyGen6HeldItem("end-of-turn", ctx);
+    const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([{ type: "chip-damage", target: "self", value: 25 }]);
   });
@@ -946,7 +946,7 @@ describe("Gen 6 Ruleset -- applyHeldItem wiring", () => {
     const ruleset = new Gen6Ruleset();
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.leftovers, hp: 200, currentHp: 100 });
     const ctx = createItemContext({ pokemon });
-    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    const result = ruleset.applyHeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
     // Source: Leftovers: floor(200/16) = 12
     expect(result.effects).toEqual([{ type: "heal", target: "self", value: 12 }]);
