@@ -71,6 +71,44 @@ class TestRuleset extends BaseRuleset {
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 const emptyState = {} as unknown as BattleState;
 
+// Source: Showdown sim/battle-actions.ts residualOrder values from
+// data/conditions.ts, data/moves.ts, data/items.ts.
+const EXPECTED_END_OF_TURN_ORDER = [
+  "future-attack",
+  "wish",
+  "weather-damage",
+  "leftovers",
+  "black-sludge",
+  "ingrain",
+  "leech-seed",
+  "status-damage",
+  "nightmare",
+  "curse",
+  "bind",
+  "perish-song",
+  "screen-countdown",
+  "weather-countdown",
+  "terrain-countdown",
+  "tailwind-countdown",
+  "trick-room-countdown",
+  "encore-countdown",
+] as const;
+
+function createChanceCapturingRng() {
+  const capture = { probability: null as number | null };
+  return {
+    getCapturedProbability: () => capture.probability,
+    rng: {
+      chance: (probability: number) => {
+        capture.probability = probability;
+        return false;
+      },
+      next: () => 0.5,
+      int: () => 0,
+    } as unknown as SeededRandom,
+  };
+}
+
 describe("BaseRuleset — rollMultiHitCount", () => {
   let ruleset: TestRuleset;
 
@@ -156,62 +194,43 @@ describe("BaseRuleset — rollProtectSuccess", () => {
     }
   });
 
-  it("given 1 consecutive protect, when rollProtectSuccess is called many times, then success rate is ~1/3", () => {
+  it("given 1 consecutive protect, when rollProtectSuccess is called, then it requests a 1/3 RNG chance", () => {
     // Arrange
-    // Source: Showdown data/conditions.ts — stall volatile: onStart sets counter=3 (first consecutive use = 1/3 chance)
-    //   onRestart multiplies by 3 each additional use: counter goes 3 → 9 → 27 → ...
-    // N=1 consecutive: denominator = min(729, 3^1) = 3 → 1/3 chance
-    const rng = new SeededRandom(42);
+    // Source: Showdown data/conditions.ts — first consecutive Protect uses denominator 3.
+    const { rng, getCapturedProbability } = createChanceCapturingRng();
 
     // Act
-    let successes = 0;
-    const trials = 3000;
-    for (let i = 0; i < trials; i++) {
-      if (ruleset.rollProtectSuccess(1, rng)) successes++;
-    }
+    ruleset.rollProtectSuccess(1, rng);
 
-    // Assert — ~1/3 = 33.3%, allow 25%-42%
-    expect(successes).toBeGreaterThanOrEqual(750);
-    expect(successes).toBeLessThanOrEqual(1260);
+    // Assert
+    expect(getCapturedProbability()).toBe(1 / 3);
   });
 
-  it("given 2 consecutive protects, when rollProtectSuccess is called many times, then success rate is ~1/9", () => {
+  it("given 2 consecutive protects, when rollProtectSuccess is called, then it requests a 1/9 RNG chance", () => {
     // Arrange
-    // Source: Showdown data/conditions.ts — stall volatile: N=2 → counter = 3^2 = 9 → 1/9 chance (~11.1%)
-    const rng = new SeededRandom(12345);
+    // Source: Showdown data/conditions.ts — second consecutive Protect uses denominator 9.
+    const { rng, getCapturedProbability } = createChanceCapturingRng();
 
     // Act
-    let successes = 0;
-    const trials = 9000;
-    for (let i = 0; i < trials; i++) {
-      if (ruleset.rollProtectSuccess(2, rng)) successes++;
-    }
+    ruleset.rollProtectSuccess(2, rng);
 
-    // Assert — ~1/9 = 11.1%, allow 7%-16%
-    expect(successes).toBeGreaterThanOrEqual(630);
-    expect(successes).toBeLessThanOrEqual(1440);
+    // Assert
+    expect(getCapturedProbability()).toBe(1 / 9);
   });
 
-  it("given 6 or more consecutive protects, when rollProtectSuccess is called, then denominator is capped at 729", () => {
+  it("given 6 or more consecutive protects, when rollProtectSuccess is called, then it caps the requested RNG chance at 1/729", () => {
     // Arrange
-    // Source: Showdown data/conditions.ts — stall volatile: counterMax = 729 = 3^6
-    //   Attempts beyond 6 in a row still use 1/729 chance
-    const rng = new SeededRandom(99);
+    // Source: Showdown data/conditions.ts — the denominator is capped at 729 = 3^6.
+    const protectAtCap = createChanceCapturingRng();
+    const protectBeyondCap = createChanceCapturingRng();
 
-    // Act — 6 consecutive vs 10 consecutive should yield same cap behavior
-    let successes6 = 0;
-    let successes10 = 0;
-    const trials = 72900;
-    const rng2 = new SeededRandom(99);
-    for (let i = 0; i < trials; i++) {
-      if (ruleset.rollProtectSuccess(6, rng)) successes6++;
-      if (ruleset.rollProtectSuccess(10, rng2)) successes10++;
-    }
+    // Act
+    ruleset.rollProtectSuccess(6, protectAtCap.rng);
+    ruleset.rollProtectSuccess(10, protectBeyondCap.rng);
 
-    // Assert — both should be ~1/729 = 0.137%, both around the same count
-    // Verify capped behavior: 10 consecutive uses same denominator as 6
-    expect(successes10).toBeGreaterThanOrEqual(successes6 - 30);
-    expect(successes10).toBeLessThanOrEqual(successes6 + 30);
+    // Assert
+    expect(protectAtCap.getCapturedProbability()).toBe(1 / 729);
+    expect(protectBeyondCap.getCapturedProbability()).toBe(1 / 729);
   });
 
   it("given a deterministic-always-succeed RNG, when rollProtectSuccess(1, rng) is called, then returns true", () => {
@@ -762,142 +781,8 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     ruleset = new TestRuleset();
   });
 
-  it("given the base ruleset, when getEndOfTurnOrder is called, then future-attack comes before weather-damage", () => {
-    // Arrange
-    // Source: Showdown data/conditions.ts — futuremove onResidualOrder: 3 (first)
-    //   weather damage (Sandstorm/Hail) onResidualOrder: 5
-    //   future-attack MUST precede weather-damage per Showdown
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const futureIdx = order.indexOf("future-attack");
-    const weatherIdx = order.indexOf("weather-damage");
-
-    // Assert — future-attack (Showdown order 3) must come before weather-damage (order 5)
-    expect(futureIdx).toBeGreaterThanOrEqual(0); // must be present
-    expect(weatherIdx).toBeGreaterThanOrEqual(0); // must be present
-    expect(futureIdx).toBeLessThan(weatherIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then wish comes before weather-damage", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — wish onResidualOrder: 4 (before weather at 5)
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const wishIdx = order.indexOf("wish");
-    const weatherIdx = order.indexOf("weather-damage");
-
-    // Assert — wish (Showdown order 4) must come before weather-damage (order 5)
-    expect(wishIdx).toBeGreaterThanOrEqual(0);
-    expect(weatherIdx).toBeGreaterThanOrEqual(0);
-    expect(wishIdx).toBeLessThan(weatherIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then leftovers comes before leech-seed", () => {
-    // Arrange
-    // Source: Showdown data/items.ts — leftovers onResidualOrder: 5
-    //          data/moves.ts — leechseed onResidualOrder: 8
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const leftoversIdx = order.indexOf("leftovers");
-    const leechIdx = order.indexOf("leech-seed");
-
-    // Assert — leftovers (order 5) must come before leech-seed (order 8)
-    expect(leftoversIdx).toBeGreaterThanOrEqual(0);
-    expect(leechIdx).toBeGreaterThanOrEqual(0);
-    expect(leftoversIdx).toBeLessThan(leechIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then leech-seed comes before status-damage", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — leechseed onResidualOrder: 8
-    //          data/conditions.ts — brn onResidualOrder: 10; psn onResidualOrder: 9
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const leechIdx = order.indexOf("leech-seed");
-    const statusIdx = order.indexOf("status-damage");
-
-    // Assert — leech-seed (order 8) must come before status-damage (order 9/10)
-    expect(leechIdx).toBeGreaterThanOrEqual(0);
-    expect(statusIdx).toBeGreaterThanOrEqual(0);
-    expect(leechIdx).toBeLessThan(statusIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then nightmare comes before bind", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11
-    //          data/conditions.ts — partiallytrapped onResidualOrder: 13
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const nightmareIdx = order.indexOf("nightmare");
-    const bindIdx = order.indexOf("bind");
-
-    // Assert — nightmare (order 11) must come before bind (order 13)
-    expect(nightmareIdx).toBeGreaterThanOrEqual(0);
-    expect(bindIdx).toBeGreaterThanOrEqual(0);
-    expect(nightmareIdx).toBeLessThan(bindIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then curse comes before bind", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — curse onResidualOrder: 12
-    //          data/conditions.ts — partiallytrapped onResidualOrder: 13
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const curseIdx = order.indexOf("curse");
-    const bindIdx = order.indexOf("bind");
-
-    // Assert — curse (order 12) must come before bind (order 13)
-    expect(curseIdx).toBeGreaterThanOrEqual(0);
-    expect(bindIdx).toBeGreaterThanOrEqual(0);
-    expect(curseIdx).toBeLessThan(bindIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then bind comes before perish-song", () => {
-    // Arrange
-    // Source: Showdown data/conditions.ts — partiallytrapped onResidualOrder: 13
-    //          data/moves.ts — perishsong onResidualOrder: 24
-    // Both bind and perish-song exist in BaseRuleset; perish-song must come last
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const bindIdx = order.indexOf("bind");
-    const perishIdx = order.indexOf("perish-song");
-
-    // Assert — bind (order 13) comes before perish-song (order 24)
-    expect(bindIdx).toBeGreaterThanOrEqual(0);
-    expect(perishIdx).toBeGreaterThanOrEqual(0);
-    expect(bindIdx).toBeLessThan(perishIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then all expected Gen 6+ effects are present", () => {
-    // Arrange
-    // Source: Showdown — these are all effects in the Gen 6+ EoT order that matter for singles
-    const requiredEffects = [
-      "future-attack", // Showdown order 3
-      "wish", // Showdown order 4
-      "weather-damage", // Showdown order 5 (via weather residuals)
-      "leech-seed", // Showdown order 8
-      "status-damage", // Showdown order 9/10 (burn/poison)
-      "nightmare", // Showdown order 11
-      "curse", // Showdown order 12
-      "bind", // Showdown order 13
-      "perish-song", // Showdown order 24
-      "leftovers", // Showdown order 5 (items)
-    ];
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-
-    // Assert — all required effects must be present
-    for (const effect of requiredEffects) {
-      expect(order).toContain(effect);
-    }
+  it("given the base ruleset, when getEndOfTurnOrder is called, then it matches the exact Showdown-derived residual sequence", () => {
+    expect(ruleset.getEndOfTurnOrder()).toEqual(EXPECTED_END_OF_TURN_ORDER);
   });
 });
 
