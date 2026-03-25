@@ -20,10 +20,35 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { createActivePokemon, createTestPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, MoveTarget, PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src";
 import { handlePopulationBomb } from "../src/Gen9MoveEffects";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS } as const;
+const DATA_MANAGER = createGen9DataManager();
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS } as const;
+const SPECIES = GEN9_SPECIES_IDS;
+const TERRAINS = CORE_TERRAIN_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,15 +83,15 @@ function makeActivePokemon(overrides: {
       currentHp: overrides.currentHp ?? maxHp,
       status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
-      moves: [{ moveId: "tackle" }],
+      moves: [{ moveId: MOVES.tackle }],
       nickname: overrides.nickname ?? null,
-      speciesId: overrides.speciesId ?? 25,
+      speciesId: overrides.speciesId ?? SPECIES.pikachu,
       timesAttacked: overrides.timesAttacked ?? 0,
       teraType: null,
     },
-    ability: overrides.ability ?? "blaze",
+    ability: overrides.ability ?? ABILITIES.blaze,
     volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: (overrides.types ?? ["normal"]) as readonly string[],
+    types: (overrides.types ?? [TYPES.normal]) as readonly string[],
     consecutiveProtects: 0,
     turnsOnField: 0,
     substituteHp: overrides.substituteHp ?? 0,
@@ -101,38 +126,10 @@ function makeActivePokemon(overrides: {
 }
 
 function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const move = DATA_MANAGER.getMove(id);
   return {
-    id,
-    displayName: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe" as MoveTarget,
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 9,
+    ...move,
+    flags: { ...move.flags, ...(overrides?.flags ?? {}) },
     ...overrides,
   } as MoveData;
 }
@@ -140,16 +137,16 @@ function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
 function makePokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInstance {
   return {
     uid: "test-uid",
-    speciesId: 25,
+    speciesId: SPECIES.pikachu,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "adamant",
+    nature: GEN9_NATURE_IDS.adamant,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
-    moves: [{ moveId: "tackle", currentPp: 35, maxPp: 35 }],
-    ability: "static",
+    moves: [{ moveId: MOVES.tackle, currentPp: DATA_MANAGER.getMove(MOVES.tackle).pp, maxPp: DATA_MANAGER.getMove(MOVES.tackle).pp }],
+    ability: ABILITIES.static,
     abilitySlot: "normal1" as const,
     heldItem: null,
     status: null,
@@ -160,7 +157,7 @@ function makePokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInsta
     metLevel: 5,
     originalTrainer: "Ash",
     originalTrainerId: 12345,
-    pokeball: "poke-ball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: 200,
       attack: 100,
@@ -220,10 +217,10 @@ describe("Bug #751: timesAttacked counter reset between battles", () => {
   it("given a PokemonInstance with timesAttacked=5, when createActivePokemon is called for a mid-battle switch-in, then timesAttacked is NOT reset (preserves Rage Fist counter)", () => {
     // Source: Showdown sim/pokemon.ts — timesAttacked is preserved across switches within a battle;
     // reset only happens in BattleEngine constructor at battle start, not on every switch-in
-    const pokemon = createTestPokemon(25, 50);
+    const pokemon = createTestPokemon(SPECIES.pikachu, 50);
     pokemon.timesAttacked = 5;
 
-    createActivePokemon(pokemon, 0, ["electric"]);
+    createActivePokemon(pokemon, 0, [TYPES.electric]);
 
     expect(pokemon.timesAttacked).toBe(5);
   });
@@ -231,10 +228,10 @@ describe("Bug #751: timesAttacked counter reset between battles", () => {
   it("given a PokemonInstance with timesAttacked=0, when createActivePokemon is called, then timesAttacked remains 0", () => {
     // Source: Showdown sim/pokemon.ts — createActivePokemon does not modify timesAttacked;
     // BattleEngine constructor sets it to 0 at battle start for all team members
-    const pokemon = createTestPokemon(25, 50);
+    const pokemon = createTestPokemon(SPECIES.pikachu, 50);
     pokemon.timesAttacked = 0;
 
-    createActivePokemon(pokemon, 0, ["electric"]);
+    createActivePokemon(pokemon, 0, [TYPES.electric]);
 
     expect(pokemon.timesAttacked).toBe(0);
   });
@@ -272,7 +269,7 @@ describe("Bug #750: Shed Tail substitute transfer to incoming Pokemon", () => {
 
     // Simulate Shed Tail setting the volatile
     const subHp = Math.floor(200 / 4); // 50
-    attacker.volatileStatuses.set("shed-tail-sub", {
+    attacker.volatileStatuses.set(VOLATILES.shedTailSub, {
       turnsLeft: -1,
       data: { substituteHp: subHp },
     });
@@ -286,7 +283,7 @@ describe("Bug #750: Shed Tail substitute transfer to incoming Pokemon", () => {
 
     // Verify the substitute was transferred
     expect(replacement.substituteHp).toBe(50);
-    expect(replacement.volatileStatuses.has("substitute")).toBe(true);
+    expect(replacement.volatileStatuses.has(VOLATILES.substitute)).toBe(true);
   });
 
   it("given Shed Tail was not used, when switching normally, then no substitute is created", () => {
@@ -322,7 +319,7 @@ describe("Bug #750: Shed Tail substitute transfer to incoming Pokemon", () => {
 
     // No substitute should be created
     expect(incoming.substituteHp).toBe(0);
-    expect(incoming.volatileStatuses.has("substitute")).toBe(false);
+    expect(incoming.volatileStatuses.has(VOLATILES.substitute)).toBe(false);
   });
 });
 
@@ -336,7 +333,7 @@ describe("Bug #749: Population Bomb per-hit accuracy re-roll", () => {
     const ctx = {
       attacker: makeActivePokemon({}),
       defender: makeActivePokemon({}),
-      move: makeMove("population-bomb"),
+      move: makeMove(MOVES.populationBomb),
       damage: 0,
       state: makeState(),
       rng: new SeededRandom(42),
@@ -354,7 +351,7 @@ describe("Bug #749: Population Bomb per-hit accuracy re-roll", () => {
     const ctx = {
       attacker: makeActivePokemon({}),
       defender: makeActivePokemon({}),
-      move: makeMove("fury-attack"),
+      move: makeMove(MOVES.furyAttack),
       damage: 0,
       state: makeState(),
       rng: new SeededRandom(42),
@@ -376,13 +373,13 @@ describe("Bug #731: Sturdy prevents one-hit KOs via capLethalDamage", () => {
     // Source: Showdown data/abilities.ts -- sturdy: onDamage (priority -30)
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      ability: "sturdy",
+      ability: ABILITIES.sturdy,
       maxHp: 200,
       currentHp: 200,
       nickname: "Golem",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("earthquake");
+    const move = makeMove(MOVES.earthquake);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -397,13 +394,13 @@ describe("Bug #731: Sturdy prevents one-hit KOs via capLethalDamage", () => {
     // Source: Showdown data/abilities.ts -- sturdy only activates at full HP
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      ability: "sturdy",
+      ability: ABILITIES.sturdy,
       maxHp: 200,
       currentHp: 150, // NOT full HP
       nickname: "Golem",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("earthquake");
+    const move = makeMove(MOVES.earthquake);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -416,12 +413,12 @@ describe("Bug #731: Sturdy prevents one-hit KOs via capLethalDamage", () => {
     // Source: Showdown data/abilities.ts -- sturdy only activates when damage >= currentHp
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      ability: "sturdy",
+      ability: ABILITIES.sturdy,
       maxHp: 200,
       currentHp: 200,
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("tackle");
+    const move = makeMove(MOVES.tackle);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(50, defender, attacker, move, state);
@@ -440,20 +437,20 @@ describe("Bug #725: Focus Sash prevents lethal hits via capLethalDamage", () => 
     // Source: Showdown data/items.ts -- focussash: onDamage at full HP
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      heldItem: "focus-sash",
+      heldItem: ITEMS.focusSash,
       maxHp: 200,
       currentHp: 200,
       nickname: "Shedinja",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("fire-blast");
+    const move = makeMove(MOVES.fireBlast);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
 
     expect(result.damage).toBe(199); // 200 - 1
     expect(result.survived).toBe(true);
-    expect(result.consumedItem).toBe("focus-sash");
+    expect(result.consumedItem).toBe(ITEMS.focusSash);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.messages[0]).toContain("Focus Sash");
   });
@@ -462,13 +459,13 @@ describe("Bug #725: Focus Sash prevents lethal hits via capLethalDamage", () => 
     // Source: Showdown data/items.ts -- focussash only activates at full HP
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      heldItem: "focus-sash",
+      heldItem: ITEMS.focusSash,
       maxHp: 200,
       currentHp: 180, // NOT full HP
       nickname: "Alakazam",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("shadow-ball");
+    const move = makeMove(MOVES.shadowBall);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -483,13 +480,13 @@ describe("Bug #725: Focus Sash prevents lethal hits via capLethalDamage", () => 
     // Sturdy activates first.
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      ability: "sturdy",
-      heldItem: "focus-sash",
+      ability: ABILITIES.sturdy,
+      heldItem: ITEMS.focusSash,
       maxHp: 200,
       currentHp: 200,
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("earthquake");
+    const move = makeMove(MOVES.earthquake);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -512,14 +509,14 @@ describe("Bug #804: Focus Sash respects item suppression (Klutz, Embargo, Magic 
     // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      heldItem: "focus-sash",
-      ability: "klutz",
+      heldItem: ITEMS.focusSash,
+      ability: GEN9_ABILITY_IDS.klutz,
       maxHp: 200,
       currentHp: 200,
       nickname: "Alakazam",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("earthquake");
+    const move = makeMove(MOVES.earthquake);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -534,14 +531,14 @@ describe("Bug #804: Focus Sash respects item suppression (Klutz, Embargo, Magic 
     // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      heldItem: "focus-sash",
+      heldItem: ITEMS.focusSash,
       maxHp: 200,
       currentHp: 200,
       nickname: "Gardevoir",
-      volatileStatuses: new Map([["embargo", { turnsLeft: 5 }]]),
+      volatileStatuses: new Map([[VOLATILES.embargo, { turnsLeft: 5 }]]),
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("shadow-ball");
+    const move = makeMove(MOVES.shadowBall);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
@@ -555,13 +552,13 @@ describe("Bug #804: Focus Sash respects item suppression (Klutz, Embargo, Magic 
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all held item effects
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      heldItem: "focus-sash",
+      heldItem: ITEMS.focusSash,
       maxHp: 200,
       currentHp: 200,
       nickname: "Espeon",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("dark-pulse");
+    const move = makeMove(MOVES.darkPulse);
     const state = makeState();
     (state as any).magicRoom = { active: true, turnsLeft: 3 };
 
@@ -577,20 +574,20 @@ describe("Bug #804: Focus Sash respects item suppression (Klutz, Embargo, Magic 
     // Regression: ensure the suppression check doesn't break normal behavior
     const ruleset = new Gen9Ruleset();
     const defender = makeActivePokemon({
-      heldItem: "focus-sash",
+      heldItem: ITEMS.focusSash,
       maxHp: 200,
       currentHp: 200,
       nickname: "Shedinja",
     });
     const attacker = makeActivePokemon({});
-    const move = makeMove("fire-blast");
+    const move = makeMove(MOVES.fireBlast);
     const state = makeState();
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
 
     expect(result.damage).toBe(199); // 200 - 1
     expect(result.survived).toBe(true);
-    expect(result.consumedItem).toBe("focus-sash");
+    expect(result.consumedItem).toBe(ITEMS.focusSash);
     expect(result.messages[0]).toContain("Focus Sash");
   });
 });
@@ -604,7 +601,7 @@ describe("Bug #726: Lansat Berry grants crit stages via focus-energy volatile", 
     // Source: Showdown data/items.ts -- lansatberry onEat: source.addVolatile('focusenergy')
     // Source: Showdown data/conditions.ts -- focusenergy: onModifyCritRatio: critRatio + 2
     const pokemon = makeActivePokemon({
-      heldItem: "lansat-berry",
+      heldItem: ITEMS.lansatBerry,
       maxHp: 200,
       currentHp: 40, // 20% = below 25% threshold
       nickname: "Pikachu",
@@ -620,14 +617,14 @@ describe("Bug #726: Lansat Berry grants crit stages via focus-energy volatile", 
     // The item should activate and set focus-energy volatile
     if (result.activated) {
       // Check the volatile was set directly on the Pokemon
-      expect(pokemon.volatileStatuses.has("focus-energy")).toBe(true);
+      expect(pokemon.volatileStatuses.has(VOLATILES.focusEnergy)).toBe(true);
     }
   });
 
   it("given a Pokemon above 25% HP with Lansat Berry, when the item is checked, then it does NOT activate", () => {
     // Source: Showdown data/items.ts -- lansatberry: only activates at <= 25% HP
     const pokemon = makeActivePokemon({
-      heldItem: "lansat-berry",
+      heldItem: ITEMS.lansatBerry,
       maxHp: 200,
       currentHp: 100, // 50% = above 25% threshold
     });
@@ -651,12 +648,12 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
   it("given a grounded Pokemon on Misty Terrain, when confusion would be inflicted, then shouldBlockVolatile returns true", () => {
     // Source: Showdown data/conditions.ts -- mistyterrain.onTryAddVolatile: blocks confusion
     const ruleset = new Gen9Ruleset();
-    const target = makeActivePokemon({ types: ["normal"] }); // grounded
+    const target = makeActivePokemon({ types: [TYPES.normal] }); // grounded
     const state = makeState({
-      terrain: { type: "misty" as any, turnsLeft: 5, source: "misty-surge" },
+      terrain: { type: TERRAINS.misty as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
     });
 
-    const blocked = ruleset.shouldBlockVolatile!("confusion", target, state);
+    const blocked = ruleset.shouldBlockVolatile!(VOLATILES.confusion, target, state);
 
     expect(blocked).toBe(true);
   });
@@ -664,12 +661,12 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
   it("given a Flying-type Pokemon on Misty Terrain, when confusion would be inflicted, then shouldBlockVolatile returns false", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: Flying type = not grounded
     const ruleset = new Gen9Ruleset();
-    const target = makeActivePokemon({ types: ["flying"] }); // NOT grounded
+    const target = makeActivePokemon({ types: [TYPES.flying] }); // NOT grounded
     const state = makeState({
-      terrain: { type: "misty" as any, turnsLeft: 5, source: "misty-surge" },
+      terrain: { type: TERRAINS.misty as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
     });
 
-    const blocked = ruleset.shouldBlockVolatile!("confusion", target, state);
+    const blocked = ruleset.shouldBlockVolatile!(VOLATILES.confusion, target, state);
 
     expect(blocked).toBe(false);
   });
@@ -677,10 +674,10 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
   it("given no terrain is active, when confusion would be inflicted, then shouldBlockVolatile returns false", () => {
     // Source: No terrain = no confusion blocking
     const ruleset = new Gen9Ruleset();
-    const target = makeActivePokemon({ types: ["normal"] });
+    const target = makeActivePokemon({ types: [TYPES.normal] });
     const state = makeState({ terrain: null as any });
 
-    const blocked = ruleset.shouldBlockVolatile!("confusion", target, state);
+    const blocked = ruleset.shouldBlockVolatile!(VOLATILES.confusion, target, state);
 
     expect(blocked).toBe(false);
   });
@@ -688,12 +685,12 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
   it("given Misty Terrain is active, when a non-confusion volatile would be inflicted, then shouldBlockVolatile returns false", () => {
     // Source: Showdown data/conditions.ts -- mistyterrain only blocks confusion, not other volatiles
     const ruleset = new Gen9Ruleset();
-    const target = makeActivePokemon({ types: ["normal"] });
+    const target = makeActivePokemon({ types: [TYPES.normal] });
     const state = makeState({
-      terrain: { type: "misty" as any, turnsLeft: 5, source: "misty-surge" },
+      terrain: { type: TERRAINS.misty as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
     });
 
-    const blocked = ruleset.shouldBlockVolatile!("taunt", target, state);
+    const blocked = ruleset.shouldBlockVolatile!(VOLATILES.taunt, target, state);
 
     expect(blocked).toBe(false);
   });
@@ -709,10 +706,10 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     //   if (target.isGrounded() && move.priority > 0) return false
     const ruleset = new Gen9Ruleset();
     const actor = makeActivePokemon({});
-    const defender = makeActivePokemon({ types: ["normal"] }); // grounded
-    const move = makeMove("quick-attack", { priority: 1 });
+    const defender = makeActivePokemon({ types: [TYPES.normal] }); // grounded
+    const move = makeMove(MOVES.quickAttack, { priority: 1 });
     const state = makeState({
-      terrain: { type: "psychic" as any, turnsLeft: 5, source: "psychic-surge" },
+      terrain: { type: TERRAINS.psychic as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.psychicSurge },
     });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
@@ -724,10 +721,10 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     // Source: Showdown sim/pokemon.ts -- isGrounded: Flying type = not grounded
     const ruleset = new Gen9Ruleset();
     const actor = makeActivePokemon({});
-    const defender = makeActivePokemon({ types: ["flying"] }); // NOT grounded
-    const move = makeMove("quick-attack", { priority: 1 });
+    const defender = makeActivePokemon({ types: [TYPES.flying] }); // NOT grounded
+    const move = makeMove(MOVES.quickAttack, { priority: 1 });
     const state = makeState({
-      terrain: { type: "psychic" as any, turnsLeft: 5, source: "psychic-surge" },
+      terrain: { type: TERRAINS.psychic as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.psychicSurge },
     });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
@@ -739,10 +736,10 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     // Source: Showdown data/conditions.ts -- psychicterrain only blocks priority > 0
     const ruleset = new Gen9Ruleset();
     const actor = makeActivePokemon({});
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const move = makeMove("tackle", { priority: 0 });
+    const defender = makeActivePokemon({ types: [TYPES.normal] });
+    const move = makeMove(MOVES.tackle, { priority: 0 });
     const state = makeState({
-      terrain: { type: "psychic" as any, turnsLeft: 5, source: "psychic-surge" },
+      terrain: { type: TERRAINS.psychic as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.psychicSurge },
     });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
@@ -754,8 +751,8 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     // Source: No terrain = no priority blocking
     const ruleset = new Gen9Ruleset();
     const actor = makeActivePokemon({});
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const move = makeMove("quick-attack", { priority: 1 });
+    const defender = makeActivePokemon({ types: [TYPES.normal] });
+    const move = makeMove(MOVES.quickAttack, { priority: 1 });
     const state = makeState({ terrain: null as any });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
