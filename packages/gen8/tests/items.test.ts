@@ -26,10 +26,25 @@ import {
   isChoiceLocked,
 } from "../src/Gen8Items";
 import { Gen8Ruleset } from "../src/Gen8Ruleset";
+import { GEN8_TEST_VALUES } from "./helpers/reference-data";
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
+
+const {
+  abilities: ABILITIES,
+  battle: BATTLE,
+  categories: CATEGORIES,
+  expectedAmounts: EXPECTED,
+  fixedPoint: FIXED_POINT,
+  hp: HP,
+  items: ITEMS,
+  moves: MOVES,
+  pokemon: POKEMON,
+  volatiles: VOLATILES,
+  types: TYPES,
+} = GEN8_TEST_VALUES;
 
 function makeActive(overrides: {
   level?: number;
@@ -56,28 +71,28 @@ function makeActive(overrides: {
   const speed = overrides.speed ?? 100;
   return {
     pokemon: {
-      uid: "test",
+      uid: POKEMON.uid,
       speciesId: overrides.speciesId ?? 1,
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: POKEMON.nature,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
-      abilitySlot: "normal1" as const,
+      ability: overrides.ability ?? POKEMON.ability,
+      abilitySlot: POKEMON.abilitySlot,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: POKEMON.gender as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: POKEMON.pokeball,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -91,8 +106,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [POKEMON.defaultType as PokemonType],
+    ability: overrides.ability ?? POKEMON.ability,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -122,7 +137,7 @@ function makeState(
   } = {},
 ): BattleState {
   return {
-    format: { generation: 8, battleType: "singles" },
+    format: { generation: 8, battleType: BATTLE.singles },
     sides: [
       { active: [], bench: [], entryHazards: {} } as any,
       { active: [], bench: [], entryHazards: {} } as any,
@@ -171,48 +186,48 @@ describe("Choice Items", () => {
   describe("getChoiceItemBoost", () => {
     // Source: Showdown data/items.ts -- Choice Band onModifyAtk: 1.5x
     it("given Choice Band, when getting boost, then returns atk 1.5x", () => {
-      const result = getChoiceItemBoost("choice-band");
+      const result = getChoiceItemBoost(ITEMS.choiceBand);
       expect(result).toEqual({ stat: "atk", multiplier: 1.5 });
     });
 
     // Source: Showdown data/items.ts -- Choice Specs onModifySpA: 1.5x
     it("given Choice Specs, when getting boost, then returns spatk 1.5x", () => {
-      const result = getChoiceItemBoost("choice-specs");
+      const result = getChoiceItemBoost(ITEMS.choiceSpecs);
       expect(result).toEqual({ stat: "spatk", multiplier: 1.5 });
     });
 
     // Source: Showdown data/items.ts -- Choice Scarf onModifySpe: 1.5x
     it("given Choice Scarf, when getting boost, then returns spe 1.5x", () => {
-      const result = getChoiceItemBoost("choice-scarf");
+      const result = getChoiceItemBoost(ITEMS.choiceScarf);
       expect(result).toEqual({ stat: "spe", multiplier: 1.5 });
     });
 
     it("given a non-choice item, when getting boost, then returns null", () => {
-      const result = getChoiceItemBoost("life-orb");
+      const result = getChoiceItemBoost(ITEMS.lifeOrb);
       expect(result).toBe(null);
     });
   });
 
   describe("isChoiceLocked", () => {
     it("given Pokemon with Choice Band and not Dynamaxed, when checking lock, then returns true", () => {
-      const pokemon = makeActive({ heldItem: "choice-band", isDynamaxed: false });
+      const pokemon = makeActive({ heldItem: ITEMS.choiceBand, isDynamaxed: false });
       expect(isChoiceLocked(pokemon)).toBe(true);
     });
 
     it("given Pokemon with Choice Specs and not Dynamaxed, when checking lock, then returns true", () => {
-      const pokemon = makeActive({ heldItem: "choice-specs", isDynamaxed: false });
+      const pokemon = makeActive({ heldItem: ITEMS.choiceSpecs, isDynamaxed: false });
       expect(isChoiceLocked(pokemon)).toBe(true);
     });
 
     // Source: Bulbapedia "Dynamax" -- Choice items do not lock during Dynamax
     // Source: Showdown sim/battle-actions.ts Gen 8 -- Dynamax suppresses Choice lock
     it("given Pokemon with Choice Band and isDynamaxed=true, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: "choice-band", isDynamaxed: true });
+      const pokemon = makeActive({ heldItem: ITEMS.choiceBand, isDynamaxed: true });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
 
     it("given Pokemon with Choice Scarf and isDynamaxed=true, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: "choice-scarf", isDynamaxed: true });
+      const pokemon = makeActive({ heldItem: ITEMS.choiceScarf, isDynamaxed: true });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
 
@@ -222,7 +237,7 @@ describe("Choice Items", () => {
     });
 
     it("given Pokemon with non-choice item, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: "life-orb" });
+      const pokemon = makeActive({ heldItem: ITEMS.lifeOrb });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
   });
@@ -236,82 +251,82 @@ describe("getItemDamageModifier", () => {
   // Source: Showdown data/items.ts -- Choice Band onModifyAtk: chainModify(1.5)
   // 1.5x in 4096-based = 6144
   it("given Choice Band with physical move, when calculating modifier, then returns 6144", () => {
-    const result = getItemDamageModifier("choice-band", {
-      moveCategory: "physical",
-      moveType: "normal",
+    const result = getItemDamageModifier(ITEMS.choiceBand, {
+      moveCategory: CATEGORIES.physical,
+      moveType: TYPES.normal,
     });
-    expect(result).toBe(6144);
+    expect(result).toBe(FIXED_POINT.boost15);
   });
 
   it("given Choice Band with special move, when calculating modifier, then returns 4096 (no effect)", () => {
-    const result = getItemDamageModifier("choice-band", {
-      moveCategory: "special",
-      moveType: "normal",
+    const result = getItemDamageModifier(ITEMS.choiceBand, {
+      moveCategory: CATEGORIES.special,
+      moveType: TYPES.normal,
     });
-    expect(result).toBe(4096);
+    expect(result).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Showdown data/items.ts -- Choice Specs onModifySpA: chainModify(1.5)
   it("given Choice Specs with special move, when calculating modifier, then returns 6144", () => {
-    const result = getItemDamageModifier("choice-specs", {
-      moveCategory: "special",
-      moveType: "normal",
+    const result = getItemDamageModifier(ITEMS.choiceSpecs, {
+      moveCategory: CATEGORIES.special,
+      moveType: TYPES.normal,
     });
-    expect(result).toBe(6144);
+    expect(result).toBe(FIXED_POINT.boost15);
   });
 
   it("given Choice Specs with physical move, when calculating modifier, then returns 4096 (no effect)", () => {
-    const result = getItemDamageModifier("choice-specs", {
-      moveCategory: "physical",
-      moveType: "normal",
+    const result = getItemDamageModifier(ITEMS.choiceSpecs, {
+      moveCategory: CATEGORIES.physical,
+      moveType: TYPES.normal,
     });
-    expect(result).toBe(4096);
+    expect(result).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Showdown data/items.ts -- Life Orb onModifyDamage: chainModify([5325, 4096])
   // 1.3x in 4096-based = 5325
   it("given Life Orb, when calculating modifier, then returns 5325", () => {
-    const result = getItemDamageModifier("life-orb", {
-      moveCategory: "physical",
-      moveType: "fire",
+    const result = getItemDamageModifier(ITEMS.lifeOrb, {
+      moveCategory: CATEGORIES.physical,
+      moveType: TYPES.fire,
     });
-    expect(result).toBe(5325);
+    expect(result).toBe(FIXED_POINT.boost13);
   });
 
   it("given Life Orb with special move, when calculating modifier, then returns 5325", () => {
-    const result = getItemDamageModifier("life-orb", {
-      moveCategory: "special",
-      moveType: "water",
+    const result = getItemDamageModifier(ITEMS.lifeOrb, {
+      moveCategory: CATEGORIES.special,
+      moveType: TYPES.water,
     });
-    expect(result).toBe(5325);
+    expect(result).toBe(FIXED_POINT.boost13);
   });
 
   it("given unrecognized item, when calculating modifier, then returns 4096 (1.0x)", () => {
-    const result = getItemDamageModifier("potion", {
-      moveCategory: "physical",
-      moveType: "normal",
+    const result = getItemDamageModifier(ITEMS.potion, {
+      moveCategory: CATEGORIES.physical,
+      moveType: TYPES.normal,
     });
-    expect(result).toBe(4096);
+    expect(result).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Showdown data/items.ts -- type-boost onBasePower and Life Orb onModifyDamage
   //   only fire on damaging hits, never on status moves
   it("given Life Orb with a status move, when calculating modifier, then returns 4096 (no boost)", () => {
     // Status moves (Will-O-Wisp, Toxic, etc.) must not receive a damage modifier
-    const result = getItemDamageModifier("life-orb", {
-      moveCategory: "status",
-      moveType: "fire",
+    const result = getItemDamageModifier(ITEMS.lifeOrb, {
+      moveCategory: CATEGORIES.status,
+      moveType: TYPES.fire,
     });
-    expect(result).toBe(4096);
+    expect(result).toBe(FIXED_POINT.neutral);
   });
 
   it("given Charcoal with a Fire-type status move, when calculating modifier, then returns 4096 (no boost)", () => {
     // Type-boost items must not activate for status moves regardless of type match
-    const result = getItemDamageModifier("charcoal", {
-      moveCategory: "status",
-      moveType: "fire",
+    const result = getItemDamageModifier(ITEMS.charcoal, {
+      moveCategory: CATEGORIES.status,
+      moveType: TYPES.fire,
     });
-    expect(result).toBe(4096);
+    expect(result).toBe(FIXED_POINT.neutral);
   });
 });
 
@@ -323,39 +338,39 @@ describe("getTypeBoostItem", () => {
   // Source: Showdown data/items.ts -- Charcoal onBasePower: chainModify([4915, 4096])
   // 1.2x in 4096-based = 4915
   it("given Charcoal with Fire move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem("charcoal", "fire")).toBe(4915);
+    expect(getTypeBoostItem(ITEMS.charcoal, TYPES.fire)).toBe(FIXED_POINT.boost12);
   });
 
   it("given Charcoal with Water move, when calculating modifier, then returns 4096 (no match)", () => {
-    expect(getTypeBoostItem("charcoal", "water")).toBe(4096);
+    expect(getTypeBoostItem(ITEMS.charcoal, TYPES.water)).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Showdown data/items.ts -- Mystic Water onBasePower: chainModify([4915, 4096])
   it("given Mystic Water with Water move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem("mystic-water", "water")).toBe(4915);
+    expect(getTypeBoostItem(ITEMS.mysticWater, TYPES.water)).toBe(FIXED_POINT.boost12);
   });
 
   // Source: Showdown data/items.ts -- Flame Plate onBasePower: chainModify([4915, 4096])
   it("given Flame Plate with Fire move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem("flame-plate", "fire")).toBe(4915);
+    expect(getTypeBoostItem(ITEMS.flamePlate, TYPES.fire)).toBe(FIXED_POINT.boost12);
   });
 
   it("given Flame Plate with Water move, when calculating modifier, then returns 4096 (no match)", () => {
-    expect(getTypeBoostItem("flame-plate", "water")).toBe(4096);
+    expect(getTypeBoostItem(ITEMS.flamePlate, TYPES.water)).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Showdown data/items.ts -- Sea Incense onBasePower: chainModify([4915, 4096])
   it("given Sea Incense with Water move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem("sea-incense", "water")).toBe(4915);
+    expect(getTypeBoostItem(ITEMS.seaIncense, TYPES.water)).toBe(FIXED_POINT.boost12);
   });
 
   it("given non-boost item, when calculating modifier, then returns 4096", () => {
-    expect(getTypeBoostItem("leftovers", "normal")).toBe(4096);
+    expect(getTypeBoostItem(ITEMS.leftovers, TYPES.normal)).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Showdown data/items.ts -- Silk Scarf onBasePower: chainModify([4915, 4096])
   it("given Silk Scarf with Normal move, when calculating modifier, then returns 4915", () => {
-    expect(getTypeBoostItem("silk-scarf", "normal")).toBe(4915);
+    expect(getTypeBoostItem(ITEMS.silkScarf, TYPES.normal)).toBe(FIXED_POINT.boost12);
   });
 });
 
@@ -367,29 +382,29 @@ describe("getTypeResistBerry", () => {
   // Source: Showdown data/items.ts -- Occa Berry onSourceModifyDamage: chainModify(0.5)
   // 0.5x in 4096-based = 2048
   it("given Occa Berry with super-effective Fire move, when calculating modifier, then returns 2048", () => {
-    expect(getTypeResistBerry("occa-berry", "fire", 2)).toBe(2048);
+    expect(getTypeResistBerry(ITEMS.occaBerry, TYPES.fire, 2)).toBe(FIXED_POINT.resistHalf);
   });
 
   it("given Occa Berry with neutral Fire move, when calculating modifier, then returns 4096 (no activation)", () => {
-    expect(getTypeResistBerry("occa-berry", "fire", 1)).toBe(4096);
+    expect(getTypeResistBerry(ITEMS.occaBerry, TYPES.fire, 1)).toBe(FIXED_POINT.neutral);
   });
 
   it("given Occa Berry with non-Fire move, when calculating modifier, then returns 4096 (wrong type)", () => {
-    expect(getTypeResistBerry("occa-berry", "water", 2)).toBe(4096);
+    expect(getTypeResistBerry(ITEMS.occaBerry, TYPES.water, 2)).toBe(FIXED_POINT.neutral);
   });
 
   // Source: Bulbapedia "Chilan Berry" -- activates on any Normal hit (no SE requirement)
   it("given Chilan Berry with Normal move (neutral), when calculating modifier, then returns 2048", () => {
-    expect(getTypeResistBerry("chilan-berry", "normal", 1)).toBe(2048);
+    expect(getTypeResistBerry(ITEMS.chilanBerry, TYPES.normal, 1)).toBe(FIXED_POINT.resistHalf);
   });
 
   // Source: Showdown data/items.ts -- Yache Berry: Ice resist
   it("given Yache Berry with 4x effective Ice move, when calculating modifier, then returns 2048", () => {
-    expect(getTypeResistBerry("yache-berry", "ice", 4)).toBe(2048);
+    expect(getTypeResistBerry(ITEMS.yacheBerry, TYPES.ice, 4)).toBe(FIXED_POINT.resistHalf);
   });
 
   it("given non-berry item, when calculating modifier, then returns 4096", () => {
-    expect(getTypeResistBerry("leftovers", "fire", 2)).toBe(4096);
+    expect(getTypeResistBerry(ITEMS.leftovers, TYPES.fire, 2)).toBe(FIXED_POINT.neutral);
   });
 });
 
@@ -402,17 +417,17 @@ describe("getLifeOrbRecoil", () => {
   //   this.damage(pokemon.baseMaxhp / 10)
   // floor(200 / 10) = 20
   it("given 200 max HP, when calculating recoil, then returns 20", () => {
-    expect(getLifeOrbRecoil(200)).toBe(20);
+    expect(getLifeOrbRecoil(HP.lifeOrbRecoil)).toBe(EXPECTED.lifeOrbRecoil200);
   });
 
   // floor(160 / 10) = 16
   it("given 160 max HP, when calculating recoil, then returns 16", () => {
-    expect(getLifeOrbRecoil(160)).toBe(16);
+    expect(getLifeOrbRecoil(HP.leftOversRecoil)).toBe(EXPECTED.lifeOrbRecoil160);
   });
 
   // floor(1 / 10) = 0, minimum 1
   it("given 1 max HP, when calculating recoil, then returns 1 (minimum)", () => {
-    expect(getLifeOrbRecoil(1)).toBe(1);
+    expect(getLifeOrbRecoil(HP.min)).toBe(EXPECTED.minimum);
   });
 });
 
@@ -424,17 +439,17 @@ describe("getLeftoversHeal", () => {
   // Source: Showdown data/items.ts -- Leftovers onResidual: heal(target.baseMaxhp / 16)
   // floor(320 / 16) = 20
   it("given 320 max HP, when calculating heal, then returns 20", () => {
-    expect(getLeftoversHeal(320)).toBe(20);
+    expect(getLeftoversHeal(HP.blackSludgeHeal)).toBe(EXPECTED.leftoversHeal320);
   });
 
   // floor(200 / 16) = 12
   it("given 200 max HP, when calculating heal, then returns 12", () => {
-    expect(getLeftoversHeal(200)).toBe(12);
+    expect(getLeftoversHeal(HP.lifeOrbRecoil)).toBe(EXPECTED.leftoversHeal200);
   });
 
   // floor(1 / 16) = 0, minimum 1
   it("given 1 max HP, when calculating heal, then returns 1 (minimum)", () => {
-    expect(getLeftoversHeal(1)).toBe(1);
+    expect(getLeftoversHeal(HP.min)).toBe(EXPECTED.minimum);
   });
 });
 
@@ -447,25 +462,28 @@ describe("getBlackSludgeEffect", () => {
   //   Poison: heal target.baseMaxhp / 16
   //   Non-poison: damage target.baseMaxhp / 8
   it("given Poison-type with 320 max HP, when calculating effect, then heals 20", () => {
-    const result = getBlackSludgeEffect({ types: ["poison"], maxHp: 320 });
-    expect(result).toEqual({ type: "heal", amount: 20 });
+    const result = getBlackSludgeEffect({ types: [TYPES.poison], maxHp: HP.blackSludgeHeal });
+    expect(result).toEqual({ type: "heal", amount: EXPECTED.blackSludgeHeal320 });
   });
 
   it("given Poison/Dark-type with 200 max HP, when calculating effect, then heals 12", () => {
-    const result = getBlackSludgeEffect({ types: ["poison", "dark"], maxHp: 200 });
-    expect(result).toEqual({ type: "heal", amount: 12 });
+    const result = getBlackSludgeEffect({
+      types: [TYPES.poison, TYPES.dark],
+      maxHp: HP.lifeOrbRecoil,
+    });
+    expect(result).toEqual({ type: "heal", amount: EXPECTED.blackSludgeHeal200 });
   });
 
   it("given Normal-type with 320 max HP, when calculating effect, then damages 40", () => {
-    const result = getBlackSludgeEffect({ types: ["normal"], maxHp: 320 });
+    const result = getBlackSludgeEffect({ types: [TYPES.normal], maxHp: HP.blackSludgeHeal });
     // floor(320 / 8) = 40
-    expect(result).toEqual({ type: "damage", amount: 40 });
+    expect(result).toEqual({ type: "damage", amount: EXPECTED.blackSludgeDamage320 });
   });
 
   it("given Fire-type with 200 max HP, when calculating effect, then damages 25", () => {
-    const result = getBlackSludgeEffect({ types: ["fire"], maxHp: 200 });
+    const result = getBlackSludgeEffect({ types: [TYPES.fire], maxHp: HP.lifeOrbRecoil });
     // floor(200 / 8) = 25
-    expect(result).toEqual({ type: "damage", amount: 25 });
+    expect(result).toEqual({ type: "damage", amount: EXPECTED.blackSludgeDamage200 });
   });
 });
 
@@ -478,17 +496,17 @@ describe("getRockyHelmetDamage", () => {
   //   this.damage(source.baseMaxhp / 6, source, target)
   // floor(300 / 6) = 50
   it("given 300 max HP, when calculating chip damage, then returns 50", () => {
-    expect(getRockyHelmetDamage(300)).toBe(50);
+    expect(getRockyHelmetDamage(HP.rockyHelmetDamage)).toBe(EXPECTED.rockyHelmetDamage300);
   });
 
   // floor(200 / 6) = 33
   it("given 200 max HP, when calculating chip damage, then returns 33", () => {
-    expect(getRockyHelmetDamage(200)).toBe(33);
+    expect(getRockyHelmetDamage(HP.lifeOrbRecoil)).toBe(EXPECTED.rockyHelmetDamage200);
   });
 
   // floor(1 / 6) = 0, minimum 1
   it("given 1 max HP, when calculating chip damage, then returns 1 (minimum)", () => {
-    expect(getRockyHelmetDamage(1)).toBe(1);
+    expect(getRockyHelmetDamage(HP.min)).toBe(1);
   });
 });
 
@@ -500,19 +518,23 @@ describe("getFocusSashTrigger", () => {
   // Source: Showdown data/items.ts -- Focus Sash onDamagePriority:
   //   if (pokemon.hp === pokemon.maxhp && damage >= pokemon.hp)
   it("given full HP and lethal damage, when checking trigger, then returns true", () => {
-    expect(getFocusSashTrigger({ currentHp: 200, maxHp: 200, damage: 200 })).toBe(true);
+    expect(
+      getFocusSashTrigger({ currentHp: HP.lifeOrbRecoil, maxHp: HP.lifeOrbRecoil, damage: HP.lifeOrbRecoil }),
+    ).toBe(true);
   });
 
   it("given full HP and overkill damage, when checking trigger, then returns true", () => {
-    expect(getFocusSashTrigger({ currentHp: 200, maxHp: 200, damage: 500 })).toBe(true);
+    expect(
+      getFocusSashTrigger({ currentHp: HP.lifeOrbRecoil, maxHp: HP.lifeOrbRecoil, damage: 500 }),
+    ).toBe(true);
   });
 
   it("given not full HP and lethal damage, when checking trigger, then returns false", () => {
-    expect(getFocusSashTrigger({ currentHp: 150, maxHp: 200, damage: 200 })).toBe(false);
+    expect(getFocusSashTrigger({ currentHp: 150, maxHp: HP.lifeOrbRecoil, damage: HP.lifeOrbRecoil })).toBe(false);
   });
 
   it("given full HP and non-lethal damage, when checking trigger, then returns false", () => {
-    expect(getFocusSashTrigger({ currentHp: 200, maxHp: 200, damage: 100 })).toBe(false);
+    expect(getFocusSashTrigger({ currentHp: HP.lifeOrbRecoil, maxHp: HP.lifeOrbRecoil, damage: 100 })).toBe(false);
   });
 });
 
@@ -524,11 +546,11 @@ describe("getEvioliteModifier", () => {
   // Source: Showdown data/items.ts -- Eviolite onModifyDef/onModifySpD: chainModify(1.5)
   // 1.5x in 4096-based = 6144
   it("given unevolved Pokemon, when calculating modifier, then returns 6144", () => {
-    expect(getEvioliteModifier(true)).toBe(6144);
+    expect(getEvioliteModifier(true)).toBe(EXPECTED.evioliteBoost);
   });
 
   it("given fully evolved Pokemon, when calculating modifier, then returns 4096 (no boost)", () => {
-    expect(getEvioliteModifier(false)).toBe(4096);
+    expect(getEvioliteModifier(false)).toBe(FIXED_POINT.neutral);
   });
 });
 
@@ -540,12 +562,12 @@ describe("hasHeavyDutyBoots", () => {
   // Source: Showdown data/items.ts -- heavydutyboots: immunity to entry hazards
   // Source: Bulbapedia "Heavy-Duty Boots" -- protects from effects of entry hazards
   it("given Pokemon holding Heavy-Duty Boots, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: "heavy-duty-boots" });
+    const pokemon = makeActive({ heldItem: ITEMS.heavyDutyBoots });
     expect(hasHeavyDutyBoots(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Leftovers, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: "leftovers" });
+    const pokemon = makeActive({ heldItem: ITEMS.leftovers });
     expect(hasHeavyDutyBoots(pokemon)).toBe(false);
   });
 
@@ -563,12 +585,12 @@ describe("hasUtilityUmbrella", () => {
   // Source: Showdown data/items.ts -- utilityumbrella: weather immunity for holder
   // Source: Bulbapedia "Utility Umbrella" -- negates weather effects
   it("given Pokemon holding Utility Umbrella, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: "utility-umbrella" });
+    const pokemon = makeActive({ heldItem: ITEMS.utilityUmbrella });
     expect(hasUtilityUmbrella(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Life Orb, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: "life-orb" });
+    const pokemon = makeActive({ heldItem: ITEMS.lifeOrb });
     expect(hasUtilityUmbrella(pokemon)).toBe(false);
   });
 });
@@ -580,12 +602,12 @@ describe("hasUtilityUmbrella", () => {
 describe("isAssaultVestHolder", () => {
   // Source: Showdown data/items.ts -- Assault Vest onModifySpD/onDisableMove
   it("given Pokemon holding Assault Vest, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: "assault-vest" });
+    const pokemon = makeActive({ heldItem: ITEMS.assaultVest });
     expect(isAssaultVestHolder(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Leftovers, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: "leftovers" });
+    const pokemon = makeActive({ heldItem: ITEMS.leftovers });
     expect(isAssaultVestHolder(pokemon)).toBe(false);
   });
 });
@@ -598,7 +620,7 @@ describe("hasAirBalloon", () => {
   // Source: Showdown data/items.ts -- Air Balloon: immunity to Ground
   // Source: Bulbapedia "Air Balloon" -- immune to Ground-type moves while held
   it("given Pokemon holding Air Balloon, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: "air-balloon" });
+    const pokemon = makeActive({ heldItem: ITEMS.airBalloon });
     expect(hasAirBalloon(pokemon)).toBe(true);
   });
 
@@ -615,12 +637,12 @@ describe("hasAirBalloon", () => {
 describe("hasIronBall", () => {
   // Source: Showdown data/items.ts -- Iron Ball: onModifySpe 0.5x, grounds holder
   it("given Pokemon holding Iron Ball, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: "iron-ball" });
+    const pokemon = makeActive({ heldItem: ITEMS.ironBall });
     expect(hasIronBall(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Leftovers, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: "leftovers" });
+    const pokemon = makeActive({ heldItem: ITEMS.leftovers });
     expect(hasIronBall(pokemon)).toBe(false);
   });
 });
@@ -698,50 +720,50 @@ describe("Room Service", () => {
 describe("getConsumableItemEffect", () => {
   // Source: Showdown data/items.ts -- Blunder Policy: boost speed +2
   it("given Blunder Policy and move missed, when getting effect, then returns speed +2 consumed", () => {
-    const result = getConsumableItemEffect("blunder-policy", { moveMissed: true });
+    const result = getConsumableItemEffect(ITEMS.blunderPolicy, { moveMissed: true });
     expect(result).toEqual({ stat: "speed", stages: 2, consumed: true });
   });
 
   it("given Blunder Policy and move hit, when getting effect, then returns null", () => {
-    const result = getConsumableItemEffect("blunder-policy", { moveMissed: false });
+    const result = getConsumableItemEffect(ITEMS.blunderPolicy, { moveMissed: false });
     expect(result).toBe(null);
   });
 
   // Source: Showdown data/items.ts -- Throat Spray: boost spa +1
   it("given Throat Spray and sound move, when getting effect, then returns spAttack +1 consumed", () => {
-    const result = getConsumableItemEffect("throat-spray", { moveFlags: { sound: true } });
+    const result = getConsumableItemEffect(ITEMS.throatSpray, { moveFlags: { sound: true } });
     expect(result).toEqual({ stat: "spAttack", stages: 1, consumed: true });
   });
 
   it("given Throat Spray and non-sound move, when getting effect, then returns null", () => {
-    const result = getConsumableItemEffect("throat-spray", { moveFlags: { sound: false } });
+    const result = getConsumableItemEffect(ITEMS.throatSpray, { moveFlags: { sound: false } });
     expect(result).toBe(null);
   });
 
   // Source: Showdown data/items.ts -- Room Service: boost spe -1
   it("given Room Service and Trick Room active, when getting effect, then returns speed -1 consumed", () => {
-    const result = getConsumableItemEffect("room-service", { trickRoomActive: true });
+    const result = getConsumableItemEffect(ITEMS.roomService, { trickRoomActive: true });
     expect(result).toEqual({ stat: "speed", stages: -1, consumed: true });
   });
 
   it("given Room Service and no Trick Room, when getting effect, then returns null", () => {
-    const result = getConsumableItemEffect("room-service", { trickRoomActive: false });
+    const result = getConsumableItemEffect(ITEMS.roomService, { trickRoomActive: false });
     expect(result).toBe(null);
   });
 
   // Source: Showdown data/items.ts -- Eject Pack: force switch on stat decrease
   it("given Eject Pack and stat decreased, when getting effect, then returns consumed with no stat change", () => {
-    const result = getConsumableItemEffect("eject-pack", { statChange: -1 });
+    const result = getConsumableItemEffect(ITEMS.ejectPack, { statChange: -1 });
     expect(result).toEqual({ stat: "none", stages: 0, consumed: true });
   });
 
   it("given Eject Pack and stat increased, when getting effect, then returns null", () => {
-    const result = getConsumableItemEffect("eject-pack", { statChange: 1 });
+    const result = getConsumableItemEffect(ITEMS.ejectPack, { statChange: 1 });
     expect(result).toBe(null);
   });
 
   it("given unknown item, when getting effect, then returns null", () => {
-    const result = getConsumableItemEffect("leftovers", {});
+    const result = getConsumableItemEffect(ITEMS.potion, {});
     expect(result).toBe(null);
   });
 });
@@ -754,41 +776,45 @@ describe("applyGen8HeldItem", () => {
   describe("end-of-turn triggers", () => {
     // Source: Showdown data/items.ts -- Leftovers onResidual: heal 1/16 max HP
     it("given Leftovers holder at end-of-turn, when applying item, then heals 1/16 max HP", () => {
-      const pokemon = makeActive({ heldItem: "leftovers", hp: 320, currentHp: 200 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.leftovers,
+        hp: HP.blackSludgeHeal,
+        currentHp: HP.lifeOrbRecoil,
+      });
       const ctx = makeContext({ pokemon });
       const result = applyGen8HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 16) = 20
-      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: 20 });
+      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.leftoversHeal320 });
     });
 
     // Source: Showdown data/items.ts -- Black Sludge: heal Poison 1/16, damage non-Poison 1/8
     it("given Poison-type with Black Sludge at end-of-turn, when applying item, then heals 1/16 max HP", () => {
       const pokemon = makeActive({
-        heldItem: "black-sludge",
-        hp: 320,
-        currentHp: 200,
-        types: ["poison"],
+        heldItem: ITEMS.blackSludge,
+        hp: HP.blackSludgeHeal,
+        currentHp: HP.lifeOrbRecoil,
+        types: [TYPES.poison],
       });
       const ctx = makeContext({ pokemon });
       const result = applyGen8HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 16) = 20
-      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: 20 });
+      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.blackSludgeHeal320 });
     });
 
     it("given Normal-type with Black Sludge at end-of-turn, when applying item, then damages 1/8 max HP", () => {
       const pokemon = makeActive({
-        heldItem: "black-sludge",
-        hp: 320,
-        currentHp: 200,
-        types: ["normal"],
+        heldItem: ITEMS.blackSludge,
+        hp: HP.blackSludgeHeal,
+        currentHp: HP.lifeOrbRecoil,
+        types: [TYPES.normal],
       });
       const ctx = makeContext({ pokemon });
       const result = applyGen8HeldItem("end-of-turn", ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 8) = 40
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: 40 });
+      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.blackSludgeDamage320 });
     });
   });
 
@@ -796,43 +822,55 @@ describe("applyGen8HeldItem", () => {
     // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook).
     // See: Gen8Ruleset.capLethalDamage and GitHub issue #784
     it("given Focus Sash holder at full HP taking lethal damage, when on-damage-taken fires, then does NOT activate (handled by capLethalDamage now)", () => {
-      const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 200 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.focusSash,
+        hp: HP.lifeOrbRecoil,
+        currentHp: HP.lifeOrbRecoil,
+      });
       const ctx = makeContext({ pokemon, damage: 250 });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(false);
     });
 
     it("given Focus Sash holder NOT at full HP taking lethal damage, when on-damage-taken fires, then does not activate", () => {
-      const pokemon = makeActive({ heldItem: "focus-sash", hp: 200, currentHp: 150 });
-      const ctx = makeContext({ pokemon, damage: 200 });
+      const pokemon = makeActive({ heldItem: ITEMS.focusSash, hp: HP.lifeOrbRecoil, currentHp: 150 });
+      const ctx = makeContext({ pokemon, damage: HP.lifeOrbRecoil });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(false);
     });
 
     // Source: Showdown data/items.ts -- Air Balloon: pops on hit
     it("given Air Balloon holder taking damage, when applying item, then balloon pops (consumed)", () => {
-      const pokemon = makeActive({ heldItem: "air-balloon", hp: 200, currentHp: 200 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.airBalloon,
+        hp: HP.lifeOrbRecoil,
+        currentHp: HP.lifeOrbRecoil,
+      });
       const ctx = makeContext({ pokemon, damage: 50 });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
         type: "consume",
         target: "self",
-        value: "air-balloon",
+        value: ITEMS.airBalloon,
       });
     });
 
     // Source: Showdown data/items.ts -- Air Balloon: pops on hit regardless of damage amount
     it("given Air Balloon holder taking 1 damage (minimum), when applying item, then balloon pops (consumed)", () => {
       // Triangulation: different damage value confirms balloon always pops when hit
-      const pokemon = makeActive({ heldItem: "air-balloon", hp: 400, currentHp: 400 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.airBalloon,
+        hp: HP.airBalloonPop,
+        currentHp: HP.airBalloonPop,
+      });
       const ctx = makeContext({ pokemon, damage: 1 });
       const result = applyGen8HeldItem("on-damage-taken", ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
         type: "consume",
         target: "self",
-        value: "air-balloon",
+        value: ITEMS.airBalloon,
       });
     });
   });
@@ -840,19 +878,23 @@ describe("applyGen8HeldItem", () => {
   describe("on-contact triggers", () => {
     // Source: Showdown data/items.ts -- Rocky Helmet: 1/6 attacker max HP on contact
     it("given Rocky Helmet holder hit by contact move, when applying item, then deals 1/6 of opponent max HP", () => {
-      const pokemon = makeActive({ heldItem: "rocky-helmet", hp: 200, currentHp: 200 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.rockyHelmet,
+        hp: HP.lifeOrbRecoil,
+        currentHp: HP.lifeOrbRecoil,
+      });
       const state = makeState();
       // Set up sides with the holder and an opponent
-      const opponent = makeActive({ hp: 300, currentHp: 300 });
+      const opponent = makeActive({ hp: HP.rockyHelmetDamage, currentHp: HP.rockyHelmetDamage });
       state.sides[0].active = [pokemon] as any;
       state.sides[1].active = [opponent] as any;
       const ctx = makeContext({
         pokemon,
         state,
         move: {
-          id: "tackle",
-          type: "normal",
-          category: "physical",
+          id: MOVES.tackle,
+          type: TYPES.normal,
+          category: CATEGORIES.physical,
           power: 40,
           flags: { contact: true },
         },
@@ -860,17 +902,25 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem("on-contact", ctx);
       expect(result.activated).toBe(true);
       // floor(300 / 6) = 50 (opponent's max HP)
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "opponent", value: 50 });
+      expect(result.effects[0]).toEqual({
+        type: "chip-damage",
+        target: "opponent",
+        value: EXPECTED.rockyHelmetDamage300,
+      });
     });
 
     it("given Rocky Helmet holder hit by non-contact move, when applying item, then does not activate", () => {
-      const pokemon = makeActive({ heldItem: "rocky-helmet", hp: 200, currentHp: 200 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.rockyHelmet,
+        hp: HP.lifeOrbRecoil,
+        currentHp: HP.lifeOrbRecoil,
+      });
       const ctx = makeContext({
         pokemon,
         move: {
-          id: "surf",
-          type: "water",
-          category: "special",
+          id: MOVES.surf,
+          type: TYPES.water,
+          category: CATEGORIES.special,
           power: 90,
           flags: {},
         },
@@ -883,31 +933,39 @@ describe("applyGen8HeldItem", () => {
   describe("on-hit triggers (attacker perspective)", () => {
     // Source: Showdown data/items.ts -- Life Orb: recoil floor(maxHP/10)
     it("given Life Orb holder dealing damage, when applying item, then takes 1/10 max HP recoil", () => {
-      const pokemon = makeActive({ heldItem: "life-orb", hp: 200, currentHp: 200 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.lifeOrb,
+        hp: HP.lifeOrbRecoil,
+        currentHp: HP.lifeOrbRecoil,
+      });
       const ctx = makeContext({
         pokemon,
         damage: 50,
-        move: { id: "tackle", type: "normal", category: "physical", power: 40 },
+        move: { id: MOVES.tackle, type: TYPES.normal, category: CATEGORIES.physical, power: 40 },
       });
       const result = applyGen8HeldItem("on-hit", ctx);
       expect(result.activated).toBe(true);
       // floor(200 / 10) = 20
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: 20 });
+      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.lifeOrbRecoil200 });
     });
 
     // Source: Showdown data/items.ts -- Life Orb: floor(baseMaxhp / 10)
     it("given Life Orb holder with 300 max HP dealing a special move, when applying item, then takes 30 recoil", () => {
       // Triangulation: different HP value confirms it's not a constant return
-      const pokemon = makeActive({ heldItem: "life-orb", hp: 300, currentHp: 300 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.lifeOrb,
+        hp: HP.rockyHelmetDamage,
+        currentHp: HP.rockyHelmetDamage,
+      });
       const ctx = makeContext({
         pokemon,
         damage: 80,
-        move: { id: "flamethrower", type: "fire", category: "special", power: 90 },
+        move: { id: MOVES.flamethrower, type: TYPES.fire, category: CATEGORIES.special, power: 90 },
       });
       const result = applyGen8HeldItem("on-hit", ctx);
       expect(result.activated).toBe(true);
       // floor(300 / 10) = 30
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: 30 });
+      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.lifeOrbRecoil300 });
     });
   });
 
@@ -915,10 +973,10 @@ describe("applyGen8HeldItem", () => {
     // Source: Showdown data/abilities.ts -- Klutz: suppress all item effects
     it("given Klutz holder with Leftovers at end-of-turn, when applying item, then does not activate", () => {
       const pokemon = makeActive({
-        heldItem: "leftovers",
-        hp: 200,
+        heldItem: ITEMS.leftovers,
+        hp: HP.lifeOrbRecoil,
         currentHp: 100,
-        ability: "klutz",
+        ability: ABILITIES.klutz,
       });
       const ctx = makeContext({ pokemon });
       const result = applyGen8HeldItem("end-of-turn", ctx);
@@ -928,10 +986,10 @@ describe("applyGen8HeldItem", () => {
     // Source: Showdown -- Embargo blocks item effects
     it("given embargoed holder with Leftovers at end-of-turn, when applying item, then does not activate", () => {
       const volatiles = new Map<string, { turnsLeft: number }>();
-      volatiles.set("embargo", { turnsLeft: 3 });
+      volatiles.set(VOLATILES.embargo, { turnsLeft: 3 });
       const pokemon = makeActive({
-        heldItem: "leftovers",
-        hp: 200,
+        heldItem: ITEMS.leftovers,
+        hp: HP.lifeOrbRecoil,
         currentHp: 100,
         volatiles,
       });
@@ -943,8 +1001,8 @@ describe("applyGen8HeldItem", () => {
     // Source: Showdown -- Magic Room suppresses all held item effects
     it("given Magic Room active with Leftovers holder at end-of-turn, when applying item, then does not activate", () => {
       const pokemon = makeActive({
-        heldItem: "leftovers",
-        hp: 200,
+        heldItem: ITEMS.leftovers,
+        hp: HP.lifeOrbRecoil,
         currentHp: 100,
       });
       const state = makeState({ magicRoom: { active: true, turnsLeft: 3 } });
@@ -971,15 +1029,19 @@ describe("applyGen8HeldItem", () => {
 describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
   // Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP each end-of-turn
   // Verifies Gen8Ruleset.applyHeldItem delegates to applyGen8HeldItem (not a no-op)
-  it("given Gen8Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen8 item handler", () => {
-    const ruleset = new Gen8Ruleset();
-    const pokemon = makeActive({ heldItem: "leftovers", hp: 160, currentHp: 120 });
-    const ctx = makeContext({ pokemon });
-    const result = ruleset.applyHeldItem("end-of-turn", ctx);
-    expect(result.activated).toBe(true);
-    // floor(160 / 16) = 10 HP healed
-    expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: 10 });
-  });
+    it("given Gen8Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen8 item handler", () => {
+      const ruleset = new Gen8Ruleset();
+      const pokemon = makeActive({
+        heldItem: ITEMS.leftovers,
+        hp: HP.leftOversRecoil,
+        currentHp: 120,
+      });
+      const ctx = makeContext({ pokemon });
+      const result = ruleset.applyHeldItem("end-of-turn", ctx);
+      expect(result.activated).toBe(true);
+      // floor(160 / 16) = 10 HP healed
+      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.leftoversHeal160 });
+    });
 
   it("given Gen8Ruleset, when calling applyHeldItem with no item, then returns inactive result", () => {
     const ruleset = new Gen8Ruleset();
