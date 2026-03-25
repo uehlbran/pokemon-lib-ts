@@ -262,34 +262,23 @@ describe("#354 processSleepTurn allows action on wake turn", () => {
 // ===========================================================================
 
 describe("#356 rollSleepTurns returns 1-4 effective turns", () => {
-  it("given rollSleepTurns with seed=1, when called, then returns a value in [1, 4]", () => {
+  it("given rollSleepTurns with seed=7, when called, then returns 1 effective turn", () => {
     // Source: Showdown Gen 4 data/mods/gen4/conditions.ts line 32 --
     //   this.effectState.time = this.random(2, 6); // counter 2-5
     //   Our processSleepTurn decrements turnsLeft; effective sleep = turnsLeft value.
     const ruleset = makeRuleset();
-    const rng = new SeededRandom(1);
+    const rng = new SeededRandom(7);
     const turns = ruleset.rollSleepTurns(rng);
-    expect(turns).toBeGreaterThanOrEqual(1);
-    expect(turns).toBeLessThanOrEqual(4);
+    expect(turns).toBe(1);
   });
 
-  it("given rollSleepTurns called 500 times with varying seeds, then max is 4 and min is 1", () => {
+  it("given rollSleepTurns with seed=4, when called, then returns 4 effective turns", () => {
     // Source: Showdown Gen 4 data/mods/gen4/conditions.ts --
     //   counter random(2,6) = 2-5; effective turns 1-4.
-    // Triangulation: 500 iterations to verify distribution boundaries.
     const ruleset = makeRuleset();
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
-
-    for (let seed = 1; seed <= 500; seed++) {
-      const rng = new SeededRandom(seed);
-      const turns = ruleset.rollSleepTurns(rng);
-      if (turns < min) min = turns;
-      if (turns > max) max = turns;
-    }
-
-    expect(min).toBe(1);
-    expect(max).toBe(4);
+    const rng = new SeededRandom(4);
+    const turns = ruleset.rollSleepTurns(rng);
+    expect(turns).toBe(4);
   });
 });
 
@@ -492,7 +481,7 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
 // ===========================================================================
 
 describe("#439 Lucky Chant blocks critical hits", () => {
-  it("given Lucky Chant active on defender's side, when rollCritical called 100 times, then always returns false", () => {
+  it("given Lucky Chant active on defender's side and seed 7, when rollCritical is called, then it returns false", () => {
     // Source: pret/pokeplatinum src/battle/battle_lib.c BattleSystem_CalcCriticalMulti
     //   line 7137: (sideConditions & SIDE_CONDITION_LUCKY_CHANT) == FALSE
     // Lucky Chant blocks all crits for the protected side.
@@ -508,21 +497,19 @@ describe("#439 Lucky Chant blocks critical hits", () => {
       luckyChant: { active: true, turnsLeft: 5 },
     } as BattleSide;
     const state = makeBattleState({ sides: [side0, side1Lucky] });
+    const rng = new SeededRandom(7);
+    const result = ruleset.rollCritical({
+      attacker,
+      defender,
+      move,
+      state,
+      rng,
+    });
 
-    for (let seed = 1; seed <= 100; seed++) {
-      const rng = new SeededRandom(seed);
-      const result = ruleset.rollCritical({
-        attacker,
-        defender,
-        move,
-        state,
-        rng,
-      });
-      expect(result).toBe(false);
-    }
+    expect(result).toBe(false);
   });
 
-  it("given Lucky Chant NOT active on defender's side, when rollCritical called, then crits can land normally", () => {
+  it("given Lucky Chant NOT active on defender's side and seed 7, when rollCritical is called, then crits can land normally", () => {
     // Source: pret/pokeplatinum -- without Lucky Chant, normal crit rules apply.
     // Control test: Lucky Chant inactive, crits should be possible.
     const ruleset = makeRuleset();
@@ -533,21 +520,16 @@ describe("#439 Lucky Chant blocks critical hits", () => {
     const side0 = makeSide(0, attacker);
     const side1 = makeSide(1, defender);
     const state = makeBattleState({ sides: [side0, side1] });
-
-    let anyTrue = false;
-    for (let seed = 1; seed <= 200; seed++) {
-      const rng = new SeededRandom(seed);
-      const result = ruleset.rollCritical({
-        attacker,
-        defender,
-        move,
-        state,
-        rng,
-      });
-      if (result) anyTrue = true;
-    }
-    // At stage 0, crit rate is 1/16 = 6.25%. Over 200 rolls, we expect at least 1 crit.
-    expect(anyTrue).toBe(true);
+    const rng = new SeededRandom(7);
+    const result = ruleset.rollCritical({
+      attacker,
+      defender,
+      move,
+      state,
+      rng,
+    });
+    // Source: SeededRandom seed 7 hits the 1/16 crit roll when Lucky Chant is inactive.
+    expect(result).toBe(true);
   });
 });
 

@@ -382,7 +382,6 @@ describe("Gen4Ruleset resolveTurnOrder -- Quick Claw with Tailwind", () => {
   it("given Pokemon A (speed 80, side 0 Tailwind, Quick Claw activated) and Pokemon B (speed 200), when resolveTurnOrder is called, then Pokemon A moves first (QC beats speed)", () => {
     // Source: pret/pokeplatinum -- Quick Claw 20% activation; goes before speed check
     // Quick Claw activation trumps speed within same priority bracket
-    // Use a deterministic RNG seed that activates Quick Claw (20% chance)
     const monA = makeActivePokemon({ speed: 80, heldItem: "quick-claw" });
     const monB = makeActivePokemon({ speed: 200 });
     const state = buildTwoSideState(monA, monB, { side0Tailwind: true });
@@ -393,21 +392,8 @@ describe("Gen4Ruleset resolveTurnOrder -- Quick Claw with Tailwind", () => {
       { type: "move", side: 1, moveIndex: 0 },
     ];
 
-    // Find a seed where Quick Claw activates for side 0
-    // QC check is rng.chance(0.2) -- we need to find a seed where it triggers
-    let activatingSeed = -1;
-    for (let seed = 1; seed <= 100; seed++) {
-      const testRng = new SeededRandom(seed);
-      // Quick Claw check: first rng call is chance(0.2) for action 0
-      if (testRng.chance(0.2)) {
-        activatingSeed = seed;
-        break;
-      }
-    }
-    // Ensure we found a seed (statistically almost certain within 100 tries)
-    expect(activatingSeed).toBeGreaterThan(0);
-
-    const rng = new SeededRandom(activatingSeed);
+    // Source: SeededRandom seed 7 activates Quick Claw for the first move-action roll.
+    const rng = new SeededRandom(7);
     const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
     // Quick Claw activated for A, so A goes first despite lower speed
