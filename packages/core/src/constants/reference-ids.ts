@@ -58,18 +58,28 @@ export const CORE_TERRAIN_IDS = {
 } as const;
 
 export const CORE_TYPE_IDS = {
+  bug: "bug",
   dark: "dark",
+  dragon: "dragon",
   electric: "electric",
+  fighting: "fighting",
   fire: "fire",
   flying: "flying",
-  ice: "ice",
   ghost: "ghost",
   grass: "grass",
   ground: "ground",
+  ice: "ice",
   normal: "normal",
   poison: "poison",
+  psychic: "psychic",
+  rock: "rock",
   steel: "steel",
   water: "water",
+} as const;
+
+export const CORE_SCREEN_IDS = {
+  lightScreen: "light-screen",
+  reflect: "reflect",
 } as const;
 
 export const CORE_STATUS_IDS = {
@@ -82,6 +92,7 @@ export const CORE_STATUS_IDS = {
 } as const;
 
 export const CORE_VOLATILE_IDS = {
+  bound: "bound",
   confusion: "confusion",
   embargo: "embargo",
   ingrain: "ingrain",

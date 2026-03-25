@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen7 -- Gen7Ruleset + complete Gen 7 data
 
 export { createGen7DataManager } from "./data/index.js";
+export * from "./data/reference-ids.js";
 export {
   getAteAbilityOverride,
   getFurCoatMultiplier,

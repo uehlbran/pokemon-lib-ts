@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen9 -- Gen9Ruleset + complete Gen 9 data
 
 export { createGen9DataManager } from "./data/index.js";
+export * from "./data/reference-ids.js";
 export { handleGen9Ability } from "./Gen9Abilities.js";
 export {
   applyGen9DauntlessShieldBoost,

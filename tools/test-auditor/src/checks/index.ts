@@ -2,6 +2,7 @@ import type { Check } from "../types.ts";
 import { checkAssertionStrength } from "./assertion-strength.ts";
 import { checkInternalDomainMocking } from "./internal-domain-mock.ts";
 import { checkProvenance } from "./provenance.ts";
+import { checkRawReferenceIds } from "./raw-reference-id.ts";
 import { checkTestIsolation } from "./test-isolation.ts";
 import { checkTestNaming } from "./test-naming.ts";
 import { checkStaleTestComments } from "./stale-comments.ts";
@@ -15,4 +16,5 @@ export const ALL_CHECKS: readonly Check[] = [
   { name: "todo-skip-debt", run: checkTodoSkipDebt },
   { name: "internal-domain-mock", run: checkInternalDomainMocking },
   { name: "stale-test-comments", run: checkStaleTestComments },
+  { name: "raw-reference-id", run: checkRawReferenceIds },
 ];

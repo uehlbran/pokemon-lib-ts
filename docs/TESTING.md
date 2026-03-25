@@ -8,6 +8,10 @@ Code examples for the test types used in this project. For testing philosophy, c
 - Use Given/When/Then test names.
 - Use exact assertions for formulas and data validation.
 - Do not use weak formula assertions such as `toBeTruthy()`, `toBeDefined()`, or `toBeGreaterThan(0)`.
+- Do not handwrite canonical move, item, ability, species, weather, status, terrain, volatile, or gimmick identifiers in tests when an exported reference surface exists.
+- For core-owned ids, import from `@pokemon-lib-ts/core`.
+- For battle-owned ids, import from `@pokemon-lib-ts/battle`.
+- For generation-specific ids, import from the generation package's exported data-backed `GENN_*_IDS` references derived from `packages/genN/data/*.json`.
 
 ## Unit Tests
 

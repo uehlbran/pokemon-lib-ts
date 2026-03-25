@@ -20,8 +20,9 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN1_MOVE_IDS } from "../../src";
 import { createGen1DataManager } from "../../src/data";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
@@ -94,12 +95,12 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
       nature: "hardy",
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: GEN1_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       currentHp: 200,
       status: null,
       friendship: 70,
       heldItem: null,
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       gender: "male" as const,
       isShiny: false,
@@ -123,7 +124,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
     },
     volatileStatuses: new Map(),
     types: ["normal"] as PokemonType[],
-    ability: "",
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -990,11 +991,11 @@ describe("Bug #105 — Sharpen move exists in move data", () => {
     const dm = createGen1DataManager();
 
     // Act
-    const sharpen = dm.getMove("sharpen");
+    const sharpen = dm.getMove(GEN1_MOVE_IDS.sharpen);
 
     // Assert
     expect(sharpen).toBeDefined();
-    expect(sharpen.id).toBe("sharpen");
+    expect(sharpen.id).toBe(GEN1_MOVE_IDS.sharpen);
     expect(sharpen.displayName).toBe("Sharpen");
     expect(sharpen.category).toBe("status");
     expect(sharpen.type).toBe("normal");
@@ -1007,7 +1008,7 @@ describe("Bug #105 — Sharpen move exists in move data", () => {
   it("given Sharpen move data, when executeMoveEffect is called, then Attack increases by 1 stage on the user", () => {
     // Arrange
     const dm = createGen1DataManager();
-    const sharpen = dm.getMove("sharpen");
+    const sharpen = dm.getMove(GEN1_MOVE_IDS.sharpen);
     const context = makeMoveEffectContext({ move: sharpen });
 
     // Act

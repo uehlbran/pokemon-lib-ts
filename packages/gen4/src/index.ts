@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen4 -- Gen4Ruleset + complete Gen 4 data
 
 export { createGen4DataManager } from "./data";
+export * from "./data/reference-ids";
 export {
   applyGen4Ability,
   GEN4_WEATHER_SUPPRESSING_ABILITIES,

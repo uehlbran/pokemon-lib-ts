@@ -1,4 +1,6 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { createGen1DataManager } from "../../src/data";
 
 const GEN1_SPECIES_COUNT = 151;
@@ -22,87 +24,61 @@ const GEN1_MOVE_STATS = {
   hyperBeam: { power: 150 },
 } as const;
 
-const GEN1_SPECIES = {
-  bulbasaur: { id: 1, name: "bulbasaur", displayName: "Bulbasaur" },
-  ivysaur: { id: 2, name: "ivysaur", displayName: "Ivysaur" },
-  venusaur: { id: 3, name: "venusaur", displayName: "Venusaur" },
-  charizard: { id: 6, name: "charizard", displayName: "Charizard" },
-  pikachu: { id: 25, name: "pikachu", displayName: "Pikachu" },
-  gengar: { id: 94, name: "gengar", displayName: "Gengar" },
-  snorlax: { id: 143, name: "snorlax", displayName: "Snorlax" },
-  mewtwo: { id: 150, name: "mewtwo", displayName: "Mewtwo" },
-  mew: { id: 151, name: "mew", displayName: "Mew" },
-  eevee: { id: 133, name: "eevee", displayName: "Eevee" },
-  vaporeon: { id: 134, name: "vaporeon", displayName: "Vaporeon" },
-  jolteon: { id: 135, name: "jolteon", displayName: "Jolteon" },
-  flareon: { id: 136, name: "flareon", displayName: "Flareon" },
-} as const;
-
-const GEN1_MOVES = {
-  flamethrower: "flamethrower",
-  tackle: "tackle",
-  scratch: "scratch",
-  growl: "growl",
-  leechSeed: "leech-seed",
-  vineWhip: "vine-whip",
-  poisonPowder: "poison-powder",
-  razorLeaf: "razor-leaf",
-  growth: "growth",
-  sleepPowder: "sleep-powder",
-  solarBeam: "solar-beam",
-  ember: "ember",
-  leer: "leer",
-  rage: "rage",
-  slash: "slash",
-  fireSpin: "fire-spin",
-  earthquake: "earthquake",
-  thunderbolt: "thunderbolt",
-  psychic: "psychic",
-  swift: "swift",
-  quickAttack: "quick-attack",
-  counter: "counter",
-  hyperBeam: "hyper-beam",
+const GEN1_SPECIES_EXPECTATIONS = {
+  bulbasaur: { name: "bulbasaur", displayName: "Bulbasaur" },
+  ivysaur: { name: "ivysaur", displayName: "Ivysaur" },
+  venusaur: { name: "venusaur", displayName: "Venusaur" },
+  charizard: { name: "charizard", displayName: "Charizard" },
+  pikachu: { name: "pikachu", displayName: "Pikachu" },
+  gengar: { name: "gengar", displayName: "Gengar" },
+  snorlax: { name: "snorlax", displayName: "Snorlax" },
+  mewtwo: { name: "mewtwo", displayName: "Mewtwo" },
+  mew: { name: "mew", displayName: "Mew" },
+  eevee: { name: "eevee", displayName: "Eevee" },
+  vaporeon: { name: "vaporeon", displayName: "Vaporeon" },
+  jolteon: { name: "jolteon", displayName: "Jolteon" },
+  flareon: { name: "flareon", displayName: "Flareon" },
 } as const;
 
 const GEN1_BULBASAUR_LEVEL_UP_MOVES = [
-  { level: 1, move: GEN1_MOVES.tackle },
-  { level: 1, move: GEN1_MOVES.growl },
-  { level: 7, move: GEN1_MOVES.leechSeed },
-  { level: 13, move: GEN1_MOVES.vineWhip },
-  { level: 20, move: GEN1_MOVES.poisonPowder },
-  { level: 27, move: GEN1_MOVES.razorLeaf },
-  { level: 34, move: GEN1_MOVES.growth },
-  { level: 41, move: GEN1_MOVES.sleepPowder },
-  { level: 48, move: GEN1_MOVES.solarBeam },
+  { level: 1, move: GEN1_MOVE_IDS.tackle },
+  { level: 1, move: GEN1_MOVE_IDS.growl },
+  { level: 7, move: GEN1_MOVE_IDS.leechSeed },
+  { level: 13, move: GEN1_MOVE_IDS.vineWhip },
+  { level: 20, move: GEN1_MOVE_IDS.poisonPowder },
+  { level: 27, move: GEN1_MOVE_IDS.razorLeaf },
+  { level: 34, move: GEN1_MOVE_IDS.growth },
+  { level: 41, move: GEN1_MOVE_IDS.sleepPowder },
+  { level: 48, move: GEN1_MOVE_IDS.solarBeam },
 ] as const;
 
 const GEN1_CHARIZARD_LEVEL_UP_MOVES = [
-  GEN1_MOVES.scratch,
-  GEN1_MOVES.growl,
-  GEN1_MOVES.ember,
-  GEN1_MOVES.leer,
-  GEN1_MOVES.rage,
-  GEN1_MOVES.slash,
-  GEN1_MOVES.flamethrower,
-  GEN1_MOVES.fireSpin,
+  GEN1_MOVE_IDS.scratch,
+  GEN1_MOVE_IDS.growl,
+  GEN1_MOVE_IDS.ember,
+  GEN1_MOVE_IDS.leer,
+  GEN1_MOVE_IDS.rage,
+  GEN1_MOVE_IDS.slash,
+  GEN1_MOVE_IDS.flamethrower,
+  GEN1_MOVE_IDS.fireSpin,
 ] as const;
 
 const GEN1_TYPE_NAMES = [
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
+  CORE_TYPE_IDS.normal,
+  CORE_TYPE_IDS.fire,
+  CORE_TYPE_IDS.water,
+  CORE_TYPE_IDS.electric,
+  CORE_TYPE_IDS.grass,
+  CORE_TYPE_IDS.ice,
+  CORE_TYPE_IDS.fighting,
+  CORE_TYPE_IDS.poison,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.flying,
+  CORE_TYPE_IDS.psychic,
+  CORE_TYPE_IDS.bug,
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ghost,
+  CORE_TYPE_IDS.dragon,
 ] as const;
 
 describe("Gen 1 Data Loading", () => {
@@ -137,10 +113,10 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const bulbasaur = dm.getSpecies(GEN1_SPECIES.bulbasaur.id);
+    const bulbasaur = dm.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
     // Assert
-    expect(bulbasaur.displayName).toBe(GEN1_SPECIES.bulbasaur.displayName);
-    expect(bulbasaur.name).toBe(GEN1_SPECIES.bulbasaur.name);
+    expect(bulbasaur.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.bulbasaur.displayName);
+    expect(bulbasaur.name).toBe(GEN1_SPECIES_EXPECTATIONS.bulbasaur.name);
     expect(bulbasaur.types).toEqual(["grass", "poison"]);
     expect(bulbasaur.baseStats).toEqual({
       hp: 45,
@@ -156,9 +132,9 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const charizard = dm.getSpecies(GEN1_SPECIES.charizard.id);
+    const charizard = dm.getSpecies(GEN1_SPECIES_IDS.charizard);
     // Assert
-    expect(charizard.displayName).toBe(GEN1_SPECIES.charizard.displayName);
+    expect(charizard.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.charizard.displayName);
     expect(charizard.types).toEqual(["fire", "flying"]);
     expect(charizard.baseStats).toEqual({
       hp: 78,
@@ -174,9 +150,9 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const pikachu = dm.getSpecies(GEN1_SPECIES.pikachu.id);
+    const pikachu = dm.getSpecies(GEN1_SPECIES_IDS.pikachu);
     // Assert
-    expect(pikachu.displayName).toBe(GEN1_SPECIES.pikachu.displayName);
+    expect(pikachu.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.pikachu.displayName);
     expect(pikachu.types).toEqual(["electric"]);
     expect(pikachu.baseStats).toEqual({
       hp: 35,
@@ -192,9 +168,9 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const mewtwo = dm.getSpecies(GEN1_SPECIES.mewtwo.id);
+    const mewtwo = dm.getSpecies(GEN1_SPECIES_IDS.mewtwo);
     // Assert
-    expect(mewtwo.displayName).toBe(GEN1_SPECIES.mewtwo.displayName);
+    expect(mewtwo.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.mewtwo.displayName);
     expect(mewtwo.isLegendary).toBe(true);
     expect(mewtwo.isMythical).toBe(false);
     expect(mewtwo.types).toEqual(["psychic"]);
@@ -212,9 +188,9 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const mew = dm.getSpecies(GEN1_SPECIES.mew.id);
+    const mew = dm.getSpecies(GEN1_SPECIES_IDS.mew);
     // Assert
-    expect(mew.displayName).toBe(GEN1_SPECIES.mew.displayName);
+    expect(mew.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.mew.displayName);
     expect(mew.isMythical).toBe(true);
     expect(mew.isLegendary).toBe(false);
     expect(mew.types).toEqual(["psychic"]);
@@ -256,9 +232,9 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const gengar = dm.getSpecies(GEN1_SPECIES.gengar.id);
+    const gengar = dm.getSpecies(GEN1_SPECIES_IDS.gengar);
     // Assert
-    expect(gengar.displayName).toBe(GEN1_SPECIES.gengar.displayName);
+    expect(gengar.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.gengar.displayName);
     expect(gengar.types).toEqual(["ghost", "poison"]);
   });
 
@@ -266,9 +242,9 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const snorlax = dm.getSpecies(GEN1_SPECIES.snorlax.id);
+    const snorlax = dm.getSpecies(GEN1_SPECIES_IDS.snorlax);
     // Assert
-    expect(snorlax.displayName).toBe(GEN1_SPECIES.snorlax.displayName);
+    expect(snorlax.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.snorlax.displayName);
     expect(snorlax.baseStats).toEqual({
       hp: 160,
       attack: 110,
@@ -296,19 +272,19 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const bulbasaur = dm.getSpeciesByName(GEN1_SPECIES.bulbasaur.name);
+    const bulbasaur = dm.getSpeciesByName(GEN1_SPECIES_EXPECTATIONS.bulbasaur.name);
     // Assert
-    expect(bulbasaur.id).toBe(GEN1_SPECIES.bulbasaur.id);
-    expect(bulbasaur.displayName).toBe(GEN1_SPECIES.bulbasaur.displayName);
+    expect(bulbasaur.id).toBe(GEN1_SPECIES_IDS.bulbasaur);
+    expect(bulbasaur.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.bulbasaur.displayName);
   });
 
   it("given Gen 1 data, when loading species by name with different case, then still finds it", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const pikachu = dm.getSpeciesByName(GEN1_SPECIES.pikachu.displayName);
+    const pikachu = dm.getSpeciesByName(GEN1_SPECIES_EXPECTATIONS.pikachu.displayName);
     // Assert
-    expect(pikachu.id).toBe(GEN1_SPECIES.pikachu.id);
+    expect(pikachu.id).toBe(GEN1_SPECIES_IDS.pikachu);
   });
 
   it("given Gen 1 data, when loading non-existent species, then throws error", () => {
@@ -324,12 +300,12 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const bulbasaur = dm.getSpecies(GEN1_SPECIES.bulbasaur.id);
+    const bulbasaur = dm.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
     // Assert
     expect(bulbasaur.evolution).not.toBeNull();
     expect(bulbasaur.evolution?.from).toBeNull(); // Base form
     expect(bulbasaur.evolution?.to).toHaveLength(1);
-    expect(bulbasaur.evolution?.to[0]?.speciesId).toBe(GEN1_SPECIES.ivysaur.id); // Ivysaur
+    expect(bulbasaur.evolution?.to[0]?.speciesId).toBe(GEN1_SPECIES_IDS.ivysaur); // Ivysaur
     expect(bulbasaur.evolution?.to[0]?.level).toBe(GEN1_EVOLUTION_LEVELS.bulbasaurToIvysaur);
     expect(bulbasaur.evolution?.to[0]?.method).toBe("level-up");
   });
@@ -338,12 +314,12 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const ivysaur = dm.getSpecies(GEN1_SPECIES.ivysaur.id);
+    const ivysaur = dm.getSpecies(GEN1_SPECIES_IDS.ivysaur);
     // Assert
     expect(ivysaur.evolution).not.toBeNull();
     expect(ivysaur.evolution?.from).not.toBeNull();
-    expect(ivysaur.evolution?.from?.speciesId).toBe(GEN1_SPECIES.bulbasaur.id); // From Bulbasaur
-    expect(ivysaur.evolution?.to[0]?.speciesId).toBe(GEN1_SPECIES.venusaur.id); // To Venusaur
+    expect(ivysaur.evolution?.from?.speciesId).toBe(GEN1_SPECIES_IDS.bulbasaur); // From Bulbasaur
+    expect(ivysaur.evolution?.to[0]?.speciesId).toBe(GEN1_SPECIES_IDS.venusaur); // To Venusaur
     expect(ivysaur.evolution?.to[0]?.level).toBe(GEN1_EVOLUTION_LEVELS.ivysaurToVenusaur);
   });
 
@@ -351,15 +327,15 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const eevee = dm.getSpecies(GEN1_SPECIES.eevee.id);
+    const eevee = dm.getSpecies(GEN1_SPECIES_IDS.eevee);
     // Assert
     expect(eevee.evolution).not.toBeNull();
     // Gen 1 Eevee can evolve into Vaporeon (134), Jolteon (135), Flareon (136)
     const targetIds = eevee.evolution?.to.map((e) => e.speciesId);
     expect(targetIds).toEqual([
-      GEN1_SPECIES.vaporeon.id,
-      GEN1_SPECIES.jolteon.id,
-      GEN1_SPECIES.flareon.id,
+      GEN1_SPECIES_IDS.vaporeon,
+      GEN1_SPECIES_IDS.jolteon,
+      GEN1_SPECIES_IDS.flareon,
     ]);
   });
 
@@ -378,7 +354,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const flamethrower = dm.getMove(GEN1_MOVES.flamethrower);
+    const flamethrower = dm.getMove(GEN1_MOVE_IDS.flamethrower);
     // Assert: In Gen 1, Fire-type moves are Special
     expect(flamethrower.type).toBe("fire");
     expect(flamethrower.category).toBe("special");
@@ -390,7 +366,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const tackle = dm.getMove(GEN1_MOVES.tackle);
+    const tackle = dm.getMove(GEN1_MOVE_IDS.tackle);
     // Assert: In Gen 1, Normal-type moves are Physical
     expect(tackle.type).toBe("normal");
     expect(tackle.category).toBe("physical");
@@ -401,7 +377,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const earthquake = dm.getMove(GEN1_MOVES.earthquake);
+    const earthquake = dm.getMove(GEN1_MOVE_IDS.earthquake);
     // Assert
     expect(earthquake.type).toBe("ground");
     expect(earthquake.category).toBe("physical");
@@ -413,7 +389,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const thunderbolt = dm.getMove(GEN1_MOVES.thunderbolt);
+    const thunderbolt = dm.getMove(GEN1_MOVE_IDS.thunderbolt);
     // Assert
     expect(thunderbolt.type).toBe("electric");
     expect(thunderbolt.category).toBe("special");
@@ -424,7 +400,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const psychic = dm.getMove(GEN1_MOVES.psychic);
+    const psychic = dm.getMove(GEN1_MOVE_IDS.psychic);
     // Assert
     expect(psychic.type).toBe("psychic");
     expect(psychic.category).toBe("special");
@@ -435,7 +411,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const swift = dm.getMove(GEN1_MOVES.swift);
+    const swift = dm.getMove(GEN1_MOVE_IDS.swift);
     // Assert
     expect(swift.type).toBe("normal");
     expect(swift.category).toBe("physical");
@@ -451,7 +427,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const quickAttack = dm.getMove(GEN1_MOVES.quickAttack);
+    const quickAttack = dm.getMove(GEN1_MOVE_IDS.quickAttack);
     // Assert
     expect(quickAttack.priority).toBe(1);
     expect(quickAttack.type).toBe("normal");
@@ -463,7 +439,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const counter = dm.getMove(GEN1_MOVES.counter);
+    const counter = dm.getMove(GEN1_MOVE_IDS.counter);
     // Assert
     expect(counter.priority).toBeLessThan(0);
   });
@@ -472,7 +448,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const hyperBeam = dm.getMove(GEN1_MOVES.hyperBeam);
+    const hyperBeam = dm.getMove(GEN1_MOVE_IDS.hyperBeam);
     // Assert
     expect(hyperBeam.flags.recharge).toBe(true);
     expect(hyperBeam.power).toBe(GEN1_MOVE_STATS.hyperBeam.power);
@@ -535,7 +511,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const bulbasaur = dm.getSpecies(GEN1_SPECIES.bulbasaur.id);
+    const bulbasaur = dm.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
     // Assert
     expect(bulbasaur.learnset.levelUp).toEqual(GEN1_BULBASAUR_LEVEL_UP_MOVES);
   });
@@ -544,7 +520,7 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const charizard = dm.getSpecies(GEN1_SPECIES.charizard.id);
+    const charizard = dm.getSpecies(GEN1_SPECIES_IDS.charizard);
     const moveIds = charizard.learnset.levelUp.map((m) => m.move);
     // Assert: exact Gen 1 level-up learnset order for Charizard from the fixture data
     expect(moveIds).toEqual(GEN1_CHARIZARD_LEVEL_UP_MOVES);

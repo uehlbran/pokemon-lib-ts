@@ -22,6 +22,7 @@
     "typecheck:contracts": "npm run typecheck:contracts --workspace @pokemon-lib-ts/battle",
     "lint": "npx @biomejs/biome check --write .",
     "lint:check": "npx @biomejs/biome check .",
+    "generate:reference-ids": "tsx scripts/generate-reference-ids.ts",
     "worktree:check": "node scripts/check-worktree.mjs",
     "verify:local": "node scripts/verify-local.mjs",
     "changeset:check": "node scripts/check-changeset.mjs",

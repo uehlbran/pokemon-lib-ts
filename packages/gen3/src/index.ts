@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen3 — Gen3Ruleset + complete Gen 3 data
 
 export { createGen3DataManager } from "./data";
+export * from "./data/reference-ids";
 export {
   applyGen3Ability,
   GEN3_ABILITY_STATUS_IMMUNITIES,

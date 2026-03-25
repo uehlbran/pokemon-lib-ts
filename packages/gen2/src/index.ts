@@ -1,5 +1,6 @@
 // @pokemon-lib-ts/gen2 — Gen2Ruleset + complete Gen 2 data
 export { createGen2DataManager } from "./data";
+export * from "./data/reference-ids";
 export { GEN2_CRIT_RATES, getGen2CritStage, rollGen2Critical } from "./Gen2CritCalc";
 export {
   calculateGen2Damage,
