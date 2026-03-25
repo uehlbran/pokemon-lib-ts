@@ -1,11 +1,21 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  NEUTRAL_NATURES,
+  type PokemonType,
+  type WeatherType,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  GEN2_ITEM_IDS,
+  GEN2_SPECIES_IDS,
+  GEN2_TYPES,
   applyGen2WeatherEffects,
   getWeatherDamageModifier,
-  isWeatherImmune,
-} from "../../src/Gen2Weather";
+} from "../../src";
+import { isWeatherImmune } from "../../src/Gen2Weather";
 
 /**
  * Helper to create a minimal ActivePokemon for weather tests.
@@ -23,16 +33,16 @@ function createMockActivePokemon(
   return {
     pokemon: {
       uid: overrides.uid ?? "test-pokemon",
-      speciesId: 1,
+      speciesId: GEN2_SPECIES_IDS.ditto,
       nickname: overrides.nickname ?? null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: NEUTRAL_NATURES[0],
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? maxHp,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1",
       heldItem: null,
       status: null,
@@ -43,7 +53,7 @@ function createMockActivePokemon(
       metLevel: 5,
       originalTrainer: "Test",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: GEN2_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -65,8 +75,8 @@ function createMockActivePokemon(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: "",
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,
@@ -88,7 +98,7 @@ function createMockActivePokemon(
  */
 function createMockBattleState(
   overrides: {
-    weather?: { type: string; turnsLeft: number; source: string } | null;
+    weather?: { type: WeatherType; turnsLeft: number; source: string } | null;
     sides?: [unknown, unknown];
   } = {},
 ): BattleState {
@@ -148,10 +158,10 @@ describe("Gen2Weather", () => {
   describe("Given Rain weather", () => {
     it("should boost Water moves by 1.5x", () => {
       // Arrange
-      const moveType: PokemonType = "water";
+      const moveType: PokemonType = CORE_TYPE_IDS.water;
 
       // Act
-      const modifier = getWeatherDamageModifier(moveType, "rain");
+      const modifier = getWeatherDamageModifier(moveType, CORE_WEATHER_IDS.rain);
 
       // Assert
       // Source: Gen 2 rain dance boosts Water moves to 1.5x.
@@ -160,10 +170,10 @@ describe("Gen2Weather", () => {
 
     it("should weaken Fire moves by 0.5x", () => {
       // Arrange
-      const moveType: PokemonType = "fire";
+      const moveType: PokemonType = CORE_TYPE_IDS.fire;
 
       // Act
-      const modifier = getWeatherDamageModifier(moveType, "rain");
+      const modifier = getWeatherDamageModifier(moveType, CORE_WEATHER_IDS.rain);
 
       // Assert
       // Source: Gen 2 rain dance weakens Fire moves to 0.5x.
@@ -172,26 +182,12 @@ describe("Gen2Weather", () => {
 
     it("should not affect other types", () => {
       // Arrange / Act / Assert
-      const otherTypes: PokemonType[] = [
-        "normal",
-        "electric",
-        "grass",
-        "ice",
-        "fighting",
-        "poison",
-        "ground",
-        "flying",
-        "psychic",
-        "bug",
-        "rock",
-        "ghost",
-        "dragon",
-        "dark",
-        "steel",
-      ];
+      const otherTypes: readonly PokemonType[] = GEN2_TYPES.filter(
+        (type) => type !== CORE_TYPE_IDS.water && type !== CORE_TYPE_IDS.fire,
+      );
 
       for (const type of otherTypes) {
-        expect(getWeatherDamageModifier(type, "rain")).toBe(1);
+        expect(getWeatherDamageModifier(type, CORE_WEATHER_IDS.rain)).toBe(1);
       }
     });
   });
@@ -199,10 +195,10 @@ describe("Gen2Weather", () => {
   describe("Given Sun weather", () => {
     it("should boost Fire moves by 1.5x", () => {
       // Arrange
-      const moveType: PokemonType = "fire";
+      const moveType: PokemonType = CORE_TYPE_IDS.fire;
 
       // Act
-      const modifier = getWeatherDamageModifier(moveType, "sun");
+      const modifier = getWeatherDamageModifier(moveType, CORE_WEATHER_IDS.sun);
 
       // Assert
       // Source: Gen 2 sunny day boosts Fire moves to 1.5x.
@@ -211,10 +207,10 @@ describe("Gen2Weather", () => {
 
     it("should weaken Water moves by 0.5x", () => {
       // Arrange
-      const moveType: PokemonType = "water";
+      const moveType: PokemonType = CORE_TYPE_IDS.water;
 
       // Act
-      const modifier = getWeatherDamageModifier(moveType, "sun");
+      const modifier = getWeatherDamageModifier(moveType, CORE_WEATHER_IDS.sun);
 
       // Assert
       // Source: Gen 2 sunny day weakens Water moves to 0.5x.
@@ -223,26 +219,12 @@ describe("Gen2Weather", () => {
 
     it("should not affect other types", () => {
       // Arrange / Act / Assert
-      const otherTypes: PokemonType[] = [
-        "normal",
-        "electric",
-        "grass",
-        "ice",
-        "fighting",
-        "poison",
-        "ground",
-        "flying",
-        "psychic",
-        "bug",
-        "rock",
-        "ghost",
-        "dragon",
-        "dark",
-        "steel",
-      ];
+      const otherTypes: readonly PokemonType[] = GEN2_TYPES.filter(
+        (type) => type !== CORE_TYPE_IDS.fire && type !== CORE_TYPE_IDS.water,
+      );
 
       for (const type of otherTypes) {
-        expect(getWeatherDamageModifier(type, "sun")).toBe(1);
+        expect(getWeatherDamageModifier(type, CORE_WEATHER_IDS.sun)).toBe(1);
       }
     });
   });
@@ -250,7 +232,11 @@ describe("Gen2Weather", () => {
   describe("Given Sandstorm", () => {
     it("should deal 1/8 max HP to non-Rock/Ground/Steel", () => {
       // Arrange
-      const normalPokemon = createMockActivePokemon({ types: ["normal"], maxHp: 200, uid: "p1" });
+      const normalPokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        maxHp: 200,
+        uid: "p1",
+      });
       const side0 = {
         index: 0,
         trainer: null,
@@ -269,7 +255,7 @@ describe("Gen2Weather", () => {
         index: 1,
         trainer: null,
         team: [],
-        active: [createMockActivePokemon({ types: ["normal"], maxHp: 200, uid: "p2" })],
+        active: [createMockActivePokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 200, uid: "p2" })],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -280,7 +266,11 @@ describe("Gen2Weather", () => {
         gimmickUsed: false,
       };
       const state = createMockBattleState({
-        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+        weather: {
+          type: CORE_WEATHER_IDS.sand,
+          turnsLeft: 5,
+          source: CORE_WEATHER_IDS.sand,
+        },
         sides: [side0, side1],
       });
 
@@ -297,10 +287,14 @@ describe("Gen2Weather", () => {
 
     it("should not damage Rock types", () => {
       // Arrange
-      const rockPokemon = createMockActivePokemon({ types: ["rock"], maxHp: 200, uid: "rock-mon" });
+      const rockPokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.rock],
+        maxHp: 200,
+        uid: "rock-mon",
+      });
 
       // Act
-      const immune = isWeatherImmune(rockPokemon.types, "sand");
+      const immune = isWeatherImmune(rockPokemon.types, CORE_WEATHER_IDS.sand);
 
       // Assert
       expect(immune).toBe(true);
@@ -308,10 +302,10 @@ describe("Gen2Weather", () => {
 
     it("should not damage Ground types", () => {
       // Arrange
-      const groundPokemon = createMockActivePokemon({ types: ["ground"], maxHp: 200 });
+      const groundPokemon = createMockActivePokemon({ types: [CORE_TYPE_IDS.ground], maxHp: 200 });
 
       // Act
-      const immune = isWeatherImmune(groundPokemon.types, "sand");
+      const immune = isWeatherImmune(groundPokemon.types, CORE_WEATHER_IDS.sand);
 
       // Assert
       expect(immune).toBe(true);
@@ -319,10 +313,10 @@ describe("Gen2Weather", () => {
 
     it("should not damage Steel types", () => {
       // Arrange
-      const steelPokemon = createMockActivePokemon({ types: ["steel"], maxHp: 200 });
+      const steelPokemon = createMockActivePokemon({ types: [CORE_TYPE_IDS.steel], maxHp: 200 });
 
       // Act
-      const immune = isWeatherImmune(steelPokemon.types, "sand");
+      const immune = isWeatherImmune(steelPokemon.types, CORE_WEATHER_IDS.sand);
 
       // Assert
       expect(immune).toBe(true);
@@ -330,10 +324,13 @@ describe("Gen2Weather", () => {
 
     it("should not damage dual-type Pokemon with one immune type", () => {
       // Arrange — Rock/Fire is immune because it has Rock
-      const rockFirePokemon = createMockActivePokemon({ types: ["rock", "fire"], maxHp: 200 });
+      const rockFirePokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.rock, CORE_TYPE_IDS.fire],
+        maxHp: 200,
+      });
 
       // Act
-      const immune = isWeatherImmune(rockFirePokemon.types, "sand");
+      const immune = isWeatherImmune(rockFirePokemon.types, CORE_WEATHER_IDS.sand);
 
       // Assert
       expect(immune).toBe(true);
@@ -341,7 +338,11 @@ describe("Gen2Weather", () => {
 
     it("should not boost SpDef (that is Gen 4+)", () => {
       // Arrange — This test documents the behavior: sandstorm ONLY does damage in Gen 2
-      const normalPokemon = createMockActivePokemon({ types: ["normal"], maxHp: 200, uid: "p1" });
+      const normalPokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        maxHp: 200,
+        uid: "p1",
+      });
       const side0 = {
         index: 0,
         trainer: null,
@@ -360,7 +361,7 @@ describe("Gen2Weather", () => {
         index: 1,
         trainer: null,
         team: [],
-        active: [createMockActivePokemon({ types: ["rock"], maxHp: 200, uid: "p2" })],
+        active: [createMockActivePokemon({ types: [CORE_TYPE_IDS.rock], maxHp: 200, uid: "p2" })],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -371,7 +372,11 @@ describe("Gen2Weather", () => {
         gimmickUsed: false,
       };
       const state = createMockBattleState({
-        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+        weather: {
+          type: CORE_WEATHER_IDS.sand,
+          turnsLeft: 5,
+          source: CORE_WEATHER_IDS.sand,
+        },
         sides: [side0, side1],
       });
 
@@ -390,8 +395,16 @@ describe("Gen2Weather", () => {
 
     it("should return no results when sandstorm is active but all Pokemon are immune", () => {
       // Arrange
-      const rockPokemon = createMockActivePokemon({ types: ["rock"], maxHp: 200, uid: "p1" });
-      const steelPokemon = createMockActivePokemon({ types: ["steel"], maxHp: 200, uid: "p2" });
+      const rockPokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.rock],
+        maxHp: 200,
+        uid: "p1",
+      });
+      const steelPokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.steel],
+        maxHp: 200,
+        uid: "p2",
+      });
       const side0 = {
         index: 0,
         trainer: null,
@@ -421,7 +434,11 @@ describe("Gen2Weather", () => {
         gimmickUsed: false,
       };
       const state = createMockBattleState({
-        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+        weather: {
+          type: CORE_WEATHER_IDS.sand,
+          turnsLeft: 5,
+          source: CORE_WEATHER_IDS.sand,
+        },
         sides: [side0, side1],
       });
 
@@ -436,30 +453,10 @@ describe("Gen2Weather", () => {
   describe("Given no weather", () => {
     it("should return 1 for all types", () => {
       // Arrange / Act / Assert
-      const allTypes: PokemonType[] = [
-        "normal",
-        "fire",
-        "water",
-        "electric",
-        "grass",
-        "ice",
-        "fighting",
-        "poison",
-        "ground",
-        "flying",
-        "psychic",
-        "bug",
-        "rock",
-        "ghost",
-        "dragon",
-        "dark",
-        "steel",
-      ];
+      const allTypes: readonly PokemonType[] = GEN2_TYPES;
 
       for (const type of allTypes) {
-        // No weather type that would affect anything — use a non-existent weather
-        // Actually, the function should handle the case where weather doesn't affect the type
-        expect(getWeatherDamageModifier(type, "sand")).toBe(1);
+        expect(getWeatherDamageModifier(type, CORE_WEATHER_IDS.sand)).toBe(1);
       }
     });
 
@@ -492,7 +489,11 @@ describe("Gen2Weather", () => {
         faintCount: 0,
         gimmickUsed: false,
       };
-      const normalPokemon = createMockActivePokemon({ types: ["normal"], maxHp: 200, uid: "p2" });
+      const normalPokemon = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        maxHp: 200,
+        uid: "p2",
+      });
       const side1 = {
         index: 1,
         trainer: null,
@@ -508,7 +509,11 @@ describe("Gen2Weather", () => {
         gimmickUsed: false,
       };
       const state = createMockBattleState({
-        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+        weather: {
+          type: CORE_WEATHER_IDS.sand,
+          turnsLeft: 5,
+          source: CORE_WEATHER_IDS.sand,
+        },
         sides: [side0, side1],
       });
 
@@ -525,7 +530,11 @@ describe("Gen2Weather", () => {
   describe("Given sandstorm with Pokemon missing calculatedStats", () => {
     it("should fall back to currentHp for damage calculation", () => {
       // Arrange: Pokemon with no calculatedStats
-      const pokemonNoStats = createMockActivePokemon({ types: ["fire"], maxHp: 160, uid: "p1" });
+      const pokemonNoStats = createMockActivePokemon({
+        types: [CORE_TYPE_IDS.fire],
+        maxHp: 160,
+        uid: "p1",
+      });
       // Remove calculatedStats to trigger fallback
       (pokemonNoStats.pokemon as unknown as Record<string, unknown>).calculatedStats = undefined;
       (pokemonNoStats.pokemon as unknown as Record<string, unknown>).currentHp = 160;
@@ -548,7 +557,7 @@ describe("Gen2Weather", () => {
         index: 1,
         trainer: null,
         team: [],
-        active: [createMockActivePokemon({ types: ["rock"], maxHp: 200, uid: "p2" })],
+        active: [createMockActivePokemon({ types: [CORE_TYPE_IDS.rock], maxHp: 200, uid: "p2" })],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -559,7 +568,11 @@ describe("Gen2Weather", () => {
         gimmickUsed: false,
       };
       const state = createMockBattleState({
-        weather: { type: "sand", turnsLeft: 5, source: "sandstorm" },
+        weather: {
+          type: CORE_WEATHER_IDS.sand,
+          turnsLeft: 5,
+          source: CORE_WEATHER_IDS.sand,
+        },
         sides: [side0, side1],
       });
 
@@ -576,16 +589,16 @@ describe("Gen2Weather", () => {
   describe("Given weather immunity checks", () => {
     it("should return false for non-immune types in sandstorm", () => {
       // Arrange / Act / Assert
-      expect(isWeatherImmune(["normal"], "sand")).toBe(false);
-      expect(isWeatherImmune(["fire"], "sand")).toBe(false);
-      expect(isWeatherImmune(["water"], "sand")).toBe(false);
-      expect(isWeatherImmune(["electric"], "sand")).toBe(false);
+      expect(isWeatherImmune([CORE_TYPE_IDS.normal], CORE_WEATHER_IDS.sand)).toBe(false);
+      expect(isWeatherImmune([CORE_TYPE_IDS.fire], CORE_WEATHER_IDS.sand)).toBe(false);
+      expect(isWeatherImmune([CORE_TYPE_IDS.water], CORE_WEATHER_IDS.sand)).toBe(false);
+      expect(isWeatherImmune([CORE_TYPE_IDS.electric], CORE_WEATHER_IDS.sand)).toBe(false);
     });
 
     it("should return false for all types in non-damaging weather", () => {
       // Arrange / Act / Assert
-      expect(isWeatherImmune(["normal"], "rain")).toBe(false);
-      expect(isWeatherImmune(["normal"], "sun")).toBe(false);
+      expect(isWeatherImmune([CORE_TYPE_IDS.normal], CORE_WEATHER_IDS.rain)).toBe(false);
+      expect(isWeatherImmune([CORE_TYPE_IDS.normal], CORE_WEATHER_IDS.sun)).toBe(false);
     });
   });
 });

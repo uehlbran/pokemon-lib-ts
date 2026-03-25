@@ -1,4 +1,5 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { CORE_TYPE_IDS, CORE_WEATHER_IDS, type PokemonType, type WeatherType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
 import {
@@ -7,6 +8,17 @@ import {
   isGen5WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
 } from "../src/Gen5Weather";
+import { GEN5_ABILITY_IDS, GEN5_SPECIES_IDS } from "../src";
+
+const ABILITIES = GEN5_ABILITY_IDS;
+const SPECIES = GEN5_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const DEFAULT_POKEMON_NAME = "TestMon";
+
+function getExpectedWeatherChip(maxHp: number): number {
+  return Math.max(1, Math.floor(maxHp / 16));
+}
 
 /**
  * Helper: create a minimal ActivePokemon mock for weather tests.
@@ -14,7 +26,7 @@ import {
 function makeActivePokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
-  types?: string[];
+  types?: PokemonType[];
   ability?: string;
   nickname?: string;
 }): ActivePokemon {
@@ -23,11 +35,11 @@ function makeActivePokemon(overrides: {
     pokemon: {
       calculatedStats: { hp: maxHp },
       currentHp: overrides.currentHp ?? maxHp,
-      nickname: overrides.nickname ?? "TestMon",
-      speciesId: 1,
+      nickname: overrides.nickname ?? DEFAULT_POKEMON_NAME,
+      speciesId: SPECIES.bulbasaur,
     },
-    ability: overrides.ability ?? "blaze",
-    types: overrides.types ?? ["normal"],
+    ability: overrides.ability ?? ABILITIES.blaze,
+    types: overrides.types ?? [TYPES.normal],
     statStages: {
       attack: 0,
       defense: 0,
@@ -59,7 +71,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
 }
 
 function makeState(
-  weatherType: string | null,
+  weatherType: WeatherType | null,
   turnsLeft: number,
   sides: [BattleSide, BattleSide],
 ): BattleState {
@@ -74,215 +86,225 @@ function makeState(
 describe("Gen5 weather immunity", () => {
   it("given Rock-type in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel are immune to sandstorm damage
-    expect(isGen5WeatherImmune(["rock"], "sand")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.rock], WEATHER.sand)).toBe(true);
   });
 
   it("given Ground-type in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel are immune to sandstorm damage
-    expect(isGen5WeatherImmune(["ground"], "sand")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.ground], WEATHER.sand)).toBe(true);
   });
 
   it("given Steel-type in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel are immune to sandstorm damage
-    expect(isGen5WeatherImmune(["steel"], "sand")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.steel], WEATHER.sand)).toBe(true);
   });
 
   it("given Normal-type in sandstorm, when checking immunity, then is NOT immune", () => {
     // Source: Bulbapedia -- Normal type takes sandstorm damage
-    expect(isGen5WeatherImmune(["normal"], "sand")).toBe(false);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.sand)).toBe(false);
   });
 
   it("given Ice-type in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Ice types are immune to hail damage
-    expect(isGen5WeatherImmune(["ice"], "hail")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.ice], WEATHER.hail)).toBe(true);
   });
 
   it("given Normal-type in hail, when checking immunity, then is NOT immune", () => {
     // Source: Bulbapedia -- Normal type takes hail damage
-    expect(isGen5WeatherImmune(["normal"], "hail")).toBe(false);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.hail)).toBe(false);
   });
 
   it("given pokemon with Magic Guard in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage including weather
-    expect(isGen5WeatherImmune(["normal"], "sand", "magic-guard")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.sand, ABILITIES.magicGuard)).toBe(true);
   });
 
   it("given pokemon with Magic Guard in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage including weather
-    expect(isGen5WeatherImmune(["normal"], "hail", "magic-guard")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.hail, ABILITIES.magicGuard)).toBe(true);
   });
 
   it("given pokemon with Overcoat in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage in Gen 5 (NOT powder moves, that's Gen 6+)
-    expect(isGen5WeatherImmune(["normal"], "sand", "overcoat")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.sand, ABILITIES.overcoat)).toBe(true);
   });
 
   it("given pokemon with Overcoat in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage in Gen 5
-    expect(isGen5WeatherImmune(["normal"], "hail", "overcoat")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.hail, ABILITIES.overcoat)).toBe(true);
   });
 
   it("given pokemon with Sand Rush in sandstorm, when checking immunity, then is immune to chip", () => {
     // Source: Bulbapedia -- Sand Rush: immune to sandstorm chip + 2x speed
-    expect(isGen5WeatherImmune(["normal"], "sand", "sand-rush")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.sand, ABILITIES.sandRush)).toBe(true);
   });
 
   it("given pokemon with Sand Force in sandstorm, when checking immunity, then is immune to chip", () => {
     // Source: Bulbapedia -- Sand Force: immune to sandstorm chip
-    expect(isGen5WeatherImmune(["normal"], "sand", "sand-force")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.sand, ABILITIES.sandForce)).toBe(true);
   });
 
   it("given pokemon with Ice Body in hail, when checking immunity, then is immune to chip", () => {
     // Source: Bulbapedia -- Ice Body: heals 1/16 in hail instead of taking damage
-    expect(isGen5WeatherImmune(["normal"], "hail", "ice-body")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.hail, ABILITIES.iceBody)).toBe(true);
   });
 
   it("given any pokemon in rain, when checking immunity, then returns false (rain has no chip)", () => {
     // Source: Rain/Sun have no chip damage
-    expect(isGen5WeatherImmune(["normal"], "rain")).toBe(false);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.rain)).toBe(false);
   });
 
   it("given any pokemon in sun, when checking immunity, then returns false (sun has no chip)", () => {
     // Source: Rain/Sun have no chip damage
-    expect(isGen5WeatherImmune(["normal"], "sun")).toBe(false);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.sun)).toBe(false);
   });
 });
 
 describe("Gen5 weather chip damage", () => {
   it("given sandstorm active, when non-Rock/Ground/Steel pokemon takes end-of-turn tick, then takes maxHp/16 damage", () => {
     // Source: Bulbapedia -- Sandstorm chip damage is 1/16 max HP
-    const pokemon = makeActivePokemon({ maxHp: 160, types: ["normal"] });
+    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.normal] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["rock"] }), 1);
-    const state = makeState("sand", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
+    const state = makeState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    // Only the Normal-type should take damage
-    const normalResult = results.find((r) => r.side === 0);
-    expect(normalResult).toBeDefined();
-    expect(normalResult!.damage).toBe(10); // floor(160 / 16) = 10
+    expect(results).toEqual([
+      {
+        side: 0,
+        pokemon: DEFAULT_POKEMON_NAME,
+        damage: getExpectedWeatherChip(160),
+        message: `${DEFAULT_POKEMON_NAME} is buffeted by the sandstorm!`,
+      },
+    ]);
   });
 
   it("given sandstorm active, when Rock-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: ["rock"] });
+    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.rock] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["rock"] }), 1);
-    const state = makeState("sand", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
+    const state = makeState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    const rockResult = results.find((r) => r.side === 0);
-    expect(rockResult).toBeUndefined();
+    expect(results).toEqual([]);
   });
 
   it("given sandstorm active, when Steel-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: ["steel"] });
+    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.steel] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["steel"] }), 1);
-    const state = makeState("sand", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.steel] }), 1);
+    const state = makeState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    expect(results).toHaveLength(0);
+    expect(results).toEqual([]);
   });
 
   it("given hail active, when non-Ice pokemon takes end-of-turn tick, then takes maxHp/16 damage", () => {
     // Source: Bulbapedia -- Hail chip damage is 1/16 max HP
-    const pokemon = makeActivePokemon({ maxHp: 320, types: ["fire"] });
+    const pokemon = makeActivePokemon({ maxHp: 320, types: [TYPES.fire] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["ice"] }), 1);
-    const state = makeState("hail", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
+    const state = makeState(WEATHER.hail, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    const fireResult = results.find((r) => r.side === 0);
-    expect(fireResult).toBeDefined();
-    expect(fireResult!.damage).toBe(20); // floor(320 / 16) = 20
+    expect(results).toEqual([
+      {
+        side: 0,
+        pokemon: DEFAULT_POKEMON_NAME,
+        damage: getExpectedWeatherChip(320),
+        message: `${DEFAULT_POKEMON_NAME} is pelted by hail!`,
+      },
+    ]);
   });
 
   it("given hail active, when Ice-type takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Ice types immune to hail chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: ["ice"] });
+    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.ice] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["ice"] }), 1);
-    const state = makeState("hail", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
+    const state = makeState(WEATHER.hail, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    expect(results).toHaveLength(0);
+    expect(results).toEqual([]);
   });
 
   it("given sandstorm and pokemon with Overcoat, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage in Gen 5 (NOT powder moves)
     const pokemon = makeActivePokemon({
       maxHp: 160,
-      types: ["normal"],
-      ability: "overcoat",
+      types: [TYPES.normal],
+      ability: ABILITIES.overcoat,
     });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["rock"] }), 1);
-    const state = makeState("sand", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
+    const state = makeState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
     const overcoatResult = results.find((r) => r.side === 0);
     expect(overcoatResult).toBeUndefined();
+    expect(results).toEqual([]);
   });
 
   it("given hail and pokemon with Magic Guard, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage
     const pokemon = makeActivePokemon({
       maxHp: 160,
-      types: ["normal"],
-      ability: "magic-guard",
+      types: [TYPES.normal],
+      ability: ABILITIES.magicGuard,
     });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["ice"] }), 1);
-    const state = makeState("hail", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
+    const state = makeState(WEATHER.hail, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
     const magicResult = results.find((r) => r.side === 0);
     expect(magicResult).toBeUndefined();
+    expect(results).toEqual([]);
   });
 
   it("given rain active, when end-of-turn tick fires, then no chip damage to anyone", () => {
     // Source: Rain has no chip damage
-    const pokemon = makeActivePokemon({ types: ["normal"] });
+    const pokemon = makeActivePokemon({ types: [TYPES.normal] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["fire"] }), 1);
-    const state = makeState("rain", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.fire] }), 1);
+    const state = makeState(WEATHER.rain, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    expect(results).toHaveLength(0);
+    expect(results).toEqual([]);
   });
 
   it("given sun active, when end-of-turn tick fires, then no chip damage to anyone", () => {
     // Source: Sun has no chip damage
-    const pokemon = makeActivePokemon({ types: ["normal"] });
+    const pokemon = makeActivePokemon({ types: [TYPES.normal] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["grass"] }), 1);
-    const state = makeState("sun", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.grass] }), 1);
+    const state = makeState(WEATHER.sun, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    expect(results).toHaveLength(0);
+    expect(results).toEqual([]);
   });
 
   it("given no weather active, when end-of-turn tick fires, then no results", () => {
     // Source: No weather = no effects
-    const pokemon = makeActivePokemon({ types: ["normal"] });
+    const pokemon = makeActivePokemon({ types: [TYPES.normal] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["fire"] }), 1);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.fire] }), 1);
     const state = makeState(null, 0, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
-    expect(results).toHaveLength(0);
+    expect(results).toEqual([]);
   });
 });
 
@@ -296,36 +318,49 @@ describe("Gen5 weather duration — BattleState shape", () => {
   it("given a BattleState with rain turnsLeft=5, when applyWeatherEffects called, then no chip damage (rain has none)", () => {
     // Source: Bulbapedia -- Rain does not deal chip damage; confirms the state shape is valid
     const ruleset = new Gen5Ruleset();
-    const state = makeState("rain", 5, [
-      makeSide(makeActivePokemon({ types: ["fire"] }), 0),
-      makeSide(makeActivePokemon({ types: ["water"] }), 1),
+    const state = makeState(WEATHER.rain, 5, [
+      makeSide(makeActivePokemon({ types: [TYPES.fire] }), 0),
+      makeSide(makeActivePokemon({ types: [TYPES.water] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     // Rain never deals chip damage — 0 results regardless of turnsLeft
-    expect(results).toHaveLength(0);
+    expect(results).toEqual([]);
   });
 
   it("given a BattleState with sand turnsLeft=8 (Smooth Rock), when applyWeatherEffects called, then non-immune types take chip damage", () => {
     // Source: Bulbapedia -- Smooth Rock extends sandstorm to 8 turns; chip still applies each turn
     const ruleset = new Gen5Ruleset();
-    const state = makeState("sand", 8, [
-      makeSide(makeActivePokemon({ maxHp: 160, types: ["fire"] }), 0),
-      makeSide(makeActivePokemon({ types: ["rock"] }), 1),
+    const state = makeState(WEATHER.sand, 8, [
+      makeSide(makeActivePokemon({ maxHp: 160, types: [TYPES.fire] }), 0),
+      makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
-    expect(results).toHaveLength(1); // only Fire takes chip; Rock is immune
-    expect(results[0].damage).toBe(10); // floor(160/16)=10
+    expect(results).toEqual([
+      {
+        side: 0,
+        pokemon: DEFAULT_POKEMON_NAME,
+        damage: getExpectedWeatherChip(160),
+        message: `${DEFAULT_POKEMON_NAME} is buffeted by the sandstorm!`,
+      },
+    ]);
   });
 
   it("given a BattleState with sand turnsLeft=-1 (Sandstream, indefinite), when applyWeatherEffects called, then chip damage still applies", () => {
     // Source: Showdown gen5 -- Sandstream sets indefinite weather (turnsLeft=-1 per our WeatherState shape)
     const ruleset = new Gen5Ruleset();
-    const state = makeState("sand", -1, [
-      makeSide(makeActivePokemon({ maxHp: 160, types: ["fire"] }), 0),
-      makeSide(makeActivePokemon({ types: ["ground"] }), 1),
+    const state = makeState(WEATHER.sand, -1, [
+      makeSide(makeActivePokemon({ maxHp: 160, types: [TYPES.fire] }), 0),
+      makeSide(makeActivePokemon({ types: [TYPES.ground] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
-    expect(results).toHaveLength(1); // only Fire takes chip; Ground is immune
+    expect(results).toEqual([
+      {
+        side: 0,
+        pokemon: DEFAULT_POKEMON_NAME,
+        damage: getExpectedWeatherChip(160),
+        message: `${DEFAULT_POKEMON_NAME} is buffeted by the sandstorm!`,
+      },
+    ]);
   });
 });
 
@@ -333,32 +368,33 @@ describe("Gen5 weather integration via ruleset", () => {
   it("given Gen5Ruleset, when applyWeatherEffects called with sandstorm state, then returns chip results", () => {
     // Source: Bulbapedia -- Sandstorm chip damage
     const ruleset = new Gen5Ruleset();
-    const pokemon = makeActivePokemon({ maxHp: 160, types: ["fire"] });
+    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.fire] });
     const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: ["rock"] }), 1);
-    const state = makeState("sand", 5, [side0, side1]);
+    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
+    const state = makeState(WEATHER.sand, 5, [side0, side1]);
 
     const results = ruleset.applyWeatherEffects(state);
 
-    expect(results.length).toBeGreaterThan(0);
-    const fireResult = results.find((r) => r.side === 0);
-    expect(fireResult).toBeDefined();
-    expect(fireResult!.damage).toBe(10); // floor(160 / 16) = 10
+    expect(results).toEqual([
+      {
+        side: 0,
+        pokemon: DEFAULT_POKEMON_NAME,
+        damage: getExpectedWeatherChip(160),
+        message: `${DEFAULT_POKEMON_NAME} is buffeted by the sandstorm!`,
+      },
+    ]);
   });
 });
 
 describe("Gen5 weather immunity type constants", () => {
   it("given SANDSTORM_IMMUNE_TYPES, then includes rock, ground, steel", () => {
     // Source: Bulbapedia -- these types are immune to sandstorm chip
-    expect(SANDSTORM_IMMUNE_TYPES).toContain("rock");
-    expect(SANDSTORM_IMMUNE_TYPES).toContain("ground");
-    expect(SANDSTORM_IMMUNE_TYPES).toContain("steel");
+    expect(SANDSTORM_IMMUNE_TYPES).toEqual([TYPES.rock, TYPES.ground, TYPES.steel]);
   });
 
   it("given HAIL_IMMUNE_TYPES, then includes only ice", () => {
     // Source: Bulbapedia -- only ice is immune to hail chip
-    expect(HAIL_IMMUNE_TYPES).toContain("ice");
-    expect(HAIL_IMMUNE_TYPES).toHaveLength(1);
+    expect(HAIL_IMMUNE_TYPES).toEqual([TYPES.ice]);
   });
 });
 
@@ -370,11 +406,11 @@ describe("Gen5 Snow Cloak hail immunity", () => {
     //   weather damage check: "!target.runStatusImmunity(effect.id)" → skips damage when false
     //   runStatusImmunity calls runEvent('Immunity') → onImmunity returning false → immune
     // Source: Bulbapedia -- Snow Cloak: "The Pokemon is immune to damage from hail."
-    expect(isGen5WeatherImmune(["normal"], "hail", "snow-cloak")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.hail, ABILITIES.snowCloak)).toBe(true);
   });
 
   it("given a Pokemon with ice-body in hail, when isGen5WeatherImmune called, then returns true (grants chip immunity)", () => {
     // Source: Bulbapedia -- Ice Body: "the Pokémon is unaffected by hail"
-    expect(isGen5WeatherImmune(["normal"], "hail", "ice-body")).toBe(true);
+    expect(isGen5WeatherImmune([TYPES.normal], WEATHER.hail, ABILITIES.iceBody)).toBe(true);
   });
 });
