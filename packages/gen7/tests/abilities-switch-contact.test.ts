@@ -1,18 +1,33 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonInstance, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import type { Gender, MoveData, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
 import {
-  ALL_NATURES,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  SeededRandom,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
-import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "../src/data/reference-ids";
 import { describe, expect, it } from "vitest";
+import {
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_SPECIES_IDS,
+  createGen7DataManager,
+} from "../src";
 import {
   getWeatherDuration,
   handleGen7SwitchAbility,
@@ -32,6 +47,7 @@ const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const STATUS_IDS = CORE_STATUS_IDS;
+const TRIGGER_IDS = CORE_ABILITY_TRIGGER_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const WEATHER_IDS = {
@@ -40,14 +56,12 @@ const WEATHER_IDS = {
   hail: CORE_WEATHER_IDS.hail,
   sand: CORE_WEATHER_IDS.sand as WeatherType,
 } as const;
-const DEFAULT_NATURE_ID = ALL_NATURES[0]!.id;
-const DEFAULT_POKEBALL = GEN7_ITEM_IDS.pokeBall;
-const DEFAULT_ABILITY_SLOT = Object.keys({ normal1: null } as const)[0] as PokemonInstance["abilitySlot"];
-const GENDER_IDS = {
-  male: ["ma", "le"].join("") as Gender,
-  female: ["fe", "male"].join("") as Gender,
-  genderless: ["gender", "less"].join("") as Gender,
-} as const;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const dataManager = createGen7DataManager();
+const defaultSpecies = dataManager.getSpecies(GEN7_SPECIES_IDS.pikachu);
+const defaultNatureId = CORE_NATURE_IDS.hardy;
+const defaultPokeball = ITEM_IDS.pokeBall;
+const tackle = dataManager.getMove(MOVE_IDS.tackle);
 
 /**
  * Gen 7 switch-in, switch-out, contact, and passive ability tests.
@@ -72,11 +86,11 @@ const GENDER_IDS = {
 // ---------------------------------------------------------------------------
 
 let nextTestUid = 0;
-function makeTestUid() {
+function createTestUid() {
   return `test-${nextTestUid++}`;
 }
 
-function makePokemonInstance(overrides: {
+function createCanonicalPokemon(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -85,43 +99,42 @@ function makePokemonInstance(overrides: {
   maxHp?: number;
   status?: string | null;
   gender?: Gender;
-}): PokemonInstance {
+}) {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: makeTestUid(),
-    speciesId: overrides.speciesId ?? 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: DEFAULT_NATURE_ID,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(7), {
+    nature: defaultNatureId,
+    ivs: createIvs(),
+    evs: createEvs(),
     moves: [],
-    ability: overrides.ability ?? ABILITY_IDS.none,
-    abilitySlot: DEFAULT_ABILITY_SLOT,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: overrides.gender ?? CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: overrides.gender ?? GENDER_IDS.male,
     isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: DEFAULT_POKEBALL,
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+    pokeball: defaultPokeball,
+  });
+  pokemon.uid = createTestUid();
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = [createMoveSlot(tackle.id, tackle.pp)];
+  pokemon.ability = overrides.ability ?? ABILITY_IDS.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = (overrides.status ?? null) as typeof pokemon.status;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
@@ -136,8 +149,9 @@ function makeActivePokemon(overrides: {
   calcDefense?: number;
   calcSpDefense?: number;
 }) {
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createCanonicalPokemon({
       ability: overrides.ability,
       nickname: overrides.nickname,
       currentHp: overrides.currentHp,
@@ -158,7 +172,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [TYPE_IDS.normal],
+    types: overrides.types ?? [...species.types],
     ability: overrides.ability ?? ABILITY_IDS.none,
     suppressedAbility: null,
     lastMoveUsed: null,
@@ -182,7 +196,7 @@ function makeActivePokemon(overrides: {
   };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -199,13 +213,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 7,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -227,37 +241,29 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function _makeMove(
-  type: PokemonType,
+function createSyntheticMoveFrom(
+  baseMove: MoveData,
   opts: {
     id?: string;
-    category?: "physical" | "special" | "status";
+    type?: PokemonType;
+    category?: MoveData["category"];
     flags?: Record<string, boolean>;
   } = {},
 ): MoveData {
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type,
-    category: opts.category ?? "physical",
-    power: opts.category === "status" ? 0 : 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "single",
-    generation: 7,
-    flags: opts.flags ?? { contact: true },
-    effectChance: null,
-    secondaryEffects: [],
+    ...baseMove,
+    id: opts.id ?? baseMove.id,
+    type: opts.type ?? baseMove.type,
+    category: opts.category ?? baseMove.category,
+    flags: { ...baseMove.flags, ...opts.flags },
   } as unknown as MoveData;
 }
 
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
   trigger: string;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
   move?: MoveData;
   nickname?: string;
   heldItem?: string | null;
@@ -270,11 +276,11 @@ function makeContext(opts: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   gender?: Gender;
 }): AbilityContext {
-  const state = makeBattleState();
+  const state = createBattleState();
   if (opts.rng) {
     (state as any).rng = { ...state.rng, ...opts.rng };
   }
-  const pokemon = makeActivePokemon({
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname,
@@ -287,17 +293,6 @@ function makeContext(opts: {
     volatiles: opts.volatiles,
     gender: opts.gender,
   });
-  if (opts.opponent) {
-    // Override calculated stats for Download tests
-    if ((opts.opponent as any)._calcDefOverride !== undefined) {
-      opts.opponent.pokemon.calculatedStats = {
-        ...opts.opponent.pokemon.calculatedStats!,
-        defense: (opts.opponent as any)._calcDefOverride,
-        spDefense: (opts.opponent as any)._calcSpDefOverride,
-      };
-    }
-  }
-
   return {
     pokemon,
     opponent: opts.opponent,
@@ -316,15 +311,15 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Intimidate", () => {
     it("given Intimidate user, when switching in with opponent, then lowers opponent Attack by 1 stage", () => {
       // Source: Showdown data/abilities.ts -- Intimidate: -1 Atk to foe on switch-in
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.innerFocus, nickname: "Metagross" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.innerFocus, nickname: "Metagross" });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.intimidate,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Gyarados",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -342,26 +337,26 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Intimidate user, when opponent has Substitute, then does not lower Attack", () => {
       // Source: Showdown data/abilities.ts -- Intimidate blocked by Substitute
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.innerFocus, substituteHp: 50 });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.innerFocus, substituteHp: 50 });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.intimidate,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Intimidate user, when no opponent present, then does not activate", () => {
       // Source: Showdown -- no opponent to target
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.intimidate,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -370,15 +365,15 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Trace", () => {
     it("given Trace user, when opponent has a copyable ability, then copies opponent ability", () => {
       // Source: Showdown data/abilities.ts -- Trace: copies opponent's ability
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.levitate, nickname: "Garchomp" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.levitate, nickname: "Garchomp" });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.trace,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Gardevoir",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -395,42 +390,42 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Trace user, when opponent has Disguise (Gen 7 uncopyable), then does not activate", () => {
       // Source: Bulbapedia "Trace" Gen VII -- cannot copy Disguise
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.disguise });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.disguise });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.trace,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Trace user, when opponent has Schooling (Gen 7 uncopyable), then does not activate", () => {
       // Source: Bulbapedia "Trace" Gen VII -- cannot copy Schooling
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.schooling });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.schooling });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.trace,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Trace user, when opponent has Battle Bond (Gen 7 uncopyable), then does not activate", () => {
       // Source: Bulbapedia "Trace" Gen VII -- cannot copy Battle Bond
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.battleBond });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.battleBond });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.trace,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -439,7 +434,7 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Download", () => {
     it("given Download user, when opponent SpDef > Def, then raises Attack", () => {
       // Source: Showdown data/abilities.ts -- Download: foe Def < SpDef => +1 Atk
-      const opponent = makeActivePokemon({ ability: "" });
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
       opponent.pokemon.calculatedStats = {
         hp: 200,
         attack: 100,
@@ -448,14 +443,14 @@ describe("Gen 7 Switch-in Abilities", () => {
         spDefense: 120,
         speed: 100,
       };
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.download,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Porygon-Z",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -468,7 +463,7 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Download user, when opponent Def >= SpDef, then raises Sp. Atk", () => {
       // Source: Showdown data/abilities.ts -- Download: foe Def >= SpDef => +1 SpA
-      const opponent = makeActivePokemon({ ability: "" });
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
       opponent.pokemon.calculatedStats = {
         hp: 200,
         attack: 100,
@@ -477,14 +472,14 @@ describe("Gen 7 Switch-in Abilities", () => {
         spDefense: 100,
         speed: 100,
       };
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.download,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Porygon-Z",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -500,13 +495,13 @@ describe("Gen 7 Switch-in Abilities", () => {
     it("given Drizzle user with no weather rock, when switching in, then sets 5-turn rain", () => {
       // Source: Showdown data/abilities.ts -- Drizzle: 5 turns of rain
       // Source: Bulbapedia -- Drizzle Gen 6+: 5-turn rain
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.drizzle,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Pelipper",
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -520,14 +515,14 @@ describe("Gen 7 Switch-in Abilities", () => {
     it("given Drizzle user with Damp Rock, when switching in, then sets 8-turn rain", () => {
       // Source: Bulbapedia -- Damp Rock extends rain from 5 to 8 turns
       // Source: Showdown data/items.ts -- damprock
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.drizzle,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Pelipper",
         heldItem: ITEM_IDS.dampRock,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -540,13 +535,13 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Drought user with Heat Rock, when switching in, then sets 8-turn sun", () => {
       // Source: Bulbapedia -- Heat Rock extends sun from 5 to 8 turns
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.drought,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         heldItem: ITEM_IDS.heatRock,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.effects[0]).toEqual({
         effectType: "weather-set",
@@ -558,13 +553,13 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Sand Stream user with Smooth Rock, when switching in, then sets 8-turn sand", () => {
       // Source: Bulbapedia -- Smooth Rock extends sandstorm from 5 to 8 turns
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.sandStream,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         heldItem: ITEM_IDS.smoothRock,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.effects[0]).toEqual({
         effectType: "weather-set",
@@ -576,13 +571,13 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Snow Warning user with Icy Rock, when switching in, then sets 8-turn hail", () => {
       // Source: Bulbapedia -- Icy Rock extends hail from 5 to 8 turns
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.snowWarning,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         heldItem: ITEM_IDS.icyRock,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.effects[0]).toEqual({
         effectType: "weather-set",
@@ -594,13 +589,13 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Drought user with wrong rock (Damp Rock), when switching in, then sets 5-turn sun", () => {
       // Source: Weather rocks only extend matching weather type
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.drought,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         heldItem: ITEM_IDS.dampRock,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.effects[0]).toEqual({
         effectType: "weather-set",
@@ -614,13 +609,13 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Mold Breaker / Teravolt / Turboblaze", () => {
     it("given Mold Breaker user, when switching in, then announces with 'breaks the mold' message", () => {
       // Source: Showdown data/abilities.ts -- Mold Breaker onStart
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.moldBreaker,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Excadrill",
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("Excadrill breaks the mold!");
@@ -628,13 +623,13 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Teravolt user, when switching in, then announces with 'bursting aura' message", () => {
       // Source: Showdown data/abilities.ts -- Teravolt onStart
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.teravolt,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Zekrom",
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("Zekrom is radiating a bursting aura!");
@@ -642,13 +637,13 @@ describe("Gen 7 Switch-in Abilities", () => {
 
     it("given Turboblaze user, when switching in, then announces with 'blazing aura' message", () => {
       // Source: Showdown data/abilities.ts -- Turboblaze onStart
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.turboblaze,
-        trigger: "on-switch-in",
+        trigger: TRIGGER_IDS.onSwitchIn,
         nickname: "Reshiram",
       });
 
-      const result = handleGen7SwitchAbility("on-switch-in", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.messages[0]).toBe("Reshiram is radiating a blazing aura!");
@@ -666,15 +661,15 @@ describe("Gen 7 Switch-out Abilities", () => {
       // Source: Showdown data/abilities.ts -- Regenerator: heals 1/3 max HP on switch-out
       // Source: Bulbapedia -- Regenerator: "Restores 1/3 of its maximum HP"
       // 300 / 3 = 100
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.regenerator,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
         nickname: "Slowbro",
         currentHp: 100,
         maxHp: 300,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -687,14 +682,14 @@ describe("Gen 7 Switch-out Abilities", () => {
     it("given Regenerator user with max HP that is not divisible by 3, when switching out, then floors the heal amount", () => {
       // Source: Showdown data/abilities.ts -- Math.floor(maxHP / 3)
       // 200 / 3 = 66.67 -> floor to 66
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.regenerator,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
         currentHp: 50,
         maxHp: 200,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -709,14 +704,14 @@ describe("Gen 7 Switch-out Abilities", () => {
     it("given Natural Cure user with burn, when switching out, then cures burn", () => {
       // Source: Showdown data/abilities.ts -- Natural Cure: cures status on switch-out
       // Source: Bulbapedia -- Natural Cure: "All status conditions are healed"
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.naturalCure,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
         nickname: "Chansey",
         status: STATUS_IDS.burn,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -727,12 +722,12 @@ describe("Gen 7 Switch-out Abilities", () => {
 
     it("given Natural Cure user with no status, when switching out, then does not activate", () => {
       // Source: Showdown -- no status to cure
-      const ctx = makeContext({
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.naturalCure,
-        trigger: "on-switch-out",
+        trigger: TRIGGER_IDS.onSwitchOut,
       });
 
-      const result = handleGen7SwitchAbility("on-switch-out", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onSwitchOut, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -749,15 +744,15 @@ describe("Gen 7 Contact Abilities", () => {
       // Source: Showdown data/abilities.ts -- Rough Skin: 1/8 max HP chip
       // Source: Bulbapedia -- Rough Skin: "1/8 of the attacker's maximum HP"
       // 200 / 8 = 25
-      const opponent = makeActivePokemon({ ability: "", maxHp: 200 });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, maxHp: 200 });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.roughSkin,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         nickname: "Garchomp",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -775,15 +770,15 @@ describe("Gen 7 Contact Abilities", () => {
     it("given Iron Barbs defender with 160 HP attacker, when attacker makes contact, then deals 20 chip damage (floor(160/8))", () => {
       // Source: Showdown data/abilities.ts -- Iron Barbs: same as Rough Skin (1/8)
       // 160 / 8 = 20
-      const opponent = makeActivePokemon({ ability: "", maxHp: 160 });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, maxHp: 160 });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.ironBarbs,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         nickname: "Ferrothorn",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -803,16 +798,16 @@ describe("Gen 7 Contact Abilities", () => {
     it("given Flame Body defender, when attacker makes contact and RNG < 0.3, then burns attacker", () => {
       // Source: Showdown data/abilities.ts -- Flame Body: 30% burn on contact
       // Source: Bulbapedia -- Flame Body: "30% chance of burning the attacker"
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.flameBody,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         nickname: "Talonflame",
         opponent,
         rng: { next: () => 0.1 }, // < 0.3, triggers
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -824,30 +819,30 @@ describe("Gen 7 Contact Abilities", () => {
 
     it("given Flame Body defender, when attacker makes contact and RNG >= 0.3, then does not burn", () => {
       // Source: Showdown -- 70% chance of NOT triggering
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.flameBody,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.5 }, // >= 0.3, does not trigger
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Flame Body defender, when attacker already has a status, then does not burn", () => {
       // Source: Showdown -- cannot inflict if already statused
-      const opponent = makeActivePokemon({ ability: "", status: STATUS_IDS.paralysis });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, status: STATUS_IDS.paralysis });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.flameBody,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.1 },
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -857,16 +852,16 @@ describe("Gen 7 Contact Abilities", () => {
     it("given Static defender, when attacker makes contact and RNG < 0.3, then paralyzes attacker", () => {
       // Source: Showdown data/abilities.ts -- Static: 30% paralysis on contact
       // Source: Bulbapedia -- Static: "30% chance of paralyzing the attacker"
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.static,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         nickname: "Pikachu",
         opponent,
         rng: { next: () => 0.2 }, // < 0.3, triggers
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -878,15 +873,15 @@ describe("Gen 7 Contact Abilities", () => {
 
     it("given Static defender, when attacker already statused, then does not paralyze", () => {
       // Source: Showdown -- cannot inflict on already-statused Pokemon
-      const opponent = makeActivePokemon({ ability: "", status: STATUS_IDS.burn });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, status: STATUS_IDS.burn });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.static,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.1 },
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -895,15 +890,15 @@ describe("Gen 7 Contact Abilities", () => {
   describe("Poison Point", () => {
     it("given Poison Point defender, when attacker makes contact and RNG < 0.3, then poisons attacker", () => {
       // Source: Showdown data/abilities.ts -- Poison Point: 30% poison on contact
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.poisonPoint,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.15 },
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -918,15 +913,15 @@ describe("Gen 7 Contact Abilities", () => {
     it("given Gooey defender, when attacker makes contact, then lowers attacker Speed by 1 stage", () => {
       // Source: Showdown data/abilities.ts -- Gooey: -1 Speed to contact attacker
       // Source: Bulbapedia -- Gooey: "Lowers the attacker's Speed by one stage on contact"
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.gooey,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         nickname: "Goodra",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -945,15 +940,15 @@ describe("Gen 7 Contact Abilities", () => {
     it("given Tangling Hair defender (Gen 7 new), when attacker makes contact, then lowers attacker Speed by 1 stage", () => {
       // Source: Bulbapedia "Tangling Hair" -- introduced Gen 7 (Alolan Dugtrio)
       // Same effect as Gooey: -1 Speed to contact attacker
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.tanglingHair,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         nickname: "Dugtrio-Alola",
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result).toEqual({
         activated: true,
@@ -973,14 +968,14 @@ describe("Gen 7 Contact Abilities", () => {
   describe("Mummy", () => {
     it("given Mummy defender, when attacker makes contact, then overwrites attacker ability to Mummy", () => {
       // Source: Showdown data/abilities.ts -- Mummy: contact overwrite
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.toughClaws });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.toughClaws });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.mummy,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -992,28 +987,28 @@ describe("Gen 7 Contact Abilities", () => {
 
     it("given Mummy defender, when attacker has unsuppressable ability (Schooling), then does not overwrite", () => {
       // Source: Showdown data/abilities.ts -- cannot suppress Schooling
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.schooling });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.schooling });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.mummy,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Mummy defender, when attacker already has Mummy, then does not activate", () => {
       // Source: Showdown -- cannot overwrite Mummy with Mummy
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.mummy });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.mummy });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.mummy,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -1023,15 +1018,15 @@ describe("Gen 7 Contact Abilities", () => {
     it("given Effect Spore defender, when attacker makes contact and roll = 5, then puts attacker to sleep", () => {
       // Source: Showdown data/abilities.ts -- Effect Spore: roll 0-9 = sleep
       // Math.floor(0.05 * 100) = 5, which is in range [0, 9]
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.effectSpore,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.05 },
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -1043,30 +1038,30 @@ describe("Gen 7 Contact Abilities", () => {
 
     it("given Effect Spore defender, when attacker is Grass-type, then does not activate", () => {
       // Source: Showdown data/abilities.ts -- Grass-types immune to Effect Spore
-      const opponent = makeActivePokemon({ ability: "", types: ["grass"] });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, types: [TYPE_IDS.grass] });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.effectSpore,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.05 },
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Effect Spore defender, when attacker has Overcoat, then does not activate", () => {
       // Source: Showdown data/abilities.ts -- Overcoat blocks Effect Spore
-      const opponent = makeActivePokemon({ ability: ABILITY_IDS.overcoat });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.overcoat });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.effectSpore,
-        trigger: "on-contact",
+        trigger: TRIGGER_IDS.onContact,
         opponent,
         rng: { next: () => 0.05 },
       });
 
-      const result = handleGen7SwitchAbility("on-contact", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onContact, ctx);
 
       expect(result.activated).toBe(false);
     });
@@ -1075,16 +1070,16 @@ describe("Gen 7 Contact Abilities", () => {
   describe("Synchronize", () => {
     it("given Synchronize holder with burn, when status was inflicted by opponent, then spreads burn to opponent", () => {
       // Source: Showdown data/abilities.ts -- Synchronize: passes burn/paralysis/poison
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.synchronize,
-        trigger: "on-status-inflicted",
+        trigger: TRIGGER_IDS.onStatusInflicted,
         nickname: "Espeon",
         status: STATUS_IDS.burn,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-status-inflicted", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onStatusInflicted, ctx);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
@@ -1096,30 +1091,30 @@ describe("Gen 7 Contact Abilities", () => {
 
     it("given Synchronize holder with sleep, when status was inflicted, then does NOT spread sleep", () => {
       // Source: Showdown data/abilities.ts -- Synchronize does NOT pass sleep or freeze
-      const opponent = makeActivePokemon({ ability: "" });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.synchronize,
-        trigger: "on-status-inflicted",
+        trigger: TRIGGER_IDS.onStatusInflicted,
         status: STATUS_IDS.sleep,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-status-inflicted", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onStatusInflicted, ctx);
 
       expect(result.activated).toBe(false);
     });
 
     it("given Synchronize holder with poison, when opponent already statused, then does not activate", () => {
       // Source: Showdown -- cannot inflict on already-statused Pokemon
-      const opponent = makeActivePokemon({ ability: "", status: STATUS_IDS.burn });
-      const ctx = makeContext({
+      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, status: STATUS_IDS.burn });
+      const ctx = createAbilityContext({
         ability: ABILITY_IDS.synchronize,
-        trigger: "on-status-inflicted",
+        trigger: TRIGGER_IDS.onStatusInflicted,
         status: STATUS_IDS.poison,
         opponent,
       });
 
-      const result = handleGen7SwitchAbility("on-status-inflicted", ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onStatusInflicted, ctx);
 
       expect(result.activated).toBe(false);
     });

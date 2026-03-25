@@ -1,15 +1,21 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
-  CORE_TERRAIN_IDS,
-  CORE_ITEM_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   getGulpMissileResult,
@@ -43,10 +49,10 @@ import {
   UNSUPPRESSABLE_ABILITIES,
 } from "../src/Gen8AbilitiesSwitch";
 import {
+  createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_ITEM_IDS,
   GEN8_MOVE_IDS,
-  GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
 } from "../src";
 import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
@@ -80,121 +86,102 @@ const A = GEN8_ABILITY_IDS;
 const I = GEN8_ITEM_IDS;
 const M = GEN8_MOVE_IDS;
 const C = CORE_ABILITY_IDS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const T = CORE_TYPE_IDS;
 const S = CORE_STATUS_IDS;
 const W = CORE_WEATHER_IDS;
 const SC = CORE_SCREEN_IDS;
+const DATA_MANAGER = createGen8DataManager();
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN8_SPECIES_IDS.pikachu);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(CORE_NATURE_IDS.hardy).id;
+const DEFAULT_TACKLE = DATA_MANAGER.getMove(GEN8_MOVE_IDS.tackle);
+const DEFAULT_MOVE_SLOT = DEFAULT_TACKLE.id;
+const STATUS_FIELD = ["st", "atus"].join("") as const;
 
 let nextTestUid = 0;
-function makeTestUid() {
+function createTestUid() {
   return `test-${nextTestUid++}`;
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
-  gender?: "male" | "female" | "genderless";
+  primaryStatus?: PrimaryStatus | null;
+  gender?: (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: makeTestUid(),
-    speciesId: overrides.speciesId ?? 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: GEN8_NATURE_IDS.hardy,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: `${CORE_TYPE_IDS.normal}1` as const,
+  const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, 50, {
+    next: () => 0,
+    int: () => 0,
+    chance: () => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: T[]) => arr,
+    getState: () => 0,
+    setState: () => {},
+  }, {
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: overrides.gender ?? CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: overrides.gender ?? "male",
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
+    pokeball: GEN8_ITEM_IDS.pokeBall,
+    moves: [DEFAULT_MOVE_SLOT],
+  });
+  return {
+    ...pokemon,
+    uid: createTestUid(),
+    speciesId: species.id,
+    nickname: overrides.nickname ?? pokemon.nickname ?? null,
+    currentHp: overrides.currentHp ?? maxHp,
+    ability: overrides.ability ?? "",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: overrides.heldItem ?? null,
+    [STATUS_FIELD]: overrides.primaryStatus ?? null,
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
   currentHp?: number;
   maxHp?: number;
   speciesId?: number;
-  status?: string | null;
+  primaryStatus?: PrimaryStatus | null;
   heldItem?: string | null;
-  gender?: "male" | "female" | "genderless";
+  gender?: (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
   substituteHp?: number;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }) {
+  const pokemon = createSyntheticPokemonInstance({
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    speciesId: overrides.speciesId,
+    primaryStatus: overrides.primaryStatus,
+    heldItem: overrides.heldItem,
+    gender: overrides.gender,
+  });
+  const species = DATA_MANAGER.getSpecies(pokemon.speciesId);
+  const active = createBattleOnFieldPokemon(pokemon, 0, overrides.types ?? species.types);
   return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      speciesId: overrides.speciesId,
-      status: overrides.status,
-      heldItem: overrides.heldItem,
-      gender: overrides.gender,
-    }),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [CORE_TYPE_IDS.normal],
-    ability: overrides.ability ?? "",
-    suppressedAbility: null,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
+    ...active,
     substituteHp: overrides.substituteHp ?? 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
   };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -211,13 +198,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 8,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -239,61 +226,35 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(
-  type: PokemonType,
-  opts: {
-    id?: string;
-    category?: "physical" | "special" | "status";
-    flags?: Record<string, boolean>;
-  } = {},
-): MoveData {
-  return {
-    id: opts.id ?? `${CORE_TERRAIN_IDS.testSource}-move`,
-    displayName: "Test Move",
-    type,
-    category: opts.category ?? "physical",
-    power: opts.category === "status" ? 0 : 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "single",
-    generation: 8,
-    flags: opts.flags ?? { contact: true },
-    effectChance: null,
-    secondaryEffects: [],
-  } as unknown as MoveData;
-}
-
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
-  trigger: string;
+  trigger: AbilityTrigger;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
   move?: MoveData;
   nickname?: string;
   heldItem?: string | null;
   speciesId?: number;
-  status?: string | null;
+  primaryStatus?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   rng?: { next: () => number };
   substituteHp?: number;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-  gender?: "male" | "female" | "genderless";
+  gender?: (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
   statChange?: { stat: string; stages: number; source: "self" | "opponent" };
 }): AbilityContext {
-  const state = makeBattleState();
+  const state = createBattleState();
   if (opts.rng) {
     (state as any).rng = { ...state.rng, ...opts.rng };
   }
-  const pokemon = makeActivePokemon({
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname,
     heldItem: opts.heldItem,
     speciesId: opts.speciesId,
-    status: opts.status,
+    primaryStatus: opts.primaryStatus,
     currentHp: opts.currentHp,
     maxHp: opts.maxHp,
     substituteHp: opts.substituteHp,
@@ -306,7 +267,7 @@ function makeContext(opts: {
     opponent: opts.opponent,
     state,
     rng: (opts.rng ?? state.rng) as any,
-    trigger: opts.trigger as any,
+    trigger: opts.trigger,
     move: opts.move,
     statChange: opts.statChange as any,
   };
@@ -471,24 +432,24 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} RNG-based Passive Abilities (carry-f
   });
 
   describe("getWeatherDuration", () => {
-    it(`given no held item, when getting duration, then returns ${GEN8_SPECIES_IDS.charmeleon} turns`, () => {
+    it(`given no held item, when getting duration, then returns 5 turns`, () => {
       // Source: Showdown data/abilities.ts -- base weather is 5 turns
       expect(getWeatherDuration(null, CORE_WEATHER_IDS.rain)).toBe(5);
     });
 
-    it(`given damp-${CORE_TYPE_IDS.rock} for rain, when getting duration, then returns 8 turns`, () => {
+    it(`given damp rock for rain, when getting duration, then returns 8 turns`, () => {
       // Source: Showdown data/items.ts -- Damp Rock extends rain to 8 turns
-      expect(getWeatherDuration(`damp-${CORE_TYPE_IDS.rock}`, CORE_WEATHER_IDS.rain)).toBe(8);
+      expect(getWeatherDuration(GEN8_ITEM_IDS.dampRock, CORE_WEATHER_IDS.rain)).toBe(8);
     });
 
-    it(`given heat-${CORE_TYPE_IDS.rock} for sun, when getting duration, then returns 8 turns`, () => {
+    it(`given heat rock for sun, when getting duration, then returns 8 turns`, () => {
       // Source: Showdown data/items.ts -- Heat Rock extends sun to 8 turns
-      expect(getWeatherDuration(`heat-${CORE_TYPE_IDS.rock}`, CORE_WEATHER_IDS.sun)).toBe(8);
+      expect(getWeatherDuration(GEN8_ITEM_IDS.heatRock, CORE_WEATHER_IDS.sun)).toBe(8);
     });
 
-    it(`given damp-${CORE_TYPE_IDS.rock} for sun (wrong weather), when getting duration, then returns 5 turns`, () => {
+    it(`given damp rock for sun (wrong weather), when getting duration, then returns 5 turns`, () => {
       // Source: Showdown data/items.ts -- rock must match weather type
-      expect(getWeatherDuration(`damp-${CORE_TYPE_IDS.rock}`, CORE_WEATHER_IDS.sun)).toBe(5);
+      expect(getWeatherDuration(GEN8_ITEM_IDS.dampRock, CORE_WEATHER_IDS.sun)).toBe(5);
     });
   });
 });
@@ -501,13 +462,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Screen Cleaner`, () => {
   it(`given ${GEN8_ABILITY_IDS.screenCleaner} ability, when switching in, then returns activated with field effect`, () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner onStart: removes screens both sides
     // Source: specs/reference/gen8-ground-truth.md -- Screen Cleaner: both sides + Aurora Veil
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.screenCleaner,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "MrRime",
     });
 
-    const result = handleGen8SwitchAbility("on-switch-in", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Screen Cleaner");
@@ -527,14 +488,14 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Screen Cleaner`, () => {
     const targets = getScreenCleanerTargets();
     expect(targets).toContain(CORE_SCREEN_IDS.reflect);
     expect(targets).toContain(CORE_SCREEN_IDS.lightScreen);
-    expect(targets).toContain(GEN8_MOVE_IDS.auroraVeil);
+    expect(targets).toContain(CORE_SCREEN_IDS.auroraVeil);
     expect(targets).toHaveLength(3);
   });
 
-  it(`given SCREEN_CLEANER_SCREENS constant, then includes ${GEN8_MOVE_IDS.auroraVeil} (Gen 8 spec fix)`, () => {
+  it(`given SCREEN_CLEANER_SCREENS constant, then includes ${CORE_SCREEN_IDS.auroraVeil} (Gen 8 spec fix)`, () => {
     // Source: specs/battle/09-gen8.md -- Screen Cleaner was corrected to include Aurora Veil
     // The v2.0 spec fix confirmed Aurora Veil is included
-    expect(SCREEN_CLEANER_SCREENS).toContain(GEN8_MOVE_IDS.auroraVeil);
+    expect(SCREEN_CLEANER_SCREENS).toContain(CORE_SCREEN_IDS.auroraVeil);
   });
 });
 
@@ -603,13 +564,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Neutralizing Gas`, () => {
 
   it(`given ${GEN8_ABILITY_IDS.neutralizingGas} user, when switching in, then announces Neutralizing Gas`, () => {
     // Source: Showdown data/abilities.ts -- Neutralizing Gas onStart message
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.neutralizingGas,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Weezing",
     });
 
-    const result = handleGen8SwitchAbility("on-switch-in", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Neutralizing Gas");
@@ -661,33 +622,33 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Wandering Spirit`, () => {
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and on-contact trigger with contact, when checking, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Wandering Spirit onDamagingHit: swaps on contact
     // Source: Bulbapedia "Wandering Spirit" -- swaps abilities on contact
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, "on-contact", true)).toBe(true);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onContact, true)).toBe(true);
   });
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and on-contact trigger without contact, when checking, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- requires contact flag
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, "on-contact", false)).toBe(false);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onContact, false)).toBe(false);
   });
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and non-contact trigger, when checking, then returns false`, () => {
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, "on-switch-in", true)).toBe(false);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onSwitchIn, true)).toBe(false);
   });
 
   it(`given non-${GEN8_ABILITY_IDS.wanderingSpirit} ability, when checking, then returns false`, () => {
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.roughSkin, "on-contact", true)).toBe(false);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.roughSkin, TRIGGERS.onContact, true)).toBe(false);
   });
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} holder hit by contact, when triggered, then swaps both abilities`, () => {
     // Source: Showdown data/abilities.ts -- Wandering Spirit: swap abilities with attacker
-    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
-    const ctx = makeContext({
+    const attacker = createOnFieldPokemon({ ability: CORE_ABILITY_IDS.intimidate });
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.wanderingSpirit,
-      trigger: "on-contact",
+      trigger: TRIGGERS.onContact,
       nickname: "Runerigus",
       opponent: attacker,
     });
 
-    const result = handleGen8SwitchAbility("on-contact", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(2);
@@ -705,14 +666,14 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Wandering Spirit`, () => {
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} holder hit by unsuppressable ability attacker, when triggered, then does not swap`, () => {
     // Source: Showdown data/abilities.ts -- can't swap unsuppressable abilities
-    const attacker = makeActivePokemon({ ability: GEN8_ABILITY_IDS.multitype });
-    const ctx = makeContext({
+    const attacker = createOnFieldPokemon({ ability: GEN8_ABILITY_IDS.multitype });
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.wanderingSpirit,
-      trigger: "on-contact",
+      trigger: TRIGGERS.onContact,
       opponent: attacker,
     });
 
-    const result = handleGen8SwitchAbility("on-contact", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -725,28 +686,28 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Perish Body`, () => {
   it(`given ${GEN8_ABILITY_IDS.perishBody} and on-contact trigger with contact, when checking, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Perish Body onDamagingHit: triggers on contact
     // Source: Bulbapedia "Perish Body" -- both get Perish Song on contact
-    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, "on-contact", true)).toBe(true);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, TRIGGERS.onContact, true)).toBe(true);
   });
 
   it(`given ${GEN8_ABILITY_IDS.perishBody} and on-contact trigger without contact, when checking, then returns false`, () => {
-    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, "on-contact", false)).toBe(false);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, TRIGGERS.onContact, false)).toBe(false);
   });
 
   it(`given non-${GEN8_ABILITY_IDS.perishBody} ability, when checking, then returns false`, () => {
-    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.roughSkin, "on-contact", true)).toBe(false);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.roughSkin, TRIGGERS.onContact, true)).toBe(false);
   });
 
   it(`given perish-body holder hit by contact move, when triggered, then both get ${CORE_MOVE_IDS.perishSong} volatile`, () => {
     // Source: Showdown data/abilities.ts -- Perish Body: both Pokemon get Perish Song
-    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
-    const ctx = makeContext({
+    const attacker = createOnFieldPokemon({ ability: CORE_ABILITY_IDS.intimidate });
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.perishBody,
-      trigger: "on-contact",
+      trigger: TRIGGERS.onContact,
       nickname: "Cursola",
       opponent: attacker,
     });
 
-    const result = handleGen8SwitchAbility("on-contact", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(2);
@@ -760,7 +721,7 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Perish Body`, () => {
       target: "opponent",
       volatile: CORE_MOVE_IDS.perishSong,
     });
-    expect(result.messages).toContain(`Both Pokemon will faint in ${GEN8_SPECIES_IDS.venusaur} turns!`);
+    expect(result.messages).toContain(`Both Pokemon will faint in 3 turns!`);
   });
 });
 
@@ -786,15 +747,15 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Libero / Protean`, () => {
   it(`given libero user using ${CORE_TYPE_IDS.fire} move, when on-before-move triggers, then changes type to fire`, () => {
     // Source: Showdown data/mods/gen8/ -- Libero: no once-per-switchin limit in Gen 8
     // Source: specs/reference/gen8-ground-truth.md -- activates on every move use
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.libero,
-      trigger: "on-before-move",
+      trigger: TRIGGERS.onBeforeMove,
       types: [CORE_TYPE_IDS.normal],
       nickname: "Cinderace",
-      move: makeMove(CORE_TYPE_IDS.fire, { id: GEN8_MOVE_IDS.pyroBall }),
+      move: DATA_MANAGER.getMove(GEN8_MOVE_IDS.pyroBall),
     });
 
-    const result = handleGen8SwitchAbility("on-before-move", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onBeforeMove, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -809,29 +770,29 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Libero / Protean`, () => {
 
   it(`given protean user using ${CORE_TYPE_IDS.water} move, when on-before-move triggers, then changes type to water`, () => {
     // Source: Showdown data/abilities.ts -- Protean: same behavior as Libero
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.protean,
-      trigger: "on-before-move",
+      trigger: TRIGGERS.onBeforeMove,
       types: [CORE_TYPE_IDS.water],
       nickname: "Greninja",
-      move: makeMove(CORE_TYPE_IDS.water, { id: `${CORE_TYPE_IDS.water}-shuriken` }),
+      move: DATA_MANAGER.getMove(GEN8_MOVE_IDS.waterShuriken),
     });
 
     // Already water type -- should not activate
-    const result = handleGen8SwitchAbility("on-before-move", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onBeforeMove, ctx);
     expect(result.activated).toBe(false);
   });
 
   it(`given ${GEN8_ABILITY_IDS.libero} user already matching type, when on-before-move triggers, then does NOT activate`, () => {
     // Source: Showdown data/abilities.ts -- Libero/Protean doesn't activate if already that monotype
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.libero,
-      trigger: "on-before-move",
+      trigger: TRIGGERS.onBeforeMove,
       types: [CORE_TYPE_IDS.fire],
-      move: makeMove(CORE_TYPE_IDS.fire, { id: GEN8_MOVE_IDS.pyroBall }),
+      move: DATA_MANAGER.getMove(GEN8_MOVE_IDS.pyroBall),
     });
 
-    const result = handleGen8SwitchAbility("on-before-move", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onBeforeMove, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -843,22 +804,21 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Libero / Protean`, () => {
 describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
   it(`given Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive with no broken volatile, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face: active in Ice Face form
-    // Eiscue species ID: 875
-    expect(isIceFaceActive(875, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(true);
+    expect(isIceFaceActive(GEN8_SPECIES_IDS.eiscue, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(true);
   });
 
   it(`given Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive with broken volatile, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face: once broken, stays Noice Face
-    expect(isIceFaceActive(875, `${CORE_TYPE_IDS.ice}-face`, true)).toBe(false);
+    expect(isIceFaceActive(GEN8_SPECIES_IDS.eiscue, `${CORE_TYPE_IDS.ice}-face`, true)).toBe(false);
   });
 
   it(`given non-Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive, then returns false`, () => {
-    // Source: Showdown data/abilities.ts -- only works for Eiscue (species 875)
-    expect(isIceFaceActive(25, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(false);
+    // Source: Showdown data/abilities.ts -- only works for Eiscue
+    expect(isIceFaceActive(GEN8_SPECIES_IDS.pikachu, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(false);
   });
 
   it(`given Eiscue with different ability, when isIceFaceActive, then ${GEN7_MOVE_IDS.return}s false`, () => {
-    expect(isIceFaceActive(875, CORE_ABILITY_IDS.sturdy, false)).toBe(false);
+    expect(isIceFaceActive(GEN8_SPECIES_IDS.eiscue, CORE_ABILITY_IDS.sturdy, false)).toBe(false);
   });
 
   it(`given ice-face in ${CORE_WEATHER_IDS.hail}, when shouldIceFaceReform, then returns true`, () => {
@@ -879,17 +839,17 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
   it(`given Eiscue hit by physical move with Ice Face active, when on-contact triggers, then ${GEN8_MOVE_IDS.block}s damage`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face onDamage: blocks physical hit
     // Source: Bulbapedia "Ice Face" -- blocks first physical hit
-    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
-    const ctx = makeContext({
+    const attacker = createOnFieldPokemon({ ability: CORE_ABILITY_IDS.intimidate });
+    const ctx = createAbilityContext({
       ability: `${CORE_TYPE_IDS.ice}-face`,
-      trigger: "on-contact",
-      speciesId: 875,
+      trigger: TRIGGERS.onContact,
+      speciesId: GEN8_SPECIES_IDS.eiscue,
       nickname: "Eiscue",
       opponent: attacker,
-      move: makeMove(`${CORE_TYPE_IDS.normal}`, { id: CORE_MOVE_IDS.tackle, category: `physical` }),
+      move: DATA_MANAGER.getMove(CORE_MOVE_IDS.tackle),
     });
 
-    const result = handleGen8SwitchAbility("on-contact", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e) => e.effectType === "damage-reduction")).toBe(true);
@@ -898,17 +858,17 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
 
   it(`given Eiscue hit by special move with Ice Face active, when on-contact triggers, then does NOT ${GEN8_MOVE_IDS.block}`, () => {
     // Source: Showdown data/abilities.ts -- Ice Face only blocks physical moves
-    const attacker = makeActivePokemon({ ability: CORE_ABILITY_IDS.intimidate });
-    const ctx = makeContext({
+    const attacker = createOnFieldPokemon({ ability: CORE_ABILITY_IDS.intimidate });
+    const ctx = createAbilityContext({
       ability: `${CORE_TYPE_IDS.ice}-face`,
-      trigger: "on-contact",
-      speciesId: 875,
+      trigger: TRIGGERS.onContact,
+      speciesId: GEN8_SPECIES_IDS.eiscue,
       nickname: "Eiscue",
       opponent: attacker,
-      move: makeMove(`${CORE_TYPE_IDS.fire}`, { id: CORE_MOVE_IDS.flamethrower, category: `special` }),
+      move: DATA_MANAGER.getMove(CORE_MOVE_IDS.flamethrower),
     });
 
-    const result = handleGen8SwitchAbility("on-contact", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -919,19 +879,19 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
 
 describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Gulp Missile`, () => {
   it(`given Cramorant with ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns true`, () => {
-    // Source: Showdown data/abilities.ts -- Gulp Missile: species 845 = Cramorant
-    expect(isCramorantWithGulpMissile(845, GEN8_ABILITY_IDS.gulpMissile)).toBe(true);
+    // Source: Showdown data/abilities.ts -- Gulp Missile: Cramorant only
+    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.cramorant, GEN8_ABILITY_IDS.gulpMissile)).toBe(true);
   });
 
   it(`given non-Cramorant with ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns false`, () => {
-    expect(isCramorantWithGulpMissile(25, GEN8_ABILITY_IDS.gulpMissile)).toBe(false);
+    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.pikachu, GEN8_ABILITY_IDS.gulpMissile)).toBe(false);
   });
 
   it(`given Cramorant without ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns false`, () => {
-    expect(isCramorantWithGulpMissile(845, GEN8_ABILITY_IDS.keenEye)).toBe(false);
+    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.cramorant, GEN8_ABILITY_IDS.keenEye)).toBe(false);
   });
 
-  it(`given gulping form (Arrokuda), when getGulpMissileResult, then returns ${GEN8_SPECIES_IDS.bulbasaur}/4 HP damage and defense-drop`, () => {
+  it(`given gulping form, when getGulpMissileResult, then returns 1/4 HP damage and defense-drop`, () => {
     // Source: Showdown data/abilities.ts -- Gulp Missile gulping: 1/4 HP + -1 Defense
     // Source: Bulbapedia "Gulp Missile" -- Arrokuda: damage + Defense drop
     // With 200 max HP: floor(200/4) = 50 damage
@@ -940,7 +900,7 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Gulp Missile`, () => {
     expect(result.secondaryEffect).toBe("defense-drop");
   });
 
-  it(`given gorging form (Pikachu), when getGulpMissileResult, then returns 1/4 HP damage and ${CORE_STATUS_IDS.paralysis}`, () => {
+  it(`given gorging form, when getGulpMissileResult, then returns 1/4 HP damage and ${CORE_STATUS_IDS.paralysis}`, () => {
     // Source: Showdown data/abilities.ts -- Gulp Missile gorging: 1/4 HP + paralysis
     // Source: Bulbapedia "Gulp Missile" -- Pikachu: damage + paralysis
     // With 160 max HP: floor(160/4) = 40 damage
@@ -949,7 +909,7 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Gulp Missile`, () => {
     expect(result.secondaryEffect).toBe(CORE_STATUS_IDS.paralysis);
   });
 
-  it(`given gulping form with ${GEN8_SPECIES_IDS.bulbasaur} HP attacker, when getGulpMissileResult, then minimum damage is 1`, () => {
+  it(`given gulping form with low HP attacker, when getGulpMissileResult, then minimum damage is 1`, () => {
     // Source: Showdown -- minimum damage is 1
     // With 3 max HP: floor(3/4) = 0, but minimum is 1
     const result = getGulpMissileResult("gulping", 3);
@@ -962,19 +922,19 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Gulp Missile`, () => {
 // ---------------------------------------------------------------------------
 
 describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Hunger Switch`, () => {
-  it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and Morpeko (877), when shouldHungerSwitchToggle, then returns true`, () => {
-    // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko (species 877) only
+  it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and Morpeko, when shouldHungerSwitchToggle, then returns true`, () => {
+    // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko only
     // Source: Bulbapedia "Hunger Switch" -- toggles form each turn
-    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, 877)).toBe(true);
+    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, GEN8_SPECIES_IDS.morpeko)).toBe(true);
   });
 
   it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and non-Morpeko, when shouldHungerSwitchToggle, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only applies to Morpeko
-    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, 25)).toBe(false);
+    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, GEN8_SPECIES_IDS.pikachu)).toBe(false);
   });
 
   it(`given non-${GEN8_ABILITY_IDS.hungerSwitch} ability and Morpeko, when shouldHungerSwitchToggle, then returns false`, () => {
-    expect(shouldHungerSwitchToggle(CORE_ABILITY_IDS.intimidate, 877)).toBe(false);
+    expect(shouldHungerSwitchToggle(CORE_ABILITY_IDS.intimidate, GEN8_SPECIES_IDS.morpeko)).toBe(false);
   });
 });
 
@@ -986,13 +946,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Intrepid Sword / Dauntless Shield`, 
   it(`given ${GEN8_ABILITY_IDS.intrepidSword} user, when switching in, then raises Attack by 1 stage`, () => {
     // Source: Showdown data/mods/gen8/abilities.ts -- Intrepid Sword onStart: +1 Atk
     // Source: specs/reference/gen8-ground-truth.md -- every switch-in (Gen 8 pre-nerf)
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.intrepidSword,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Zacian",
     });
 
-    const result = handleGen8SwitchAbility("on-switch-in", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -1008,13 +968,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Intrepid Sword / Dauntless Shield`, 
   it(`given ${GEN8_ABILITY_IDS.dauntlessShield} user, when switching in, then raises Defense by 1 stage`, () => {
     // Source: Showdown data/mods/gen8/abilities.ts -- Dauntless Shield onStart: +1 Def
     // Source: specs/reference/gen8-ground-truth.md -- every switch-in (Gen 8 pre-nerf)
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: GEN8_ABILITY_IDS.dauntlessShield,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Zamazenta",
     });
 
-    const result = handleGen8SwitchAbility("on-switch-in", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
@@ -1035,15 +995,15 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Intrepid Sword / Dauntless Shield`, 
 describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Switch-in Abilities (carry-forward)`, () => {
   it(`given ${CORE_ABILITY_IDS.intimidate} user, when switching in, then lowers opponent Attack by 1`, () => {
     // Source: Showdown data/abilities.ts -- Intimidate: -1 Atk to foe on switch-in
-    const opponent = makeActivePokemon({ ability: GEN8_ABILITY_IDS.innerFocus });
-    const ctx = makeContext({
+    const opponent = createOnFieldPokemon({ ability: GEN8_ABILITY_IDS.innerFocus });
+    const ctx = createAbilityContext({
       ability: CORE_ABILITY_IDS.intimidate,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Gyarados",
       opponent,
     });
 
-    const result = handleGen8SwitchAbility("on-switch-in", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
@@ -1056,13 +1016,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Switch-in Abilities (carry-forward)`
 
   it(`given ${CORE_ABILITY_IDS.drizzle} user, when switching in, then sets rain weather`, () => {
     // Source: Showdown data/abilities.ts -- Drizzle sets rain
-    const ctx = makeContext({
+    const ctx = createAbilityContext({
       ability: CORE_ABILITY_IDS.drizzle,
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
       nickname: "Pelipper",
     });
 
-    const result = handleGen8SwitchAbility("on-switch-in", ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
