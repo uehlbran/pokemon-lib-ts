@@ -13,6 +13,14 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import { CORE_STATUS_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
 import { Gen3Ruleset } from "../../src";
 import { createGen3DataManager } from "../../src/data";
@@ -95,16 +103,16 @@ function createActivePokemon(opts?: {
 
   const pokemon = {
     uid: "test",
-    speciesId: 1,
+    speciesId: GEN3_SPECIES_IDS.bulbasaur,
     nickname: null,
     level: o.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN3_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: o.hp ?? 200,
     moves: [],
-    ability: o.ability ?? "",
+    ability: o.ability ?? GEN3_ABILITY_IDS.static,
     abilitySlot: "normal1" as const,
     heldItem: o.heldItem ?? null,
     status: o.status ?? null,
@@ -115,7 +123,7 @@ function createActivePokemon(opts?: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: GEN3_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -132,8 +140,8 @@ function createActivePokemon(opts?: {
       evasion: o.statStages?.evasion ?? 0,
     },
     volatileStatuses: new Map(),
-    types: o.types ?? ["normal"],
-    ability: o.ability ?? "",
+    types: o.types ?? [CORE_TYPE_IDS.normal],
+    ability: o.ability ?? GEN3_ABILITY_IDS.static,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -154,7 +162,7 @@ function createActivePokemon(opts?: {
 
 function createMove(type: PokemonType, power: number, opts?: Partial<MoveData>): MoveData {
   return {
-    id: opts?.id ?? "test-move",
+    id: opts?.id ?? GEN3_MOVE_IDS.tackle,
     displayName: "Test Move",
     type,
     category: "physical",
@@ -190,23 +198,23 @@ function createMove(type: PokemonType, power: number, opts?: Partial<MoveData>):
 
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -272,11 +280,11 @@ describe("Bug 5A: Damage formula — burn applied AFTER base formula", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"], // not normal → no STAB
-      status: "burn",
+      types: [CORE_TYPE_IDS.fighting], // not normal → no STAB
+      status: CORE_STATUS_IDS.burn,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove("normal", 80);
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { id: GEN3_MOVE_IDS.bodySlam });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen3Damage(
@@ -308,12 +316,12 @@ describe("Bug 5A: Damage formula — burn applied AFTER base formula", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
-      status: "burn",
-      ability: "guts",
+      types: [CORE_TYPE_IDS.fighting],
+      status: CORE_STATUS_IDS.burn,
+      ability: GEN3_ABILITY_IDS.guts,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove("normal", 80);
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { id: GEN3_MOVE_IDS.bodySlam });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen3Damage(
@@ -350,16 +358,16 @@ describe("Bug 5A: Damage formula — type-boost items applied to raw stat", () =
     const withItem = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["normal"], // no STAB
-      heldItem: "charcoal",
+      types: [CORE_TYPE_IDS.normal], // no STAB
+      heldItem: GEN3_ITEM_IDS.charcoal,
     });
     const withoutItem = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove("fire", 80);
+    const move = createMove(CORE_TYPE_IDS.fire, 80, { id: GEN3_MOVE_IDS.flamethrower });
     const chart = createNeutralTypeChart();
     const state = createMinimalBattleState();
 
@@ -407,16 +415,16 @@ describe("Bug 5A: Damage formula — type-boost items applied to raw stat", () =
     const withBand = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"], // no STAB for normal
-      heldItem: "choice-band",
+      types: [CORE_TYPE_IDS.fighting], // no STAB for normal
+      heldItem: GEN3_ITEM_IDS.choiceBand,
     });
     const withoutBand = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
+      types: [CORE_TYPE_IDS.fighting],
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove("normal", 80);
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { id: GEN3_MOVE_IDS.bodySlam });
     const chart = createNeutralTypeChart();
     const state = createMinimalBattleState();
 
@@ -458,7 +466,7 @@ describe("Bug 5B: Quick Claw activation rate is 20%", () => {
     // "if (holdEffect == HOLD_EFFECT_QUICK_CLAW && gRandomTurnNumber < (0xFFFF * holdEffectParam) / 100)"
     // holdEffectParam = 20 (src/data/items.h:2241), giving (0xFFFF * 20) / 100 = 13107
     // 13107 / 65536 = 20.00%, so the implementation should pass 0.2 to rng.chance.
-    const slowMon = createActivePokemon({ heldItem: "quick-claw", speed: 50 });
+    const slowMon = createActivePokemon({ heldItem: GEN3_ITEM_IDS.quickClaw, speed: 50 });
     const fastMon = createActivePokemon({ speed: 100 });
     const state = createMinimalBattleState();
     state.sides[0]!.active = [slowMon];
@@ -469,11 +477,11 @@ describe("Bug 5B: Quick Claw activation rate is 20%", () => {
       { type: "move", side: 1, moveIndex: 0 },
     ] as const;
 
-    let observedProbability: number | null = null;
+    const observedProbability = { value: null as number | null };
     const rng = createMockRng({
       chanceResult: true,
       onChance: (probability) => {
-        observedProbability = probability;
+        observedProbability.value = probability;
       },
     });
 
@@ -481,7 +489,7 @@ describe("Bug 5B: Quick Claw activation rate is 20%", () => {
 
     expect(order[0]?.type).toBe("move");
     expect(order[0]?.side).toBe(0);
-    expect(observedProbability).toBe(0.2);
+    expect(observedProbability.value).toBe(0.2);
   });
 });
 
@@ -526,16 +534,16 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
     // "else if (Random() % 100 < percentChance ..."
     // Random() % 100 produces 0-99. 0-99 < 100 is ALWAYS true.
     // The old 0-255 scale had a 1/256 failure at 100% — this is wrong for Gen 3.
-    const attacker = createActivePokemon({ types: ["water"] });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.water] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState();
 
     // Use a move with 100% chance status-chance effect (e.g., Scald's burn)
-    const move = createMove("water", 80, {
-      id: "test-100pct",
+    const move = createMove(CORE_TYPE_IDS.water, 80, {
+      id: GEN3_MOVE_IDS.waterGun,
       effect: {
         type: "status-chance",
-        status: "burn",
+        status: CORE_STATUS_IDS.burn,
         chance: 100,
       },
     });
@@ -550,20 +558,20 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
     } as MoveEffectContext);
 
     // Source: pokeemerald — 100% effects ALWAYS succeed
-    expect(result.statusInflicted).toBe("burn");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.burn);
   });
 
   it("given 50% secondary effect chance, when the modulo roll is below 50, then the effect applies", () => {
     // Source: pret/pokeemerald — Random() % 100 < 50 succeeds
-    const attacker = createActivePokemon({ types: ["water"] });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.water] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState();
 
-    const move = createMove("water", 80, {
-      id: "test-50pct",
+    const move = createMove(CORE_TYPE_IDS.water, 80, {
+      id: GEN3_MOVE_IDS.waterGun,
       effect: {
         type: "status-chance",
-        status: "burn",
+        status: CORE_STATUS_IDS.burn,
         chance: 50,
       },
     });
@@ -577,19 +585,19 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
       state,
     } as MoveEffectContext);
 
-    expect(result.statusInflicted).toBe("burn");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.burn);
   });
 
   it("given 50% secondary effect chance, when the modulo roll is 50 or higher, then the effect does not apply", () => {
     // Source: pret/pokeemerald — Random() % 100 < 50 fails at 50 because the comparison is strict.
-    const attacker = createActivePokemon({ types: ["water"] });
-    const defender = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.water] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState();
-    const move = createMove("water", 80, {
-      id: "test-50pct-boundary",
+    const move = createMove(CORE_TYPE_IDS.water, 80, {
+      id: GEN3_MOVE_IDS.waterGun,
       effect: {
         type: "status-chance",
-        status: "burn",
+        status: CORE_STATUS_IDS.burn,
         chance: 50,
       },
     });
@@ -626,7 +634,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       statStages: { accuracy: -5 },
     });
     const defender = createActivePokemon();
-    const move = createMove("normal", 80, { accuracy: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
     const state = createMinimalBattleState();
 
     // Roll of 36 should hit (36 <= 36)
@@ -663,7 +671,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       statStages: { accuracy: -4 },
     });
     const defender = createActivePokemon();
-    const move = createMove("normal", 80, { accuracy: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
     const state = createMinimalBattleState();
 
     // Roll of 43 should hit (43 <= 43)
@@ -696,7 +704,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     // All rolls 1-100 hit (roll <= 100)
     const attacker = createActivePokemon();
     const defender = createActivePokemon();
-    const move = createMove("normal", 80, { accuracy: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
     const state = createMinimalBattleState();
 
     // Roll of 100 should hit (100 <= 100)
@@ -731,7 +739,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       statStages: { accuracy: 6 },
     });
     const defender = createActivePokemon();
-    const move = createMove("normal", 80, { accuracy: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
     const state = createMinimalBattleState();
 
     const context: AccuracyContext = {
@@ -750,7 +758,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     // "if (move == NO_ACC_CALC ...)" — certain moves skip accuracy entirely
     const attacker = createActivePokemon();
     const defender = createActivePokemon({ statStages: { evasion: 6 } });
-    const move = createMove("normal", 80, { accuracy: null });
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: null, id: GEN3_MOVE_IDS.tackle });
     const state = createMinimalBattleState();
 
     const context: AccuracyContext = {
@@ -773,7 +781,7 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
       statStages: { accuracy: -6 },
     });
     const defender = createActivePokemon();
-    const move = createMove("normal", 80, { accuracy: 80 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 80, id: GEN3_MOVE_IDS.tackle });
     const state = createMinimalBattleState();
 
     // Roll of 26 should hit
