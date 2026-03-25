@@ -16,19 +16,46 @@
  */
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonSpeciesData,
-  PokemonType,
-  StatBlock,
-  TypeChart,
+import type { PokemonInstance, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager } from "../../src";
 import { getGen2CritStage } from "../../src/Gen2CritCalc";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
+
+const DATA_MANAGER = createGen2DataManager();
+const BASE_SPECIES = DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.bulbasaur);
+const MOVE_IDS = GEN2_MOVE_IDS;
+const ITEM_IDS = GEN2_ITEM_IDS;
+// Gen 2 battles still require a nature field in the shared Pokemon model.
+// Use a core-owned neutral nature id because Gen 2 does not own a separate nature bundle.
+const DEFAULT_NATURE = ALL_NATURES[0].id;
+const NORMAL = CORE_TYPE_IDS.normal;
+const FIRE = CORE_TYPE_IDS.fire;
+const WATER = CORE_TYPE_IDS.water;
+const ELECTRIC = CORE_TYPE_IDS.electric;
+const GRASS = CORE_TYPE_IDS.grass;
+const ICE = CORE_TYPE_IDS.ice;
+const FIGHTING = CORE_TYPE_IDS.fighting;
+const POISON = CORE_TYPE_IDS.poison;
+const GROUND = CORE_TYPE_IDS.ground;
+const FLYING = CORE_TYPE_IDS.flying;
+const PSYCHIC = CORE_TYPE_IDS.psychic;
+const BUG = CORE_TYPE_IDS.bug;
+const ROCK = CORE_TYPE_IDS.rock;
+const GHOST = CORE_TYPE_IDS.ghost;
+const DRAGON = CORE_TYPE_IDS.dragon;
+const DARK = CORE_TYPE_IDS.dark;
+const STEEL = CORE_TYPE_IDS.steel;
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -75,16 +102,16 @@ function createActivePokemon(opts: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: opts.speciesId ?? 1,
+      speciesId: opts.speciesId ?? BASE_SPECIES.id,
       nickname: null,
       level: opts.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: maxHp,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: opts.heldItem ?? null,
       status: opts.status ?? null,
@@ -95,7 +122,7 @@ function createActivePokemon(opts: {
       metLevel: 5,
       originalTrainer: "Test",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: stats,
     } as PokemonInstance,
     teamSlot: 0,
@@ -110,8 +137,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: (opts.volatileStatuses ?? new Map()) as Map<never, never>,
-    types: opts.types ?? ["normal"],
-    ability: "",
+    types: opts.types ?? [NORMAL],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,
@@ -128,94 +155,26 @@ function createActivePokemon(opts: {
   } as unknown as ActivePokemon;
 }
 
-/** Create a minimal MoveData. */
-function createMove(opts: {
-  id?: string;
-  type: PokemonType;
-  power?: number;
-  category?: "physical" | "special" | "status";
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power ?? 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 2,
-  } as MoveData;
-}
-
-/** Create a minimal species data mock. */
-function createSpecies(): PokemonSpeciesData {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: ["normal"],
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
-}
-
 /** Create a neutral type chart (all interactions = 1). */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    NORMAL,
+    FIRE,
+    WATER,
+    ELECTRIC,
+    GRASS,
+    ICE,
+    FIGHTING,
+    POISON,
+    GROUND,
+    FLYING,
+    PSYCHIC,
+    BUG,
+    ROCK,
+    GHOST,
+    DRAGON,
+    DARK,
+    STEEL,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -246,20 +205,20 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm lines 2983, 3108-3129
     //   Item modifier applied first (line 2983), then .CriticalMultiplier (sla = *2)
-    // L50, 80 power Normal-type physical move, attacker holds Silk Scarf (1.1x Normal boost)
+    // L50, 80 power Normal-type physical move, attacker holds Pink Bow (1.1x Normal boost)
     // Attack=100, Defense=100, no weather, no STAB, neutral type chart
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fire"], // Not normal — no STAB
-      heldItem: "silk-scarf", // 1.1x boost for Normal moves
+      types: [FIRE], // Not normal — no STAB
+      heldItem: ITEM_IDS.pinkBow, // 1.1x boost for Normal moves in Gen 2
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [NORMAL],
     });
-    const move = createMove({ type: "normal", power: 80 });
+    const move = DATA_MANAGER.getMove(MOVE_IDS.strength);
     const typeChart = createNeutralTypeChart();
     const state = createMockDamageState();
     const rng = createMockRng(255); // Max random roll
@@ -284,7 +243,7 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     };
 
     // Act
-    const result = calculateGen2Damage(contextCrit, typeChart, createSpecies());
+    const result = calculateGen2Damage(contextCrit, typeChart, BASE_SPECIES);
 
     // Assert — 78 with 2x crit multiplier + item
     // Source: pret/pokecrystal — base=35, item=38, crit*2=76, +2=78
@@ -296,15 +255,15 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fire"],
+      types: [FIRE],
       heldItem: null, // No item
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [NORMAL],
     });
-    const move = createMove({ type: "normal", power: 80 });
+    const move = DATA_MANAGER.getMove(MOVE_IDS.strength);
     const typeChart = createNeutralTypeChart();
     const state = createMockDamageState();
     const rng = createMockRng(255);
@@ -324,7 +283,7 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     };
 
     // Act
-    const result = calculateGen2Damage(context, typeChart, createSpecies());
+    const result = calculateGen2Damage(context, typeChart, BASE_SPECIES);
 
     // Assert — 72 with 2x crit multiplier, no item
     // Source: pret/pokecrystal — base=35, crit*2=70, +2=72
@@ -345,7 +304,7 @@ describe("Bug #324 regression: high-crit moves add +2 to crit stage (pokecrystal
     // NOTE: This corrects the earlier bug #324 "fix" which incorrectly changed +2 to +1.
     // The cartridge assembly uses two increments; the correct value is +2.
     const attacker = createActivePokemon({});
-    const move = createMove({ id: "slash", type: "normal" });
+    const move = DATA_MANAGER.getMove(MOVE_IDS.slash);
 
     // Act
     const stage = getGen2CritStage(attacker, move);
@@ -358,7 +317,7 @@ describe("Bug #324 regression: high-crit moves add +2 to crit stage (pokecrystal
     // Arrange
     // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2
     const attacker = createActivePokemon({});
-    const move = createMove({ id: "cross-chop", type: "fighting" });
+    const move = DATA_MANAGER.getMove(MOVE_IDS.crossChop);
 
     // Act
     const stage = getGen2CritStage(attacker, move);
@@ -479,10 +438,10 @@ describe("Bug 4F regression: badly-poisoned reverts to regular poison on switch-
     //   NewBattleMonStatus zeros SUBSTATUS_TOXIC on switch, reverting to regular poison
     const ruleset = new Gen2Ruleset();
     const pokemon = createActivePokemon({
-      types: ["poison"],
-      status: "badly-poisoned",
+      types: [POISON],
+      status: CORE_STATUS_IDS.badlyPoisoned,
     });
-    const opponent = createActivePokemon({ types: ["normal"] });
+    const opponent = createActivePokemon({ types: [NORMAL] });
 
     const state: BattleState = {
       sides: [
@@ -523,24 +482,24 @@ describe("Bug 4F regression: badly-poisoned reverts to regular poison on switch-
     } as unknown as BattleState;
 
     // Pre-condition: status is badly-poisoned
-    expect(pokemon.pokemon.status).toBe("badly-poisoned");
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.badlyPoisoned);
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — status reverts to regular poison, not cleared entirely
     // Source: pret/pokecrystal core.asm:4078-4104
-    expect(pokemon.pokemon.status).toBe("poison");
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.poison);
   });
 
   it("given a regularly-poisoned Pokemon, when it switches out, then status remains poison (no change)", () => {
     // Arrange — triangulation: regular poison should not be cleared
     const ruleset = new Gen2Ruleset();
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      status: "poison",
+      types: [NORMAL],
+      status: CORE_STATUS_IDS.poison,
     });
-    const opponent = createActivePokemon({ types: ["normal"] });
+    const opponent = createActivePokemon({ types: [NORMAL] });
 
     const state: BattleState = {
       sides: [
@@ -584,7 +543,7 @@ describe("Bug 4F regression: badly-poisoned reverts to regular poison on switch-
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — regular poison persists
-    expect(pokemon.pokemon.status).toBe("poison");
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.poison);
   });
 });
 
