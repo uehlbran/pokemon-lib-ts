@@ -633,7 +633,7 @@ describe("Gen6 Sticky Web", () => {
   });
 
   it("given Sticky Web set, when a Clear Body Pokemon switches in, then Speed NOT dropped", () => {
-    // Source: Showdown data/abilities.ts -- clearbody: "This Pokemon's stat stages cannot
+    // Source: Showdown data/abilities.ts -- Clear Body: "This Pokemon's stat stages cannot
     //   be lowered by other Pokemon"
     // Source: Bulbapedia -- Clear Body prevents stat reductions from opponents
     const pokemon = makeActivePokemon({ ability: ABILITIES.clearBody });
@@ -660,7 +660,7 @@ describe("Gen6 Sticky Web", () => {
   it("given Sticky Web set, when a Defiant Pokemon switches in, then -1 Speed AND triggers +2 Attack", () => {
     // Source: Bulbapedia -- Defiant: "raises the Pokemon's Attack stat by two stages for
     //   each of its stats that is lowered by an opposing Pokemon"
-    // Source: Showdown data/abilities.ts -- defiant: onAfterEachBoost
+    // Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost
     const pokemon = makeActivePokemon({ ability: ABILITIES.defiant });
     const result = applyGen6StickyWeb(pokemon, false);
     expect(result.applied).toBe(true);
@@ -673,7 +673,7 @@ describe("Gen6 Sticky Web", () => {
   it("given Sticky Web set, when a Competitive Pokemon switches in, then -1 Speed AND triggers +2 SpAtk", () => {
     // Source: Bulbapedia -- Competitive: "raises the Pokemon's Special Attack stat by two
     //   stages for each of its stats that is lowered by an opposing Pokemon"
-    // Source: Showdown data/abilities.ts -- competitive: onAfterEachBoost
+    // Source: Showdown data/abilities.ts -- Competitive onAfterEachBoost
     const pokemon = makeActivePokemon({ ability: ABILITIES.competitive });
     const result = applyGen6StickyWeb(pokemon, false);
     expect(result.applied).toBe(true);
@@ -851,7 +851,7 @@ describe("Gen6 applyGen6EntryHazards (combined)", () => {
   });
 
   it("given only Sticky Web, when a Clear Body Pokemon switches in, then no stat changes applied", () => {
-    // Source: Showdown data/abilities.ts -- clearbody blocks stat drops from opponents
+    // Source: Showdown data/abilities.ts -- Clear Body blocks stat drops from opponents
     const pokemon = makeActivePokemon({ ability: ABILITIES.clearBody });
     const side = makeSide([{ type: HAZARDS.stickyWeb, layers: 1 }]);
     const state = makeState();
