@@ -1,6 +1,10 @@
-import { DataManager } from "@pokemon-lib-ts/core";
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import { CORE_GIMMICK_IDS, CORE_HAZARD_IDS, DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen7Ruleset } from "../../src/Gen7Ruleset.js";
+
+const HAZARD_IDS = CORE_HAZARD_IDS;
+const GIMMICK_IDS = { ...CORE_GIMMICK_IDS, zMove: BATTLE_GIMMICK_IDS.zMove } as const;
 
 /**
  * Smoke tests for Gen7Ruleset scaffold.
@@ -53,21 +57,21 @@ describe("Gen7Ruleset", () => {
   });
 
   describe("getAvailableHazards", () => {
-    it('given a Gen7Ruleset, when getting hazards, then includes "sticky-web"', () => {
+    it(`given a Gen7Ruleset, when getting hazards, then includes "${HAZARD_IDS.stickyWeb}"`, () => {
       // Source: Bulbapedia -- Sticky Web introduced in Gen 6, still present in Gen 7
       const ruleset = createTestRuleset();
       const hazards = ruleset.getAvailableHazards();
-      expect(hazards).toContain("sticky-web");
+      expect(hazards).toContain(HAZARD_IDS.stickyWeb);
     });
 
     it("given a Gen7Ruleset, when getting hazards, then includes all four hazard types", () => {
       // Source: Showdown data/moves.ts -- Gen 7 has stealth-rock, spikes, toxic-spikes, sticky-web
       const ruleset = createTestRuleset();
       const hazards = ruleset.getAvailableHazards();
-      expect(hazards).toContain("stealth-rock");
-      expect(hazards).toContain("spikes");
-      expect(hazards).toContain("toxic-spikes");
-      expect(hazards).toContain("sticky-web");
+      expect(hazards).toContain(HAZARD_IDS.stealthRock);
+      expect(hazards).toContain(HAZARD_IDS.spikes);
+      expect(hazards).toContain(HAZARD_IDS.toxicSpikes);
+      expect(hazards).toContain(HAZARD_IDS.stickyWeb);
     });
   });
 
@@ -136,7 +140,7 @@ describe("Gen7Ruleset", () => {
     it("given a Gen7Ruleset, when getting battle gimmick for zmove, then returns Gen7ZMove instance", () => {
       // Source: Showdown sim/battle-actions.ts -- Z-Moves are a Gen 7 BattleGimmick
       const ruleset = createTestRuleset();
-      const gimmick = ruleset.getBattleGimmick("zmove");
+      const gimmick = ruleset.getBattleGimmick(GIMMICK_IDS.zMove);
       expect(gimmick).not.toBeNull();
       expect(gimmick!.name).toBe("Z-Move");
     });
@@ -144,7 +148,7 @@ describe("Gen7Ruleset", () => {
     it("given a Gen7Ruleset, when getting battle gimmick for mega, then returns Gen7MegaEvolution instance", () => {
       // Source: Bulbapedia "Mega Evolution" -- available in Gen 7 (Sun/Moon/USUM)
       const ruleset = createTestRuleset();
-      const gimmick = ruleset.getBattleGimmick("mega");
+      const gimmick = ruleset.getBattleGimmick(GIMMICK_IDS.mega);
       expect(gimmick).not.toBeNull();
       expect(gimmick!.name).toBe("Mega Evolution");
     });
