@@ -1,9 +1,32 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
-import { MEGA_STONE_DATA as CORE_MEGA_STONE_DATA } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  MEGA_STONE_DATA as CORE_MEGA_STONE_DATA,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  GEN6_ABILITY_IDS,
+  GEN6_ITEM_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
 import { Gen6MegaEvolution, getMegaEvolutionData, MEGA_STONE_DATA } from "../src/Gen6MegaEvolution";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
+const SPECIES = GEN6_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const CHARIZARDITE_X_DATA = MEGA_STONE_DATA[ITEMS.charizarditeX];
+const CHARIZARDITE_Y_DATA = MEGA_STONE_DATA[ITEMS.charizarditeY];
+const VENUSAURITE_DATA = MEGA_STONE_DATA[ITEMS.venusaurite];
+const MEWTWONITE_X_DATA = MEGA_STONE_DATA[ITEMS.mewtwoniteX];
+const MEWTWONITE_Y_DATA = MEGA_STONE_DATA[ITEMS.mewtwoniteY];
+const AGGRONITE_DATA = MEGA_STONE_DATA[ITEMS.aggronite];
 
 // ---------------------------------------------------------------------------
 // Helper factories
@@ -11,6 +34,7 @@ import { Gen6Ruleset } from "../src/Gen6Ruleset";
 
 function makeActivePokemon(overrides: {
   uid?: string;
+  speciesId?: number;
   heldItem?: string | null;
   types?: PokemonType[];
   ability?: string;
@@ -28,16 +52,16 @@ function makeActivePokemon(overrides: {
   return {
     pokemon: {
       uid: overrides.uid ?? "test-uid",
-      speciesId: 6,
+      speciesId: overrides.speciesId ?? SPECIES.charizard,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
+      nature: GEN6_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: 200,
       moves: [],
-      ability: overrides.ability ?? "blaze",
+      ability: overrides.ability ?? ABILITIES.blaze,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: null,
@@ -48,7 +72,7 @@ function makeActivePokemon(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: {
         hp: cs.hp ?? 200,
         attack: cs.attack ?? 100,
@@ -69,8 +93,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["fire", "flying"],
-    ability: overrides.ability ?? "blaze",
+    types: overrides.types ?? [TYPES.fire, TYPES.flying],
+    ability: overrides.ability ?? ABILITIES.blaze,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -144,21 +168,19 @@ describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
 
   it("given charizardite-x, when looking up in MEGA_STONE_DATA, then returns Charizard Mega X data", () => {
     // Source: Bulbapedia "Charizardite X" — Fire/Dragon type, Tough Claws ability, 130 Attack
-    const data = MEGA_STONE_DATA["charizardite-x"];
+    const data = MEGA_STONE_DATA[ITEMS.charizarditeX];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-charizard-x");
-    expect(data.types).toEqual(["fire", "dragon"]);
-    expect(data.ability).toBe("tough-claws");
+    expect(data.types).toEqual([TYPES.fire, TYPES.dragon]);
+    expect(data.ability).toBe(GEN6_ABILITY_IDS.toughClaws);
     expect(data.baseStats.attack).toBe(130);
   });
 
   it("given charizardite-y, when looking up in MEGA_STONE_DATA, then returns Charizard Mega Y data", () => {
     // Source: Bulbapedia "Charizardite Y" — Fire/Flying type, Drought ability, 159 Sp. Attack
-    const data = MEGA_STONE_DATA["charizardite-y"];
+    const data = MEGA_STONE_DATA[ITEMS.charizarditeY];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-charizard-y");
-    expect(data.types).toEqual(["fire", "flying"]);
-    expect(data.ability).toBe("drought");
+    expect(data.types).toEqual([TYPES.fire, TYPES.flying]);
+    expect(data.ability).toBe(GEN6_ABILITY_IDS.drought);
     expect(data.baseStats.spAttack).toBe(159);
   });
 
@@ -166,29 +188,26 @@ describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
     // Source: Bulbapedia "Venusaurite" — Grass/Poison, Thick Fat, 123 Defense
     const data = MEGA_STONE_DATA.venusaurite;
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-venusaur");
-    expect(data.types).toEqual(["grass", "poison"]);
-    expect(data.ability).toBe("thick-fat");
+    expect(data.types).toEqual([TYPES.grass, TYPES.poison]);
+    expect(data.ability).toBe(GEN6_ABILITY_IDS.thickFat);
     expect(data.baseStats.defense).toBe(123);
   });
 
   it("given mewtwonite-x, when looking up in MEGA_STONE_DATA, then returns Mega Mewtwo X data", () => {
     // Source: Bulbapedia "Mewtwonite X" — Psychic/Fighting, Steadfast, 190 Attack
-    const data = MEGA_STONE_DATA["mewtwonite-x"];
+    const data = MEGA_STONE_DATA[ITEMS.mewtwoniteX];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-mewtwo-x");
-    expect(data.types).toEqual(["psychic", "fighting"]);
-    expect(data.ability).toBe("steadfast");
+    expect(data.types).toEqual([TYPES.psychic, TYPES.fighting]);
+    expect(data.ability).toBe(ABILITIES.steadfast);
     expect(data.baseStats.attack).toBe(190);
   });
 
   it("given mewtwonite-y, when looking up in MEGA_STONE_DATA, then returns Mega Mewtwo Y data", () => {
     // Source: Bulbapedia "Mewtwonite Y" — Psychic, Insomnia, 194 Sp. Attack
-    const data = MEGA_STONE_DATA["mewtwonite-y"];
+    const data = MEGA_STONE_DATA[ITEMS.mewtwoniteY];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-mewtwo-y");
-    expect(data.types).toEqual(["psychic"]);
-    expect(data.ability).toBe("insomnia");
+    expect(data.types).toEqual([TYPES.psychic]);
+    expect(data.ability).toBe(ABILITIES.insomnia);
     expect(data.baseStats.spAttack).toBe(194);
   });
 
@@ -197,9 +216,9 @@ describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
     // Note: Mega Aggron is notable for being a pure Steel type (loses its Rock type)
     const data = MEGA_STONE_DATA.aggronite;
     expect(data).toBeDefined();
-    expect(data.types).toEqual(["steel"]);
+    expect(data.types).toEqual([TYPES.steel]);
     expect(data.baseStats.defense).toBe(230);
-    expect(data.ability).toBe("filter");
+    expect(data.ability).toBe(GEN6_ABILITY_IDS.filter);
   });
 });
 
@@ -210,9 +229,9 @@ describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
 describe("getMegaEvolutionData", () => {
   it("given a valid mega stone item ID, when calling getMegaEvolutionData, then returns MegaEvolutionData", () => {
     // Source: Showdown data/items.ts -- charizardite-x is a Mega Stone
-    const result = getMegaEvolutionData("charizardite-x");
+    const result = getMegaEvolutionData(ITEMS.charizarditeX);
     expect(result).not.toBeNull();
-    expect(result!.form).toBe("mega-charizard-x");
+    expect(result).toBe(CHARIZARDITE_X_DATA);
   });
 
   it("given null, when calling getMegaEvolutionData, then returns null", () => {
@@ -226,21 +245,20 @@ describe("getMegaEvolutionData", () => {
 
   it("given a non-mega-stone item (sitrus-berry), when calling getMegaEvolutionData, then returns null", () => {
     // Source: Bulbapedia -- Sitrus Berry is not a Mega Stone
-    expect(getMegaEvolutionData("sitrus-berry")).toBeNull();
+    expect(getMegaEvolutionData(ITEMS.sitrusBerry)).toBeNull();
   });
 
   it("given eviolite (ends in -ite but is NOT a mega stone), when calling getMegaEvolutionData, then returns null", () => {
     // Source: isMegaStone() explicitly excludes eviolite -- it ends in -ite but is not a mega stone
-    expect(getMegaEvolutionData("eviolite")).toBeNull();
+    expect(getMegaEvolutionData(ITEMS.eviolite)).toBeNull();
   });
 
   it("given venusaurite, when calling getMegaEvolutionData, then returns correct form data", () => {
     // Source: Bulbapedia — Mega Venusaur uses Venusaurite; mega form name "mega-venusaur"
     // https://bulbapedia.bulbagarden.net/wiki/Mega_Evolution
-    const result = getMegaEvolutionData("venusaurite");
+    const result = getMegaEvolutionData(ITEMS.venusaurite);
     expect(result).not.toBeNull();
-    expect(result!.form).toBe("mega-venusaur");
-    expect(result!.item).toBe("venusaurite");
+    expect(result).toBe(VENUSAURITE_DATA);
   });
 });
 
@@ -253,7 +271,7 @@ describe("Gen6MegaEvolution -- canUse()", () => {
     // Source: Bulbapedia "Mega Evolution" — can activate if holding correct Mega Stone
     // Source: Showdown sim/battle.ts — canMegaEvo check: holding mega stone + gimmick not used
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: "charizardite-x", isMega: false });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
@@ -263,7 +281,7 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding charizardite-x but gimmick already used, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" — only one Mega Evolution per trainer per battle
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: "charizardite-x", isMega: false });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
     const side = makeSide({ gimmickUsed: true });
     const state = makeState();
 
@@ -273,7 +291,7 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon that has already mega evolved, when calling canUse, then returns false", () => {
     // Source: Showdown sim/battle.ts — pokemon.isMega blocks re-activation
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: "charizardite-x", isMega: true });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: true });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
@@ -283,7 +301,7 @@ describe("Gen6MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding a non-mega-stone item, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" — requires a Mega Stone to activate
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: "leftovers", isMega: false });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.leftovers, isMega: false });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
@@ -307,7 +325,7 @@ describe("Gen6MegaEvolution -- canUse()", () => {
     // Source: Showdown sim/battle.ts — formeChange only permitted when species matches stone
     const gimmick = new Gen6MegaEvolution();
     // makeActivePokemon defaults speciesId: 6 (Charizard); venusaurite.baseSpeciesId = 3 (Venusaur)
-    const pokemon = makeActivePokemon({ heldItem: "venusaurite", isMega: false });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.venusaurite, isMega: false });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
@@ -326,9 +344,9 @@ describe("Gen6MegaEvolution -- activate()", () => {
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
       uid: "charizard-1",
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
-      ability: "blaze",
+      heldItem: ITEMS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
+      ability: ABILITIES.blaze,
     });
     const side = makeSide({ gimmickUsed: false, index: 0 });
     const state = makeState();
@@ -338,7 +356,7 @@ describe("Gen6MegaEvolution -- activate()", () => {
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("mega-evolve");
     if (events[0].type === "mega-evolve") {
-      expect(events[0].form).toBe("mega-charizard-x");
+      expect(events[0].form).toBe(CHARIZARDITE_X_DATA.form);
       expect(events[0].side).toBe(0);
       expect(events[0].pokemon).toBe("charizard-1");
     }
@@ -348,32 +366,32 @@ describe("Gen6MegaEvolution -- activate()", () => {
     // Source: Bulbapedia "Charizardite X" — Mega Charizard X is Fire/Dragon type
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
-      ability: "blaze",
+      heldItem: ITEMS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
+      ability: ABILITIES.blaze,
     });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
     gimmick.activate(pokemon, side, state);
 
-    expect(pokemon.types).toEqual(["fire", "dragon"]);
+    expect(pokemon.types).toEqual(CHARIZARDITE_X_DATA.types);
   });
 
   it("given Charizard holding charizardite-x, when activate is called, then ability changes to Tough Claws", () => {
     // Source: Bulbapedia "Charizardite X" — Mega Charizard X has Tough Claws
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
-      ability: "blaze",
+      heldItem: ITEMS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
+      ability: ABILITIES.blaze,
     });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
     gimmick.activate(pokemon, side, state);
 
-    expect(pokemon.ability).toBe("tough-claws");
+    expect(pokemon.ability).toBe(CHARIZARDITE_X_DATA.ability);
   });
 
   it("given Charizard holding charizardite-x, when activate is called, then calculatedStats are updated to level-scaled mega form stats", () => {
@@ -389,7 +407,7 @@ describe("Gen6MegaEvolution -- activate()", () => {
     //   spe:   floor((floor((200+31+0)*50/100)+5)*1.0) = floor((floor(11550/100)+5)) = floor(115+5) = 120
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "charizardite-x",
+      heldItem: ITEMS.charizarditeX,
       calculatedStats: {
         hp: 200,
         attack: 84,
@@ -418,7 +436,7 @@ describe("Gen6MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then pokemon.isMega is set to true", () => {
     // Source: Showdown sim/battle.ts — pokemon.isMega = true after activation
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: "charizardite-x", isMega: false });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX, isMega: false });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
@@ -431,7 +449,7 @@ describe("Gen6MegaEvolution -- activate()", () => {
     // Source: Bulbapedia "Mega Evolution" — one Mega Evolution per trainer per battle
     // Source: Showdown sim/battle.ts — side.gimmickUsed = true after activation
     const gimmick = new Gen6MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: "charizardite-x" });
+    const pokemon = makeActivePokemon({ heldItem: ITEMS.charizarditeX });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
@@ -445,9 +463,10 @@ describe("Gen6MegaEvolution -- activate()", () => {
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
       uid: "venusaur-1",
-      heldItem: "venusaurite",
-      types: ["grass", "poison"],
-      ability: "chlorophyll",
+      speciesId: SPECIES.venusaur,
+      heldItem: ITEMS.venusaurite,
+      types: [TYPES.grass, TYPES.poison],
+      ability: GEN6_ABILITY_IDS.chlorophyll,
     });
     const side = makeSide({ gimmickUsed: false, index: 1 });
     const state = makeState();
@@ -456,27 +475,28 @@ describe("Gen6MegaEvolution -- activate()", () => {
 
     expect(events).toHaveLength(1);
     if (events[0].type === "mega-evolve") {
-      expect(events[0].form).toBe("mega-venusaur");
+      expect(events[0].form).toBe(VENUSAURITE_DATA.form);
       expect(events[0].side).toBe(1);
     }
-    expect(pokemon.types).toEqual(["grass", "poison"]);
-    expect(pokemon.ability).toBe("thick-fat");
+    expect(pokemon.types).toEqual(VENUSAURITE_DATA.types);
+    expect(pokemon.ability).toBe(VENUSAURITE_DATA.ability);
   });
 
   it("given Aggron holding aggronite, when activate is called, then types change to pure Steel", () => {
     // Source: Bulbapedia "Aggronite" — Mega Aggron loses Rock type, becomes pure Steel
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "aggronite",
-      types: ["steel", "rock"],
-      ability: "sturdy",
+      speciesId: SPECIES.aggron,
+      heldItem: ITEMS.aggronite,
+      types: [TYPES.steel, TYPES.rock],
+      ability: ABILITIES.sturdy,
     });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
 
     gimmick.activate(pokemon, side, state);
 
-    expect(pokemon.types).toEqual(["steel"]);
+    expect(pokemon.types).toEqual(AGGRONITE_DATA.types);
   });
 
   it("given a Pokemon holding no item, when activate is called, then returns empty events array", () => {
@@ -499,9 +519,9 @@ describe("Gen6MegaEvolution -- activate()", () => {
     //   spatk: floor((floor((318+31+0)*50/100)+5)*1.0) = floor((floor(17450/100)+5)) = floor(174+5) = 179
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "charizardite-y",
-      types: ["fire", "flying"],
-      ability: "blaze",
+      heldItem: ITEMS.charizarditeY,
+      types: [TYPES.fire, TYPES.flying],
+      ability: ABILITIES.blaze,
     });
     const side = makeSide({ gimmickUsed: false });
     const state = makeState();
@@ -510,10 +530,10 @@ describe("Gen6MegaEvolution -- activate()", () => {
 
     expect(events).toHaveLength(1);
     if (events[0].type === "mega-evolve") {
-      expect(events[0].form).toBe("mega-charizard-y");
+      expect(events[0].form).toBe(CHARIZARDITE_Y_DATA.form);
     }
-    expect(pokemon.types).toEqual(["fire", "flying"]);
-    expect(pokemon.ability).toBe("drought");
+    expect(pokemon.types).toEqual(CHARIZARDITE_Y_DATA.types);
+    expect(pokemon.ability).toBe(CHARIZARDITE_Y_DATA.ability);
     // Properly scaled: calculateStat(159, 31, 0, 50, 1.0) = 179
     expect(pokemon.pokemon.calculatedStats!.spAttack).toBe(179);
   });
@@ -586,9 +606,9 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
     // This test verifies the isMega flag is correctly set, which is the engine's gate condition.
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "charizardite-y",
-      types: ["fire", "flying"],
-      ability: "blaze",
+      heldItem: ITEMS.charizarditeY,
+      types: [TYPES.fire, TYPES.flying],
+      ability: ABILITIES.blaze,
       isMega: false,
     });
     const side = makeSide({ gimmickUsed: false });
@@ -601,7 +621,7 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
     // activation, which triggers Drought to set 5-turn sun weather.
     expect(pokemon.isMega).toBe(true);
     // Ability updated to drought — on-switch-in will set 5-turn sun (Gen 6 weather duration)
-    expect(pokemon.ability).toBe("drought");
+    expect(pokemon.ability).toBe(CHARIZARDITE_Y_DATA.ability);
   });
 
   it("given Charizard-Y mega-evolving, when ruleset applyAbility is called with on-switch-in, then sun weather is set", () => {
@@ -612,9 +632,9 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
     const ruleset = new Gen6Ruleset();
     const gimmick = new Gen6MegaEvolution();
     const pokemon = makeActivePokemon({
-      heldItem: "charizardite-y",
-      types: ["fire", "flying"],
-      ability: "blaze",
+      heldItem: ITEMS.charizarditeY,
+      types: [TYPES.fire, TYPES.flying],
+      ability: ABILITIES.blaze,
       isMega: false,
     });
     const opponent = makeActivePokemon({ heldItem: null });
@@ -623,7 +643,7 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
 
     // Step 1: Mega evolve — ability changes to Drought, isMega set to true
     gimmick.activate(pokemon, side, state);
-    expect(pokemon.ability).toBe("drought");
+    expect(pokemon.ability).toBe(CHARIZARDITE_Y_DATA.ability);
 
     // Step 2: Engine's ability hook fires on-switch-in with the new mega ability
     const abilityResult = ruleset.applyAbility("on-switch-in", {
@@ -645,7 +665,7 @@ describe("Gen6MegaEvolution -- mega ability on-switch-in trigger", () => {
     // Drought ability fires → activated = true, weather-set effect in effects array
     expect(abilityResult.activated).toBe(true);
     const weatherEffect = abilityResult.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect?.weather).toBe("sun");
+    expect(weatherEffect?.weather).toBe(CORE_WEATHER_IDS.sun);
     expect(weatherEffect?.weatherTurns).toBe(5);
   });
 });
