@@ -1,6 +1,9 @@
 import type { ActivePokemon, DamageContext, ItemContext } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -73,6 +76,9 @@ const I = GEN4_ITEM_IDS;
 const M = GEN4_MOVE_IDS;
 const N = GEN4_NATURE_IDS;
 const S = GEN4_SPECIES_IDS;
+const AS = CORE_ABILITY_SLOTS;
+const G = CORE_GENDERS;
+const TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 const T = CORE_TYPE_IDS;
 const ST = CORE_STATUS_IDS;
 const V = CORE_VOLATILE_IDS;
@@ -100,7 +106,7 @@ function createActivePokemon(opts: {
   heldItem?: string | null;
   status?: PrimaryStatus | null;
   speciesId?: number;
-  gender?: "male" | "female" | "genderless";
+  gender?: (typeof G)[keyof typeof G];
 }): ActivePokemon {
   const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
@@ -125,11 +131,11 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
     ability: opts.ability ?? NONE,
-    abilitySlot: "normal1" as const,
+    abilitySlot: AS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: opts.gender ?? ("male" as const),
+    gender: opts.gender ?? G.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -227,11 +233,11 @@ function createItemContext(opts: {
         currentHp: opts.currentHp ?? maxHp,
         moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
         ability: opts.ability ?? NONE,
-        abilitySlot: "normal1" as const,
+        abilitySlot: AS.normal1,
         heldItem: opts.heldItem ?? null,
         status: opts.status ?? null,
         friendship: 0,
-        gender: "male" as const,
+        gender: G.male,
         isShiny: false,
         metLocation: "",
         metLevel: 1,
@@ -302,7 +308,7 @@ describe("Magic Guard + Life Orb interaction", () => {
       maxHp: 200,
       damage: 80,
     });
-    const result = applyGen4HeldItem("on-hit", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onHit, ctx);
 
     // Magic Guard: no recoil
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
@@ -359,7 +365,7 @@ describe("Magic Guard + Life Orb interaction", () => {
       maxHp: 200,
       damage: 80,
     });
-    const result = applyGen4HeldItem("on-hit", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onHit, ctx);
 
     expect(result).toEqual({
       activated: true,
@@ -388,7 +394,7 @@ describe("Unburden + item consumption", () => {
     });
 
     expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(false);
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onDamageTaken, ctx);
 
     expect(result.effects.some((e) => e.type === "consume")).toBe(true);
     // The Unburden volatile should now be set in the pokemon's volatileStatuses
@@ -408,7 +414,7 @@ describe("Unburden + item consumption", () => {
       damage: 5,
     });
 
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onDamageTaken, ctx);
 
     expect(result.effects.some((e) => e.type === "consume")).toBe(true);
     expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(true);
@@ -424,7 +430,7 @@ describe("Unburden + item consumption", () => {
       damage: 20,
     });
 
-    applyGen4HeldItem("on-damage-taken", ctx);
+    applyGen4HeldItem(TRIGGERS.onDamageTaken, ctx);
 
     expect((ctx.pokemon.volatileStatuses as Map<string, unknown>).has(V.unburden)).toBe(false);
   });
@@ -439,7 +445,7 @@ describe("Klutz + items — all triggers suppressed", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items."
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
     const ctx = createItemContext({ heldItem: I.leftovers, ability: A.klutz, maxHp: 160 });
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.endOfTurn, ctx);
 
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
@@ -447,7 +453,7 @@ describe("Klutz + items — all triggers suppressed", () => {
   it("given Klutz holder with Toxic Orb, when end-of-turn triggers, then item does NOT activate (Klutz blocks status orbs)", () => {
     // Source: Bulbapedia — Klutz prevents item use including Toxic Orb
     const ctx = createItemContext({ heldItem: I.toxicOrb, ability: A.klutz, status: null });
-    const result = applyGen4HeldItem("end-of-turn", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.endOfTurn, ctx);
 
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
@@ -495,7 +501,7 @@ describe("Klutz + items — all triggers suppressed", () => {
       maxHp: 200,
       damage: 80,
     });
-    const result = applyGen4HeldItem("on-hit", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onHit, ctx);
 
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
@@ -509,7 +515,7 @@ describe("Klutz + items — all triggers suppressed", () => {
       currentHp: 160,
       damage: 200,
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onDamageTaken, ctx);
 
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
@@ -618,7 +624,7 @@ describe("Life Orb — no recoil when damage is 0 or absent", () => {
       maxHp: 200,
       damage: 0,
     });
-    const result = applyGen4HeldItem("on-hit", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onHit, ctx);
 
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
@@ -632,7 +638,7 @@ describe("Life Orb — no recoil when damage is 0 or absent", () => {
       maxHp: 200,
       damage: 100,
     });
-    const result = applyGen4HeldItem("on-hit", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onHit, ctx);
 
     expect(result).toEqual({
       activated: true,
@@ -856,7 +862,7 @@ describe("Focus Sash — does not activate unless holder is at full HP", () => {
       currentHp: 159, // one below full
       damage: 200, // would KO
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onDamageTaken, ctx);
 
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
@@ -869,7 +875,7 @@ describe("Focus Sash — does not activate unless holder is at full HP", () => {
       currentHp: 160, // full HP
       damage: 200, // would KO
     });
-    const result = applyGen4HeldItem("on-damage-taken", ctx);
+    const result = applyGen4HeldItem(TRIGGERS.onDamageTaken, ctx);
 
     expect(result).toEqual({
       activated: true,
@@ -894,7 +900,7 @@ describe("Lum Berry — cures all primary statuses individually", () => {
       // Source: Showdown Gen 4 mod — Lum Berry cures any primary status condition
       // Source: Bulbapedia — Lum Berry: "Cures any major status condition"
       const ctx = createItemContext({ heldItem: I.lumBerry, status });
-      const result = applyGen4HeldItem("end-of-turn", ctx);
+      const result = applyGen4HeldItem(TRIGGERS.endOfTurn, ctx);
 
       expect(result.effects.some((e) => e.type === "status-cure")).toBe(true);
       expect(result.effects.some((e) => e.type === "consume" && "value" in e && e.value === I.lumBerry)).toBe(true);
