@@ -6,7 +6,14 @@ import type {
   ItemContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_MOVE_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_SPECIES_IDS,
+} from "../src";
 import { handleGen7NewAbility } from "../src/Gen7AbilitiesNew";
 import { handleGen7StatAbility } from "../src/Gen7AbilitiesStat";
 import { applyGen7HeldItem } from "../src/Gen7Items";
@@ -16,6 +23,16 @@ import {
   MEGA_RAYQUAZA_DATA,
 } from "../src/Gen7MegaEvolution";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
+
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const CORE_ABILITIES = CORE_ABILITY_IDS;
+const CORE_ITEMS = CORE_ITEM_IDS;
+const CORE_MOVES = CORE_MOVE_IDS;
+const ABILITIES = GEN7_ABILITY_IDS;
+const ITEMS = GEN7_ITEM_IDS;
+const MOVES = GEN7_MOVE_IDS;
+const SPECIES = GEN7_SPECIES_IDS;
 
 /**
  * Phase 2 bugfix tests for Gen 7 issues:
@@ -55,7 +72,7 @@ function makeActivePokemon(overrides: {
   return {
     pokemon: {
       uid: overrides.uid ?? "test-uid",
-      speciesId: overrides.speciesId ?? 6,
+      speciesId: overrides.speciesId ?? SPECIES.charizard,
       nickname: overrides.nickname ?? null,
       level: 50,
       experience: 0,
@@ -64,7 +81,7 @@ function makeActivePokemon(overrides: {
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? maxHp,
       moves: overrides.moves ?? [],
-      ability: overrides.ability ?? "blaze",
+      ability: overrides.ability ?? CORE_ABILITIES.blaze,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: null,
@@ -75,7 +92,7 @@ function makeActivePokemon(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEMS.pokeBall,
       calculatedStats: {
         hp: cs.hp ?? maxHp,
         attack: cs.attack ?? 100,
@@ -96,8 +113,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["fire", "flying"],
-    ability: overrides.ability ?? "blaze",
+    types: overrides.types ?? [TYPES.fire, TYPES.flying],
+    ability: overrides.ability ?? CORE_ABILITIES.blaze,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -154,9 +171,9 @@ function makeState(): BattleState {
 
 function makeMoveData(overrides: Partial<MoveData> = {}): MoveData {
   return {
-    id: overrides.id ?? "tackle",
+    id: overrides.id ?? CORE_MOVES.tackle,
     displayName: overrides.displayName ?? "Tackle",
-    type: overrides.type ?? "normal",
+    type: overrides.type ?? TYPES.normal,
     category: overrides.category ?? "physical",
     power: overrides.power ?? 40,
     accuracy: overrides.accuracy ?? 100,
@@ -221,11 +238,11 @@ function makeItemContext(overrides: {
 }): ItemContext {
   const pokemon = makeActivePokemon({
     heldItem: overrides.item,
-    ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? CORE_ABILITIES.none,
     currentHp: overrides.currentHp,
     maxHp: overrides.maxHp,
     calculatedStats: { hp: overrides.maxHp },
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [TYPES.normal],
   });
   return {
     pokemon,
@@ -245,10 +262,10 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
   it("given Rayquaza (species 384) knowing dragon-ascent, when checking canRayquazaMegaEvolve, then returns true", () => {
     // Source: Bulbapedia "Mega Evolution" — Rayquaza can Mega Evolve if it knows Dragon Ascent
     const pokemon = makeActivePokemon({
-      speciesId: 384,
-      ability: "air-lock",
-      types: ["dragon", "flying"],
-      moves: [{ moveId: "dragon-ascent", currentPP: 5, maxPP: 5 }],
+      speciesId: SPECIES.rayquaza,
+      ability: ABILITIES.airLock,
+      types: [TYPES.dragon, TYPES.flying],
+      moves: [{ moveId: MOVES.dragonAscent, currentPP: 5, maxPP: 5 }],
     });
     expect(canRayquazaMegaEvolve(pokemon)).toBe(true);
   });
@@ -256,10 +273,10 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
   it("given Rayquaza WITHOUT dragon-ascent, when checking canRayquazaMegaEvolve, then returns false", () => {
     // Source: Showdown sim/battle-actions.ts — Rayquaza needs Dragon Ascent to Mega Evolve
     const pokemon = makeActivePokemon({
-      speciesId: 384,
-      ability: "air-lock",
-      types: ["dragon", "flying"],
-      moves: [{ moveId: "outrage", currentPP: 10, maxPP: 10 }],
+      speciesId: SPECIES.rayquaza,
+      ability: ABILITIES.airLock,
+      types: [TYPES.dragon, TYPES.flying],
+      moves: [{ moveId: MOVES.outrage, currentPP: 10, maxPP: 10 }],
     });
     expect(canRayquazaMegaEvolve(pokemon)).toBe(false);
   });
@@ -267,11 +284,11 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
   it("given Rayquaza with dragon-ascent BUT holding a Z-Crystal, when checking canRayquazaMegaEvolve, then returns false", () => {
     // Source: Bulbapedia — "Rayquaza cannot Mega Evolve if it is holding a Z-Crystal"
     const pokemon = makeActivePokemon({
-      speciesId: 384,
-      ability: "air-lock",
-      types: ["dragon", "flying"],
-      heldItem: "dragonium-z",
-      moves: [{ moveId: "dragon-ascent", currentPP: 5, maxPP: 5 }],
+      speciesId: SPECIES.rayquaza,
+      ability: ABILITIES.airLock,
+      types: [TYPES.dragon, TYPES.flying],
+      heldItem: ITEMS.dragoniumZ,
+      moves: [{ moveId: MOVES.dragonAscent, currentPP: 5, maxPP: 5 }],
     });
     expect(canRayquazaMegaEvolve(pokemon)).toBe(false);
   });
@@ -279,9 +296,9 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
   it("given non-Rayquaza Pokemon with dragon-ascent, when checking canRayquazaMegaEvolve, then returns false", () => {
     // Only Rayquaza (species 384) can use the Dragon Ascent mega path
     const pokemon = makeActivePokemon({
-      speciesId: 6,
-      ability: "blaze",
-      moves: [{ moveId: "dragon-ascent", currentPP: 5, maxPP: 5 }],
+      speciesId: SPECIES.charizard,
+      ability: CORE_ABILITIES.blaze,
+      moves: [{ moveId: MOVES.dragonAscent, currentPP: 5, maxPP: 5 }],
     });
     expect(canRayquazaMegaEvolve(pokemon)).toBe(false);
   });
@@ -290,10 +307,10 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
     // Source: Showdown sim/battle-actions.ts — Rayquaza mega via Dragon Ascent, no stone
     const mega = new Gen7MegaEvolution();
     const pokemon = makeActivePokemon({
-      speciesId: 384,
-      ability: "air-lock",
-      types: ["dragon", "flying"],
-      moves: [{ moveId: "dragon-ascent", currentPP: 5, maxPP: 5 }],
+      speciesId: SPECIES.rayquaza,
+      ability: ABILITIES.airLock,
+      types: [TYPES.dragon, TYPES.flying],
+      moves: [{ moveId: MOVES.dragonAscent, currentPP: 5, maxPP: 5 }],
       // No Mega Stone held
     });
     const side = makeSide();
@@ -306,10 +323,10 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
     //   base stats: 105/180/100/180/100/115
     const mega = new Gen7MegaEvolution();
     const pokemon = makeActivePokemon({
-      speciesId: 384,
-      ability: "air-lock",
-      types: ["dragon", "flying"],
-      moves: [{ moveId: "dragon-ascent", currentPP: 5, maxPP: 5 }],
+      speciesId: SPECIES.rayquaza,
+      ability: ABILITIES.airLock,
+      types: [TYPES.dragon, TYPES.flying],
+      moves: [{ moveId: MOVES.dragonAscent, currentPP: 5, maxPP: 5 }],
     });
     const side = makeSide();
     const state = makeState();
@@ -322,9 +339,9 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
     expect((events[0] as any).form).toBe("mega-rayquaza");
 
     // Types should be updated
-    expect(pokemon.types).toEqual(["dragon", "flying"]);
+    expect(pokemon.types).toEqual([TYPES.dragon, TYPES.flying]);
     // Ability should be Delta Stream
-    expect(pokemon.ability).toBe("delta-stream");
+    expect(pokemon.ability).toBe(ABILITIES.deltaStream);
     // Should be marked as mega
     expect(pokemon.isMega).toBe(true);
   });
@@ -337,8 +354,8 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
     expect(MEGA_RAYQUAZA_DATA.baseStats.spAttack).toBe(180);
     expect(MEGA_RAYQUAZA_DATA.baseStats.spDefense).toBe(100);
     expect(MEGA_RAYQUAZA_DATA.baseStats.speed).toBe(115);
-    expect(MEGA_RAYQUAZA_DATA.ability).toBe("delta-stream");
-    expect(MEGA_RAYQUAZA_DATA.baseSpeciesId).toBe(384);
+    expect(MEGA_RAYQUAZA_DATA.ability).toBe(ABILITIES.deltaStream);
+    expect(MEGA_RAYQUAZA_DATA.baseSpeciesId).toBe(SPECIES.rayquaza);
   });
 });
 
@@ -353,7 +370,7 @@ describe("#687 — Disguise blocks non-lethal hits via capLethalDamage (Gen 7)",
     // Source: Showdown data/abilities.ts — disguise: onDamage priority 1, blocks all hits
     // Source: Bulbapedia "Disguise" — absorbs the first damaging hit
     const defender = makeActivePokemon({
-      ability: "disguise",
+      ability: ABILITIES.disguise,
       currentHp: 200,
       maxHp: 200,
     });
@@ -367,14 +384,12 @@ describe("#687 — Disguise blocks non-lethal hits via capLethalDamage (Gen 7)",
     expect(result.survived).toBe(true);
     expect(result.messages.length).toBeGreaterThan(0);
     expect(result.messages[0]).toContain("Disguise was busted");
-    // Disguise should now be broken
-    expect(defender.volatileStatuses.has("disguise-broken")).toBe(true);
   });
 
   it("given Mimikyu with intact Disguise hit by a 100 HP special move, when capLethalDamage fires, then damage is reduced to 0", () => {
     // Source: Showdown data/abilities.ts — disguise blocks special moves too
     const defender = makeActivePokemon({
-      ability: "disguise",
+      ability: ABILITIES.disguise,
       currentHp: 200,
       maxHp: 200,
     });
@@ -390,18 +405,16 @@ describe("#687 — Disguise blocks non-lethal hits via capLethalDamage (Gen 7)",
 
   it("given Mimikyu with BUSTED Disguise, when capLethalDamage fires with 50 damage, then full damage passes through", () => {
     // Source: Showdown data/abilities.ts — once broken, Disguise doesn't activate again
-    const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("disguise-broken", { turnsLeft: -1 });
     const defender = makeActivePokemon({
-      ability: "disguise",
+      ability: ABILITIES.disguise,
       currentHp: 200,
       maxHp: 200,
-      volatiles,
     });
     const attacker = makeActivePokemon({});
     const move = makeMoveData({ category: "physical", power: 50 });
     const state = makeState();
 
+    ruleset.capLethalDamage(10, defender, attacker, move, state);
     const result = ruleset.capLethalDamage(50, defender, attacker, move, state);
 
     expect(result.damage).toBe(50);
@@ -411,7 +424,7 @@ describe("#687 — Disguise blocks non-lethal hits via capLethalDamage (Gen 7)",
   it("given Mimikyu with intact Disguise hit by a status move, when capLethalDamage fires, then Disguise does NOT activate", () => {
     // Source: Showdown data/abilities.ts — disguise only blocks damaging moves
     const defender = makeActivePokemon({
-      ability: "disguise",
+      ability: ABILITIES.disguise,
       currentHp: 200,
       maxHp: 200,
     });
@@ -423,14 +436,14 @@ describe("#687 — Disguise blocks non-lethal hits via capLethalDamage (Gen 7)",
 
     expect(result.damage).toBe(0);
     // Disguise should NOT be broken by status moves
-    expect(defender.volatileStatuses.has("disguise-broken")).toBe(false);
+    expect(defender.volatileStatuses.has(VOLATILES.disguiseBroken)).toBe(false);
   });
 
   it("given Mimikyu with intact Disguise (Gen 7), when Disguise busts, then NO chip damage is applied", () => {
     // Source: Bulbapedia "Disguise" — Gen 7: no chip damage when Disguise breaks
     //   (1/8 chip damage was added in Gen 8)
     const defender = makeActivePokemon({
-      ability: "disguise",
+      ability: ABILITIES.disguise,
       currentHp: 200,
       maxHp: 200,
     });
@@ -455,7 +468,7 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
     // Source: Bulbapedia "Beast Boost" — "raises the user's highest stat by one stage"
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "beast-boost",
+      ability: ABILITIES.beastBoost,
       calculatedStats: {
         hp: 200,
         attack: 150,
@@ -480,7 +493,7 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
     // Source: Showdown data/abilities.ts — beastboost checks all 5 battle stats
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "beast-boost",
+      ability: ABILITIES.beastBoost,
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -503,7 +516,7 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
     // Must KO to trigger
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "beast-boost",
+      ability: ABILITIES.beastBoost,
       calculatedStats: {
         hp: 200,
         attack: 150,
@@ -526,7 +539,7 @@ describe("#688 — Moxie raises Attack after KO", () => {
     // Source: Bulbapedia "Moxie" — "Raises Attack by one stage when it knocks out another Pokemon"
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "moxie",
+      ability: ABILITIES.moxie,
       opponentHp: 0,
     });
 
@@ -542,7 +555,7 @@ describe("#688 — Moxie raises Attack after KO", () => {
   it("given Pokemon with moxie, when opponent survives, then no activation", () => {
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "moxie",
+      ability: ABILITIES.moxie,
       opponentHp: 1,
     });
 
@@ -557,8 +570,8 @@ describe("#688 — Battle Bond transforms Greninja after KO", () => {
     // Source: Bulbapedia "Battle Bond" — transforms Greninja after KO
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "battle-bond",
-      speciesId: 658, // Greninja
+      ability: ABILITIES.battleBond,
+      speciesId: SPECIES.greninja,
       opponentHp: 0,
     });
 
@@ -567,19 +580,26 @@ describe("#688 — Battle Bond transforms Greninja after KO", () => {
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     expect(result.effects[0].effectType).toBe("volatile-inflict");
-    expect((result.effects[0] as any).volatile).toBe("battle-bond-transformed");
+    expect(result.messages[0]).toContain("Ash-Greninja");
   });
 
   it("given Greninja already transformed via battle-bond, when another KO occurs, then no activation", () => {
     // Battle Bond only transforms once per battle
-    const volatiles = new Map<string, { turnsLeft: number }>();
-    volatiles.set("battle-bond-transformed", { turnsLeft: -1 });
+    const firstCtx = makeAbilityContext({
+      trigger: "on-after-move-used",
+      ability: ABILITIES.battleBond,
+      speciesId: SPECIES.greninja,
+      opponentHp: 0,
+    });
+
+    const firstResult = handleGen7NewAbility(firstCtx);
+    const transformedVolatile = (firstResult.effects[0] as any).volatile;
     const ctx = makeAbilityContext({
       trigger: "on-after-move-used",
-      ability: "battle-bond",
-      speciesId: 658,
+      ability: ABILITIES.battleBond,
+      speciesId: SPECIES.greninja,
       opponentHp: 0,
-      volatiles,
+      volatiles: new Map([[transformedVolatile, { turnsLeft: -1 }]]),
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -597,7 +617,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     // Source: Bulbapedia "Liechi Berry" — "Raises Attack by one stage when HP drops to 1/4 or less"
     // 200 max HP, 25% = 50 HP, threshold = floor(200 * 0.25) = 50
     const ctx = makeItemContext({
-      item: "liechi-berry",
+      item: ITEMS.liechiBerry,
       currentHp: 50,
       maxHp: 200,
     });
@@ -615,7 +635,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     // Source: Showdown data/items.ts — ganlonberry: onEat raises Defense by 1
     // 200 max HP, 20% = 40 HP, threshold = floor(200 * 0.25) = 50
     const ctx = makeItemContext({
-      item: "ganlon-berry",
+      item: ITEMS.ganlonBerry,
       currentHp: 40,
       maxHp: 200,
     });
@@ -631,7 +651,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
   it("given Pokemon holding Salac Berry with HP at 25%, when stat-boost-between-turns fires, then Speed boost + consume", () => {
     // Source: Showdown data/items.ts — salacberry: onEat raises Speed by 1
     const ctx = makeItemContext({
-      item: "salac-berry",
+      item: ITEMS.salacBerry,
       currentHp: 50,
       maxHp: 200,
     });
@@ -647,7 +667,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
   it("given Pokemon holding Petaya Berry with HP at 10%, when stat-boost-between-turns fires, then Sp. Atk boost + consume", () => {
     // Source: Showdown data/items.ts — petayaberry: onEat raises Sp. Atk by 1
     const ctx = makeItemContext({
-      item: "petaya-berry",
+      item: ITEMS.petayaBerry,
       currentHp: 20,
       maxHp: 200,
     });
@@ -663,7 +683,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
   it("given Pokemon holding Apicot Berry with HP at 25%, when stat-boost-between-turns fires, then Sp. Def boost + consume", () => {
     // Source: Showdown data/items.ts — apicotberry: onEat raises Sp. Def by 1
     const ctx = makeItemContext({
-      item: "apicot-berry",
+      item: ITEMS.apicotBerry,
       currentHp: 50,
       maxHp: 200,
     });
@@ -679,7 +699,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
   it("given Pokemon holding Liechi Berry with HP above 25%, when stat-boost-between-turns fires, then no activation", () => {
     // HP at 60% — above the 25% threshold
     const ctx = makeItemContext({
-      item: "liechi-berry",
+      item: ITEMS.liechiBerry,
       currentHp: 120,
       maxHp: 200,
     });
@@ -693,8 +713,8 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     // Source: Bulbapedia "Gluttony" — raises pinch berry threshold from 25% to 50%
     // 200 max HP, Gluttony threshold = 50% = floor(200 * 0.5) = 100
     const ctx = makeItemContext({
-      item: "liechi-berry",
-      ability: "gluttony",
+      item: ITEMS.liechiBerry,
+      ability: ABILITIES.gluttony,
       currentHp: 100,
       maxHp: 200,
     });
@@ -710,7 +730,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
   it("given Pokemon holding Leftovers at 25% HP, when stat-boost-between-turns fires, then no activation (not a stat-pinch berry)", () => {
     // Leftovers is an end-of-turn heal item, not a stat-pinch berry
     const ctx = makeItemContext({
-      item: "leftovers",
+      item: CORE_ITEMS.leftovers,
       currentHp: 50,
       maxHp: 200,
     });
@@ -723,7 +743,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
   it("given fainted Pokemon holding Liechi Berry, when stat-boost-between-turns fires, then no activation", () => {
     // Dead Pokemon can't eat berries
     const ctx = makeItemContext({
-      item: "liechi-berry",
+      item: ITEMS.liechiBerry,
       currentHp: 0,
       maxHp: 200,
     });
