@@ -4,7 +4,12 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type {
+import {
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
   MoveData,
   PokemonInstance,
   PokemonType,
@@ -13,10 +18,20 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { applyMoveEffect, handleCustomEffect, type MutableResult } from "../../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 import { canInflictGen2Status } from "../../src/Gen2Status";
+
+const ITEMS = GEN2_ITEM_IDS;
+const MOVES = GEN2_MOVE_IDS;
+const SCREENS = CORE_SCREEN_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const STATUS = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -43,7 +58,7 @@ function createActivePokemon(opts: {
   spAttack: number;
   spDefense: number;
   types: PokemonType[];
-  status?: "burn" | "paralysis" | "sleep" | "poison" | "freeze" | null;
+  status?: (typeof STATUS)[keyof typeof STATUS] | null;
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
@@ -60,11 +75,11 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
     nickname: opts.nickname ?? null,
     level: opts.level,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
@@ -80,7 +95,7 @@ function createActivePokemon(opts: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -161,23 +176,23 @@ function createMove(
 /** All-neutral type chart for 17 Gen 2 types. */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    TYPES.normal,
+    TYPES.fire,
+    TYPES.water,
+    TYPES.electric,
+    TYPES.grass,
+    TYPES.ice,
+    TYPES.fighting,
+    TYPES.poison,
+    TYPES.ground,
+    TYPES.flying,
+    TYPES.psychic,
+    TYPES.bug,
+    TYPES.rock,
+    TYPES.ghost,
+    TYPES.dragon,
+    TYPES.dark,
+    TYPES.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -190,9 +205,9 @@ function createNeutralTypeChart(): TypeChart {
 }
 
 /** Minimal species data mock. */
-function createSpecies(types: PokemonType[] = ["normal"]) {
+function createSpecies(types: PokemonType[] = [TYPES.normal]) {
   return {
-    id: 1,
+    id: SPECIES.bulbasaur,
     name: "test",
     displayName: "Test",
     types,
@@ -291,7 +306,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["fighting"], // NOT Normal — avoids STAB
+        types: [TYPES.fighting], // NOT Normal — avoids STAB
       });
       const defender = createActivePokemon({
         level: 50,
@@ -299,11 +314,11 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 80);
+      const move = createMove(TYPES.normal, 80);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["fighting"]);
+      const species = createSpecies([TYPES.fighting]);
       const rng = createMockRng(255); // max roll
 
       // Without Reflect
@@ -320,7 +335,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // With Reflect
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
-        { type: "reflect", turnsLeft: 5 },
+        { type: SCREENS.reflect, turnsLeft: 5 },
       ]);
       const ctxWithReflect: DamageContext = {
         attacker,
@@ -351,7 +366,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -359,11 +374,11 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("psychic", 80, "special");
+      const move = createMove(TYPES.psychic, 80, "special");
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["psychic"]);
+      const species = createSpecies([TYPES.psychic]);
       const rng = createMockRng(255);
 
       // Without Light Screen
@@ -380,7 +395,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // With Light Screen
       const stateWithLS = createMockStateWithSides(attacker, defender, [
-        { type: "light-screen", turnsLeft: 5 },
+        { type: SCREENS.lightScreen, turnsLeft: 5 },
       ]);
       const ctxWithLS: DamageContext = {
         attacker,
@@ -410,7 +425,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -418,16 +433,16 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 80);
+      const move = createMove(TYPES.normal, 80);
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["normal"]);
+      const species = createSpecies([TYPES.normal]);
       const rng = createMockRng(255);
 
       // Crit WITH Reflect — screens should be bypassed
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
-        { type: "reflect", turnsLeft: 5 },
+        { type: SCREENS.reflect, turnsLeft: 5 },
       ]);
       const ctxCritReflect: DamageContext = {
         attacker,
@@ -464,7 +479,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["water"],
+        types: [TYPES.water],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -472,16 +487,16 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("water", 80, "special");
+      const move = createMove(TYPES.water, 80, "special");
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["water"]);
+      const species = createSpecies([TYPES.water]);
       const rng = createMockRng(255);
 
       // Crit WITH Light Screen — screens should be bypassed
       const stateWithLS = createMockStateWithSides(attacker, defender, [
-        { type: "light-screen", turnsLeft: 5 },
+        { type: SCREENS.lightScreen, turnsLeft: 5 },
       ]);
       const ctxCritLS: DamageContext = {
         attacker,
@@ -517,7 +532,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -525,16 +540,16 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       // Psychic is special in Gen 2
-      const move = createMove("psychic", 80, "special");
+      const move = createMove(TYPES.psychic, 80, "special");
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["psychic"]);
+      const species = createSpecies([TYPES.psychic]);
 
       // With Reflect (should not affect special moves)
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
-        { type: "reflect", turnsLeft: 5 },
+        { type: SCREENS.reflect, turnsLeft: 5 },
       ]);
       const ctxReflect: DamageContext = {
         attacker,
@@ -577,7 +592,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const attacker = createActivePokemon({
         level: 50,
@@ -585,13 +600,13 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["fire"],
+        types: [TYPES.fire],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 3 },
+        { type: MOVES.safeguard, turnsLeft: 3 },
       ]);
 
-      const canBurn = canInflictGen2Status("burn", defender, state);
+      const canBurn = canInflictGen2Status(STATUS.burn, defender, state);
       expect(canBurn).toBe(false);
     });
 
@@ -603,7 +618,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const attacker = createActivePokemon({
         level: 50,
@@ -611,13 +626,13 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["electric"],
+        types: [TYPES.electric],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 5 },
+        { type: MOVES.safeguard, turnsLeft: 5 },
       ]);
 
-      const canParalyze = canInflictGen2Status("paralysis", defender, state);
+      const canParalyze = canInflictGen2Status(STATUS.paralysis, defender, state);
       expect(canParalyze).toBe(false);
     });
 
@@ -629,7 +644,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const attacker = createActivePokemon({
         level: 50,
@@ -637,13 +652,13 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 2 },
+        { type: MOVES.safeguard, turnsLeft: 2 },
       ]);
 
-      const canSleep = canInflictGen2Status("sleep", defender, state);
+      const canSleep = canInflictGen2Status(STATUS.sleep, defender, state);
       expect(canSleep).toBe(false);
     });
 
@@ -655,7 +670,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const attacker = createActivePokemon({
         level: 50,
@@ -663,13 +678,13 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["poison"],
+        types: [TYPES.poison],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 4 },
+        { type: MOVES.safeguard, turnsLeft: 4 },
       ]);
 
-      const canPoison = canInflictGen2Status("poison", defender, state);
+      const canPoison = canInflictGen2Status(STATUS.poison, defender, state);
       expect(canPoison).toBe(false);
     });
 
@@ -681,7 +696,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const attacker = createActivePokemon({
         level: 50,
@@ -689,11 +704,11 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["fire"],
+        types: [TYPES.fire],
       });
       const state = createMockStateWithSides(attacker, defender, []);
 
-      const canBurn = canInflictGen2Status("burn", defender, state);
+      const canBurn = canInflictGen2Status(STATUS.burn, defender, state);
       expect(canBurn).toBe(true);
     });
 
@@ -707,7 +722,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Attacker",
       });
       const defender = createActivePokemon({
@@ -716,12 +731,12 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Defender",
       });
 
       const stateWithSafeguard = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 5 },
+        { type: MOVES.safeguard, turnsLeft: 5 },
       ]);
 
       // Growl-like effect: stat-change targeting defender
@@ -731,7 +746,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         chance: 100,
         changes: [{ stat: "attack" as const, stages: -1 }],
       };
-      const move = createMove("normal", 0, "status");
+      const move = createMove(TYPES.normal, 0, "status");
       const result = createEmptyResult();
       const context: MoveEffectContext = {
         attacker,
@@ -764,7 +779,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
         nickname: "Alakazam",
       });
       const defender = createActivePokemon({
@@ -773,16 +788,16 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Snorlax",
       });
-      const move = createMove("psychic", 0, "status", { id: "reflect" });
+      const move = createMove(TYPES.psychic, 0, "status", { id: SCREENS.reflect });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
       const screenEffect = {
         type: "screen" as const,
-        screen: "reflect" as ScreenType,
+        screen: SCREENS.reflect as ScreenType,
         turns: 5,
       };
 
@@ -796,7 +811,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       });
 
       expect(result.screenSet).toEqual({
-        screen: "reflect",
+        screen: SCREENS.reflect,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -810,7 +825,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -818,15 +833,15 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("psychic", 0, "status", { id: "light-screen" });
+      const move = createMove(TYPES.psychic, 0, "status", { id: SCREENS.lightScreen });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
       const screenEffect = {
         type: "screen" as const,
-        screen: "light-screen" as ScreenType,
+        screen: SCREENS.lightScreen as ScreenType,
         turns: 5,
       };
 
@@ -840,7 +855,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       });
 
       expect(result.screenSet).toEqual({
-        screen: "light-screen",
+        screen: SCREENS.lightScreen,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -861,7 +876,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Blissey",
       });
       const defender = createActivePokemon({
@@ -870,9 +885,9 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "safeguard" });
+      const move = createMove(TYPES.normal, 0, "status", { id: MOVES.safeguard });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
@@ -886,7 +901,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       });
 
       expect(result.screenSet).toEqual({
-        screen: "safeguard",
+        screen: MOVES.safeguard,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -901,7 +916,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Blissey",
       });
       const defender = createActivePokemon({
@@ -910,9 +925,9 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "mean-look" });
+      const move = createMove(TYPES.normal, 0, "status", { id: MOVES.meanLook });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
@@ -927,7 +942,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // Mean Look sets trapped volatile, not a screen
       expect(result.screenSet).toBeUndefined();
-      expect(result.volatileInflicted).toBe("trapped");
+      expect(result.volatileInflicted).toBe(VOLATILES.trapped);
     });
 
     it("given safeguard move with effect:null, when executeMoveEffect is called, then result.screenSet is populated", () => {
@@ -942,7 +957,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Blissey",
       });
       const defender = createActivePokemon({
@@ -951,9 +966,9 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "safeguard" });
+      const move = createMove(TYPES.normal, 0, "status", { id: MOVES.safeguard });
       const state = createMockStateWithSides(attacker, defender, []);
       const context: MoveEffectContext = {
         attacker,
@@ -967,7 +982,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       const result = ruleset.executeMoveEffect(context);
 
       expect(result.screenSet).toEqual({
-        screen: "safeguard",
+        screen: MOVES.safeguard,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -985,7 +1000,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       const defender = createActivePokemon({
         level: 50,
@@ -993,9 +1008,9 @@ describe("Gen 2 Screens and Safeguard", () => {
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "mean-look" });
+      const move = createMove(TYPES.normal, 0, "status", { id: MOVES.meanLook });
       const state = createMockStateWithSides(attacker, defender, []);
       const context: MoveEffectContext = {
         attacker,
@@ -1008,7 +1023,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       const result = ruleset.executeMoveEffect(context);
 
-      expect(result.volatileInflicted).toBe("trapped");
+      expect(result.volatileInflicted).toBe(VOLATILES.trapped);
     });
   });
 });

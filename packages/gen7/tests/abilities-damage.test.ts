@@ -1,6 +1,16 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MECHANIC_MULTIPLIERS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+  type MoveData,
+  type MoveEffect,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   getAteAbilityOverride,
@@ -18,6 +28,19 @@ import {
   sheerForceSuppressesLifeOrb,
   sturdyBlocksOHKO,
 } from "../src/Gen7AbilitiesDamage";
+import {
+  createGen7DataManager,
+  GEN7_ABILITY_IDS,
+  GEN7_SPECIES_IDS,
+} from "../src";
+
+const dataManager = createGen7DataManager();
+const A = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS };
+const SPECIES = GEN7_SPECIES_IDS;
+const M = CORE_MOVE_IDS;
+const S = CORE_STATUS_IDS;
+const T = CORE_TYPE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 
 // ---------------------------------------------------------------------------
 // Helper factories
@@ -49,16 +72,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? A.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -83,8 +106,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [T.normal],
+    ability: overrides.ability ?? A.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -116,14 +139,16 @@ function makeMove(overrides: {
   effect?: MoveData["effect"];
   hasCrashDamage?: boolean;
 }): MoveData {
+  const moveId = overrides.id ?? M.tackle;
+  const sourceMove = dataManager.getMove(moveId);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
+    id: moveId,
+    displayName: sourceMove.displayName,
+    type: overrides.type ?? sourceMove.type,
     category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
+    power: overrides.power ?? sourceMove.power,
+    accuracy: sourceMove.accuracy,
+    pp: sourceMove.pp,
     priority: 0,
     target: "adjacent-foe",
     flags: {
@@ -168,7 +193,7 @@ function makeState(overrides?: {
     generation: 7,
     turnNumber: 1,
     sides: [{}, {}],
-  } as unknown as BattleState;
+    } as unknown as BattleState;
 }
 
 function makeCtx(overrides: {
@@ -184,14 +209,14 @@ function makeCtx(overrides: {
 }): AbilityContext {
   const hp = overrides.maxHp ?? 200;
   return {
-    pokemon: makeActive({
-      ability: overrides.ability,
-      currentHp: overrides.currentHp ?? hp,
-      hp: hp,
-      status: overrides.status ?? null,
-      types: overrides.types ?? ["normal"],
-      nickname: overrides.nickname ?? null,
-    }),
+      pokemon: makeActive({
+        ability: overrides.ability,
+        currentHp: overrides.currentHp ?? hp,
+        hp: hp,
+        status: overrides.status ?? null,
+      types: overrides.types ?? [T.normal],
+        nickname: overrides.nickname ?? null,
+      }),
     opponent: overrides.opponent ?? makeActive({}),
     state: makeState(
       overrides.weather ? { weather: { type: overrides.weather, turnsLeft: 5, source: "" } } : {},
@@ -213,7 +238,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a contact move, when Tough Claws is active, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- toughclaws: move.flags.contact
       const ctx = makeCtx({
-        ability: "tough-claws",
+      ability: A.toughClaws,
         move: makeMove({ flags: { contact: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -223,7 +248,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a non-contact move, when Tough Claws is active, then returns activated:false", () => {
       // Source: Showdown data/abilities.ts -- toughclaws: only contact moves
       const ctx = makeCtx({
-        ability: "tough-claws",
+      ability: A.toughClaws,
         move: makeMove({ flags: { contact: false } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -233,13 +258,13 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Tough Claws multiplier helper, when contact move, then returns 5325/4096 (~1.3x)", () => {
       // Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, 4096])
       // 5325 / 4096 = 1.2998046875
-      const mult = getToughClawsMultiplier("tough-claws", true);
+      const mult = getToughClawsMultiplier(A.toughClaws, true);
       expect(mult).toBe(5325 / 4096);
     });
 
     it("given Tough Claws multiplier helper, when non-contact, then returns 1", () => {
-      const mult = getToughClawsMultiplier("tough-claws", false);
-      expect(mult).toBe(1);
+      const mult = getToughClawsMultiplier(A.toughClaws, false);
+      expect(mult).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
     });
   });
 
@@ -249,7 +274,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given full HP, when Multiscale is active, then returns activated:true with damage-reduction", () => {
       // Source: Showdown data/abilities.ts -- multiscale: at full HP, halve damage
       const ctx = makeCtx({
-        ability: "multiscale",
+        ability: A.multiscale,
         currentHp: 200,
         maxHp: 200,
         move: makeMove({}),
@@ -262,7 +287,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given HP below max, when Multiscale is active, then returns activated:false", () => {
       // Source: Showdown data/abilities.ts -- multiscale: only at full HP
       const ctx = makeCtx({
-        ability: "multiscale",
+        ability: A.multiscale,
         currentHp: 150,
         maxHp: 200,
         move: makeMove({}),
@@ -273,13 +298,13 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Multiscale multiplier helper at full HP, then returns 0.5", () => {
       // Source: Showdown data/abilities.ts -- multiscale: chainModify(0.5) at full HP
-      const mult = getMultiscaleMultiplier("multiscale", 200, 200);
+      const mult = getMultiscaleMultiplier(A.multiscale, 200, 200);
       expect(mult).toBe(0.5);
     });
 
     it("given Multiscale multiplier helper below full HP, then returns 1", () => {
-      const mult = getMultiscaleMultiplier("multiscale", 150, 200);
-      expect(mult).toBe(1);
+      const mult = getMultiscaleMultiplier(A.multiscale, 150, 200);
+      expect(mult).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
     });
   });
 
@@ -289,7 +314,7 @@ describe("Gen 7 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- shadowshield: same as multiscale
       // Source: Bulbapedia "Shadow Shield" -- "same as Multiscale"
       const ctx = makeCtx({
-        ability: "shadow-shield",
+        ability: A.shadowShield,
         currentHp: 200,
         maxHp: 200,
         move: makeMove({}),
@@ -301,7 +326,7 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Shadow Shield multiplier helper at full HP, then returns 0.5", () => {
       // Source: Showdown data/abilities.ts -- shadowshield: same multiplier as multiscale
-      const mult = getMultiscaleMultiplier("shadow-shield", 200, 200);
+      const mult = getMultiscaleMultiplier(A.shadowShield, 200, 200);
       expect(mult).toBe(0.5);
     });
   });
@@ -312,7 +337,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Solid Rock ability, when triggered, then returns activated:true with damage-reduction", () => {
       // Source: Showdown data/abilities.ts -- solidrock: 0.75x super-effective damage
       const ctx = makeCtx({
-        ability: "solid-rock",
+        ability: A.solidRock,
         move: makeMove({}),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -323,7 +348,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Filter ability, when triggered, then returns activated:true with damage-reduction", () => {
       // Source: Showdown data/abilities.ts -- filter: same as solidrock
       const ctx = makeCtx({
-        ability: "filter",
+        ability: A.filter,
         move: makeMove({}),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -339,7 +364,7 @@ describe("Gen 7 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- prismarmor: same as solidrock/filter
       // Source: Bulbapedia "Prism Armor" -- "reduces super-effective damage by 25%"
       const ctx = makeCtx({
-        ability: "prism-armor",
+        ability: A.prismArmor,
         move: makeMove({}),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -351,7 +376,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Prism Armor, then it has a distinct message from Solid Rock/Filter", () => {
       // Source: Showdown -- Prism Armor has its own message
       const ctx = makeCtx({
-        ability: "prism-armor",
+        ability: A.prismArmor,
         nickname: "Necrozma",
         move: makeMove({}),
       });
@@ -367,11 +392,11 @@ describe("Gen 7 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- sheerforce: boosts moves with secondary effects
       const statusChanceEffect: MoveEffect = {
         type: "status-chance",
-        status: "burn",
+        status: S.burn,
         chance: 30,
       };
       const ctx = makeCtx({
-        ability: "sheer-force",
+        ability: A.sheerForce,
         move: makeMove({ effect: statusChanceEffect }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -381,7 +406,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a move without secondary effects, when Sheer Force is active, then returns activated:false", () => {
       // Source: Showdown data/abilities.ts -- sheerforce: only secondary-effect moves
       const ctx = makeCtx({
-        ability: "sheer-force",
+        ability: A.sheerForce,
         move: makeMove({ effect: null }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -390,8 +415,8 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Sheer Force multiplier helper with secondary-effect move, then returns 5325/4096 (~1.3x)", () => {
       // Source: Showdown data/abilities.ts -- sheerforce: chainModify([5325, 4096])
-      const effect: MoveEffect = { type: "status-chance", status: "burn", chance: 30 };
-      const mult = getSheerForceMultiplier("sheer-force", effect);
+      const effect: MoveEffect = { type: "status-chance", status: S.burn, chance: 30 };
+      const mult = getSheerForceMultiplier(A.sheerForce, effect);
       expect(mult).toBe(5325 / 4096);
     });
 
@@ -399,14 +424,14 @@ describe("Gen 7 Damage Abilities", () => {
       // Tri-Attack is on the Sheer Force whitelist because its secondary
       // is implemented as an onHit function in Showdown.
       // Source: Showdown data/moves.ts -- triattack: secondary.onHit
-      const mult = getSheerForceMultiplier("sheer-force", null, "tri-attack");
+      const mult = getSheerForceMultiplier(A.sheerForce, null, M.triAttack);
       expect(mult).toBe(5325 / 4096);
     });
 
     it("given Sheer Force with secondary-effect move, then suppresses Life Orb recoil", () => {
       // Source: Showdown scripts.ts -- if move.hasSheerForce, skip Life Orb recoil
-      const effect: MoveEffect = { type: "status-chance", status: "burn", chance: 10 };
-      expect(sheerForceSuppressesLifeOrb("sheer-force", effect)).toBe(true);
+      const effect: MoveEffect = { type: "status-chance", status: S.burn, chance: 10 };
+      expect(sheerForceSuppressesLifeOrb(A.sheerForce, effect)).toBe(true);
     });
   });
 
@@ -416,7 +441,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a physical move, when Fur Coat is active, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- furcoat: physical only
       const ctx = makeCtx({
-        ability: "fur-coat",
+        ability: A.furCoat,
         move: makeMove({ category: "physical" }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -427,7 +452,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a special move, when Fur Coat is active, then returns activated:false", () => {
       // Source: Showdown data/abilities.ts -- furcoat: physical only
       const ctx = makeCtx({
-        ability: "fur-coat",
+        ability: A.furCoat,
         move: makeMove({ category: "special" }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -437,13 +462,13 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Fur Coat multiplier helper with physical move, then returns 2.0", () => {
       // Source: Showdown data/abilities.ts -- furcoat: chainModify(2) for physical Defense
       // This means the defense is DOUBLED, effectively halving physical damage.
-      const mult = getFurCoatMultiplier("fur-coat", true);
+      const mult = getFurCoatMultiplier(A.furCoat, true);
       expect(mult).toBe(2);
     });
 
     it("given Fur Coat multiplier helper with special move, then returns 1.0", () => {
-      const mult = getFurCoatMultiplier("fur-coat", false);
-      expect(mult).toBe(1);
+      const mult = getFurCoatMultiplier(A.furCoat, false);
+      expect(mult).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
     });
   });
 
@@ -453,7 +478,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a bite move, when Strong Jaw is active, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- strongjaw: move.flags.bite
       const ctx = makeCtx({
-        ability: "strong-jaw",
+        ability: A.strongJaw,
         move: makeMove({ flags: { bite: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -462,8 +487,8 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Strong Jaw multiplier helper with bite move, then returns 1.5", () => {
       // Source: Showdown data/abilities.ts -- strongjaw: chainModify(1.5)
-      const mult = getStrongJawMultiplier("strong-jaw", true);
-      expect(mult).toBe(1.5);
+      const mult = getStrongJawMultiplier(A.strongJaw, true);
+      expect(mult).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     });
   });
 
@@ -473,7 +498,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a pulse move, when Mega Launcher is active, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- megalauncher: move.flags.pulse
       const ctx = makeCtx({
-        ability: "mega-launcher",
+        ability: A.megaLauncher,
         move: makeMove({ flags: { pulse: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -482,8 +507,8 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Mega Launcher multiplier helper with pulse move, then returns 1.5", () => {
       // Source: Showdown data/abilities.ts -- megalauncher: chainModify(1.5)
-      const mult = getMegaLauncherMultiplier("mega-launcher", true);
-      expect(mult).toBe(1.5);
+      const mult = getMegaLauncherMultiplier(A.megaLauncher, true);
+      expect(mult).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     });
   });
 
@@ -493,52 +518,52 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Pixilate with Normal-type move, then returns type-change to fairy", () => {
       // Source: Showdown data/abilities.ts -- pixilate: Normal -> Fairy
       const ctx = makeCtx({
-        ability: "pixilate",
-        move: makeMove({ type: "normal" }),
+        ability: A.pixilate,
+        move: makeMove({ type: T.normal }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0].effectType).toBe("type-change");
       if (result.effects[0].effectType === "type-change") {
-        expect(result.effects[0].types).toEqual(["fairy"]);
+        expect(result.effects[0].types).toEqual([T.fairy]);
       }
     });
 
     it("given getAteAbilityOverride for Pixilate in Gen 7, then multiplier is 4915/4096 (~1.2x)", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 pixilate: chainModify([4915, 4096])
       // 4915 / 4096 = 1.19995117... (the Gen 7 nerf from 1.3x)
-      const override = getAteAbilityOverride("pixilate", "normal");
+      const override = getAteAbilityOverride(A.pixilate, T.normal);
       expect(override).not.toBeNull();
-      expect(override!.type).toBe("fairy");
+      expect(override!.type).toBe(T.fairy);
       expect(override!.multiplier).toBe(4915 / 4096);
     });
 
     it("given getAteAbilityOverride for Galvanize (new Gen 7), then Normal -> Electric + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- galvanize: Normal -> Electric + 1.2x
       // Source: Bulbapedia "Galvanize" -- introduced in Gen 7
-      const override = getAteAbilityOverride("galvanize", "normal");
+      const override = getAteAbilityOverride(A.galvanize, T.normal);
       expect(override).not.toBeNull();
-      expect(override!.type).toBe("electric");
+      expect(override!.type).toBe(T.electric);
       expect(override!.multiplier).toBe(4915 / 4096);
     });
 
     it("given getAteAbilityOverride with non-Normal move, then returns null", () => {
       // -ate abilities only convert Normal-type moves
-      const override = getAteAbilityOverride("pixilate", "fire");
+      const override = getAteAbilityOverride(A.pixilate, T.fire);
       expect(override).toBeNull();
     });
 
     it("given getAteAbilityOverride for Aerilate, then Normal -> Flying + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 aerilate: Normal -> Flying
-      const override = getAteAbilityOverride("aerilate", "normal");
-      expect(override!.type).toBe("flying");
+      const override = getAteAbilityOverride(A.aerilate, T.normal);
+      expect(override!.type).toBe(T.flying);
       expect(override!.multiplier).toBe(4915 / 4096);
     });
 
     it("given getAteAbilityOverride for Refrigerate, then Normal -> Ice + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 refrigerate: Normal -> Ice
-      const override = getAteAbilityOverride("refrigerate", "normal");
-      expect(override!.type).toBe("ice");
+      const override = getAteAbilityOverride(A.refrigerate, T.normal);
+      expect(override!.type).toBe(T.ice);
       expect(override!.multiplier).toBe(4915 / 4096);
     });
   });
@@ -554,18 +579,18 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Parental Bond with a powered move, then isParentalBondEligible returns true", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: damaging moves
-      expect(isParentalBondEligible("parental-bond", 100, null)).toBe(true);
+      expect(isParentalBondEligible(A.parentalBond, 100, null)).toBe(true);
     });
 
     it("given Parental Bond with a multi-hit move, then isParentalBondEligible returns false", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: not multi-hit
-      expect(isParentalBondEligible("parental-bond", 100, "multi-hit")).toBe(false);
+      expect(isParentalBondEligible(A.parentalBond, 100, "multi-hit")).toBe(false);
     });
 
     it("given Parental Bond handler with a powered move, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: damaging moves
       const ctx = makeCtx({
-        ability: "parental-bond",
+        ability: A.parentalBond,
         move: makeMove({ power: 100 }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -580,7 +605,7 @@ describe("Gen 7 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- sturdy: blocks OHKO moves
       const ohkoEffect: MoveEffect = { type: "ohko" };
       const ctx = makeCtx({
-        ability: "sturdy",
+        ability: A.sturdy,
         move: makeMove({ effect: ohkoEffect }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
@@ -590,24 +615,24 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Sturdy damage cap helper at full HP with lethal damage, then returns maxHp - 1", () => {
       // Source: Showdown data/abilities.ts -- sturdy: cap at 1 HP from full
-      const capped = getSturdyDamageCap("sturdy", 300, 200, 200);
+      const capped = getSturdyDamageCap(A.sturdy, 300, 200, 200);
       expect(capped).toBe(199);
     });
 
     it("given Sturdy damage cap helper below full HP, then returns unmodified damage", () => {
       // Source: Showdown data/abilities.ts -- sturdy: only at full HP
-      const capped = getSturdyDamageCap("sturdy", 300, 150, 200);
+      const capped = getSturdyDamageCap(A.sturdy, 300, 150, 200);
       expect(capped).toBe(300);
     });
 
     it("given sturdyBlocksOHKO with OHKO effect, then returns true", () => {
       const ohkoEffect: MoveEffect = { type: "ohko" };
-      expect(sturdyBlocksOHKO("sturdy", ohkoEffect)).toBe(true);
+      expect(sturdyBlocksOHKO(A.sturdy, ohkoEffect)).toBe(true);
     });
 
     it("given sturdyBlocksOHKO with non-OHKO effect, then returns false", () => {
       const normalEffect: MoveEffect = { type: "recoil", recoilPercent: 25 };
-      expect(sturdyBlocksOHKO("sturdy", normalEffect)).toBe(false);
+      expect(sturdyBlocksOHKO(A.sturdy, normalEffect)).toBe(false);
     });
   });
 
@@ -617,7 +642,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given Sniper ability, when triggered, then always returns activated:true", () => {
       // Sniper just signals activation; damage calc handles the 2.25x multiplier
       // Source: Showdown data/abilities.ts -- sniper: crit 1.5x * 1.5x = 2.25x
-      const ctx = makeCtx({ ability: "sniper" });
+      const ctx = makeCtx({ ability: A.sniper });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
@@ -628,7 +653,7 @@ describe("Gen 7 Damage Abilities", () => {
   describe("Tinted Lens", () => {
     it("given Tinted Lens ability, when triggered, then always returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- tintedlens: NVE moves deal 2x
-      const ctx = makeCtx({ ability: "tinted-lens" });
+      const ctx = makeCtx({ ability: A.tintedLens });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
     });
@@ -640,7 +665,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given a punch move, when Iron Fist is active, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- ironfist: move.flags.punch
       const ctx = makeCtx({
-        ability: "iron-fist",
+        ability: A.ironFist,
         move: makeMove({ flags: { punch: true } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -649,7 +674,7 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given a non-punch move, when Iron Fist is active, then returns activated:false", () => {
       const ctx = makeCtx({
-        ability: "iron-fist",
+        ability: A.ironFist,
         move: makeMove({ flags: { punch: false } }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -664,7 +689,7 @@ describe("Gen 7 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- reckless: move has recoil
       const recoilEffect: MoveEffect = { type: "recoil", recoilPercent: 33 };
       const ctx = makeCtx({
-        ability: "reckless",
+        ability: A.reckless,
         move: makeMove({ effect: recoilEffect }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -673,7 +698,7 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given a non-recoil move, when Reckless is active, then returns activated:false", () => {
       const ctx = makeCtx({
-        ability: "reckless",
+        ability: A.reckless,
         move: makeMove({ effect: null }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -687,7 +712,7 @@ describe("Gen 7 Damage Abilities", () => {
     it("given opponent has already moved, when Analytic is active, then returns activated:true", () => {
       // Source: Showdown data/abilities.ts -- analytic: if target already moved
       const ctx = makeCtx({
-        ability: "analytic",
+        ability: A.analytic,
         move: makeMove({}),
         opponent: makeActive({ movedThisTurn: true }),
       });
@@ -697,7 +722,7 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given opponent has not moved yet, when Analytic is active, then returns activated:false", () => {
       const ctx = makeCtx({
-        ability: "analytic",
+        ability: A.analytic,
         move: makeMove({}),
         opponent: makeActive({ movedThisTurn: false }),
       });

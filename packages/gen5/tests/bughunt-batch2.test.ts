@@ -7,14 +7,32 @@ import type {
 import type {
   EntryHazardType,
   Gender,
+  PrimaryStatus,
   PokemonInstance,
   PokemonType,
-  VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_IDS,
+  CORE_HAZARD_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
 import { applyGen5EntryHazards } from "../src/Gen5EntryHazards";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
+import { GEN5_ABILITY_IDS, GEN5_ITEM_IDS, GEN5_SPECIES_IDS } from "../src";
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS };
+const ITEMS = GEN5_ITEM_IDS;
+const SPECIES = GEN5_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const HAZARDS = CORE_HAZARD_IDS;
+const DEFAULT_NATURE = ALL_NATURES[0].id;
+const DEFAULT_POKEBALL = ITEMS.pokeBall;
+const HAZARD_STATUS_SOURCE = "hazard-status-source";
 
 /**
  * Bughunt batch 2 regression tests.
@@ -35,7 +53,7 @@ function makePokemonInstance(overrides: {
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   gender?: Gender;
@@ -43,11 +61,11 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: overrides.speciesId ?? 1,
+    speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
@@ -63,7 +81,7 @@ function makePokemonInstance(overrides: {
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: DEFAULT_POKEBALL,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -80,7 +98,7 @@ function makeActivePokemon(overrides: {
   types?: PokemonType[];
   speciesId?: number;
   nickname?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   heldItem?: string | null;
@@ -110,7 +128,7 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
+    types: overrides.types ?? [TYPES.normal],
     ability: overrides.ability ?? "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -186,7 +204,7 @@ function makeAbilityContext(opts: {
   trigger: string;
   types?: PokemonType[];
   opponent?: ReturnType<typeof makeActivePokemon>;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   currentHp?: number;
   maxHp?: number;
   rngNextValues?: number[];
@@ -239,16 +257,16 @@ describe("#650 — Magic Guard + Poison-type Toxic Spikes absorption", () => {
     //   Toxic Spikes, removing them from the field."
     const pokemon = makeActivePokemon({
       maxHp: 200,
-      types: ["poison"],
-      ability: "magic-guard",
+      types: [TYPES.poison],
+      ability: ABILITIES.magicGuard,
     });
-    const side = makeHazardSide([{ type: "toxic-spikes", layers: 2 }]);
+    const side = makeHazardSide([{ type: HAZARDS.toxicSpikes, layers: 2 }]);
     const state = makeBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
 
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
-    expect(result.hazardsToRemove).toEqual(["toxic-spikes"]);
+    expect(result.hazardsToRemove).toEqual([HAZARDS.toxicSpikes]);
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]).toContain("absorbed the poison spikes");
   });
@@ -258,26 +276,26 @@ describe("#650 — Magic Guard + Poison-type Toxic Spikes absorption", () => {
     // Gravity makes the Pokemon grounded, so Toxic Spikes can be absorbed.
     const pokemon = makeActivePokemon({
       maxHp: 200,
-      types: ["poison", "flying"],
-      ability: "magic-guard",
+      types: [TYPES.poison, TYPES.flying],
+      ability: ABILITIES.magicGuard,
     });
-    const side = makeHazardSide([{ type: "toxic-spikes", layers: 1 }]);
+    const side = makeHazardSide([{ type: HAZARDS.toxicSpikes, layers: 1 }]);
     const state = makeBattleState(true); // gravity active
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
 
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
-    expect(result.hazardsToRemove).toEqual(["toxic-spikes"]);
+    expect(result.hazardsToRemove).toEqual([HAZARDS.toxicSpikes]);
   });
 
   it("given a Normal-type with Magic Guard, when switching into Toxic Spikes, then does NOT absorb hazard", () => {
     // Source: Showdown — only Poison-types absorb Toxic Spikes; other types just get immunity from Magic Guard
     const pokemon = makeActivePokemon({
       maxHp: 200,
-      types: ["normal"],
-      ability: "magic-guard",
+      types: [TYPES.normal],
+      ability: ABILITIES.magicGuard,
     });
-    const side = makeHazardSide([{ type: "toxic-spikes", layers: 2 }]);
+    const side = makeHazardSide([{ type: HAZARDS.toxicSpikes, layers: 2 }]);
     const state = makeBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
 
@@ -298,19 +316,19 @@ describe("#649 — UNSUPPRESSABLE_ABILITIES scope in Gen 5", () => {
     //   (only Multitype and Zen Mode are truly unsuppressable in Gen 5)
     // Source: Bulbapedia — Mummy: "Cannot overwrite Multitype" (Gen 5); Wonder Guard not listed
     const defender = makeActivePokemon({
-      ability: "mummy",
-      types: ["ghost"],
+      ability: ABILITIES.mummy,
+      types: [TYPES.ghost],
       nickname: "Cofagrigus",
     });
     const attacker = makeActivePokemon({
-      ability: "wonder-guard",
-      types: ["bug", "ghost"],
+      ability: ABILITIES.wonderGuard,
+      types: [TYPES.bug, TYPES.ghost],
       nickname: "Shedinja",
     });
     const ctx = makeAbilityContext({
-      ability: "mummy",
+      ability: ABILITIES.mummy,
       trigger: "on-contact",
-      types: ["ghost"],
+      types: [TYPES.ghost],
     });
     // Inject the attacker as the opponent in the context
     (ctx as Record<string, unknown>).pokemon = defender;
@@ -321,7 +339,7 @@ describe("#649 — UNSUPPRESSABLE_ABILITIES scope in Gen 5", () => {
     expect(result.effects[0]).toEqual({
       effectType: "ability-change",
       target: "opponent",
-      newAbility: "mummy",
+      newAbility: ABILITIES.mummy,
     });
   });
 
@@ -329,19 +347,19 @@ describe("#649 — UNSUPPRESSABLE_ABILITIES scope in Gen 5", () => {
     // Source: Showdown data/abilities.ts — Gen 5: Truant CAN be overwritten by Mummy
     //   (Truant was only made unsuppressable in later gens, not Gen 5)
     const defender = makeActivePokemon({
-      ability: "mummy",
-      types: ["ghost"],
+      ability: ABILITIES.mummy,
+      types: [TYPES.ghost],
       nickname: "Cofagrigus",
     });
     const attacker = makeActivePokemon({
-      ability: "truant",
-      types: ["normal"],
+      ability: ABILITIES.truant,
+      types: [TYPES.normal],
       nickname: "Slaking",
     });
     const ctx = makeAbilityContext({
-      ability: "mummy",
+      ability: ABILITIES.mummy,
       trigger: "on-contact",
-      types: ["ghost"],
+      types: [TYPES.ghost],
     });
     (ctx as Record<string, unknown>).pokemon = defender;
     (ctx as Record<string, unknown>).opponent = attacker;
@@ -351,7 +369,7 @@ describe("#649 — UNSUPPRESSABLE_ABILITIES scope in Gen 5", () => {
     expect(result.effects[0]).toEqual({
       effectType: "ability-change",
       target: "opponent",
-      newAbility: "mummy",
+      newAbility: ABILITIES.mummy,
     });
   });
 
@@ -359,19 +377,19 @@ describe("#649 — UNSUPPRESSABLE_ABILITIES scope in Gen 5", () => {
     // Source: Showdown data/abilities.ts — Multitype is unsuppressable in Gen 5
     // Source: Bulbapedia — Multitype: "Cannot be overwritten by other Abilities"
     const defender = makeActivePokemon({
-      ability: "mummy",
-      types: ["ghost"],
+      ability: ABILITIES.mummy,
+      types: [TYPES.ghost],
       nickname: "Cofagrigus",
     });
     const attacker = makeActivePokemon({
-      ability: "multitype",
-      types: ["normal"],
+      ability: ABILITIES.multitype,
+      types: [TYPES.normal],
       nickname: "Arceus",
     });
     const ctx = makeAbilityContext({
-      ability: "mummy",
+      ability: ABILITIES.mummy,
       trigger: "on-contact",
-      types: ["ghost"],
+      types: [TYPES.ghost],
     });
     (ctx as Record<string, unknown>).pokemon = defender;
     (ctx as Record<string, unknown>).opponent = attacker;
@@ -384,19 +402,19 @@ describe("#649 — UNSUPPRESSABLE_ABILITIES scope in Gen 5", () => {
     // Source: Showdown data/abilities.ts — Zen Mode is unsuppressable in Gen 5
     // Source: Bulbapedia — Zen Mode: "Cannot be suppressed"
     const defender = makeActivePokemon({
-      ability: "mummy",
-      types: ["ghost"],
+      ability: ABILITIES.mummy,
+      types: [TYPES.ghost],
       nickname: "Cofagrigus",
     });
     const attacker = makeActivePokemon({
-      ability: "zen-mode",
-      types: ["fire"],
+      ability: ABILITIES.zenMode,
+      types: [TYPES.fire],
       nickname: "Darmanitan",
     });
     const ctx = makeAbilityContext({
-      ability: "mummy",
+      ability: ABILITIES.mummy,
       trigger: "on-contact",
-      types: ["ghost"],
+      types: [TYPES.ghost],
     });
     (ctx as Record<string, unknown>).pokemon = defender;
     (ctx as Record<string, unknown>).opponent = attacker;
@@ -415,11 +433,11 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     // Source: Showdown data/abilities.ts — effectspore: this.random(100)
     //   < 11 = sleep, < 21 = poison, < 30 = paralysis
     //   roll=10 is < 11, so it should be sleep
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
+    const opponent = makeActivePokemon({ ability: ABILITIES.blaze, types: [TYPES.fire] });
     const ctx = makeAbilityContext({
-      ability: "effect-spore",
+      ability: ABILITIES.effectSpore,
       trigger: "on-contact",
-      types: ["grass"],
+      types: [TYPES.grass],
       opponent,
       // roll = Math.floor(rngNext * 100); for roll=10, rngNext = 10/100 = 0.10
       rngNextValues: [0.1],
@@ -430,17 +448,17 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "sleep",
+      status: STATUSES.sleep,
     });
   });
 
   it("given Effect Spore holder, when roll=9 (i.e., 9/100), then inflicts sleep", () => {
     // Source: Showdown data/abilities.ts — roll=9 < 11, so sleep
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
+    const opponent = makeActivePokemon({ ability: ABILITIES.blaze, types: [TYPES.fire] });
     const ctx = makeAbilityContext({
-      ability: "effect-spore",
+      ability: ABILITIES.effectSpore,
       trigger: "on-contact",
-      types: ["grass"],
+      types: [TYPES.grass],
       opponent,
       rngNextValues: [0.09],
     });
@@ -450,7 +468,7 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "sleep",
+      status: STATUSES.sleep,
     });
   });
 
@@ -458,11 +476,11 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     // Source: Showdown data/abilities.ts — roll=11 >= 11 but < 21, so poison
     //   Before the fix, roll=11 was < 20 = paralysis (wrong order).
     //   After the fix, roll=11 is >= 11 but < 21, so poison.
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
+    const opponent = makeActivePokemon({ ability: ABILITIES.blaze, types: [TYPES.fire] });
     const ctx = makeAbilityContext({
-      ability: "effect-spore",
+      ability: ABILITIES.effectSpore,
       trigger: "on-contact",
-      types: ["grass"],
+      types: [TYPES.grass],
       opponent,
       rngNextValues: [0.11],
     });
@@ -472,17 +490,17 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: STATUSES.poison,
     });
   });
 
   it("given Effect Spore holder, when roll=20 (i.e., 20/100), then inflicts poison (boundary)", () => {
     // Source: Showdown data/abilities.ts — roll=20 < 21, so poison
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
+    const opponent = makeActivePokemon({ ability: ABILITIES.blaze, types: [TYPES.fire] });
     const ctx = makeAbilityContext({
-      ability: "effect-spore",
+      ability: ABILITIES.effectSpore,
       trigger: "on-contact",
-      types: ["grass"],
+      types: [TYPES.grass],
       opponent,
       rngNextValues: [0.2],
     });
@@ -492,17 +510,17 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: STATUSES.poison,
     });
   });
 
   it("given Effect Spore holder, when roll=21 (i.e., 21/100), then inflicts paralysis", () => {
     // Source: Showdown data/abilities.ts — roll=21 >= 21 but < 30, so paralysis
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
+    const opponent = makeActivePokemon({ ability: ABILITIES.blaze, types: [TYPES.fire] });
     const ctx = makeAbilityContext({
-      ability: "effect-spore",
+      ability: ABILITIES.effectSpore,
       trigger: "on-contact",
-      types: ["grass"],
+      types: [TYPES.grass],
       opponent,
       rngNextValues: [0.21],
     });
@@ -512,17 +530,17 @@ describe("#657 — Effect Spore sleep/poison/paralysis thresholds", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "paralysis",
+      status: STATUSES.paralysis,
     });
   });
 
   it("given Effect Spore holder, when roll=30 (i.e., 30/100), then no effect", () => {
     // Source: Showdown data/abilities.ts — roll=30 >= 30, no effect
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
+    const opponent = makeActivePokemon({ ability: ABILITIES.blaze, types: [TYPES.fire] });
     const ctx = makeAbilityContext({
-      ability: "effect-spore",
+      ability: ABILITIES.effectSpore,
       trigger: "on-contact",
-      types: ["grass"],
+      types: [TYPES.grass],
       opponent,
       rngNextValues: [0.3],
     });
@@ -542,18 +560,18 @@ describe("#661 — Synchronize hazard-source exclusion", () => {
     // The entry hazard code sets a "hazard-status-source" volatile when Toxic Spikes inflicts
     // status. Synchronize checks for this volatile and skips activation.
     const opponent = makeActivePokemon({
-      ability: "blaze",
-      types: ["fire"],
+      ability: ABILITIES.blaze,
+      types: [TYPES.fire],
       nickname: "Charizard",
     });
     const hazardVolatile = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>([
-      ["hazard-status-source", { turnsLeft: 1 }],
+      [HAZARD_STATUS_SOURCE, { turnsLeft: 1 }],
     ]);
     const ctx = makeAbilityContext({
-      ability: "synchronize",
+      ability: ABILITIES.synchronize,
       trigger: "on-status-inflicted",
-      types: ["psychic"],
-      status: "poison",
+      types: [TYPES.psychic],
+      status: STATUSES.poison,
       opponent,
       volatiles: hazardVolatile,
     });
@@ -561,22 +579,22 @@ describe("#661 — Synchronize hazard-source exclusion", () => {
     const result = handleGen5SwitchAbility("on-status-inflicted", ctx);
     expect(result.activated).toBe(false);
     // The volatile should be removed after checking
-    expect(ctx.pokemon.volatileStatuses.has("hazard-status-source" as VolatileStatus)).toBe(false);
+    expect(ctx.pokemon.volatileStatuses.has(HAZARD_STATUS_SOURCE)).toBe(false);
   });
 
   it("given Synchronize holder poisoned by opponent's Toxic move, when Synchronize checks, then DOES trigger", () => {
     // Source: Showdown data/abilities.ts — Synchronize: spreads poison/burn/paralysis from opponent's move
     // No hazard-status-source volatile present, so Synchronize fires normally.
     const opponent = makeActivePokemon({
-      ability: "blaze",
-      types: ["fire"],
+      ability: ABILITIES.blaze,
+      types: [TYPES.fire],
       nickname: "Charizard",
     });
     const ctx = makeAbilityContext({
-      ability: "synchronize",
+      ability: ABILITIES.synchronize,
       trigger: "on-status-inflicted",
-      types: ["psychic"],
-      status: "poison",
+      types: [TYPES.psychic],
+      status: STATUSES.poison,
       opponent,
     });
 
@@ -585,7 +603,7 @@ describe("#661 — Synchronize hazard-source exclusion", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "poison",
+      status: STATUSES.poison,
     });
   });
 
@@ -593,15 +611,15 @@ describe("#661 — Synchronize hazard-source exclusion", () => {
     // Source: Showdown data/abilities.ts — Synchronize: spreads burn from opponent's move
     // Source: Bulbapedia — Synchronize: "Passes burn, paralysis, or poison to the foe."
     const opponent = makeActivePokemon({
-      ability: "blaze",
-      types: ["fire"],
+      ability: ABILITIES.blaze,
+      types: [TYPES.fire],
       nickname: "Charizard",
     });
     const ctx = makeAbilityContext({
-      ability: "synchronize",
+      ability: ABILITIES.synchronize,
       trigger: "on-status-inflicted",
-      types: ["psychic"],
-      status: "burn",
+      types: [TYPES.psychic],
+      status: STATUSES.burn,
       opponent,
     });
 
@@ -610,7 +628,7 @@ describe("#661 — Synchronize hazard-source exclusion", () => {
     expect(result.effects[0]).toEqual({
       effectType: "status-inflict",
       target: "opponent",
-      status: "burn",
+      status: STATUSES.burn,
     });
   });
 
@@ -619,14 +637,14 @@ describe("#661 — Synchronize hazard-source exclusion", () => {
     // Verify that the entry hazard code sets the volatile marker for Synchronize to check.
     const pokemon = makeActivePokemon({
       maxHp: 200,
-      types: ["normal"],
-      ability: "synchronize",
+      types: [TYPES.normal],
+      ability: ABILITIES.synchronize,
     });
-    const side = makeHazardSide([{ type: "toxic-spikes", layers: 1 }]);
+    const side = makeHazardSide([{ type: HAZARDS.toxicSpikes, layers: 1 }]);
     const state = makeBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
 
-    expect(result.statusInflicted).toBe("poison");
-    expect(pokemon.volatileStatuses.has("hazard-status-source" as VolatileStatus)).toBe(true);
+    expect(result.statusInflicted).toBe(STATUSES.poison);
+    expect(pokemon.volatileStatuses.has(HAZARD_STATUS_SOURCE)).toBe(true);
   });
 });
