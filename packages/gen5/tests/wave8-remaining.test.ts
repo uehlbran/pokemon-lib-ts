@@ -20,18 +20,43 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
 import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { handleGen5CombatMove } from "../src/Gen5MoveEffectsCombat";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 
 // ---------------------------------------------------------------------------
-// Helper factories (same pattern as damage-calc.test.ts)
+// Scenario helpers
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+const dataManager = createGen5DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN5_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS } as const;
+const TYPES = CORE_TYPE_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const SPECIES = GEN5_SPECIES_IDS;
+const BASE_SPECIES = dataManager.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_NATURE = dataManager.getNature(GEN5_NATURE_IDS.hardy).id;
+
+function makeScenarioActive(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -45,6 +70,7 @@ function makeActive(overrides: {
   heldItem?: string | null;
   status?: string | null;
   speciesId?: number;
+  nature?: string;
   gender?: "male" | "female" | "genderless";
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   statStages?: Partial<Record<string, number>>;
@@ -59,16 +85,16 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? BASE_SPECIES.id,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: overrides.nature ?? DEFAULT_NATURE,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
+      ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: "normal1" as const,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
@@ -79,7 +105,7 @@ function makeActive(overrides: {
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -93,8 +119,9 @@ function makeActive(overrides: {
       evasion: overrides.statStages?.evasion ?? 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    // Synthetic scenario default: neutral Normal typing unless the test opts into real typing.
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -117,51 +144,22 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-}): MoveData {
+function makeCanonicalMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(id);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
+    ...baseMove,
+    ...overrides,
+    id: baseMove.id,
+    displayName: baseMove.displayName,
     flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
+      ...baseMove.flags,
+      ...overrides?.flags,
     },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 5,
-    critRatio: overrides.critRatio ?? 0,
   } as MoveData;
+}
+
+function makeSyntheticMove(id: string, overrides: Partial<MoveData>): MoveData {
+  return makeCanonicalMove(id, overrides);
 }
 
 function makeState(overrides?: {
@@ -192,9 +190,9 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    attacker: overrides.attacker ?? makeScenarioActive({}),
+    defender: overrides.defender ?? makeScenarioActive({}),
+    move: overrides.move ?? makeCanonicalMove(MOVES.tackle),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -209,9 +207,9 @@ function makeMoveEffectContext(overrides: {
   damage?: number;
 }): MoveEffectContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    attacker: overrides.attacker ?? makeScenarioActive({}),
+    defender: overrides.defender ?? makeScenarioActive({}),
+    move: overrides.move ?? makeCanonicalMove(MOVES.tackle),
     state: overrides.state ?? makeState(),
     damage: overrides.damage ?? 0,
   } as MoveEffectContext;
@@ -226,16 +224,16 @@ describe("Venoshock base power doubling", () => {
     // Source: Showdown data/moves.ts -- venoshock onBasePower:
     //   if (target.status === 'psn' || target.status === 'tox') return this.chainModify(2)
     // Source: Bulbapedia -- "If the target is poisoned, Venoshock's base power doubles."
-    const attacker = makeActive({ spAttack: 100, types: ["poison"] });
-    const defender = makeActive({ spDefense: 100, status: "poison" });
-    const move = makeMove({ id: "venoshock", type: "poison", category: "special", power: 65 });
+    const attacker = makeScenarioActive({ spAttack: 100, types: [TYPES.poison] });
+    const defender = makeScenarioActive({ spDefense: 100, status: STATUSES.poison });
+    const move = makeCanonicalMove(MOVES.venoshock);
 
     const poisoned = calculateGen5Damage(
       makeDamageContext({ attacker, defender, move, seed: 1 }),
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    const healthyDefender = makeActive({ spDefense: 100 });
+    const healthyDefender = makeScenarioActive({ spDefense: 100 });
     const normal = calculateGen5Damage(
       makeDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -249,16 +247,16 @@ describe("Venoshock base power doubling", () => {
   it("given target is badly-poisoned, when Venoshock hits, then base power doubles from 65 to 130", () => {
     // Source: Showdown data/moves.ts -- venoshock: checks 'tox' status too
     // Source: Bulbapedia -- badly poisoned counts as poisoned for Venoshock
-    const attacker = makeActive({ spAttack: 100, types: ["poison"] });
-    const defender = makeActive({ spDefense: 100, status: "badly-poisoned" });
-    const move = makeMove({ id: "venoshock", type: "poison", category: "special", power: 65 });
+    const attacker = makeScenarioActive({ spAttack: 100, types: [TYPES.poison] });
+    const defender = makeScenarioActive({ spDefense: 100, status: STATUSES.badlyPoisoned });
+    const move = makeCanonicalMove(MOVES.venoshock);
 
     const badlyPoisoned = calculateGen5Damage(
       makeDamageContext({ attacker, defender, move, seed: 1 }),
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    const healthyDefender = makeActive({ spDefense: 100 });
+    const healthyDefender = makeScenarioActive({ spDefense: 100 });
     const normal = calculateGen5Damage(
       makeDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -269,9 +267,9 @@ describe("Venoshock base power doubling", () => {
 
   it("given target has paralysis (not poison), when Venoshock hits, then base power stays at 65", () => {
     // Source: Showdown data/moves.ts -- venoshock: no modifier if no psn/tox
-    const attacker = makeActive({ spAttack: 100, types: ["poison"] });
-    const defender = makeActive({ spDefense: 100 });
-    const move = makeMove({ id: "venoshock", type: "poison", category: "special", power: 65 });
+    const attacker = makeScenarioActive({ spAttack: 100, types: [TYPES.poison] });
+    const defender = makeScenarioActive({ spDefense: 100 });
+    const move = makeCanonicalMove(MOVES.venoshock);
 
     const result = calculateGen5Damage(
       makeDamageContext({ attacker, defender, move, seed: 1 }),
@@ -279,7 +277,7 @@ describe("Venoshock base power doubling", () => {
     );
 
     // With paralyzed target (non-poison status), should NOT double
-    const paralyzedDefender = makeActive({ spDefense: 100, status: "paralysis" });
+    const paralyzedDefender = makeScenarioActive({ spDefense: 100, status: STATUSES.paralysis });
     const paralyzed = calculateGen5Damage(
       makeDamageContext({ attacker, defender: paralyzedDefender, move, seed: 1 }),
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -300,11 +298,11 @@ describe("Hex base power doubling", () => {
     //   if (target.status || target.volatiles['comatose']) return this.chainModify(2)
     // Source: Bulbapedia -- "If the target has a major status condition, Hex's
     //   base power doubles."
-    const attacker = makeActive({ spAttack: 100, types: ["ghost"] });
+    const attacker = makeScenarioActive({ spAttack: 100, types: [TYPES.ghost] });
     // Use Fire-type target to avoid Ghost immunity on Normal
-    const healthyDefender = makeActive({ spDefense: 100, types: ["fire"] });
-    const burnedFireDefender = makeActive({ spDefense: 100, status: "burn", types: ["fire"] });
-    const move = makeMove({ id: "hex", type: "ghost", category: "special", power: 50 });
+    const healthyDefender = makeScenarioActive({ spDefense: 100, types: [TYPES.fire] });
+    const burnedFireDefender = makeScenarioActive({ spDefense: 100, status: STATUSES.burn, types: [TYPES.fire] });
+    const move = makeCanonicalMove(MOVES.hex);
 
     const normal = calculateGen5Damage(
       makeDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
@@ -322,10 +320,10 @@ describe("Hex base power doubling", () => {
   it("given target is paralyzed, when Hex hits, then base power doubles from 50 to 100", () => {
     // Source: Showdown data/moves.ts -- hex: any status triggers doubling
     // Source: Bulbapedia -- paralysis is a major status condition
-    const attacker = makeActive({ spAttack: 100, types: ["ghost"] });
-    const healthyDefender = makeActive({ spDefense: 100, types: ["fire"] });
-    const paralyzedDefender = makeActive({ spDefense: 100, status: "paralysis", types: ["fire"] });
-    const move = makeMove({ id: "hex", type: "ghost", category: "special", power: 50 });
+    const attacker = makeScenarioActive({ spAttack: 100, types: [TYPES.ghost] });
+    const healthyDefender = makeScenarioActive({ spDefense: 100, types: [TYPES.fire] });
+    const paralyzedDefender = makeScenarioActive({ spDefense: 100, status: STATUSES.paralysis, types: [TYPES.fire] });
+    const move = makeCanonicalMove(MOVES.hex);
 
     const normal = calculateGen5Damage(
       makeDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
@@ -342,14 +340,11 @@ describe("Hex base power doubling", () => {
 
   it("given target has no status, when Hex hits, then base power stays at 50", () => {
     // Source: Showdown data/moves.ts -- hex: no modifier without status
-    const attacker = makeActive({ spAttack: 100, types: ["ghost"] });
-    const healthyDefender = makeActive({ spDefense: 100, types: ["fire"] });
-    const move = makeMove({ id: "hex", type: "ghost", category: "special", power: 50 });
+    const attacker = makeScenarioActive({ spAttack: 100, types: [TYPES.ghost] });
+    const healthyDefender = makeScenarioActive({ spDefense: 100, types: [TYPES.fire] });
+    const move = makeCanonicalMove(MOVES.hex);
     // Use a generic 50 BP Ghost move for comparison
-    const genericGhost = makeMove({
-      id: "shadow-ball",
-      type: "ghost",
-      category: "special",
+    const genericGhost = makeSyntheticMove(MOVES.shadowBall, {
       power: 50,
       flags: { contact: false },
     });
@@ -378,23 +373,18 @@ describe("Chip Away ignoring defense stages", () => {
     // Source: Showdown data/moves.ts -- chipaway: { ignoreDefensive: true }
     // Source: Bulbapedia -- "Chip Away ignores the target's stat stage changes
     //   to Defense and Special Defense."
-    const attacker = makeActive({ attack: 100, types: ["normal"] });
-    const boostedDefender = makeActive({
+    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.normal] });
+    const boostedDefender = makeScenarioActive({
       defense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
       statStages: { defense: 2 },
     });
-    const normalDefender = makeActive({
+    const normalDefender = makeScenarioActive({
       defense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
       statStages: { defense: 0 },
     });
-    const chipAway = makeMove({
-      id: "chip-away",
-      type: "normal",
-      category: "physical",
-      power: 70,
-    });
+    const chipAway = makeCanonicalMove(MOVES.chipAway);
 
     const vsBoosted = calculateGen5Damage(
       makeDamageContext({ attacker, defender: boostedDefender, move: chipAway, seed: 1 }),
@@ -413,23 +403,18 @@ describe("Chip Away ignoring defense stages", () => {
   it("given defender has -2 Defense, when Chip Away hits, then defense stage drop is also ignored", () => {
     // Source: Showdown data/moves.ts -- chipaway: ignoreDefensive means
     //   BOTH positive and negative defense stages are ignored
-    const attacker = makeActive({ attack: 100, types: ["normal"] });
-    const droppedDefender = makeActive({
+    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.normal] });
+    const droppedDefender = makeScenarioActive({
       defense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
       statStages: { defense: -2 },
     });
-    const normalDefender = makeActive({
+    const normalDefender = makeScenarioActive({
       defense: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
       statStages: { defense: 0 },
     });
-    const chipAway = makeMove({
-      id: "chip-away",
-      type: "normal",
-      category: "physical",
-      power: 70,
-    });
+    const chipAway = makeCanonicalMove(MOVES.chipAway);
 
     const vsDropped = calculateGen5Damage(
       makeDamageContext({ attacker, defender: droppedDefender, move: chipAway, seed: 1 }),
@@ -451,23 +436,18 @@ describe("Sacred Sword ignoring defense stages", () => {
     // Source: Showdown data/moves.ts -- sacredsword: { ignoreDefensive: true, ignoreEvasion: true }
     // Source: Bulbapedia -- "Sacred Sword ignores the target's stat stage changes
     //   to Defense, Special Defense, and evasion."
-    const attacker = makeActive({ attack: 100, types: ["fighting"] });
-    const boostedDefender = makeActive({
+    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fighting] });
+    const boostedDefender = makeScenarioActive({
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { defense: 3 },
     });
-    const normalDefender = makeActive({
+    const normalDefender = makeScenarioActive({
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { defense: 0 },
     });
-    const sacredSword = makeMove({
-      id: "sacred-sword",
-      type: "fighting",
-      category: "physical",
-      power: 90,
-    });
+    const sacredSword = makeCanonicalMove(MOVES.sacredSword);
 
     const vsBoosted = calculateGen5Damage(
       makeDamageContext({ attacker, defender: boostedDefender, move: sacredSword, seed: 1 }),
@@ -486,23 +466,18 @@ describe("Sacred Sword ignoring defense stages", () => {
   it("given a non-ignoring move vs +3 Defense, when it hits, then defense boost DOES reduce damage", () => {
     // Negative control: prove that a normal physical move IS affected by +3 Defense
     // Source: Showdown -- normal moves respect defense stages
-    const attacker = makeActive({ attack: 100, types: ["fighting"] });
-    const boostedDefender = makeActive({
+    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fighting] });
+    const boostedDefender = makeScenarioActive({
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { defense: 3 },
     });
-    const normalDefender = makeActive({
+    const normalDefender = makeScenarioActive({
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
       statStages: { defense: 0 },
     });
-    const closeCombat = makeMove({
-      id: "close-combat",
-      type: "fighting",
-      category: "physical",
-      power: 90,
-    });
+    const closeCombat = makeCanonicalMove(MOVES.closeCombat);
 
     const vsBoosted = calculateGen5Damage(
       makeDamageContext({ attacker, defender: boostedDefender, move: closeCombat, seed: 1 }),
@@ -529,18 +504,12 @@ describe("Clear Smog stat reset", () => {
     //   onHit(target) { target.clearBoosts(); }
     // Source: Bulbapedia -- "Clear Smog resets all of the target's stat stage
     //   changes to 0 upon dealing damage."
-    const attacker = makeActive({ types: ["poison"] });
-    const defender = makeActive({
-      types: ["fire"],
+    const attacker = makeScenarioActive({ types: [TYPES.poison] });
+    const defender = makeScenarioActive({
+      types: [TYPES.fire],
       statStages: { attack: 2, speed: 1 },
     });
-    const clearSmog = makeMove({
-      id: "clear-smog",
-      type: "poison",
-      category: "special",
-      power: 50,
-      flags: { contact: false },
-    });
+    const clearSmog = makeCanonicalMove(MOVES.clearSmog);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -560,15 +529,9 @@ describe("Clear Smog stat reset", () => {
   it("given defender has no stat changes, when Clear Smog hits, then still signals reset (no-op but valid)", () => {
     // Source: Showdown data/moves.ts -- clearsmog: always calls clearBoosts,
     //   even if there are no boosts to clear (no failure condition on boosts)
-    const attacker = makeActive({ types: ["poison"] });
-    const defender = makeActive({ types: ["fire"] });
-    const clearSmog = makeMove({
-      id: "clear-smog",
-      type: "poison",
-      category: "special",
-      power: 50,
-      flags: { contact: false },
-    });
+    const attacker = makeScenarioActive({ types: [TYPES.poison] });
+    const defender = makeScenarioActive({ types: [TYPES.fire] });
+    const clearSmog = makeCanonicalMove(MOVES.clearSmog);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -593,14 +556,9 @@ describe("Synchronoise type-match check", () => {
     // Source: Showdown data/moves.ts -- synchronoise:
     //   onTryHit(target, source) { if (target.hasType(source.getTypes())) return; return false; }
     // Source: Bulbapedia -- "Synchronoise only hits targets that share a type with the user."
-    const attacker = makeActive({ types: ["psychic"] });
-    const defender = makeActive({ types: ["psychic", "flying"] });
-    const synchronoise = makeMove({
-      id: "synchronoise",
-      type: "psychic",
-      category: "special",
-      power: 70,
-    });
+    const attacker = makeScenarioActive({ types: [TYPES.psychic] });
+    const defender = makeScenarioActive({ types: [TYPES.psychic, TYPES.flying] });
+    const synchronoise = makeCanonicalMove(MOVES.synchronoise);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -618,14 +576,9 @@ describe("Synchronoise type-match check", () => {
     // Source: Showdown data/moves.ts -- synchronoise: returns false if no shared type
     // Source: Bulbapedia -- "If the target does not share a type with the user,
     //   the move fails."
-    const attacker = makeActive({ types: ["psychic"] });
-    const defender = makeActive({ types: ["fire"] });
-    const synchronoise = makeMove({
-      id: "synchronoise",
-      type: "psychic",
-      category: "special",
-      power: 70,
-    });
+    const attacker = makeScenarioActive({ types: [TYPES.psychic] });
+    const defender = makeScenarioActive({ types: [TYPES.fire] });
+    const synchronoise = makeCanonicalMove(MOVES.synchronoise);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -643,14 +596,9 @@ describe("Synchronoise type-match check", () => {
 
   it("given dual-type user shares second type with target, when Synchronoise is used, then succeeds", () => {
     // Source: Showdown -- hasType checks all of the source's types against target's types
-    const attacker = makeActive({ types: ["psychic", "fire"] });
-    const defender = makeActive({ types: ["fire", "rock"] });
-    const synchronoise = makeMove({
-      id: "synchronoise",
-      type: "psychic",
-      category: "special",
-      power: 70,
-    });
+    const attacker = makeScenarioActive({ types: [TYPES.psychic, TYPES.fire] });
+    const defender = makeScenarioActive({ types: [TYPES.fire, TYPES.rock] });
+    const synchronoise = makeCanonicalMove(MOVES.synchronoise);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -675,15 +623,9 @@ describe("Nature Power in Gen 5", () => {
     //   onTryHit(target, pokemon) { this.actions.useMove('triattack', pokemon, target); }
     // Source: Bulbapedia -- "In Generation V, Nature Power becomes Tri Attack
     //   in a standard battle."
-    const attacker = makeActive({ types: ["grass"] });
-    const defender = makeActive({ types: ["fire"] });
-    const naturePower = makeMove({
-      id: "nature-power",
-      type: "normal",
-      category: "status",
-      power: null,
-      flags: { contact: false },
-    });
+    const attacker = makeScenarioActive({ types: [TYPES.grass] });
+    const defender = makeScenarioActive({ types: [TYPES.fire] });
+    const naturePower = makeCanonicalMove(MOVES.naturePower);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -694,22 +636,16 @@ describe("Nature Power in Gen 5", () => {
     );
 
     expect(result).not.toBeNull();
-    expect(result!.recursiveMove).toBe("tri-attack");
-    expect(result!.messages.some((m: string) => m.includes("Tri Attack"))).toBe(true);
+    expect(result!.recursiveMove).toBe(MOVES.triAttack);
+    expect(result!.messages.some((m: string) => m.includes(dataManager.getMove(MOVES.triAttack).displayName))).toBe(true);
   });
 
-  it("given Nature Power calls Tri Attack, when resolved, then the recursive move ID is 'tri-attack'", () => {
+  it(`given Nature Power calls ${MOVES.triAttack}, when resolved, then the recursive move ID matches the owned move constant`, () => {
     // Source: Showdown data/mods/gen5/moves.ts -- naturepower uses 'triattack'
-    // Our move IDs use kebab-case, so it becomes 'tri-attack'
-    const attacker = makeActive({ types: ["normal"] });
-    const defender = makeActive({ types: ["water"] });
-    const naturePower = makeMove({
-      id: "nature-power",
-      type: "normal",
-      category: "status",
-      power: null,
-      flags: { contact: false },
-    });
+    // Our move ids use kebab-case, so the recursive id matches the owned Tri Attack constant.
+    const attacker = makeScenarioActive({ types: [TYPES.normal] });
+    const defender = makeScenarioActive({ types: [TYPES.water] });
+    const naturePower = makeCanonicalMove(MOVES.naturePower);
 
     const result = handleGen5CombatMove(
       makeMoveEffectContext({
@@ -720,7 +656,7 @@ describe("Nature Power in Gen 5", () => {
     );
 
     expect(result).not.toBeNull();
-    expect(result!.recursiveMove).toBe("tri-attack");
+    expect(result!.recursiveMove).toBe(MOVES.triAttack);
   });
 });
 
@@ -736,7 +672,7 @@ describe("Gen 5 multi-hit distribution (35/35/15/15)", () => {
     //   = 35% 2-hits, 35% 3-hits, 15% 4-hits, 15% 5-hits
     const ruleset = new Gen5Ruleset();
     const rng = new SeededRandom(12345);
-    const attacker = makeActive({});
+    const attacker = makeScenarioActive({});
     const counts: Record<number, number> = { 2: 0, 3: 0, 4: 0, 5: 0 };
 
     for (let i = 0; i < 1000; i++) {
@@ -761,7 +697,7 @@ describe("Gen 5 multi-hit distribution (35/35/15/15)", () => {
     // Source: Bulbapedia -- "Multi-hit moves will always hit the maximum number of times."
     const ruleset = new Gen5Ruleset();
     const rng = new SeededRandom(42);
-    const attacker = makeActive({ ability: "skill-link" });
+    const attacker = makeScenarioActive({ ability: ABILITIES.skillLink });
 
     for (let i = 0; i < 10; i++) {
       expect(ruleset.rollMultiHitCount(attacker, rng)).toBe(5);

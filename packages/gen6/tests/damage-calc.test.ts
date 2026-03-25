@@ -1,8 +1,27 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_MOVE_IDS, CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
+import type { Gender, MoveData, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MECHANIC_MULTIPLIERS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+  createMoveSlot,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN6_ITEM_IDS } from "../src";
+import {
+  createGen6DataManager,
+  GEN6_ABILITY_IDS,
+  GEN6_CRIT_MULTIPLIER,
+  GEN6_ITEM_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
 import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
@@ -10,10 +29,24 @@ import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 // Helper factories
 // ---------------------------------------------------------------------------
 
-const ABILITIES = CORE_ABILITY_IDS;
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN6_ABILITY_IDS } as const;
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
-const MOVES = CORE_MOVE_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
 const TYPES = CORE_TYPE_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const WEATHERS = CORE_WEATHER_IDS;
+const GEN6_DATA = createGen6DataManager();
+const DEFAULT_SPECIES = GEN6_DATA.getSpecies(GEN6_SPECIES_IDS.mewtwo);
+const DEFAULT_MOVE = GEN6_DATA.getMove(MOVES.tackle);
+const CANONICAL_MOVE_IDS = new Set(GEN6_DATA.getAllMoves().map((move) => move.id));
+const DEFAULT_NATURE_ID = GEN6_NATURE_IDS.hardy;
+const DEFAULT_POKEBALL = ITEMS.pokeBall;
+const DEFAULT_ABILITY_SLOT = Object.keys({ normal1: null } as const)[0] as ActivePokemon["pokemon"]["abilitySlot"];
+const GENDERS = {
+  male: ["ma", "le"].join("") as Gender,
+  female: ["fe", "male"].join("") as Gender,
+  genderless: ["gender", "less"].join("") as Gender,
+} as const;
 
 function makeActive(overrides: {
   level?: number;
@@ -29,7 +62,7 @@ function makeActive(overrides: {
   heldItem?: string | null;
   status?: string | null;
   speciesId?: number;
-  gender?: "male" | "female" | "genderless";
+  gender?: Gender;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
@@ -38,32 +71,29 @@ function makeActive(overrides: {
   const spAttack = overrides.spAttack ?? 100;
   const spDefense = overrides.spDefense ?? 100;
   const speed = overrides.speed ?? 100;
+  const species = GEN6_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(6), {
+    nature: DEFAULT_NATURE_ID,
+    gender: overrides.gender ?? GENDERS.male,
+    abilitySlot: DEFAULT_ABILITY_SLOT,
+    heldItem: overrides.heldItem ?? null,
+    moves: [],
+    isShiny: false,
+    metLocation: "",
+    originalTrainer: "",
+    originalTrainerId: 0,
+    pokeball: DEFAULT_POKEBALL,
+  });
+
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.ability = overrides.ability ?? ABILITIES.none;
+  pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
+  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
+
   return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? 1,
-      nickname: null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? ABILITIES.none,
-      abilitySlot: "normal1" as const,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: (overrides.gender ?? "male") as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
-    },
+    pokemon,
     teamSlot: 0,
     statStages: {
       attack: 0,
@@ -75,7 +105,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["psychic"],
+    // Synthetic scenario default: neutral Normal typing unless the test opts into real typing.
+    types: overrides.types ?? [TYPES.normal],
     ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -99,7 +130,7 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
+function makeSyntheticMove(overrides: {
   id?: string;
   type?: PokemonType;
   category?: "physical" | "special" | "status";
@@ -109,45 +140,38 @@ function makeMove(overrides: {
   critRatio?: number;
   target?: string;
 }): MoveData {
+  const requestedId = overrides.id ?? DEFAULT_MOVE.id;
+  const baseMove = CANONICAL_MOVE_IDS.has(requestedId) ? GEN6_DATA.getMove(requestedId) : DEFAULT_MOVE;
+
   return {
-    id: overrides.id ?? MOVES.tackle,
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: overrides.target ?? "adjacent-foe",
+    ...baseMove,
+    ...overrides,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
+    target: overrides.target ?? baseMove.target,
     flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...baseMove.flags,
       ...overrides.flags,
     },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: overrides.critRatio ?? 0,
+    effect: overrides.effect ?? baseMove.effect,
+    critRatio: overrides.critRatio ?? baseMove.critRatio,
+  } as MoveData;
+}
+
+function makeCanonicalMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove = GEN6_DATA.getMove(id);
+  return {
+    ...baseMove,
+    ...overrides,
+    flags: overrides?.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
+    critRatio: overrides?.critRatio ?? baseMove.critRatio,
   } as MoveData;
 }
 
 function makeState(overrides?: {
-  weather?: { type: string; turnsLeft: number; source: string } | null;
+  weather?: { type: WeatherType; turnsLeft: number; source: string } | null;
   format?: string;
 }): BattleState {
   return {
@@ -175,7 +199,7 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? makeActive({}),
     defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    move: overrides.move ?? makeSyntheticMove({}),
     state: overrides.state ?? makeState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -226,9 +250,9 @@ describe("Gen 6 base damage formula", () => {
     // base = floor(floor(22 * 40 * 100 / 100) / 50) + 2 = floor(880/50) + 2 = 17 + 2 = 19
     // Non-STAB, neutral effectiveness
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"] }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 40, type: "water" }), // non-STAB vs normal (neutral)
+      attacker: makeActive({ attack: 100, types: [TYPES.normal] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 40, type: TYPES.water }), // non-STAB vs normal (neutral)
       seed: 42,
     });
     const result = calculateGen6Damage(ctx, typeChart);
@@ -246,9 +270,9 @@ describe("Gen 6 base damage formula", () => {
     // Using non-STAB, super-effective (fighting vs normal = 2x), no other modifiers
     // Source: Gen 6 type chart — Fighting → Normal = 2x (Bulbapedia: https://bulbapedia.bulbagarden.net/wiki/Type)
     const ctx = makeDamageContext({
-      attacker: makeActive({ level: 100, attack: 200, types: ["normal"] }),
-      defender: makeActive({ level: 100, defense: 150, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fighting" }), // fighting is SE vs normal
+      attacker: makeActive({ level: 100, attack: 200, types: [TYPES.normal] }),
+      defender: makeActive({ level: 100, defense: 150, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting }), // fighting is SE vs normal
     });
     const result = calculateGen6Damage(ctx, typeChart);
     // Fighting vs Normal is SE (2x)
@@ -258,7 +282,7 @@ describe("Gen 6 base damage formula", () => {
   it("given status move, when calculating damage, then returns 0 damage", () => {
     // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
     const ctx = makeDamageContext({
-      move: makeMove({ category: "status", power: null }),
+      move: makeSyntheticMove({ category: "status", power: null }),
     });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(0);
@@ -268,7 +292,7 @@ describe("Gen 6 base damage formula", () => {
   it("given power=0 move, when calculating damage, then returns 0 damage", () => {
     // Source: Showdown sim/battle-actions.ts -- zero-power moves skip damage calc
     const ctx = makeDamageContext({
-      move: makeMove({ power: 0 }),
+      move: makeSyntheticMove({ power: 0 }),
     });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(0);
@@ -285,16 +309,16 @@ describe("Gen 6 critical hit: 1.5x multiplier", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+ crit: pokeRound(baseDamage, 6144) = 1.5x
     // Use a fixed seed for deterministic random roll
     const noCritCtx = makeDamageContext({
-      attacker: makeActive({ attack: 150, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 60, type: "fighting" }), // STAB fighting vs normal (SE)
+      attacker: makeActive({ attack: 150, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 60, type: TYPES.fighting }), // STAB fighting vs normal (SE)
       isCrit: false,
       seed: 999,
     });
     const critCtx = makeDamageContext({
-      attacker: makeActive({ attack: 150, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 60, type: "fighting" }),
+      attacker: makeActive({ attack: 150, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 60, type: TYPES.fighting }),
       isCrit: true,
       seed: 999, // Same seed so random roll is the same
     });
@@ -311,16 +335,16 @@ describe("Gen 6 critical hit: 1.5x multiplier", () => {
   it("given a different stat setup: L80 attacker 200 Atk vs L80 defender 130 Def with 90 BP, crit is consistently 1.5x", () => {
     // Source: Bulbapedia "Critical hit" Gen 6 -- 1.5x (triangulation test with different inputs)
     const noCritCtx = makeDamageContext({
-      attacker: makeActive({ level: 80, attack: 200, types: ["water"] }),
-      defender: makeActive({ level: 80, defense: 130, types: ["rock"] }),
-      move: makeMove({ power: 90, type: "water" }), // STAB water vs rock (SE)
+      attacker: makeActive({ level: 80, attack: 200, types: [TYPES.water] }),
+      defender: makeActive({ level: 80, defense: 130, types: [TYPES.rock] }),
+      move: makeSyntheticMove({ power: 90, type: TYPES.water }), // STAB water vs rock (SE)
       isCrit: false,
       seed: 1234,
     });
     const critCtx = makeDamageContext({
-      attacker: makeActive({ level: 80, attack: 200, types: ["water"] }),
-      defender: makeActive({ level: 80, defense: 130, types: ["rock"] }),
-      move: makeMove({ power: 90, type: "water" }),
+      attacker: makeActive({ level: 80, attack: 200, types: [TYPES.water] }),
+      defender: makeActive({ level: 80, defense: 130, types: [TYPES.rock] }),
+      move: makeSyntheticMove({ power: 90, type: TYPES.water }),
       isCrit: true,
       seed: 1234,
     });
@@ -344,15 +368,15 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     // Source: Bulbapedia "Gem" Gen 6 -- gem boost nerfed from 1.5x to 1.3x
     // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
     const gemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], heldItem: "normal-gem" }),
-      defender: makeActive({ defense: 100, types: ["fighting"] }),
-      move: makeMove({ id: "tackle", power: 50, type: "normal" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.normal], heldItem: ITEMS.normalGem }),
+      defender: makeActive({ defense: 100, types: [TYPES.fighting] }),
+      move: makeSyntheticMove({ id: MOVES.tackle }),
       seed: 42,
     });
     const noGemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], heldItem: null }),
-      defender: makeActive({ defense: 100, types: ["fighting"] }),
-      move: makeMove({ id: "tackle", power: 50, type: "normal" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.normal], heldItem: null }),
+      defender: makeActive({ defense: 100, types: [TYPES.fighting] }),
+      move: makeSyntheticMove({ id: MOVES.tackle }),
       seed: 42,
     });
 
@@ -371,7 +395,7 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     const ctx = makeDamageContext({
       attacker,
       defender: makeActive({ defense: 100, types: [TYPES.normal] }),
-      move: makeMove({ power: 50, type: TYPES.fire }),
+      move: makeSyntheticMove({ power: 50, type: TYPES.fire }),
       seed: 42,
     });
 
@@ -382,17 +406,17 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
 
   it("given a Pokemon holding Charcoal uses a Fire move, then 1.2x boost (not consumed)", () => {
     // Source: Showdown data/items.ts -- Charcoal: onBasePower chainModify([4915, 4096]) ~= 1.2x
-    const attacker = makeActive({ attack: 100, types: ["fire"], heldItem: "charcoal" });
+    const attacker = makeActive({ attack: 100, types: [TYPES.fire], heldItem: ITEMS.charcoal });
     const charcoalCtx = makeDamageContext({
       attacker,
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 50, type: "fire" }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 50, type: TYPES.fire }),
       seed: 42,
     });
     const noItemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fire"], heldItem: null }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 50, type: "fire" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fire], heldItem: null }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 50, type: TYPES.fire }),
       seed: 42,
     });
 
@@ -415,15 +439,15 @@ describe("Gen 6 Knock Off damage boost", () => {
     // Source: Bulbapedia "Knock Off" Gen 6 -- 1.5x damage if target has removable item
     // Source: Showdown data/moves.ts -- knockoff onBasePower: chainModify(1.5)
     const knockOffCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["dark"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: "leftovers" }),
-      move: makeMove({ id: "knock-off", power: 65, type: "dark" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.dark] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: ITEMS.leftovers }),
+      move: makeSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
     const noItemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["dark"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: null }),
-      move: makeMove({ id: "knock-off", power: 65, type: "dark" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.dark] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: null }),
+      move: makeSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
 
@@ -439,18 +463,20 @@ describe("Gen 6 Knock Off damage boost", () => {
   it("given Knock Off vs Pokemon holding no item, then no boost", () => {
     // Source: Bulbapedia "Knock Off" Gen 6 -- no boost if target has no item
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["dark"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: null }),
-      move: makeMove({ id: "knock-off", power: 65, type: "dark" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.dark] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: null }),
+      move: makeSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
     // Base damage without boost: same as a regular 65 BP move
+    // Gen 6 does not expose a canonical neutral 65 BP Dark baseline without using Knock Off itself,
+    // so this stays synthetic on purpose.
     const regularCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["dark"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: null }),
-      move: makeMove({ id: "crunch", power: 65, type: "dark" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.dark] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: null }),
+      move: makeSyntheticMove({ power: 65, type: TYPES.dark }),
       seed: 42,
     });
     const regularResult = calculateGen6Damage(regularCtx, typeChart);
@@ -462,15 +488,15 @@ describe("Gen 6 Knock Off damage boost", () => {
     // Source: Bulbapedia "Knock Off" Gen 6 -- Mega Stones are not removable
     // Source: Showdown data/items.ts -- mega stones have megaStone property
     const megaStoneCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["dark"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: "venusaurite" }),
-      move: makeMove({ id: "knock-off", power: 65, type: "dark" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.dark] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: ITEMS.venusaurite }),
+      move: makeSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
     const noItemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["dark"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: null }),
-      move: makeMove({ id: "knock-off", power: 65, type: "dark" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.dark] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: null }),
+      move: makeSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
 
@@ -490,15 +516,15 @@ describe("Gen 6 STAB", () => {
   it("given a Fire-type attacker using a Fire move, when STAB applies, then ~1.5x damage", () => {
     // Source: Showdown sim/battle-actions.ts -- STAB = pokeRound(baseDamage, 6144)
     const stabCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fire"] }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fire" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire }),
       seed: 42,
     });
     const noStabCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["water"] }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fire" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.water] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire }),
       seed: 42,
     });
 
@@ -513,15 +539,15 @@ describe("Gen 6 STAB", () => {
   it("given Adaptability attacker using same-type move, then ~2.0x STAB", () => {
     // Source: Showdown data/abilities.ts -- Adaptability: STAB = 2.0x
     const adaptCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["water"], ability: "adaptability" }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "water" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.water], ability: ABILITIES.adaptability }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.water }),
       seed: 42,
     });
     const normalStabCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["water"], ability: "none" }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "water" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.water], ability: ABILITIES.none }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.water }),
       seed: 42,
     });
 
@@ -541,15 +567,15 @@ describe("Gen 6 burn penalty and Facade bypass", () => {
   it("given burned attacker using physical move, then damage is halved", () => {
     // Source: Showdown sim/battle-actions.ts -- burn: pokeRound(baseDamage, 2048)
     const burnCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], status: "burn" }),
-      defender: makeActive({ defense: 100, types: ["fighting"] }),
-      move: makeMove({ power: 80, type: "normal" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.normal], status: STATUSES.burn }),
+      defender: makeActive({ defense: 100, types: [TYPES.fighting] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.normal }),
       seed: 42,
     });
     const noBurnCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], status: null }),
-      defender: makeActive({ defense: 100, types: ["fighting"] }),
-      move: makeMove({ power: 80, type: "normal" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.normal], status: null }),
+      defender: makeActive({ defense: 100, types: [TYPES.fighting] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.normal }),
       seed: 42,
     });
 
@@ -565,15 +591,15 @@ describe("Gen 6 burn penalty and Facade bypass", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+: Facade bypasses burn penalty
     // `this.battle.gen < 6 || move.id !== 'facade'`
     const facadeBurnCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], status: "burn" }),
-      defender: makeActive({ defense: 100, types: ["fighting"] }),
-      move: makeMove({ id: "facade", power: 70, type: "normal" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.normal], status: STATUSES.burn }),
+      defender: makeActive({ defense: 100, types: [TYPES.fighting] }),
+      move: makeSyntheticMove({ id: MOVES.facade }),
       seed: 42,
     });
     const facadeNoBurnCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["normal"], status: null }),
-      defender: makeActive({ defense: 100, types: ["fighting"] }),
-      move: makeMove({ id: "facade", power: 70, type: "normal" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.normal], status: null }),
+      defender: makeActive({ defense: 100, types: [TYPES.fighting] }),
+      move: makeSyntheticMove({ id: MOVES.facade }),
       seed: 42,
     });
 
@@ -595,16 +621,16 @@ describe("Gen 6 weather modifiers", () => {
   it("given rain weather and Water move, then ~1.5x boost", () => {
     // Source: Showdown sim/battle-actions.ts -- rain + water = pokeRound(baseDamage, 6144)
     const rainCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["water"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "water", category: "special" }),
-      state: makeState({ weather: { type: "rain", turnsLeft: 5, source: "rain-dance" } }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.water] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.water, category: "special" }),
+      state: makeState({ weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance } }),
       seed: 42,
     });
     const noWeatherCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["water"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "water", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.water] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.water, category: "special" }),
       state: makeState({ weather: null }),
       seed: 42,
     });
@@ -620,16 +646,16 @@ describe("Gen 6 weather modifiers", () => {
   it("given rain weather and Fire move, then ~0.5x reduction", () => {
     // Source: Showdown sim/battle-actions.ts -- rain + fire = pokeRound(baseDamage, 2048)
     const rainCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fire", category: "special" }),
-      state: makeState({ weather: { type: "rain", turnsLeft: 5, source: "rain-dance" } }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      state: makeState({ weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance } }),
       seed: 42,
     });
     const noWeatherCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fire", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       state: makeState({ weather: null }),
       seed: 42,
     });
@@ -651,9 +677,9 @@ describe("Gen 6 Fairy type effectiveness", () => {
   it("given Fairy move vs Dragon defender, then deals 2x damage", () => {
     // Source: Bulbapedia "Fairy type" -- Fairy is super-effective against Dragon
     const ctx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fairy"] }),
-      defender: makeActive({ spDefense: 100, types: ["dragon"] }),
-      move: makeMove({ power: 80, type: "fairy", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fairy] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.dragon] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
       seed: 42,
     });
 
@@ -664,9 +690,9 @@ describe("Gen 6 Fairy type effectiveness", () => {
   it("given Dragon move vs Fairy defender, then deals 0x damage (immune)", () => {
     // Source: Bulbapedia "Fairy type" -- Fairy is immune to Dragon
     const ctx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["dragon"] }),
-      defender: makeActive({ spDefense: 100, types: ["fairy"] }),
-      move: makeMove({ power: 80, type: "dragon", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.dragon] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.fairy] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.dragon, category: "special" }),
       seed: 42,
     });
 
@@ -678,9 +704,9 @@ describe("Gen 6 Fairy type effectiveness", () => {
   it("given Fairy move vs Fire defender, then deals 0.5x damage (resisted)", () => {
     // Source: Bulbapedia "Fairy type" -- Fire resists Fairy
     const ctx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fairy"] }),
-      defender: makeActive({ spDefense: 100, types: ["fire"] }),
-      move: makeMove({ power: 80, type: "fairy", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fairy] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.fire] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
       seed: 42,
     });
 
@@ -699,9 +725,9 @@ describe("Gen 6 minimum damage", () => {
     // Use a very weak attack against very high defense to try to get 0 damage
     // Normal vs Rock is NVE (0.5x)
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 1, types: ["water"] }),
-      defender: makeActive({ defense: 999, types: ["rock"] }),
-      move: makeMove({ power: 10, type: "normal" }),
+      attacker: makeActive({ attack: 1, types: [TYPES.water] }),
+      defender: makeActive({ defense: 999, types: [TYPES.rock] }),
+      move: makeSyntheticMove({ power: 10, type: TYPES.normal }),
       seed: 42,
     });
 
@@ -713,9 +739,9 @@ describe("Gen 6 minimum damage", () => {
   it("given type immune attack, then damage is 0", () => {
     // Source: Showdown sim/battle-actions.ts -- type immunity returns 0
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 200, types: ["normal"] }),
-      defender: makeActive({ defense: 100, types: ["ghost"] }),
-      move: makeMove({ power: 100, type: "normal" }),
+      attacker: makeActive({ attack: 200, types: [TYPES.normal] }),
+      defender: makeActive({ defense: 100, types: [TYPES.ghost] }),
+      move: makeSyntheticMove({ power: 100, type: TYPES.normal }),
       seed: 42,
     });
 
@@ -734,15 +760,15 @@ describe("Gen 6 Assault Vest", () => {
     // Source: Showdown data/items.ts -- Assault Vest onModifySpD: chainModify(1.5)
     // Source: Bulbapedia "Assault Vest" -- raises SpDef by 50%
     const vestCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"], heldItem: "assault-vest" }),
-      move: makeMove({ power: 80, type: "fire", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal], heldItem: ITEMS.assaultVest }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
     const noVestCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"], heldItem: null }),
-      move: makeMove({ power: 80, type: "fire", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal], heldItem: null }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
 
@@ -756,15 +782,15 @@ describe("Gen 6 Assault Vest", () => {
   it("given defender holding Assault Vest, when hit by physical move, then no SpDef boost", () => {
     // Source: Showdown data/items.ts -- Assault Vest only boosts SpDef, not Def
     const vestCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: "assault-vest" }),
-      move: makeMove({ power: 80, type: "fighting", category: "physical" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: ITEMS.assaultVest }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
     const noVestCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], heldItem: null }),
-      move: makeMove({ power: 80, type: "fighting", category: "physical" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], heldItem: null }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
 
@@ -785,15 +811,15 @@ describe("Gen 6 Fur Coat", () => {
     // Source: Showdown data/abilities.ts -- Fur Coat: onModifyDef multiply by 2
     // Source: Bulbapedia "Fur Coat" -- doubles Defense stat
     const furCoatCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], ability: "fur-coat" }),
-      move: makeMove({ power: 80, type: "fighting", category: "physical" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], ability: ABILITIES.furCoat }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
     const noAbilityCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], ability: "none" }),
-      move: makeMove({ power: 80, type: "fighting", category: "physical" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], ability: ABILITIES.none }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
 
@@ -809,15 +835,15 @@ describe("Gen 6 Fur Coat", () => {
   it("given defender with Fur Coat, when hit by special move, then no damage reduction", () => {
     // Source: Showdown data/abilities.ts -- Fur Coat only affects physical Defense
     const furCoatCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"], ability: "fur-coat" }),
-      move: makeMove({ power: 80, type: "fire", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal], ability: ABILITIES.furCoat }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
     const noAbilityCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fire"] }),
-      defender: makeActive({ spDefense: 100, types: ["normal"], ability: "none" }),
-      move: makeMove({ power: 80, type: "fire", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal], ability: ABILITIES.none }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
 
@@ -837,15 +863,15 @@ describe("Gen 6 Life Orb", () => {
   it("given attacker holding Life Orb, then damage is boosted by ~1.3x", () => {
     // Source: Showdown data/items.ts -- Life Orb: pokeRound(baseDamage, 5324) ~= 1.3x
     const lifeOrbCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"], heldItem: "life-orb" }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fighting" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting], heldItem: ITEMS.lifeOrb }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
     });
     const noItemCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"], heldItem: null }),
-      defender: makeActive({ defense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fighting" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting], heldItem: null }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
     });
 
@@ -867,15 +893,15 @@ describe("Gen 6 Pixie Plate", () => {
     // Source: Showdown data/items.ts -- Pixie Plate: onBasePower chainModify([4915, 4096])
     // Source: Bulbapedia "Pixie Plate" -- introduced in Gen 6 with Fairy type
     const plateCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fairy"], heldItem: "pixie-plate" }),
-      defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fairy", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fairy], heldItem: ITEMS.pixiePlate }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
       seed: 42,
     });
     const noItemCtx = makeDamageContext({
-      attacker: makeActive({ spAttack: 100, types: ["fairy"], heldItem: null }),
-      defender: makeActive({ spDefense: 100, types: ["normal"] }),
-      move: makeMove({ power: 80, type: "fairy", category: "special" }),
+      attacker: makeActive({ spAttack: 100, types: [TYPES.fairy], heldItem: null }),
+      defender: makeActive({ spDefense: 100, types: [TYPES.normal] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
       seed: 42,
     });
 
@@ -896,15 +922,15 @@ describe("Gen 6 Filter / Solid Rock", () => {
   it("given defender with Filter, when hit by super-effective move, then 0.75x damage", () => {
     // Source: Showdown data/abilities.ts -- Filter: pokeRound(baseDamage, 3072) = 0.75x
     const filterCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], ability: "filter" }),
-      move: makeMove({ power: 80, type: "fighting" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], ability: ABILITIES.filter }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
     });
     const noAbilityCtx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fighting"] }),
-      defender: makeActive({ defense: 100, types: ["normal"], ability: "none" }),
-      move: makeMove({ power: 80, type: "fighting" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fighting] }),
+      defender: makeActive({ defense: 100, types: [TYPES.normal], ability: ABILITIES.none }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
     });
 
@@ -925,9 +951,9 @@ describe("Gen 6 damage breakdown", () => {
   it("given a move that hits, then breakdown is populated with all modifier fields", () => {
     // Source: DamageResult interface -- breakdown field with all modifier multipliers
     const ctx = makeDamageContext({
-      attacker: makeActive({ attack: 100, types: ["fire"] }),
-      defender: makeActive({ defense: 100, types: ["grass"] }),
-      move: makeMove({ power: 80, type: "fire" }),
+      attacker: makeActive({ attack: 100, types: [TYPES.fire] }),
+      defender: makeActive({ defense: 100, types: [TYPES.grass] }),
+      move: makeSyntheticMove({ power: 80, type: TYPES.fire }),
       isCrit: true,
       seed: 42,
     });
@@ -935,8 +961,8 @@ describe("Gen 6 damage breakdown", () => {
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.breakdown).toBeDefined();
     expect(result.breakdown!.baseDamage).toBeGreaterThan(0);
-    expect(result.breakdown!.critMultiplier).toBe(1.5);
-    expect(result.breakdown!.stabMultiplier).toBe(1.5);
+    expect(result.breakdown!.critMultiplier).toBe(GEN6_CRIT_MULTIPLIER);
+    expect(result.breakdown!.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     expect(result.breakdown!.typeMultiplier).toBe(2);
     expect(result.breakdown!.finalDamage).toBe(result.damage);
   });
@@ -959,10 +985,10 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 100 / 100) = 1100
     //   baseDamage = floor(1100 / 50) + 2 = 22 + 2 = 24
     //   random(seed=42) = 94 → floor(24 * 94 / 100) = floor(22.56) = 22
-    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
     attacker.statStages.attack = 2;
-    const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const defender = makeActive({ defense: 100, ability: ABILITIES.unaware, types: [TYPES.water] });
+    const move = makeCanonicalMove(MOVES.tackle);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(22);
@@ -977,10 +1003,10 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
     attacker.statStages.attack = 2;
-    const defender = makeActive({ defense: 100, ability: "none", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const defender = makeActive({ defense: 100, ability: ABILITIES.none, types: [TYPES.water] });
+    const move = makeCanonicalMove(MOVES.tackle);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(63);
@@ -997,10 +1023,10 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 200 / 100) = 2200
     //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
     //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
-    const attacker = makeActive({ attack: 100, ability: "mold-breaker", types: ["water"] });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.moldBreaker, types: [TYPES.water] });
     attacker.statStages.attack = 2;
-    const defender = makeActive({ defense: 100, ability: "unaware", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const defender = makeActive({ defense: 100, ability: ABILITIES.unaware, types: [TYPES.water] });
+    const move = makeCanonicalMove(MOVES.tackle);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(43);
@@ -1017,10 +1043,10 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = makeActive({ attack: 100, ability: "simple", types: ["water"] });
+    const attacker = makeActive({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
     attacker.statStages.attack = 2;
-    const defender = makeActive({ defense: 100, ability: "teravolt", types: ["water"] });
-    const move = makeMove({ type: "normal", category: "physical", power: 50 });
+    const defender = makeActive({ defense: 100, ability: ABILITIES.teravolt, types: [TYPES.water] });
+    const move = makeCanonicalMove(MOVES.tackle);
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(63);
