@@ -11,9 +11,12 @@ import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
   CORE_MECHANIC_MULTIPLIERS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
@@ -164,14 +167,17 @@ function createActivePokemon(opts: {
 
 /** Create a move mock with the given type, power, and category. */
 const dataManager = createGen4DataManager();
+const moveCategories = CORE_MOVE_CATEGORIES;
+const screenIds = CORE_SCREEN_IDS;
+const weatherIds = CORE_WEATHER_IDS;
 const SYNTHETIC_MOVE_BASE = dataManager.getMove(GEN4_MOVE_IDS.tackle);
 
 function resolveRepresentativeGen4MoveId(opts: {
   type: PokemonType;
   power: number;
-  category?: "physical" | "special" | "status";
+  category?: MoveData["category"];
 }): string | null {
-  const category = opts.category ?? "physical";
+  const category = opts.category ?? moveCategories.physical;
   const key = `${opts.type}|${opts.power}|${category}`;
   switch (key) {
     case `${CORE_TYPE_IDS.normal}|80|physical`:
@@ -208,7 +214,7 @@ function resolveRepresentativeGen4MoveId(opts: {
 function buildMove(
   type: PokemonType,
   power: number,
-  category: "physical" | "special" | "status",
+  category: MoveData["category"],
   id?: string,
 ): MoveData {
   const canonicalMoveId = id ?? resolveRepresentativeGen4MoveId({ type, power, category });
@@ -312,7 +318,7 @@ describe("Gen 4 damage calc — physical/special split", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -347,7 +353,7 @@ describe("Gen 4 damage calc — physical/special split", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -384,8 +390,8 @@ describe("Gen 4 damage calc — physical/special split", () => {
       types: [CORE_TYPE_IDS.normal],
     });
     const chart = createNeutralTypeChart();
-    const waterfall = buildMove(CORE_TYPE_IDS.water, 80, "physical", GEN4_MOVE_IDS.waterfall);
-    const surf = buildMove(CORE_TYPE_IDS.water, 95, "special", GEN4_MOVE_IDS.surf);
+    const waterfall = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.physical, GEN4_MOVE_IDS.waterfall);
+    const surf = buildMove(CORE_TYPE_IDS.water, 95, moveCategories.special, GEN4_MOVE_IDS.surf);
 
     const waterfallResult = calculateGen4Damage(
       createDamageContext({ attacker, defender, move: waterfall, rng: createMockRng(100) }),
@@ -438,7 +444,7 @@ describe("Gen 4 damage calc — burn", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const burnedResult = calculateGen4Damage(
@@ -495,7 +501,7 @@ describe("Gen 4 damage calc — burn", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const burnedResult = calculateGen4Damage(
@@ -552,7 +558,7 @@ describe("Gen 4 damage calc — burn", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const gutsResult = calculateGen4Damage(
@@ -606,7 +612,7 @@ describe("Gen 4 damage calc — weather", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const rainResult = calculateGen4Damage(
@@ -641,7 +647,7 @@ describe("Gen 4 damage calc — weather", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const rainResult = calculateGen4Damage(
@@ -676,7 +682,7 @@ describe("Gen 4 damage calc — weather", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
@@ -711,7 +717,7 @@ describe("Gen 4 damage calc — weather", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
@@ -753,7 +759,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const critResult = calculateGen4Damage(
@@ -793,7 +799,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -841,7 +847,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const debuffedCrit = calculateGen4Damage(
@@ -897,7 +903,7 @@ describe("Gen 4 damage calc — critical hits", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const vsBoostedCrit = calculateGen4Damage(
@@ -957,7 +963,7 @@ describe("Gen 4 damage calc — STAB", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const stabResult = calculateGen4Damage(
@@ -1013,7 +1019,7 @@ describe("Gen 4 damage calc — STAB", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const adaptResult = calculateGen4Damage(
@@ -1064,7 +1070,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const result = calculateGen4Damage(
@@ -1099,7 +1105,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.grass],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.grass, 0.5]]);
 
     const result = calculateGen4Damage(
@@ -1135,7 +1141,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       types: [CORE_TYPE_IDS.flying],
       ability: CORE_ABILITY_IDS.levitate,
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, "physical");
+    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical);
     // Ground vs Flying = immune in Gen 4 type chart
     const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying, 0]]);
 
@@ -1173,7 +1179,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       types: [CORE_TYPE_IDS.flying],
       heldItem: CORE_ITEM_IDS.ironBall,
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, "physical");
+    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical);
     // Set type chart so ground vs flying would normally be immune (0), but Iron Ball overrides
     const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying, 0]]);
 
@@ -1203,7 +1209,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       types: [CORE_TYPE_IDS.flying],
       heldItem: null,
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, "physical");
+    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical);
     const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying, 0]]);
 
     const result = calculateGen4Damage(
@@ -1238,7 +1244,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.rock],
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, "physical", GEN4_MOVE_IDS.earthquake);
+    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical, GEN4_MOVE_IDS.earthquake);
     const chart = createTypeChart([
       [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.fire, 2],
       [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.rock, 2],
@@ -1276,7 +1282,7 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.rock],
     });
-    const normalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const normalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createTypeChart([
       [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.steel, 0.5],
       [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.rock, 0.5],
@@ -1330,7 +1336,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       types: [CORE_TYPE_IDS.fighting],
     });
     // power=40, Technician raises it to 60 effectively
-    const weakMove = buildMove(CORE_TYPE_IDS.normal, 40, "physical");
+    const weakMove = buildMove(CORE_TYPE_IDS.normal, 40, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const techResult = calculateGen4Damage(
@@ -1386,7 +1392,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const strongMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const strongMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const techResult = calculateGen4Damage(
@@ -1442,7 +1448,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       types: [CORE_TYPE_IDS.rock],
     });
     // Normal vs Rock = 0.5x NVE
-    const normalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const normalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createTypeChart([[CORE_TYPE_IDS.normal, CORE_TYPE_IDS.rock, 0.5]]);
 
     const lensResult = calculateGen4Damage(
@@ -1498,7 +1504,7 @@ describe("Gen 4 damage calc — new abilities", () => {
     });
     // Water vs Fire = SE (2x). Tinted Lens must NOT apply.
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
 
     const lensResult = calculateGen4Damage(
       createDamageContext({
@@ -1551,7 +1557,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const filterResult = calculateGen4Damage(
@@ -1605,7 +1611,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const solidRockResult = calculateGen4Damage(
@@ -1660,7 +1666,7 @@ describe("Gen 4 damage calc — new abilities", () => {
     });
     // Normal vs Normal = neutral (1x). Filter must NOT apply.
     const chart = createNeutralTypeChart();
-    const normalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const normalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
 
     const filterResult = calculateGen4Damage(
       createDamageContext({
@@ -1719,7 +1725,7 @@ describe("Gen 4 damage calc — new abilities", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const grassMove = buildMove(CORE_TYPE_IDS.grass, 80, "special");
+    const grassMove = buildMove(CORE_TYPE_IDS.grass, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const overgrowResult = calculateGen4Damage(
@@ -1779,7 +1785,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const choiceResult = calculateGen4Damage(
@@ -1836,7 +1842,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const specsResult = calculateGen4Damage(
@@ -1892,7 +1898,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const lifeOrbResult = calculateGen4Damage(
@@ -1937,7 +1943,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const beltResult = calculateGen4Damage(
@@ -1990,7 +1996,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const normalMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const normalMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart(); // neutral matchup
 
     const beltResult = calculateGen4Damage(
@@ -2044,7 +2050,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physicalMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const bandResult = calculateGen4Damage(
@@ -2099,7 +2105,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const glassesResult = calculateGen4Damage(
@@ -2158,7 +2164,7 @@ describe("Gen 4 damage calc — items", () => {
       types: [CORE_TYPE_IDS.normal],
     });
     // Physical move — Light Ball doubles Attack in Gen 4+
-    const physMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const lightBallResult = calculateGen4Damage(
@@ -2216,7 +2222,7 @@ describe("Gen 4 damage calc — items", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const lightBallResult = calculateGen4Damage(
@@ -2279,7 +2285,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.psychic],
       speciesId: GEN4_SPECIES_IDS.latias,
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const soulDewResult = calculateGen4Damage(
@@ -2335,7 +2341,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const toothResult = calculateGen4Damage(
@@ -2393,7 +2399,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       types: [CORE_TYPE_IDS.water],
       speciesId: GEN4_SPECIES_IDS.clamperl,
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const scaleResult = calculateGen4Damage(
@@ -2449,7 +2455,7 @@ describe("Gen 4 damage calc — species items (defense)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const physMove = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const physMove = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const thickClubResult = calculateGen4Damage(
@@ -2505,7 +2511,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       ability: CORE_ABILITY_IDS.wonderGuard,
     });
     // Normal vs Ghost → immune in type chart; but here we test neutral (effectiveness=1) vs WonderGuard
-    const normalMove = buildMove(CORE_TYPE_IDS.normal, 100, "physical");
+    const normalMove = buildMove(CORE_TYPE_IDS.normal, 100, moveCategories.physical);
     const chart = createNeutralTypeChart(); // neutral effectiveness = 1
 
     const result = calculateGen4Damage(
@@ -2542,7 +2548,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       types: [CORE_TYPE_IDS.electric],
       ability: CORE_ABILITY_IDS.levitate,
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, "physical", GEN4_MOVE_IDS.earthquake);
+    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical, GEN4_MOVE_IDS.earthquake);
     // Levitate: Ground immunity — the calc should treat effectiveness as 0
     // Ground vs Electric would normally be 1x; Levitate makes it 0
     const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.electric, 0]]);
@@ -2615,7 +2621,7 @@ describe("Gen 4 damage calc — ability immunities", () => {
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.thickFat,
     });
-    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const thickFatResult = calculateGen4Damage(
@@ -2684,8 +2690,8 @@ describe("Gen 4 damage calc — Explosion / Self-Destruct", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const noHalveMove = buildMove(CORE_TYPE_IDS.normal, 250, "physical", "normal-250");
-    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, "physical", GEN4_MOVE_IDS.explosion);
+    const noHalveMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, "normal-250");
+    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, GEN4_MOVE_IDS.explosion);
     const chart = createNeutralTypeChart();
 
     // Explosion halves defender's defense (200 → 100 effective)
@@ -2732,7 +2738,7 @@ describe("Gen 4 damage calc — minimum damage", () => {
       spDefense: 999,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 10, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 10, moveCategories.physical);
     const chart = createNeutralTypeChart();
     // Use minimum random roll (85) to make result as small as possible
     const ctx = createDamageContext({
@@ -2765,7 +2771,7 @@ describe("Gen 4 damage calc — minimum damage", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.ghost],
     });
-    const normalMove = buildMove(CORE_TYPE_IDS.normal, 150, "physical");
+    const normalMove = buildMove(CORE_TYPE_IDS.normal, 150, moveCategories.physical);
     const chart = createTypeChart([[CORE_TYPE_IDS.normal, CORE_TYPE_IDS.ghost, 0]]);
 
     const result = calculateGen4Damage(
@@ -2808,7 +2814,7 @@ describe("Gen 4 damage calc — breakdown completeness", () => {
       spDefense: 80,
       types: [CORE_TYPE_IDS.fire],
     });
-    const surf = buildMove(CORE_TYPE_IDS.water, 95, "special", GEN4_MOVE_IDS.surf);
+    const surf = buildMove(CORE_TYPE_IDS.water, 95, moveCategories.special, GEN4_MOVE_IDS.surf);
     const chart = createTypeChart([[CORE_TYPE_IDS.water, CORE_TYPE_IDS.fire, 2]]);
 
     const result = calculateGen4Damage(
@@ -2858,7 +2864,7 @@ describe("Gen 4 damage calc — type chart integration", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const waterMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2891,7 +2897,7 @@ describe("Gen 4 damage calc — type chart integration", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.ground],
     });
-    const electricMove = buildMove(CORE_TYPE_IDS.electric, 90, "special");
+    const electricMove = buildMove(CORE_TYPE_IDS.electric, 90, moveCategories.special);
 
     const result = calculateGen4Damage(
       createDamageContext({
@@ -2943,7 +2949,7 @@ describe("Gen 4 damage calc — Dry Skin fire weakness", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const drySkinResult = calculateGen4Damage(
@@ -3017,7 +3023,7 @@ describe("Gen 4 damage calc — Plates (4915/4096 base power boost)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, "special");
+    const fireMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const plateResult = calculateGen4Damage(
@@ -3080,7 +3086,7 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     // With rain weather
@@ -3134,7 +3140,7 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     // With sandstorm weather
@@ -3181,7 +3187,7 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     const hailResult = calculateGen4Damage(
@@ -3213,7 +3219,7 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
@@ -3267,7 +3273,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3301,7 +3307,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3331,7 +3337,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3363,7 +3369,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3393,7 +3399,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3424,7 +3430,7 @@ describe("Gen 4 damage calc — weather before +2 order (#349)", () => {
     // OLD BUG: +2 first → 37, then floor(37*1.5) = 55 (wrong)
     const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.water, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3449,7 +3455,7 @@ describe("Gen 4 damage calc — weather before +2 order (#349)", () => {
     // OLD BUG: +2 first → 60, then floor(60*1.5) = 90 (wrong)
     const attacker = createActivePokemon({ attack: 120, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 90 });
-    const move = buildMove(CORE_TYPE_IDS.fire, 100, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 100, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3481,7 +3487,7 @@ describe("Gen 4 damage calc — Flash Fire as damage modifier (#352)", () => {
     const attacker = createActivePokemon({ attack: 120, types: [CORE_TYPE_IDS.normal] });
     attacker.volatileStatuses.set(CORE_ABILITY_IDS.flashFire, { turnsLeft: -1 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.fire, 60, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 60, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3500,7 +3506,7 @@ describe("Gen 4 damage calc — Flash Fire as damage modifier (#352)", () => {
     const attacker = createActivePokemon({ attack: 80, types: [CORE_TYPE_IDS.normal] });
     attacker.volatileStatuses.set(CORE_ABILITY_IDS.flashFire, { turnsLeft: -1 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.fire, 100, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 100, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3530,7 +3536,7 @@ describe("Gen 4 damage calc — Thick Fat halves base power (#353)", () => {
       ability: GEN4_ABILITY_IDS.thickFat,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.fire, 90, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 90, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     // Power halved: power = floor(90/2) = 45
@@ -3586,7 +3592,7 @@ describe("Gen 4 damage calc — Thick Fat halves base power (#353)", () => {
       ability: GEN4_ABILITY_IDS.thickFat,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.ice, 73, "physical");
+    const move = buildMove(CORE_TYPE_IDS.ice, 73, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3619,7 +3625,7 @@ describe("Gen 4 damage calc — Heatproof post-formula 0.5x modifier (#355)", ()
       ability: GEN4_ABILITY_IDS.heatproof,
       types: [CORE_TYPE_IDS.steel],
     });
-    const move = buildMove(CORE_TYPE_IDS.fire, 73, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 73, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3643,7 +3649,7 @@ describe("Gen 4 damage calc — Heatproof post-formula 0.5x modifier (#355)", ()
       ability: GEN4_ABILITY_IDS.heatproof,
       types: [CORE_TYPE_IDS.steel],
     });
-    const move = buildMove(CORE_TYPE_IDS.fire, 91, "special");
+    const move = buildMove(CORE_TYPE_IDS.fire, 91, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3675,7 +3681,7 @@ describe("Gen 4 damage calc — Life Orb in Phase 2 (#357)", () => {
       heldItem: GEN4_ITEM_IDS.lifeOrb,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3701,7 +3707,7 @@ describe("Gen 4 damage calc — Life Orb in Phase 2 (#357)", () => {
       heldItem: GEN4_ITEM_IDS.lifeOrb,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3730,7 +3736,7 @@ describe("Gen 4 damage calc — Muscle Band and Wise Glasses base power (#366)",
       heldItem: GEN4_ITEM_IDS.muscleBand,
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 90, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 90, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3753,7 +3759,7 @@ describe("Gen 4 damage calc — Muscle Band and Wise Glasses base power (#366)",
       heldItem: GEN4_ITEM_IDS.wiseGlasses,
     });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 90, "special");
+    const move = buildMove(CORE_TYPE_IDS.normal, 90, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3804,7 +3810,7 @@ describe("Gen 4 damage calc — Expert Belt 4915/4096 (#369)", () => {
       heldItem: GEN4_ITEM_IDS.expertBelt,
     });
     const defender = createActivePokemon({ defense: 100, types: [CORE_TYPE_IDS.grass] });
-    const move = buildMove(CORE_TYPE_IDS.fire, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.physical);
     const chart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
 
     const result = calculateGen4Damage(
@@ -3827,7 +3833,7 @@ describe("Gen 4 damage calc — Expert Belt 4915/4096 (#369)", () => {
       heldItem: GEN4_ITEM_IDS.expertBelt,
     });
     const defender = createActivePokemon({ defense: 100, types: [CORE_TYPE_IDS.grass] });
-    const move = buildMove(CORE_TYPE_IDS.fire, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.physical);
     const chart = createTypeChart([[CORE_TYPE_IDS.fire, CORE_TYPE_IDS.grass, 2]]);
 
     const result = calculateGen4Damage(
@@ -3861,7 +3867,7 @@ describe("Gen 4 damage calc — non-Mold-Breaker bypass guard (#377)", () => {
       ability: GEN4_ABILITY_IDS.flowerGift,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "special");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3891,7 +3897,7 @@ describe("Gen 4 damage calc — non-Mold-Breaker bypass guard (#377)", () => {
       ability: GEN4_ABILITY_IDS.flowerGift,
       types: [CORE_TYPE_IDS.normal],
     });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "special");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3935,7 +3941,7 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
       data: { count: 3, moveId: GEN4_MOVE_IDS.strength },
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3965,7 +3971,7 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
       data: { count: 2, moveId: GEN4_MOVE_IDS.strength },
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 90, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 90, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -3991,7 +3997,7 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     // Without Reflect: baseDmg=35, +2=37 → 37
     const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.fighting] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4018,7 +4024,7 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     //   Light Screen: floor(35/2) = 17; +2 = 19
     const attacker = createActivePokemon({ spAttack: 100, types: [CORE_TYPE_IDS.fighting] });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "special");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4045,7 +4051,7 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     //   random=74; STAB(normal)=floor(74*1.5)=111 → 111
     const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.normal, 80, "physical");
+    const move = buildMove(CORE_TYPE_IDS.normal, 80, moveCategories.physical);
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4073,7 +4079,7 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     //   No screen reduction (Brick Break bypasses); +2 = 35 → 35
     const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.fighting, 75, "physical", GEN4_MOVE_IDS.brickBreak);
+    const move = buildMove(CORE_TYPE_IDS.fighting, 75, moveCategories.physical, GEN4_MOVE_IDS.brickBreak);
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4192,7 +4198,7 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.heatproof,
     });
-    const firePhysicalMove = buildMove(CORE_TYPE_IDS.fire, 80, "physical", GEN4_MOVE_IDS.firePunch);
+    const firePhysicalMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.physical, GEN4_MOVE_IDS.firePunch);
     const chart = createNeutralTypeChart();
 
     const noHeatproofResult = calculateGen4Damage(
@@ -4254,7 +4260,7 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.heatproof,
     });
-    const fireSpecialMove = buildMove(CORE_TYPE_IDS.fire, 90, "special", CORE_MOVE_IDS.flamethrower);
+    const fireSpecialMove = buildMove(CORE_TYPE_IDS.fire, 90, moveCategories.special, CORE_MOVE_IDS.flamethrower);
     const chart = createNeutralTypeChart();
 
     const noHeatproofResult = calculateGen4Damage(
@@ -4318,7 +4324,7 @@ describe("Gen 4 damage calc — Mold Breaker bypasses Heatproof (issue #430 adde
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.heatproof,
     });
-    const firePhysicalMove = buildMove(CORE_TYPE_IDS.fire, 80, "physical", GEN4_MOVE_IDS.firePunch);
+    const firePhysicalMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.physical, GEN4_MOVE_IDS.firePunch);
     const chart = createNeutralTypeChart();
 
     const moldBreakerResult = calculateGen4Damage(
@@ -4411,7 +4417,7 @@ describe("Gen 4 damage calc — sandstorm Rock SpDef boost (issue #440)", () => 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, "special");
+    const specialMove = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.special);
     const chart = createNeutralTypeChart();
 
     const noSandstormResult = calculateGen4Damage(
@@ -4473,8 +4479,8 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, "physical", GEN4_MOVE_IDS.explosion);
-    const normalPhysicalMove = buildMove(CORE_TYPE_IDS.normal, 250, "physical", CORE_MOVE_IDS.hyperBeam);
+    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, GEN4_MOVE_IDS.explosion);
+    const normalPhysicalMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, CORE_MOVE_IDS.hyperBeam);
     const chart = createNeutralTypeChart();
 
     const explosionResult = calculateGen4Damage(
@@ -4529,8 +4535,8 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const selfDestructMove = buildMove(CORE_TYPE_IDS.normal, 200, "physical", GEN4_MOVE_IDS.selfDestruct);
-    const normalMove200 = buildMove(CORE_TYPE_IDS.normal, 200, "physical", CORE_MOVE_IDS.doubleEdge);
+    const selfDestructMove = buildMove(CORE_TYPE_IDS.normal, 200, moveCategories.physical, GEN4_MOVE_IDS.selfDestruct);
+    const normalMove200 = buildMove(CORE_TYPE_IDS.normal, 200, moveCategories.physical, CORE_MOVE_IDS.doubleEdge);
     const chart = createNeutralTypeChart();
 
     const selfDestructResult = calculateGen4Damage(
@@ -4584,8 +4590,8 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, "physical", GEN4_MOVE_IDS.explosion);
-    const selfDestructMove = buildMove(CORE_TYPE_IDS.normal, 200, "physical", GEN4_MOVE_IDS.selfDestruct);
+    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, GEN4_MOVE_IDS.explosion);
+    const selfDestructMove = buildMove(CORE_TYPE_IDS.normal, 200, moveCategories.physical, GEN4_MOVE_IDS.selfDestruct);
     const chart = createNeutralTypeChart();
 
     const explosionResult = calculateGen4Damage(
@@ -4646,7 +4652,7 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     const noWeatherResult = calculateGen4Damage(
@@ -4693,7 +4699,7 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     const sandstormResult = calculateGen4Damage(
@@ -4727,7 +4733,7 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     const hailResult = calculateGen4Damage(
@@ -4763,7 +4769,7 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, "special", CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
