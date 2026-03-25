@@ -23,11 +23,28 @@ import type {
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { getGen2CritStage } from "../../src/Gen2CritCalc";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+
+const dataManager = createGen2DataManager();
+const MOVES = { ...CORE_MOVE_IDS, ...GEN2_MOVE_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN2_ITEM_IDS } as const;
+const TYPES = CORE_TYPE_IDS;
+const STATUS = CORE_STATUS_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -43,6 +60,14 @@ function createMockRng(intReturnValue: number) {
     getState: () => 0,
     setState: () => {},
   };
+}
+
+function countSuccessfulTrials(trials: number, attempt: (index: number) => boolean): number {
+  let total = 0;
+  for (let index = 0; index < trials; index++) {
+    if (attempt(index)) total++;
+  }
+  return total;
 }
 
 function createActivePokemon(opts: {
@@ -73,16 +98,16 @@ function createActivePokemon(opts: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: opts.speciesId ?? 1,
+      speciesId: opts.speciesId ?? SPECIES.bulbasaur,
       nickname: null,
       level: opts.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: DEFAULT_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: maxHp,
       moves: [],
-      ability: "",
+      ability: CORE_ABILITY_IDS.none,
       abilitySlot: "normal1" as const,
       heldItem: opts.heldItem ?? null,
       status: opts.status ?? null,
@@ -93,7 +118,7 @@ function createActivePokemon(opts: {
       metLevel: 5,
       originalTrainer: "Test",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: stats,
     } as PokemonInstance,
     teamSlot: 0,
@@ -108,8 +133,8 @@ function createActivePokemon(opts: {
       evasion: opts.statStages?.evasion ?? 0,
     },
     volatileStatuses: (opts.volatileStatuses ?? new Map()) as Map<never, never>,
-    types: opts.types ?? ["normal"],
-    ability: "",
+    types: opts.types ?? [TYPES.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,
@@ -126,94 +151,33 @@ function createActivePokemon(opts: {
   } as unknown as ActivePokemon;
 }
 
-function createMove(opts: {
-  id?: string;
-  type: PokemonType;
-  power?: number | null;
-  accuracy?: number | null;
-  category?: "physical" | "special" | "status";
-  effect?: { type: string } | null;
-}): MoveData {
+function createMove(
+  id: string,
+  opts?: {
+    type?: PokemonType;
+    power?: number | null;
+    accuracy?: number | null;
+    category?: "physical" | "special" | "status";
+    effect?: { type: string } | null;
+  },
+): MoveData {
+  const base = dataManager.getMove(id);
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power ?? 80,
-    accuracy: opts.accuracy ?? 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: opts.effect ?? null,
-    description: "",
-    generation: 2,
+    ...base,
+    type: opts?.type ?? base.type,
+    category: opts?.category ?? base.category,
+    power: opts?.power ?? base.power,
+    accuracy: opts?.accuracy ?? base.accuracy,
+    effect: opts?.effect ?? base.effect,
   } as MoveData;
 }
 
 function createSpecies(): PokemonSpeciesData {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: ["normal"],
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
+  return dataManager.getSpecies(SPECIES.bulbasaur) as PokemonSpeciesData;
 }
 
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
+  const types: PokemonType[] = Object.values(TYPES) as PokemonType[];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
     chart[atk] = {};
@@ -236,12 +200,14 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
     // Gen 2 formula: F = floor(catchRate * (maxHP*2 - currentHP*3) / (maxHP*2))
     // At full HP (current=max=200): maxHP*2=400, currentHP*3=600 → curHp3 >= maxHp2
     // When curHp3 >= maxHp2, numerator <= 0 → hpFactor clamps to 1.
-    // catchRate=45 (Bulbasaur), ballMod=1 (Poke Ball). hpFactor = 1.
+    const species = dataManager.getSpecies(SPECIES.bulbasaur);
+    // Bulbasaur catchRate is sourced from Gen 2 data.
+    // ballMod=1 (Poke Ball). hpFactor = 1.
     // No status bonus. finalRate = 1.
     // With Poke Ball (1x multiplier) at full HP, catch is very unlikely (≤1/256 ~ 2/256 with equality).
     // Gen 3+ would give a different result due to its 4-shake formula.
     const rng = new SeededRandom(42);
-    const result = ruleset.rollCatchAttempt(45, 200, 200, null, 1, rng);
+    const result = ruleset.rollCatchAttempt(species.catchRate, 200, 200, null, 1, rng);
 
     // The important thing is the formula produces the correct Gen 2 result.
     // At full HP with low catch rate, the rate is extremely low (1/256).
@@ -252,7 +218,9 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
 
   it("given 1 HP and high catch rate, when rolling catch, then probability is very high", () => {
     // Source: pret/pokecrystal engine/items/item_effects.asm PokeBallEffect
-    // catchRate=255 (Caterpie), ballMod=1 (Poke Ball), maxHP=100, currentHP=1
+    const species = dataManager.getSpecies(SPECIES.caterpie);
+    // Caterpie catchRate is sourced from Gen 2 data.
+    // ballMod=1 (Poke Ball), maxHP=100, currentHP=1
     // maxHP*2=200, currentHP*3=3. F = floor(255 * (200-3) / 200) = floor(255*197/200)
     // = floor(50235/200) = floor(251.175) = 251
     // No status bonus. finalRate=251. Roll 0-255: very likely to catch (251/256 ~ 98%).
@@ -260,7 +228,7 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
     const trials = 1000;
     for (let i = 0; i < trials; i++) {
       const rng = new SeededRandom(i);
-      const result = ruleset.rollCatchAttempt(255, 100, 1, null, 1, rng);
+      const result = ruleset.rollCatchAttempt(species.catchRate, 100, 1, null, 1, rng);
       if (result.caught) catches++;
     }
     // ~98% catch rate
@@ -274,18 +242,17 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
     // maxHP*2=400, currentHP*3=300. F = floor(100*(400-300)/400) = floor(100*100/400) = 25
     // With freeze: finalRate = min(255, 25+10) = 35. Without: 25.
     // Freeze should give noticeably higher catch rate.
-    let catchesNoStatus = 0;
-    let catchesFreeze = 0;
     const trials = 5000;
-    for (let i = 0; i < trials; i++) {
+    const catchesNoStatus = countSuccessfulTrials(trials, (i) => {
       const rng1 = new SeededRandom(i);
       const r1 = ruleset.rollCatchAttempt(100, 200, 100, null, 1, rng1);
-      if (r1.caught) catchesNoStatus++;
-
+      return r1.caught;
+    });
+    const catchesFreeze = countSuccessfulTrials(trials, (i) => {
       const rng2 = new SeededRandom(i);
-      const r2 = ruleset.rollCatchAttempt(100, 200, 100, "freeze", 1, rng2);
-      if (r2.caught) catchesFreeze++;
-    }
+      const r2 = ruleset.rollCatchAttempt(100, 200, 100, STATUS.freeze, 1, rng2);
+      return r2.caught;
+    });
     // Freeze should give higher catch rate than no status
     expect(catchesFreeze).toBeGreaterThan(catchesNoStatus);
     // No status: ~25/256 ≈ 9.8%. Freeze: ~35/256 ≈ 13.7%.
@@ -308,7 +275,7 @@ describe("Issue #284 regression: Gen 2 catch formula uses BallCalc, not Gen 3+",
       if (r1.caught) catchesNoStatus++;
 
       const rng2 = new SeededRandom(i);
-      const r2 = ruleset.rollCatchAttempt(100, 200, 100, "burn", 1, rng2);
+      const r2 = ruleset.rollCatchAttempt(100, 200, 100, STATUS.burn, 1, rng2);
       if (r2.caught) catchesBurn++;
     }
     // Burn should give SAME catch rate as no status (decomp bug)
@@ -436,14 +403,14 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"], // Not Normal — no STAB
+      types: [TYPES.fighting], // Not Normal — no STAB
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const move = createMove({ type: "normal", power: 80 });
+    const move = createMove(MOVES.struggle, { type: TYPES.normal, power: 80 });
     const typeChart = createNeutralTypeChart();
     const species = createSpecies();
     const rng = createMockRng(255);
@@ -489,14 +456,18 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
     const attacker = createActivePokemon({
       level: 50,
       spAttack: 100,
-      types: ["psychic"], // STAB with Psychic move
+      types: [TYPES.psychic], // STAB with Psychic move
     });
     const defender = createActivePokemon({
       level: 50,
       spDefense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const move = createMove({ type: "psychic", power: 80, category: "special" });
+    const move = createMove(MOVES.psybeam, {
+      type: TYPES.psychic,
+      power: 80,
+      category: "special",
+    });
     const typeChart = createNeutralTypeChart();
     const species = createSpecies();
     const rng = createMockRng(255);
@@ -552,17 +523,14 @@ describe("Issue #320 regression: accuracy uses integer ratio table, not float fr
 
     // We verify by running many trials at stage -5. The hit rate should be around 91/256 ≈ 35.5%
     // (integer), not 95/256 ≈ 37.1% (float).
-    const move = createMove({ type: "normal", power: 80, accuracy: 100 });
-    let hits = 0;
+    const move = createMove(MOVES.tackle, { type: TYPES.normal, power: 80, accuracy: 100 });
     const trials = 10000;
-
-    for (let i = 0; i < trials; i++) {
+    const hits = countSuccessfulTrials(trials, (i) => {
       const rng = new SeededRandom(i * 7919);
       const attacker = createActivePokemon({ statStages: { accuracy: -5 } });
       const defender = createActivePokemon({ statStages: { evasion: 0 } });
-      const result = ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
-      if (result) hits++;
-    }
+      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+    });
 
     const rate = hits / trials;
     // Integer: 91/256 ≈ 35.5%. Tolerance ±3%
@@ -578,17 +546,14 @@ describe("Issue #320 regression: accuracy uses integer ratio table, not float fr
     // Float 5/3: floor(127 * 5/3) = floor(211.67) = 211
     // Integer gives slightly lower (210 vs 211). Both hit most of the time at 50% base,
     // but the integer method is cartridge-accurate.
-    const move = createMove({ type: "normal", power: 80, accuracy: 50 });
-    let hits = 0;
+    const move = createMove(MOVES.tackle, { type: TYPES.normal, power: 80, accuracy: 50 });
     const trials = 10000;
-
-    for (let i = 0; i < trials; i++) {
+    const hits = countSuccessfulTrials(trials, (i) => {
       const rng = new SeededRandom(i * 3571);
       const attacker = createActivePokemon({ statStages: { accuracy: 2 } });
       const defender = createActivePokemon({ statStages: { evasion: 0 } });
-      const result = ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
-      if (result) hits++;
-    }
+      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+    });
 
     const rate = hits / trials;
     // Integer: 210/256 ≈ 82.0%. Tolerance ±3%
@@ -607,23 +572,19 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
   it("given attacker level < defender level, when using an OHKO move, then it always fails", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5438-5439
     // `sub [hl]; jr c, .no_effect` — if attacker level < defender level, carry flag set → fail
-    const move = createMove({
-      id: "fissure",
-      type: "ground",
+    const move = createMove(MOVES.fissure, {
+      type: TYPES.ground,
       power: null,
       accuracy: 30,
       effect: { type: "ohko" },
     });
 
-    let hits = 0;
-    for (let i = 0; i < 1000; i++) {
+    const hits = countSuccessfulTrials(1000, (i) => {
       const rng = new SeededRandom(i);
       const attacker = createActivePokemon({ level: 30 });
       const defender = createActivePokemon({ level: 50 });
-      if (ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any })) {
-        hits++;
-      }
-    }
+      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+    });
 
     // Must always fail
     expect(hits).toBe(0);
@@ -633,24 +594,20 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:5440-5448
     // levelDiff = 0, doubled = 0, accuracy = 30 + 0 = 30
     // Hit if random(0-255) < 30 → rate = 30/256 ≈ 11.7%
-    const move = createMove({
-      id: "horn-drill",
-      type: "normal",
+    const move = createMove(MOVES.hornDrill, {
+      type: TYPES.normal,
       power: null,
       accuracy: 30,
       effect: { type: "ohko" },
     });
 
-    let hits = 0;
     const trials = 10000;
-    for (let i = 0; i < trials; i++) {
+    const hits = countSuccessfulTrials(trials, (i) => {
       const rng = new SeededRandom(i);
       const attacker = createActivePokemon({ level: 50 });
       const defender = createActivePokemon({ level: 50 });
-      if (ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any })) {
-        hits++;
-      }
-    }
+      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+    });
 
     const rate = hits / trials;
     // 30/256 ≈ 11.7%, tolerance ±2%
@@ -663,9 +620,8 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
     // levelDiff = 20, doubled = 40 (add a = 2 * levelDiff)
     // accuracy = 30 + 40 = 70
     // Hit if random(0-255) < 70 → rate = 70/256 ≈ 27.3%
-    const move = createMove({
-      id: "guillotine",
-      type: "normal",
+    const move = createMove(MOVES.guillotine, {
+      type: TYPES.normal,
       power: null,
       accuracy: 30,
       effect: { type: "ohko" },
@@ -704,14 +660,14 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const move = createMove({ type: "normal", power: 80 });
+    const move = createMove(MOVES.struggle, { type: TYPES.normal, power: 80 });
     const typeChart = createNeutralTypeChart();
     const rng = createMockRng(255);
 
@@ -742,14 +698,14 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
+      types: [TYPES.fighting],
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const move = createMove({ type: "normal", power: 80 });
+    const move = createMove(MOVES.struggle, { type: TYPES.normal, power: 80 });
     const typeChart = createNeutralTypeChart();
     const rng = createMockRng(255);
 
@@ -823,19 +779,19 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fire"], // Fire STAB
+      types: [TYPES.fire], // Fire STAB
     });
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const move = createMove({ type: "fire", power: 80 });
+    const move = createMove(MOVES.flamethrower, { type: TYPES.fire, power: 80 });
     const typeChart = createNeutralTypeChart();
     const rng = createMockRng(255);
 
     const stateRain = {
-      weather: { type: "rain", turnsLeft: 5, source: "rain-dance" },
+      weather: { type: "rain", turnsLeft: 5, source: MOVES.rainDance },
       sides: [
         { active: [attacker], screens: [] },
         { active: [defender], screens: [] },
@@ -866,10 +822,10 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
     // NOTE: The earlier bug #324 "fix" incorrectly changed +2 → +1. The cartridge uses two
     // increments of register c. The correct value is +2.
     const attacker = createActivePokemon({});
-    const slashMove = createMove({ id: "slash", type: "normal" });
+    const slashMove = createMove(MOVES.slash, { type: TYPES.normal });
     expect(getGen2CritStage(attacker, slashMove)).toBe(2);
 
-    const crossChopMove = createMove({ id: "cross-chop", type: "fighting" });
+    const crossChopMove = createMove(MOVES.crossChop, { type: TYPES.fighting });
     expect(getGen2CritStage(attacker, crossChopMove)).toBe(2);
   });
 });
