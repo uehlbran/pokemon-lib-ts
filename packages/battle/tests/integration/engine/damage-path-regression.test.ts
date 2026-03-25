@@ -1,4 +1,11 @@
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { describe, expect, it } from "vitest";
 import type {
   AbilityContext,
@@ -16,6 +23,18 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const SPECIES = GEN1_SPECIES_IDS;
+const MOVES = CORE_MOVE_IDS;
+const ITEMS = CORE_ITEM_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const MOVE_SLOT_DATA_MANAGER = createMockDataManager();
+
+function createMoveSlot(moveId: string) {
+  const move = MOVE_SLOT_DATA_MANAGER.getMove(moveId);
+  return { moveId, currentPP: move.pp, maxPP: move.pp, ppUps: 0 };
+}
 
 // ---------------------------------------------------------------------------
 // MockRuleset subclass with capLethalDamage support for Sturdy testing
@@ -49,6 +68,8 @@ class SturdyMockRuleset extends MockRuleset {
 //   which fires before the accuracy roll
 // ---------------------------------------------------------------------------
 class ChoiceMockRuleset extends MockRuleset {
+  readonly generation = 4;
+
   hasHeldItems(): boolean {
     return true;
   }
@@ -167,6 +188,7 @@ class CustomDamageHookMockRuleset extends MockRuleset {
 }
 
 function createEngine(overrides?: {
+  generation?: number;
   seed?: number;
   team1?: PokemonInstance[];
   team2?: PokemonInstance[];
@@ -177,10 +199,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(SPECIES.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(MOVES.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -194,10 +216,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(SPECIES.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(MOVES.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -211,7 +233,7 @@ function createEngine(overrides?: {
   ];
 
   const config: BattleConfig = {
-    generation: 1,
+    generation: overrides?.generation ?? 1,
     format: "singles",
     teams: [team1, team2],
     seed: overrides?.seed ?? 12345,
@@ -234,15 +256,15 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
           // Source: 999 is intentionally over any plausible Gen 1 HP total so the
           // test always exercises the capLethalDamage branch.
           amount: 999,
-          source: "tackle",
-          type: "normal",
+          source: MOVES.tackle,
+          type: TYPES.normal,
         },
       });
 
-      const charizard = createTestPokemon(6, 50, {
+      const charizard = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.swordsDance)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -258,10 +280,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         ruleset,
         team1: [charizard],
         team2: [
-          createTestPokemon(9, 50, {
+          createTestPokemon(SPECIES.blastoise, 50, {
             uid: "blastoise-1",
             nickname: "Blastoise",
-            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            moves: [createMoveSlot(MOVES.swordsDance)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -292,13 +314,13 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         amount: expectedDamage,
         currentHp: 1,
         maxHp: defenderMaxHp,
-        source: "tackle",
+        source: MOVES.tackle,
       });
 
       expect(ruleset.damageReceivedCalls).toContainEqual({
         defenderUid: "blastoise-1",
         damage: expectedDamage,
-        moveId: "tackle",
+        moveId: MOVES.tackle,
       });
 
       const surviveMessage = events.find(
@@ -319,15 +341,15 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
           // Source: this fixture is intentionally below max HP so the test verifies
           // the direct subtraction path rather than the capLethalDamage branch.
           amount: 37,
-          source: "tackle",
-          type: "normal",
+          source: MOVES.tackle,
+          type: TYPES.normal,
         },
       });
 
-      const charizard = createTestPokemon(6, 50, {
+      const charizard = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.swordsDance)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -343,10 +365,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         ruleset,
         team1: [charizard],
         team2: [
-          createTestPokemon(9, 50, {
+          createTestPokemon(SPECIES.blastoise, 50, {
             uid: "blastoise-1",
             nickname: "Blastoise",
-            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            moves: [createMoveSlot(MOVES.swordsDance)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -376,7 +398,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         side: 1,
         amount: 37,
         currentHp: startingHp - 37,
-        source: "tackle",
+        source: MOVES.tackle,
       });
     });
 
@@ -389,15 +411,15 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
           // Source: this fixture uses contact move data so the regression covers the
           // same hook path as normal damaging contact attacks.
           amount: 30,
-          source: "tackle",
-          type: "normal",
+          source: MOVES.tackle,
+          type: TYPES.normal,
         },
       });
 
-      const charizard = createTestPokemon(6, 50, {
+      const charizard = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.swordsDance)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -413,10 +435,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         ruleset,
         team1: [charizard],
         team2: [
-          createTestPokemon(9, 50, {
+          createTestPokemon(SPECIES.blastoise, 50, {
             uid: "blastoise-1",
             nickname: "Blastoise",
-            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            moves: [createMoveSlot(MOVES.swordsDance)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -434,7 +456,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       const defender = engine.getState().sides[1].active[0];
       expect(defender).toBeDefined();
       defender!.substituteHp = 50;
-      defender!.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      defender!.volatileStatuses.set(VOLATILES.substitute, { turnsLeft: -1 });
       const startingHp = defender!.pokemon.currentHp;
 
       events.length = 0;
@@ -473,15 +495,15 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
           // Source: invalid inputs are clamped to zero so they cannot heal or
           // trigger the downstream reactive hooks.
           amount,
-          source: "tackle",
-          type: "normal",
+          source: MOVES.tackle,
+          type: TYPES.normal,
         },
       });
 
-      const charizard = createTestPokemon(6, 50, {
+      const charizard = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.swordsDance)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -497,10 +519,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         ruleset,
         team1: [charizard],
         team2: [
-          createTestPokemon(9, 50, {
+          createTestPokemon(SPECIES.blastoise, 50, {
             uid: "blastoise-1",
             nickname: "Blastoise",
-            moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            moves: [createMoveSlot(MOVES.swordsDance)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -533,7 +555,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         side: 1,
         amount: 0,
         currentHp: startingHp,
-        source: "tackle",
+        source: MOVES.tackle,
       });
     });
   });
@@ -553,13 +575,13 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
 
       // The move effect triggers a recursive damaging move
       ruleset.setMoveEffectResult({
-        recursiveMove: "tackle",
+        recursiveMove: MOVES.tackle,
       });
 
-      const charizard = createTestPokemon(6, 50, {
+      const charizard = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.swordsDance)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -611,13 +633,13 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       ruleset.setFixedDamage(50); // not lethal
 
       ruleset.setMoveEffectResult({
-        recursiveMove: "tackle",
+        recursiveMove: MOVES.tackle,
       });
 
-      const charizard = createTestPokemon(6, 50, {
+      const charizard = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+        moves: [createMoveSlot(MOVES.swordsDance)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -662,14 +684,11 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       const ruleset = new ChoiceMockRuleset();
       ruleset.setAlwaysHit(false); // Force miss
 
-      const choiceBandUser = createTestPokemon(6, 50, {
+      const choiceBandUser = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-          { moveId: "scratch", currentPP: 35, maxPP: 35, ppUps: 0 },
-        ],
-        heldItem: "choice-band",
+        moves: [createMoveSlot(MOVES.tackle), createMoveSlot(MOVES.scratch)],
+        heldItem: ITEMS.choiceBand,
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -682,6 +701,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       });
 
       const { engine, events } = createEngine({
+        generation: 4,
         ruleset,
         team1: [choiceBandUser],
       });
@@ -698,25 +718,22 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       const state = engine.getState();
       const actor = state.sides[0].active[0];
       expect(actor).toBeDefined();
-      expect(actor!.volatileStatuses.has("choice-locked")).toBe(true);
+      expect(actor!.volatileStatuses.has(VOLATILES.choiceLocked)).toBe(true);
 
-      const choiceData = actor!.volatileStatuses.get("choice-locked")?.data;
-      expect(choiceData).toEqual({ moveId: "tackle" });
+      const choiceData = actor!.volatileStatuses.get(VOLATILES.choiceLocked)?.data;
+      expect(choiceData).toEqual({ moveId: MOVES.tackle });
     });
 
-    it("given a Pokemon with Choice Scarf whose move hits, then the choice-locked volatile is still applied (baseline)", () => {
-      // Source: Bulbapedia — "Choice Scarf locks the holder into the first move used"
+    it("given a Pokemon with Choice Band whose move hits, then the choice-locked volatile is still applied (baseline)", () => {
+      // Source: Bulbapedia — Choice items lock the holder into the first move used.
       // This is a baseline test to confirm normal behavior still works.
       const ruleset = new ChoiceMockRuleset();
 
-      const choiceScarfUser = createTestPokemon(6, 50, {
+      const choiceBandUser = createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [
-          { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-          { moveId: "scratch", currentPP: 35, maxPP: 35, ppUps: 0 },
-        ],
-        heldItem: "choice-scarf",
+        moves: [createMoveSlot(MOVES.tackle), createMoveSlot(MOVES.scratch)],
+        heldItem: ITEMS.choiceBand,
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -729,8 +746,9 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       });
 
       const { engine } = createEngine({
+        generation: 4,
         ruleset,
-        team1: [choiceScarfUser],
+        team1: [choiceBandUser],
       });
       engine.start();
 
@@ -740,8 +758,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       const state = engine.getState();
       const actor = state.sides[0].active[0];
       expect(actor).toBeDefined();
-      expect(actor!.volatileStatuses.has("choice-locked")).toBe(true);
-      expect(actor!.volatileStatuses.get("choice-locked")?.data).toEqual({ moveId: "tackle" });
+      expect(actor!.volatileStatuses.has(VOLATILES.choiceLocked)).toBe(true);
+      expect(actor!.volatileStatuses.get(VOLATILES.choiceLocked)?.data).toEqual({
+        moveId: MOVES.tackle,
+      });
     });
   });
 
