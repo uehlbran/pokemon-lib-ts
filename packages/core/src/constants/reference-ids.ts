@@ -230,6 +230,10 @@ export const CORE_VOLATILE_IDS = {
   nightmare: "nightmare",
   shadowForceCharging: "shadow-force-charging",
   silkTrap: "silk-trap",
+  embodyAspectUsed: "embody-aspect-used",
+  intrepidSwordUsed: "intrepid-sword-used",
+  dauntlessShieldUsed: "dauntless-shield-used",
+  proteanUsed: "protean-used",
   justFrozen: "just-frozen",
   sleepCounter: "sleep-counter",
   trapped: "trapped",
@@ -242,6 +246,7 @@ export const CORE_VOLATILE_IDS = {
   uproar: "uproar",
   taunt: "taunt",
   unburden: "unburden",
+  underwater: "underwater",
 } as const;
 
 export const CORE_WEATHER_IDS = {

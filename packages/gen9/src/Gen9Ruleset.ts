@@ -281,8 +281,8 @@ export class Gen9Ruleset extends BaseRuleset {
    *
    * Certain moves can hit targets in semi-invulnerable states:
    * - Flying (Fly/Bounce): Gust, Twister, Thunder, Sky Uppercut, Hurricane,
-   *   Smack Down, Thousand Arrows
-   * - Underground (Dig): Earthquake, Magnitude, Fissure
+   *   Smack Down
+   * - Underground (Dig): Earthquake, Fissure
    * - Underwater (Dive): Surf, Whirlpool
    * - Shadow Force charging: nothing bypasses it
    * - Generic charging: always hittable (not truly semi-invulnerable)
@@ -301,10 +301,9 @@ export class Gen9Ruleset extends BaseRuleset {
           "sky-uppercut",
           "hurricane",
           "smack-down",
-          "thousand-arrows",
         ].includes(moveId);
       case "underground":
-        return ["earthquake", "magnitude", "fissure"].includes(moveId);
+        return ["earthquake", "fissure"].includes(moveId);
       case "underwater":
         return ["surf", "whirlpool"].includes(moveId);
       case "shadow-force-charging":
