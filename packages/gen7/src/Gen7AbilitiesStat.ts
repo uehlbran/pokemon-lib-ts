@@ -1,4 +1,10 @@
-import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import {
+  type AbilityContext,
+  type AbilityEffect,
+  type AbilityResult,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+} from "@pokemon-lib-ts/battle";
 import type { MoveCategory } from "@pokemon-lib-ts/core";
 
 /**
@@ -308,8 +314,8 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
     activated: true,
     effects: [
       {
-        effectType: "type-change",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+        target: BATTLE_EFFECT_TARGETS.self,
         types: [moveType],
       },
     ],
@@ -351,8 +357,8 @@ function handleMoxie(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "attack",
     stages: 1,
   };
@@ -397,8 +403,8 @@ function handleBeastBoost(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: bestStat,
     stages: 1,
   };
@@ -451,8 +457,8 @@ function handleDefiant(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "attack",
     stages: 2,
   };
@@ -476,8 +482,8 @@ function handleCompetitive(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "spAttack",
     stages: 2,
   };
@@ -554,8 +560,8 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "attack",
     stages: 1,
   };
@@ -581,14 +587,14 @@ function handleWeakArmor(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "defense",
     stages: -1,
   };
   const spdEffect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "speed",
     stages: 2, // Gen 7: +2 Speed (was +1 in Gen 5-6)
   };
@@ -612,8 +618,8 @@ function handleStamina(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "defense",
     stages: 1,
   };
@@ -638,8 +644,8 @@ function handleRattled(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "speed",
     stages: 1,
   };
@@ -684,8 +690,8 @@ function handleSpeedBoost(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "speed",
     stages: 1,
   };
@@ -735,8 +741,8 @@ function handleMoody(ctx: AbilityContext): AbilityResult {
 
   if (raisedStat) {
     effects.push({
-      effectType: "stat-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       stat: raisedStat,
       stages: 2,
     });
@@ -745,8 +751,8 @@ function handleMoody(ctx: AbilityContext): AbilityResult {
 
   if (loweredStat) {
     effects.push({
-      effectType: "stat-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       stat: loweredStat,
       stages: -1,
     });
@@ -776,8 +782,8 @@ function handleFlinch(abilityId: string, ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
     stat: "speed",
     stages: 1,
   };

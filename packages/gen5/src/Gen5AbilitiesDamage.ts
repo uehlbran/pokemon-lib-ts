@@ -1,4 +1,5 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 
 /**
@@ -239,7 +240,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -257,7 +260,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -275,7 +280,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -289,7 +296,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -303,7 +312,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -319,7 +330,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -335,7 +348,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -351,7 +366,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -367,7 +384,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -383,7 +402,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -405,7 +426,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -419,7 +442,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.isCrit) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -432,7 +457,9 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness >= 1) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -448,7 +475,12 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Multiscale weakened the attack!`],
       };
     }
@@ -462,7 +494,12 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness <= 1) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -477,7 +514,12 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -491,7 +533,12 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -528,7 +575,12 @@ export function handleGen5DamageImmunityAbility(ctx: AbilityContext): AbilityRes
       if (ctx.move?.effect?.type === "ohko") {
         return {
           activated: true,
-          effects: [{ effectType: "damage-reduction", target: "self" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+              target: BATTLE_EFFECT_TARGETS.self,
+            },
+          ],
           messages: [`${name} held on thanks to Sturdy!`],
           movePrevented: true,
         };
