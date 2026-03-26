@@ -1,9 +1,5 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
-import {
-  CORE_HAZARD_IDS,
-  createPokemonInstance,
-  SeededRandom,
-} from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, createPokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
