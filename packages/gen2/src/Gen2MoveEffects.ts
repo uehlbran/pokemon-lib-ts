@@ -22,6 +22,7 @@ import type {
   SeededRandom,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { canInflictGen2Status } from "./Gen2Status";
 
 // ---------------------------------------------------------------------------
@@ -287,7 +288,7 @@ export function handleCustomEffect(
         result.recoilDamage = halfHp;
         result.statChanges.push({
           target: "attacker",
-          stat: "attack",
+          stat: CORE_STAT_IDS.attack,
           stages: 6 - attacker.statStages.attack,
         });
         result.messages.push(`${pokemonName} cut its own HP and maximized Attack!`);

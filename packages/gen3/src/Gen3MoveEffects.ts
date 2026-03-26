@@ -29,6 +29,7 @@ import type {
   VolatileStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { canInflictGen3Status } from "./Gen3Ruleset";
 
 // ---------------------------------------------------------------------------
@@ -403,7 +404,7 @@ function handleTwoTurnEffect(
   // Skull Bash raises Defense by 1 stage on the charge turn
   // Source: pret/pokeemerald — EFFECT_SKULL_BASH: RaiseStat(STAT_DEF) before charging
   if (move.id === "skull-bash") {
-    result.statChanges.push({ target: "attacker", stat: "defense", stages: 1 });
+    result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.defense, stages: 1 });
   }
 
   const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
@@ -437,7 +438,7 @@ function handleCustomEffect(
         result.recoilDamage = halfHp;
         result.statChanges.push({
           target: "attacker",
-          stat: "attack",
+          stat: CORE_STAT_IDS.attack,
           stages: 6 - attacker.statStages.attack,
         });
         result.messages.push(`${pokemonName} cut its own HP and maximized Attack!`);
@@ -691,9 +692,9 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
         );
       } else {
         result.statChanges.push(
-          { target: "attacker", stat: "speed", stages: -1 },
-          { target: "attacker", stat: "attack", stages: 1 },
-          { target: "attacker", stat: "defense", stages: 1 },
+          { target: "attacker", stat: CORE_STAT_IDS.speed, stages: -1 },
+          { target: "attacker", stat: CORE_STAT_IDS.attack, stages: 1 },
+          { target: "attacker", stat: CORE_STAT_IDS.defense, stages: 1 },
         );
       }
       return true;
@@ -864,7 +865,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       }
       result.selfVolatileInflicted = "charged";
       result.selfVolatileData = { turnsLeft: 2 }; // Lasts until end of next turn
-      result.statChanges.push({ target: "attacker", stat: "spDefense", stages: 1 });
+      result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.spDefense, stages: 1 });
       result.messages.push(`${attackerName} began charging power!`);
       return true;
     }

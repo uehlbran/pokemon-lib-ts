@@ -5,6 +5,7 @@ import type {
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
 import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
 
@@ -178,7 +179,7 @@ function handleSwitchIn(
       const effect: AbilityEffect = {
         effectType: "stat-change",
         target: "opponent",
-        stat: "attack",
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -522,7 +523,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const effect: AbilityEffect = {
         effectType: "stat-change",
         target: "self",
-        stat: "speed",
+        stat: CORE_STAT_IDS.speed,
         stages: 1,
       };
       return {
@@ -909,7 +910,9 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       if (moveType !== "electric") return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        effects: [
+          { effectType: "stat-change", target: "self", stat: CORE_STAT_IDS.speed, stages: 1 },
+        ],
         messages: [],
       };
     }
@@ -1010,7 +1013,7 @@ function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResu
   const effect: AbilityEffect = {
     effectType: "stat-change",
     target: "self",
-    stat: "speed",
+    stat: CORE_STAT_IDS.speed,
     stages: 1,
   };
   return {

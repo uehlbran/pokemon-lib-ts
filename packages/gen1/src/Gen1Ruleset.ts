@@ -41,6 +41,7 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_STAT_IDS,
   calculateExpGainClassic,
   gen1to2FullParalysisCheck,
   gen1to4MultiHitRoll,
@@ -581,12 +582,12 @@ export class Gen1Ruleset implements GenerationRuleset {
           if (change.stat === "spAttack" || change.stat === "spDefense") {
             result.statChanges.push({
               target: resolvedTarget,
-              stat: "spAttack",
+              stat: CORE_STAT_IDS.spAttack,
               stages: change.stages,
             });
             result.statChanges.push({
               target: resolvedTarget,
-              stat: "spDefense",
+              stat: CORE_STAT_IDS.spDefense,
               stages: change.stages,
             });
           } else {

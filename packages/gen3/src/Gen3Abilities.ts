@@ -10,7 +10,7 @@ import type {
   PrimaryStatus,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 3 Abilities — applyAbility dispatch.
@@ -308,7 +308,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       const effect: AbilityEffect = {
         effectType: "stat-change",
         target: "opponent",
-        stat: "attack",
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -669,7 +669,9 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       }
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        effects: [
+          { effectType: "stat-change", target: "self", stat: CORE_STAT_IDS.speed, stages: 1 },
+        ],
         messages: [`${name}'s Speed Boost raised its Speed!`],
       };
     }

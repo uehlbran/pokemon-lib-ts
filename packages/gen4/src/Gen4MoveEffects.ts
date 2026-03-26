@@ -34,6 +34,7 @@ import type {
   VolatileStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -624,7 +625,7 @@ function handleCustomEffect(
         result.recoilDamage = halfHp;
         result.statChanges.push({
           target: "attacker",
-          stat: "attack",
+          stat: CORE_STAT_IDS.attack,
           stages: 6 - attacker.statStages.attack,
         });
         result.messages.push(`${attackerName} cut its own HP and maximized Attack!`);
@@ -963,7 +964,7 @@ function handleNullEffectMoves(
       // Source: Bulbapedia — Defog lowers target's evasion by 1 and clears hazards
       result.clearSideHazards = "defender";
       result.screensCleared = "defender";
-      result.statChanges.push({ target: "defender", stat: "evasion", stages: -1 });
+      result.statChanges.push({ target: "defender", stat: CORE_STAT_IDS.evasion, stages: -1 });
       result.messages.push("It blew away the hazards!");
       break;
     }
@@ -2164,19 +2165,19 @@ function applyBerryEffectToAttacker(
       break;
     // Stat pinch berries — boost stat immediately when eaten via Pluck/Bug Bite
     case "liechi-berry":
-      result.statChanges.push({ target: "attacker", stat: "attack", stages: 1 });
+      result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.attack, stages: 1 });
       break;
     case "ganlon-berry":
-      result.statChanges.push({ target: "attacker", stat: "defense", stages: 1 });
+      result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.defense, stages: 1 });
       break;
     case "salac-berry":
-      result.statChanges.push({ target: "attacker", stat: "speed", stages: 1 });
+      result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.speed, stages: 1 });
       break;
     case "petaya-berry":
-      result.statChanges.push({ target: "attacker", stat: "spAttack", stages: 1 });
+      result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.spAttack, stages: 1 });
       break;
     case "apicot-berry":
-      result.statChanges.push({ target: "attacker", stat: "spDefense", stages: 1 });
+      result.statChanges.push({ target: "attacker", stat: CORE_STAT_IDS.spDefense, stages: 1 });
       break;
     default:
       // Many berries have no in-battle effect when consumed this way
