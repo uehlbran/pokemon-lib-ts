@@ -1,5 +1,7 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { GEN8_ABILITY_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 8 damage-modifying ability handlers.
@@ -98,10 +100,10 @@ export function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: stri
  * Source: Showdown data/abilities.ts -- Blaze/Overgrow/Torrent/Swarm onModifyAtk/onModifySpA
  */
 const PINCH_ABILITY_TYPES: Readonly<Record<string, PokemonType>> = {
-  blaze: "fire",
-  overgrow: "grass",
-  torrent: "water",
-  swarm: "bug",
+  [GEN8_ABILITY_IDS.blaze]: CORE_TYPE_IDS.fire,
+  [GEN8_ABILITY_IDS.overgrow]: CORE_TYPE_IDS.grass,
+  [GEN8_ABILITY_IDS.torrent]: CORE_TYPE_IDS.water,
+  [GEN8_ABILITY_IDS.swarm]: CORE_TYPE_IDS.bug,
 };
 
 // ---------------------------------------------------------------------------
@@ -168,8 +170,12 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Source: Showdown data/abilities.ts -- sandforce onBasePower
       if (!ctx.move) return NO_ACTIVATION;
       const weather = ctx.state.weather?.type ?? null;
-      if (weather !== "sand") return NO_ACTIVATION;
-      const sandForceTypes: PokemonType[] = ["rock", "ground", "steel"];
+      if (weather !== CORE_WEATHER_IDS.sand) return NO_ACTIVATION;
+      const sandForceTypes: readonly PokemonType[] = [
+        CORE_TYPE_IDS.rock,
+        CORE_TYPE_IDS.ground,
+        CORE_TYPE_IDS.steel,
+      ];
       if (!sandForceTypes.includes(ctx.move.type)) return NO_ACTIVATION;
       return {
         activated: true,
@@ -350,10 +356,10 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Pixilate: Normal moves become Fairy, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- pixilate: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["fairy"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.fairy] }],
         messages: [`${name}'s Pixilate transformed the move into Fairy type!`],
       };
     }
@@ -362,10 +368,10 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Aerilate: Normal moves become Flying, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- aerilate: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["flying"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.flying] }],
         messages: [`${name}'s Aerilate transformed the move into Flying type!`],
       };
     }
@@ -374,10 +380,10 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Refrigerate: Normal moves become Ice, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- refrigerate: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["ice"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] }],
         messages: [`${name}'s Refrigerate transformed the move into Ice type!`],
       };
     }
@@ -386,10 +392,10 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Galvanize: Normal moves become Electric, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- galvanize: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["electric"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.electric] }],
         messages: [`${name}'s Galvanize transformed the move into Electric type!`],
       };
     }
@@ -429,7 +435,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Source: Bulbapedia "Transistor" -- "powers up Electric-type moves by 50%"
       // Note: In Gen 9, nerfed to 1.3333x (5461/4096). Gen 8 is 1.5x.
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "electric") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.electric) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -442,7 +448,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Source: Showdown data/abilities.ts -- dragonsmaw: onModifyAtk/onModifySpA, chainModify(1.5)
       // Source: Bulbapedia "Dragon's Maw" -- "powers up Dragon-type moves by 50%"
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "dragon") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.dragon) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -468,7 +474,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Source: Showdown data/abilities.ts -- steelworker: onModifyAtk/onModifySpA, chainModify(1.5)
       // Source: Bulbapedia "Steelworker" -- "powers up Steel-type moves by 50%"
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "steel") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.steel) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -517,7 +523,9 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Thick Fat: 0.5x damage from Fire and Ice type moves.
       // Source: Showdown data/abilities.ts -- thickfat onSourceModifyAtk/onSourceModifySpA
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "fire" && ctx.move.type !== "ice") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.fire && ctx.move.type !== CORE_TYPE_IDS.ice) {
+        return NO_ACTIVATION;
+      }
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -728,17 +736,17 @@ export function getAteAbilityOverride(
   abilityId: string,
   moveType: PokemonType,
 ): { type: PokemonType; multiplier: number } | null {
-  if (moveType !== "normal") return null;
+  if (moveType !== CORE_TYPE_IDS.normal) return null;
 
   switch (abilityId) {
     case "pixilate":
-      return { type: "fairy", multiplier: 4915 / 4096 };
+      return { type: CORE_TYPE_IDS.fairy, multiplier: 4915 / 4096 };
     case "aerilate":
-      return { type: "flying", multiplier: 4915 / 4096 };
+      return { type: CORE_TYPE_IDS.flying, multiplier: 4915 / 4096 };
     case "refrigerate":
-      return { type: "ice", multiplier: 4915 / 4096 };
+      return { type: CORE_TYPE_IDS.ice, multiplier: 4915 / 4096 };
     case "galvanize":
-      return { type: "electric", multiplier: 4915 / 4096 };
+      return { type: CORE_TYPE_IDS.electric, multiplier: 4915 / 4096 };
     default:
       return null;
   }
@@ -810,7 +818,7 @@ export function getGorillaTacticsMultiplier(abilityId: string, category: string)
  */
 export function getTransistorMultiplier(abilityId: string, moveType: PokemonType): number {
   if (abilityId !== "transistor") return 1;
-  if (moveType !== "electric") return 1;
+  if (moveType !== CORE_TYPE_IDS.electric) return 1;
   return 6144 / 4096;
 }
 
@@ -823,7 +831,7 @@ export function getTransistorMultiplier(abilityId: string, moveType: PokemonType
  */
 export function getDragonsMawMultiplier(abilityId: string, moveType: PokemonType): number {
   if (abilityId !== "dragons-maw") return 1;
-  if (moveType !== "dragon") return 1;
+  if (moveType !== CORE_TYPE_IDS.dragon) return 1;
   return 6144 / 4096;
 }
 
@@ -875,6 +883,6 @@ export function getIceScalesMultiplier(abilityId: string, category: string): num
  */
 export function getSteelworkerMultiplier(abilityId: string, moveType: PokemonType): number {
   if (abilityId !== "steelworker") return 1;
-  if (moveType !== "steel") return 1;
+  if (moveType !== CORE_TYPE_IDS.steel) return 1;
   return 6144 / 4096;
 }

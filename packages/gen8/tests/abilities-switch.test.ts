@@ -612,11 +612,11 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Pastel Veil`, () => {
     ).toBe(true);
   });
 
-  it(`given pastel-veil on side and bad-${CORE_STATUS_IDS.poison} status, when checking, then blocks toxic`, () => {
+  it(`given pastel-veil on side and ${CORE_STATUS_IDS.badlyPoisoned} status, when checking, then blocks toxic`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil blocks Toxic poison too
-    expect(
-      isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], `bad-${CORE_STATUS_IDS.poison}`),
-    ).toBe(true);
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.badlyPoisoned)).toBe(
+      true,
+    );
   });
 
   it(`given pastel-veil on ally (not self), when checking ${CORE_STATUS_IDS.poison}, then still blocks`, () => {

@@ -1,5 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { GEN5_ABILITY_IDS } from "./data/reference-ids";
 
 /**
  * Gen 5 switch-in, contact, switch-out, and passive ability handlers.
@@ -42,7 +44,11 @@ function getOpponentName(ctx: AbilityContext): string {
 // Mold Breaker variants
 // Source: Showdown data/abilities.ts — onModifyMove: move.ignoreAbility = true
 // ---------------------------------------------------------------------------
-const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+export const MOLD_BREAKER_ALIASES: ReadonlySet<string> = new Set([
+  GEN5_ABILITY_IDS.moldBreaker,
+  GEN5_ABILITY_IDS.teravolt,
+  GEN5_ABILITY_IDS.turboblaze,
+]);
 
 /**
  * Abilities that cannot be overwritten by Mummy or suppressed by Gastro Acid in Gen 5.
@@ -58,7 +64,20 @@ const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"])
  * Source: Bulbapedia — Mummy: "Cannot overwrite Multitype" (Gen 5)
  * Source: Bulbapedia — Zen Mode: "Cannot be suppressed" (Gen 5)
  */
-const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "zen-mode"]);
+export const UNSUPPRESSABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN5_ABILITY_IDS.multitype,
+  GEN5_ABILITY_IDS.zenMode,
+]);
+
+export const TRACE_UNCOPYABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN5_ABILITY_IDS.trace,
+  GEN5_ABILITY_IDS.multitype,
+  GEN5_ABILITY_IDS.forecast,
+  GEN5_ABILITY_IDS.illusion,
+  GEN5_ABILITY_IDS.flowerGift,
+  GEN5_ABILITY_IDS.imposter,
+  GEN5_ABILITY_IDS.zenMode,
+]);
 
 // ---------------------------------------------------------------------------
 // Main dispatch
@@ -148,7 +167,12 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "rain", weatherTurns: -1 },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: -1,
+          },
         ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
@@ -158,7 +182,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown Gen 5 — Drought sets permanent sun (-1 turns)
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "sun", weatherTurns: -1 }],
+        effects: [
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: -1,
+          },
+        ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
     }
@@ -168,7 +199,12 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sand", weatherTurns: -1 },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: -1,
+          },
         ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
@@ -179,7 +215,12 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "hail", weatherTurns: -1 },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.hail,
+            weatherTurns: -1,
+          },
         ],
         messages: [`${name}'s Snow Warning made it hail!`],
       };
@@ -209,17 +250,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Trace cannot copy Multitype, Forecast, Trace, Illusion, Imposter,
       //   Zen Mode, Flower Gift (Gen 5)
       if (!ctx.opponent) return NO_EFFECT;
-      const uncopyable = [
-        "trace",
-        "multitype",
-        "forecast",
-        "illusion",
-        "flower-gift",
-        "imposter",
-        "zen-mode",
-      ];
       const opponentAbility = ctx.opponent.ability;
-      if (!opponentAbility || uncopyable.includes(opponentAbility)) return NO_EFFECT;
+      if (!opponentAbility || TRACE_UNCOPYABLE_ABILITIES.has(opponentAbility)) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
@@ -277,7 +309,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // We set the "illusion" volatile status here as a signal.
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "self", volatile: "illusion" }],
+        effects: [
+          { effectType: "volatile-inflict", target: "self", volatile: CORE_VOLATILE_IDS.illusion },
+        ],
         messages: [],
       };
     }
@@ -493,13 +527,23 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Mummy: "Contact with the Pokemon changes the attacker's
       //   Ability to Mummy."
       const otherAbility = other.ability;
-      if (!otherAbility || otherAbility === "mummy" || UNSUPPRESSABLE_ABILITIES.has(otherAbility)) {
+      if (
+        !otherAbility ||
+        otherAbility === GEN5_ABILITY_IDS.mummy ||
+        UNSUPPRESSABLE_ABILITIES.has(otherAbility)
+      ) {
         return NO_EFFECT;
       }
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "opponent", newAbility: "mummy" }],
+        effects: [
+          {
+            effectType: "ability-change",
+            target: "opponent",
+            newAbility: GEN5_ABILITY_IDS.mummy,
+          },
+        ],
         messages: [`${oppName}'s ability became Mummy!`],
       };
     }
@@ -537,8 +581,11 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Unburden: if the victim (attacker) has Unburden, set the volatile.
       // Source: Showdown data/abilities.ts — Unburden activates when item is lost by any means.
       // Source: Bulbapedia — Unburden: "Doubles Speed when held item is used or lost."
-      if (other.ability === "unburden" && !other.volatileStatuses.has("unburden")) {
-        other.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      if (
+        other.ability === GEN5_ABILITY_IDS.unburden &&
+        !other.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+      ) {
+        other.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
       }
 
       return {

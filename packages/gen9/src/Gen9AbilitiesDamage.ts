@@ -18,7 +18,17 @@
  */
 
 import type { AbilityContext, AbilityResult, ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { MoveCategory, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS, GEN9_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Supreme Overlord power table
@@ -70,9 +80,9 @@ export function getOrichalcumPulseAtkModifier(
   abilityId: string,
   weatherType: string | null,
 ): number {
-  if (abilityId !== "orichalcum-pulse") return 4096;
+  if (abilityId !== GEN9_ABILITY_IDS.orichalcumPulse) return 4096;
   // "harsh-sun" is our WeatherType for Desolate Land (Showdown calls it "desolateland")
-  if (weatherType !== "sun" && weatherType !== "harsh-sun") {
+  if (weatherType !== CORE_WEATHER_IDS.sun && weatherType !== CORE_WEATHER_IDS.harshSun) {
     return 4096;
   }
   return 5461;
@@ -87,8 +97,8 @@ export function getOrichalcumPulseAtkModifier(
  *     return this.chainModify([5461, 4096]);
  */
 export function getHadronEngineSpAModifier(abilityId: string, terrainType: string | null): number {
-  if (abilityId !== "hadron-engine") return 4096;
-  if (terrainType !== "electric") return 4096;
+  if (abilityId !== GEN9_ABILITY_IDS.hadronEngine) return 4096;
+  if (terrainType !== CORE_TERRAIN_IDS.electric) return 4096;
   return 5461;
 }
 
@@ -116,9 +126,9 @@ export function getFluffyModifier(
   moveType: PokemonType,
   isContact: boolean,
 ): number {
-  if (defenderAbility !== "fluffy") return 4096;
+  if (defenderAbility !== GEN9_ABILITY_IDS.fluffy) return 4096;
   let mod = 1;
-  if (moveType === "fire") mod *= 2;
+  if (moveType === CORE_TYPE_IDS.fire) mod *= 2;
   if (isContact) mod /= 2;
   // Convert to 4096-based: 0.5 = 2048, 1.0 = 4096, 2.0 = 8192
   return Math.round(mod * 4096);
@@ -134,12 +144,9 @@ export function getFluffyModifier(
  * Source: Showdown data/abilities.ts -- icescales: onSourceModifyDamage
  *   if (move.category === 'Special') return this.chainModify(0.5);
  */
-export function getIceScalesModifier(
-  defenderAbility: string,
-  moveCategory: "physical" | "special" | "status",
-): number {
-  if (defenderAbility !== "ice-scales") return 4096;
-  if (moveCategory !== "special") return 4096;
+export function getIceScalesModifier(defenderAbility: string, moveCategory: MoveCategory): number {
+  if (defenderAbility !== GEN9_ABILITY_IDS.iceScales) return 4096;
+  if (moveCategory !== CORE_MOVE_CATEGORIES.special) return 4096;
   return 2048; // 0.5x
 }
 
@@ -173,9 +180,9 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *   from burn/paralysis/freeze with 20% chance
  */
 const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
+  CORE_MOVE_IDS.triAttack,
   "secret-power",
-  "relic-song",
+  GEN9_MOVE_IDS.relicSong,
 ]);
 
 /**
@@ -221,10 +228,10 @@ export function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: stri
  * Source: Showdown data/abilities.ts -- Blaze/Overgrow/Torrent/Swarm
  */
 const PINCH_ABILITY_TYPES: Readonly<Record<string, PokemonType>> = {
-  blaze: "fire",
-  overgrow: "grass",
-  torrent: "water",
-  swarm: "bug",
+  [GEN9_ABILITY_IDS.blaze]: CORE_TYPE_IDS.fire,
+  [GEN9_ABILITY_IDS.overgrow]: CORE_TYPE_IDS.grass,
+  [GEN9_ABILITY_IDS.torrent]: CORE_TYPE_IDS.water,
+  [GEN9_ABILITY_IDS.swarm]: CORE_TYPE_IDS.bug,
 };
 
 // ---------------------------------------------------------------------------
@@ -260,29 +267,33 @@ export function getAteAbilityOverride(
   isSoundMove?: boolean,
 ): { type: PokemonType; multiplier: number } | null {
   // -ate abilities: only convert Normal-type moves
-  if (moveType === "normal") {
+  if (moveType === CORE_TYPE_IDS.normal) {
     switch (abilityId) {
-      case "pixilate":
-        return { type: "fairy", multiplier: 4915 / 4096 };
-      case "aerilate":
-        return { type: "flying", multiplier: 4915 / 4096 };
-      case "refrigerate":
-        return { type: "ice", multiplier: 4915 / 4096 };
-      case "galvanize":
-        return { type: "electric", multiplier: 4915 / 4096 };
+      case GEN9_ABILITY_IDS.pixilate:
+        return { type: CORE_TYPE_IDS.fairy, multiplier: 4915 / 4096 };
+      case GEN9_ABILITY_IDS.aerilate:
+        return { type: CORE_TYPE_IDS.flying, multiplier: 4915 / 4096 };
+      case GEN9_ABILITY_IDS.refrigerate:
+        return { type: CORE_TYPE_IDS.ice, multiplier: 4915 / 4096 };
+      case GEN9_ABILITY_IDS.galvanize:
+        return { type: CORE_TYPE_IDS.electric, multiplier: 4915 / 4096 };
     }
   }
 
   // Normalize: all moves become Normal type + 1.2x boost (Gen 7+)
   // Source: Showdown data/abilities.ts -- Normalize Gen 7+
-  if (abilityId === "normalize" && moveType !== "normal") {
-    return { type: "normal", multiplier: 4915 / 4096 };
+  if (abilityId === GEN9_ABILITY_IDS.normalize && moveType !== CORE_TYPE_IDS.normal) {
+    return { type: CORE_TYPE_IDS.normal, multiplier: 4915 / 4096 };
   }
 
   // Liquid Voice: sound-based moves become Water type (no power boost)
   // Source: Showdown data/abilities.ts -- liquidvoice: onModifyType
-  if (abilityId === "liquid-voice" && isSoundMove && moveType !== "water") {
-    return { type: "water", multiplier: 1 };
+  if (
+    abilityId === GEN9_ABILITY_IDS.liquidVoice &&
+    isSoundMove &&
+    moveType !== CORE_TYPE_IDS.water
+  ) {
+    return { type: CORE_TYPE_IDS.water, multiplier: 1 };
   }
 
   return null;
@@ -310,16 +321,16 @@ export function applyGen9ProteanTypeChange(
   sideIndex: 0 | 1,
 ): Array<{ type: string; side: number; pokemon: number; types: PokemonType[] }> {
   const ability = pokemon.ability;
-  if (ability !== "protean" && ability !== "libero") return [];
+  if (ability !== GEN9_ABILITY_IDS.protean && ability !== GEN9_ABILITY_IDS.libero) return [];
 
   // Once per switchin gate
-  if (pokemon.volatileStatuses.has("protean-used" as VolatileStatus)) return [];
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.proteanUsed)) return [];
 
   // Already the same type -- no change needed (matches Showdown check)
   if (pokemon.types.length === 1 && pokemon.types[0] === moveType) return [];
 
   // Mark as used for this switchin
-  pokemon.volatileStatuses.set("protean-used" as VolatileStatus, { turnsLeft: -1 });
+  pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.proteanUsed, { turnsLeft: -1 });
 
   // Change type to move type
   pokemon.types = [moveType];
@@ -357,7 +368,7 @@ export const handleGen9ProteanTypeChange = applyGen9ProteanTypeChange;
  * @returns true if the ability activated (Atk should be boosted by +1)
  */
 export function applyGen9IntrepidSwordBoost(pokemon: ActivePokemon): boolean {
-  if (pokemon.ability !== "intrepid-sword") return false;
+  if (pokemon.ability !== GEN9_ABILITY_IDS.intrepidSword) return false;
 
   // Check if already used this battle — persisted on PokemonInstance so it survives switches.
   // Mirrors Showdown: if (pokemon.swordBoost) return; pokemon.swordBoost = true;
@@ -387,7 +398,7 @@ export const handleGen9IntrepidSword = applyGen9IntrepidSwordBoost;
  * @returns true if the ability activated (Def should be boosted by +1)
  */
 export function applyGen9DauntlessShieldBoost(pokemon: ActivePokemon): boolean {
-  if (pokemon.ability !== "dauntless-shield") return false;
+  if (pokemon.ability !== GEN9_ABILITY_IDS.dauntlessShield) return false;
 
   // Check if already used this battle — persisted on PokemonInstance so it survives switches.
   // Mirrors Showdown: if (pokemon.shieldBoost) return; pokemon.shieldBoost = true;
@@ -436,7 +447,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
   switch (abilityId) {
     // ---- Attacker-side abilities ----
 
-    case "sheer-force": {
+    case GEN9_ABILITY_IDS.sheerForce: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!isSheerForceEligibleMove(ctx.move.effect, ctx.move.id)) return NO_ACTIVATION;
       return {
@@ -446,7 +457,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "analytic": {
+    case GEN9_ABILITY_IDS.analytic: {
       if (!ctx.opponent) return NO_ACTIVATION;
       if (!ctx.opponent.movedThisTurn) return NO_ACTIVATION;
       return {
@@ -456,11 +467,15 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "sand-force": {
+    case GEN9_ABILITY_IDS.sandForce: {
       if (!ctx.move) return NO_ACTIVATION;
       const weather = ctx.state.weather?.type ?? null;
-      if (weather !== "sand") return NO_ACTIVATION;
-      const sandForceTypes: PokemonType[] = ["rock", "ground", "steel"];
+      if (weather !== CORE_WEATHER_IDS.sand) return NO_ACTIVATION;
+      const sandForceTypes: readonly PokemonType[] = [
+        CORE_TYPE_IDS.rock,
+        CORE_TYPE_IDS.ground,
+        CORE_TYPE_IDS.steel,
+      ];
       if (!sandForceTypes.includes(ctx.move.type)) return NO_ACTIVATION;
       return {
         activated: true,
@@ -469,7 +484,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "technician": {
+    case GEN9_ABILITY_IDS.technician: {
       if (!ctx.move) return NO_ACTIVATION;
       if (ctx.move.power === null || ctx.move.power > 60) return NO_ACTIVATION;
       return {
@@ -479,7 +494,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "iron-fist": {
+    case GEN9_ABILITY_IDS.ironFist: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!ctx.move.flags.punch) return NO_ACTIVATION;
       return {
@@ -489,7 +504,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "reckless": {
+    case GEN9_ABILITY_IDS.reckless: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!hasRecoilEffect(ctx.move.effect) && !ctx.move.hasCrashDamage) return NO_ACTIVATION;
       return {
@@ -499,7 +514,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "adaptability": {
+    case GEN9_ABILITY_IDS.adaptability: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!ctx.pokemon.types.includes(ctx.move.type)) return NO_ACTIVATION;
       return {
@@ -509,9 +524,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "hustle": {
+    case GEN9_ABILITY_IDS.hustle: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -519,10 +534,10 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "huge-power":
-    case "pure-power": {
+    case GEN9_ABILITY_IDS.hugePower:
+    case GEN9_ABILITY_IDS.purePower: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -530,9 +545,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "guts": {
+    case GEN9_ABILITY_IDS.guts: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
       return {
         activated: true,
@@ -541,10 +556,10 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "blaze":
-    case "overgrow":
-    case "torrent":
-    case "swarm": {
+    case GEN9_ABILITY_IDS.blaze:
+    case GEN9_ABILITY_IDS.overgrow:
+    case GEN9_ABILITY_IDS.torrent:
+    case GEN9_ABILITY_IDS.swarm: {
       if (!ctx.move) return NO_ACTIVATION;
       const pinchType = PINCH_ABILITY_TYPES[abilityId];
       if (!pinchType || ctx.move.type !== pinchType) return NO_ACTIVATION;
@@ -558,7 +573,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "sniper": {
+    case GEN9_ABILITY_IDS.sniper: {
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -566,7 +581,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "tinted-lens": {
+    case GEN9_ABILITY_IDS.tintedLens: {
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -574,7 +589,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "supreme-overlord": {
+    case GEN9_ABILITY_IDS.supremeOverlord: {
       // Supreme Overlord: power boost based on fainted allies.
       // The actual numerical modifier is applied via getSupremeOverlordModifier()
       // in the damage calc. This handler just signals activation.
@@ -592,11 +607,11 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "orichalcum-pulse": {
+    case GEN9_ABILITY_IDS.orichalcumPulse: {
       // Stat modifier: applied in getAttackStat via getOrichalcumPulseAtkModifier().
       // Source: Showdown data/abilities.ts:3016-3035
       const weather = ctx.state.weather?.type ?? null;
-      if (weather !== "sun" && weather !== "harsh-sun") {
+      if (weather !== CORE_WEATHER_IDS.sun && weather !== CORE_WEATHER_IDS.harshSun) {
         return NO_ACTIVATION;
       }
       return {
@@ -606,11 +621,11 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "hadron-engine": {
+    case GEN9_ABILITY_IDS.hadronEngine: {
       // Stat modifier: applied in getAttackStat via getHadronEngineSpAModifier().
       // Source: Showdown data/abilities.ts:1725-1742
       const terrainType = ctx.state.terrain?.type ?? null;
-      if (terrainType !== "electric") return NO_ACTIVATION;
+      if (terrainType !== CORE_TERRAIN_IDS.electric) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -620,7 +635,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- Gen 6 carry-forward: Attacker-side ----
 
-    case "tough-claws": {
+    case GEN9_ABILITY_IDS.toughClaws: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!ctx.move.flags.contact) return NO_ACTIVATION;
       return {
@@ -630,7 +645,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "strong-jaw": {
+    case GEN9_ABILITY_IDS.strongJaw: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!ctx.move.flags.bite) return NO_ACTIVATION;
       return {
@@ -640,7 +655,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "mega-launcher": {
+    case GEN9_ABILITY_IDS.megaLauncher: {
       if (!ctx.move) return NO_ACTIVATION;
       if (!ctx.move.flags.pulse) return NO_ACTIVATION;
       return {
@@ -652,47 +667,47 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- -ate abilities (Gen 7+: 1.2x, carried to Gen 9) ----
 
-    case "pixilate": {
+    case GEN9_ABILITY_IDS.pixilate: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["fairy"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.fairy] }],
         messages: [`${name}'s Pixilate transformed the move into Fairy type!`],
       };
     }
 
-    case "aerilate": {
+    case GEN9_ABILITY_IDS.aerilate: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["flying"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.flying] }],
         messages: [`${name}'s Aerilate transformed the move into Flying type!`],
       };
     }
 
-    case "refrigerate": {
+    case GEN9_ABILITY_IDS.refrigerate: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["ice"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] }],
         messages: [`${name}'s Refrigerate transformed the move into Ice type!`],
       };
     }
 
-    case "galvanize": {
+    case GEN9_ABILITY_IDS.galvanize: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "normal") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: ["electric"] }],
+        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.electric] }],
         messages: [`${name}'s Galvanize transformed the move into Electric type!`],
       };
     }
 
-    case "parental-bond": {
+    case GEN9_ABILITY_IDS.parentalBond: {
       if (!ctx.move) return NO_ACTIVATION;
       if (ctx.move.effect?.type === "multi-hit") return NO_ACTIVATION;
       if (!ctx.move.power || ctx.move.power <= 0) return NO_ACTIVATION;
@@ -705,11 +720,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- Defender-side abilities ----
 
-    case "multiscale":
-    case "shadow-shield": {
+    case GEN9_ABILITY_IDS.multiscale:
+    case GEN9_ABILITY_IDS.shadowShield: {
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       if (ctx.pokemon.pokemon.currentHp < maxHp) return NO_ACTIVATION;
-      const abilityName = abilityId === "multiscale" ? "Multiscale" : "Shadow Shield";
+      const abilityName =
+        abilityId === GEN9_ABILITY_IDS.multiscale ? "Multiscale" : "Shadow Shield";
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -717,8 +733,8 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "solid-rock":
-    case "filter": {
+    case GEN9_ABILITY_IDS.solidRock:
+    case GEN9_ABILITY_IDS.filter: {
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -726,7 +742,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "prism-armor": {
+    case GEN9_ABILITY_IDS.prismArmor: {
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -734,9 +750,11 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "thick-fat": {
+    case GEN9_ABILITY_IDS.thickFat: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "fire" && ctx.move.type !== "ice") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.fire && ctx.move.type !== CORE_TYPE_IDS.ice) {
+        return NO_ACTIVATION;
+      }
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -744,7 +762,7 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "marvel-scale": {
+    case CORE_ABILITY_IDS.marvelScale: {
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
       return {
         activated: true,
@@ -753,9 +771,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "fur-coat": {
+    case GEN9_ABILITY_IDS.furCoat: {
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -763,11 +781,11 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "fluffy": {
+    case GEN9_ABILITY_IDS.fluffy: {
       // Fluffy: halves contact damage, doubles fire damage.
       // Source: Showdown data/abilities.ts -- fluffy: onSourceModifyDamage
       if (!ctx.move) return NO_ACTIVATION;
-      const isFire = ctx.move.type === "fire";
+      const isFire = ctx.move.type === CORE_TYPE_IDS.fire;
       const isContact = !!ctx.move.flags.contact;
       if (!isFire && !isContact) return NO_ACTIVATION;
       return {
@@ -777,11 +795,11 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "ice-scales": {
+    case GEN9_ABILITY_IDS.iceScales: {
       // Ice Scales: halves special damage taken.
       // Source: Showdown data/abilities.ts -- icescales: onSourceModifyDamage
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "special") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.special) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -806,7 +824,7 @@ export function handleGen9DamageImmunityAbility(ctx: AbilityContext): AbilityRes
   const name = ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
 
   switch (abilityId) {
-    case "sturdy": {
+    case CORE_ABILITY_IDS.sturdy: {
       if (ctx.move?.effect?.type === "ohko") {
         return {
           activated: true,
@@ -838,7 +856,7 @@ export function getSheerForceMultiplier(
   effect: MoveEffect | null,
   moveId?: string,
 ): number {
-  if (abilityId !== "sheer-force") return 1;
+  if (abilityId !== GEN9_ABILITY_IDS.sheerForce) return 1;
   if (!isSheerForceEligibleMove(effect, moveId ?? "")) return 1;
   return 5325 / 4096;
 }
@@ -853,7 +871,7 @@ export function sheerForceSuppressesLifeOrb(
   effect: MoveEffect | null,
   moveId?: string,
 ): boolean {
-  if (abilityId !== "sheer-force") return false;
+  if (abilityId !== GEN9_ABILITY_IDS.sheerForce) return false;
   return isSheerForceEligibleMove(effect, moveId ?? "");
 }
 
@@ -868,7 +886,9 @@ export function getMultiscaleMultiplier(
   currentHp: number,
   maxHp: number,
 ): number {
-  if (abilityId !== "multiscale" && abilityId !== "shadow-shield") return 1;
+  if (abilityId !== GEN9_ABILITY_IDS.multiscale && abilityId !== GEN9_ABILITY_IDS.shadowShield) {
+    return 1;
+  }
   if (currentHp < maxHp) return 1;
   return 0.5;
 }
@@ -885,7 +905,7 @@ export function getSturdyDamageCap(
   currentHp: number,
   maxHp: number,
 ): number {
-  if (abilityId !== "sturdy") return damage;
+  if (abilityId !== CORE_ABILITY_IDS.sturdy) return damage;
   if (currentHp !== maxHp) return damage;
   if (damage < currentHp) return damage;
   return maxHp - 1;
@@ -897,7 +917,7 @@ export function getSturdyDamageCap(
  * Source: Showdown data/abilities.ts -- sturdy onTryHit
  */
 export function sturdyBlocksOHKO(abilityId: string, effect: MoveEffect | null): boolean {
-  if (abilityId !== "sturdy") return false;
+  if (abilityId !== CORE_ABILITY_IDS.sturdy) return false;
   if (!effect) return false;
   return effect.type === "ohko";
 }
@@ -909,7 +929,7 @@ export function sturdyBlocksOHKO(abilityId: string, effect: MoveEffect | null): 
  * Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, 4096])
  */
 export function getToughClawsMultiplier(abilityId: string, isContact: boolean): number {
-  if (abilityId !== "tough-claws") return 1;
+  if (abilityId !== GEN9_ABILITY_IDS.toughClaws) return 1;
   if (!isContact) return 1;
   return 5325 / 4096;
 }
@@ -921,7 +941,7 @@ export function getToughClawsMultiplier(abilityId: string, isContact: boolean): 
  * Source: Showdown data/abilities.ts -- strongjaw: chainModify(1.5)
  */
 export function getStrongJawMultiplier(abilityId: string, isBite: boolean): number {
-  if (abilityId !== "strong-jaw") return 1;
+  if (abilityId !== GEN9_ABILITY_IDS.strongJaw) return 1;
   if (!isBite) return 1;
   return 1.5;
 }
@@ -933,7 +953,7 @@ export function getStrongJawMultiplier(abilityId: string, isBite: boolean): numb
  * Source: Showdown data/abilities.ts -- megalauncher: chainModify(1.5)
  */
 export function getMegaLauncherMultiplier(abilityId: string, isPulse: boolean): number {
-  if (abilityId !== "mega-launcher") return 1;
+  if (abilityId !== GEN9_ABILITY_IDS.megaLauncher) return 1;
   if (!isPulse) return 1;
   return 1.5;
 }
@@ -948,7 +968,7 @@ export function isParentalBondEligible(
   movePower: number | null,
   moveEffectType: string | null,
 ): boolean {
-  if (abilityId !== "parental-bond") return false;
+  if (abilityId !== GEN9_ABILITY_IDS.parentalBond) return false;
   if (!movePower || movePower <= 0) return false;
   if (moveEffectType === "multi-hit") return false;
   return true;
@@ -969,7 +989,7 @@ export const PARENTAL_BOND_SECOND_HIT_MULTIPLIER = 0.25;
  * Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
  */
 export function getFurCoatMultiplier(abilityId: string, isPhysical: boolean): number {
-  if (abilityId !== "fur-coat") return 1;
+  if (abilityId !== GEN9_ABILITY_IDS.furCoat) return 1;
   if (!isPhysical) return 1;
   return 2;
 }

@@ -1,5 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { GEN6_ABILITY_IDS, GEN6_MOVE_IDS } from "./data/reference-ids";
 
 /**
  * Gen 6 switch-in, contact, switch-out, and passive ability handlers.
@@ -52,7 +54,11 @@ function getOpponentName(ctx: AbilityContext): string {
 // Mold Breaker variants
 // Source: Showdown data/abilities.ts — onModifyMove: move.ignoreAbility = true
 // ---------------------------------------------------------------------------
-const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+export const MOLD_BREAKER_ALIASES: ReadonlySet<string> = new Set([
+  GEN6_ABILITY_IDS.moldBreaker,
+  GEN6_ABILITY_IDS.teravolt,
+  GEN6_ABILITY_IDS.turboblaze,
+]);
 
 /**
  * Abilities that cannot be overwritten by Mummy in Gen 6.
@@ -62,7 +68,22 @@ const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"])
  * Source: Showdown data/mods/gen6/abilities.ts — cantsuppress flag for Gen 6
  * Source: Showdown data/abilities.ts — { cantsuppress: 1 } flag
  */
-const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "stance-change", "zen-mode"]);
+export const UNSUPPRESSABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN6_ABILITY_IDS.multitype,
+  GEN6_ABILITY_IDS.stanceChange,
+  GEN6_ABILITY_IDS.zenMode,
+]);
+
+export const TRACE_UNCOPYABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN6_ABILITY_IDS.trace,
+  GEN6_ABILITY_IDS.multitype,
+  GEN6_ABILITY_IDS.forecast,
+  GEN6_ABILITY_IDS.illusion,
+  GEN6_ABILITY_IDS.flowerGift,
+  GEN6_ABILITY_IDS.imposter,
+  GEN6_ABILITY_IDS.zenMode,
+  GEN6_ABILITY_IDS.stanceChange,
+]);
 
 // Bulletproof uses the move.flags.bullet flag (see handler and isBulletproofBlocked).
 // Source: Showdown data/abilities.ts — bulletproof: `move.flags['bullet']`
@@ -72,13 +93,13 @@ const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "stance-change", "zen-mod
  * Move IDs that Aroma Veil blocks (mental interference moves).
  * Source: Showdown data/abilities.ts — aromaveil: blocks moves targeting mental freedom
  */
-const AROMA_VEIL_BLOCKED_MOVES = new Set([
-  "taunt",
-  "encore",
-  "torment",
-  "disable",
-  "heal-block",
-  "attract",
+export const AROMA_VEIL_BLOCKED_MOVES: ReadonlySet<string> = new Set([
+  GEN6_MOVE_IDS.taunt,
+  GEN6_MOVE_IDS.encore,
+  GEN6_MOVE_IDS.torment,
+  GEN6_MOVE_IDS.disable,
+  GEN6_MOVE_IDS.healBlock,
+  GEN6_MOVE_IDS.attract,
 ]);
 
 // ---------------------------------------------------------------------------
@@ -169,7 +190,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Drizzle Gen VI: "Summons rain for 5 turns on entry."
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "rain", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
     }
@@ -178,7 +206,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/mods/gen6/abilities.ts — Drought sets 5-turn sun in Gen 6
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "sun", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
     }
@@ -187,7 +222,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/mods/gen6/abilities.ts — Sand Stream sets 5-turn sandstorm in Gen 6
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "sand", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
     }
@@ -196,7 +238,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/mods/gen6/abilities.ts — Snow Warning sets 5-turn hail in Gen 6
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "hail", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.hail,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Snow Warning made it hail!`],
       };
     }
@@ -221,22 +270,11 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
 
     case "trace": {
       // Source: Showdown data/abilities.ts — Trace: copies opponent's ability
-      // Gen 6 ban list adds "power-construct", "stance-change" to Gen 5 list
-      // Source: Bulbapedia — Trace Gen VI: cannot copy Power Construct, Stance Change
+      // Gen 6 ban list adds Stance Change to the Gen 5 list.
+      // Power Construct is Gen 7-only and is not part of the Gen 6 surface.
       if (!ctx.opponent) return NO_EFFECT;
-      const uncopyable = [
-        "trace",
-        "multitype",
-        "forecast",
-        "illusion",
-        "flower-gift",
-        "imposter",
-        "zen-mode",
-        "stance-change",
-        "power-construct",
-      ];
       const opponentAbility = ctx.opponent.ability;
-      if (!opponentAbility || uncopyable.includes(opponentAbility)) return NO_EFFECT;
+      if (!opponentAbility || TRACE_UNCOPYABLE_ABILITIES.has(opponentAbility)) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
@@ -291,7 +329,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Illusion: sets volatile on switch-in
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "self", volatile: "illusion" }],
+        effects: [
+          { effectType: "volatile-inflict", target: "self", volatile: CORE_VOLATILE_IDS.illusion },
+        ],
         messages: [],
       };
     }
@@ -448,7 +488,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (other.types.includes("grass")) return NO_EFFECT;
       // Overcoat blocks powder/spore moves in Gen 6 (including Effect Spore)
       // Source: Showdown data/mods/gen6/abilities.ts — overcoat: blocks powder flag
-      if (other.ability === "overcoat") return NO_EFFECT;
+      if (other.ability === GEN6_ABILITY_IDS.overcoat) return NO_EFFECT;
       const roll = Math.floor(ctx.rng.next() * 100);
       if (roll < 10) {
         return {
@@ -514,13 +554,23 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Mummy: contact changes attacker's ability to Mummy.
       // Cannot overwrite unsuppressable abilities or Mummy itself.
       const otherAbility = other.ability;
-      if (!otherAbility || otherAbility === "mummy" || UNSUPPRESSABLE_ABILITIES.has(otherAbility)) {
+      if (
+        !otherAbility ||
+        otherAbility === GEN6_ABILITY_IDS.mummy ||
+        UNSUPPRESSABLE_ABILITIES.has(otherAbility)
+      ) {
         return NO_EFFECT;
       }
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "opponent", newAbility: "mummy" }],
+        effects: [
+          {
+            effectType: "ability-change",
+            target: "opponent",
+            newAbility: GEN6_ABILITY_IDS.mummy,
+          },
+        ],
         messages: [`${oppName}'s ability became Mummy!`],
       };
     }
@@ -551,8 +601,11 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       other.pokemon.heldItem = null;
 
       // Unburden activates if the victim (attacker) loses its item
-      if (other.ability === "unburden" && !other.volatileStatuses.has("unburden")) {
-        other.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      if (
+        other.ability === GEN6_ABILITY_IDS.unburden &&
+        !other.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+      ) {
+        other.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
       }
 
       return {

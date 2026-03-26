@@ -44,9 +44,13 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  BASE_ABILITY_TYPE_IMMUNITIES,
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  BASE_TYPE_RESIST_BERRIES,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
@@ -78,24 +82,8 @@ const GIRATINA_SPECIES_ID = 487;
  * Source: Bulbapedia -- type-resist berries
  */
 export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
-  "roseli-berry": "fairy",
+  ...BASE_TYPE_RESIST_BERRIES,
+  [CORE_ITEM_IDS.roseliBerry]: CORE_TYPE_IDS.fairy,
 };
 
 // ---- Type-Boosting Items ----
@@ -118,7 +106,7 @@ const TYPE_BOOST_ITEMS = BASE_TYPE_BOOST_ITEMS;
  */
 const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
   ...BASE_PLATE_ITEMS,
-  "pixie-plate": "fairy",
+  [CORE_ITEM_IDS.pixiePlate]: CORE_TYPE_IDS.fairy,
 };
 
 // ---- Gem Items (Gen 7) ----
@@ -132,7 +120,7 @@ const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
  * Source: Bulbapedia "Gem" -- "From Generation VII onwards, only Normal Gem is available."
  */
 const GEM_ITEMS: Readonly<Record<string, string>> = {
-  "normal-gem": "normal",
+  [CORE_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
 };
 
 /**
@@ -163,17 +151,7 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  * Source: Showdown sim/battle.ts -- immunity abilities
  * Source: Bulbapedia -- Motor Drive, Dry Skin, etc.
  */
-const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
-  "storm-drain": "water",
-  "lightning-rod": "electric",
-  "sap-sipper": "grass",
-};
+const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
 // ---- Recoil Detection Helper ----
 
