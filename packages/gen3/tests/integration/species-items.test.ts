@@ -1,8 +1,12 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import {
-  CORE_STATUS_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
-  NEUTRAL_NATURES,
+  createEvs,
+  createFriendship,
+  createIvs,
   type MoveData,
   type PokemonInstance,
   type PokemonType,
@@ -11,21 +15,20 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  createGen3DataManager,
   calculateGen3Damage,
+  createGen3DataManager,
   GEN3_ITEM_IDS,
   GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
   GEN3_TYPES,
 } from "../../src";
 
 const dataManager = createGen3DataManager();
-const STATUS = CORE_STATUS_IDS;
-const T = CORE_TYPE_IDS;
-const I = GEN3_ITEM_IDS;
-const M = GEN3_MOVE_IDS;
-const S = GEN3_SPECIES_IDS;
-const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const typeIds = CORE_TYPE_IDS;
+const itemIds = GEN3_ITEM_IDS;
+const moveIds = GEN3_MOVE_IDS;
+const speciesIds = GEN3_SPECIES_IDS;
 
 /**
  * Gen 3 Species-Specific Item Tests
@@ -62,68 +65,68 @@ function createMockRng(intReturnValue: number) {
 }
 
 /** Minimal ActivePokemon mock with configurable speciesId. */
-function createActivePokemon(opts: {
+function createSyntheticOnFieldPokemon(options: {
   level: number;
   attack: number;
   defense: number;
   spAttack: number;
   spDefense: number;
-  types: PokemonType[];
+  types: readonly [PokemonType] | readonly [PokemonType, PokemonType];
   speciesId?: number;
   status?: PrimaryStatus | null;
   heldItem?: string | null;
   ability?: string;
 }): ActivePokemon {
+  const species = dataManager.getSpecies(options.speciesId ?? speciesIds.bulbasaur);
+  const defaultGender =
+    species.genderRatio === -1
+      ? CORE_GENDERS.genderless
+      : species.genderRatio === 0
+        ? CORE_GENDERS.female
+        : CORE_GENDERS.male;
+  const defaultAbility = options.ability ?? species.abilities.normal[0] ?? "";
   const stats: StatBlock = {
     hp: 200,
-    attack: opts.attack,
-    defense: opts.defense,
-    spAttack: opts.spAttack,
-    spDefense: opts.spDefense,
+    attack: options.attack,
+    defense: options.defense,
+    spAttack: options.spAttack,
+    spDefense: options.spDefense,
     speed: 100,
   };
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? S.bulbasaur,
+    speciesId: species.id,
     nickname: null,
-    level: opts.level,
+    level: options.level,
     experience: 0,
-    nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: GEN3_NATURE_IDS.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: 200,
     moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    ability: defaultAbility,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: options.heldItem ?? null,
+    status: options.status ?? null,
+    friendship: createFriendship(species.baseFriendship),
+    gender: defaultGender,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: I.pokeBall,
+    pokeball: itemIds.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
   return {
     pokemon,
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: opts.types,
-    ability: opts.ability ?? "",
+    types: [...options.types],
+    ability: defaultAbility,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -142,42 +145,36 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-/** Create a move mock with the given type and power. */
-function createMove(type: PokemonType, power: number): MoveData {
-  const baseMove = dataManager.getMove(M.tackle);
+/** Create a synthetic move from canonical Gen 3 data. */
+function createSyntheticMove(baseMoveId: string, overrides: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(baseMoveId);
   return {
-    id: baseMove.id,
-    displayName: baseMove.displayName,
-    type,
-    category: "physical",
-    power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 3,
+    ...baseMove,
+    flags: { ...baseMove.flags, ...overrides.flags },
+    ...overrides,
+    effect: overrides.effect ?? baseMove.effect,
   } as MoveData;
+}
+
+function getRepresentativeDamageMoveId(type: PokemonType): string {
+  switch (type) {
+    case CORE_TYPE_IDS.fire:
+      return moveIds.flamethrower;
+    case CORE_TYPE_IDS.water:
+      return moveIds.waterGun;
+    case CORE_TYPE_IDS.electric:
+      return moveIds.thunderbolt;
+    case CORE_TYPE_IDS.ground:
+      return moveIds.earthquake;
+    case CORE_TYPE_IDS.normal:
+      return moveIds.tackle;
+    default:
+      return moveIds.tackle;
+  }
+}
+
+function createSyntheticDamageMove(type: PokemonType, power: number): MoveData {
+  return createSyntheticMove(getRepresentativeDamageMoveId(type), { power });
 }
 
 /** All-neutral type chart for 17 Gen 3 types. */
@@ -238,37 +235,37 @@ describe("Gen 3 Species-Specific Items", () => {
       // With Soul Dew: rawStat = floor(200*150/100) = 300
       //   baseDamage = floor(floor((22*80*300)/100)/50)+2 = floor(5280/50)+2 = 105+2 = 107
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80); // fire is special in Gen 3
+      const move = createSyntheticDamageMove(typeIds.fire, 80); // fire is special in Gen 3
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latias,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latias,
         heldItem: null,
       });
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latias,
-        heldItem: I.soulDew,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latias,
+        heldItem: itemIds.soulDew,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithout = calculateGen3Damage(
@@ -300,37 +297,37 @@ describe("Gen 3 Species-Specific Items", () => {
       //             = floor(floor(1012500/120)/50)+2
       //             = floor(8437/50)+2 = 168+2 = 170
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.water, 90); // water is special in Gen 3
+      const move = createSyntheticDamageMove(typeIds.water, 90); // water is special in Gen 3
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 70,
         attack: 100,
         defense: 100,
         spAttack: 250,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latios,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latios,
         heldItem: null,
       });
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 70,
         attack: 100,
         defense: 100,
         spAttack: 250,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latios,
-        heldItem: I.soulDew,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latios,
+        heldItem: itemIds.soulDew,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 120,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithout = calculateGen3Damage(
@@ -360,37 +357,37 @@ describe("Gen 3 Species-Specific Items", () => {
       //             = floor(floor(352000/300)/50)+2
       //             = floor(1173/50)+2 = 23+2 = 25
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80);
+      const move = createSyntheticDamageMove(typeIds.fire, 80);
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 100,
-        types: [T.normal], // NOT fire-type -- avoids STAB
+        types: [typeIds.normal], // NOT fire-type -- avoids STAB
       });
 
-      const defenderNoItem = createActivePokemon({
+      const defenderNoItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latias,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latias,
         heldItem: null,
       });
 
-      const defenderWithItem = createActivePokemon({
+      const defenderWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latias,
-        heldItem: I.soulDew,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latias,
+        heldItem: itemIds.soulDew,
       });
 
       const resultWithout = calculateGen3Damage(
@@ -413,26 +410,26 @@ describe("Gen 3 Species-Specific Items", () => {
       // Setup: Bulbasaur (1) holding Soul Dew, L50, SpAtk=200, Def=100, Power=80
       // Expected: no boost, baseDamage = floor(floor((22*80*200)/100)/50)+2 = 72
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80);
+      const move = createSyntheticDamageMove(typeIds.fire, 80);
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 200,
-        types: [T.grass, T.poison],
-        speciesId: S.bulbasaur,
-        heldItem: I.soulDew,
+        types: [typeIds.grass, typeIds.poison],
+        speciesId: speciesIds.bulbasaur,
+        heldItem: itemIds.soulDew,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const result = calculateGen3Damage(
@@ -450,26 +447,26 @@ describe("Gen 3 Species-Specific Items", () => {
       // Setup: Latias L50, Atk=200, Def=100, Power=80, Normal type (physical in Gen 3)
       // Expected: no boost on physical, baseDamage = 72
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80); // Normal is physical in Gen 3
+      const move = createSyntheticDamageMove(typeIds.normal, 80); // Normal is physical in Gen 3
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 200,
         defense: 100,
         spAttack: 200,
         spDefense: 200,
-        types: [T.dragon, T.psychic],
-        speciesId: S.latias,
-        heldItem: I.soulDew,
+        types: [typeIds.dragon, typeIds.psychic],
+        speciesId: speciesIds.latias,
+        heldItem: itemIds.soulDew,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const result = calculateGen3Damage(
@@ -499,37 +496,37 @@ describe("Gen 3 Species-Specific Items", () => {
       // With Deep Sea Tooth: rawStat = 100*2 = 200
       //   baseDamage = floor(floor((22*80*200)/100)/50)+2 = floor(3520/50)+2 = 70+2 = 72
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80); // fire is special in Gen 3, no STAB for Clamperl
+      const move = createSyntheticDamageMove(typeIds.fire, 80); // fire is special in Gen 3, no STAB for Clamperl
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
         heldItem: null,
       });
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
-        heldItem: I.deepSeaTooth,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
+        heldItem: itemIds.deepSeaTooth,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithout = calculateGen3Damage(
@@ -560,37 +557,37 @@ describe("Gen 3 Species-Specific Items", () => {
       //             = floor(floor(145600/120)/50)+2
       //             = floor(1213/50)+2 = 24+2 = 26
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 65); // fire is special in Gen 3
+      const move = createSyntheticDamageMove(typeIds.fire, 65); // fire is special in Gen 3
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 30,
         attack: 60,
         defense: 100,
         spAttack: 80,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
         heldItem: null,
       });
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 30,
         attack: 60,
         defense: 100,
         spAttack: 80,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
-        heldItem: I.deepSeaTooth,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
+        heldItem: itemIds.deepSeaTooth,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 120,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithout = calculateGen3Damage(
@@ -613,26 +610,26 @@ describe("Gen 3 Species-Specific Items", () => {
       // Setup: Bulbasaur (1) L50, SpAtk=100, Def=100, Power=80
       // Expected: baseDamage = 37 (no boost)
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.water, 80);
+      const move = createSyntheticDamageMove(typeIds.water, 80);
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.grass, T.poison],
-        speciesId: S.bulbasaur,
-        heldItem: I.deepSeaTooth,
+        types: [typeIds.grass, typeIds.poison],
+        speciesId: speciesIds.bulbasaur,
+        heldItem: itemIds.deepSeaTooth,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const result = calculateGen3Damage(
@@ -663,37 +660,37 @@ describe("Gen 3 Species-Specific Items", () => {
       // With Light Ball: rawStat = 100*2 = 200
       //   baseDamage = floor(floor((22*80*200)/100)/50)+2 = floor(3520/50)+2 = 70+2 = 72
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80); // fire is special in Gen 3, no STAB for Pikachu
+      const move = createSyntheticDamageMove(typeIds.fire, 80); // fire is special in Gen 3, no STAB for Pikachu
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.electric],
-        speciesId: S.pikachu,
+        types: [typeIds.electric],
+        speciesId: speciesIds.pikachu,
         heldItem: null,
       });
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.electric],
-        speciesId: S.pikachu,
-        heldItem: I.lightBall,
+        types: [typeIds.electric],
+        speciesId: speciesIds.pikachu,
+        heldItem: itemIds.lightBall,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithout = calculateGen3Damage(
@@ -724,37 +721,37 @@ describe("Gen 3 Species-Specific Items", () => {
       //             = floor(floor(57600/80)/50)+2
       //             = floor(720/50)+2 = 14+2 = 16
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 40); // fire is special in Gen 3
+      const move = createSyntheticDamageMove(typeIds.fire, 40); // fire is special in Gen 3
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 25,
         attack: 50,
         defense: 50,
         spAttack: 60,
         spDefense: 60,
-        types: [T.electric],
-        speciesId: S.pikachu,
+        types: [typeIds.electric],
+        speciesId: speciesIds.pikachu,
         heldItem: null,
       });
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 25,
         attack: 50,
         defense: 50,
         spAttack: 60,
         spDefense: 60,
-        types: [T.electric],
-        speciesId: S.pikachu,
-        heldItem: I.lightBall,
+        types: [typeIds.electric],
+        speciesId: speciesIds.pikachu,
+        heldItem: itemIds.lightBall,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 80,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithout = calculateGen3Damage(
@@ -778,37 +775,37 @@ describe("Gen 3 Species-Specific Items", () => {
       // Setup: L50, Atk=100, Def=100, Power=80, Normal type (physical in Gen 3)
       // Expected: no boost, baseDamage = 37
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80); // Normal is physical in Gen 3
+      const move = createSyntheticDamageMove(typeIds.normal, 80); // Normal is physical in Gen 3
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.electric],
-        speciesId: S.pikachu,
-        heldItem: I.lightBall,
+        types: [typeIds.electric],
+        speciesId: speciesIds.pikachu,
+        heldItem: itemIds.lightBall,
       });
 
-      const attackerNoItem = createActivePokemon({
+      const attackerNoItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.electric],
-        speciesId: S.pikachu,
+        types: [typeIds.electric],
+        speciesId: speciesIds.pikachu,
         heldItem: null,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWith = calculateGen3Damage(
@@ -831,26 +828,26 @@ describe("Gen 3 Species-Specific Items", () => {
       // Setup: Bulbasaur (1) L50, SpAtk=100, Def=100, Power=80
       // Expected: baseDamage = 37 (no boost)
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.electric, 80);
+      const move = createSyntheticDamageMove(typeIds.electric, 80);
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.grass, T.poison],
-        speciesId: S.bulbasaur,
-        heldItem: I.lightBall,
+        types: [typeIds.grass, typeIds.poison],
+        speciesId: speciesIds.bulbasaur,
+        heldItem: itemIds.lightBall,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const result = calculateGen3Damage(
@@ -881,36 +878,36 @@ describe("Gen 3 Species-Specific Items", () => {
       // With Deep Sea Scale: rawDef = 100*2 = 200
       //   baseDamage = floor(floor((22*80*200)/200)/50)+2 = floor(1760/50)+2 = 35+2 = 37
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80); // fire is special in Gen 3
+      const move = createSyntheticDamageMove(typeIds.fire, 80); // fire is special in Gen 3
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 200,
         spDefense: 100,
-        types: [T.normal], // NOT fire-type -- avoids STAB complicating the expected values
+        types: [typeIds.normal], // NOT fire-type -- avoids STAB complicating the expected values
       });
 
-      const defenderWithItem = createActivePokemon({
+      const defenderWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 50,
         defense: 80,
         spAttack: 50,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
-        heldItem: I.deepSeaScale,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
+        heldItem: itemIds.deepSeaScale,
       });
 
-      const defenderWithoutItem = createActivePokemon({
+      const defenderWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 50,
         defense: 80,
         spAttack: 50,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
         heldItem: null,
       });
 
@@ -931,36 +928,36 @@ describe("Gen 3 Species-Specific Items", () => {
     it("given Clamperl (366) holding Deep Sea Scale, when defending a physical move, then SpDef doubling does not apply", () => {
       // Source: Deep Sea Scale only boosts SpDef, not Def
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80); // normal is physical in Gen 3
+      const move = createSyntheticDamageMove(typeIds.normal, 80); // normal is physical in Gen 3
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
-      const defenderWithItem = createActivePokemon({
+      const defenderWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 50,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
-        heldItem: I.deepSeaScale,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
+        heldItem: itemIds.deepSeaScale,
       });
 
-      const defenderWithoutItem = createActivePokemon({
+      const defenderWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 50,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.clamperl,
+        types: [typeIds.water],
+        speciesId: speciesIds.clamperl,
         heldItem: null,
       });
 
@@ -980,36 +977,36 @@ describe("Gen 3 Species-Specific Items", () => {
     it("given non-Clamperl Pokemon holding Deep Sea Scale, when defending a special move, then SpDef is NOT doubled", () => {
       // Source: Deep Sea Scale only works for Clamperl (species 366)
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80);
+      const move = createSyntheticDamageMove(typeIds.fire, 80);
 
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.fire],
+        types: [typeIds.fire],
       });
 
-      const defenderWithItem = createActivePokemon({
+      const defenderWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 50,
         defense: 80,
         spAttack: 50,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.bulbasaur,
-        heldItem: I.deepSeaScale,
+        types: [typeIds.water],
+        speciesId: speciesIds.bulbasaur,
+        heldItem: itemIds.deepSeaScale,
       });
 
-      const defenderWithoutItem = createActivePokemon({
+      const defenderWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 50,
         defense: 80,
         spAttack: 50,
         spDefense: 100,
-        types: [T.water],
-        speciesId: S.bulbasaur,
+        types: [typeIds.water],
+        speciesId: speciesIds.bulbasaur,
         heldItem: null,
       });
 
@@ -1046,37 +1043,37 @@ describe("Gen 3 Species-Specific Items", () => {
       //   baseDamage = floor(floor((22*80*200)/100)/50)+2 = 70+2 = 72
       //   STAB = floor(72*1.5) = 108
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.ground, 80); // ground is physical in Gen 3
+      const move = createSyntheticDamageMove(typeIds.ground, 80); // ground is physical in Gen 3
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.ground],
-        speciesId: S.cubone,
-        heldItem: I.thickClub,
+        types: [typeIds.ground],
+        speciesId: speciesIds.cubone,
+        heldItem: itemIds.thickClub,
       });
 
-      const attackerWithoutItem = createActivePokemon({
+      const attackerWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.ground],
-        speciesId: S.cubone,
+        types: [typeIds.ground],
+        speciesId: speciesIds.cubone,
         heldItem: null,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithItem = calculateGen3Damage(
@@ -1100,37 +1097,37 @@ describe("Gen 3 Species-Specific Items", () => {
       // Without item: baseDamage = 37, no STAB => 37
       // With Thick Club: baseDamage = 72, no STAB => 72
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80); // normal is physical in Gen 3
+      const move = createSyntheticDamageMove(typeIds.normal, 80); // normal is physical in Gen 3
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.ground],
-        speciesId: S.marowak,
-        heldItem: I.thickClub,
+        types: [typeIds.ground],
+        speciesId: speciesIds.marowak,
+        heldItem: itemIds.thickClub,
       });
 
-      const attackerWithoutItem = createActivePokemon({
+      const attackerWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.ground],
-        speciesId: S.marowak,
+        types: [typeIds.ground],
+        speciesId: speciesIds.marowak,
         heldItem: null,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithItem = calculateGen3Damage(
@@ -1150,37 +1147,37 @@ describe("Gen 3 Species-Specific Items", () => {
     it("given Cubone (104) holding Thick Club, when using a special move, then Attack doubling does not apply", () => {
       // Source: Thick Club only boosts physical Attack, not SpAtk
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.fire, 80); // fire is special in Gen 3
+      const move = createSyntheticDamageMove(typeIds.fire, 80); // fire is special in Gen 3
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.ground],
-        speciesId: S.cubone,
-        heldItem: I.thickClub,
+        types: [typeIds.ground],
+        speciesId: speciesIds.cubone,
+        heldItem: itemIds.thickClub,
       });
 
-      const attackerWithoutItem = createActivePokemon({
+      const attackerWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.ground],
-        speciesId: S.cubone,
+        types: [typeIds.ground],
+        speciesId: speciesIds.cubone,
         heldItem: null,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithItem = calculateGen3Damage(
@@ -1199,37 +1196,37 @@ describe("Gen 3 Species-Specific Items", () => {
     it("given non-Cubone/Marowak Pokemon holding Thick Club, when using a physical move, then Attack is NOT doubled", () => {
       // Source: Thick Club only works for Cubone (104) and Marowak (105)
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80);
+      const move = createSyntheticDamageMove(typeIds.normal, 80);
 
-      const attackerWithItem = createActivePokemon({
+      const attackerWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.normal],
-        speciesId: S.bulbasaur,
-        heldItem: I.thickClub,
+        types: [typeIds.normal],
+        speciesId: speciesIds.bulbasaur,
+        heldItem: itemIds.thickClub,
       });
 
-      const attackerWithoutItem = createActivePokemon({
+      const attackerWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 50,
         spDefense: 100,
-        types: [T.normal],
-        speciesId: S.bulbasaur,
+        types: [typeIds.normal],
+        speciesId: speciesIds.bulbasaur,
         heldItem: null,
       });
 
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
+        types: [typeIds.normal],
       });
 
       const resultWithItem = calculateGen3Damage(
@@ -1269,35 +1266,35 @@ describe("Gen 3 Species-Specific Items", () => {
       //     random roll = 1.0x → damage = 19
       // Source: pret/pokeemerald src/pokemon.c:3197 — defense *= 2 for SPECIES_DITTO
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80); // Normal is physical in Gen 3
+      const move = createSyntheticDamageMove(typeIds.normal, 80); // Normal is physical in Gen 3
 
-      const dittoWithItem = createActivePokemon({
+      const dittoWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
-        speciesId: S.ditto,
-        heldItem: I.metalPowder,
+        types: [typeIds.normal],
+        speciesId: speciesIds.ditto,
+        heldItem: itemIds.metalPowder,
       });
-      const dittoWithoutItem = createActivePokemon({
+      const dittoWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
-        speciesId: S.ditto,
+        types: [typeIds.normal],
+        speciesId: speciesIds.ditto,
         heldItem: null,
       });
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.fire], // fire-type attacker → no STAB on normal move
+        types: [typeIds.fire], // fire-type attacker → no STAB on normal move
       });
 
       const resultWith = calculateGen3Damage(
@@ -1319,35 +1316,35 @@ describe("Gen 3 Species-Specific Items", () => {
       // Source: pret/pokeemerald src/pokemon.c:3197 — species check is strictly SPECIES_DITTO
       // Fire-type attacker → no STAB on normal move → damage = 37 regardless of item.
       const typeChart = createNeutralTypeChart();
-      const move = createMove(T.normal, 80);
+      const move = createSyntheticDamageMove(typeIds.normal, 80);
 
-      const nonDittoWithItem = createActivePokemon({
+      const nonDittoWithItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
-        speciesId: S.bulbasaur, // Bulbasaur — not Ditto
-        heldItem: I.metalPowder,
+        types: [typeIds.normal],
+        speciesId: speciesIds.bulbasaur, // Bulbasaur — not Ditto
+        heldItem: itemIds.metalPowder,
       });
-      const nonDittoWithoutItem = createActivePokemon({
+      const nonDittoWithoutItem = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.normal],
-        speciesId: S.bulbasaur,
+        types: [typeIds.normal],
+        speciesId: speciesIds.bulbasaur,
         heldItem: null,
       });
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: [T.fire], // no STAB on normal move
+        types: [typeIds.fire], // no STAB on normal move
       });
 
       const resultWith = calculateGen3Damage(
