@@ -6,7 +6,13 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN4_ITEM_IDS } from "./data/reference-ids";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
 import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
 
@@ -70,22 +76,22 @@ export function isWeatherSuppressedOnField(state: {
  * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Plate_(item)
  */
 export const PLATE_TO_TYPE: Record<string, PokemonType> = {
-  "flame-plate": "fire",
-  "splash-plate": "water",
-  "zap-plate": "electric",
-  "meadow-plate": "grass",
-  "icicle-plate": "ice",
-  "fist-plate": "fighting",
-  "toxic-plate": "poison",
-  "earth-plate": "ground",
-  "sky-plate": "flying",
-  "mind-plate": "psychic",
-  "insect-plate": "bug",
-  "stone-plate": "rock",
-  "spooky-plate": "ghost",
-  "draco-plate": "dragon",
-  "dread-plate": "dark",
-  "iron-plate": "steel",
+  [GEN4_ITEM_IDS.flamePlate]: CORE_TYPE_IDS.fire,
+  [GEN4_ITEM_IDS.splashPlate]: CORE_TYPE_IDS.water,
+  [GEN4_ITEM_IDS.zapPlate]: CORE_TYPE_IDS.electric,
+  [GEN4_ITEM_IDS.meadowPlate]: CORE_TYPE_IDS.grass,
+  [GEN4_ITEM_IDS.iciclePlate]: CORE_TYPE_IDS.ice,
+  [GEN4_ITEM_IDS.fistPlate]: CORE_TYPE_IDS.fighting,
+  [GEN4_ITEM_IDS.toxicPlate]: CORE_TYPE_IDS.poison,
+  [GEN4_ITEM_IDS.earthPlate]: CORE_TYPE_IDS.ground,
+  [GEN4_ITEM_IDS.skyPlate]: CORE_TYPE_IDS.flying,
+  [GEN4_ITEM_IDS.mindPlate]: CORE_TYPE_IDS.psychic,
+  [GEN4_ITEM_IDS.insectPlate]: CORE_TYPE_IDS.bug,
+  [GEN4_ITEM_IDS.stonePlate]: CORE_TYPE_IDS.rock,
+  [GEN4_ITEM_IDS.spookyPlate]: CORE_TYPE_IDS.ghost,
+  [GEN4_ITEM_IDS.dracoPlate]: CORE_TYPE_IDS.dragon,
+  [GEN4_ITEM_IDS.dreadPlate]: CORE_TYPE_IDS.dark,
+  [GEN4_ITEM_IDS.ironPlate]: CORE_TYPE_IDS.steel,
 };
 
 /**
