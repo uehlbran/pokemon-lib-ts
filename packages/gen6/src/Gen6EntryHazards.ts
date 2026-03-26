@@ -33,6 +33,7 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -403,21 +404,23 @@ export function applyGen6StickyWeb(
   //   each of its stats that is lowered by an opposing Pokemon"
   // Source: Bulbapedia -- Competitive: "raises the Pokemon's Special Attack stat by two
   //   stages for each of its stats that is lowered by an opposing Pokemon"
-  const statChanges: Array<{ stat: BattleStat; stages: number }> = [{ stat: "speed", stages: -1 }];
+  const statChanges: Array<{ stat: BattleStat; stages: number }> = [
+    { stat: CORE_STAT_IDS.speed, stages: -1 },
+  ];
 
   if (switchingIn.ability === "defiant") {
     // Defiant: +2 Attack in response to stat drop
-    statChanges.push({ stat: "attack", stages: 2 });
+    statChanges.push({ stat: CORE_STAT_IDS.attack, stages: 2 });
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
   } else if (switchingIn.ability === "competitive") {
     // Competitive: +2 Special Attack in response to stat drop
-    statChanges.push({ stat: "spAttack", stages: 2 });
+    statChanges.push({ stat: CORE_STAT_IDS.spAttack, stages: 2 });
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
   }
 
   return {
     applied: true,
-    statChange: { stat: "speed", stages: -1 },
+    statChange: { stat: CORE_STAT_IDS.speed, stages: -1 },
     followupStatChanges: statChanges.slice(1),
     messages,
   };

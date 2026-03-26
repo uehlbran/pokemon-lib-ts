@@ -3,6 +3,7 @@ import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib
 import type { AbilityTrigger, PokemonType, ScreenType, WeatherType } from "@pokemon-lib-ts/core";
 import {
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -227,7 +228,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const effect: AbilityEffect = {
         effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
         target: BATTLE_EFFECT_TARGETS.opponent,
-        stat: "attack",
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -468,7 +469,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "attack",
+            stat: CORE_STAT_IDS.attack,
             stages: 1,
           },
         ],
@@ -486,7 +487,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "defense",
+            stat: CORE_STAT_IDS.defense,
             stages: 1,
           },
         ],
@@ -781,7 +782,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            stat: "speed",
+            stat: CORE_STAT_IDS.speed,
             stages: -1,
           },
         ],
@@ -1056,7 +1057,7 @@ function handleGulpMissileOnHit(ctx: AbilityContext): AbilityResult {
     effects.push({
       effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
       target: BATTLE_EFFECT_TARGETS.opponent,
-      stat: "defense",
+      stat: CORE_STAT_IDS.defense,
       stages: -1,
     });
   } else {

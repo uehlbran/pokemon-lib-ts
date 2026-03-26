@@ -1,7 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { GEN5_ABILITY_IDS } from "./data/reference-ids";
 
 /**
@@ -142,7 +142,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const effect: AbilityEffect = {
         effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
         target: BATTLE_EFFECT_TARGETS.opponent,
-        stat: "attack",
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -755,7 +755,7 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "speed",
+            stat: CORE_STAT_IDS.speed,
             stages: 1,
           },
         ],
@@ -942,7 +942,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "speed",
+            stat: CORE_STAT_IDS.speed,
             stages: 1,
           },
         ],
@@ -993,7 +993,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "attack",
+            stat: CORE_STAT_IDS.attack,
             stages: 1,
           },
         ],
@@ -1025,7 +1025,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "spAttack",
+            stat: CORE_STAT_IDS.spAttack,
             stages: 1,
           },
         ],
@@ -1044,7 +1044,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
             target: BATTLE_EFFECT_TARGETS.self,
-            stat: "spAttack",
+            stat: CORE_STAT_IDS.spAttack,
             stages: 1,
           },
         ],

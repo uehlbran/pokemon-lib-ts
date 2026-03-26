@@ -28,6 +28,7 @@ import type {
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
 import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { isGen9Grounded } from "./Gen9Terrain.js";
 
 // ---------------------------------------------------------------------------
@@ -306,7 +307,10 @@ export function applyGen9StickyWeb(
 
   // Apply Speed stage change (negative unless Contrary)
   const messages: string[] = [`${pokemonName} was caught in a sticky web!`];
-  const speedChange: { stat: BattleStat; stages: number } = { stat: "speed", stages: speedStages };
+  const speedChange: { stat: BattleStat; stages: number } = {
+    stat: CORE_STAT_IDS.speed,
+    stages: speedStages,
+  };
   const allStatChanges: Array<{ stat: BattleStat; stages: number }> = [speedChange];
 
   // Defiant / Competitive: triggered by opponent-caused stat DROP, raise Attack or Sp. Atk by +2.
@@ -315,10 +319,10 @@ export function applyGen9StickyWeb(
   // Source: Bulbapedia "Defiant" -- "raises Attack by 2 when its stats are lowered by an opponent"
   if (!hasContrary && switchingIn.ability === "defiant") {
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
-    allStatChanges.push({ stat: "attack", stages: 2 });
+    allStatChanges.push({ stat: CORE_STAT_IDS.attack, stages: 2 });
   } else if (!hasContrary && switchingIn.ability === "competitive") {
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
-    allStatChanges.push({ stat: "spAttack", stages: 2 });
+    allStatChanges.push({ stat: CORE_STAT_IDS.spAttack, stages: 2 });
   }
 
   return {
