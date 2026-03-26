@@ -13,17 +13,18 @@
  */
 
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { createGen4DataManager, GEN4_MOVE_IDS, GEN4_SPECIES_IDS } from "@pokemon-lib-ts/gen4";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, HazardSetEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 /** MockRuleset that signals a hazard-set via executeMoveEffect on each call. */
 class HazardMockRuleset extends MockRuleset {
-  private _hazardType: import("@pokemon-lib-ts/core").EntryHazardType = "spikes";
+  private _hazardType: import("@pokemon-lib-ts/core").EntryHazardType = CORE_HAZARD_IDS.spikes;
   private _hazardEffectActive = false;
 
   setHazard(hazard: import("@pokemon-lib-ts/core").EntryHazardType): void {
@@ -59,7 +60,7 @@ class HazardMockRuleset extends MockRuleset {
 
 class ToxicSpikesAbsorbMockRuleset extends MockRuleset {
   override getAvailableHazards(): readonly import("@pokemon-lib-ts/core").EntryHazardType[] {
-    return ["toxic-spikes"];
+    return [CORE_HAZARD_IDS.toxicSpikes];
   }
 
   override applyEntryHazards(
@@ -68,8 +69,8 @@ class ToxicSpikesAbsorbMockRuleset extends MockRuleset {
     _state?: import("../../../src/state").BattleState,
   ): import("../../../src/context").EntryHazardResult {
     if (
-      pokemon.types.includes("poison") &&
-      side.hazards.some((hazard) => hazard.type === "toxic-spikes")
+      pokemon.types.includes(CORE_TYPE_IDS.poison) &&
+      side.hazards.some((hazard) => hazard.type === CORE_HAZARD_IDS.toxicSpikes)
     ) {
       return {
         damage: 0,
@@ -78,7 +79,7 @@ class ToxicSpikesAbsorbMockRuleset extends MockRuleset {
         messages: [
           `${pokemon.pokemon.nickname ?? pokemon.pokemon.speciesId.toString()} absorbed the poison spikes!`,
         ],
-        hazardsToRemove: ["toxic-spikes"],
+        hazardsToRemove: [CORE_HAZARD_IDS.toxicSpikes],
       };
     }
 
@@ -98,14 +99,14 @@ function createHazardEngine(overrides?: { seed?: number }): {
 } {
   const ruleset = new HazardMockRuleset();
   ruleset.enableHazardEffect(true);
-  const dataManager = createMockDataManager();
+  const dataManager = createGen4DataManager();
   const events: BattleEvent[] = [];
 
   const team1: PokemonInstance[] = [
-    createTestPokemon(6, 50, {
+    createTestPokemon(GEN4_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: GEN4_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -119,10 +120,10 @@ function createHazardEngine(overrides?: { seed?: number }): {
   ];
 
   const team2: PokemonInstance[] = [
-    createTestPokemon(9, 50, {
+    createTestPokemon(GEN4_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: GEN4_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -154,47 +155,14 @@ function createToxicSpikesAbsorbEngine(): {
   events: BattleEvent[];
 } {
   const ruleset = new ToxicSpikesAbsorbMockRuleset();
-  const dataManager = createMockDataManager();
-  const poisonSpecies = {
-    ...dataManager.getSpecies(25),
-    id: 999,
-    name: "poison-mon",
-    displayName: "Poison Mon",
-    types: ["poison"],
-    baseStats: {
-      hp: 60,
-      attack: 60,
-      defense: 60,
-      spAttack: 60,
-      spDefense: 60,
-      speed: 60,
-    },
-    learnset: {
-      levelUp: [{ level: 1, move: "tackle" }],
-      tm: [],
-      egg: [],
-      tutor: [],
-    },
-    spriteKey: "poison-mon",
-    generation: 4,
-    isLegendary: false,
-    isMythical: false,
-  };
-  dataManager.loadFromObjects({
-    pokemon: [...dataManager.getAllSpecies(), poisonSpecies],
-    moves: dataManager.getAllMoves(),
-    abilities: dataManager.getAllAbilities(),
-    items: dataManager.getAllItems(),
-    natures: dataManager.getAllNatures(),
-    typeChart: dataManager.getTypeChart(),
-  });
+  const dataManager = createGen4DataManager();
   const events: BattleEvent[] = [];
 
   const team1: PokemonInstance[] = [
-    createTestPokemon(6, 50, {
+    createTestPokemon(GEN4_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: GEN4_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -208,10 +176,10 @@ function createToxicSpikesAbsorbEngine(): {
   ];
 
   const team2: PokemonInstance[] = [
-    createTestPokemon(999, 50, {
-      uid: "poison-mon-1",
-      nickname: "Poison Mon",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+    createTestPokemon(GEN4_SPECIES_IDS.roselia, 50, {
+      uid: "roselia-1",
+      nickname: "Roselia",
+      moves: [{ moveId: GEN4_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -256,7 +224,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
 
     // Assert — side 1 should have 1 Spikes layer
     const side1Hazards = engine.getState().sides[1].hazards;
-    const spikes = side1Hazards.find((h) => h.type === "spikes");
+    const spikes = side1Hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     expect(spikes).toBeDefined();
     expect(spikes?.layers).toBe(1);
 
@@ -274,7 +242,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     engine.start();
 
     // Pre-set 1 existing Spikes layer
-    engine.getState().sides[1].hazards.push({ type: "spikes", layers: 1 });
+    engine.getState().sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 1 });
 
     // Act — use Spikes again (second application)
     events.length = 0;
@@ -283,7 +251,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
 
     // Assert — layers should be 2
     const side1Hazards = engine.getState().sides[1].hazards;
-    const spikes = side1Hazards.find((h) => h.type === "spikes");
+    const spikes = side1Hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     expect(spikes?.layers).toBe(2);
 
     // Exactly one hazard-set event for this turn (the second layer)
@@ -298,7 +266,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     const { engine, events } = createHazardEngine();
     engine.start();
 
-    engine.getState().sides[1].hazards.push({ type: "spikes", layers: 2 });
+    engine.getState().sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 2 });
 
     // Act — third Spikes use
     events.length = 0;
@@ -306,7 +274,9 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — layers must be 3
-    const spikes = engine.getState().sides[1].hazards.find((h) => h.type === "spikes");
+    const spikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     expect(spikes?.layers).toBe(3);
 
     const hazardSetEvents = events.filter((e): e is HazardSetEvent => e.type === "hazard-set");
@@ -321,14 +291,16 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     const { engine, events } = createHazardEngine();
     engine.start();
 
-    engine.getState().sides[1].hazards.push({ type: "spikes", layers: 3 });
+    engine.getState().sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 3 });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — layers must not exceed 3
-    const spikes = engine.getState().sides[1].hazards.find((h) => h.type === "spikes");
+    const spikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     expect(spikes?.layers).toBe(3);
 
     // No hazard-set event should fire when already at max
@@ -345,14 +317,16 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
   it("given no Toxic Spikes, when Toxic Spikes is used once, then side has 1 Toxic Spikes layer", () => {
     // Source: Showdown data/moves.ts — toxicspikes: layer 1 poisons, layer 2 badly poisons
     const { engine, ruleset, events } = createHazardEngine();
-    ruleset.setHazard("toxic-spikes");
+    ruleset.setHazard(CORE_HAZARD_IDS.toxicSpikes);
     engine.start();
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const toxicSpikes = engine.getState().sides[1].hazards.find((h) => h.type === "toxic-spikes");
+    const toxicSpikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     expect(toxicSpikes).toBeDefined();
     expect(toxicSpikes?.layers).toBe(1);
   });
@@ -361,18 +335,23 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     // Source: Showdown data/moves.ts — toxicspikes.condition.onSwitchIn:
     //   if (layers >= 2) inflict 'badly-poisoned', else inflict 'poison'
     const { engine, ruleset, events } = createHazardEngine();
-    ruleset.setHazard("toxic-spikes");
+    ruleset.setHazard(CORE_HAZARD_IDS.toxicSpikes);
     engine.start();
 
     // Pre-seed 1 layer
-    engine.getState().sides[1].hazards.push({ type: "toxic-spikes", layers: 1 });
+    engine.getState().sides[1].hazards.push({
+      type: CORE_HAZARD_IDS.toxicSpikes,
+      layers: 1,
+    });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — layers must be 2 for badly-poisoned switch-in to work
-    const toxicSpikes = engine.getState().sides[1].hazards.find((h) => h.type === "toxic-spikes");
+    const toxicSpikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     expect(toxicSpikes?.layers).toBe(2);
 
     const hazardSetEvents = events.filter((e): e is HazardSetEvent => e.type === "hazard-set");
@@ -383,16 +362,21 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
   it("given 2 Toxic Spikes layers (max), when Toxic Spikes is used again, then layers stays at 2 (cap enforcement)", () => {
     // Source: Showdown data/moves.ts — toxicspikes max 2 layers
     const { engine, ruleset, events } = createHazardEngine();
-    ruleset.setHazard("toxic-spikes");
+    ruleset.setHazard(CORE_HAZARD_IDS.toxicSpikes);
     engine.start();
 
-    engine.getState().sides[1].hazards.push({ type: "toxic-spikes", layers: 2 });
+    engine.getState().sides[1].hazards.push({
+      type: CORE_HAZARD_IDS.toxicSpikes,
+      layers: 2,
+    });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const toxicSpikes = engine.getState().sides[1].hazards.find((h) => h.type === "toxic-spikes");
+    const toxicSpikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     expect(toxicSpikes?.layers).toBe(2);
 
     // No hazard-set event at max layers
@@ -407,7 +391,7 @@ describe("Toxic Spikes absorption emits hazard-clear", () => {
     // Source: pret/pokeplatinum — the Toxic Spikes hazard is removed on absorb
     const { engine, events } = createToxicSpikesAbsorbEngine();
 
-    engine.state.sides[1].hazards = [{ type: "toxic-spikes", layers: 1 }];
+    engine.state.sides[1].hazards = [{ type: CORE_HAZARD_IDS.toxicSpikes, layers: 1 }];
 
     engine.start();
 
@@ -418,7 +402,9 @@ describe("Toxic Spikes absorption emits hazard-clear", () => {
         event.type === "hazard-clear" && event.side === 1,
     );
     // Source: Toxic Spikes absorption should emit the public hazard-clear event for the removed hazard.
-    expect(hazardClearEvents).toEqual([{ type: "hazard-clear", side: 1, hazard: "toxic-spikes" }]);
+    expect(hazardClearEvents).toEqual([
+      { type: "hazard-clear", side: 1, hazard: CORE_HAZARD_IDS.toxicSpikes },
+    ]);
   });
 });
 
@@ -430,14 +416,16 @@ describe("Stealth Rock — single-layer hazard unaffected by layering bug", () =
   it("given no hazards, when Stealth Rock is used once, then side has 1 stealth-rock entry", () => {
     // Source: Showdown data/moves.ts — stealth-rock: no layers (1 use = 1 entry, cannot stack)
     const { engine, ruleset, events } = createHazardEngine();
-    ruleset.setHazard("stealth-rock");
+    ruleset.setHazard(CORE_HAZARD_IDS.stealthRock);
     engine.start();
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const stealthRock = engine.getState().sides[1].hazards.find((h) => h.type === "stealth-rock");
+    const stealthRock = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.stealthRock);
     expect(stealthRock).toBeDefined();
     expect(stealthRock?.layers).toBe(1);
   });
@@ -446,10 +434,13 @@ describe("Stealth Rock — single-layer hazard unaffected by layering bug", () =
     // Source: Showdown data/moves.ts — Stealth Rock fails if already present
     // Stealth Rock max layers = 1, so the engine cap prevents increment.
     const { engine, ruleset, events } = createHazardEngine();
-    ruleset.setHazard("stealth-rock");
+    ruleset.setHazard(CORE_HAZARD_IDS.stealthRock);
     engine.start();
 
-    engine.getState().sides[1].hazards.push({ type: "stealth-rock", layers: 1 });
+    engine.getState().sides[1].hazards.push({
+      type: CORE_HAZARD_IDS.stealthRock,
+      layers: 1,
+    });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -458,7 +449,7 @@ describe("Stealth Rock — single-layer hazard unaffected by layering bug", () =
     // Still only 1 stealth-rock (layers stays at 1)
     const stealthRocks = engine
       .getState()
-      .sides[1].hazards.filter((h) => h.type === "stealth-rock");
+      .sides[1].hazards.filter((h) => h.type === CORE_HAZARD_IDS.stealthRock);
     expect(stealthRocks.length).toBe(1);
     expect(stealthRocks[0]?.layers).toBe(1);
 

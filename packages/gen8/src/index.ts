@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen8 -- Gen8Ruleset + complete Gen 8 data
 
 export { createGen8DataManager } from "./data/index.js";
+export * from "./data/reference-ids.js";
 export {
   handleGen8ContactAbility,
   handleGen8FieldAbility,

@@ -1,4 +1,4 @@
-import { getExpForLevel } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, CORE_MOVE_IDS, getExpForLevel } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult, ExpContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +6,7 @@ import type { BattleEvent, ExpGainEvent, LevelUpEvent } from "../../../src/event
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 /**
  * Creates and starts a battle engine configured for EXP gain tests.
@@ -35,7 +36,7 @@ function createAndStartExpTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
     }),
   ];
 
@@ -45,7 +46,7 @@ function createAndStartExpTestEngine(overrides?: {
     createTestPokemon(9, 30, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
     }),
   ];
 
@@ -75,7 +76,7 @@ function createAndStartExpTestEngine(overrides?: {
 
 class PhazingHazardRuleset extends MockRuleset {
   getAvailableHazards(): readonly import("@pokemon-lib-ts/core").EntryHazardType[] {
-    return ["stealth-rock"];
+    return [CORE_HAZARD_IDS.stealthRock];
   }
 
   applyEntryHazards(
@@ -138,7 +139,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           experience: startExp >= 0 ? startExp : 0,
         }),
       ];
@@ -184,7 +185,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 5, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           level: 5,
           experience: 0,
         }),
@@ -232,12 +233,12 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
       ];
 
@@ -279,7 +280,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -296,7 +297,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -310,7 +311,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-bench",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -334,7 +335,7 @@ describe("BattleEngine - EXP gain on faint", () => {
       const dataManager = createMockDataManager();
       const engine = new BattleEngine(config, ruleset, dataManager);
       engine.start();
-      engine.state.sides[1].hazards.push({ type: "stealth-rock", layers: 1 });
+      engine.state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.stealthRock, layers: 1 });
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -368,13 +369,13 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
           heldItem: "exp-share",
-          moves: [{ moveId: "growl", currentPP: 40, maxPP: 40, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.growl)],
         }),
       ];
 
@@ -415,12 +416,12 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "growl", currentPP: 40, maxPP: 40, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.growl)],
         }),
       ];
 
@@ -456,7 +457,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 100, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           level: 100,
         }),
       ];
@@ -514,7 +515,7 @@ describe("BattleEngine - EXP gain on faint", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           experience: startExp >= 0 ? startExp : 0,
         }),
       ];

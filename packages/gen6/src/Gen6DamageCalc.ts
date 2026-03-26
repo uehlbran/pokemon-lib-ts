@@ -10,6 +10,8 @@ import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
@@ -96,32 +98,13 @@ const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
 
 /**
  * Type Gem items: consume on use to boost base power of matching type moves.
- * In Gen 6+, the boost is 1.3x (nerfed from 1.5x in Gen 5).
+ * In Gen 6, only Normal Gem remains in the committed item data.
  *
- * Source: Showdown data/items.ts -- gem condition: chainModify([5325, 4096]) in Gen 6+
- * Source: Bulbapedia "Gem" -- "From Generation VI onwards, Gems multiply the power
- *   of a move by 1.3 instead of 1.5."
+ * Source: packages/gen6/data/items.json -- only `normal-gem` is present in Gen 6 data
+ * Source: Bulbapedia "Gem" -- most Gems are unavailable from Gen VI onward
  */
 const GEM_ITEMS: Readonly<Record<string, string>> = {
-  "normal-gem": "normal",
-  "fire-gem": "fire",
-  "water-gem": "water",
-  "electric-gem": "electric",
-  "grass-gem": "grass",
-  "ice-gem": "ice",
-  "fighting-gem": "fighting",
-  "poison-gem": "poison",
-  "ground-gem": "ground",
-  "flying-gem": "flying",
-  "psychic-gem": "psychic",
-  "bug-gem": "bug",
-  "rock-gem": "rock",
-  "ghost-gem": "ghost",
-  "dragon-gem": "dragon",
-  "dark-gem": "dark",
-  "steel-gem": "steel",
-  // Source: Bulbapedia "Fairy Gem" -- introduced in Gen 6 with Fairy type
-  "fairy-gem": "fairy",
+  [CORE_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
 };
 
 /**

@@ -1,21 +1,16 @@
 import type { DataManager } from "@pokemon-lib-ts/core";
-import { NEUTRAL_NATURES, SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_SLOTS, NEUTRAL_NATURES, SeededRandom } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { generateRandomTeam } from "../../src/simulation/team-generator.js";
 
 // ---------------------------------------------------------------------------
 // Shared data managers — expensive to load, create once per describe block
 // ---------------------------------------------------------------------------
 
-let gen1Dm: DataManager;
-let gen2Dm: DataManager;
-
-beforeAll(() => {
-  gen1Dm = createGen1DataManager();
-  gen2Dm = createGen2DataManager();
-});
+const gen1Dm: DataManager = createGen1DataManager();
+const gen2Dm: DataManager = createGen2DataManager();
 
 // ---------------------------------------------------------------------------
 // Team size
@@ -241,22 +236,12 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
     // Act
     const team = generateRandomTeam(1, gen1Dm, rng);
 
-    // Assert — Gen 1 uses DVs (0-15), not IVs (0-31)
-    for (const pokemon of team) {
-      const { hp, attack, defense, spAttack, spDefense, speed } = pokemon.ivs;
-      expect(hp).toBeGreaterThanOrEqual(0);
-      expect(hp).toBeLessThanOrEqual(15);
-      expect(attack).toBeGreaterThanOrEqual(0);
-      expect(attack).toBeLessThanOrEqual(15);
-      expect(defense).toBeGreaterThanOrEqual(0);
-      expect(defense).toBeLessThanOrEqual(15);
-      expect(spAttack).toBeGreaterThanOrEqual(0);
-      expect(spAttack).toBeLessThanOrEqual(15);
-      expect(spDefense).toBeGreaterThanOrEqual(0);
-      expect(spDefense).toBeLessThanOrEqual(15);
-      expect(speed).toBeGreaterThanOrEqual(0);
-      expect(speed).toBeLessThanOrEqual(15);
-    }
+    // Assert — Gen 1 uses 0-15 DVs, and the seeded generator should stay deterministic.
+    expect(team.map((pokemon) => pokemon.ivs)).toEqual([
+      { hp: 4, attack: 5, defense: 10, spAttack: 3, spDefense: 2, speed: 11 },
+      { hp: 12, attack: 7, defense: 2, spAttack: 13, spDefense: 8, speed: 13 },
+      { hp: 3, attack: 6, defense: 8, spAttack: 15, spDefense: 7, speed: 13 },
+    ]);
   });
 
   it("given generation 1, when generating a team, then all Pokemon have no held item", () => {
@@ -272,7 +257,7 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
     }
   });
 
-  it("given generation 1, when generating a team, then abilitySlot is always 'normal1'", () => {
+  it("given generation 1, when generating a team, then abilitySlot is always the primary slot", () => {
     // Arrange
     const rng = new SeededRandom(42);
 
@@ -281,7 +266,7 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
 
     // Assert
     for (const pokemon of team) {
-      expect(pokemon.abilitySlot).toBe("normal1");
+      expect(pokemon.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
     }
   });
 });

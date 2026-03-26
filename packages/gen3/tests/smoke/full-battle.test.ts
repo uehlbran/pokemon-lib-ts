@@ -1,9 +1,25 @@
 import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import { createGen3DataManager, Gen3Ruleset } from "../../src";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_SPECIES_IDS,
+  Gen3Ruleset,
+} from "../../src";
 
 /**
  * Gen 3 Full Battle Integration Tests
@@ -18,6 +34,11 @@ import { createGen3DataManager, Gen3Ruleset } from "../../src";
 const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
 let uidCounter = 0;
+const DEFAULT_NATURE = ALL_NATURES[0].id;
+
+beforeEach(() => {
+  uidCounter = 0;
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -40,7 +61,7 @@ function createGen3Pokemon(
     nickname: nickname ?? null,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 300,
@@ -54,17 +75,17 @@ function createGen3Pokemon(
       };
     }),
     ability: "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 70,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "littleroot-town",
     metLevel: level,
     originalTrainer: "Brendan",
     originalTrainerId: 12345,
-    pokeball: "poke-ball",
+    pokeball: GEN3_ITEM_IDS.pokeBall,
     ...overrides,
   };
 }
@@ -137,27 +158,72 @@ function runFullBattle(engine: BattleEngine, seed: number, maxTurns = 500): Batt
 function createTeam1(): PokemonInstance[] {
   return [
     createGen3Pokemon(
-      257,
+      GEN3_SPECIES_IDS.blaziken,
       50,
-      ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+      [
+        GEN3_MOVE_IDS.flamethrower,
+        GEN3_MOVE_IDS.skyUppercut,
+        GEN3_MOVE_IDS.rockSlide,
+        GEN3_MOVE_IDS.swordsDance,
+      ],
       "Blaziken",
     ),
-    createGen3Pokemon(260, 50, ["surf", "earthquake", "ice-beam", "protect"], "Swampert"),
-    createGen3Pokemon(282, 50, ["psychic", "thunderbolt", "calm-mind", "shadow-ball"], "Gardevoir"),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.swampert,
+      50,
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.protect],
+      "Swampert",
+    ),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.gardevoir,
+      50,
+      [
+        GEN3_MOVE_IDS.psychic,
+        GEN3_MOVE_IDS.thunderbolt,
+        GEN3_MOVE_IDS.calmMind,
+        GEN3_MOVE_IDS.shadowBall,
+      ],
+      "Gardevoir",
+    ),
   ];
 }
 
 /** Team 2: Aggron, Salamence, Metagross (Gen 3 powerhouses) */
 function createTeam2(): PokemonInstance[] {
   return [
-    createGen3Pokemon(306, 50, ["iron-tail", "earthquake", "rock-slide", "double-edge"], "Aggron"),
     createGen3Pokemon(
-      373,
+      GEN3_SPECIES_IDS.aggron,
       50,
-      ["dragon-claw", "flamethrower", "earthquake", "dragon-dance"],
+      [
+        GEN3_MOVE_IDS.ironTail,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.rockSlide,
+        GEN3_MOVE_IDS.doubleEdge,
+      ],
+      "Aggron",
+    ),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.salamence,
+      50,
+      [
+        GEN3_MOVE_IDS.dragonClaw,
+        GEN3_MOVE_IDS.flamethrower,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.dragonDance,
+      ],
       "Salamence",
     ),
-    createGen3Pokemon(376, 50, ["meteor-mash", "earthquake", "psychic", "explosion"], "Metagross"),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.metagross,
+      50,
+      [
+        GEN3_MOVE_IDS.meteorMash,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.psychic,
+        GEN3_MOVE_IDS.explosion,
+      ],
+      "Metagross",
+    ),
   ];
 }
 
@@ -168,13 +234,28 @@ function createTeam2(): PokemonInstance[] {
 function createIntimidateTeam(): PokemonInstance[] {
   return [
     createGen3Pokemon(
-      373,
+      GEN3_SPECIES_IDS.salamence,
       50,
-      ["dragon-claw", "flamethrower", "earthquake", "dragon-dance"],
+      [
+        GEN3_MOVE_IDS.dragonClaw,
+        GEN3_MOVE_IDS.flamethrower,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.dragonDance,
+      ],
       "Salamence",
-      { ability: "intimidate" },
+      { ability: GEN3_ABILITY_IDS.intimidate },
     ),
-    createGen3Pokemon(376, 50, ["meteor-mash", "earthquake", "psychic", "explosion"], "Metagross"),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.metagross,
+      50,
+      [
+        GEN3_MOVE_IDS.meteorMash,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.psychic,
+        GEN3_MOVE_IDS.explosion,
+      ],
+      "Metagross",
+    ),
   ];
 }
 
@@ -184,12 +265,24 @@ function createIntimidateTeam(): PokemonInstance[] {
  */
 function createDrizzleTeam(): PokemonInstance[] {
   return [
-    createGen3Pokemon(382, 50, ["surf", "thunder", "ice-beam", "calm-mind"], "Kyogre", {
-      ability: "drizzle",
-    }),
-    createGen3Pokemon(121, 50, ["surf", "thunderbolt", "ice-beam", "psychic"], "Starmie", {
-      ability: "natural-cure",
-    }),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.kyogre,
+      50,
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.thunder, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.calmMind],
+      "Kyogre",
+      {
+        ability: GEN3_ABILITY_IDS.drizzle,
+      },
+    ),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.starmie,
+      50,
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.thunderbolt, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.psychic],
+      "Starmie",
+      {
+        ability: GEN3_ABILITY_IDS.naturalCure,
+      },
+    ),
   ];
 }
 
@@ -199,12 +292,29 @@ function createDrizzleTeam(): PokemonInstance[] {
  */
 function createSwiftSwimTeam(): PokemonInstance[] {
   return [
-    createGen3Pokemon(117, 50, ["surf", "rain-dance", "ice-beam", "toxic"], "Seadra", {
-      ability: "swift-swim",
-    }),
-    createGen3Pokemon(130, 50, ["surf", "earthquake", "dragon-dance", "ice-beam"], "Gyarados", {
-      ability: "intimidate",
-    }),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.seadra,
+      50,
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.rainDance, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.toxic],
+      "Seadra",
+      {
+        ability: GEN3_ABILITY_IDS.swiftSwim,
+      },
+    ),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.gyarados,
+      50,
+      [
+        GEN3_MOVE_IDS.surf,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.dragonDance,
+        GEN3_MOVE_IDS.iceBeam,
+      ],
+      "Gyarados",
+      {
+        ability: GEN3_ABILITY_IDS.intimidate,
+      },
+    ),
   ];
 }
 
@@ -214,10 +324,31 @@ function createSwiftSwimTeam(): PokemonInstance[] {
  */
 function createSpeedBoostTeam(): PokemonInstance[] {
   return [
-    createGen3Pokemon(291, 50, ["swords-dance", "slash", "protect", "baton-pass"], "Ninjask", {
-      ability: "speed-boost",
-    }),
-    createGen3Pokemon(248, 50, ["rock-slide", "earthquake", "crunch", "dragon-dance"], "Tyranitar"),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.ninjask,
+      50,
+      [
+        GEN3_MOVE_IDS.swordsDance,
+        GEN3_MOVE_IDS.slash,
+        GEN3_MOVE_IDS.protect,
+        GEN3_MOVE_IDS.batonPass,
+      ],
+      "Ninjask",
+      {
+        ability: GEN3_ABILITY_IDS.speedBoost,
+      },
+    ),
+    createGen3Pokemon(
+      GEN3_SPECIES_IDS.tyranitar,
+      50,
+      [
+        GEN3_MOVE_IDS.rockSlide,
+        GEN3_MOVE_IDS.earthquake,
+        GEN3_MOVE_IDS.crunch,
+        GEN3_MOVE_IDS.dragonDance,
+      ],
+      "Tyranitar",
+    ),
   ];
 }
 
@@ -313,6 +444,7 @@ describe("Gen 3 Full Battle Integration", () => {
     expect(events.length).toBeGreaterThan(0);
     expect(events[0]?.type).toBe("battle-start");
     if (events[0]?.type === "battle-start") {
+      // Source: createBattle() hard-codes generation 3 for this Gen 3 suite.
       expect(events[0]?.generation).toBe(3);
       expect(events[0]?.format).toBe("singles");
     }
@@ -343,15 +475,20 @@ describe("Gen 3 Full Battle Integration", () => {
     // HP formula: Blaziken base HP=80: floor((2*80+31)*50/100)+60 = 155
     //             Swampert base HP=100: floor((2*100+31)*50/100)+60 = 175
     const attacker = createGen3Pokemon(
-      257,
+      GEN3_SPECIES_IDS.blaziken,
       50,
-      ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+      [
+        GEN3_MOVE_IDS.flamethrower,
+        GEN3_MOVE_IDS.skyUppercut,
+        GEN3_MOVE_IDS.rockSlide,
+        GEN3_MOVE_IDS.swordsDance,
+      ],
       "Blaziken",
     );
     const defender = createGen3Pokemon(
-      260,
+      GEN3_SPECIES_IDS.swampert,
       50,
-      ["surf", "earthquake", "ice-beam", "protect"],
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.protect],
       "Swampert",
     );
     const engine = createBattle([attacker], [defender], 42);
@@ -390,14 +527,29 @@ describe("Gen 3 Full Battle Integration", () => {
     // Arrange
     const team1 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.swordsDance,
+        ],
         "Blaziken",
       ),
     ];
     const team2 = [
-      createGen3Pokemon(260, 50, ["surf", "earthquake", "ice-beam", "protect"], "Swampert"),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.swampert,
+        50,
+        [
+          GEN3_MOVE_IDS.surf,
+          GEN3_MOVE_IDS.earthquake,
+          GEN3_MOVE_IDS.iceBeam,
+          GEN3_MOVE_IDS.protect,
+        ],
+        "Swampert",
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -430,9 +582,14 @@ describe("Gen 3 Ability Integration", () => {
     const team1 = createIntimidateTeam();
     const team2 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.swordsDance,
+        ],
         "Blaziken",
       ),
     ];
@@ -460,9 +617,14 @@ describe("Gen 3 Ability Integration", () => {
     const team1 = createDrizzleTeam();
     const team2 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.swordsDance,
+        ],
         "Blaziken",
       ),
     ];
@@ -477,14 +639,16 @@ describe("Gen 3 Ability Integration", () => {
     const weatherEvents = events.filter((e) => e.type === "weather-set");
     // Drizzle fires exactly once (only one side has a weather-setting ability)
     expect(weatherEvents.length).toBe(1);
-    const rainEvent = weatherEvents.find((e) => e.type === "weather-set" && e.weather === "rain");
+    const rainEvent = weatherEvents.find(
+      (e) => e.type === "weather-set" && e.weather === CORE_WEATHER_IDS.rain,
+    );
     // The single weather event must be the rain event from Drizzle
     expect(rainEvent).not.toBeNull();
     expect(rainEvent).not.toBeUndefined();
 
     // Verify state reflects rain
     const state = engine.getState();
-    expect(state.weather?.type).toBe("rain");
+    expect(state.weather?.type).toBe(CORE_WEATHER_IDS.rain);
   });
 
   it("given a Drizzle team vs a normal team, when battle runs to completion, then it finishes (stability)", () => {
@@ -512,9 +676,15 @@ describe("Gen 3 Ability Integration", () => {
     // Arrange
     const team1 = createSpeedBoostTeam();
     const team2 = [
-      createGen3Pokemon(143, 50, ["body-slam", "earthquake", "rest", "curse"], "Snorlax", {
-        ability: "thick-fat",
-      }),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.snorlax,
+        50,
+        [GEN3_MOVE_IDS.bodySlam, GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.rest, GEN3_MOVE_IDS.curse],
+        "Snorlax",
+        {
+          ability: GEN3_ABILITY_IDS.thickFat,
+        },
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -540,12 +710,17 @@ describe("Gen 3 Ability Integration", () => {
     const team1 = createSpeedBoostTeam();
     const team2 = [
       createGen3Pokemon(
-        113,
+        GEN3_SPECIES_IDS.chansey,
         50,
-        ["seismic-toss", "soft-boiled", "thunder-wave", "toxic"],
+        [
+          GEN3_MOVE_IDS.seismicToss,
+          GEN3_MOVE_IDS.softBoiled,
+          GEN3_MOVE_IDS.thunderWave,
+          GEN3_MOVE_IDS.toxic,
+        ],
         "Chansey",
         {
-          ability: "natural-cure",
+          ability: GEN3_ABILITY_IDS.naturalCure,
         },
       ),
     ];
@@ -593,9 +768,14 @@ describe("Gen 3 Weather Integration", () => {
     const team1 = createDrizzleTeam();
     const team2 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.swordsDance,
+        ],
         "Blaziken",
       ),
     ];
@@ -640,9 +820,14 @@ describe("Gen 3 Weather Integration", () => {
     const team1 = createSwiftSwimTeam();
     const team2 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.swordsDance,
+        ],
         "Blaziken",
       ),
     ];
@@ -683,20 +868,30 @@ describe("Gen 3 Weather Integration", () => {
     // Arrange: Tyranitar (Sand Stream) vs Blaziken (Fire/Fighting, not immune)
     const team1 = [
       createGen3Pokemon(
-        248,
+        GEN3_SPECIES_IDS.tyranitar,
         50,
-        ["rock-slide", "earthquake", "crunch", "dragon-dance"],
+        [
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.earthquake,
+          GEN3_MOVE_IDS.crunch,
+          GEN3_MOVE_IDS.dragonDance,
+        ],
         "Tyranitar",
         {
-          ability: "sand-stream",
+          ability: GEN3_ABILITY_IDS.sandStream,
         },
       ),
     ];
     const team2 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "protect"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.protect,
+        ],
         "Blaziken",
       ),
     ];
@@ -744,18 +939,28 @@ describe("Gen 3 Weather Integration", () => {
     const team1 = createDrizzleTeam();
     const team2 = [
       createGen3Pokemon(
-        248,
+        GEN3_SPECIES_IDS.tyranitar,
         50,
-        ["rock-slide", "earthquake", "crunch", "dragon-dance"],
+        [
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.earthquake,
+          GEN3_MOVE_IDS.crunch,
+          GEN3_MOVE_IDS.dragonDance,
+        ],
         "Tyranitar",
         {
-          ability: "sand-stream",
+          ability: GEN3_ABILITY_IDS.sandStream,
         },
       ),
       createGen3Pokemon(
-        376,
+        GEN3_SPECIES_IDS.metagross,
         50,
-        ["meteor-mash", "earthquake", "psychic", "explosion"],
+        [
+          GEN3_MOVE_IDS.meteorMash,
+          GEN3_MOVE_IDS.earthquake,
+          GEN3_MOVE_IDS.psychic,
+          GEN3_MOVE_IDS.explosion,
+        ],
         "Metagross",
       ),
     ];
@@ -777,26 +982,26 @@ describe("Gen 3 End-of-Turn Order", () => {
     const order = ruleset.getEndOfTurnOrder();
     // Source: pret/pokeemerald src/battle_main.c — Uproar processing in end-of-turn loop
     expect(order).toEqual([
-      "weather-damage",
-      "future-attack",
-      "wish",
-      "weather-healing",
-      "leftovers",
-      "ingrain",
-      "status-damage",
-      "leech-seed",
-      "curse",
-      "nightmare",
-      "bind",
-      "stat-boosting-items",
-      "encore-countdown",
-      "disable-countdown",
-      "taunt-countdown",
-      "perish-song",
-      "uproar",
-      "speed-boost",
-      "shed-skin",
-      "weather-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+      GEN3_ITEM_IDS.leftovers,
+      CORE_VOLATILE_IDS.ingrain,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_VOLATILE_IDS.leechSeed,
+      CORE_VOLATILE_IDS.curse,
+      CORE_VOLATILE_IDS.nightmare,
+      GEN3_MOVE_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      GEN3_MOVE_IDS.perishSong,
+      CORE_VOLATILE_IDS.uproar,
+      GEN3_ABILITY_IDS.speedBoost,
+      GEN3_ABILITY_IDS.shedSkin,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
     ]);
   });
 
@@ -804,15 +1009,31 @@ describe("Gen 3 End-of-Turn Order", () => {
     // Source: pret/pokeemerald — weather damage tick before burn/poison tick
     // Arrange: Sandstorm + poisoned Blaziken
     const team1 = [
-      createGen3Pokemon(248, 50, ["rock-slide", "earthquake", "crunch", "toxic"], "Tyranitar", {
-        ability: "sand-stream",
-      }),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.tyranitar,
+        50,
+        [
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.earthquake,
+          GEN3_MOVE_IDS.crunch,
+          GEN3_MOVE_IDS.toxic,
+        ],
+        "Tyranitar",
+        {
+          ability: GEN3_ABILITY_IDS.sandStream,
+        },
+      ),
     ];
     const team2 = [
       createGen3Pokemon(
-        257,
+        GEN3_SPECIES_IDS.blaziken,
         50,
-        ["flamethrower", "sky-uppercut", "rock-slide", "protect"],
+        [
+          GEN3_MOVE_IDS.flamethrower,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.protect,
+        ],
         "Blaziken",
       ),
     ];
@@ -825,7 +1046,7 @@ describe("Gen 3 End-of-Turn Order", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 }); // flamethrower
 
     // Assert: In the event log, weather chip damage (type: "damage", source: "weather-*")
-    // should appear before status damage (type: "damage", source: "burn"/"poison"/"badly-poisoned")
+    // should appear before status damage (type: "damage", source: CORE_STATUS_IDS.burn/CORE_STATUS_IDS.poison/CORE_STATUS_IDS.badlyPoisoned)
     const events = engine.getEventLog();
     const weatherDmgIdx = events.findIndex(
       (e) =>
@@ -837,9 +1058,9 @@ describe("Gen 3 End-of-Turn Order", () => {
       (e) =>
         e.type === "damage" &&
         "source" in e &&
-        ((e as { source?: string }).source === "poison" ||
-          (e as { source?: string }).source === "badly-poisoned" ||
-          (e as { source?: string }).source === "burn"),
+        ((e as { source?: string }).source === CORE_STATUS_IDS.poison ||
+          (e as { source?: string }).source === CORE_STATUS_IDS.badlyPoisoned ||
+          (e as { source?: string }).source === CORE_STATUS_IDS.burn),
     );
 
     // Both should exist if Blaziken was poisoned and sandstorm is active
@@ -858,14 +1079,31 @@ describe("Gen 3 Ability Immunity Integration", () => {
     // Source: pret/pokeemerald — ABILITY_LIMBER blocks STATUS_PARALYSIS
     // Arrange: Persian (Limber) vs opponent using Thunder Wave
     const team1 = [
-      createGen3Pokemon(53, 50, ["slash", "bite", "fake-out", "protect"], "Persian", {
-        ability: "limber",
-      }),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.persian,
+        50,
+        [GEN3_MOVE_IDS.slash, GEN3_MOVE_IDS.bite, GEN3_MOVE_IDS.fakeOut, GEN3_MOVE_IDS.protect],
+        "Persian",
+        {
+          ability: GEN3_ABILITY_IDS.limber,
+        },
+      ),
     ];
     const team2 = [
-      createGen3Pokemon(25, 50, ["thunder-wave", "thunderbolt", "surf", "protect"], "Pikachu", {
-        ability: "static",
-      }),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.pikachu,
+        50,
+        [
+          GEN3_MOVE_IDS.thunderWave,
+          GEN3_MOVE_IDS.thunderbolt,
+          GEN3_MOVE_IDS.surf,
+          GEN3_MOVE_IDS.protect,
+        ],
+        "Pikachu",
+        {
+          ability: GEN3_ABILITY_IDS.static,
+        },
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -883,18 +1121,34 @@ describe("Gen 3 Ability Immunity Integration", () => {
     // Source: pret/pokeemerald — ABILITY_INSOMNIA blocks STATUS_SLEEP
     // Arrange: Hypno (Insomnia) vs opponent using Spore
     const team1 = [
-      createGen3Pokemon(97, 50, ["psychic", "thunderbolt", "protect", "calm-mind"], "Hypno", {
-        ability: "insomnia",
-      }),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.hypno,
+        50,
+        [
+          GEN3_MOVE_IDS.psychic,
+          GEN3_MOVE_IDS.thunderbolt,
+          GEN3_MOVE_IDS.protect,
+          GEN3_MOVE_IDS.calmMind,
+        ],
+        "Hypno",
+        {
+          ability: GEN3_ABILITY_IDS.insomnia,
+        },
+      ),
     ];
     const team2 = [
       createGen3Pokemon(
-        286,
+        GEN3_SPECIES_IDS.breloom,
         50,
-        ["spore", "mach-punch", "sky-uppercut", "swords-dance"],
+        [
+          GEN3_MOVE_IDS.spore,
+          GEN3_MOVE_IDS.machPunch,
+          GEN3_MOVE_IDS.skyUppercut,
+          GEN3_MOVE_IDS.swordsDance,
+        ],
         "Breloom",
         {
-          ability: "effect-spore",
+          ability: GEN3_ABILITY_IDS.effectSpore,
         },
       ),
     ];
@@ -914,12 +1168,28 @@ describe("Gen 3 Ability Immunity Integration", () => {
     // Source: pret/pokeemerald — ABILITY_IMMUNITY blocks STATUS_POISON/STATUS_TOXIC
     // Arrange
     const team1 = [
-      createGen3Pokemon(143, 50, ["body-slam", "earthquake", "rest", "curse"], "Snorlax", {
-        ability: "immunity",
-      }),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.snorlax,
+        50,
+        [GEN3_MOVE_IDS.bodySlam, GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.rest, GEN3_MOVE_IDS.curse],
+        "Snorlax",
+        {
+          ability: GEN3_ABILITY_IDS.immunity,
+        },
+      ),
     ];
     const team2 = [
-      createGen3Pokemon(248, 50, ["rock-slide", "earthquake", "crunch", "toxic"], "Tyranitar"),
+      createGen3Pokemon(
+        GEN3_SPECIES_IDS.tyranitar,
+        50,
+        [
+          GEN3_MOVE_IDS.rockSlide,
+          GEN3_MOVE_IDS.earthquake,
+          GEN3_MOVE_IDS.crunch,
+          GEN3_MOVE_IDS.toxic,
+        ],
+        "Tyranitar",
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -931,13 +1201,13 @@ describe("Gen 3 Ability Immunity Integration", () => {
     // Assert: Snorlax should NOT be poisoned
     const snorlaxActive = engine.getActive(0);
     // Snorlax may have used Rest (which inflicts sleep), but should not be poisoned
-    expect(snorlaxActive?.pokemon.status !== "poison").toBe(true);
-    expect(snorlaxActive?.pokemon.status !== "badly-poisoned").toBe(true);
+    expect(snorlaxActive?.pokemon.status !== CORE_STATUS_IDS.poison).toBe(true);
+    expect(snorlaxActive?.pokemon.status !== CORE_STATUS_IDS.badlyPoisoned).toBe(true);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Issue #382: Choice Band move lock-in mechanic
+// Issue #GEN3_SPECIES_IDS.kyogre: Choice Band move lock-in mechanic
 // ---------------------------------------------------------------------------
 
 describe("Gen 3 Choice Band move lock-in mechanic", () => {
@@ -955,16 +1225,21 @@ describe("Gen 3 Choice Band move lock-in mechanic", () => {
     // Blaziken moveset: [flamethrower(0), sky-uppercut(1), rock-slide(2), swords-dance(3)]
     // After using move index 0 (flamethrower), moves 1-3 should be disabled
     const blaziken = createGen3Pokemon(
-      257,
+      GEN3_SPECIES_IDS.blaziken,
       50,
-      ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+      [
+        GEN3_MOVE_IDS.flamethrower,
+        GEN3_MOVE_IDS.skyUppercut,
+        GEN3_MOVE_IDS.rockSlide,
+        GEN3_MOVE_IDS.swordsDance,
+      ],
       "Blaziken",
-      { heldItem: "choice-band" },
+      { heldItem: GEN3_ITEM_IDS.choiceBand },
     );
     const swampert = createGen3Pokemon(
-      260,
+      GEN3_SPECIES_IDS.swampert,
       50,
-      ["surf", "earthquake", "ice-beam", "protect"],
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.protect],
       "Swampert",
     );
     const engine = createBattle([blaziken], [swampert], 42);
@@ -992,16 +1267,21 @@ describe("Gen 3 Choice Band move lock-in mechanic", () => {
     // Source: pret/pokeemerald — Choice lock only applies when holding a Choice item
     // Without Choice Band, no lock-in should occur
     const blaziken = createGen3Pokemon(
-      257,
+      GEN3_SPECIES_IDS.blaziken,
       50,
-      ["flamethrower", "sky-uppercut", "rock-slide", "swords-dance"],
+      [
+        GEN3_MOVE_IDS.flamethrower,
+        GEN3_MOVE_IDS.skyUppercut,
+        GEN3_MOVE_IDS.rockSlide,
+        GEN3_MOVE_IDS.swordsDance,
+      ],
       "Blaziken",
       { heldItem: null },
     );
     const swampert = createGen3Pokemon(
-      260,
+      GEN3_SPECIES_IDS.swampert,
       50,
-      ["surf", "earthquake", "ice-beam", "protect"],
+      [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.protect],
       "Swampert",
     );
     const engine = createBattle([blaziken], [swampert], 42);

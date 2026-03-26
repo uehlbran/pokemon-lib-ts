@@ -1,4 +1,10 @@
-import type { AbilityTrigger, DamageContext } from "@pokemon-lib-ts/core";
+import {
+  type AbilityTrigger,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  type DamageContext,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type {
   AbilityContext,
@@ -11,6 +17,7 @@ import { BattleEngine } from "../../../src/engine";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 const defaultMoveEffectResult: MoveEffectResult = {
   statusInflicted: null,
@@ -42,7 +49,7 @@ function createRecursiveHookEngine(ruleset: RecursiveHookRuleset): BattleEngine 
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.swordsDance)],
           calculatedStats: makeStats(200, 120),
           currentHp: 200,
         }),
@@ -51,7 +58,7 @@ function createRecursiveHookEngine(ruleset: RecursiveHookRuleset): BattleEngine 
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.swordsDance)],
           calculatedStats: makeStats(200, 80),
           currentHp: 200,
         }),
@@ -94,7 +101,10 @@ class RecursiveHookRuleset extends MockRuleset {
     }
 
     const base = { ...defaultMoveEffectResult };
-    if (context.move.id !== "swords-dance" || context.attacker.pokemon.uid !== "charizard-1") {
+    if (
+      context.move.id !== CORE_MOVE_IDS.swordsDance ||
+      context.attacker.pokemon.uid !== "charizard-1"
+    ) {
       return base;
     }
 
@@ -116,14 +126,17 @@ class RecursiveHookRuleset extends MockRuleset {
   }
 
   override applyAbility(trigger: AbilityTrigger, _context: AbilityContext) {
-    if (trigger === "passive-immunity") {
+    if (trigger === CORE_ABILITY_TRIGGER_IDS.passiveImmunity) {
       this.passiveImmunityTriggers.push(trigger);
       if (this.options.passiveImmunityActivates) {
         return { activated: true, effects: [], messages: [] };
       }
     }
 
-    if (trigger === "on-damage-taken" || trigger === "on-contact") {
+    if (
+      trigger === CORE_ABILITY_TRIGGER_IDS.onDamageTaken ||
+      trigger === CORE_ABILITY_TRIGGER_IDS.onContact
+    ) {
       this.damageAbilityTriggers.push(trigger);
     }
 
@@ -131,7 +144,11 @@ class RecursiveHookRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string, _context: ItemContext) {
-    if (trigger === "on-damage-taken" || trigger === "on-contact" || trigger === "on-hit") {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onDamageTaken ||
+      trigger === CORE_ITEM_TRIGGER_IDS.onContact ||
+      trigger === CORE_ITEM_TRIGGER_IDS.onHit
+    ) {
       this.itemTriggers.push(trigger);
     }
 
@@ -142,7 +159,7 @@ class RecursiveHookRuleset extends MockRuleset {
 describe("BattleEngine.executeMoveById recursive hook parity", () => {
   it("given a recursive move that is fully absorbed, when executeMoveById resolves it, then passive-immunity fires and the recursive move never executes", () => {
     const ruleset = new RecursiveHookRuleset({
-      recursiveMoveId: "thunderbolt",
+      recursiveMoveId: CORE_MOVE_IDS.thunderbolt,
       damageByMoveId: {
         thunderbolt: { damage: 0, effectiveness: 0 },
         default: { damage: 10, effectiveness: 1 },
@@ -155,7 +172,7 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(ruleset.passiveImmunityTriggers).toEqual(["passive-immunity"]);
+    expect(ruleset.passiveImmunityTriggers).toEqual([CORE_ABILITY_TRIGGER_IDS.passiveImmunity]);
     expect(ruleset.recursiveEffectCalls).toHaveLength(0);
     expect(ruleset.itemTriggers).toHaveLength(0);
     expect(ruleset.damageAbilityTriggers).toHaveLength(0);
@@ -166,7 +183,7 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     // A successful damaging contact hit reaches defender on-damage-taken/on-contact hooks and attacker
     // on-hit item hooks (Life Orb / Shell Bell style post-damage effects) in the normal move path.
     const ruleset = new RecursiveHookRuleset({
-      recursiveMoveId: "tackle",
+      recursiveMoveId: CORE_MOVE_IDS.tackle,
       damageByMoveId: {
         tackle: { damage: 30, effectiveness: 1 },
         default: { damage: 10, effectiveness: 1 },
@@ -180,13 +197,20 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Source: executeMove() parity contract for recursive moves.
-    expect(ruleset.recursiveEffectCalls).toEqual(["tackle"]);
+    expect(ruleset.recursiveEffectCalls).toEqual([CORE_MOVE_IDS.tackle]);
     expect(ruleset.itemTriggers).toEqual(
-      expect.arrayContaining(["on-damage-taken", "on-contact", "on-hit"]),
+      expect.arrayContaining([
+        CORE_ITEM_TRIGGER_IDS.onDamageTaken,
+        CORE_ITEM_TRIGGER_IDS.onContact,
+        CORE_ITEM_TRIGGER_IDS.onHit,
+      ]),
     );
     // Source: executeMove() parity contract for recursive moves.
     expect(ruleset.damageAbilityTriggers).toEqual(
-      expect.arrayContaining(["on-damage-taken", "on-contact"]),
+      expect.arrayContaining([
+        CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+        CORE_ABILITY_TRIGGER_IDS.onContact,
+      ]),
     );
   });
 });

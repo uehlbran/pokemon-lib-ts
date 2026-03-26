@@ -11,7 +11,19 @@
  *
  * Source: Pokemon Showdown Gen 4 mod — EoT ordering and mechanic behaviour
  */
-import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  type AbilityTrigger,
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
+import { GEN4_SPECIES_IDS } from "@pokemon-lib-ts/gen4";
 import { describe, expect, it } from "vitest";
 import type {
   AbilityContext,
@@ -28,8 +40,56 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const gen4EndOfTurnEffectIds = {
+  // Stopgap: these Gen 4 room countdown ids are used by the engine but are not yet exported
+  // from the shared core end-of-turn reference surface.
+  magicRoomCountdown: "magic-room-countdown",
+  wonderRoomCountdown: "wonder-room-countdown",
+} as const;
+
+const defaultAttackerStats = {
+  hp: 160,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 80,
+} as const;
+
+const defaultDefenderStats = {
+  hp: 160,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 120,
+} as const;
+
+function createDefaultAttacker(overrides?: Partial<PokemonInstance>): PokemonInstance {
+  return createTestPokemon(GEN4_SPECIES_IDS.charizard, 50, {
+    uid: "charizard-1",
+    nickname: "Charizard",
+    moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+    calculatedStats: defaultAttackerStats,
+    currentHp: defaultAttackerStats.hp,
+    ...overrides,
+  });
+}
+
+function createDefaultDefender(overrides?: Partial<PokemonInstance>): PokemonInstance {
+  return createTestPokemon(GEN4_SPECIES_IDS.blastoise, 50, {
+    uid: "blastoise-1",
+    nickname: "Blastoise",
+    moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+    calculatedStats: defaultDefenderStats,
+    currentHp: defaultDefenderStats.hp,
+    ...overrides,
+  });
+}
 
 function createEngine(opts?: {
   team1?: PokemonInstance[];
@@ -41,39 +101,9 @@ function createEngine(opts?: {
   const dataManager = createMockDataManager();
   const events: BattleEvent[] = [];
 
-  const team1 = opts?.team1 ?? [
-    createTestPokemon(6, 50, {
-      uid: "charizard-1",
-      nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      calculatedStats: {
-        hp: 160,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 80,
-      },
-      currentHp: 160,
-    }),
-  ];
+  const team1 = opts?.team1 ?? [createDefaultAttacker()];
 
-  const team2 = opts?.team2 ?? [
-    createTestPokemon(9, 50, {
-      uid: "blastoise-1",
-      nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      calculatedStats: {
-        hp: 160,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 120,
-      },
-      currentHp: 160,
-    }),
-  ];
+  const team2 = opts?.team2 ?? [createDefaultDefender()];
 
   const config: BattleConfig = {
     generation: 4,
@@ -264,7 +294,9 @@ describe("weather-healing EoT slot", () => {
   it("given a Pokemon with Rain Dish that returns heal effect, when weather-healing EoT runs, then HP increases and heal event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Rain Dish heals 1/16 max HP per turn in rain
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["weather-healing"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+    ];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "heal", target: "self", value: 10 }],
@@ -291,7 +323,9 @@ describe("weather-healing EoT slot", () => {
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
 
     // applyAbility should have been called with "on-turn-end" trigger
-    const turnEndCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const turnEndCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(turnEndCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -300,7 +334,7 @@ describe("speed-boost EoT slot", () => {
   it("given a Pokemon with Speed Boost ability that returns stat-change effect, when speed-boost EoT runs, then applyAbility is called and stat-change event emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Speed Boost raises Speed by 1 stage each turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["speed-boost"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.speedBoost];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
@@ -318,7 +352,9 @@ describe("speed-boost EoT slot", () => {
     expect(statChangeEvents.length).toBeGreaterThanOrEqual(1);
 
     // applyAbility called for on-turn-end
-    const turnEndCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const turnEndCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(turnEndCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -327,7 +363,7 @@ describe("shed-skin EoT slot", () => {
   it("given a Pokemon with Shed Skin that returns status-cure effect, when shed-skin EoT runs, then status is cleared and status-cure event emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Shed Skin has 33% chance to cure primary status each turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["shed-skin"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.shedSkin];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "status-cure", target: "self" }],
@@ -339,7 +375,7 @@ describe("shed-skin EoT slot", () => {
 
     // Give the pokemon a status to cure
     const active0 = engine.state.sides[0].active[0];
-    if (active0) active0.pokemon.status = "burn";
+    if (active0) active0.pokemon.status = CORE_STATUS_IDS.burn;
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -349,7 +385,9 @@ describe("shed-skin EoT slot", () => {
     expect(statusCureEvents.length).toBeGreaterThanOrEqual(1);
 
     // applyAbility called with on-turn-end trigger
-    const turnEndCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const turnEndCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(turnEndCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -358,7 +396,7 @@ describe("poison-heal EoT slot", () => {
   it("given a Pokemon with Poison Heal that returns heal effect (instead of status damage), when poison-heal EoT runs, then applyAbility is called and heal is applied", () => {
     // Source: Pokemon Showdown Gen 4 mod — Poison Heal converts poison damage to healing
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["poison-heal"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.poisonHeal];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "heal", target: "self", value: 15 }],
@@ -376,7 +414,9 @@ describe("poison-heal EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // applyAbility should have been called
-    const turnEndCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const turnEndCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(turnEndCalls.length).toBeGreaterThanOrEqual(1);
 
     const healEvents = events.filter(
@@ -390,7 +430,7 @@ describe("bad-dreams EoT slot", () => {
   it("given a Pokemon with Bad Dreams that returns chip-damage effect, when bad-dreams EoT runs, then applyAbility is called and damage is applied", () => {
     // Source: Pokemon Showdown Gen 4 mod — Bad Dreams deals 1/8 max HP damage to sleeping foes
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["bad-dreams"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.badDreams];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "chip-damage", target: "opponent", value: 20 }],
@@ -402,7 +442,7 @@ describe("bad-dreams EoT slot", () => {
 
     // Give opponent a sleeping status
     const active1 = engine.state.sides[1].active[0];
-    if (active1) active1.pokemon.status = "sleep";
+    if (active1) active1.pokemon.status = CORE_STATUS_IDS.sleep;
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -413,7 +453,9 @@ describe("bad-dreams EoT slot", () => {
     );
     expect(damageEvents.length).toBeGreaterThanOrEqual(1);
 
-    const turnEndCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const turnEndCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(turnEndCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -424,30 +466,16 @@ describe("toxic-orb-activation EoT slot", () => {
   it("given a Pokemon holding Toxic Orb, when toxic-orb-activation EoT runs, then applyHeldItem is called and status-inflict event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Toxic Orb badly poisons the holder at end of turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+    ];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "inflict-status", target: "self", status: "badly-poisoned" }],
+      effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.badlyPoisoned }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        heldItem: "toxic-orb",
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.toxicOrb })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -457,18 +485,21 @@ describe("toxic-orb-activation EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // applyHeldItem should have been called with "end-of-turn" trigger
-    const eotItemCalls = ruleset.itemCalls.filter((c) => c.trigger === "end-of-turn");
+    const eotItemCalls = ruleset.itemCalls.filter(
+      (c) => c.trigger === CORE_ITEM_TRIGGER_IDS.endOfTurn,
+    );
     expect(eotItemCalls.length).toBeGreaterThanOrEqual(1);
 
     // A status-inflict event should have been emitted for badly-poisoned
     const statusInflictEvents = events.filter(
-      (e) => e.type === "status-inflict" && "status" in e && e.status === "badly-poisoned",
+      (e) =>
+        e.type === "status-inflict" && "status" in e && e.status === CORE_STATUS_IDS.badlyPoisoned,
     );
     expect(statusInflictEvents.length).toBeGreaterThanOrEqual(1);
 
     // The pokemon's status should be set
     const active0 = engine.state.sides[0].active[0];
-    expect(active0?.pokemon.status).toBe("badly-poisoned");
+    expect(active0?.pokemon.status).toBe(CORE_STATUS_IDS.badlyPoisoned);
   });
 });
 
@@ -476,30 +507,16 @@ describe("flame-orb-activation EoT slot", () => {
   it("given a Pokemon holding Flame Orb, when flame-orb-activation EoT runs, then applyHeldItem is called and burn status is inflicted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Flame Orb burns the holder at end of turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["flame-orb-activation"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
+    ];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "inflict-status", target: "self", status: "burn" }],
+      effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.burn }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        heldItem: "flame-orb",
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.flameOrb })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -508,18 +525,20 @@ describe("flame-orb-activation EoT slot", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const eotItemCalls = ruleset.itemCalls.filter((c) => c.trigger === "end-of-turn");
+    const eotItemCalls = ruleset.itemCalls.filter(
+      (c) => c.trigger === CORE_ITEM_TRIGGER_IDS.endOfTurn,
+    );
     expect(eotItemCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
 
 // ─── EoT Volatile-Based Handler Tests ────────────────────────────────────────
 
-describe("aqua-ring EoT slot", () => {
-  it("given a Pokemon at partial HP with aqua-ring volatile, when aqua-ring EoT runs, then HP increases by floor(maxHp/16) and heal event emitted with source 'aqua-ring'", () => {
+describe(`aquaRing EoT slot`, () => {
+  it(`given a Pokemon at partial HP with ${CORE_VOLATILE_IDS.aquaRing} volatile, when ${CORE_VOLATILE_IDS.aquaRing} EoT runs, then HP increases by floor(maxHp/16) and heal event emitted with source '${CORE_VOLATILE_IDS.aquaRing}'`, () => {
     // Source: Pokemon Showdown Gen 4 mod — Aqua Ring heals 1/16 max HP per turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["aqua-ring"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_VOLATILE_IDS.aquaRing];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -527,7 +546,7 @@ describe("aqua-ring EoT slot", () => {
     const active0 = engine.state.sides[0].active[0];
     if (active0) {
       active0.pokemon.currentHp = 100;
-      active0.volatileStatuses.set("aqua-ring", { turnsLeft: -1 });
+      active0.volatileStatuses.set(CORE_VOLATILE_IDS.aquaRing, { turnsLeft: -1 });
     }
 
     const maxHp = active0?.pokemon.calculatedStats?.hp ?? 160;
@@ -538,9 +557,9 @@ describe("aqua-ring EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const healEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "aqua-ring",
+      (e) => e.type === "heal" && "source" in e && e.source === CORE_VOLATILE_IDS.aquaRing,
     );
-    expect(healEvents.length).toBe(1);
+    expect(healEvents).toHaveLength(1);
 
     const healEvent = healEvents[0];
     if (healEvent && healEvent.type === "heal" && "amount" in healEvent) {
@@ -548,13 +567,13 @@ describe("aqua-ring EoT slot", () => {
     }
   });
 
-  it("given a Pokemon at deep partial HP with aqua-ring volatile, when aqua-ring EoT runs, then HP increases by exactly floor(maxHp/16)", () => {
+  it(`given a Pokemon at deep partial HP with ${CORE_VOLATILE_IDS.aquaRing} volatile, when ${CORE_VOLATILE_IDS.aquaRing} EoT runs, then HP increases by exactly floor(maxHp/16)`, () => {
     // Triangulation: aqua-ring should heal exactly 1/16 max HP (not more, not less when below cap)
     // Source: Pokemon Showdown Gen 4 mod — Aqua Ring heals 1/16 max HP per turn
     const ruleset = new Gen4MockRuleset();
     // No EoT damage — use only aqua-ring so we can measure exactly
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["aqua-ring"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_VOLATILE_IDS.aquaRing];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -567,7 +586,7 @@ describe("aqua-ring EoT slot", () => {
     if (active0) {
       // Set HP to 50 (well below maxHp, so heal is exactly floor(maxHp/16))
       active0.pokemon.currentHp = 50;
-      active0.volatileStatuses.set("aqua-ring", { turnsLeft: -1 });
+      active0.volatileStatuses.set(CORE_VOLATILE_IDS.aquaRing, { turnsLeft: -1 });
     }
 
     events.length = 0;
@@ -575,9 +594,9 @@ describe("aqua-ring EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const healEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "aqua-ring",
+      (e) => e.type === "heal" && "source" in e && e.source === CORE_VOLATILE_IDS.aquaRing,
     );
-    expect(healEvents.length).toBe(1);
+    expect(healEvents).toHaveLength(1);
 
     const healEvent = healEvents[0];
     if (healEvent && healEvent.type === "heal" && "amount" in healEvent) {
@@ -586,11 +605,11 @@ describe("aqua-ring EoT slot", () => {
   });
 });
 
-describe("ingrain EoT slot", () => {
-  it("given a Pokemon at partial HP with ingrain volatile, when ingrain EoT runs, then HP increases by floor(maxHp/16) and heal event emitted with source 'ingrain'", () => {
+describe(`ingrain EoT slot`, () => {
+  it(`given a Pokemon at partial HP with ${CORE_VOLATILE_IDS.ingrain} volatile, when ${CORE_VOLATILE_IDS.ingrain} EoT runs, then HP increases by floor(maxHp/16) and heal event emitted with source '${CORE_VOLATILE_IDS.ingrain}'`, () => {
     // Source: Bulbapedia — Ingrain heals the user by 1/16 of its maximum HP at end of each turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["ingrain"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_VOLATILE_IDS.ingrain];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -598,7 +617,7 @@ describe("ingrain EoT slot", () => {
     const active0 = engine.state.sides[0].active[0];
     if (active0) {
       active0.pokemon.currentHp = 80;
-      active0.volatileStatuses.set("ingrain", { turnsLeft: -1 });
+      active0.volatileStatuses.set(CORE_VOLATILE_IDS.ingrain, { turnsLeft: -1 });
     }
 
     const maxHp = active0?.pokemon.calculatedStats?.hp ?? 160;
@@ -609,9 +628,9 @@ describe("ingrain EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const healEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "ingrain",
+      (e) => e.type === "heal" && "source" in e && e.source === CORE_VOLATILE_IDS.ingrain,
     );
-    expect(healEvents.length).toBe(1);
+    expect(healEvents).toHaveLength(1);
 
     const healEvent = healEvents[0];
     if (healEvent && healEvent.type === "heal" && "amount" in healEvent) {
@@ -626,7 +645,9 @@ describe("wish EoT slot", () => {
   it("given side.wish active with turnsLeft=1 and healAmount=50, when wish EoT runs, then active Pokemon is healed by 50 and side.wish is null", () => {
     // Source: Pokemon Showdown Gen 3+ — Wish heals the Pokemon in the slot on the next turn
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["wish"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -643,9 +664,9 @@ describe("wish EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const wishHealEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "wish",
+      (e) => e.type === "heal" && "source" in e && e.source === CORE_END_OF_TURN_EFFECT_IDS.wish,
     );
-    expect(wishHealEvents.length).toBeGreaterThanOrEqual(1);
+    expect(wishHealEvents).toHaveLength(1);
 
     // After wish fires, side.wish should be null
     expect(state.sides[0].wish).toBeNull();
@@ -654,7 +675,9 @@ describe("wish EoT slot", () => {
   it("given side.wish active with turnsLeft=2, when wish EoT runs, then turnsLeft decrements to 1 and no heal event emitted yet", () => {
     // Triangulation: wish should not fire until turnsLeft reaches 0
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["wish"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -671,7 +694,7 @@ describe("wish EoT slot", () => {
 
     // No wish heal should have fired yet
     const wishHealEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "wish",
+      (e) => e.type === "heal" && "source" in e && e.source === CORE_END_OF_TURN_EFFECT_IDS.wish,
     );
     expect(wishHealEvents.length).toBe(0);
   });
@@ -683,7 +706,9 @@ describe("processAbilityResult — heal effect type", () => {
   it("given an ability result with heal effect targeting self, when processed, then Pokemon HP increases and heal event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Rain Dish / Ice Body produce heal ability effects
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["weather-healing"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+    ];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "heal", target: "self", value: 20 }],
@@ -711,7 +736,7 @@ describe("processAbilityResult — chip-damage effect type", () => {
   it("given an ability result with chip-damage effect targeting opponent, when processed, then opponent HP decreases and damage event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Bad Dreams: 1/8 max HP damage to sleeping foes
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["bad-dreams"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.badDreams];
     ruleset.setAbilityResult({
       activated: true,
       effects: [{ effectType: "chip-damage", target: "opponent", value: 20 }],
@@ -736,30 +761,16 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
   it("given an item result with inflict-status effect, when processed, then Pokemon status is set and status-inflict event is emitted", () => {
     // Source: Pokemon Showdown Gen 4 mod — Toxic Orb / Flame Orb inflict status via item effects
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["toxic-orb-activation"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+    ];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "inflict-status", target: "self", status: "poison" }],
+      effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.poison }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        heldItem: "toxic-orb",
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.toxicOrb })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -775,30 +786,14 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
   it("given an item result with chip-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source 'held-item'", () => {
     // Source: Pokemon Showdown Gen 4 mod — Black Sludge damages non-Poison types
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["black-sludge"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ITEM_IDS.blackSludge];
     ruleset.setHeldItemResult({
       activated: true,
       effects: [{ type: "chip-damage", target: "self", value: 10 }],
       messages: [],
     });
 
-    const team1 = [
-      createTestPokemon(6, 50, {
-        uid: "charizard-1",
-        nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-        heldItem: "black-sludge",
-        calculatedStats: {
-          hp: 160,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 80,
-        },
-        currentHp: 160,
-      }),
-    ];
+    const team1 = [createDefaultAttacker({ heldItem: CORE_ITEM_IDS.blackSludge })];
 
     const { engine, events } = createEngine({ ruleset, team1 });
     engine.start();
@@ -823,7 +818,9 @@ describe("slow-start-countdown EoT slot", () => {
     const ruleset = new Gen4MockRuleset();
     // Only run slow-start-countdown in EoT (no damage, no weather, etc.)
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -831,8 +828,8 @@ describe("slow-start-countdown EoT slot", () => {
     // Set up the slow-start volatile on side 0's active Pokemon
     const active0 = engine.state.sides[0].active[0];
     if (active0) {
-      active0.ability = "slow-start";
-      active0.volatileStatuses.set("slow-start", { turnsLeft: 5 });
+      active0.ability = CORE_ABILITY_IDS.slowStart;
+      active0.volatileStatuses.set(CORE_ABILITY_IDS.slowStart, { turnsLeft: 5 });
     }
 
     // Run 5 turns — each turn triggers EoT which decrements turnsLeft by 1
@@ -843,11 +840,12 @@ describe("slow-start-countdown EoT slot", () => {
     }
 
     // After 5 EoT ticks, the slow-start volatile should be removed
-    expect(active0?.volatileStatuses.has("slow-start")).toBe(false);
+    expect(active0?.volatileStatuses.has(CORE_ABILITY_IDS.slowStart)).toBe(false);
 
     // A volatile-end event for slow-start should have been emitted
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "slow-start",
+      (e) =>
+        e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_ABILITY_IDS.slowStart,
     );
     expect(volatileEndEvents.length).toBe(1);
 
@@ -863,15 +861,17 @@ describe("slow-start-countdown EoT slot", () => {
     // Triangulation: verify the countdown decrements by exactly 1 per turn, not all at once
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
     const active0 = engine.state.sides[0].active[0];
     if (active0) {
-      active0.ability = "slow-start";
-      active0.volatileStatuses.set("slow-start", { turnsLeft: 2 });
+      active0.ability = CORE_ABILITY_IDS.slowStart;
+      active0.volatileStatuses.set(CORE_ABILITY_IDS.slowStart, { turnsLeft: 2 });
     }
 
     events.length = 0;
@@ -879,12 +879,13 @@ describe("slow-start-countdown EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // After 1 tick, volatile should still be present with turnsLeft=1
-    expect(active0?.volatileStatuses.has("slow-start")).toBe(true);
-    expect(active0?.volatileStatuses.get("slow-start")?.turnsLeft).toBe(1);
+    expect(active0?.volatileStatuses.has(CORE_ABILITY_IDS.slowStart)).toBe(true);
+    expect(active0?.volatileStatuses.get(CORE_ABILITY_IDS.slowStart)?.turnsLeft).toBe(1);
 
     // No volatile-end event yet
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "slow-start",
+      (e) =>
+        e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_ABILITY_IDS.slowStart,
     );
     expect(volatileEndEvents.length).toBe(0);
   });
@@ -894,7 +895,9 @@ describe("slow-start-countdown EoT slot", () => {
     // This tests the fix that removed the ability check from the slow-start-countdown handler
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["slow-start-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -902,8 +905,8 @@ describe("slow-start-countdown EoT slot", () => {
     const active0 = engine.state.sides[0].active[0];
     if (active0) {
       // Ability was changed (e.g., by Skill Swap) but volatile remains
-      active0.ability = "pressure";
-      active0.volatileStatuses.set("slow-start", { turnsLeft: 1 });
+      active0.ability = CORE_ABILITY_IDS.pressure;
+      active0.volatileStatuses.set(CORE_ABILITY_IDS.slowStart, { turnsLeft: 1 });
     }
 
     events.length = 0;
@@ -911,10 +914,11 @@ describe("slow-start-countdown EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // The volatile should be removed even though the ability is no longer slow-start
-    expect(active0?.volatileStatuses.has("slow-start")).toBe(false);
+    expect(active0?.volatileStatuses.has(CORE_ABILITY_IDS.slowStart)).toBe(false);
 
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "slow-start",
+      (e) =>
+        e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_ABILITY_IDS.slowStart,
     );
     expect(volatileEndEvents.length).toBe(1);
   });
@@ -925,23 +929,23 @@ describe("slow-start-countdown EoT slot", () => {
 describe("simple volatile countdown EoT slots", () => {
   const removalCases = [
     {
-      effect: "taunt-countdown",
-      volatile: "taunt",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      volatile: CORE_VOLATILE_IDS.taunt,
       source: 'Bulbapedia — "Taunt lasts for 3 turns in Gen 4"',
     },
     {
-      effect: "heal-block-countdown",
-      volatile: "heal-block",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
+      volatile: CORE_VOLATILE_IDS.healBlock,
       source: "Bulbapedia / Showdown Gen 4 mod — Heal Block lasts 5 turns",
     },
     {
-      effect: "embargo-countdown",
-      volatile: "embargo",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
+      volatile: CORE_VOLATILE_IDS.embargo,
       source: "Bulbapedia / Showdown Gen 4 mod — Embargo lasts 5 turns",
     },
     {
-      effect: "magnet-rise-countdown",
-      volatile: "magnet-rise",
+      effect: CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      volatile: CORE_VOLATILE_IDS.magnetRise,
       source: "Bulbapedia / Showdown Gen 4 mod — Magnet Rise lasts 5 turns",
     },
   ] as const;
@@ -979,13 +983,15 @@ describe("simple volatile countdown EoT slots", () => {
     // should decrement by exactly 1 without ending the volatile early.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["disable-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
     const active0 = engine.state.sides[0].active[0];
-    active0?.volatileStatuses.set("disable", { turnsLeft: 2 });
+    active0?.volatileStatuses.set(CORE_VOLATILE_IDS.disable, { turnsLeft: 2 });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -993,9 +999,10 @@ describe("simple volatile countdown EoT slots", () => {
 
     // Source: after one tick the volatile should remain with turnsLeft=1 and emit no
     // volatile-end event yet.
-    expect(active0?.volatileStatuses.get("disable")?.turnsLeft).toBe(1);
+    expect(active0?.volatileStatuses.get(CORE_VOLATILE_IDS.disable)?.turnsLeft).toBe(1);
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "disable",
+      (e) =>
+        e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.disable,
     );
     expect(volatileEndEvents.length).toBe(0);
   });
@@ -1007,23 +1014,25 @@ describe("yawn-countdown EoT slot", () => {
     // so the first countdown tick should only decrement the drowsy volatile.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
     const active0 = engine.state.sides[0].active[0];
-    active0?.volatileStatuses.set("yawn", { turnsLeft: 2 });
+    active0?.volatileStatuses.set(CORE_VOLATILE_IDS.yawn, { turnsLeft: 2 });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Source: the first tick leaves Yawn active with one turn remaining and does not inflict sleep yet.
-    expect(active0?.volatileStatuses.get("yawn")?.turnsLeft).toBe(1);
+    expect(active0?.volatileStatuses.get(CORE_VOLATILE_IDS.yawn)?.turnsLeft).toBe(1);
     expect(active0?.pokemon.status).toBe(null);
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "yawn",
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.yawn,
     );
     expect(volatileEndEvents.length).toBe(0);
   });
@@ -1033,23 +1042,25 @@ describe("yawn-countdown EoT slot", () => {
     // the end of the next turn, so turnsLeft=1 should resolve to sleep on this tick.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
     const active0 = engine.state.sides[0].active[0];
-    active0?.volatileStatuses.set("yawn", { turnsLeft: 1 });
+    active0?.volatileStatuses.set(CORE_VOLATILE_IDS.yawn, { turnsLeft: 1 });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Source: Yawn removes the volatile and inflicts sleep exactly once when it resolves.
-    expect(active0?.volatileStatuses.has("yawn")).toBe(false);
-    expect(active0?.pokemon.status).toBe("sleep");
+    expect(active0?.volatileStatuses.has(CORE_VOLATILE_IDS.yawn)).toBe(false);
+    expect(active0?.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "yawn",
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.yawn,
     );
     expect(volatileEndEvents.length).toBe(1);
   });
@@ -1059,15 +1070,17 @@ describe("yawn-countdown EoT slot", () => {
     // target is currently status-free; Yawn still ends even when sleep cannot be applied.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["yawn-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
     const active0 = engine.state.sides[0].active[0];
     if (active0) {
-      active0.pokemon.status = "paralysis";
-      active0.volatileStatuses.set("yawn", { turnsLeft: 1 });
+      active0.pokemon.status = CORE_STATUS_IDS.paralysis;
+      active0.volatileStatuses.set(CORE_VOLATILE_IDS.yawn, { turnsLeft: 1 });
     }
 
     events.length = 0;
@@ -1075,10 +1088,10 @@ describe("yawn-countdown EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Source: the status remains paralysis because Yawn only applies sleep to status-free targets.
-    expect(active0?.volatileStatuses.has("yawn")).toBe(false);
-    expect(active0?.pokemon.status).toBe("paralysis");
+    expect(active0?.volatileStatuses.has(CORE_VOLATILE_IDS.yawn)).toBe(false);
+    expect(active0?.pokemon.status).toBe(CORE_STATUS_IDS.paralysis);
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "yawn",
+      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.yawn,
     );
     expect(volatileEndEvents.length).toBe(1);
   });
@@ -1090,7 +1103,9 @@ describe("room countdown EoT slots", () => {
     // ends once the final countdown tick reaches 0.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["magic-room-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      gen4EndOfTurnEffectIds.magicRoomCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1116,7 +1131,9 @@ describe("room countdown EoT slots", () => {
     // ends once the final countdown tick reaches 0.
     const ruleset = new Gen4MockRuleset();
     ruleset.setFixedDamage(0);
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["wonder-room-countdown"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      gen4EndOfTurnEffectIds.wonderRoomCountdown,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -1149,7 +1166,7 @@ describe("Gen 5+ EoT handler stubs", () => {
     // This test verifies the engine stub correctly delegates to the ruleset
     // without crashing, even though no gen currently returns this effect.
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["moody"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.moody];
     // Ability result is inactive by default — no stat changes applied
     ruleset.setAbilityResult({ activated: false, effects: [], messages: [] });
 
@@ -1162,7 +1179,9 @@ describe("Gen 5+ EoT handler stubs", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // applyAbility should have been called with "on-turn-end" for each side
-    const eotAbilityCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const eotAbilityCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(eotAbilityCalls.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -1173,7 +1192,10 @@ describe("Gen 5+ EoT handler stubs", () => {
     // Bug #484 fix: each Pokemon's on-turn-end ability fires at most once per turn,
     // so harvest fires for both sides (2 calls) and pickup is skipped (already fired).
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["harvest", "pickup"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_ABILITY_IDS.harvest,
+      CORE_ABILITY_IDS.pickup,
+    ];
     ruleset.setAbilityResult({ activated: false, effects: [], messages: [] });
 
     const { engine, events } = createEngine({ ruleset });
@@ -1186,7 +1208,9 @@ describe("Gen 5+ EoT handler stubs", () => {
 
     // With dedup fix: applyAbility fires once per active Pokemon (2 sides = 2 calls),
     // not once per EoT case per side (which was the old buggy behavior of 4 calls).
-    const eotAbilityCalls = ruleset.abilityCalls.filter((c) => c.trigger === "on-turn-end");
+    const eotAbilityCalls = ruleset.abilityCalls.filter(
+      (c) => c.trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
+    );
     expect(eotAbilityCalls.length).toBe(2);
   });
 
@@ -1194,7 +1218,9 @@ describe("Gen 5+ EoT handler stubs", () => {
     // Source: Showdown sim/field.ts — Grassy Terrain heal only applies when terrain is active
     // With no terrain set, the grassy-terrain-heal handler should be a no-op.
     const ruleset = new Gen4MockRuleset();
-    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["grassy-terrain-heal"];
+    ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+      CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal,
+    ];
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();

@@ -1,4 +1,5 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, DamageContext, DamageResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -7,6 +8,9 @@ import type { ActivePokemon, BattleState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const MOVE_IDS = CORE_MOVE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,7 +28,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -41,7 +45,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -76,10 +80,11 @@ describe("recharge enforcement (#104)", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      // Place the "recharge" volatile on side 0's active Pokemon directly
-      const active0 = engine.state.sides[0].active[0];
-      expect(active0).not.toBeNull();
-      active0?.volatileStatuses.set("recharge", { turnsLeft: 1 });
+      const onFieldPokemon0 = engine.state.sides[0].active[0];
+      if (!onFieldPokemon0) {
+        throw new Error("Expected an active Pokemon on side 0");
+      }
+      onFieldPokemon0.volatileStatuses.set(VOLATILE_IDS.recharge, { turnsLeft: 1 });
 
       // Act — side 0 tries to submit a move but has recharge volatile
       events.length = 0;
@@ -88,10 +93,10 @@ describe("recharge enforcement (#104)", () => {
 
       // Assert — a recharge message appears for side 0
       const messages = events.filter((e) => e.type === "message");
-      const rechargeMsg = messages.find(
-        (e) => e.type === "message" && e.text.toLowerCase().includes("recharge"),
+      const hasRechargeMessage = messages.some(
+        (e) => e.type === "message" && e.text === "Charizard must recharge!",
       );
-      expect(rechargeMsg).toBeDefined();
+      expect(hasRechargeMessage).toBe(true);
     });
 
     it("when resolveTurn processes the turn, then the recharge volatile is cleared from the Pokemon", () => {
@@ -99,16 +104,18 @@ describe("recharge enforcement (#104)", () => {
       const { engine } = createEngine();
       engine.start();
 
-      const active0 = engine.state.sides[0].active[0];
-      expect(active0).not.toBeNull();
-      active0?.volatileStatuses.set("recharge", { turnsLeft: 1 });
+      const onFieldPokemon0 = engine.state.sides[0].active[0];
+      if (!onFieldPokemon0) {
+        throw new Error("Expected an active Pokemon on side 0");
+      }
+      onFieldPokemon0.volatileStatuses.set(VOLATILE_IDS.recharge, { turnsLeft: 1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — volatile is gone after the turn
-      expect(active0?.volatileStatuses.has("recharge")).toBe(false);
+      expect(onFieldPokemon0.volatileStatuses.has(VOLATILE_IDS.recharge)).toBe(false);
     });
 
     it("when the recharge turn resolves, then on the next turn the Pokemon can act normally", () => {
@@ -116,9 +123,11 @@ describe("recharge enforcement (#104)", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      const active0 = engine.state.sides[0].active[0];
-      expect(active0).not.toBeNull();
-      active0?.volatileStatuses.set("recharge", { turnsLeft: 1 });
+      const onFieldPokemon0 = engine.state.sides[0].active[0];
+      if (!onFieldPokemon0) {
+        throw new Error("Expected an active Pokemon on side 0");
+      }
+      onFieldPokemon0.volatileStatuses.set(VOLATILE_IDS.recharge, { turnsLeft: 1 });
 
       // Turn 1 — recharge fires
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -131,10 +140,10 @@ describe("recharge enforcement (#104)", () => {
 
       // Assert — no recharge message on turn 2; a move-start event appears for side 0
       const messages = events.filter((e) => e.type === "message");
-      const rechargeMsg = messages.find(
-        (e) => e.type === "message" && e.text.toLowerCase().includes("recharge"),
+      const hasRechargeMessage = messages.some(
+        (e) => e.type === "message" && e.text === "Charizard must recharge!",
       );
-      expect(rechargeMsg).toBeUndefined();
+      expect(hasRechargeMessage).toBe(false);
 
       const moveStart = events.find((e) => e.type === "move-start" && e.side === 0);
       expect(moveStart).toBeDefined();
@@ -203,10 +212,11 @@ describe("Struggle damage delegation (#80)", () => {
       const struggleDamage = events.find(
         (e) => e.type === "damage" && "source" in e && e.source === "struggle",
       );
-      expect(struggleDamage).toBeDefined();
-      if (struggleDamage && struggleDamage.type === "damage") {
-        expect(struggleDamage.amount).toBe(99);
+      if (!struggleDamage || struggleDamage.type !== "damage") {
+        throw new Error("Expected a Struggle damage event");
       }
+      // Source: this ruleset instance is constructed with FixedStruggleDamageRuleset(99).
+      expect(struggleDamage.amount).toBe(99);
     });
   });
 
@@ -225,10 +235,10 @@ describe("Struggle damage delegation (#80)", () => {
       const struggleDamage = events.find(
         (e) => e.type === "damage" && "source" in e && e.source === "struggle",
       );
-      expect(struggleDamage).toBeDefined();
-      if (struggleDamage && struggleDamage.type === "damage") {
-        expect(struggleDamage.amount).toBe(0);
+      if (!struggleDamage || struggleDamage.type !== "damage") {
+        throw new Error("Expected a Struggle damage event");
       }
+      expect(struggleDamage.amount).toBe(0);
     });
   });
 
@@ -247,10 +257,11 @@ describe("Struggle damage delegation (#80)", () => {
       const struggleDamage = events.find(
         (e) => e.type === "damage" && "source" in e && e.source === "struggle",
       );
-      expect(struggleDamage).toBeDefined();
-      if (struggleDamage && struggleDamage.type === "damage") {
-        expect(struggleDamage.amount).toBe(60);
+      if (!struggleDamage || struggleDamage.type !== "damage") {
+        throw new Error("Expected a Struggle damage event");
       }
+      // Source: this ruleset instance is constructed with FixedStruggleDamageRuleset(60).
+      expect(struggleDamage.amount).toBe(60);
     });
   });
 });

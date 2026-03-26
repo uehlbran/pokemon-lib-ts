@@ -32,12 +32,35 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, CORE_VOLATILE_IDS, getStatStageMultiplier } from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
+import { GEN6_MOVE_IDS } from "./data/reference-ids.js";
 import { applyGen6Ability } from "./Gen6Abilities.js";
 import { calculateGen6Damage } from "./Gen6DamageCalc.js";
 import { applyGen6EntryHazards, isGen6Grounded } from "./Gen6EntryHazards.js";
 import { applyGen6HeldItem } from "./Gen6Items.js";
+
+const GEN6_FLYING_BYPASS_MOVE_IDS: readonly string[] = [
+  GEN6_MOVE_IDS.gust,
+  GEN6_MOVE_IDS.twister,
+  GEN6_MOVE_IDS.thunder,
+  GEN6_MOVE_IDS.skyUppercut,
+  GEN6_MOVE_IDS.hurricane,
+  GEN6_MOVE_IDS.smackDown,
+  GEN6_MOVE_IDS.thousandArrows,
+];
+
+const GEN6_UNDERGROUND_BYPASS_MOVE_IDS: readonly string[] = [
+  GEN6_MOVE_IDS.earthquake,
+  GEN6_MOVE_IDS.magnitude,
+  GEN6_MOVE_IDS.fissure,
+];
+
+const GEN6_UNDERWATER_BYPASS_MOVE_IDS: readonly string[] = [
+  GEN6_MOVE_IDS.surf,
+  GEN6_MOVE_IDS.whirlpool,
+];
+
 import { Gen6MegaEvolution } from "./Gen6MegaEvolution.js";
 import { executeGen6MoveEffect, isGen6GrassPowderBlocked } from "./Gen6MoveEffects.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";
@@ -354,24 +377,16 @@ export class Gen6Ruleset extends BaseRuleset {
   canHitSemiInvulnerable(moveId: string, volatile: Gen6TwoTurnMoveVolatile): boolean;
   override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
-      case "flying":
+      case CORE_VOLATILE_IDS.flying:
         // Source: Showdown Gen 6 -- Thousand Arrows added in Gen 6
-        return [
-          "gust",
-          "twister",
-          "thunder",
-          "sky-uppercut",
-          "hurricane",
-          "smack-down",
-          "thousand-arrows",
-        ].includes(moveId);
-      case "underground":
-        return ["earthquake", "magnitude", "fissure"].includes(moveId);
-      case "underwater":
-        return ["surf", "whirlpool"].includes(moveId);
-      case "shadow-force-charging":
+        return GEN6_FLYING_BYPASS_MOVE_IDS.includes(moveId);
+      case CORE_VOLATILE_IDS.underground:
+        return GEN6_UNDERGROUND_BYPASS_MOVE_IDS.includes(moveId);
+      case CORE_VOLATILE_IDS.underwater:
+        return GEN6_UNDERWATER_BYPASS_MOVE_IDS.includes(moveId);
+      case CORE_VOLATILE_IDS.shadowForceCharging:
         return false; // Nothing bypasses Shadow Force / Phantom Force
-      case "charging":
+      case CORE_VOLATILE_IDS.charging:
         return true; // Generic charging moves are NOT semi-invulnerable
       default:
         return false;
@@ -685,7 +700,12 @@ export class Gen6Ruleset extends BaseRuleset {
    * Source: Showdown data/moves.ts -- stickyweb
    */
   override getAvailableHazards(): readonly import("@pokemon-lib-ts/core").EntryHazardType[] {
-    return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web"];
+    return [
+      CORE_HAZARD_IDS.stealthRock,
+      CORE_HAZARD_IDS.spikes,
+      CORE_HAZARD_IDS.toxicSpikes,
+      CORE_HAZARD_IDS.stickyWeb,
+    ];
   }
 
   /**

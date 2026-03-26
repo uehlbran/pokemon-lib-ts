@@ -21,6 +21,13 @@
  */
 
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type {
   ActivePokemon,
@@ -34,6 +41,7 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -62,7 +70,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: makeStats(200, 120),
       currentHp: 200,
     }),
@@ -72,7 +80,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: makeStats(200, 80),
       currentHp: 200,
     }),
@@ -125,7 +133,7 @@ class RecursiveMoveSturdyRuleset extends MockRuleset {
     };
     // Only return recursiveMove on the first call to prevent infinite recursion
     if (this.effectCallCount === 1) {
-      return { ...base, recursiveMove: "scratch" };
+      return { ...base, recursiveMove: CORE_MOVE_IDS.scratch };
     }
     return base;
   }
@@ -139,7 +147,11 @@ class RecursiveMoveSturdyRuleset extends MockRuleset {
   ): { damage: number; survived: boolean; messages: string[] } {
     this.capLethalDamageCalls++;
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
-    if (defender.ability === "sturdy" && defender.pokemon.currentHp === maxHp && damage >= maxHp) {
+    if (
+      defender.ability === CORE_ABILITY_IDS.sturdy &&
+      defender.pokemon.currentHp === maxHp &&
+      damage >= maxHp
+    ) {
       return {
         damage: maxHp - 1,
         survived: true,
@@ -176,7 +188,7 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
       // Blastoise is at full HP (154). Give it Sturdy ability.
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.ability = "sturdy";
+      defender!.ability = CORE_ABILITY_IDS.sturdy;
 
       // Reset call counter after start() (start fires entry events that may call ruleset hooks)
       ruleset.capLethalDamageCalls = 0;
@@ -202,7 +214,7 @@ describe("Bug #531 — capLethalDamage not called in executeMoveById (recursive 
       // Blastoise at 50 HP (NOT full HP) — Sturdy won't trigger on hit 1.
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.ability = "sturdy";
+      defender!.ability = CORE_ABILITY_IDS.sturdy;
       defender!.pokemon.currentHp = 50; // below full HP (154)
 
       ruleset.capLethalDamageCalls = 0;
@@ -261,10 +273,10 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
           uid: "charizard-choice",
           nickname: "Charizard",
           moves: [
-            { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-            { moveId: "scratch", currentPP: 35, maxPP: 35, ppUps: 0 },
+            createMockMoveSlot(CORE_MOVE_IDS.tackle),
+            createMockMoveSlot(CORE_MOVE_IDS.scratch),
           ],
-          heldItem: "choice-band",
+          heldItem: CORE_ITEM_IDS.choiceBand,
           calculatedStats: makeStats(200, 120),
           currentHp: 200,
         }),
@@ -275,7 +287,7 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
 
       const actor = engine.state.sides[0].active[0];
       expect(actor).not.toBeNull();
-      expect(actor!.volatileStatuses.has("choice-locked")).toBe(false);
+      expect(actor!.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked)).toBe(false);
 
       // Act — use tackle (moveIndex 0); always misses
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -285,9 +297,9 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
       // Bug #538: currently evaluates to false (lock not applied on miss).
       // This assertion FAILS until bug #538 is fixed.
       // Source: Showdown Gen 3+ — choice lock applies even on miss.
-      expect(actor!.volatileStatuses.has("choice-locked")).toBe(true);
-      const lockData = actor!.volatileStatuses.get("choice-locked")?.data;
-      expect(lockData?.moveId).toBe("tackle");
+      expect(actor!.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked)).toBe(true);
+      const lockData = actor!.volatileStatuses.get(CORE_VOLATILE_IDS.choiceLocked)?.data;
+      expect(lockData?.moveId).toBe(CORE_MOVE_IDS.tackle);
     });
 
     it("when the move hits successfully on the first use, then the Pokemon is choice-locked (baseline confirms existing behavior)", () => {
@@ -301,10 +313,10 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
           uid: "charizard-hit",
           nickname: "Charizard",
           moves: [
-            { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-            { moveId: "scratch", currentPP: 35, maxPP: 35, ppUps: 0 },
+            createMockMoveSlot(CORE_MOVE_IDS.tackle),
+            createMockMoveSlot(CORE_MOVE_IDS.scratch),
           ],
-          heldItem: "choice-band",
+          heldItem: CORE_ITEM_IDS.choiceBand,
           calculatedStats: makeStats(200, 120),
           currentHp: 200,
         }),
@@ -320,9 +332,9 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — move hit; choice lock applied correctly (existing correct path)
-      expect(actor!.volatileStatuses.has("choice-locked")).toBe(true);
-      const lockData = actor!.volatileStatuses.get("choice-locked")?.data;
-      expect(lockData?.moveId).toBe("tackle");
+      expect(actor!.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked)).toBe(true);
+      const lockData = actor!.volatileStatuses.get(CORE_VOLATILE_IDS.choiceLocked)?.data;
+      expect(lockData?.moveId).toBe(CORE_MOVE_IDS.tackle);
     });
   });
 
@@ -338,10 +350,10 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
           uid: "charizard-locked",
           nickname: "Charizard",
           moves: [
-            { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-            { moveId: "scratch", currentPP: 35, maxPP: 35, ppUps: 0 },
+            createMockMoveSlot(CORE_MOVE_IDS.tackle),
+            createMockMoveSlot(CORE_MOVE_IDS.scratch),
           ],
-          heldItem: "choice-band",
+          heldItem: CORE_ITEM_IDS.choiceBand,
           calculatedStats: makeStats(200, 120),
           currentHp: 200,
         }),
@@ -353,18 +365,18 @@ describe("Bug #538 — Choice lock not applied when move misses", () => {
       const actor = engine.state.sides[0].active[0];
       expect(actor).not.toBeNull();
       // Pre-apply choice lock
-      actor!.volatileStatuses.set("choice-locked", {
+      actor!.volatileStatuses.set(CORE_VOLATILE_IDS.choiceLocked, {
         turnsLeft: -1,
-        data: { moveId: "tackle" },
+        data: { moveId: CORE_MOVE_IDS.tackle },
       });
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — lock persists (was not cleared by the miss)
-      expect(actor!.volatileStatuses.has("choice-locked")).toBe(true);
-      const lockData = actor!.volatileStatuses.get("choice-locked")?.data;
-      expect(lockData?.moveId).toBe("tackle");
+      expect(actor!.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked)).toBe(true);
+      const lockData = actor!.volatileStatuses.get(CORE_VOLATILE_IDS.choiceLocked)?.data;
+      expect(lockData?.moveId).toBe(CORE_MOVE_IDS.tackle);
     });
   });
 });
@@ -420,7 +432,11 @@ class MultiHitSturdyRuleset extends MockRuleset {
   ): { damage: number; survived: boolean; messages: string[] } {
     this.capLethalDamageInvocations.push(damage);
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
-    if (defender.ability === "sturdy" && defender.pokemon.currentHp === maxHp && damage >= maxHp) {
+    if (
+      defender.ability === CORE_ABILITY_IDS.sturdy &&
+      defender.pokemon.currentHp === maxHp &&
+      damage >= maxHp
+    ) {
       return {
         damage: maxHp - 1,
         survived: true,
@@ -454,7 +470,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
       // Blastoise at full HP (154, recalculated by engine constructor)
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.ability = "sturdy";
+      defender!.ability = CORE_ABILITY_IDS.sturdy;
       ruleset.capLethalDamageInvocations.length = 0; // reset after start()
       ruleset.effectCallCount = 0;
 
@@ -486,7 +502,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
 
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.ability = "sturdy";
+      defender!.ability = CORE_ABILITY_IDS.sturdy;
       ruleset.capLethalDamageInvocations.length = 0;
       ruleset.effectCallCount = 0;
 
@@ -518,7 +534,7 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
 
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.ability = "torrent"; // no Sturdy
+      defender!.ability = CORE_ABILITY_IDS.torrent; // no Sturdy
       ruleset.capLethalDamageInvocations.length = 0;
       ruleset.effectCallCount = 0;
 
@@ -528,10 +544,12 @@ describe("Bug #539 — capLethalDamage not called for hits 2+ in multi-hit move 
 
       // Assert — 4 hits × 30 = 120. Blastoise ends at 154-120 = 34 HP.
       // Each hit should apply the configured fixed damage.
+      // Source: 154 HP - 120 damage from four 30-damage hits = 34 HP.
       expect(defender!.pokemon.currentHp).toBe(34);
 
       // Four damage events emitted (one per hit to Blastoise, side 1)
       const damageToBlastoise = events.filter((e) => e.type === "damage" && e.side === 1);
+      // Source: four hits are expected because the ruleset returns multiHitCount=3.
       expect(damageToBlastoise.length).toBe(4);
     });
   });
@@ -619,7 +637,7 @@ class ContactItemTrackingRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string): import("../../../src/context").ItemResult {
-    if (trigger === "on-contact") {
+    if (trigger === CORE_ITEM_TRIGGER_IDS.onContact) {
       this.contactItemTriggerCount++;
       return {
         activated: true,
@@ -638,7 +656,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
     createTestPokemon(9, 50, {
       uid: "blastoise-sub",
       nickname: "Blastoise",
-      moves: [{ moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.thunderbolt)],
       calculatedStats: makeStats(200, 80),
       currentHp: 200,
     }),
@@ -660,7 +678,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.substituteHp = 50;
-      defender!.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      defender!.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
       ruleset.contactItemTriggerCount = 0;
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -684,7 +702,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
       defender!.substituteHp = 50;
-      defender!.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      defender!.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
       events.length = 0;
       ruleset.contactItemTriggerCount = 0;
@@ -693,15 +711,18 @@ describe("Substitute blocks held-item on-contact triggers", () => {
 
       // Assert — Substitute broken (HP floored to 0)
       expect(defender!.substituteHp).toBe(0);
-      expect(defender!.volatileStatuses.has("substitute")).toBe(false);
+      expect(defender!.volatileStatuses.has(CORE_VOLATILE_IDS.substitute)).toBe(false);
 
       // Assert — volatile-end event emitted for substitute removal
       const subEndEvent = events.find(
-        (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "substitute",
+        (e) =>
+          e.type === "volatile-end" &&
+          "volatile" in e &&
+          e.volatile === CORE_VOLATILE_IDS.substitute,
       );
       expect(subEndEvent).toMatchObject({
         type: "volatile-end",
-        volatile: "substitute",
+        volatile: CORE_VOLATILE_IDS.substitute,
       });
     });
 
@@ -716,7 +737,7 @@ describe("Substitute blocks held-item on-contact triggers", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-special",
           nickname: "Charizard",
-          moves: [{ moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.thunderbolt)],
           calculatedStats: makeStats(200, 120),
           currentHp: 200,
         }),
@@ -766,7 +787,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
         createTestPokemon(6, 50, {
           uid: "charizard-low",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(200, 120),
           currentHp: 200,
         }),
@@ -774,7 +795,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
         createTestPokemon(25, 50, {
           uid: "pikachu-backup",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(110, 90),
           currentHp: 110,
         }),
@@ -784,7 +805,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(200, 80),
           currentHp: 200,
         }),
@@ -825,14 +846,14 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
         createTestPokemon(6, 50, {
           uid: "charizard-1hp",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(200, 100),
           currentHp: 200,
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-backup",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(110, 90),
           currentHp: 110,
         }),
@@ -841,14 +862,14 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
         createTestPokemon(9, 50, {
           uid: "blastoise-1hp",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(200, 100),
           currentHp: 200,
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-backup2",
           nickname: "Pikachu2",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: makeStats(110, 90),
           currentHp: 110,
         }),

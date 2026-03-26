@@ -1,5 +1,11 @@
-import { CRIT_RATE_PROBABILITIES_GEN6, DataManager } from "@pokemon-lib-ts/core";
+import {
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CRIT_RATE_PROBABILITIES_GEN6,
+  DataManager,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN7_ABILITY_IDS } from "../src/data/reference-ids";
 import {
   GEN7_CRIT_MULTIPLIER,
   GEN7_CRIT_RATE_PROBABILITIES,
@@ -7,6 +13,10 @@ import {
   GEN7_CRIT_RATES,
 } from "../src/Gen7CritCalc";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
+
+const abilityIds = GEN7_ABILITY_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
 
 // ---------------------------------------------------------------------------
 // Gen 7 Critical Hit Constants
@@ -126,7 +136,7 @@ describe("Gen 7 critical hit roll behavior", () => {
         ability: overrides.attackerAbility ?? null,
         statStages: { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
         volatileStatuses: volatileSet,
-        types: ["electric" as const],
+        types: [typeIds.electric],
       },
       defender: overrides.defenderAbility
         ? {
@@ -134,7 +144,7 @@ describe("Gen 7 critical hit roll behavior", () => {
             ability: overrides.defenderAbility,
             statStages: { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
             volatileStatuses: new Set(),
-            types: ["normal" as const],
+            types: [typeIds.normal],
           }
         : undefined,
       move: {
@@ -146,13 +156,13 @@ describe("Gen 7 critical hit roll behavior", () => {
 
   it("given defender has Battle Armor ability, when rolling crit, then crit is prevented", () => {
     // Source: Bulbapedia -- Battle Armor prevents critical hits
-    const context = makeCritContext({ defenderAbility: "battle-armor" });
+    const context = makeCritContext({ defenderAbility: abilityIds.battleArmor });
     expect(ruleset.rollCritical(context)).toBe(false);
   });
 
   it("given defender has Shell Armor ability, when rolling crit, then crit is prevented", () => {
     // Source: Bulbapedia -- Shell Armor prevents critical hits (same effect as Battle Armor)
-    const context = makeCritContext({ defenderAbility: "shell-armor" });
+    const context = makeCritContext({ defenderAbility: abilityIds.shellArmor });
     expect(ruleset.rollCritical(context)).toBe(false);
   });
 
@@ -160,14 +170,14 @@ describe("Gen 7 critical hit roll behavior", () => {
     // Source: Bulbapedia -- without Battle Armor/Shell Armor, crits are possible
     // With our fake RNG that returns min (=1), and stage 0 rate of 24,
     // rng.int(1, 24) === 1 is true, so crit occurs
-    const context = makeCritContext({ defenderAbility: "intimidate" });
+    const context = makeCritContext({ defenderAbility: abilityIds.intimidate });
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given attacker has Focus Energy, when rolling crit, then crit stage is boosted by +2", () => {
     // Source: Showdown sim/battle-actions.ts -- Focus Energy adds +2 to crit stage
     // Stage 2 rate = 2, so rng.int(1, 2) === 1 is true with our favorable RNG
-    const context = makeCritContext({ attackerVolatiles: ["focus-energy"] });
+    const context = makeCritContext({ attackerVolatiles: [volatileIds.focusEnergy] });
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 });

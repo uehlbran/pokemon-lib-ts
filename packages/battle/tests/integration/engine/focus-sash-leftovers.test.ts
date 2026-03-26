@@ -9,15 +9,22 @@
  *   before HP subtraction (like Sturdy).
  * Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP once per turn.
  */
-import type { MoveData } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  type MoveData,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EndOfTurnEffect, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import type { ActivePokemon, BattleState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ---------------------------------------------------------------------------
 // Mock Ruleset for Focus Sash tests
@@ -47,7 +54,7 @@ class FocusSashMockRuleset extends MockRuleset {
     // Source: Bulbapedia -- Focus Sash: survive with 1 HP if at full HP; consumed
     // Source: Showdown data/items.ts -- Focus Sash onDamage
     if (
-      heldItem === "focus-sash" &&
+      heldItem === CORE_ITEM_IDS.focusSash &&
       defender.pokemon.currentHp === maxHp &&
       damage >= defender.pokemon.currentHp
     ) {
@@ -56,7 +63,7 @@ class FocusSashMockRuleset extends MockRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on with its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 
@@ -69,7 +76,7 @@ class FocusSashMockRuleset extends MockRuleset {
 // ---------------------------------------------------------------------------
 
 /**
- * MockRuleset that tracks how many times applyHeldItem("end-of-turn") fires
+ * MockRuleset that tracks how many times applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn) fires
  * and simulates Leftovers healing.
  */
 class LeftoversMockRuleset extends MockRuleset {
@@ -80,10 +87,10 @@ class LeftoversMockRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
-    if (trigger === "end-of-turn") {
+    if (trigger === CORE_ITEM_TRIGGER_IDS.endOfTurn) {
       this.endOfTurnItemCalls++;
       const item = context.pokemon.pokemon.heldItem;
-      if (item === "leftovers") {
+      if (item === CORE_ITEM_IDS.leftovers) {
         const maxHp =
           context.pokemon.pokemon.calculatedStats?.hp ?? context.pokemon.pokemon.currentHp;
         const healAmount = Math.max(1, Math.floor(maxHp / 16));
@@ -116,10 +123,10 @@ function createFocusSashEngine(overrides?: {
   const defenderHp = overrides?.defenderHp ?? 200;
 
   const team1 = [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 150,
@@ -133,11 +140,11 @@ function createFocusSashEngine(overrides?: {
   ];
 
   const team2 = [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      heldItem: overrides?.heldItem ?? "focus-sash",
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+      heldItem: overrides?.heldItem ?? CORE_ITEM_IDS.focusSash,
       calculatedStats: {
         hp: defenderHp,
         attack: 100,
@@ -172,11 +179,11 @@ function createLeftoversEngine(eotOrder: readonly EndOfTurnEffect[]) {
   const events: BattleEvent[] = [];
 
   const team1 = [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      heldItem: "leftovers",
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+      heldItem: CORE_ITEM_IDS.leftovers,
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -190,10 +197,10 @@ function createLeftoversEngine(eotOrder: readonly EndOfTurnEffect[]) {
   ];
 
   const team2 = [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -239,7 +246,7 @@ describe("Bug #551 -- Focus Sash activation via capLethalDamage", () => {
     // Engine recalculates stats via MockRuleset; read the actual maxHp
     const maxHp = defender!.pokemon.calculatedStats?.hp ?? defender!.pokemon.currentHp;
     expect(defender!.pokemon.currentHp).toBe(maxHp); // Full HP
-    expect(defender!.pokemon.heldItem).toBe("focus-sash");
+    expect(defender!.pokemon.heldItem).toBe(CORE_ITEM_IDS.focusSash);
 
     // Act -- Charizard (speed 120) attacks Blastoise (speed 80)
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -280,7 +287,7 @@ describe("Bug #551 -- Focus Sash activation via capLethalDamage", () => {
     expect(defender!.pokemon.currentHp).toBe(0);
 
     // Focus Sash should NOT be consumed
-    expect(defender!.pokemon.heldItem).toBe("focus-sash");
+    expect(defender!.pokemon.heldItem).toBe(CORE_ITEM_IDS.focusSash);
   });
 
   it("given a full-HP Pokemon with Focus Sash, when a move does NOT KO, then Focus Sash does NOT activate", () => {
@@ -301,7 +308,7 @@ describe("Bug #551 -- Focus Sash activation via capLethalDamage", () => {
 
     // Assert -- Blastoise took damage but Focus Sash didn't activate
     expect(defender!.pokemon.currentHp).toBe(maxHp - 50);
-    expect(defender!.pokemon.heldItem).toBe("focus-sash"); // Not consumed
+    expect(defender!.pokemon.heldItem).toBe(CORE_ITEM_IDS.focusSash); // Not consumed
   });
 });
 
@@ -317,8 +324,8 @@ describe("Bug #600 -- Leftovers should not activate twice when toxic-orb-activat
 
     // Arrange
     const { engine, ruleset, events } = createLeftoversEngine([
-      "leftovers",
-      "toxic-orb-activation",
+      CORE_ITEM_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
     ]);
     engine.start();
 
@@ -359,8 +366,8 @@ describe("Bug #600 -- Leftovers should not activate twice when toxic-orb-activat
 
     // Arrange
     const { engine, ruleset, events } = createLeftoversEngine([
-      "leftovers",
-      "flame-orb-activation",
+      CORE_ITEM_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
     ]);
     engine.start();
 

@@ -1,14 +1,18 @@
 import type { PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_GENDERS, CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  createActivePokemon,
   createDefaultStatStages,
+  createOnFieldPokemon,
   createPokemonSnapshot,
   createTestPokemon,
   getPokemonName,
 } from "../../../src/utils";
 
 describe("BattleHelpers", () => {
+  const fireFlyingTypes: PokemonType[] = [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying];
+  const fireMonotype: PokemonType[] = [CORE_TYPE_IDS.fire];
+
   describe("createDefaultStatStages", () => {
     it("given no arguments, when createDefaultStatStages is called, then all stages are 0", () => {
       // Act
@@ -29,14 +33,18 @@ describe("BattleHelpers", () => {
   describe("createTestPokemon", () => {
     it("given speciesId and level, when createTestPokemon is called, then a valid PokemonInstance is returned", () => {
       // Act
-      const pokemon = createTestPokemon(6, 50);
+      // Source: Battle helper default fixture coverage uses a Charizard-style species/level pair.
+      const speciesId = 6;
+      const level = 50;
+      const expectedCurrentHp = 200;
+      const pokemon = createTestPokemon(speciesId, level);
 
       // Assert
-      expect(pokemon.speciesId).toBe(6);
-      expect(pokemon.level).toBe(50);
-      expect(pokemon.currentHp).toBe(200);
+      expect(pokemon.speciesId).toBe(speciesId);
+      expect(pokemon.level).toBe(level);
+      expect(pokemon.currentHp).toBe(expectedCurrentHp);
       expect(pokemon.moves).toHaveLength(1);
-      expect(pokemon.moves[0]?.moveId).toBe("tackle");
+      expect(pokemon.moves[0]?.moveId).toBe(CORE_MOVE_IDS.tackle);
     });
 
     it("given repeated calls with the same species and level, when createTestPokemon is called, then each Pokemon has a unique uid", () => {
@@ -52,30 +60,34 @@ describe("BattleHelpers", () => {
 
     it("given overrides, when createTestPokemon is called, then overrides are applied", () => {
       // Act
-      const pokemon = createTestPokemon(25, 30, {
+      // Source: the override fixture intentionally uses a level-30 Pokemon to verify replacement values.
+      const overriddenSpeciesId = 25;
+      const overriddenLevel = 30;
+      const overriddenCurrentHp = 100;
+      const pokemon = createTestPokemon(overriddenSpeciesId, overriddenLevel, {
         nickname: "Sparky",
-        currentHp: 100,
+        currentHp: overriddenCurrentHp,
       });
 
       // Assert
       expect(pokemon.nickname).toBe("Sparky");
-      expect(pokemon.currentHp).toBe(100);
-      expect(pokemon.level).toBe(30);
+      expect(pokemon.currentHp).toBe(overriddenCurrentHp);
+      expect(pokemon.level).toBe(overriddenLevel);
     });
   });
 
-  describe("createActivePokemon", () => {
-    it("given a PokemonInstance, when createActivePokemon is called, then an ActivePokemon wrapper is returned", () => {
+  describe("createOnFieldPokemon", () => {
+    it("given a PokemonInstance, when createOnFieldPokemon is called, then an ActivePokemon wrapper is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
 
       // Act
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireFlyingTypes);
 
       // Assert
       expect(active.pokemon).toBe(pokemon);
       expect(active.teamSlot).toBe(0);
-      expect(active.types).toEqual(["fire", "flying"]);
+      expect(active.types).toEqual(fireFlyingTypes);
       expect(active.statStages.attack).toBe(0);
       expect(active.volatileStatuses.size).toBe(0);
       expect(active.turnsOnField).toBe(0);
@@ -85,30 +97,35 @@ describe("BattleHelpers", () => {
       expect(active.stellarBoostedTypes).toEqual([]);
     });
 
-    it("given a caller-owned types array, when createActivePokemon is called, then the ActivePokemon gets its own copy", () => {
+    it("given a caller-owned base types array, when createOnFieldPokemon is called, then the ActivePokemon gets its own copy", () => {
       const pokemon = createTestPokemon(6, 50);
-      const types: PokemonType[] = ["fire", "flying"];
+      const types: PokemonType[] = [...fireFlyingTypes];
 
-      const active = createActivePokemon(pokemon, 0, types);
+      const active = createOnFieldPokemon(pokemon, 0, types);
 
-      expect(active.types).toEqual(["fire", "flying"]);
+      expect(active.types).toEqual(fireFlyingTypes);
       expect(active.types).not.toBe(types);
 
       active.types[0] = "water";
 
-      expect(types).toEqual(["fire", "flying"]);
-      expect(active.types).toEqual(["water", "flying"]);
+      expect(types).toEqual(fireFlyingTypes);
+      expect(active.types).toEqual([CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying]);
     });
   });
 
   describe("createPokemonSnapshot", () => {
     it("given an ActivePokemon, when createPokemonSnapshot is called, then public info is extracted", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, {
+      // Source: the snapshot fixture mirrors the same level-50 Charizard-style test Pokemon used elsewhere.
+      const speciesId = 6;
+      const level = 50;
+      const currentHp = 150;
+      const maxHp = 200;
+      const pokemon = createTestPokemon(speciesId, level, {
         nickname: "Char",
-        currentHp: 150,
+        currentHp,
         calculatedStats: {
-          hp: 200,
+          hp: maxHp,
           attack: 100,
           defense: 100,
           spAttack: 100,
@@ -116,19 +133,19 @@ describe("BattleHelpers", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireFlyingTypes);
 
       // Act
       const snapshot = createPokemonSnapshot(active);
 
       // Assert
-      expect(snapshot.speciesId).toBe(6);
+      expect(snapshot.speciesId).toBe(speciesId);
       expect(snapshot.nickname).toBe("Char");
-      expect(snapshot.level).toBe(50);
-      expect(snapshot.currentHp).toBe(150);
-      expect(snapshot.maxHp).toBe(200);
+      expect(snapshot.level).toBe(level);
+      expect(snapshot.currentHp).toBe(currentHp);
+      expect(snapshot.maxHp).toBe(maxHp);
       expect(snapshot.status).toBeNull();
-      expect(snapshot.gender).toBe("male");
+      expect(snapshot.gender).toBe(CORE_GENDERS.male);
       expect(snapshot.isShiny).toBe(false);
     });
   });
@@ -137,7 +154,7 @@ describe("BattleHelpers", () => {
     it("given a pokemon with a nickname, when getPokemonName is called, then nickname is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { nickname: "Char" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireMonotype);
 
       // Act
       const name = getPokemonName(active);
@@ -149,7 +166,7 @@ describe("BattleHelpers", () => {
     it("given a pokemon without a nickname, when getPokemonName is called, then species-based fallback is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { nickname: null });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, fireMonotype);
 
       // Act
       const name = getPokemonName(active);

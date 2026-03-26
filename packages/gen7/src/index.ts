@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen7 -- Gen7Ruleset + complete Gen 7 data
 
 export { createGen7DataManager } from "./data/index.js";
+export * from "./data/reference-ids.js";
 export {
   getAteAbilityOverride,
   getFurCoatMultiplier,
@@ -124,6 +125,7 @@ export { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
 export {
   ABILITY_WEATHER_TURNS,
   applyGen7WeatherEffects,
+  GEN7_WEATHER_DAMAGE_MULTIPLIERS,
   HAIL_IMMUNE_TYPES,
   isGen7WeatherImmune,
   isWeatherSuppressedGen7,

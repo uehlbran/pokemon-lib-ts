@@ -1,7 +1,23 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
+import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createPokemonInstance,
+  createStatExp,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_NATURE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 /**
@@ -17,94 +33,52 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // ---------------------------------------------------------------------------
 
 const ruleset = new Gen1Ruleset();
+const DATA_MANAGER = createGen1DataManager();
+const MOVE_IDS = GEN1_MOVE_IDS;
+const NATURE_IDS = GEN1_NATURE_IDS;
+const SPECIES_IDS = GEN1_SPECIES_IDS;
+const PIKACHU = DATA_MANAGER.getSpecies(SPECIES_IDS.pikachu);
+const TACKLE = DATA_MANAGER.getMove(MOVE_IDS.tackle);
+const CONFUSE_RAY = DATA_MANAGER.getMove(MOVE_IDS.confuseRay);
+const HAZE = DATA_MANAGER.getMove(MOVE_IDS.haze);
+const DEFAULT_CALCULATED_STATS = {
+  hp: 100,
+  attack: 80,
+  defense: 60,
+  spAttack: 80,
+  spDefense: 60,
+  speed: 120,
+} as const;
+const NORMAL_MONOTYPE = [CORE_TYPE_IDS.normal] as PokemonType[];
 
-const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
+function createSyntheticOnFieldPokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+  const pokemon = createPokemonInstance(PIKACHU, 50, new SeededRandom(1), {
+    nature: NATURE_IDS.hardy,
+    gender: CORE_GENDERS.male,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: null,
+    moves: [],
+    ivs: createDvs(),
+    evs: createStatExp(),
+    friendship: createFriendship(70),
+    isShiny: false,
+    metLocation: "pallet-town",
+    originalTrainer: "Red",
+    originalTrainerId: 12345,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
+  pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)];
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.currentHp = 100;
+  pokemon.calculatedStats = { ...DEFAULT_CALCULATED_STATS };
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
-    ...overrides,
-  };
-}
-
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
-  return {
-    pokemon: {
-      uid: "test-uid",
-      speciesId: 25,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      currentHp: 100,
-      status: null,
-      friendship: 70,
-      heldItem: null,
-      ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "pallet-town",
-      metLevel: 5,
-      originalTrainer: "Red",
-      originalTrainerId: 12345,
-      pokeball: "poke-ball",
-      calculatedStats: {
-        hp: 100,
-        attack: 80,
-        defense: 60,
-        spAttack: 80,
-        spDefense: 60,
-        speed: 120,
-      },
-    } as PokemonInstance,
+    pokemon,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: [...PIKACHU.types],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -124,7 +98,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   const rng = new SeededRandom(42);
   return {
     phase: "turn-resolve",
@@ -174,14 +148,14 @@ function makeBattleState(): BattleState {
   } as BattleState;
 }
 
-function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
+function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
   const rng = new SeededRandom(42);
   return {
-    attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
-    move: makeMove(),
+    attacker: createSyntheticOnFieldPokemon(),
+    defender: createSyntheticOnFieldPokemon({ types: [...NORMAL_MONOTYPE] }),
+    move: TACKLE,
     damage: 0,
-    state: makeBattleState(),
+    state: createBattleState(),
     rng,
     ...overrides,
   };
@@ -191,31 +165,13 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 // Confusion move definition
 // ---------------------------------------------------------------------------
 
-const confusionMove = makeMove({
-  id: "confuse-ray",
-  displayName: "Confuse Ray",
-  type: "ghost" as PokemonType,
-  category: "status",
-  power: null,
-  accuracy: 100,
-  target: "adjacent-foe",
-  effect: { type: "volatile-status" as const, status: "confusion", chance: 100 },
-});
+const confusionMove = CONFUSE_RAY;
 
 // ---------------------------------------------------------------------------
 // Haze move definition
 // ---------------------------------------------------------------------------
 
-const hazeMove = makeMove({
-  id: "haze",
-  displayName: "Haze",
-  type: "ice" as PokemonType,
-  category: "status",
-  power: null,
-  accuracy: null,
-  target: "all",
-  effect: { type: "custom" as const, handler: "haze" },
-});
+const hazeMove = HAZE;
 
 // ---------------------------------------------------------------------------
 // Confusion duration tests
@@ -230,11 +186,11 @@ describe("confusion duration", () => {
 
     for (let seed = 0; seed < 1000; seed++) {
       // Reset the defender's volatile statuses so confusion is inflicted fresh each time
-      const freshDefender = makeActivePokemon({
-        types: ["normal"],
+      const freshDefender = createSyntheticOnFieldPokemon({
+        types: [...NORMAL_MONOTYPE],
         volatileStatuses: new Map(),
       });
-      const context = makeMoveEffectContext({
+      const context = createMoveEffectContext({
         move: confusionMove,
         defender: freshDefender,
         rng: new SeededRandom(seed),
@@ -244,7 +200,7 @@ describe("confusion duration", () => {
       const result = ruleset.executeMoveEffect(context);
 
       // Only collect when confusion was actually inflicted (not already confused)
-      if (result.volatileInflicted === "confusion" && result.volatileData != null) {
+      if (result.volatileInflicted === CORE_VOLATILE_IDS.confusion && result.volatileData != null) {
         turnsLeftValues.push(result.volatileData.turnsLeft);
       }
     }
@@ -264,11 +220,11 @@ describe("confusion duration", () => {
     const turnsLeftValues: number[] = [];
 
     for (let seed = 0; seed < 1000; seed++) {
-      const freshDefender = makeActivePokemon({
-        types: ["normal"],
+      const freshDefender = createSyntheticOnFieldPokemon({
+        types: [...NORMAL_MONOTYPE],
         volatileStatuses: new Map(),
       });
-      const context = makeMoveEffectContext({
+      const context = createMoveEffectContext({
         move: confusionMove,
         defender: freshDefender,
         rng: new SeededRandom(seed),
@@ -277,7 +233,7 @@ describe("confusion duration", () => {
       // Act
       const result = ruleset.executeMoveEffect(context);
 
-      if (result.volatileInflicted === "confusion" && result.volatileData != null) {
+      if (result.volatileInflicted === CORE_VOLATILE_IDS.confusion && result.volatileData != null) {
         turnsLeftValues.push(result.volatileData.turnsLeft);
       }
     }
@@ -294,14 +250,20 @@ describe("confusion duration", () => {
     const SEED = 77;
 
     // Arrange: two identical contexts using the same seed
-    const contextA = makeMoveEffectContext({
+    const contextA = createMoveEffectContext({
       move: confusionMove,
-      defender: makeActivePokemon({ types: ["normal"], volatileStatuses: new Map() }),
+      defender: createSyntheticOnFieldPokemon({
+        types: [...NORMAL_MONOTYPE],
+        volatileStatuses: new Map(),
+      }),
       rng: new SeededRandom(SEED),
     });
-    const contextB = makeMoveEffectContext({
+    const contextB = createMoveEffectContext({
       move: confusionMove,
-      defender: makeActivePokemon({ types: ["normal"], volatileStatuses: new Map() }),
+      defender: createSyntheticOnFieldPokemon({
+        types: [...NORMAL_MONOTYPE],
+        volatileStatuses: new Map(),
+      }),
       rng: new SeededRandom(SEED),
     });
 
@@ -310,8 +272,8 @@ describe("confusion duration", () => {
     const resultB = ruleset.executeMoveEffect(contextB);
 
     // Assert: same seed → same turnsLeft
-    expect(resultA.volatileInflicted).toBe("confusion");
-    expect(resultB.volatileInflicted).toBe("confusion");
+    expect(resultA.volatileInflicted).toBe(CORE_VOLATILE_IDS.confusion);
+    expect(resultB.volatileInflicted).toBe(CORE_VOLATILE_IDS.confusion);
     expect(resultA.volatileData?.turnsLeft).toBe(resultB.volatileData?.turnsLeft);
   });
 });
@@ -326,7 +288,7 @@ describe("Haze handler", () => {
     // The user's (attacker's) status is NOT cured by Haze — only stat stages are reset.
 
     // Arrange
-    const context = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const context = createMoveEffectContext({ move: hazeMove, damage: 0 });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -340,7 +302,7 @@ describe("Haze handler", () => {
     // the defender's stages are handled through statusCured (engine resets stages on status cure).
 
     // Arrange
-    const context = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const context = createMoveEffectContext({ move: hazeMove, damage: 0 });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -353,7 +315,7 @@ describe("Haze handler", () => {
     // Source: pokered move_effects/haze.asm — Haze removes all screens from both sides in Gen 1
 
     // Arrange
-    const context = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const context = createMoveEffectContext({ move: hazeMove, damage: 0 });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -366,7 +328,7 @@ describe("Haze handler", () => {
     // Source: pokered move_effects/haze.asm — canonical in-game message after Haze
 
     // Arrange
-    const context = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const context = createMoveEffectContext({ move: hazeMove, damage: 0 });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -378,12 +340,13 @@ describe("Haze handler", () => {
   it("given attacker is burned, when Haze is used, then statusCured targets defender only (not attacker or both)", () => {
     // Source: pokered move_effects/haze.asm:15-43 — user's (attacker's) status is NOT cured by Haze;
     // only the opponent's (defender's) status is cured. Second independent test confirming target="defender".
-    const burnedPokemon = {
-      ...makeActivePokemon().pokemon,
-      status: "burn",
-    } as PokemonInstance;
-    const burnedAttacker = makeActivePokemon({ pokemon: burnedPokemon });
-    const context = makeMoveEffectContext({ move: hazeMove, damage: 0, attacker: burnedAttacker });
+    const burnedAttacker = createSyntheticOnFieldPokemon();
+    burnedAttacker.pokemon.status = CORE_STATUS_IDS.burn;
+    const context = createMoveEffectContext({
+      move: hazeMove,
+      damage: 0,
+      attacker: burnedAttacker,
+    });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -397,7 +360,7 @@ describe("Haze handler", () => {
   it("given clean-state Pokemon (no volatiles), when Haze is used, then statStagesReset still targets attacker", () => {
     // Source: pokered move_effects/haze.asm:15-43
     // Second independent test case — confirms statStagesReset is unconditional (not contingent on volatile presence)
-    const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const cleanContext = createMoveEffectContext({ move: hazeMove, damage: 0 });
     const result = ruleset.executeMoveEffect(cleanContext);
     expect(result.statStagesReset?.target).toBe("attacker");
   });
@@ -405,7 +368,7 @@ describe("Haze handler", () => {
   it("given clean-state Pokemon (no volatiles), when Haze is used, then screensCleared is still both", () => {
     // Source: pokered move_effects/haze.asm:15-43
     // Second independent test case — confirms screensCleared is unconditional
-    const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const cleanContext = createMoveEffectContext({ move: hazeMove, damage: 0 });
     const result = ruleset.executeMoveEffect(cleanContext);
     expect(result.screensCleared).toBe("both");
   });
@@ -413,7 +376,7 @@ describe("Haze handler", () => {
   it("given clean-state Pokemon (no volatiles), when Haze is used, then message is still 'All stat changes were eliminated!'", () => {
     // Source: pokered move_effects/haze.asm:15-43
     // Second independent test case — confirms message is unconditional
-    const cleanContext = makeMoveEffectContext({ move: hazeMove, damage: 0 });
+    const cleanContext = createMoveEffectContext({ move: hazeMove, damage: 0 });
     const result = ruleset.executeMoveEffect(cleanContext);
     expect(result.messages).toContain("All stat changes were eliminated!");
   });
@@ -422,14 +385,14 @@ describe("Haze handler", () => {
     // Source: pokered move_effects/haze.asm — all volatile statuses on both sides are cleared
 
     // Arrange: attacker has confusion, defender has confusion
-    const attackerWithConfusion = makeActivePokemon({
-      volatileStatuses: new Map([["confusion", { turnsLeft: 3 }]]),
+    const attackerWithConfusion = createSyntheticOnFieldPokemon({
+      volatileStatuses: new Map([[CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 }]]),
     });
-    const defenderWithConfusion = makeActivePokemon({
-      types: ["normal"],
-      volatileStatuses: new Map([["confusion", { turnsLeft: 2 }]]),
+    const defenderWithConfusion = createSyntheticOnFieldPokemon({
+      types: [...NORMAL_MONOTYPE],
+      volatileStatuses: new Map([[CORE_VOLATILE_IDS.confusion, { turnsLeft: 2 }]]),
     });
-    const context = makeMoveEffectContext({
+    const context = createMoveEffectContext({
       move: hazeMove,
       damage: 0,
       attacker: attackerWithConfusion,
@@ -443,10 +406,14 @@ describe("Haze handler", () => {
     expect(result.volatilesToClear?.length).toBe(2);
     const clears = result.volatilesToClear ?? [];
 
-    const attackerEntry = clears.find((c) => c.target === "attacker" && c.volatile === "confusion");
-    const defenderEntry = clears.find((c) => c.target === "defender" && c.volatile === "confusion");
+    const attackerEntry = clears.find(
+      (c) => c.target === "attacker" && c.volatile === CORE_VOLATILE_IDS.confusion,
+    );
+    const defenderEntry = clears.find(
+      (c) => c.target === "defender" && c.volatile === CORE_VOLATILE_IDS.confusion,
+    );
 
-    expect(attackerEntry?.volatile).toBe("confusion");
-    expect(defenderEntry?.volatile).toBe("confusion");
+    expect(attackerEntry?.volatile).toBe(CORE_VOLATILE_IDS.confusion);
+    expect(defenderEntry?.volatile).toBe(CORE_VOLATILE_IDS.confusion);
   });
 });

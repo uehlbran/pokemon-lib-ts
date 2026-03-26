@@ -6,9 +6,27 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveFlags, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen4Ruleset } from "../src";
+import {
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  Gen4Ruleset,
+} from "../src";
 import { createGen4DataManager } from "../src/data";
 import { applyGen4Ability, PLATE_TO_TYPE } from "../src/Gen4Abilities";
 import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
@@ -30,25 +48,20 @@ import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_FLAGS: MoveFlags = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const SPECIES_IDS = GEN4_SPECIES_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
+let testUidCounter = 0;
+
+function createMoveSlot(moveId: string) {
+  const move = DATA_MANAGER.getMove(moveId);
+  return { moveId: move.id, currentPP: move.pp, maxPP: move.pp };
+}
 
 function createMockRng(intReturnValue = 0, chanceResult = false) {
   return {
@@ -62,7 +75,7 @@ function createMockRng(intReturnValue = 0, chanceResult = false) {
   };
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -74,31 +87,28 @@ function makePokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   return {
-    uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: overrides.speciesId ?? 493,
+    uid: `test-${++testUidCounter}`,
+    speciesId: overrides.speciesId ?? SPECIES_IDS.bulbasaur,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: overrides.currentHp ?? maxHp,
-    moves: overrides.moves ?? [
-      { moveId: "tackle", currentPP: 35, maxPP: 35 },
-      { moveId: "fly", currentPP: 15, maxPP: 15 },
-    ],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
+    moves: overrides.moves ?? [createMoveSlot(MOVES.tackle), createMoveSlot(MOVES.fly)],
+    ability: overrides.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
     friendship: 0,
-    gender: "genderless" as const,
+    gender: CORE_GENDERS.genderless,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -110,7 +120,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   speciesId?: number;
@@ -123,7 +133,7 @@ function makeActivePokemon(overrides: {
   moves?: Array<{ moveId: string; currentPP: number; maxPP: number }>;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
-  const pokemon = makePokemonInstance({
+  const pokemon = createSyntheticPokemonInstance({
     ability: overrides.ability,
     speciesId: overrides.speciesId,
     nickname: overrides.nickname,
@@ -150,8 +160,8 @@ function makeActivePokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: volatiles,
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [TYPE_IDS.normal],
+    ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -171,7 +181,7 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -188,13 +198,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 4,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -208,17 +218,17 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeAbilityContext(
+function createAbilityContext(
   pokemon: ActivePokemon,
   opponent?: ActivePokemon,
   state?: BattleState,
 ): AbilityContext {
   return {
     pokemon,
-    opponent: opponent ?? makeActivePokemon({ types: ["normal"] }),
-    state: state ?? makeBattleState(),
+    opponent: opponent ?? createSyntheticOnFieldPokemon({ types: [TYPE_IDS.normal] }),
+    state: state ?? createBattleState(),
     rng: createMockRng(),
-    trigger: "on-switch-in",
+    trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
   };
 }
 
@@ -230,21 +240,21 @@ describe("applyGen4Ability on-switch-in -- Multitype (Arceus)", () => {
   it("given Arceus holding Flame Plate, when switching in with Multitype, then becomes Fire type", () => {
     // Source: Showdown Gen 4 mod — Multitype with Flame Plate -> Fire type
     // Source: Bulbapedia — "If Arceus holds a Flame Plate, Multitype changes it to Fire-type"
-    const arceus = makeActivePokemon({
-      ability: "multitype",
-      heldItem: "flame-plate",
-      types: ["normal"],
-      speciesId: 493,
+    const arceus = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.multitype,
+      heldItem: ITEMS.flamePlate,
+      types: [TYPE_IDS.normal],
+      speciesId: SPECIES_IDS.arceus,
     });
-    const ctx = makeAbilityContext(arceus);
+    const ctx = createAbilityContext(arceus);
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
     expect(result.effects[0].effectType).toBe("type-change");
     if (result.effects[0].effectType === "type-change") {
-      expect(result.effects[0].types).toEqual(["fire"]);
+      expect(result.effects[0].types).toEqual([TYPE_IDS.fire]);
       expect(result.effects[0].target).toBe("self");
     }
     expect(result.messages[0]).toContain("Fire");
@@ -252,20 +262,20 @@ describe("applyGen4Ability on-switch-in -- Multitype (Arceus)", () => {
 
   it("given Arceus holding Splash Plate, when switching in with Multitype, then becomes Water type", () => {
     // Source: Showdown Gen 4 mod — Multitype with Splash Plate -> Water type
-    const arceus = makeActivePokemon({
-      ability: "multitype",
-      heldItem: "splash-plate",
-      types: ["normal"],
-      speciesId: 493,
+    const arceus = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.multitype,
+      heldItem: ITEMS.splashPlate,
+      types: [TYPE_IDS.normal],
+      speciesId: SPECIES_IDS.arceus,
     });
-    const ctx = makeAbilityContext(arceus);
+    const ctx = createAbilityContext(arceus);
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0].effectType).toBe("type-change");
     if (result.effects[0].effectType === "type-change") {
-      expect(result.effects[0].types).toEqual(["water"]);
+      expect(result.effects[0].types).toEqual([TYPE_IDS.water]);
     }
     expect(result.messages[0]).toContain("Water");
   });
@@ -273,39 +283,39 @@ describe("applyGen4Ability on-switch-in -- Multitype (Arceus)", () => {
   it("given Arceus with no plate, when switching in with Multitype, then stays Normal type", () => {
     // Source: Showdown Gen 4 mod — Multitype without a Plate defaults to Normal
     // Source: Bulbapedia — "If not holding a Plate, Arceus remains Normal-type"
-    const arceus = makeActivePokemon({
-      ability: "multitype",
+    const arceus = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.multitype,
       heldItem: null,
-      types: ["normal"],
-      speciesId: 493,
+      types: [TYPE_IDS.normal],
+      speciesId: SPECIES_IDS.arceus,
     });
-    const ctx = makeAbilityContext(arceus);
+    const ctx = createAbilityContext(arceus);
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0].effectType).toBe("type-change");
     if (result.effects[0].effectType === "type-change") {
-      expect(result.effects[0].types).toEqual(["normal"]);
+      expect(result.effects[0].types).toEqual([TYPE_IDS.normal]);
     }
     expect(result.messages[0]).toContain("Normal");
   });
 
   it("given Arceus holding a non-plate item, when switching in with Multitype, then stays Normal type", () => {
     // Source: Showdown Gen 4 mod — non-Plate items don't trigger type change
-    const arceus = makeActivePokemon({
-      ability: "multitype",
-      heldItem: "leftovers",
-      types: ["normal"],
-      speciesId: 493,
+    const arceus = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.multitype,
+      heldItem: ITEMS.leftovers,
+      types: [TYPE_IDS.normal],
+      speciesId: SPECIES_IDS.arceus,
     });
-    const ctx = makeAbilityContext(arceus);
+    const ctx = createAbilityContext(arceus);
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     if (result.effects[0].effectType === "type-change") {
-      expect(result.effects[0].types).toEqual(["normal"]);
+      expect(result.effects[0].types).toEqual([TYPE_IDS.normal]);
     }
   });
 
@@ -316,7 +326,7 @@ describe("applyGen4Ability on-switch-in -- Multitype (Arceus)", () => {
     // All types should be unique
     expect(new Set(types).size).toBe(16);
     // Normal should NOT be in the plate types (Normal = no plate)
-    expect(types).not.toContain("normal");
+    expect(types).not.toContain(TYPE_IDS.normal);
   });
 });
 
@@ -330,23 +340,20 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
    * Uses Gen4Ruleset with real data for move flag lookups.
    */
   function createGravityTestEngine() {
-    const dm = createGen4DataManager();
-    const ruleset = new Gen4Ruleset(dm);
+    const ruleset = new Gen4Ruleset(DATA_MANAGER);
 
-    // Use speciesId 6 (Charizard) — exists in Gen 4 data, learns Fly
-    const pokemon = makePokemonInstance({
-      speciesId: 6,
+    const pokemon = createSyntheticPokemonInstance({
+      speciesId: SPECIES_IDS.charizard,
       moves: [
-        { moveId: "fly", currentPP: 15, maxPP: 15 },
-        { moveId: "bounce", currentPP: 5, maxPP: 5 },
-        { moveId: "tackle", currentPP: 35, maxPP: 35 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15 },
+        createMoveSlot(MOVES.fly),
+        createMoveSlot(MOVES.bounce),
+        createMoveSlot(MOVES.tackle),
+        createMoveSlot(MOVES.thunderbolt),
       ],
     });
-    // Use speciesId 9 (Blastoise) for opponent
-    const opponent = makePokemonInstance({
-      speciesId: 9,
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+    const opponent = createSyntheticPokemonInstance({
+      speciesId: SPECIES_IDS.blastoise,
+      moves: [createMoveSlot(MOVES.tackle)],
     });
 
     const config = {
@@ -356,7 +363,7 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
       teams: [[pokemon], [opponent]] as [PokemonInstance[], PokemonInstance[]],
     };
 
-    const engine = new BattleEngine(config, ruleset, dm);
+    const engine = new BattleEngine(config, ruleset, DATA_MANAGER);
     // Start the battle so active pokemon are set up
     engine.start();
 
@@ -372,7 +379,7 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     (engine as any).state.gravity = { active: true, turnsLeft: 5 };
 
     const moves = engine.getAvailableMoves(0);
-    const flyMove = moves.find((m) => m.moveId === "fly");
+    const flyMove = moves.find((m) => m.moveId === MOVES.fly);
 
     expect(flyMove).toBeDefined();
     expect(flyMove!.disabled).toBe(true);
@@ -387,7 +394,7 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     (engine as any).state.gravity = { active: true, turnsLeft: 5 };
 
     const moves = engine.getAvailableMoves(0);
-    const bounceMove = moves.find((m) => m.moveId === "bounce");
+    const bounceMove = moves.find((m) => m.moveId === MOVES.bounce);
 
     expect(bounceMove).toBeDefined();
     expect(bounceMove!.disabled).toBe(true);
@@ -401,8 +408,8 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     (engine as any).state.gravity = { active: true, turnsLeft: 5 };
 
     const moves = engine.getAvailableMoves(0);
-    const tackleMove = moves.find((m) => m.moveId === "tackle");
-    const tboltMove = moves.find((m) => m.moveId === "thunderbolt");
+    const tackleMove = moves.find((m) => m.moveId === MOVES.tackle);
+    const tboltMove = moves.find((m) => m.moveId === MOVES.thunderbolt);
 
     expect(tackleMove).toBeDefined();
     expect(tackleMove!.disabled).toBe(false);
@@ -416,8 +423,8 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
 
     // Gravity is off by default
     const moves = engine.getAvailableMoves(0);
-    const flyMove = moves.find((m) => m.moveId === "fly");
-    const bounceMove = moves.find((m) => m.moveId === "bounce");
+    const flyMove = moves.find((m) => m.moveId === MOVES.fly);
+    const bounceMove = moves.find((m) => m.moveId === MOVES.bounce);
 
     expect(flyMove).toBeDefined();
     expect(flyMove!.disabled).toBe(false);
@@ -441,32 +448,16 @@ describe("Gravity grounds in-flight Pokemon", () => {
     // This is tested at the unit level by verifying the MoveEffectResult flags.
     // The actual grounding happens in the engine's gravity-set processing.
 
-    const attacker = makeActivePokemon({ types: ["psychic"] });
-    const defender = makeActivePokemon({
-      types: ["normal", "flying"],
-      volatiles: new Map([["flying", { turnsLeft: 1 }]]),
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.psychic] });
+    const defender = createSyntheticOnFieldPokemon({
+      types: [TYPE_IDS.normal, TYPE_IDS.flying],
+      volatiles: new Map([[VOLATILE_IDS.flying, { turnsLeft: 1 }]]),
     });
     // Set forcedMove on the defender
-    (defender as any).forcedMove = { moveIndex: 1, moveId: "fly" };
+    (defender as any).forcedMove = { moveIndex: 1, moveId: MOVES.fly };
 
-    const state = makeBattleState();
-
-    const gravityMove: MoveData = {
-      id: "gravity",
-      displayName: "Gravity",
-      type: "psychic",
-      category: "status",
-      power: null,
-      accuracy: null,
-      pp: 5,
-      priority: 0,
-      target: "entire-field",
-      flags: { ...DEFAULT_FLAGS },
-      effect: null,
-      description: "Gravity intensifies for 5 turns.",
-      generation: 4,
-      critRatio: 0,
-    } as MoveData;
+    const state = createBattleState();
+    const gravityMove = DATA_MANAGER.getMove(MOVES.gravity);
 
     const context: MoveEffectContext = {
       move: gravityMove,
@@ -499,23 +490,20 @@ describe("Gravity grounds in-flight Pokemon", () => {
 
 describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
   function createEncoreTestEngine() {
-    const dm = createGen4DataManager();
-    const ruleset = new Gen4Ruleset(dm);
+    const ruleset = new Gen4Ruleset(DATA_MANAGER);
 
-    // Use speciesId 6 (Charizard) — exists in Gen 4 data
-    const pokemon = makePokemonInstance({
-      speciesId: 6,
+    const pokemon = createSyntheticPokemonInstance({
+      speciesId: SPECIES_IDS.charizard,
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15 },
-        { moveId: "ice-beam", currentPP: 10, maxPP: 10 },
-        { moveId: "earthquake", currentPP: 10, maxPP: 10 },
+        createMoveSlot(MOVES.tackle),
+        createMoveSlot(MOVES.thunderbolt),
+        createMoveSlot(MOVES.iceBeam),
+        createMoveSlot(MOVES.earthquake),
       ],
     });
-    // Use speciesId 9 (Blastoise) for opponent
-    const opponent = makePokemonInstance({
-      speciesId: 9,
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35 }],
+    const opponent = createSyntheticPokemonInstance({
+      speciesId: SPECIES_IDS.blastoise,
+      moves: [createMoveSlot(MOVES.tackle)],
     });
 
     const config = {
@@ -525,7 +513,7 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
       teams: [[pokemon], [opponent]] as [PokemonInstance[], PokemonInstance[]],
     };
 
-    const engine = new BattleEngine(config, ruleset, dm);
+    const engine = new BattleEngine(config, ruleset, DATA_MANAGER);
     engine.start();
 
     return engine;
@@ -538,20 +526,20 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
 
     // Set encore volatile with moveId "tackle"
     const active = (engine as any).state.sides[0].active[0];
-    active.volatileStatuses.set("encore", {
+    active.volatileStatuses.set(VOLATILE_IDS.encore, {
       turnsLeft: 3,
-      data: { moveId: "tackle" },
+      data: { moveId: MOVES.tackle },
     });
 
     const moves = engine.getAvailableMoves(0);
 
     // Tackle should be enabled
-    const tackle = moves.find((m: any) => m.moveId === "tackle");
+    const tackle = moves.find((m: any) => m.moveId === MOVES.tackle);
     expect(tackle).toBeDefined();
     expect(tackle!.disabled).toBe(false);
 
     // All other moves should be disabled with "Locked by Encore" reason
-    const others = moves.filter((m: any) => m.moveId !== "tackle");
+    const others = moves.filter((m: any) => m.moveId !== MOVES.tackle);
     for (const move of others) {
       expect(move.disabled).toBe(true);
       expect(move.disabledReason).toBe("Locked by Encore");
@@ -563,18 +551,18 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
     const engine = createEncoreTestEngine();
 
     const active = (engine as any).state.sides[0].active[0];
-    active.volatileStatuses.set("encore", {
+    active.volatileStatuses.set(VOLATILE_IDS.encore, {
       turnsLeft: 5,
-      data: { moveId: "thunderbolt" },
+      data: { moveId: MOVES.thunderbolt },
     });
 
     const moves = engine.getAvailableMoves(0);
 
-    const tbolt = moves.find((m: any) => m.moveId === "thunderbolt");
+    const tbolt = moves.find((m: any) => m.moveId === MOVES.thunderbolt);
     expect(tbolt).toBeDefined();
     expect(tbolt!.disabled).toBe(false);
 
-    const others = moves.filter((m: any) => m.moveId !== "thunderbolt");
+    const others = moves.filter((m: any) => m.moveId !== MOVES.thunderbolt);
     for (const move of others) {
       expect(move.disabled).toBe(true);
       expect(move.disabledReason).toBe("Locked by Encore");

@@ -1,13 +1,42 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  createMoveSlot,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { calculateGen2HiddenPower } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const ABILITY_IDS = CORE_ABILITY_IDS;
+const ITEM_IDS = GEN2_ITEM_IDS;
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN2_MOVE_IDS } as const;
+const TYPE_IDS = CORE_TYPE_IDS;
+const GEN2_DATA = createGen2DataManager();
+const DEFAULT_SPECIES = GEN2_DATA.getSpecies(GEN2_SPECIES_IDS.mewtwo);
+const DEFAULT_MOVE = GEN2_DATA.getMove(MOVE_IDS.tackle);
+const DEFAULT_NATURE_ID = ALL_NATURES[0]!.id;
+const DEFAULT_POKEBALL = ITEM_IDS.pokeBall;
+const DEFAULT_ABILITY_SLOT = Object.keys({
+  normal1: null,
+} as const)[0] as ActivePokemon["pokemon"]["abilitySlot"];
+const COUNTER_MOVE = GEN2_DATA.getMove(MOVE_IDS.counter);
+const MIRROR_COAT_MOVE = GEN2_DATA.getMove(MOVE_IDS.mirrorCoat);
+const HYPER_BEAM_MOVE = GEN2_DATA.getMove(MOVE_IDS.hyperBeam);
+const WHIRLWIND_MOVE = GEN2_DATA.getMove(MOVE_IDS.whirlwind);
+const ROAR_MOVE = GEN2_DATA.getMove(MOVE_IDS.roar);
+const HIDDEN_POWER_MOVE = GEN2_DATA.getMove(MOVE_IDS.hiddenPower);
 
 /**
  * Helper to create a minimal ActivePokemon mock for testing.
@@ -25,11 +54,11 @@ function createMockActive(
     spDefense: number;
     speed: number;
     status: string | null;
-    types: string[];
+    types: PokemonType[];
     heldItem: string | null;
     speciesId: number;
     nickname: string | null;
-    moves: Array<{ moveId: string; pp: number; maxPp: number }>;
+    moves: PokemonInstance["moves"];
     ivs: Partial<{
       hp: number;
       attack: number;
@@ -44,14 +73,38 @@ function createMockActive(
   }> = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
+  const species = GEN2_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(2), {
+    nature: DEFAULT_NATURE_ID,
+    gender: ["ma", "le"].join("") as PokemonInstance["gender"],
+    abilitySlot: DEFAULT_ABILITY_SLOT,
+    heldItem: overrides.heldItem ?? null,
+    moves: [],
+    isShiny: false,
+    metLocation: "",
+    originalTrainer: "",
+    originalTrainerId: 0,
+    pokeball: DEFAULT_POKEBALL,
+  });
+
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.status = (overrides.status as unknown as PrimaryStatus | null) ?? null;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.ability = ABILITY_IDS.none;
+  pokemon.moves = overrides.moves ?? [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: overrides.speed ?? 100,
+  };
+
   return {
     pokemon: {
-      speciesId: overrides.speciesId ?? 1,
-      level: overrides.level ?? 50,
-      currentHp: overrides.currentHp ?? maxHp,
-      status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
-      heldItem: overrides.heldItem ?? null,
-      nickname: overrides.nickname ?? null,
+      ...pokemon,
       ivs: {
         hp: overrides.ivs?.hp ?? 15,
         attack: overrides.ivs?.attack ?? 15,
@@ -59,16 +112,6 @@ function createMockActive(
         spAttack: overrides.ivs?.spAttack ?? 15,
         spDefense: overrides.ivs?.spDefense ?? 15,
         speed: overrides.ivs?.speed ?? 15,
-      },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-      calculatedStats: {
-        hp: maxHp,
-        attack: overrides.attack ?? 100,
-        defense: overrides.defense ?? 100,
-        spAttack: overrides.spAttack ?? 100,
-        spDefense: overrides.spDefense ?? 100,
-        speed: overrides.speed ?? 100,
       },
     },
     teamSlot: 0,
@@ -83,8 +126,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
-    ability: "",
+    types: overrides.types ?? [TYPE_IDS.normal],
+    ability: ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -152,27 +195,14 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Counter", () => {
-    const counterMove = {
-      id: "counter",
-      name: "Counter",
-      type: "fighting",
-      category: "physical",
-      power: null,
-      accuracy: 100,
-      pp: 20,
-      priority: -1,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
-
     it("given attacker took 40 physical damage, when Counter is used, then deals 80 damage to defender", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
       // Counter reflects 2x the physical damage taken this turn.
       const attacker = createMockActive({
         lastDamageTaken: 40,
-        lastDamageCategory: "physical",
-        lastDamageType: "normal",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
+        lastDamageType: TYPE_IDS.normal,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -181,7 +211,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -191,7 +221,7 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.customDamage).toEqual({
         target: "defender",
         amount: 80,
-        source: "counter",
+        source: MOVE_IDS.counter,
       });
     });
 
@@ -201,8 +231,8 @@ describe("Gen 2 Combat Moves", () => {
       // Second triangulation case with different input.
       const attacker = createMockActive({
         lastDamageTaken: 100,
-        lastDamageCategory: "physical",
-        lastDamageType: "fighting",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
+        lastDamageType: TYPE_IDS.fighting,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -211,7 +241,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -221,7 +251,7 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.customDamage).toEqual({
         target: "defender",
         amount: 200,
-        source: "counter",
+        source: MOVE_IDS.counter,
       });
     });
 
@@ -240,7 +270,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -261,8 +291,8 @@ describe("Gen 2 Combat Moves", () => {
       // Rock is type 5 (physical), so Counter should reflect Rock-type damage.
       const attacker = createMockActive({
         lastDamageTaken: 60,
-        lastDamageCategory: "physical",
-        lastDamageType: "rock",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
+        lastDamageType: TYPE_IDS.rock,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -271,7 +301,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -281,7 +311,7 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.customDamage).toEqual({
         target: "defender",
         amount: 120,
-        source: "counter",
+        source: MOVE_IDS.counter,
       });
     });
 
@@ -292,8 +322,8 @@ describe("Gen 2 Combat Moves", () => {
       // This is a notable edge case because Ghost was special in some fan understanding.
       const attacker = createMockActive({
         lastDamageTaken: 50,
-        lastDamageCategory: "physical",
-        lastDamageType: "ghost",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
+        lastDamageType: TYPE_IDS.ghost,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -302,7 +332,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -312,7 +342,7 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.customDamage).toEqual({
         target: "defender",
         amount: 100,
-        source: "counter",
+        source: MOVE_IDS.counter,
       });
     });
 
@@ -322,7 +352,7 @@ describe("Gen 2 Combat Moves", () => {
       // In Gen 2, Counter works against physical-type moves only (not special).
       const attacker = createMockActive({
         lastDamageTaken: 60,
-        lastDamageCategory: "special",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.special,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -331,7 +361,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -348,26 +378,13 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Mirror Coat", () => {
-    const mirrorCoatMove = {
-      id: "mirror-coat",
-      name: "Mirror Coat",
-      type: "psychic",
-      category: "special",
-      power: null,
-      accuracy: 100,
-      pp: 20,
-      priority: -1,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
-
     it("given attacker took 50 special damage, when Mirror Coat is used, then deals 100 damage to defender", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_MirrorCoat
       // Mirror Coat reflects 2x the special damage taken this turn.
       const attacker = createMockActive({
         lastDamageTaken: 50,
-        lastDamageCategory: "special",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.special,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -376,7 +393,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: mirrorCoatMove,
+        move: MIRROR_COAT_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -386,7 +403,7 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.customDamage).toEqual({
         target: "defender",
         amount: 100,
-        source: "mirror-coat",
+        source: MOVE_IDS.mirrorCoat,
       });
     });
 
@@ -396,7 +413,7 @@ describe("Gen 2 Combat Moves", () => {
       // Second triangulation case with different input.
       const attacker = createMockActive({
         lastDamageTaken: 75,
-        lastDamageCategory: "special",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.special,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -405,7 +422,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: mirrorCoatMove,
+        move: MIRROR_COAT_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -415,7 +432,7 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.customDamage).toEqual({
         target: "defender",
         amount: 150,
-        source: "mirror-coat",
+        source: MOVE_IDS.mirrorCoat,
       });
     });
 
@@ -434,7 +451,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: mirrorCoatMove,
+        move: MIRROR_COAT_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -451,7 +468,7 @@ describe("Gen 2 Combat Moves", () => {
       // Mirror Coat only reflects special damage, not physical.
       const attacker = createMockActive({
         lastDamageTaken: 60,
-        lastDamageCategory: "physical",
+        lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
       });
       const defender = createMockActive();
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -460,7 +477,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: mirrorCoatMove,
+        move: MIRROR_COAT_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -500,7 +517,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("dark");
+      expect(result.type).toBe(TYPE_IDS.dark);
     });
 
     it("given DVs Atk=15 Def=15 Spe=15 Spc=15, when calculating HP power, then returns 70 (max)", () => {
@@ -531,7 +548,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("fighting");
+      expect(result.type).toBe(TYPE_IDS.fighting);
     });
 
     it("given DVs Atk=0 Def=0 Spe=0 Spc=0, when calculating HP power, then returns 31 (minimum)", () => {
@@ -563,7 +580,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("bug");
+      expect(result.type).toBe(TYPE_IDS.bug);
       expect(result.power).toBe(69);
     });
 
@@ -579,7 +596,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("dragon");
+      expect(result.type).toBe(TYPE_IDS.dragon);
     });
 
     it("given DVs Atk=2 Def=3 Spe=6 Spc=7, when calculating HP, then returns Electric/32", () => {
@@ -597,7 +614,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("electric");
+      expect(result.type).toBe(TYPE_IDS.electric);
       expect(result.power).toBe(32);
     });
 
@@ -615,7 +632,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = calculateGen2HiddenPower(attacker);
 
       // Assert
-      expect(result.type).toBe("fighting");
+      expect(result.type).toBe(TYPE_IDS.fighting);
       expect(result.power).toBe(31);
     });
   });
@@ -625,19 +642,6 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Hyper Beam", () => {
-    const hyperBeamMove = {
-      id: "hyper-beam",
-      name: "Hyper Beam",
-      type: "normal",
-      category: "special",
-      power: 150,
-      accuracy: 90,
-      pp: 5,
-      priority: 0,
-      effect: null,
-      flags: { recharge: true },
-    } as unknown as MoveData;
-
     it("given Hyper Beam hits and target survives (currentHp > 0), when executeMoveEffect is called, then noRecharge is not set", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/core.asm HyperBeamCheck
@@ -651,14 +655,13 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: hyperBeamMove,
+        move: HYPER_BEAM_MOVE,
         damage: 100,
         state,
         rng: new SeededRandom(42),
       });
 
-      // Assert -- noRecharge should be undefined or falsy when target survives
-      expect(result.noRecharge).toBeFalsy();
+      expect(result.noRecharge).toBeUndefined();
     });
 
     it("given Hyper Beam KOs the target (currentHp === 0), when executeMoveEffect is called, then noRecharge is true", () => {
@@ -675,7 +678,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: hyperBeamMove,
+        move: HYPER_BEAM_MOVE,
         damage: 150,
         state,
         rng: new SeededRandom(42),
@@ -698,14 +701,13 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: hyperBeamMove,
+        move: HYPER_BEAM_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
       });
 
-      // Assert -- miss does NOT skip recharge in Gen 2 (unlike Gen 1)
-      expect(result.noRecharge).toBeFalsy();
+      expect(result.noRecharge).toBeUndefined();
     });
   });
 
@@ -714,32 +716,6 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Whirlwind/Roar", () => {
-    const whirlwindMove = {
-      id: "whirlwind",
-      name: "Whirlwind",
-      type: "normal",
-      category: "status",
-      power: null,
-      accuracy: null,
-      pp: 20,
-      priority: -6,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
-
-    const roarMove = {
-      id: "roar",
-      name: "Roar",
-      type: "normal",
-      category: "status",
-      power: null,
-      accuracy: null,
-      pp: 20,
-      priority: -6,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
-
     it("given Whirlwind is used, when executeMoveEffect is called, then sets switchOut and forcedSwitch", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Whirlwind
@@ -753,7 +729,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: whirlwindMove,
+        move: WHIRLWIND_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -776,7 +752,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: roarMove,
+        move: ROAR_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -793,19 +769,6 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Counter stale damage", () => {
-    const counterMove = {
-      id: "counter",
-      name: "Counter",
-      type: "fighting",
-      category: "physical",
-      power: null,
-      accuracy: 100,
-      pp: 20,
-      priority: -1,
-      effect: null,
-      flags: {},
-    } as unknown as MoveData;
-
     it("given Counter is used the turn after taking physical damage (but NOT hit this turn), when executeMoveEffect, then fails", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Counter
@@ -824,7 +787,7 @@ describe("Gen 2 Combat Moves", () => {
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,
-        move: counterMove,
+        move: COUNTER_MOVE,
         damage: 0,
         state,
         rng: new SeededRandom(42),
@@ -841,7 +804,7 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Hidden Power damage calc", () => {
-    it("given attacker with all DVs=15, when calculateDamage is called with hidden-power, then returns non-zero damage", () => {
+    it("given attacker with all DVs=15, when calculateDamage is called with hidden-power, then returns Dark-type damage 45", () => {
       // Arrange
       // Source: Bulbapedia — "Hidden Power (move)/Generation II"
       // All DVs=15 → type=Dark, power=70 (capped from 71)
@@ -851,45 +814,33 @@ describe("Gen 2 Combat Moves", () => {
         level: 50,
         spAttack: 150,
         ivs: { attack: 15, defense: 15, speed: 15, spAttack: 15 },
-        types: ["psychic"],
+        types: [TYPE_IDS.psychic],
       });
       const defender = createMockActive({
         level: 50,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPE_IDS.normal],
       });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-
-      const hiddenPowerMove = {
-        id: "hidden-power",
-        name: "Hidden Power",
-        type: "normal",
-        category: "physical",
-        power: 1,
-        accuracy: 100,
-        pp: 15,
-        priority: 0,
-        effect: { type: "custom", handler: "hidden-power" },
-        flags: {},
-      } as unknown as MoveData;
 
       // Act
       const result = ruleset.calculateDamage({
         attacker,
         defender,
-        move: hiddenPowerMove,
+        move: HIDDEN_POWER_MOVE,
         state,
         rng: new SeededRandom(42),
         isCrit: false,
       });
 
-      // Assert -- damage should be non-zero since power is overridden to 70 by DV calc
-      expect(result.damage).toBeGreaterThan(0);
+      // Assert
+      // Source: pret/pokecrystal engine/battle/hidden_power.asm — all DVs 15 produce Dark-type Hidden Power.
+      expect(result.damage).toBe(45);
       // And the effective type should be Dark (all DVs=15 → type index 15 → "dark")
-      expect(result.effectiveType).toBe("dark");
+      expect(result.effectiveType).toBe(TYPE_IDS.dark);
     });
 
-    it("given attacker with DVs producing Dragon type, when calculateDamage is called with hidden-power, then effectiveType is dragon", () => {
+    it("given attacker with DVs producing Dragon type, when calculateDamage is called with hidden-power, then returns Dragon-type damage 51", () => {
       // Arrange
       // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
       // typeIndex = (atkDv & 3) * 4 + (defDv & 3)
@@ -898,43 +849,30 @@ describe("Gen 2 Combat Moves", () => {
         level: 50,
         spAttack: 120,
         ivs: { attack: 15, defense: 14, speed: 13, spAttack: 12 },
-        types: ["dragon"],
+        types: [TYPE_IDS.dragon],
       });
       const defender = createMockActive({
         level: 50,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPE_IDS.normal],
       });
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-
-      const hiddenPowerMove = {
-        id: "hidden-power",
-        name: "Hidden Power",
-        type: "normal",
-        category: "physical",
-        power: 1,
-        accuracy: 100,
-        pp: 15,
-        priority: 0,
-        effect: { type: "custom", handler: "hidden-power" },
-        flags: {},
-      } as unknown as MoveData;
 
       // Act
       const result = ruleset.calculateDamage({
         attacker,
         defender,
-        move: hiddenPowerMove,
+        move: HIDDEN_POWER_MOVE,
         state,
         rng: new SeededRandom(42),
         isCrit: false,
       });
 
       // Assert
-      expect(result.damage).toBeGreaterThan(0);
-      expect(result.effectiveType).toBe("dragon");
-      // Dragon is a special type in Gen 2, so effectiveCategory should be "special"
-      expect(result.effectiveCategory).toBe("special");
+      expect(result.damage).toBe(51);
+      expect(result.effectiveType).toBe(TYPE_IDS.dragon);
+      // Dragon is a special type in Gen 2, so effectiveCategory should be the shared special category id.
+      expect(result.effectiveCategory).toBe(CORE_MOVE_CATEGORIES.special);
     });
   });
 });

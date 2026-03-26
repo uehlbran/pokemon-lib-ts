@@ -1,14 +1,38 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_MOVE_IDS,
+  createDvs,
+  createMoveSlot,
+  createPokemonInstance,
+  createStatExp,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_SPECIES_IDS,
+} from "../../../src";
 import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
 
 // ---------------------------------------------------------------------------
 // Helpers (same pattern as combat-moves.test.ts)
 // ---------------------------------------------------------------------------
 
-function createMockActive(
+const dataManager = createGen2DataManager();
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN2_MOVE_IDS } as const;
+const SPECIES_IDS = GEN2_SPECIES_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const DEFAULT_TACKLE_MOVE = dataManager.getMove(MOVE_IDS.tackle);
+const FUTURE_SIGHT_MOVE = dataManager.getMove(MOVE_IDS.futureSight);
+
+function createSyntheticOnFieldPokemon(
   overrides: Partial<{
     level: number;
     currentHp: number;
@@ -19,34 +43,46 @@ function createMockActive(
     spDefense: number;
     speed: number;
     status: string | null;
-    types: string[];
+    types: readonly PokemonType[];
     heldItem: string | null;
     speciesId: number;
     nickname: string | null;
-    moves: Array<{ moveId: string; pp: number; maxPp: number; currentPP?: number }>;
+    moveIds: readonly string[];
   }> = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
+  const species = dataManager.getSpecies(overrides.speciesId ?? SPECIES_IDS.chikorita);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(2), {
+    nature: DEFAULT_NATURE,
+    ivs: createDvs(),
+    evs: createStatExp(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    heldItem: overrides.heldItem ?? null,
+    moves: [...(overrides.moveIds ?? [DEFAULT_TACKLE_MOVE.id])],
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: GEN2_ITEM_IDS.pokeBall,
+  });
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.status = (overrides.status as PrimaryStatus | null | undefined) ?? null;
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.moves = (overrides.moveIds ?? [DEFAULT_TACKLE_MOVE.id]).map((moveId) => {
+    const move = dataManager.getMove(moveId);
+    return createMoveSlot(move.id, move.pp);
+  });
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: overrides.speed ?? 100,
+  };
+
   return {
-    pokemon: {
-      speciesId: overrides.speciesId ?? 1,
-      level: overrides.level ?? 50,
-      currentHp: overrides.currentHp ?? maxHp,
-      status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
-      heldItem: overrides.heldItem ?? null,
-      nickname: overrides.nickname ?? null,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35, currentPP: 35 }],
-      calculatedStats: {
-        hp: maxHp,
-        attack: overrides.attack ?? 100,
-        defense: overrides.defense ?? 100,
-        spAttack: overrides.spAttack ?? 100,
-        spDefense: overrides.spDefense ?? 100,
-        speed: overrides.speed ?? 100,
-      },
-    },
+    pokemon,
     teamSlot: 0,
     statStages: {
       hp: 0,
@@ -59,8 +95,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
-    ability: "",
+    types: [...(overrides.types ?? species.types)],
+    ability: pokemon.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -80,7 +116,7 @@ function createMockActive(
   } as unknown as ActivePokemon;
 }
 
-function createMockSide(
+function createBattleSide(
   index: 0 | 1,
   active: ActivePokemon,
   overrides: Partial<{ futureAttack: unknown }> = {},
@@ -101,14 +137,25 @@ function createMockSide(
   } as unknown as BattleSide;
 }
 
-function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
+function createBattleState(side0: BattleSide, side1: BattleSide): BattleState {
   return {
+    phase: "turn-end",
+    generation: 2,
+    format: "singles",
+    turnNumber: 1,
     sides: [side0, side1],
-    turn: 1,
     weather: null,
     terrain: null,
-    trickRoom: null,
-    format: { id: "singles", slots: 1 },
+    trickRoom: { active: false, turnsLeft: 0 },
+    magicRoom: { active: false, turnsLeft: 0 },
+    wonderRoom: { active: false, turnsLeft: 0 },
+    gravity: { active: false, turnsLeft: 0 },
+    turnHistory: [],
+    rng: new SeededRandom(42),
+    ended: false,
+    winner: null,
+    isWildBattle: false,
+    fleeAttempts: 0,
   } as unknown as BattleState;
 }
 
@@ -119,34 +166,24 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
 describe("Gen 2 Future Sight", () => {
   const ruleset = new Gen2Ruleset();
 
-  const futureSightMove = {
-    id: "future-sight",
-    name: "Future Sight",
-    type: "psychic",
-    category: "special",
-    power: 80,
-    accuracy: 90,
-    pp: 15,
-    priority: 0,
-    effect: { type: "custom", handler: "future-sight" },
-    flags: {},
-  } as unknown as MoveData;
-
   it("given no future attack is pending, when Future Sight is used, then schedules a future attack in 2 turns", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FutureSightEffect
     // Future Sight schedules a delayed attack with turnsLeft = 2.
-    const attacker = createMockActive({ nickname: "Xatu" });
-    const defender = createMockActive();
-    const side0 = createMockSide(0, attacker);
-    const side1 = createMockSide(1, defender);
-    const state = createMockState(side0, side1);
+    const attacker = createSyntheticOnFieldPokemon({
+      speciesId: SPECIES_IDS.xatu,
+      nickname: "Xatu",
+    });
+    const defender = createSyntheticOnFieldPokemon();
+    const side0 = createBattleSide(0, attacker);
+    const side1 = createBattleSide(1, defender);
+    const state = createBattleState(side0, side1);
 
     // Act
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: futureSightMove,
+      move: FUTURE_SIGHT_MOVE,
       damage: 0,
       state,
       rng: new SeededRandom(42),
@@ -154,7 +191,7 @@ describe("Gen 2 Future Sight", () => {
 
     // Assert
     expect(result.futureAttack).toEqual({
-      moveId: "future-sight",
+      moveId: FUTURE_SIGHT_MOVE.id,
       turnsLeft: 2,
       sourceSide: 0,
     });
@@ -165,17 +202,20 @@ describe("Gen 2 Future Sight", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FutureSightEffect
     // Triangulation case: the sourceSide should match the attacker's side.
-    const attacker = createMockActive({ nickname: "Slowking" });
-    const defender = createMockActive();
-    const side0 = createMockSide(0, defender);
-    const side1 = createMockSide(1, attacker);
-    const state = createMockState(side0, side1);
+    const attacker = createSyntheticOnFieldPokemon({
+      speciesId: SPECIES_IDS.slowking,
+      nickname: "Slowking",
+    });
+    const defender = createSyntheticOnFieldPokemon();
+    const side0 = createBattleSide(0, defender);
+    const side1 = createBattleSide(1, attacker);
+    const state = createBattleState(side0, side1);
 
     // Act
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: futureSightMove,
+      move: FUTURE_SIGHT_MOVE,
       damage: 0,
       state,
       rng: new SeededRandom(42),
@@ -183,7 +223,7 @@ describe("Gen 2 Future Sight", () => {
 
     // Assert
     expect(result.futureAttack).toEqual({
-      moveId: "future-sight",
+      moveId: FUTURE_SIGHT_MOVE.id,
       turnsLeft: 2,
       sourceSide: 1,
     });
@@ -193,19 +233,19 @@ describe("Gen 2 Future Sight", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FutureSightEffect
     // Future Sight fails if a future attack is already active on the target side.
-    const attacker = createMockActive();
-    const defender = createMockActive();
-    const side0 = createMockSide(0, attacker);
-    const side1 = createMockSide(1, defender, {
-      futureAttack: { moveId: "future-sight", turnsLeft: 1, sourceSide: 0 },
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon();
+    const side0 = createBattleSide(0, attacker);
+    const side1 = createBattleSide(1, defender, {
+      futureAttack: { moveId: FUTURE_SIGHT_MOVE.id, turnsLeft: 1, sourceSide: 0 },
     });
-    const state = createMockState(side0, side1);
+    const state = createBattleState(side0, side1);
 
     // Act
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: futureSightMove,
+      move: FUTURE_SIGHT_MOVE,
       damage: 0,
       state,
       rng: new SeededRandom(42),

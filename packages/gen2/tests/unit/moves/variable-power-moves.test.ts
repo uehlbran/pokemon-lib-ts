@@ -1,7 +1,15 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  createMoveSlot,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../../src";
 import { getFuryCutterPower, getRolloutPower } from "../../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
 
@@ -9,13 +17,28 @@ import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
 // Helpers
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen2DataManager();
+const MOVES = GEN2_MOVE_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const DEFAULT_SPECIES_ID = SPECIES.bulbasaur;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(DEFAULT_SPECIES_ID);
+const DEFAULT_MOVE_SLOT = createMoveSlot(MOVES.tackle, DATA_MANAGER.getMove(MOVES.tackle).pp);
+const PRESENT_MOVE = DATA_MANAGER.getMove(MOVES.present);
+const MAGNITUDE_MOVE = DATA_MANAGER.getMove(MOVES.magnitude);
+const ROLLOUT_MOVE = DATA_MANAGER.getMove(MOVES.rollout);
+const FURY_CUTTER_MOVE = DATA_MANAGER.getMove(MOVES.furyCutter);
+const TRIPLE_KICK_MOVE = DATA_MANAGER.getMove(MOVES.tripleKick);
+const ROLLOUT_STATUS = MOVES.rollout;
+const FURY_CUTTER_STATUS = MOVES.furyCutter;
+
 function createMockActive(
   overrides: Partial<{
     level: number;
     currentHp: number;
     maxHp: number;
     status: string | null;
-    types: string[];
+    types: PokemonType[];
     nickname: string | null;
     moves: Array<{ moveId: string; pp: number; maxPp: number; currentPP?: number }>;
     volatiles: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -24,15 +47,18 @@ function createMockActive(
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      speciesId: 1,
+      speciesId: DEFAULT_SPECIES_ID,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
       status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
       heldItem: null,
       nickname: overrides.nickname ?? null,
+      nature: NEUTRAL_NATURES[0],
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35, currentPP: 35 }],
+      moves: overrides.moves ?? [DEFAULT_MOVE_SLOT],
+      ability: CORE_ABILITY_IDS.none,
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -54,8 +80,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
-    ability: "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -110,19 +136,6 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
 describe("Gen 2 Present", () => {
   const ruleset = new Gen2Ruleset();
 
-  const presentMove = {
-    id: "present",
-    name: "Present",
-    type: "normal",
-    category: "physical",
-    power: null,
-    accuracy: 90,
-    pp: 15,
-    priority: 0,
-    effect: { type: "custom", handler: "present" },
-    flags: {},
-  } as unknown as MoveData;
-
   it("given many RNG seeds, when calculateGen2Damage is called for Present, then all four power outcomes (40/80/120/0) are reachable", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm PresentEffect
@@ -132,10 +145,6 @@ describe("Gen 2 Present", () => {
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const speciesData = {
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-      types: ["grass", "poison"],
-    };
 
     const damages = new Set<number>();
 
@@ -145,12 +154,11 @@ describe("Gen 2 Present", () => {
         {
           attacker,
           defender,
-          move: presentMove,
+          move: PRESENT_MOVE,
           state,
           rng: new SeededRandom(seed),
           isCrit: false,
-          attackerSpecies:
-            speciesData as unknown as import("@pokemon-lib-ts/core").PokemonSpeciesData,
+          attackerSpecies: DEFAULT_SPECIES,
         },
         typeChart,
       );
@@ -176,19 +184,6 @@ describe("Gen 2 Present", () => {
 describe("Gen 2 Magnitude", () => {
   const ruleset = new Gen2Ruleset();
 
-  const magnitudeMove = {
-    id: "magnitude",
-    name: "Magnitude",
-    type: "ground",
-    category: "physical",
-    power: null,
-    accuracy: 100,
-    pp: 30,
-    priority: 0,
-    effect: { type: "custom", handler: "magnitude" },
-    flags: {},
-  } as unknown as MoveData;
-
   it("given many RNG seeds, when calculateGen2Damage is called for Magnitude, then all 7 power levels (10/30/50/70/90/110/150) are reachable", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MagnitudeEffect
@@ -198,10 +193,6 @@ describe("Gen 2 Magnitude", () => {
     const attacker = createMockActive();
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
-    const speciesData = {
-      baseStats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-      types: ["grass", "poison"],
-    };
 
     const damages = new Set<number>();
 
@@ -211,12 +202,11 @@ describe("Gen 2 Magnitude", () => {
         {
           attacker,
           defender,
-          move: magnitudeMove,
+          move: MAGNITUDE_MOVE,
           state,
           rng: new SeededRandom(seed),
           isCrit: false,
-          attackerSpecies:
-            speciesData as unknown as import("@pokemon-lib-ts/core").PokemonSpeciesData,
+          attackerSpecies: DEFAULT_SPECIES,
         },
         typeChart,
       );
@@ -250,7 +240,7 @@ describe("Gen 2 Magnitude", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: magnitudeMove,
+      move: MAGNITUDE_MOVE,
       damage: 0,
       state,
       rng: new SeededRandom(42),
@@ -285,7 +275,7 @@ describe("Gen 2 Rollout Power", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm RolloutEffect
     // Turn 2: 30 * 2^1 = 60
     const volatiles = new Map();
-    volatiles.set("rollout", { turnsLeft: 1, data: { count: 1 } });
+    volatiles.set(ROLLOUT_STATUS, { turnsLeft: 1, data: { count: 1 } });
     const attacker = createMockActive({ volatiles });
 
     // Act
@@ -300,7 +290,7 @@ describe("Gen 2 Rollout Power", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm RolloutEffect
     // Turn 5: 30 * 2^4 = 480
     const volatiles = new Map();
-    volatiles.set("rollout", { turnsLeft: 1, data: { count: 4 } });
+    volatiles.set(ROLLOUT_STATUS, { turnsLeft: 1, data: { count: 4 } });
     const attacker = createMockActive({ volatiles });
 
     // Act
@@ -334,7 +324,7 @@ describe("Gen 2 Fury Cutter Power", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
     // Third consecutive use: 10 * 2^2 = 40
     const volatiles = new Map();
-    volatiles.set("fury-cutter", { turnsLeft: -1, data: { count: 2 } });
+    volatiles.set(FURY_CUTTER_STATUS, { turnsLeft: -1, data: { count: 2 } });
     const attacker = createMockActive({ volatiles });
 
     // Act
@@ -349,7 +339,7 @@ describe("Gen 2 Fury Cutter Power", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
     // Fifth+ consecutive use: 10 * 2^4 = 160 (capped at count=4)
     const volatiles = new Map();
-    volatiles.set("fury-cutter", { turnsLeft: -1, data: { count: 4 } });
+    volatiles.set(FURY_CUTTER_STATUS, { turnsLeft: -1, data: { count: 4 } });
     const attacker = createMockActive({ volatiles });
 
     // Act
@@ -364,7 +354,7 @@ describe("Gen 2 Fury Cutter Power", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
     // Count is capped at 4 in the power formula: 10 * 2^min(5, 4) = 160
     const volatiles = new Map();
-    volatiles.set("fury-cutter", { turnsLeft: -1, data: { count: 5 } });
+    volatiles.set(FURY_CUTTER_STATUS, { turnsLeft: -1, data: { count: 5 } });
     const attacker = createMockActive({ volatiles });
 
     // Act
@@ -382,19 +372,6 @@ describe("Gen 2 Fury Cutter Power", () => {
 describe("Gen 2 Triple Kick", () => {
   const ruleset = new Gen2Ruleset();
 
-  const tripleKickMove = {
-    id: "triple-kick",
-    name: "Triple Kick",
-    type: "fighting",
-    category: "physical",
-    power: 10,
-    accuracy: 90,
-    pp: 10,
-    priority: 0,
-    effect: null,
-    flags: { contact: true },
-  } as unknown as MoveData;
-
   it("given Triple Kick is used, when executeMoveEffect is called, then multiHitCount is 2 (3 total hits)", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm TripleKickEffect
@@ -407,7 +384,7 @@ describe("Gen 2 Triple Kick", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: tripleKickMove,
+      move: TRIPLE_KICK_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(42),
@@ -429,7 +406,7 @@ describe("Gen 2 Triple Kick", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: tripleKickMove,
+      move: TRIPLE_KICK_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(99),
@@ -447,25 +424,12 @@ describe("Gen 2 Triple Kick", () => {
 describe("Gen 2 Rollout Effect", () => {
   const ruleset = new Gen2Ruleset();
 
-  const rolloutMove = {
-    id: "rollout",
-    name: "Rollout",
-    type: "rock",
-    category: "physical",
-    power: 30,
-    accuracy: 90,
-    pp: 20,
-    priority: 0,
-    effect: null,
-    flags: {},
-  } as unknown as MoveData;
-
   it("given first turn of Rollout (no volatile), when executeMoveEffect is called, then sets forcedMoveSet for next turn", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm RolloutEffect
     // On the first use, Rollout locks the user into the move for subsequent turns.
     const attacker = createMockActive({
-      moves: [{ moveId: "rollout", pp: 20, maxPp: 20, currentPP: 20 }],
+      moves: [createMoveSlot(MOVES.rollout, ROLLOUT_MOVE.pp)],
     });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -474,7 +438,7 @@ describe("Gen 2 Rollout Effect", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: rolloutMove,
+      move: ROLLOUT_MOVE,
       damage: 30,
       state,
       rng: new SeededRandom(42),
@@ -482,8 +446,8 @@ describe("Gen 2 Rollout Effect", () => {
 
     // Assert
     expect(result.forcedMoveSet).toBeDefined();
-    expect(result.forcedMoveSet?.moveId).toBe("rollout");
-    expect(result.selfVolatileInflicted).toBe("rollout");
+    expect(result.forcedMoveSet?.moveId).toBe(MOVES.rollout);
+    expect(result.selfVolatileInflicted).toBe(ROLLOUT_STATUS);
     // With the corrected counter: handler stores nextCount=1 for Turn 2 damage calc to read
     // Turn 2 will read count=1 → power 60 (= 30 * 2^1). Source: fix for off-by-one in power sequence.
     expect(result.selfVolatileData?.data).toEqual({ count: 1 });
@@ -496,9 +460,9 @@ describe("Gen 2 Rollout Effect", () => {
     const volatiles = new Map();
     // With the corrected counter: after 4 turns, the stored count is 4 (nextCount from Turn 4 handler)
     // Turn 5 damage calc reads count=4 → power 480. Handler on Turn 5: nextCount=5 > 4 → no lock.
-    volatiles.set("rollout", { turnsLeft: 1, data: { count: 4 } });
+    volatiles.set(ROLLOUT_STATUS, { turnsLeft: 1, data: { count: 4 } });
     const attacker = createMockActive({
-      moves: [{ moveId: "rollout", pp: 20, maxPp: 20, currentPP: 20 }],
+      moves: [createMoveSlot(MOVES.rollout, ROLLOUT_MOVE.pp)],
       volatiles,
     });
     const defender = createMockActive();
@@ -508,7 +472,7 @@ describe("Gen 2 Rollout Effect", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: rolloutMove,
+      move: ROLLOUT_MOVE,
       damage: 120,
       state,
       rng: new SeededRandom(42),
@@ -526,19 +490,6 @@ describe("Gen 2 Rollout Effect", () => {
 describe("Gen 2 Fury Cutter Effect", () => {
   const ruleset = new Gen2Ruleset();
 
-  const furyCutterMove = {
-    id: "fury-cutter",
-    name: "Fury Cutter",
-    type: "bug",
-    category: "physical",
-    power: 10,
-    accuracy: 95,
-    pp: 20,
-    priority: 0,
-    effect: null,
-    flags: {},
-  } as unknown as MoveData;
-
   it("given first use of Fury Cutter (no volatile), when executeMoveEffect is called, then sets volatile with count=1", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm FuryCutterEffect
@@ -551,14 +502,14 @@ describe("Gen 2 Fury Cutter Effect", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: furyCutterMove,
+      move: FURY_CUTTER_MOVE,
       damage: 10,
       state,
       rng: new SeededRandom(42),
     });
 
     // Assert
-    expect(result.selfVolatileInflicted).toBe("fury-cutter");
+    expect(result.selfVolatileInflicted).toBe(FURY_CUTTER_STATUS);
     // With the corrected counter: handler stores nextCount=1 for next use damage calc to read
     // Next use will read count=1 → power 20 (= 10 * 2^1). Source: fix for off-by-one in power sequence.
     expect(result.selfVolatileData?.data).toEqual({ count: 1 });
@@ -572,7 +523,7 @@ describe("Gen 2 Fury Cutter Effect", () => {
     // on subsequent uses the handler updates the counter directly on the attacker's volatile.
     const volatiles = new Map();
     const existingVolatile = { turnsLeft: -1, data: { count: 2 } };
-    volatiles.set("fury-cutter", existingVolatile);
+    volatiles.set(FURY_CUTTER_STATUS, existingVolatile);
     const attacker = createMockActive({ volatiles });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -581,7 +532,7 @@ describe("Gen 2 Fury Cutter Effect", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: furyCutterMove,
+      move: FURY_CUTTER_MOVE,
       damage: 40,
       state,
       rng: new SeededRandom(42),
@@ -589,7 +540,7 @@ describe("Gen 2 Fury Cutter Effect", () => {
 
     // Assert: volatile count is updated directly (not via selfVolatileInflicted)
     expect(result.selfVolatileInflicted).toBeUndefined();
-    expect(attacker.volatileStatuses.get("fury-cutter")?.data).toEqual({ count: 3 });
+    expect(attacker.volatileStatuses.get(FURY_CUTTER_STATUS)?.data).toEqual({ count: 3 });
   });
 
   it("given fifth+ consecutive use (volatile count=4), when executeMoveEffect is called, then count stays capped at 4 on attacker", () => {
@@ -600,7 +551,7 @@ describe("Gen 2 Fury Cutter Effect", () => {
     // on subsequent uses the handler updates the counter directly on the attacker's volatile.
     const volatiles = new Map();
     const existingVolatile = { turnsLeft: -1, data: { count: 4 } };
-    volatiles.set("fury-cutter", existingVolatile);
+    volatiles.set(FURY_CUTTER_STATUS, existingVolatile);
     const attacker = createMockActive({ volatiles });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
@@ -609,7 +560,7 @@ describe("Gen 2 Fury Cutter Effect", () => {
     const result = ruleset.executeMoveEffect({
       attacker,
       defender,
-      move: furyCutterMove,
+      move: FURY_CUTTER_MOVE,
       damage: 160,
       state,
       rng: new SeededRandom(42),
@@ -617,6 +568,6 @@ describe("Gen 2 Fury Cutter Effect", () => {
 
     // Assert: volatile count is updated directly (not via selfVolatileInflicted), capped at 4
     expect(result.selfVolatileInflicted).toBeUndefined();
-    expect(attacker.volatileStatuses.get("fury-cutter")?.data).toEqual({ count: 4 });
+    expect(attacker.volatileStatuses.get(FURY_CUTTER_STATUS)?.data).toEqual({ count: 4 });
   });
 });

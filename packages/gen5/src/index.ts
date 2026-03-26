@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen5 -- Gen5Ruleset + complete Gen 5 data
 
 export { createGen5DataManager } from "./data";
+export * from "./data/reference-ids";
 export {
   applyGen5Ability,
   FRIEND_GUARD_DAMAGE_MULTIPLIER,

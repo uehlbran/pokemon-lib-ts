@@ -1,4 +1,9 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +11,7 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createTestEngine(overrides?: {
   team1?: PokemonInstance[];
@@ -21,7 +27,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -38,8 +44,8 @@ function createTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      heldItem: "air-balloon",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      heldItem: CORE_ITEM_IDS.airBalloon,
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -72,17 +78,17 @@ class ConsumeEffectMockRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
-    if (trigger !== "on-damage-taken") {
+    if (trigger !== CORE_ITEM_TRIGGER_IDS.onDamageTaken) {
       return { activated: false, effects: [], messages: [] };
     }
 
-    if (context.pokemon.pokemon.heldItem !== "air-balloon") {
+    if (context.pokemon.pokemon.heldItem !== CORE_ITEM_IDS.airBalloon) {
       return { activated: false, effects: [], messages: [] };
     }
 
     return {
       activated: true,
-      effects: [{ type: "consume", target: "self", value: "air-balloon" }],
+      effects: [{ type: "consume", target: "self", value: CORE_ITEM_IDS.airBalloon }],
       messages: ["Blastoise's Air Balloon popped!"],
     };
   }
@@ -105,7 +111,7 @@ describe("BattleEngine - held item consumption events", () => {
     if (itemConsumed?.type === "item-consumed") {
       expect(itemConsumed.side).toBe(1);
       expect(itemConsumed.pokemon).toBe("Blastoise");
-      expect(itemConsumed.item).toBe("air-balloon");
+      expect(itemConsumed.item).toBe(CORE_ITEM_IDS.airBalloon);
     }
 
     const defender = engine.state.sides[1].active[0];

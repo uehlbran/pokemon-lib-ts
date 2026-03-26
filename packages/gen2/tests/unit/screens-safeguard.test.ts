@@ -4,19 +4,37 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  ScreenType,
-  StatBlock,
-  TypeChart,
+import {
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createPokemonInstance,
+  type MoveData,
+  NEUTRAL_NATURES,
+  type PokemonCreationOptions,
+  type PokemonType,
+  type ScreenType,
+  type SeededRandom,
+  type StatBlock,
+  type TypeChart,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { applyMoveEffect, handleCustomEffect, type MutableResult } from "../../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 import { canInflictGen2Status } from "../../src/Gen2Status";
+
+const ITEMS = GEN2_ITEM_IDS;
+const MOVES = GEN2_MOVE_IDS;
+const SCREENS = CORE_SCREEN_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const STATUS = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0];
+const dataManager = createGen2DataManager();
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -35,15 +53,15 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-/** Minimal ActivePokemon mock. */
-function createActivePokemon(opts: {
+/** Minimal synthetic ActivePokemon built from owned Gen 2 data. */
+function createOnFieldPokemon(opts: {
   level: number;
   attack: number;
   defense: number;
   spAttack: number;
   spDefense: number;
   types: PokemonType[];
-  status?: "burn" | "paralysis" | "sleep" | "poison" | "freeze" | null;
+  status?: (typeof STATUS)[keyof typeof STATUS] | null;
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
@@ -58,31 +76,34 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? 1,
+  const species = dataManager.getSpecies(opts.speciesId ?? SPECIES.bulbasaur);
+  const factoryRng = {
+    next: () => 0,
+    int: (_min: number, _max: number) => 1,
+    chance: () => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: readonly T[]) => [...arr],
+    getState: () => 0,
+    setState: () => {},
+  } as SeededRandom;
+
+  const pokemon = createPokemonInstance(species, opts.level, factoryRng, {
     nickname: opts.nickname ?? null,
-    level: opts.level,
-    experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 200,
-    moves: [],
-    ability: "",
-    abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
     metLocation: "",
-    metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
+    pokeball: ITEMS.pokeBall,
+  } as Partial<PokemonCreationOptions>);
+
+  pokemon.currentHp = 200;
+  pokemon.moves = [];
+  pokemon.status = opts.status ?? null;
+  pokemon.calculatedStats = stats;
 
   return {
     pokemon,
@@ -116,68 +137,37 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-/** Create a move mock with the given type and power. */
-function createMove(
-  type: PokemonType,
-  power: number,
-  category: "physical" | "special" | "status" = "physical",
-  opts?: { id?: string },
-): MoveData {
+/** Create a synthetic move by starting from owned Gen 2 move data. */
+function createSyntheticMove(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
+  const baseMove = dataManager.getMove(moveId);
   return {
-    id: opts?.id ?? "test-move",
-    displayName: "Test Move",
-    type,
-    category,
-    power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 2,
+    ...baseMove,
+    ...overrides,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: "effect" in overrides ? overrides.effect : baseMove.effect,
   } as MoveData;
 }
 
 /** All-neutral type chart for 17 Gen 2 types. */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    TYPES.normal,
+    TYPES.fire,
+    TYPES.water,
+    TYPES.electric,
+    TYPES.grass,
+    TYPES.ice,
+    TYPES.fighting,
+    TYPES.poison,
+    TYPES.ground,
+    TYPES.flying,
+    TYPES.psychic,
+    TYPES.bug,
+    TYPES.rock,
+    TYPES.ghost,
+    TYPES.dragon,
+    TYPES.dark,
+    TYPES.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -187,32 +177,6 @@ function createNeutralTypeChart(): TypeChart {
     }
   }
   return chart as TypeChart;
-}
-
-/** Minimal species data mock. */
-function createSpecies(types: PokemonType[] = ["normal"]) {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types,
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  };
 }
 
 /**
@@ -285,25 +249,25 @@ describe("Gen 2 Screens and Safeguard", () => {
       // With Reflect:
       //   Step 8.5: floor(37 / 2) = 18
       //   Step 9 (max roll): floor(18 * 255/255) = 18
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["fighting"], // NOT Normal — avoids STAB
+        types: [TYPES.fighting], // NOT Normal — avoids STAB
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 80);
+      const move = createSyntheticMove(MOVES.tackle, { power: 80 });
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["fighting"]);
+      const species = dataManager.getSpecies(SPECIES.bulbasaur);
       const rng = createMockRng(255); // max roll
 
       // Without Reflect
@@ -320,7 +284,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // With Reflect
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
-        { type: "reflect", turnsLeft: 5 },
+        { type: SCREENS.reflect, turnsLeft: 5 },
       ]);
       const ctxWithReflect: DamageContext = {
         attacker,
@@ -345,25 +309,25 @@ describe("Gen 2 Screens and Safeguard", () => {
       // Source: pret/pokecrystal engine/battle/core.asm BattleCalcDamage
       // Light Screen halves special damage. Psychic type is special in Gen 2.
       // Same formula as above but with special stats.
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("psychic", 80, "special");
+      const move = createSyntheticMove(MOVES.psybeam, { power: 80 });
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["psychic"]);
+      const species = dataManager.getSpecies(SPECIES.bulbasaur);
       const rng = createMockRng(255);
 
       // Without Light Screen
@@ -380,7 +344,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // With Light Screen
       const stateWithLS = createMockStateWithSides(attacker, defender, [
-        { type: "light-screen", turnsLeft: 5 },
+        { type: SCREENS.lightScreen, turnsLeft: 5 },
       ]);
       const ctxWithLS: DamageContext = {
         attacker,
@@ -404,30 +368,30 @@ describe("Gen 2 Screens and Safeguard", () => {
     it("given defender's side has Reflect, when a critical hit lands, then screens are bypassed", () => {
       // Source: pret/pokecrystal engine/battle/core.asm BattleCalcDamage
       // Critical hits bypass Reflect/Light Screen in Gen 2
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 80);
+      const move = createSyntheticMove(MOVES.tackle, { power: 80 });
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["normal"]);
+      const species = dataManager.getSpecies(SPECIES.bulbasaur);
       const rng = createMockRng(255);
 
       // Crit WITH Reflect — screens should be bypassed
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
-        { type: "reflect", turnsLeft: 5 },
+        { type: SCREENS.reflect, turnsLeft: 5 },
       ]);
       const ctxCritReflect: DamageContext = {
         attacker,
@@ -458,30 +422,30 @@ describe("Gen 2 Screens and Safeguard", () => {
     it("given defender's side has Light Screen, when a critical special hit lands, then screens are bypassed", () => {
       // Source: pret/pokecrystal engine/battle/core.asm BattleCalcDamage
       // Critical hits bypass Light Screen in Gen 2
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["water"],
+        types: [TYPES.water],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("water", 80, "special");
+      const move = createSyntheticMove(MOVES.psybeam, { type: TYPES.water, power: 80 });
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["water"]);
+      const species = dataManager.getSpecies(SPECIES.bulbasaur);
       const rng = createMockRng(255);
 
       // Crit WITH Light Screen — screens should be bypassed
       const stateWithLS = createMockStateWithSides(attacker, defender, [
-        { type: "light-screen", turnsLeft: 5 },
+        { type: SCREENS.lightScreen, turnsLeft: 5 },
       ]);
       const ctxCritLS: DamageContext = {
         attacker,
@@ -511,30 +475,30 @@ describe("Gen 2 Screens and Safeguard", () => {
 
     it("given Reflect is active, when a special move hits, then Reflect does not affect it", () => {
       // Source: pret/pokecrystal — Reflect only halves physical damage, not special
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
       // Psychic is special in Gen 2
-      const move = createMove("psychic", 80, "special");
+      const move = createSyntheticMove(MOVES.psybeam, { power: 80 });
       const typeChart = createNeutralTypeChart();
-      const species = createSpecies(["psychic"]);
+      const species = dataManager.getSpecies(SPECIES.bulbasaur);
 
       // With Reflect (should not affect special moves)
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
-        { type: "reflect", turnsLeft: 5 },
+        { type: SCREENS.reflect, turnsLeft: 5 },
       ]);
       const ctxReflect: DamageContext = {
         attacker,
@@ -571,129 +535,129 @@ describe("Gen 2 Screens and Safeguard", () => {
     it("given Safeguard is active on defender's side, when burn is attempted, then it is blocked", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm CheckSafeguard
       // Safeguard blocks all primary status conditions
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["fire"],
+        types: [TYPES.fire],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 3 },
+        { type: MOVES.safeguard, turnsLeft: 3 },
       ]);
 
-      const canBurn = canInflictGen2Status("burn", defender, state);
+      const canBurn = canInflictGen2Status(STATUS.burn, defender, state);
       expect(canBurn).toBe(false);
     });
 
     it("given Safeguard is active on defender's side, when paralysis is attempted, then it is blocked", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm CheckSafeguard
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["electric"],
+        types: [TYPES.electric],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 5 },
+        { type: MOVES.safeguard, turnsLeft: 5 },
       ]);
 
-      const canParalyze = canInflictGen2Status("paralysis", defender, state);
+      const canParalyze = canInflictGen2Status(STATUS.paralysis, defender, state);
       expect(canParalyze).toBe(false);
     });
 
     it("given Safeguard is active on defender's side, when sleep is attempted, then it is blocked", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm CheckSafeguard
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 2 },
+        { type: MOVES.safeguard, turnsLeft: 2 },
       ]);
 
-      const canSleep = canInflictGen2Status("sleep", defender, state);
+      const canSleep = canInflictGen2Status(STATUS.sleep, defender, state);
       expect(canSleep).toBe(false);
     });
 
     it("given Safeguard is active on defender's side, when poison is attempted, then it is blocked", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm CheckSafeguard
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["poison"],
+        types: [TYPES.poison],
       });
       const state = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 4 },
+        { type: MOVES.safeguard, turnsLeft: 4 },
       ]);
 
-      const canPoison = canInflictGen2Status("poison", defender, state);
+      const canPoison = canInflictGen2Status(STATUS.poison, defender, state);
       expect(canPoison).toBe(false);
     });
 
     it("given no Safeguard on defender's side, when burn is attempted on a non-immune target, then it succeeds", () => {
       // Source: pret/pokecrystal — without Safeguard, normal type can be burned
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["fire"],
+        types: [TYPES.fire],
       });
       const state = createMockStateWithSides(attacker, defender, []);
 
-      const canBurn = canInflictGen2Status("burn", defender, state);
+      const canBurn = canInflictGen2Status(STATUS.burn, defender, state);
       expect(canBurn).toBe(true);
     });
 
@@ -701,27 +665,27 @@ describe("Gen 2 Screens and Safeguard", () => {
       // Source: pret/pokecrystal — Safeguard only prevents primary status conditions
       // (burn, freeze, sleep, poison, paralysis). It does not prevent stat changes,
       // volatile statuses (confusion), or secondary effects like flinch.
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Attacker",
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Defender",
       });
 
       const stateWithSafeguard = createMockStateWithSides(attacker, defender, [
-        { type: "safeguard", turnsLeft: 5 },
+        { type: MOVES.safeguard, turnsLeft: 5 },
       ]);
 
       // Growl-like effect: stat-change targeting defender
@@ -731,7 +695,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         chance: 100,
         changes: [{ stat: "attack" as const, stages: -1 }],
       };
-      const move = createMove("normal", 0, "status");
+      const move = createSyntheticMove(MOVES.growl, {});
       const result = createEmptyResult();
       const context: MoveEffectContext = {
         attacker,
@@ -758,31 +722,31 @@ describe("Gen 2 Screens and Safeguard", () => {
   describe("Screen move effect handler", () => {
     it("given a Reflect move with screen effect, when executed, then produces screenSet with turnsLeft=5 and side=attacker", () => {
       // Source: pret/pokecrystal — Reflect and Light Screen last 5 turns in Gen 2
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
         nickname: "Alakazam",
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Snorlax",
       });
-      const move = createMove("psychic", 0, "status", { id: "reflect" });
+      const move = createSyntheticMove(SCREENS.reflect, { type: TYPES.psychic });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
       const screenEffect = {
         type: "screen" as const,
-        screen: "reflect" as ScreenType,
+        screen: SCREENS.reflect as ScreenType,
         turns: 5,
       };
 
@@ -796,7 +760,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       });
 
       expect(result.screenSet).toEqual({
-        screen: "reflect",
+        screen: SCREENS.reflect,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -804,29 +768,29 @@ describe("Gen 2 Screens and Safeguard", () => {
 
     it("given a Light Screen move with screen effect, when executed, then produces screenSet with turnsLeft=5", () => {
       // Source: pret/pokecrystal — Light Screen lasts 5 turns in Gen 2
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["psychic"],
+        types: [TYPES.psychic],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("psychic", 0, "status", { id: "light-screen" });
+      const move = createSyntheticMove(SCREENS.lightScreen, { type: TYPES.psychic });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
       const screenEffect = {
         type: "screen" as const,
-        screen: "light-screen" as ScreenType,
+        screen: SCREENS.lightScreen as ScreenType,
         turns: 5,
       };
 
@@ -840,7 +804,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       });
 
       expect(result.screenSet).toEqual({
-        screen: "light-screen",
+        screen: SCREENS.lightScreen,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -855,24 +819,24 @@ describe("Gen 2 Screens and Safeguard", () => {
     it("given the Safeguard move is used, when executed, then produces screenSet with safeguard screen and turnsLeft=5", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm SafeguardEffect
       // Safeguard sets a screen-like protection on the user's side for 5 turns
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Blissey",
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "safeguard" });
+      const move = createSyntheticMove(MOVES.safeguard, { type: TYPES.normal });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
@@ -886,7 +850,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       });
 
       expect(result.screenSet).toEqual({
-        screen: "safeguard",
+        screen: MOVES.safeguard,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -895,24 +859,24 @@ describe("Gen 2 Screens and Safeguard", () => {
 
     it("given a different custom move, when executed, then does not set safeguard screen", () => {
       // Source: Safeguard handler should only activate for the "safeguard" move ID
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Blissey",
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "mean-look" });
+      const move = createSyntheticMove(MOVES.meanLook, { type: TYPES.normal });
       const state = createMockStateWithSides(attacker, defender, []);
       const result = createEmptyResult();
 
@@ -927,7 +891,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // Mean Look sets trapped volatile, not a screen
       expect(result.screenSet).toBeUndefined();
-      expect(result.volatileInflicted).toBe("trapped");
+      expect(result.volatileInflicted).toBe(VOLATILES.trapped);
     });
 
     it("given safeguard move with effect:null, when executeMoveEffect is called, then result.screenSet is populated", () => {
@@ -936,24 +900,24 @@ describe("Gen 2 Screens and Safeguard", () => {
       // returned early (at the null-effect guard) before reaching handleCustomEffect.
       // This test verifies the pre-null-guard routing works end-to-end.
       const ruleset = new Gen2Ruleset();
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
         nickname: "Blissey",
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "safeguard" });
+      const move = createSyntheticMove(MOVES.safeguard, { type: TYPES.normal });
       const state = createMockStateWithSides(attacker, defender, []);
       const context: MoveEffectContext = {
         attacker,
@@ -967,7 +931,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       const result = ruleset.executeMoveEffect(context);
 
       expect(result.screenSet).toEqual({
-        screen: "safeguard",
+        screen: MOVES.safeguard,
         turnsLeft: 5,
         side: "attacker",
       });
@@ -979,23 +943,23 @@ describe("Gen 2 Screens and Safeguard", () => {
       // Mean Look and Spider Web have effect:null in move data and were silently broken
       // (same root cause as Bug 3). This test verifies the pre-null-guard routing fixes them.
       const ruleset = new Gen2Ruleset();
-      const attacker = createActivePokemon({
+      const attacker = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const defender = createActivePokemon({
+      const defender = createOnFieldPokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove("normal", 0, "status", { id: "mean-look" });
+      const move = createSyntheticMove(MOVES.meanLook, { type: TYPES.normal });
       const state = createMockStateWithSides(attacker, defender, []);
       const context: MoveEffectContext = {
         attacker,
@@ -1008,7 +972,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       const result = ruleset.executeMoveEffect(context);
 
-      expect(result.volatileInflicted).toBe("trapped");
+      expect(result.volatileInflicted).toBe(VOLATILES.trapped);
     });
   });
 });

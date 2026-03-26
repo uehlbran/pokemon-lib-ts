@@ -15,8 +15,8 @@ describe("Gen 1 Replay Validation", () => {
     : [];
 
   if (replayFiles.length === 0) {
-    it("setup — replay fixtures exist (REQUIRED)", () => {
-      expect(replayFiles.length).toBeGreaterThan(0);
+    it("given required replay fixtures are enumerated, when validating the fixture directory, then at least one replay log exists", () => {
+      expect(replayFiles).not.toHaveLength(0);
     });
     return;
   }

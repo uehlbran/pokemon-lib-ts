@@ -10,15 +10,27 @@
  */
 
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import {
+  createOnFieldPokemon as createBattleOnFieldPokemon,
+  createTestPokemon,
+} from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { getGen1CritRate } from "../../src/Gen1CritCalc";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
@@ -29,42 +41,41 @@ import { GEN1_TYPE_CHART } from "../../src/Gen1TypeChart";
 // Shared helpers
 // ============================================================================
 
-function makeSpecies(
-  name: string,
-  baseStats: {
-    hp: number;
-    attack: number;
-    defense: number;
-    spAttack: number;
-    spDefense: number;
-    speed: number;
-  },
-): PokemonSpeciesData {
-  return {
-    id: 0,
-    name,
-    displayName: name,
-    types: ["normal"],
-    baseStats,
-    abilities: { normal: [], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: [],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 0, weight: 0 },
-    spriteKey: name,
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  } as unknown as PokemonSpeciesData;
+const dataManager = createGen1DataManager();
+const M = GEN1_MOVE_IDS;
+const P = GEN1_SPECIES_IDS;
+const T = CORE_TYPE_IDS;
+const S = CORE_STATUS_IDS;
+const V = CORE_VOLATILE_IDS;
+const NEUTRAL_NATURE = NEUTRAL_NATURES[0];
+const GEN1_TEST_TYPES: readonly PokemonType[] = [
+  T.normal,
+  T.fire,
+  T.water,
+  T.electric,
+  T.grass,
+  T.ice,
+  T.fighting,
+  T.poison,
+  T.ground,
+  T.flying,
+  T.psychic,
+  T.bug,
+  T.rock,
+  T.ghost,
+  T.dragon,
+];
+
+function getSpecies(id: number): PokemonSpeciesData {
+  return dataManager.getSpecies(id);
+}
+
+function getMove(id: string): MoveData {
+  return dataManager.getMove(id);
 }
 
 function makeInstance(opts: {
+  speciesId: number;
   level: number;
   ivs: {
     hp: number;
@@ -83,30 +94,14 @@ function makeInstance(opts: {
     speed: number;
   };
 }): PokemonInstance {
-  return {
-    uid: "test",
-    speciesId: 0,
-    nickname: null,
-    level: opts.level,
-    experience: 0,
-    nature: "hardy",
+  return createTestPokemon(opts.speciesId, opts.level, {
     ivs: opts.ivs,
     evs: opts.evs,
     currentHp: 1,
-    moves: [],
+    nature: NEUTRAL_NATURE,
     ability: "",
-    abilitySlot: "normal1" as const,
-    heldItem: null,
-    status: null,
-    friendship: 70,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "pallet-town",
-    metLevel: opts.level,
-    originalTrainer: "Test",
-    originalTrainerId: 0,
-    pokeball: "poke-ball",
-  } as unknown as PokemonInstance;
+    moves: [],
+  });
 }
 
 const MAX_DVS = { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 };
@@ -129,6 +124,17 @@ function expectedStat(base: number): number {
   return base * 2 + 99;
 }
 
+function expectedMaxStatBlock(species: PokemonSpeciesData): StatBlock {
+  return {
+    hp: expectedHp(species.baseStats.hp),
+    attack: expectedStat(species.baseStats.attack),
+    defense: expectedStat(species.baseStats.defense),
+    spAttack: expectedStat(species.baseStats.spAttack),
+    spDefense: expectedStat(species.baseStats.spDefense),
+    speed: expectedStat(species.baseStats.speed),
+  };
+}
+
 // ============================================================================
 // 3A: Stat Calculations — Known Values
 // ============================================================================
@@ -136,186 +142,166 @@ function expectedStat(base: number): number {
 describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () => {
   it("given Mewtwo at L100 max DVs max StatExp, when calculating HP, then returns 416", () => {
     // Arrange — base HP 106: 106*2+204 = 416
-    const species = makeSpecies("mewtwo", {
-      hp: 106,
-      attack: 110,
-      defense: 90,
-      spAttack: 154,
-      spDefense: 90,
-      speed: 130,
+    const species = getSpecies(P.mewtwo);
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.hp).toBe(expectedHp(106)); // 416
+    expect(stats.hp).toBe(expectedHp(species.baseStats.hp)); // 416
   });
 
   it("given Mewtwo at L100 max DVs max StatExp, when calculating Attack, then returns 319", () => {
     // Arrange — base Atk 110: 110*2+99 = 319
-    const species = makeSpecies("mewtwo", {
-      hp: 106,
-      attack: 110,
-      defense: 90,
-      spAttack: 154,
-      spDefense: 90,
-      speed: 130,
+    const species = getSpecies(P.mewtwo);
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.attack).toBe(expectedStat(110)); // 319
+    expect(stats.attack).toBe(expectedStat(species.baseStats.attack)); // 319
   });
 
   it("given Mewtwo at L100 max DVs max StatExp, when calculating Special, then returns 407", () => {
     // Arrange — base Spc 154: 154*2+99 = 407
-    const species = makeSpecies("mewtwo", {
-      hp: 106,
-      attack: 110,
-      defense: 90,
-      spAttack: 154,
-      spDefense: 90,
-      speed: 130,
+    const species = getSpecies(P.mewtwo);
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — Gen 1 unified special; spAttack and spDefense are equal
-    expect(stats.spAttack).toBe(expectedStat(154)); // 407
-    expect(stats.spDefense).toBe(expectedStat(154)); // 407
+    expect(stats.spAttack).toBe(expectedStat(species.baseStats.spAttack)); // 407
+    expect(stats.spDefense).toBe(expectedStat(species.baseStats.spDefense)); // 407
   });
 
   it("given Chansey at L100 max DVs max StatExp, when calculating HP, then returns 704", () => {
     // Arrange — base HP 250: 250*2+204 = 704
-    const species = makeSpecies("chansey", {
-      hp: 250,
-      attack: 5,
-      defense: 5,
-      spAttack: 105,
-      spDefense: 105,
-      speed: 50,
+    const species = getSpecies(P.chansey);
+    const pokemon = makeInstance({
+      speciesId: P.chansey,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.hp).toBe(expectedHp(250)); // 704
+    expect(stats.hp).toBe(expectedHp(species.baseStats.hp)); // 704
   });
 
   it("given Chansey at L100 max DVs max StatExp, when calculating all stats, then match formula", () => {
     // Arrange
-    const species = makeSpecies("chansey", {
-      hp: 250,
-      attack: 5,
-      defense: 5,
-      spAttack: 105,
-      spDefense: 105,
-      speed: 50,
+    const species = getSpecies(P.chansey);
+    const pokemon = makeInstance({
+      speciesId: P.chansey,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.attack).toBe(expectedStat(5)); // 109
-    expect(stats.defense).toBe(expectedStat(5)); // 109
-    expect(stats.spAttack).toBe(expectedStat(105)); // 309
-    expect(stats.speed).toBe(expectedStat(50)); // 199
+    expect(stats.attack).toBe(expectedStat(species.baseStats.attack)); // 109
+    expect(stats.defense).toBe(expectedStat(species.baseStats.defense)); // 109
+    expect(stats.spAttack).toBe(expectedStat(species.baseStats.spAttack)); // 309
+    expect(stats.speed).toBe(expectedStat(species.baseStats.speed)); // 199
   });
 
   it("given Snorlax at L100 max DVs max StatExp, when calculating HP, then returns 524", () => {
     // Arrange — base HP 160: 160*2+204 = 524
-    const species = makeSpecies("snorlax", {
-      hp: 160,
-      attack: 110,
-      defense: 65,
-      spAttack: 65,
-      spDefense: 65,
-      speed: 30,
+    const species = getSpecies(P.snorlax);
+    const pokemon = makeInstance({
+      speciesId: P.snorlax,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.hp).toBe(expectedHp(160)); // 524
-    expect(stats.attack).toBe(expectedStat(110)); // 319
-    expect(stats.speed).toBe(expectedStat(30)); // 159
+    expect(stats.hp).toBe(expectedHp(species.baseStats.hp)); // 524
+    expect(stats.attack).toBe(expectedStat(species.baseStats.attack)); // 319
+    expect(stats.speed).toBe(expectedStat(species.baseStats.speed)); // 159
   });
 
   it("given Alakazam at L100 max DVs max StatExp, when calculating stats, then special is 369", () => {
     // Arrange — base Spc 135: 135*2+99 = 369
-    const species = makeSpecies("alakazam", {
-      hp: 55,
-      attack: 50,
-      defense: 45,
-      spAttack: 135,
-      spDefense: 135,
-      speed: 120,
+    const species = getSpecies(P.alakazam);
+    const pokemon = makeInstance({
+      speciesId: P.alakazam,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.hp).toBe(expectedHp(55)); // 314
-    expect(stats.spAttack).toBe(expectedStat(135)); // 369
-    expect(stats.speed).toBe(expectedStat(120)); // 339
+    expect(stats.hp).toBe(expectedHp(species.baseStats.hp)); // 314
+    expect(stats.spAttack).toBe(expectedStat(species.baseStats.spAttack)); // 369
+    expect(stats.speed).toBe(expectedStat(species.baseStats.speed)); // 339
   });
 
   it("given Tauros at L100 max DVs max StatExp, when calculating stats, then match formula", () => {
     // Arrange — base: HP 75, Atk 100, Def 95, Spe 110, Spc 70
-    const species = makeSpecies("tauros", {
-      hp: 75,
-      attack: 100,
-      defense: 95,
-      spAttack: 70,
-      spDefense: 70,
-      speed: 110,
+    const species = getSpecies(P.tauros);
+    const pokemon = makeInstance({
+      speciesId: P.tauros,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.hp).toBe(expectedHp(75)); // 354
-    expect(stats.attack).toBe(expectedStat(100)); // 299
-    expect(stats.defense).toBe(expectedStat(95)); // 289
-    expect(stats.speed).toBe(expectedStat(110)); // 319
-    expect(stats.spAttack).toBe(expectedStat(70)); // 239
+    expect(stats.hp).toBe(expectedHp(species.baseStats.hp)); // 354
+    expect(stats.attack).toBe(expectedStat(species.baseStats.attack)); // 299
+    expect(stats.defense).toBe(expectedStat(species.baseStats.defense)); // 289
+    expect(stats.speed).toBe(expectedStat(species.baseStats.speed)); // 319
+    expect(stats.spAttack).toBe(expectedStat(species.baseStats.spAttack)); // 239
   });
 
   it("given Dragonite at L100 max DVs max StatExp, when calculating Attack, then returns 367", () => {
     // Arrange — base Atk 134: 134*2+99 = 367
-    const species = makeSpecies("dragonite", {
-      hp: 91,
-      attack: 134,
-      defense: 95,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 80,
+    const species = getSpecies(P.dragonite);
+    const pokemon = makeInstance({
+      speciesId: P.dragonite,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.attack).toBe(expectedStat(134)); // 367
-    expect(stats.hp).toBe(expectedHp(91)); // 386
+    expect(stats.attack).toBe(expectedStat(species.baseStats.attack)); // 367
+    expect(stats.hp).toBe(expectedHp(species.baseStats.hp)); // 386
   });
 
   it("given Gengar at L100 max DVs max StatExp, when calculating stats, then speed and special match formula", () => {
     // Arrange — base Spe 110, Spc 130
-    const species = makeSpecies("gengar", {
-      hp: 60,
-      attack: 65,
-      defense: 60,
-      spAttack: 130,
-      spDefense: 130,
-      speed: 110,
+    const species = getSpecies(P.gengar);
+    const pokemon = makeInstance({
+      speciesId: P.gengar,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.speed).toBe(expectedStat(110)); // 319
-    expect(stats.spAttack).toBe(expectedStat(130)); // 359
+    expect(stats.speed).toBe(expectedStat(species.baseStats.speed)); // 319
+    expect(stats.spAttack).toBe(expectedStat(species.baseStats.spAttack)); // 359
   });
 
   it("given Pikachu at L50 max DVs max StatExp, when calculating HP, then returns 142", () => {
@@ -323,15 +309,13 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
     // HP = floor(((35+15)*2+64)*50/100) + 50 + 10
     //     = floor((100+64)*50/100) + 60
     //     = floor(164*50/100) + 60 = floor(82) + 60 = 82 + 60 = 142
-    const species = makeSpecies("pikachu", {
-      hp: 35,
-      attack: 55,
-      defense: 30,
-      spAttack: 50,
-      spDefense: 50,
-      speed: 90,
+    const species = getSpecies(P.pikachu);
+    const pokemon = makeInstance({
+      speciesId: P.pikachu,
+      level: 50,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 50, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -345,15 +329,13 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
     //     = floor(274*50/100) + 5 = floor(137) + 5 = 137 + 5 = 142
     // Wait — let me recalc: (90+15)*2 = 210; 210+64 = 274; 274*50/100 = 137; floor(137)+5 = 142
     // Hmm. Speed = 142? Let me verify with formula.
-    const species = makeSpecies("pikachu", {
-      hp: 35,
-      attack: 55,
-      defense: 30,
-      spAttack: 50,
-      spDefense: 50,
-      speed: 90,
+    const species = getSpecies(P.pikachu);
+    const pokemon = makeInstance({
+      speciesId: P.pikachu,
+      level: 50,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 50, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — Speed: floor(((90+15)*2+64)*50/100)+5 = floor(274*0.5)+5 = 137+5 = 142
@@ -362,36 +344,43 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
 
   it("given Starmie at L100 max DVs max StatExp, when calculating stats, then speed is 329 and special is 299", () => {
     // Arrange — base Spe 115, Spc 100
-    const species = makeSpecies("starmie", {
-      hp: 60,
-      attack: 75,
-      defense: 85,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 115,
+    const species = getSpecies(P.starmie);
+    const pokemon = makeInstance({
+      speciesId: P.starmie,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
-    expect(stats.speed).toBe(expectedStat(115)); // 329
-    expect(stats.spAttack).toBe(expectedStat(100)); // 299
+    expect(stats.speed).toBe(expectedStat(species.baseStats.speed)); // 329
+    expect(stats.spAttack).toBe(expectedStat(species.baseStats.spAttack)); // 299
   });
 
   it("given any Pokemon at L100 with max DVs and max StatExp, when comparing HP to same-base non-HP stat, then HP is always larger by 105", () => {
     // Arrange — HP offset = level + 5 = 105 at L100
-    const species = makeSpecies("test", {
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
+    const species = {
+      ...getSpecies(P.mewtwo),
+      baseStats: {
+        hp: 100,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 100,
+      },
+    } as PokemonSpeciesData;
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
     });
-    const pokemon = makeInstance({ level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
-    // Assert — HP formula adds Level+10=110, non-HP adds 5; difference = 105
+    // Assert — Source: Gen 1 HP formula adds Level+10 while non-HP stats add +5,
+    // so same-base HP exceeds the matched non-HP stat by 105 at level 100.
     expect(stats.hp - stats.attack).toBe(105);
   });
 });
@@ -409,70 +398,70 @@ describe("3B: Type Chart Cross-Validation (Gen 1-specific matchups)", () => {
 
   it("given Gen 1 type chart, when checking Ghost vs Psychic, then is immune (0x) — the famous Gen 1 bug", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "ghost", "psychic");
+    const multiplier = getEffectiveness(chart, T.ghost, T.psychic);
     // Assert — Ghost should be SE vs Psychic but is coded as immune due to bug
     expect(multiplier).toBe(0);
   });
 
   it("given Gen 1 type chart, when checking Ghost vs Normal, then is immune (0x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "ghost", "normal");
+    const multiplier = getEffectiveness(chart, T.ghost, T.normal);
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen 1 type chart, when checking Normal vs Ghost, then is immune (0x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "normal", "ghost");
+    const multiplier = getEffectiveness(chart, T.normal, T.ghost);
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen 1 type chart, when checking Poison vs Bug, then is super effective (2x) — changed to 1x in Gen 2", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "poison", "bug");
+    const multiplier = getEffectiveness(chart, T.poison, T.bug);
     // Assert — Gen 1-specific: Poison is SE against Bug
     expect(multiplier).toBe(2);
   });
 
   it("given Gen 1 type chart, when checking Bug vs Poison, then is super effective (2x) — changed to 0.5x in Gen 2", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "bug", "poison");
+    const multiplier = getEffectiveness(chart, T.bug, T.poison);
     // Assert — Gen 1-specific: Bug is SE against Poison
     expect(multiplier).toBe(2);
   });
 
   it("given Gen 1 type chart, when checking Ice vs Fire, then is neutral (1x) — changed to 0.5x in Gen 2", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "ice", "fire");
+    const multiplier = getEffectiveness(chart, T.ice, T.fire);
     // Assert — Gen 1-specific: Ice is neutral against Fire (not resisted)
     expect(multiplier).toBe(1);
   });
 
   it("given Gen 1 type chart, when checking Electric vs Ground, then is immune (0x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "electric", "ground");
+    const multiplier = getEffectiveness(chart, T.electric, T.ground);
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen 1 type chart, when checking Ground vs Flying, then is immune (0x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "ground", "flying");
+    const multiplier = getEffectiveness(chart, T.ground, T.flying);
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen 1 type chart, when checking Psychic vs Fighting, then is super effective (2x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "psychic", "fighting");
+    const multiplier = getEffectiveness(chart, T.psychic, T.fighting);
     // Assert — Psychic dominance of Gen 1 meta
     expect(multiplier).toBe(2);
   });
 
   it("given Gen 1 type chart, when checking Psychic vs Poison, then is super effective (2x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "psychic", "poison");
+    const multiplier = getEffectiveness(chart, T.psychic, T.poison);
     // Assert
     expect(multiplier).toBe(2);
   });
@@ -481,10 +470,10 @@ describe("3B: Type Chart Cross-Validation (Gen 1-specific matchups)", () => {
     // Arrange / Act
     const types = Object.keys(chart);
     // Assert — Steel was introduced in Gen 2
-    expect(types).not.toContain("steel");
+    expect(types).not.toContain(T.steel);
     // Also verify no row contains 'steel' as a defender key
     for (const row of Object.values(chart as Record<string, Record<string, number>>)) {
-      expect(Object.keys(row)).not.toContain("steel");
+      expect(Object.keys(row)).not.toContain(T.steel);
     }
   });
 
@@ -492,20 +481,20 @@ describe("3B: Type Chart Cross-Validation (Gen 1-specific matchups)", () => {
     // Arrange / Act
     const types = Object.keys(chart);
     // Assert — Dark was introduced in Gen 2
-    expect(types).not.toContain("dark");
+    expect(types).not.toContain(T.dark);
   });
 
   it("given Gen 1 type chart, when checking for Fairy type entries, then Fairy does not appear (Gen 6+ only)", () => {
     // Arrange / Act
     const types = Object.keys(chart);
     // Assert — Fairy was introduced in Gen 6
-    expect(types).not.toContain("fairy");
+    expect(types).not.toContain(T.fairy);
   });
 
   it("given Gen 1 type chart, when counting types, then has exactly 15 types", () => {
     // Arrange / Act
     const types = Object.keys(chart);
-    // Assert
+    // Assert — Source: Gen 1 uses exactly the original 15 types before Steel/Dark/Fairy were introduced.
     expect(types.length).toBe(15);
   });
 });
@@ -527,136 +516,29 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
-
-function createMove(
-  id: string,
-  type: PokemonType,
-  power: number,
-  category: "physical" | "special",
-): MoveData {
-  return {
-    id,
-    displayName: id,
-    type,
-    category,
-    power,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "",
-    generation: 1,
-  } as MoveData;
-}
-
-function createActivePokemon(opts: {
+function makeDamageActivePokemon(opts: {
   level: number;
   stats: StatBlock;
   types: PokemonType[];
-  status?: "burn" | null;
-  speciesId?: number;
+  status?: PrimaryStatus | null;
+  speciesId: number;
 }): ActivePokemon {
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? 0,
-    nickname: null,
-    level: opts.level,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  const pokemon = createTestPokemon(opts.speciesId, opts.level, {
     currentHp: opts.stats.hp,
+    nature: NEUTRAL_NATURE,
+    ability: "",
     moves: [],
-    ability: "",
-    abilitySlot: "normal1" as const,
-    heldItem: null,
     status: opts.status ?? null,
-    friendship: 70,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
     calculatedStats: opts.stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: opts.types,
-    ability: "",
-    lastMoveUsed: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
+  return createBattleOnFieldPokemon(pokemon, 0, [...opts.types]);
 }
 
 function neutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  for (const atk of GEN1_TEST_TYPES) {
     chart[atk] = {};
-    for (const def of types) {
+    for (const def of GEN1_TEST_TYPES) {
       (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
@@ -679,34 +561,23 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // STAB: floor(101 * 1.5) = 151
     // type effectiveness: 1x (psychic vs normal here, use neutral chart)
     // random 255/255 = 1: floor(151 * 255 / 255) = 151
-    const psychicMove = createMove("psychic", "psychic", 90, "special");
+    const psychicMove = getMove(M.psychic);
     const chart = neutralTypeChart();
-    const mewtwoBattleSpecies = makeSpecies("mewtwo", {
-      hp: 106,
-      attack: 110,
-      defense: 90,
-      spAttack: 154,
-      spDefense: 90,
-      speed: 130,
+    const mewtwoBattleSpecies = getSpecies(P.mewtwo);
+    const mewtwoStats = expectedMaxStatBlock(mewtwoBattleSpecies);
+    const chanseyStats = expectedMaxStatBlock(getSpecies(P.chansey));
+    const mewtwo = makeDamageActivePokemon({
+      speciesId: P.mewtwo,
+      level: 100,
+      stats: mewtwoStats,
+      types: [T.psychic],
     });
-    const mewtwoStats: StatBlock = {
-      hp: expectedHp(106),
-      attack: expectedStat(110),
-      defense: expectedStat(90),
-      spAttack: expectedStat(154),
-      spDefense: expectedStat(154),
-      speed: expectedStat(130),
-    };
-    const chanseyStats: StatBlock = {
-      hp: expectedHp(250),
-      attack: expectedStat(5),
-      defense: expectedStat(5),
-      spAttack: expectedStat(105),
-      spDefense: expectedStat(105),
-      speed: expectedStat(50),
-    };
-    const mewtwo = createActivePokemon({ level: 100, stats: mewtwoStats, types: ["psychic"] });
-    const chansey = createActivePokemon({ level: 100, stats: chanseyStats, types: ["normal"] });
+    const chansey = makeDamageActivePokemon({
+      speciesId: P.chansey,
+      level: 100,
+      stats: chanseyStats,
+      types: [T.normal],
+    });
     const rng = createMockRng(255);
     const context: DamageContext = {
       attacker: mewtwo,
@@ -725,7 +596,12 @@ describe("3C: Damage Formula (exact expected values)", () => {
     expect(result.damage).toBe(151);
     // With STAB (1.5x) vs without, the ratio should be approx 1.5x
     const rngNoStab = createMockRng(255);
-    const mewtwoNoStab = createActivePokemon({ level: 100, stats: mewtwoStats, types: ["water"] });
+    const mewtwoNoStab = makeDamageActivePokemon({
+      speciesId: P.mewtwo,
+      level: 100,
+      stats: mewtwoStats,
+      types: [T.water],
+    });
     const ctxNoStab: DamageContext = {
       attacker: mewtwoNoStab,
       defender: chansey,
@@ -746,7 +622,7 @@ describe("3C: Damage Formula (exact expected values)", () => {
   it("given Thunderbolt (Electric) vs Gyarados (Water/Flying = 4x), when calculating, then damage is approx 4x neutral", () => {
     // Arrange: Thunderbolt is electric (special), power 95
     // Use neutral chart for baseline, then 4x effectiveness chart
-    const tbolt = createMove("thunderbolt", "electric", 95, "special");
+    const tbolt = getMove(M.thunderbolt);
     const chartNeutral = neutralTypeChart();
     // Build 4x: electric vs water = 2x AND electric vs flying = 2x → combined 4x
     const chart4x = neutralTypeChart();
@@ -769,24 +645,24 @@ describe("3C: Damage Formula (exact expected values)", () => {
       spDefense: 200,
       speed: 81,
     };
-    const attackerSpecies = makeSpecies("raichu", {
-      hp: 60,
-      attack: 90,
-      defense: 55,
-      spAttack: 90,
-      spDefense: 80,
-      speed: 110,
+    const attackerSpecies = getSpecies(P.raichu);
+    const attacker = makeDamageActivePokemon({
+      speciesId: P.raichu,
+      level: 100,
+      stats: attackerStats,
+      types: [T.electric],
     });
-    const attacker = createActivePokemon({ level: 100, stats: attackerStats, types: ["electric"] });
-    const gyaradosNeutral = createActivePokemon({
+    const gyaradosNeutral = makeDamageActivePokemon({
+      speciesId: P.gyarados,
       level: 100,
       stats: defenderStats,
-      types: ["normal"],
+      types: [T.normal],
     });
-    const gyarados = createActivePokemon({
+    const gyarados = makeDamageActivePokemon({
+      speciesId: P.gyarados,
       level: 100,
       stats: defenderStats,
-      types: ["water", "flying"],
+      types: [T.water, T.flying],
     });
 
     const ctxNeutral: DamageContext = {
@@ -821,15 +697,15 @@ describe("3C: Damage Formula (exact expected values)", () => {
 
   it("given Snorlax using Body Slam (STAB, Normal physical, 85 power), when calculating, then STAB applies", () => {
     // Arrange: Body Slam is Normal/Physical, Snorlax is Normal type → STAB
-    const bodySlam = createMove("body-slam", "normal", 85, "physical");
+    const bodySlam = getMove(M.bodySlam);
     const chart = neutralTypeChart();
     const snorlaxStats: StatBlock = {
-      hp: expectedHp(160),
-      attack: expectedStat(110),
-      defense: expectedStat(65),
-      spAttack: expectedStat(65),
-      spDefense: expectedStat(65),
-      speed: expectedStat(30),
+      hp: expectedHp(getSpecies(P.snorlax).baseStats.hp),
+      attack: expectedStat(getSpecies(P.snorlax).baseStats.attack),
+      defense: expectedStat(getSpecies(P.snorlax).baseStats.defense),
+      spAttack: expectedStat(getSpecies(P.snorlax).baseStats.spAttack),
+      spDefense: expectedStat(getSpecies(P.snorlax).baseStats.spDefense),
+      speed: expectedStat(getSpecies(P.snorlax).baseStats.speed),
     };
     const defenderStats: StatBlock = {
       hp: 200,
@@ -839,21 +715,25 @@ describe("3C: Damage Formula (exact expected values)", () => {
       spDefense: 100,
       speed: 100,
     };
-    const snorlaxSpecies = makeSpecies("snorlax", {
-      hp: 160,
-      attack: 110,
-      defense: 65,
-      spAttack: 65,
-      spDefense: 65,
-      speed: 30,
-    });
-    const snorlaxStab = createActivePokemon({ level: 100, stats: snorlaxStats, types: ["normal"] });
-    const snorlaxNoStab = createActivePokemon({
+    const snorlaxSpecies = getSpecies(P.snorlax);
+    const snorlaxStab = makeDamageActivePokemon({
+      speciesId: P.snorlax,
       level: 100,
       stats: snorlaxStats,
-      types: ["water"],
+      types: [T.normal],
     });
-    const defender = createActivePokemon({ level: 100, stats: defenderStats, types: ["normal"] });
+    const snorlaxNoStab = makeDamageActivePokemon({
+      speciesId: P.snorlax,
+      level: 100,
+      stats: snorlaxStats,
+      types: [T.water],
+    });
+    const defender = makeDamageActivePokemon({
+      speciesId: P.chansey,
+      level: 100,
+      stats: defenderStats,
+      types: [T.normal],
+    });
 
     const ctxStab: DamageContext = {
       attacker: snorlaxStab,
@@ -887,7 +767,7 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // Arrange: At L50, levelFactor normal = 22, crit = 42; ratio = 42/22 ≈ 1.909
     // After floor operations the actual damage ratio is ~1.86x (e.g. 69/37), not 1.91x
     // Final damage ratio is ~1.86x because level doubles and floors compound, not a flat 2x multiplier
-    const move = createMove("test", "normal", 80, "physical");
+    const move = getMove(M.tackle);
     const chart = neutralTypeChart();
     const attackStats: StatBlock = {
       hp: 200,
@@ -905,16 +785,19 @@ describe("3C: Damage Formula (exact expected values)", () => {
       spDefense: 100,
       speed: 100,
     };
-    const species = makeSpecies("test", {
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
+    const species = getSpecies(P.snorlax);
+    const attacker = makeDamageActivePokemon({
+      speciesId: P.charizard,
+      level: 50,
+      stats: attackStats,
+      types: [T.fire],
     });
-    const attacker = createActivePokemon({ level: 50, stats: attackStats, types: ["fire"] });
-    const defender = createActivePokemon({ level: 50, stats: defStats, types: ["normal"] });
+    const defender = makeDamageActivePokemon({
+      speciesId: P.chansey,
+      level: 50,
+      stats: defStats,
+      types: [T.normal],
+    });
 
     const ctxCrit: DamageContext = {
       attacker,
@@ -941,7 +824,7 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // Level doubling gives ~1.91x at L50, not flat 2x
     expect(ratio).toBeGreaterThanOrEqual(1.7);
     expect(ratio).toBeLessThanOrEqual(2.1);
-    // It should NOT be suspiciously exactly 2.0 (that would indicate wrong flat multiplier impl)
+    // Source: Gen 1 critical hits double the level term in the damage formula, not a flat 2.0 multiplier.
     expect(ratio).not.toBeCloseTo(2.0, 5);
   });
 
@@ -950,16 +833,9 @@ describe("3C: Damage Formula (exact expected values)", () => {
   it("given attack stat 300 (>= 256), when calculating damage, then overflow maps to floor(300/4)%256=75 effectively", () => {
     // Arrange: Gen 1 bug — if attack OR defense >= 256, both are divided by 4 mod 256
     // attack=300: floor(300/4)%256 = 75; defense=100: floor(100/4)%256 = 25
-    const move = createMove("test", "normal", 80, "physical");
+    const move = getMove(M.strength);
     const chart = neutralTypeChart();
-    const species = makeSpecies("test", {
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    });
+    const species = getSpecies(P.snorlax);
 
     // Attacker with overflow stats (Attack=300)
     const overflowStats: StatBlock = {
@@ -997,25 +873,29 @@ describe("3C: Damage Formula (exact expected values)", () => {
       speed: 100,
     };
 
-    const attackerOverflow = createActivePokemon({
+    const attackerOverflow = makeDamageActivePokemon({
       level: 100,
       stats: overflowStats,
-      types: ["fire"],
+      speciesId: P.charizard,
+      types: [T.fire],
     });
-    const attackerPost = createActivePokemon({
+    const attackerPost = makeDamageActivePokemon({
       level: 100,
       stats: postOverflowStats,
-      types: ["fire"],
+      speciesId: P.charizard,
+      types: [T.fire],
     });
-    const defenderOverflow = createActivePokemon({
+    const defenderOverflow = makeDamageActivePokemon({
       level: 100,
       stats: defenderNormalStats,
-      types: ["normal"],
+      speciesId: P.chansey,
+      types: [T.normal],
     });
-    const defenderPost = createActivePokemon({
+    const defenderPost = makeDamageActivePokemon({
       level: 100,
       stats: defenderOverflowedStats,
-      types: ["normal"],
+      speciesId: P.chansey,
+      types: [T.normal],
     });
 
     const ctxOverflow: DamageContext = {
@@ -1165,77 +1045,33 @@ describe("3E: Status Damage Amounts", () => {
     maxHp: number,
     volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>,
   ): ActivePokemon {
-    return {
-      pokemon: {
-        uid: "test",
-        speciesId: 0,
-        nickname: null,
-        level: 100,
-        experience: 0,
-        nature: "hardy",
-        ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-        evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-        currentHp: maxHp,
-        moves: [],
-        ability: "",
-        abilitySlot: "normal1" as const,
-        heldItem: null,
-        status: null,
-        friendship: 70,
-        gender: "male" as const,
-        isShiny: false,
-        metLocation: "",
-        metLevel: 1,
-        originalTrainer: "",
-        originalTrainerId: 0,
-        pokeball: "pokeball",
-        calculatedStats: {
-          hp: maxHp,
-          attack: 100,
-          defense: 100,
-          spAttack: 100,
-          spDefense: 100,
-          speed: 100,
-        },
-      } as PokemonInstance,
-      teamSlot: 0,
-      statStages: {
-        hp: 0,
-        attack: 0,
-        defense: 0,
-        spAttack: 0,
-        spDefense: 0,
-        speed: 0,
-        accuracy: 0,
-        evasion: 0,
+    const active = makeDamageActivePokemon({
+      speciesId: P.snorlax,
+      level: 100,
+      stats: {
+        hp: maxHp,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 100,
       },
+      types: [T.normal],
+    });
+    return {
+      ...active,
       volatileStatuses: volatiles ?? new Map(),
-      types: ["normal"] as PokemonType[],
-      ability: "",
-      lastMoveUsed: null,
-      turnsOnField: 0,
-      movedThisTurn: false,
-      consecutiveProtects: 0,
-      substituteHp: 0,
-      transformed: false,
-      transformedSpecies: null,
-      isMega: false,
-      isDynamaxed: false,
-      dynamaxTurnsLeft: 0,
-      isTerastallized: false,
-      teraType: null,
-      stellarBoostedTypes: [],
-    } as ActivePokemon;
+    };
   }
 
   it("given burn on Mewtwo (HP=416), when applying status damage, then deals floor(416/16)=26", () => {
     // Arrange — Mewtwo HP = 106*2+204 = 416
-    const mewtwoHp = expectedHp(106); // 416
+    const mewtwoHp = expectedHp(getSpecies(P.mewtwo).baseStats.hp); // 416
     const pokemon = makeStatusPokemon(mewtwoHp);
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "burn",
+      S.burn,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert
@@ -1244,12 +1080,12 @@ describe("3E: Status Damage Amounts", () => {
 
   it("given poison on Chansey (HP=704), when applying status damage, then deals floor(704/16)=44", () => {
     // Arrange — Chansey HP = 250*2+204 = 704
-    const chanseyHp = expectedHp(250); // 704
+    const chanseyHp = expectedHp(getSpecies(P.chansey).baseStats.hp); // 704
     const pokemon = makeStatusPokemon(chanseyHp);
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "poison",
+      S.poison,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert
@@ -1258,14 +1094,14 @@ describe("3E: Status Damage Amounts", () => {
 
   it("given badly-poisoned (Toxic) Snorlax (HP=524) on turn 1, when applying status damage, then deals floor(524/16)=32", () => {
     // Arrange — Snorlax HP = 160*2+204 = 524
-    const snorlaxHp = expectedHp(160); // 524
+    const snorlaxHp = expectedHp(getSpecies(P.snorlax).baseStats.hp); // 524
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 1 } });
+    volatiles.set(V.toxicCounter, { turnsLeft: 0, data: { counter: 1 } });
     const pokemon = makeStatusPokemon(snorlaxHp, volatiles);
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "badly-poisoned",
+      S.badlyPoisoned,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert — turn 1: floor(524 * 1 / 16) = floor(32.75) = 32
@@ -1274,14 +1110,14 @@ describe("3E: Status Damage Amounts", () => {
 
   it("given badly-poisoned Snorlax (HP=524) on turn 2, when applying status damage, then deals floor(524*2/16)=65", () => {
     // Arrange
-    const snorlaxHp = expectedHp(160); // 524
+    const snorlaxHp = expectedHp(getSpecies(P.snorlax).baseStats.hp); // 524
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 2 } });
+    volatiles.set(V.toxicCounter, { turnsLeft: 0, data: { counter: 2 } });
     const pokemon = makeStatusPokemon(snorlaxHp, volatiles);
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "badly-poisoned",
+      S.badlyPoisoned,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert — turn 2: floor(524 * 2 / 16) = floor(65.5) = 65
@@ -1290,14 +1126,14 @@ describe("3E: Status Damage Amounts", () => {
 
   it("given badly-poisoned Snorlax (HP=524) on turn 3, when applying status damage, then deals floor(524*3/16)=98", () => {
     // Arrange
-    const snorlaxHp = expectedHp(160); // 524
+    const snorlaxHp = expectedHp(getSpecies(P.snorlax).baseStats.hp); // 524
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 3 } });
+    volatiles.set(V.toxicCounter, { turnsLeft: 0, data: { counter: 3 } });
     const pokemon = makeStatusPokemon(snorlaxHp, volatiles);
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "badly-poisoned",
+      S.badlyPoisoned,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert — turn 3: floor(524 * 3 / 16) = floor(98.25) = 98
@@ -1310,7 +1146,7 @@ describe("3E: Status Damage Amounts", () => {
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "paralysis",
+      S.paralysis,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert
@@ -1323,7 +1159,7 @@ describe("3E: Status Damage Amounts", () => {
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "sleep",
+      S.sleep,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert
@@ -1336,7 +1172,7 @@ describe("3E: Status Damage Amounts", () => {
     // Act
     const damage = ruleset.applyStatusDamage(
       pokemon,
-      "freeze",
+      S.freeze,
       mockState as Parameters<typeof ruleset.applyStatusDamage>[2],
     );
     // Assert
@@ -1345,15 +1181,15 @@ describe("3E: Status Damage Amounts", () => {
 
   it("given toxic escalation over 3 turns on same Pokemon, when applying status damage sequentially, then damage increases each turn", () => {
     // Arrange — verify escalation by mutating the counter as the implementation does
-    const snorlaxHp = expectedHp(160); // 524
+    const snorlaxHp = expectedHp(getSpecies(P.snorlax).baseStats.hp); // 524
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("toxic-counter", { turnsLeft: 0, data: { counter: 1 } });
+    volatiles.set(V.toxicCounter, { turnsLeft: 0, data: { counter: 1 } });
     const pokemon = makeStatusPokemon(snorlaxHp, volatiles);
     const state = mockState as Parameters<typeof ruleset.applyStatusDamage>[2];
     // Act — call 3 times; the ruleset mutates the counter in the volatile data
-    const turn1 = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
-    const turn2 = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
-    const turn3 = ruleset.applyStatusDamage(pokemon, "badly-poisoned", state);
+    const turn1 = ruleset.applyStatusDamage(pokemon, S.badlyPoisoned, state);
+    const turn2 = ruleset.applyStatusDamage(pokemon, S.badlyPoisoned, state);
+    const turn3 = ruleset.applyStatusDamage(pokemon, S.badlyPoisoned, state);
     // Assert
     expect(turn2).toBeGreaterThan(turn1);
     expect(turn3).toBeGreaterThan(turn2);

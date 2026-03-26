@@ -12,16 +12,33 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   PokemonInstance,
-  PokemonSpeciesData,
   PokemonType,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createPokemonInstance,
+  createStatExp,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN1_MOVE_IDS, GEN1_NATURE_IDS, GEN1_SPECIES_IDS, GEN1_TYPES } from "../../src";
 import { createGen1DataManager } from "../../src/data";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
@@ -31,47 +48,35 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // ============================================================================
 
 const ruleset = new Gen1Ruleset();
+const gen1DataManager = createGen1DataManager();
+const HARDY_NATURE = GEN1_NATURE_IDS.hardy;
+const PIKACHU_SPECIES = gen1DataManager.getSpecies(GEN1_SPECIES_IDS.pikachu);
+const TACKLE_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.tackle);
+const AMNESIA_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.amnesia);
+const GROWTH_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.growth);
+const SWORDS_DANCE_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.swordsDance);
+const STRENGTH_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.strength);
+const MEGA_DRAIN_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.megaDrain);
+const FIRE_BLAST_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.fireBlast);
+const PSYCHIC_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.psychic);
+const GROWL_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.growl);
+const WRAP_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.wrap);
+const HYPER_BEAM_MOVE = gen1DataManager.getMove(GEN1_MOVE_IDS.hyperBeam);
+const DAMAGE_CALC_SPECIES = PIKACHU_SPECIES;
+const NORMAL_MONOTYPE: PokemonType[] = [CORE_TYPE_IDS.normal];
+const FIRE_MONOTYPE: PokemonType[] = [CORE_TYPE_IDS.fire];
+const WATER_ROCK_DUAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock];
+const WATER_NORMAL_DUAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.normal];
 
-const DEFAULT_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
-
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
+    ...baseMove,
     ...overrides,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
   };
 }
 
-function makeStats(overrides: Partial<StatBlock> = {}): StatBlock {
+function createCalculatedStats(overrides: Partial<StatBlock> = {}): StatBlock {
   return {
     hp: 200,
     attack: 100,
@@ -83,47 +88,33 @@ function makeStats(overrides: Partial<StatBlock> = {}): StatBlock {
   };
 }
 
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+function createSyntheticOnFieldPokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+  const pokemon = createPokemonInstance(PIKACHU_SPECIES, 50, new SeededRandom(1), {
+    nature: HARDY_NATURE,
+    ivs: createDvs(),
+    evs: createStatExp(),
+    friendship: createFriendship(70),
+    gender: CORE_GENDERS.male,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: null,
+    moves: [createMoveSlot(TACKLE_MOVE.id, TACKLE_MOVE.pp)],
+    isShiny: false,
+    metLocation: "pallet-town",
+    originalTrainer: "Red",
+    originalTrainerId: 12345,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.currentHp = 200;
+  pokemon.calculatedStats = createCalculatedStats();
+
   return {
-    pokemon: {
-      uid: "test-uid",
-      speciesId: 25,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      currentHp: 200,
-      status: null,
-      friendship: 70,
-      heldItem: null,
-      ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "pallet-town",
-      metLevel: 5,
-      originalTrainer: "Red",
-      originalTrainerId: 12345,
-      pokeball: "poke-ball",
-      calculatedStats: makeStats(),
-    } as PokemonInstance,
+    pokemon,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["normal"] as PokemonType[],
-    ability: "",
+    types: [...PIKACHU_SPECIES.types] as PokemonType[],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -143,10 +134,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   };
 }
 
-function makeBattleStateFull(
-  side0Pokemon: ActivePokemon,
-  side1Pokemon: ActivePokemon,
-): BattleState {
+function createBattleState(side0Pokemon: ActivePokemon, side1Pokemon: ActivePokemon): BattleState {
   const rng = new SeededRandom(42);
   return {
     phase: "turn-resolve",
@@ -196,15 +184,15 @@ function makeBattleStateFull(
   } as BattleState;
 }
 
-function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
-  const attacker = makeActivePokemon();
-  const defender = makeActivePokemon();
+function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
+  const attacker = createSyntheticOnFieldPokemon();
+  const defender = createSyntheticOnFieldPokemon();
   return {
     attacker,
     defender,
-    move: makeMove(),
+    move: TACKLE_MOVE,
     damage: 50,
-    state: makeBattleStateFull(attacker, defender),
+    state: createBattleState(attacker, defender),
     rng: new SeededRandom(42),
     ...overrides,
   };
@@ -212,23 +200,7 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 
 /** Create a minimal neutral type chart (all 1x). */
 function makeNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-  ];
+  const types: PokemonType[] = [...GEN1_TYPES];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
     chart[atk] = {};
@@ -252,39 +224,6 @@ function fixedRng(intValue: number): SeededRandom {
   } as unknown as SeededRandom;
 }
 
-/** Minimal species data for damage calc tests. */
-function makeSpecies(): PokemonSpeciesData {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: ["normal"] as PokemonType[],
-    baseStats: {
-      hp: 100,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
-}
-
 // ============================================================================
 // Bug #94 — Special stat not unified (Amnesia / Growth must affect both sides)
 // Source: gen1-ground-truth.md §1 — Unified Special Stat
@@ -293,19 +232,7 @@ function makeSpecies(): PokemonSpeciesData {
 describe("Bug #94 — Amnesia/Growth unified special stat", () => {
   it("given Amnesia (+2 spDefense self), when executeMoveEffect is called, then BOTH spAttack and spDefense stat changes are returned", () => {
     // Arrange — Amnesia effect targets self and changes spDefense by +2
-    const amnesia = makeMove({
-      id: "amnesia",
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spDefense", stages: 2 }],
-        target: "self",
-        chance: 100,
-      },
-    });
-    const context = makeMoveEffectContext({ move: amnesia });
+    const context = createMoveEffectContext({ move: AMNESIA_MOVE });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -326,19 +253,7 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 
   it("given Growth (+1 spAttack self), when executeMoveEffect is called, then BOTH spAttack and spDefense increase by 1", () => {
     // Arrange — Growth targets self and changes spAttack by +1
-    const growth = makeMove({
-      id: "growth",
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spAttack", stages: 1 }],
-        target: "self",
-        chance: 100,
-      },
-    });
-    const context = makeMoveEffectContext({ move: growth });
+    const context = createMoveEffectContext({ move: GROWTH_MOVE });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -357,19 +272,7 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 
   it("given a non-special stat-change move (Swords Dance +2 attack), when executeMoveEffect is called, then only attack changes (no duplication)", () => {
     // Arrange
-    const swordsDance = makeMove({
-      id: "swords-dance",
-      category: "status",
-      power: null,
-      accuracy: null,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "attack", stages: 2 }],
-        target: "self",
-        chance: 100,
-      },
-    });
-    const context = makeMoveEffectContext({ move: swordsDance });
+    const context = createMoveEffectContext({ move: SWORDS_DANCE_MOVE });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -389,95 +292,88 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 describe("Bug #55 — Sequential type effectiveness with per-type floor", () => {
   it("given a dual-typed defender (Water/Rock) hit by a 2x each type move at max roll, when calculating damage, then floors are applied per type sequentially", () => {
     // Arrange — use a chart where normal is 2x vs water AND 2x vs rock
-    // Level 50, Power 60, Attack 100, Defense 100:
+    // Level 50, Strength (Power 80), Attack 100, Defense 100:
     //   levelFactor = floor(100/5)+2 = 22
-    //   baseDamage = min(997, floor(floor(22*60*100)/100/50))+2 = min(997, 26)+2 = 28
+    //   baseDamage = min(997, floor(floor(22*80*100)/100/50))+2 = min(997, 35)+2 = 37
     // No STAB (attacker is fire type).
-    // 2x vs Water: floor(28 * 20/10) = 56
-    // 2x vs Rock:  floor(56 * 20/10) = 112
-    // Max roll (255): floor(112 * 255/255) = 112
+    // 2x vs Water: floor(37 * 20/10) = 74
+    // 2x vs Rock:  floor(74 * 20/10) = 148
+    // Max roll (255): floor(148 * 255/255) = 148
     const chart = makeNeutralTypeChart() as Record<string, Record<string, number>>;
-    (chart.normal as Record<string, number>).water = 2;
-    (chart.normal as Record<string, number>).rock = 2;
+    (chart[CORE_TYPE_IDS.normal] as Record<string, number>)[CORE_TYPE_IDS.water] = 2;
+    (chart[CORE_TYPE_IDS.normal] as Record<string, number>)[CORE_TYPE_IDS.rock] = 2;
 
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
-    const defender = makeActivePokemon({ types: ["water", "rock"] as PokemonType[] });
-    defender.pokemon.calculatedStats = makeStats({ defense: 100 });
+    const attacker = createSyntheticOnFieldPokemon({ types: FIRE_MONOTYPE });
+    const defender = createSyntheticOnFieldPokemon({ types: WATER_ROCK_DUAL_TYPES });
+    defender.pokemon.calculatedStats = createCalculatedStats({ defense: 100 });
 
-    const move = makeMove({ type: "normal", power: 60, category: "physical" });
-    const state = makeBattleStateFull(attacker, defender);
+    const state = createBattleState(attacker, defender);
 
     const context: DamageContext = {
       attacker,
       defender,
-      move,
+      move: STRENGTH_MOVE,
       state,
       rng: fixedRng(255),
       isCrit: false,
     };
 
     // Act
-    const result = calculateGen1Damage(context, chart as TypeChart, makeSpecies());
+    const result = calculateGen1Damage(context, chart as TypeChart, DAMAGE_CALC_SPECIES);
 
-    // Assert — sequential floor: 28 → 56 → 112 → final 112 (at max roll)
+    // Assert — sequential floor: 37 → 74 → 148 → final 148 (at max roll)
     expect(result.effectiveness).toBe(4); // combined effectiveness is 4
-    expect(result.damage).toBe(112);
+    expect(result.damage).toBe(148);
   });
 
   it("given a dual-typed defender hit by 2x + 1x effectiveness at max roll, when calculating damage, then only one floor is applied", () => {
-    // Water/Normal defender hit by Grass (2x vs Water, 1x vs Normal)
-    // baseDamage (Power 50, Atk 100, Def 100, Level 50): floor(floor(22*50*100)/100/50)+2 = 22+2 = 24
-    // 2x vs Water: floor(24 * 20/10) = 48
-    // 1x vs Normal: no change → 48
-    // Max roll: floor(48 * 255/255) = 48
+    // Water/Normal defender hit by Mega Drain (2x vs Water, 1x vs Normal)
+    // baseDamage (Power 40, Atk 100, Def 100, Level 50): floor(floor(22*40*100)/100/50)+2 = 17+2 = 19
+    // 2x vs Water: floor(19 * 20/10) = 38
+    // 1x vs Normal: no change → 38
+    // Max roll: floor(38 * 255/255) = 38
     const chart = makeNeutralTypeChart() as Record<string, Record<string, number>>;
-    (chart.grass as Record<string, number>).water = 2;
+    (chart[CORE_TYPE_IDS.grass] as Record<string, number>)[CORE_TYPE_IDS.water] = 2;
 
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
-    const defender = makeActivePokemon({ types: ["water", "normal"] as PokemonType[] });
-    defender.pokemon.calculatedStats = makeStats({ spDefense: 100 });
-    attacker.pokemon.calculatedStats = makeStats({ spAttack: 100 });
-
-    // Grass is a special type in Gen 1
-    const move = makeMove({ type: "grass", power: 50, category: "special" });
-    const state = makeBattleStateFull(attacker, defender);
+    const attacker = createSyntheticOnFieldPokemon({ types: FIRE_MONOTYPE });
+    const defender = createSyntheticOnFieldPokemon({ types: WATER_NORMAL_DUAL_TYPES });
+    defender.pokemon.calculatedStats = createCalculatedStats({ spDefense: 100 });
+    attacker.pokemon.calculatedStats = createCalculatedStats({ spAttack: 100 });
+    const state = createBattleState(attacker, defender);
 
     const context: DamageContext = {
       attacker,
       defender,
-      move,
+      move: MEGA_DRAIN_MOVE,
       state,
       rng: fixedRng(255),
       isCrit: false,
     };
 
-    const result = calculateGen1Damage(context, chart as TypeChart, makeSpecies());
+    const result = calculateGen1Damage(context, chart as TypeChart, DAMAGE_CALC_SPECIES);
 
-    expect(result.damage).toBe(48);
+    expect(result.damage).toBe(38);
     expect(result.effectiveness).toBe(2);
   });
 });
 
 // ============================================================================
-// Bug #54 — getEndOfTurnOrder() missing leech-seed
+// Bug #54 — getEndOfTurnOrder() missing CORE_VOLATILE_IDS.leechSeed
 // Source: gen1-ground-truth.md §8 — End-of-Turn Order
 // ============================================================================
 
-describe("Bug #54 — leech-seed in end-of-turn order", () => {
-  it("given Gen1Ruleset, when getEndOfTurnOrder is called, then 'leech-seed' is included after 'status-damage'", () => {
-    // Source: gen1-ground-truth.md §8 — End-of-Turn Order:
-    // 1. Burn/Poison damage (status-damage)
-    // 2. Leech Seed drain (leech-seed)
+describe(`Bug #54 — ${CORE_VOLATILE_IDS.leechSeed} in end-of-turn order`, () => {
+  it(`given Gen1Ruleset, when getEndOfTurnOrder is called, then ${CORE_VOLATILE_IDS.leechSeed} comes after the damage step`, () => {
+    // Source: gen1-ground-truth.md §8 — end-of-turn ordering.
+    // 1. Damage-over-time step
+    // 2. Leech Seed drain
     // 3. Faint check (handled by engine)
     // Arrange / Act
     const order = ruleset.getEndOfTurnOrder();
 
     // Assert
-    expect(order).toContain("leech-seed");
-    const statusIdx = order.indexOf("status-damage");
-    const leechIdx = order.indexOf("leech-seed");
-    expect(statusIdx).toBeGreaterThanOrEqual(0);
-    expect(leechIdx).toBeGreaterThan(statusIdx); // leech-seed comes after status-damage
+    expect(order[0]).toBe(CORE_END_OF_TURN_EFFECT_IDS.statusDamage);
+    expect(order[1]).toBe(CORE_VOLATILE_IDS.leechSeed);
   });
 });
 
@@ -488,60 +384,66 @@ describe("Bug #54 — leech-seed in end-of-turn order", () => {
 
 describe("Bug #90 — Toxic counter resets on switch-out", () => {
   it("given a badly-poisoned Pokemon, when it switches out, then status reverts to regular poison", () => {
-    // Source: gen1-ground-truth.md §6 — Toxic: counter resets on switch (reverts to regular poison)
+    // Source: gen1-ground-truth.md §6 — Toxic counter resets on switch (reverts to poison).
     // Arrange
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        status: "badly-poisoned" as const,
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: CORE_STATUS_IDS.badlyPoisoned as const,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 5 } });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.toxicCounter, {
+      turnsLeft: -1,
+      data: { counter: 5 },
+    });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — badly-poisoned reverts to regular poison
-    expect(pokemon.pokemon.status).toBe("poison");
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.poison);
     // Toxic counter volatile is cleared
-    expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.toxicCounter)).toBe(false);
   });
 
   it("given a regular-poisoned Pokemon, when it switches out, then status remains regular poison", () => {
     // Arrange
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        status: "poison" as const,
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: CORE_STATUS_IDS.poison as const,
       } as PokemonInstance,
     });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — regular poison is unaffected by switch-out
-    expect(pokemon.pokemon.status).toBe("poison");
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.poison);
   });
 
   it("given a badly-poisoned Pokemon with counter at 4, when it switches out, then no toxic-counter volatile remains", () => {
     // Arrange
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
-        status: "badly-poisoned" as const,
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: CORE_STATUS_IDS.badlyPoisoned as const,
       } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("toxic-counter", { turnsLeft: -1, data: { counter: 4 } });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.toxicCounter, {
+      turnsLeft: -1,
+      data: { counter: 4 },
+    });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
-    // Assert — no toxic-counter volatile remains; status is now regular poison
-    expect(pokemon.volatileStatuses.has("toxic-counter")).toBe(false);
-    expect(pokemon.pokemon.status).toBe("poison");
+    // Assert — no toxic counter volatile remains; status is now regular poison
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.toxicCounter)).toBe(false);
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.poison);
   });
 });
 
@@ -560,29 +462,41 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
     //   baseDamage = min(997, floor(floor(22*80*100)/200/50))+2 = 17+2 = 19
     //   Max roll: 19
     // Arrange
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
-    attacker.pokemon.calculatedStats = makeStats({ attack: 100 });
-    const defender = makeActivePokemon({ types: ["normal"] as PokemonType[] });
-    defender.pokemon.calculatedStats = makeStats({ defense: 100 });
+    const attacker = createSyntheticOnFieldPokemon({ types: FIRE_MONOTYPE });
+    attacker.pokemon.calculatedStats = createCalculatedStats({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ types: NORMAL_MONOTYPE });
+    defender.pokemon.calculatedStats = createCalculatedStats({ defense: 100 });
 
-    const stateNoReflect = makeBattleStateFull(attacker, defender);
-    const stateWithReflect = makeBattleStateFull(attacker, defender);
-    stateWithReflect.sides[1].screens.push({ type: "reflect", turnsLeft: -1 });
+    const stateNoReflect = createBattleState(attacker, defender);
+    const stateWithReflect = createBattleState(attacker, defender);
+    stateWithReflect.sides[1].screens.push({ type: CORE_SCREEN_IDS.reflect, turnsLeft: -1 });
 
-    const move = makeMove({ type: "normal", power: 80, category: "physical" });
     const chart = makeNeutralTypeChart();
-    const species = makeSpecies();
 
     // Act
     const damageNoReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateNoReflect, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateNoReflect,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     const damageWithReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithReflect, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateWithReflect,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
 
     // Assert
@@ -593,64 +507,92 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
 
   it("given Light Screen is active on defender's side, when a special move hits (non-crit), then damage is reduced compared to no Light Screen", () => {
     // Source: gen1-ground-truth.md §7 — Light Screen doubles SpDefense for special moves.
+    // L50, Fire Blast (Power 120), SpA100, SpD100, no STAB:
+    //   baseDamage = min(997, floor(floor(22*120*100)/100/50))+2 = 52+2 = 54
+    // With Light Screen (SpD 200):
+    //   baseDamage = min(997, floor(floor(22*120*100)/200/50))+2 = 26+2 = 28
     // Arrange
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
-    attacker.pokemon.calculatedStats = makeStats({ spAttack: 100 });
-    const defender = makeActivePokemon({ types: ["normal"] as PokemonType[] });
-    defender.pokemon.calculatedStats = makeStats({ spDefense: 100 });
+    const attacker = createSyntheticOnFieldPokemon({ types: NORMAL_MONOTYPE });
+    attacker.pokemon.calculatedStats = createCalculatedStats({ spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ types: NORMAL_MONOTYPE });
+    defender.pokemon.calculatedStats = createCalculatedStats({ spDefense: 100 });
 
-    const stateNoScreen = makeBattleStateFull(attacker, defender);
-    const stateWithScreen = makeBattleStateFull(attacker, defender);
-    stateWithScreen.sides[1].screens.push({ type: "light-screen", turnsLeft: -1 });
+    const stateNoScreen = createBattleState(attacker, defender);
+    const stateWithScreen = createBattleState(attacker, defender);
+    stateWithScreen.sides[1].screens.push({ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: -1 });
 
-    // Fire is a special type in Gen 1
-    const move = makeMove({ type: "fire", power: 80, category: "special" });
     const chart = makeNeutralTypeChart();
-    const species = makeSpecies();
 
     // Act
     const damageNoScreen = calculateGen1Damage(
-      { attacker, defender, move, state: stateNoScreen, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: FIRE_BLAST_MOVE,
+        state: stateNoScreen,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     const damageWithScreen = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithScreen, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: FIRE_BLAST_MOVE,
+        state: stateWithScreen,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
 
     // Assert — Light Screen reduces special damage
-    expect(damageWithScreen).toBeLessThan(damageNoScreen);
+    expect(damageNoScreen).toBe(54);
+    expect(damageWithScreen).toBe(28);
   });
 
   it("given Reflect is active and the move is a critical hit, when calculating damage, then Reflect is ignored (crit bypasses screens)", () => {
     // Source: gen1-ground-truth.md §3 — Crits ignore Reflect and Light Screen.
     // Arrange
-    const attacker = makeActivePokemon({ types: ["fire"] as PokemonType[] });
-    attacker.pokemon.calculatedStats = makeStats({ attack: 100 });
-    const defender = makeActivePokemon({ types: ["normal"] as PokemonType[] });
-    defender.pokemon.calculatedStats = makeStats({ defense: 100 });
+    const attacker = createSyntheticOnFieldPokemon({ types: FIRE_MONOTYPE });
+    attacker.pokemon.calculatedStats = createCalculatedStats({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ types: NORMAL_MONOTYPE });
+    defender.pokemon.calculatedStats = createCalculatedStats({ defense: 100 });
 
-    const stateWithReflect = makeBattleStateFull(attacker, defender);
-    stateWithReflect.sides[1].screens.push({ type: "reflect", turnsLeft: -1 });
+    const stateWithReflect = createBattleState(attacker, defender);
+    stateWithReflect.sides[1].screens.push({ type: CORE_SCREEN_IDS.reflect, turnsLeft: -1 });
 
-    const stateNoReflect = makeBattleStateFull(attacker, defender);
+    const stateNoReflect = createBattleState(attacker, defender);
 
-    const move = makeMove({ type: "normal", power: 80, category: "physical" });
     const chart = makeNeutralTypeChart();
-    const species = makeSpecies();
 
     // Act — critical hits: Reflect should be ignored
     const critWithReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithReflect, rng: fixedRng(255), isCrit: true },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateWithReflect,
+        rng: fixedRng(255),
+        isCrit: true,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     const critNoReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateNoReflect, rng: fixedRng(255), isCrit: true },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateNoReflect,
+        rng: fixedRng(255),
+        isCrit: true,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
 
     // Assert — crit damage is the same regardless of Reflect
@@ -658,9 +600,16 @@ describe("Bug #91 — Reflect/Light Screen doubles defense in damage calc", () =
 
     // And non-crit WITH Reflect should be lower than crit (crit doubles level)
     const nonCritWithReflect = calculateGen1Damage(
-      { attacker, defender, move, state: stateWithReflect, rng: fixedRng(255), isCrit: false },
+      {
+        attacker,
+        defender,
+        move: STRENGTH_MOVE,
+        state: stateWithReflect,
+        rng: fixedRng(255),
+        isCrit: false,
+      },
       chart,
-      species,
+      DAMAGE_CALC_SPECIES,
     ).damage;
     expect(critWithReflect).toBeGreaterThan(nonCritWithReflect);
   });
@@ -678,20 +627,8 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
     // 33% → threshold = floor(33 * 256 / 100) = 84
     // rng.int(0,255) returns 200 (>= 84) → effect skipped
     // Arrange
-    const psychic = makeMove({
-      id: "psychic",
-      type: "psychic",
-      category: "special",
-      power: 90,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spDefense", stages: -1 }],
-        target: "foe",
-        chance: 33,
-      },
-    });
     const context: MoveEffectContext = {
-      ...makeMoveEffectContext({ move: psychic }),
+      ...createMoveEffectContext({ move: PSYCHIC_MOVE }),
       rng: fixedRng(200), // 200 >= 84 → secondary does NOT apply
     };
 
@@ -705,20 +642,8 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
   it("given Psychic (33% SpDef drop) and RNG rolls below threshold, when executeMoveEffect is called, then the stat drop DOES occur", () => {
     // 33% → threshold = 84; rng.int(0,255) returns 10 (< 84) → effect applies
     // Arrange
-    const psychic = makeMove({
-      id: "psychic",
-      type: "psychic",
-      category: "special",
-      power: 90,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "spDefense", stages: -1 }],
-        target: "foe",
-        chance: 33,
-      },
-    });
     const context: MoveEffectContext = {
-      ...makeMoveEffectContext({ move: psychic }),
+      ...createMoveEffectContext({ move: PSYCHIC_MOVE }),
       rng: fixedRng(10), // 10 < 84 → secondary applies
     };
 
@@ -727,28 +652,19 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
 
     // Assert — unified Special: both spAttack and spDefense drop by 1 on defender
     // (Bug #93 fix triggers the secondary; bug #94 fix ensures both special stats are affected)
-    const defenderChanges = result.statChanges.filter((c) => c.target === "defender");
-    expect(defenderChanges.some((c) => c.stat === "spDefense" && c.stages === -1)).toBe(true);
-    expect(defenderChanges.some((c) => c.stat === "spAttack" && c.stages === -1)).toBe(true);
+    expect(result.statChanges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: "defender", stat: "spDefense", stages: -1 }),
+        expect.objectContaining({ target: "defender", stat: "spAttack", stages: -1 }),
+      ]),
+    );
   });
 
   it("given a 100% chance stat-change (Growl), when executeMoveEffect is called, then the stat change always applies", () => {
     // 100% chance → threshold = floor(100 * 256 / 100) = 256; all rolls 0-255 < 256 → always applied
     // Arrange
-    const growl = makeMove({
-      id: "growl",
-      category: "status",
-      power: null,
-      accuracy: 100,
-      effect: {
-        type: "stat-change",
-        changes: [{ stat: "attack", stages: -1 }],
-        target: "foe",
-        chance: 100,
-      },
-    });
     const context: MoveEffectContext = {
-      ...makeMoveEffectContext({ move: growl }),
+      ...createMoveEffectContext({ move: GROWL_MOVE }),
       rng: fixedRng(255), // highest possible roll; still applies at 100%
     };
 
@@ -762,63 +678,64 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
 });
 
 // ============================================================================
-// Bug #101 — Trapping moves use correct "bound" volatile key
+// Bug #101 — Trapping moves use correct CORE_VOLATILE_IDS.bound volatile key
 // Source: gen1-ground-truth.md §7 — Trapping Moves
 // ============================================================================
 
-describe("Bug #101 — Trapping moves use 'bound' volatile key", () => {
-  it("given a trapping move (Wrap), when it hits, then volatileInflicted is 'bound' not 'trapped'", () => {
+describe(`Bug #101 — Trapping moves use ${CORE_VOLATILE_IDS.bound} volatile key`, () => {
+  it(`given a trapping move (Wrap), when it hits, then volatileInflicted is ${CORE_VOLATILE_IDS.bound} not ${CORE_VOLATILE_IDS.trapped}`, () => {
     // Source: gen1-ground-truth.md §7 — Trapping Moves target is immobilized.
-    // The engine checks "bound" for immobilization; the volatile key must match.
+    // The engine checks CORE_VOLATILE_IDS.bound for immobilization; the volatile key must match.
     // Arrange
-    const wrap = makeMove({
-      id: "wrap",
-      power: 15,
-      effect: { type: "volatile-status", status: "bound", chance: 100 },
+    // Synthetic branch driver: Gen 1 move data does not encode the bound volatile payload directly,
+    // but executeMoveEffect applies it at runtime when a trapping effect is present.
+    const context = createMoveEffectContext({
+      move: createSyntheticMoveFrom(WRAP_MOVE, {
+        effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.bound, chance: 100 },
+      }),
     });
-    const context = makeMoveEffectContext({ move: wrap });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
 
-    // Assert — volatile inflicted must be "bound"
-    expect(result.volatileInflicted).toBe("bound");
-    expect(result.volatileInflicted).not.toBe("trapped");
+    // Assert — volatile inflicted must be CORE_VOLATILE_IDS.bound
+    expect(result.volatileInflicted).toBe(CORE_VOLATILE_IDS.bound);
+    expect(result.volatileInflicted).not.toBe(CORE_VOLATILE_IDS.trapped);
   });
 
-  it("given a Pokemon with 'bound' volatile set, when canSwitch is called, then returns false", () => {
+  it(`given a Pokemon with ${CORE_VOLATILE_IDS.bound} volatile set, when canSwitch is called, then returns false`, () => {
     // Source: gen1-ground-truth.md §7 — Target completely immobilized — cannot attack or switch.
     // Arrange
-    const pokemon = makeActivePokemon();
-    pokemon.volatileStatuses.set("bound", { turnsLeft: 3, data: { bindTurns: 3 } });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    const pokemon = createSyntheticOnFieldPokemon();
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 3, data: { bindTurns: 3 } });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     const canSwitch = ruleset.canSwitch(pokemon, state);
 
-    // Assert — "bound" prevents switching
+    // Assert — CORE_VOLATILE_IDS.bound prevents switching
     expect(canSwitch).toBe(false);
   });
 
-  it("given a Pokemon with 'trapped' volatile (old wrong key), when canSwitch is called, then returns true (wrong key does not block)", () => {
-    // This confirms the fix: old code blocked on "trapped"; now only "bound" blocks.
+  it(`given a Pokemon with ${CORE_VOLATILE_IDS.trapped} volatile (old wrong key), when canSwitch is called, then returns true (wrong key does not block)`, () => {
+    // This confirms the fix: old code blocked on CORE_VOLATILE_IDS.trapped; now only CORE_VOLATILE_IDS.bound blocks.
     // Arrange
-    const pokemon = makeActivePokemon();
-    pokemon.volatileStatuses.set("trapped", { turnsLeft: 3 });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    const pokemon = createSyntheticOnFieldPokemon();
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.trapped, { turnsLeft: 3 });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     const canSwitch = ruleset.canSwitch(pokemon, state);
 
-    // Assert — "trapped" is no longer the blocking key (bug was that it was used)
-    // With the fix, canSwitch checks "bound" not "trapped"
+    // Assert — CORE_VOLATILE_IDS.trapped is no longer the blocking key (bug was that it was used)
+    // With the fix, canSwitch checks CORE_VOLATILE_IDS.bound not CORE_VOLATILE_IDS.trapped
     expect(canSwitch).toBe(true);
   });
 
   it("given a Pokemon without any trapping volatile, when canSwitch is called, then returns true", () => {
     // Arrange
-    const pokemon = makeActivePokemon();
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    const pokemon = createSyntheticOnFieldPokemon();
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     const canSwitch = ruleset.canSwitch(pokemon, state);
@@ -839,17 +756,10 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     // The engine applies damage to currentHp BEFORE calling executeMoveEffect, so a KO is
     // indicated by defender.pokemon.currentHp === 0 at the time executeMoveEffect runs.
     // Arrange — engine has already reduced defender to 0 HP (was 50, took 50)
-    const defender = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
+    const defender = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
-      id: "hyper-beam",
-      type: "normal",
-      power: 150,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-      effect: null,
-    });
-    const context = makeMoveEffectContext({ move: hyperBeam, damage: 50, defender });
+    const context = createMoveEffectContext({ move: HYPER_BEAM_MOVE, damage: 50, defender });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -861,17 +771,10 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
   it("given Hyper Beam overkills the defender, when executeMoveEffect is called post-engine, then noRecharge is true", () => {
     // Overkill case: damage > original HP still counts as a KO; engine clamps currentHp to 0.
     // Arrange — engine has already reduced defender to 0 HP (was 30, took 50)
-    const defender = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, currentHp: 0 } as PokemonInstance,
+    const defender = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, currentHp: 0 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
-      id: "hyper-beam",
-      type: "normal",
-      power: 150,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-      effect: null,
-    });
-    const context = makeMoveEffectContext({ move: hyperBeam, damage: 50, defender });
+    const context = createMoveEffectContext({ move: HYPER_BEAM_MOVE, damage: 50, defender });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -884,23 +787,16 @@ describe("Bug #102 — Hyper Beam skips recharge on KO", () => {
     // Source: gen1-ground-truth.md §7 — Hyper Beam only skips recharge on KO.
     // The engine has already applied damage; defender.currentHp > 0 means it survived.
     // Arrange — defender had 200 HP, took 50 damage; engine reduced currentHp to 150
-    const defender = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, currentHp: 150 } as PokemonInstance,
+    const defender = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, currentHp: 150 } as PokemonInstance,
     });
-    const hyperBeam = makeMove({
-      id: "hyper-beam",
-      type: "normal",
-      power: 150,
-      flags: { ...DEFAULT_FLAGS, recharge: true },
-      effect: null,
-    });
-    const context = makeMoveEffectContext({ move: hyperBeam, damage: 50, defender });
+    const context = createMoveEffectContext({ move: HYPER_BEAM_MOVE, damage: 50, defender });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
 
     // Assert — target survived, recharge is required
-    expect(result.noRecharge).toBeFalsy();
+    expect(result.noRecharge).toBeUndefined();
   });
 });
 
@@ -913,91 +809,100 @@ describe("Bug #103 — Sleep counter persists through switch-out", () => {
   it("given a sleeping Pokemon with 3 turns remaining, when it switches out, then sleep-counter volatile is preserved", () => {
     // Source: gen1-ground-truth.md §8 — Sleep counter (does NOT reset) on switch-out.
     // Arrange
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: "sleep" as const } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: CORE_STATUS_IDS.sleep as const,
+      } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 3 });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — sleep counter survives the switch
-    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(true);
-    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(3);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(true);
+    expect(pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter)?.turnsLeft).toBe(3);
   });
 
   it("given a sleeping Pokemon, when it switches out, then primary sleep status is preserved", () => {
     // Arrange
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: "sleep" as const } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: CORE_STATUS_IDS.sleep as const,
+      } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 5 });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 5 });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert — primary status (sleep) is not cleared by onSwitchOut
-    expect(pokemon.pokemon.status).toBe("sleep");
+    expect(pokemon.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
   });
 
   it("given a non-sleeping Pokemon, when it switches out, then no sleep-counter volatile exists", () => {
     // Arrange
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: null } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, status: null } as PokemonInstance,
     });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
     // Assert
-    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(false);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(false);
   });
 
   it("given a sleeping Pokemon with other volatiles, when it switches out, then other volatiles are cleared but sleep-counter remains", () => {
-    // Gen 1: confusion, bound, etc. are cleared on switch-out, but sleep counter persists.
+    // Gen 1: confusion, CORE_VOLATILE_IDS.bound, etc. are cleared on switch-out, but sleep counter persists.
     // Arrange
-    const pokemon = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, status: "sleep" as const } as PokemonInstance,
+    const pokemon = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        status: CORE_STATUS_IDS.sleep as const,
+      } as PokemonInstance,
     });
-    pokemon.volatileStatuses.set("sleep-counter", { turnsLeft: 2 });
-    pokemon.volatileStatuses.set("confusion", { turnsLeft: 3 });
-    pokemon.volatileStatuses.set("bound", { turnsLeft: 2 });
-    const state = makeBattleStateFull(pokemon, makeActivePokemon());
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft: 2 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.bound, { turnsLeft: 2 });
+    const state = createBattleState(pokemon, createSyntheticOnFieldPokemon());
 
     // Act
     ruleset.onSwitchOut(pokemon, state);
 
-    // Assert — sleep-counter persists; confusion and bound are cleared
-    expect(pokemon.volatileStatuses.has("sleep-counter")).toBe(true);
-    expect(pokemon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
-    expect(pokemon.volatileStatuses.has("confusion")).toBe(false);
-    expect(pokemon.volatileStatuses.has("bound")).toBe(false);
+    // Assert — sleep-counter persists; confusion and CORE_VOLATILE_IDS.bound are cleared
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(true);
+    expect(pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter)?.turnsLeft).toBe(2);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)).toBe(false);
+    expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.bound)).toBe(false);
   });
 });
 
 // ============================================================================
-// Bug #105 — moves.json missing "sharpen"
+// Bug #105 — moves.json missing GEN1_MOVE_IDS.sharpen
 // Source: packages/gen1/CLAUDE.md — 165 moves; Gen 1 move ID 159 is Sharpen
 // ============================================================================
 
-describe("Bug #105 — Sharpen move exists in move data", () => {
-  it("given the Gen 1 data manager, when getting the 'sharpen' move, then it is defined with correct fields", () => {
-    // Source: packages/gen1/CLAUDE.md — 165 moves (sharpen was the missing 165th)
+describe(`Bug #105 — ${GEN1_MOVE_IDS.sharpen} move exists in move data`, () => {
+  it(`given the Gen 1 data manager, when getting the ${GEN1_MOVE_IDS.sharpen} move, then it is defined with correct fields`, () => {
+    // Source: packages/gen1/CLAUDE.md — 165 moves (the missing move was restored).
     // Arrange
     const dm = createGen1DataManager();
 
     // Act
-    const sharpen = dm.getMove("sharpen");
+    const sharpen = dm.getMove(GEN1_MOVE_IDS.sharpen);
 
     // Assert
     expect(sharpen).toBeDefined();
-    expect(sharpen.id).toBe("sharpen");
+    expect(sharpen.id).toBe(GEN1_MOVE_IDS.sharpen);
     expect(sharpen.displayName).toBe("Sharpen");
     expect(sharpen.category).toBe("status");
-    expect(sharpen.type).toBe("normal");
+    expect(sharpen.type).toBe(CORE_TYPE_IDS.normal);
     expect(sharpen.pp).toBe(30);
     expect(sharpen.target).toBe("self");
     expect(sharpen.power).toBeNull();
@@ -1007,8 +912,8 @@ describe("Bug #105 — Sharpen move exists in move data", () => {
   it("given Sharpen move data, when executeMoveEffect is called, then Attack increases by 1 stage on the user", () => {
     // Arrange
     const dm = createGen1DataManager();
-    const sharpen = dm.getMove("sharpen");
-    const context = makeMoveEffectContext({ move: sharpen });
+    const sharpen = dm.getMove(GEN1_MOVE_IDS.sharpen);
+    const context = createMoveEffectContext({ move: sharpen });
 
     // Act
     const result = ruleset.executeMoveEffect(context);

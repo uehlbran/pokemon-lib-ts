@@ -1,20 +1,97 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createMoveSlot,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
-import { Gen4Ruleset } from "../src/Gen4Ruleset";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  GEN4_TYPES,
+  Gen4Ruleset,
+} from "../src";
+
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS };
+const END_OF_TURN = CORE_END_OF_TURN_EFFECT_IDS;
+const HAZARDS = CORE_HAZARD_IDS;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS };
+const MOVES = CORE_MOVE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const EXPECTED_HAZARDS = [HAZARDS.stealthRock, HAZARDS.spikes, HAZARDS.toxicSpikes] as const;
+const EXPECTED_END_OF_TURN_ORDER = [
+  END_OF_TURN.weatherDamage,
+  END_OF_TURN.futureAttack,
+  END_OF_TURN.wish,
+  END_OF_TURN.weatherHealing,
+  ABILITIES.shedSkin,
+  VOLATILES.leechSeed,
+  ITEMS.leftovers,
+  ITEMS.blackSludge,
+  VOLATILES.aquaRing,
+  VOLATILES.ingrain,
+  ABILITIES.poisonHeal,
+  END_OF_TURN.statusDamage,
+  VOLATILES.nightmare,
+  VOLATILES.curse,
+  ABILITIES.badDreams,
+  MOVES.bind,
+  END_OF_TURN.yawnCountdown,
+  END_OF_TURN.encoreCountdown,
+  END_OF_TURN.tauntCountdown,
+  END_OF_TURN.disableCountdown,
+  END_OF_TURN.healBlockCountdown,
+  END_OF_TURN.embargoCountdown,
+  END_OF_TURN.magnetRiseCountdown,
+  MOVES.perishSong,
+  END_OF_TURN.screenCountdown,
+  END_OF_TURN.safeguardCountdown,
+  END_OF_TURN.tailwindCountdown,
+  END_OF_TURN.trickRoomCountdown,
+  END_OF_TURN.gravityCountdown,
+  END_OF_TURN.weatherCountdown,
+  END_OF_TURN.toxicOrbActivation,
+  END_OF_TURN.flameOrbActivation,
+  END_OF_TURN.slowStartCountdown,
+  ABILITIES.speedBoost,
+  END_OF_TURN.healingItems,
+] as const;
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
 function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+  return new Gen4Ruleset(DATA_MANAGER);
 }
 
 /** Minimal PokemonInstance for mechanic tests. */
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   maxHp?: number;
   speed?: number;
   status?: PokemonInstance["status"];
@@ -23,27 +100,27 @@ function makePokemonInstance(overrides: {
   const speed = overrides.speed ?? 100;
   return {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: maxHp,
     moves: [],
-    ability: "",
-    abilitySlot: "normal1" as const,
+    ability: ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -56,27 +133,19 @@ function makePokemonInstance(overrides: {
 }
 
 /** Minimal ActivePokemon for mechanic tests. */
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   speed?: number;
   status?: PokemonInstance["status"];
   types?: PokemonType[];
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance(overrides),
+    pokemon: createSyntheticPokemonInstance(overrides),
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: "",
+    types: overrides.types ?? [TYPES.normal],
+    ability: ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -112,7 +181,7 @@ describe("Gen4Ruleset identity", () => {
   it("given Gen4Ruleset, when accessing name, then contains 'Gen 4'", () => {
     // Source: naming convention for the library
     const ruleset = makeRuleset();
-    expect(ruleset.name).toContain("Gen 4");
+    expect(ruleset.name).toBe("Gen 4 (Diamond/Pearl/Platinum)");
   });
 });
 
@@ -121,16 +190,16 @@ describe("Gen4Ruleset identity", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset getAvailableTypes", () => {
-  it("given Gen4Ruleset, when getAvailableTypes, then returns exactly 17 types", () => {
-    // Source: pret/pokeplatinum — 17 types (Normal through Steel; Fairy added in Gen 6)
+  it("given Gen4Ruleset, when getAvailableTypes, then returns the canonical Gen 4 type list", () => {
+    // Source: Gen4Ruleset.getAvailableTypes delegates to GEN4_TYPES
     const ruleset = makeRuleset();
-    expect(ruleset.getAvailableTypes().length).toBe(17);
+    expect(ruleset.getAvailableTypes()).toEqual(GEN4_TYPES);
   });
 
   it("given Gen4Ruleset, when getAvailableTypes, then Fairy is not present", () => {
     // Source: Fairy type introduced in Gen 6 (X/Y), not present in Gen 4
     const ruleset = makeRuleset();
-    expect(ruleset.getAvailableTypes()).not.toContain("fairy");
+    expect(ruleset.getAvailableTypes()).not.toContain(TYPES.fairy);
   });
 });
 
@@ -139,28 +208,16 @@ describe("Gen4Ruleset getAvailableTypes", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen4Ruleset getAvailableHazards", () => {
-  it("given Gen4Ruleset, when getAvailableHazards, then includes stealth-rock", () => {
-    // Source: pret/pokeplatinum — Stealth Rock introduced in Gen 4 (Diamond/Pearl)
+  it("given Gen4Ruleset, when getAvailableHazards, then returns the canonical Gen 4 hazard set", () => {
+    // Source: Gen4Ruleset.getAvailableHazards returns [stealth-rock, spikes, toxic-spikes]
     const ruleset = makeRuleset();
-    expect(ruleset.getAvailableHazards()).toContain("stealth-rock");
-  });
-
-  it("given Gen4Ruleset, when getAvailableHazards, then includes spikes", () => {
-    // Source: pret/pokeplatinum — Spikes available since Gen 2
-    const ruleset = makeRuleset();
-    expect(ruleset.getAvailableHazards()).toContain("spikes");
-  });
-
-  it("given Gen4Ruleset, when getAvailableHazards, then includes toxic-spikes", () => {
-    // Source: pret/pokeplatinum — Toxic Spikes introduced in Gen 4 (Diamond/Pearl)
-    const ruleset = makeRuleset();
-    expect(ruleset.getAvailableHazards()).toContain("toxic-spikes");
+    expect(ruleset.getAvailableHazards()).toEqual(EXPECTED_HAZARDS);
   });
 
   it("given Gen4Ruleset, when getAvailableHazards, then does NOT include sticky-web", () => {
     // Source: Sticky Web was introduced in Gen 6, not available in Gen 4
     const ruleset = makeRuleset();
-    expect(ruleset.getAvailableHazards()).not.toContain("sticky-web");
+    expect(ruleset.getAvailableHazards()).not.toContain(HAZARDS.stickyWeb);
   });
 });
 
@@ -185,21 +242,17 @@ describe("Gen4Ruleset rollSleepTurns", () => {
     //   giving 2-5 inclusive; effective sleep turns are 1-4.
     // Triangulation: 1000 iterations across different seeds exhausts the rng distribution
     const ruleset = makeRuleset();
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
+    const observed = new Set<number>();
 
     for (let seed = 1; seed <= 1000; seed++) {
       const rng = new SeededRandom(seed);
       const turns = ruleset.rollSleepTurns(rng);
-      if (turns < min) min = turns;
-      if (turns > max) max = turns;
+      observed.add(turns);
       expect(turns).toBeGreaterThanOrEqual(1);
       expect(turns).toBeLessThanOrEqual(4);
     }
 
-    // With 1000 seeds, we expect to see both the minimum (1) and maximum (4)
-    expect(min).toBe(1);
-    expect(max).toBe(4);
+    expect([...observed].sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
   });
 });
 
@@ -213,24 +266,24 @@ describe("Gen4Ruleset applyStatusDamage — burn", () => {
     // Source: specs/battle/05-gen4.md — "Burn damage is 1/8 max HP"
     // Derivation: floor(160 / 8) = 20
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 160, status: "burn" });
-    expect(ruleset.applyStatusDamage(mon, "burn", STUB_STATE)).toBe(20);
+    const mon = createOnFieldPokemon({ maxHp: 160, status: STATUSES.burn });
+    expect(ruleset.applyStatusDamage(mon, STATUSES.burn, STUB_STATE)).toBe(20);
   });
 
   it("given a Pokemon with 200 maxHP and burn status, when applyStatusDamage, then returns 25", () => {
     // Source: pret/pokeplatinum — burn tick = floor(maxHP / 8)
     // Derivation: floor(200 / 8) = 25
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, status: "burn" });
-    expect(ruleset.applyStatusDamage(mon, "burn", STUB_STATE)).toBe(25);
+    const mon = createOnFieldPokemon({ maxHp: 200, status: STATUSES.burn });
+    expect(ruleset.applyStatusDamage(mon, STATUSES.burn, STUB_STATE)).toBe(25);
   });
 
   it("given a Pokemon with 1 maxHP and burn status, when applyStatusDamage, then returns 1 (minimum)", () => {
     // Source: pret/pokeplatinum — damage always >= 1
     // Derivation: floor(1 / 8) = 0 → clamped to 1
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 1, status: "burn" });
-    expect(ruleset.applyStatusDamage(mon, "burn", STUB_STATE)).toBe(1);
+    const mon = createOnFieldPokemon({ maxHp: 1, status: STATUSES.burn });
+    expect(ruleset.applyStatusDamage(mon, STATUSES.burn, STUB_STATE)).toBe(1);
   });
 });
 
@@ -243,16 +296,16 @@ describe("Gen4Ruleset applyStatusDamage — poison", () => {
     // Source: BaseRuleset — poison tick = floor(maxHP / 8) (same in Gen 3-6)
     // Derivation: floor(160 / 8) = 20
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 160, status: "poison" });
-    expect(ruleset.applyStatusDamage(mon, "poison", STUB_STATE)).toBe(20);
+    const mon = createOnFieldPokemon({ maxHp: 160, status: STATUSES.poison });
+    expect(ruleset.applyStatusDamage(mon, STATUSES.poison, STUB_STATE)).toBe(20);
   });
 
   it("given a Pokemon with 200 maxHP and poison status, when applyStatusDamage, then returns 25", () => {
     // Source: BaseRuleset — poison tick = floor(maxHP / 8)
     // Derivation: floor(200 / 8) = 25
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, status: "poison" });
-    expect(ruleset.applyStatusDamage(mon, "poison", STUB_STATE)).toBe(25);
+    const mon = createOnFieldPokemon({ maxHp: 200, status: STATUSES.poison });
+    expect(ruleset.applyStatusDamage(mon, STATUSES.poison, STUB_STATE)).toBe(25);
   });
 });
 
@@ -266,7 +319,7 @@ describe("Gen4Ruleset rollMultiHitCount", () => {
     // Distribution: 2 (37.5%), 3 (37.5%), 4 (12.5%), 5 (12.5%)
     // Source: packages/core/src/logic/gen12-shared.ts gen1to4MultiHitRoll
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
 
     for (let seed = 1; seed <= 1000; seed++) {
       const rng = new SeededRandom(seed);
@@ -279,7 +332,7 @@ describe("Gen4Ruleset rollMultiHitCount", () => {
   it("given rollMultiHitCount called 1000 times, then never returns 1 or 6+", () => {
     // Source: pret/pokeplatinum — gen1to4MultiHitRoll only produces 2, 3, 4, or 5
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
 
     for (let seed = 1; seed <= 1000; seed++) {
       const rng = new SeededRandom(seed);
@@ -300,7 +353,7 @@ describe("Gen4Ruleset calculateBindDamage", () => {
     // Source: pret/pokeplatinum — trap damage = maxHP / 16
     // Derivation: floor(200 / 16) = floor(12.5) = 12
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200 });
+    const mon = createOnFieldPokemon({ maxHp: 200 });
     expect(ruleset.calculateBindDamage(mon)).toBe(12);
   });
 
@@ -308,7 +361,7 @@ describe("Gen4Ruleset calculateBindDamage", () => {
     // Source: pret/pokeplatinum — trap damage = maxHP / 16
     // Derivation: floor(160 / 16) = 10
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 160 });
+    const mon = createOnFieldPokemon({ maxHp: 160 });
     expect(ruleset.calculateBindDamage(mon)).toBe(10);
   });
 
@@ -316,7 +369,7 @@ describe("Gen4Ruleset calculateBindDamage", () => {
     // Source: pret/pokeplatinum — damage always >= 1
     // Derivation: floor(1 / 16) = 0 → clamped to 1
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 1 });
+    const mon = createOnFieldPokemon({ maxHp: 1 });
     expect(ruleset.calculateBindDamage(mon)).toBe(1);
   });
 });
@@ -398,7 +451,7 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
     side0Pokemon: ActivePokemon,
     side1Pokemon: ActivePokemon,
   ): BattleState {
-    const makeSide = (index: 0 | 1, active: ActivePokemon) => ({
+    const createBattleSide = (index: 0 | 1, active: ActivePokemon) => ({
       index,
       trainer: null,
       team: [],
@@ -418,7 +471,7 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
       generation: 4,
       format: "singles",
       turnNumber: 1,
-      sides: [makeSide(0, side0Pokemon), makeSide(1, side1Pokemon)],
+      sides: [createBattleSide(0, side0Pokemon), createBattleSide(1, side1Pokemon)],
       weather: null,
       terrain: null,
       trickRoom: { active: false, turnsLeft: 0 },
@@ -445,11 +498,11 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Gen 7+ changed the penalty to 0.5x (BaseRuleset default)
     // Derivation: paralyzed effective speed = floor(100 * 0.25) = 25; healthy = 50
     // Result: healthy (50) > paralyzed (25), so healthy moves first
-    const paralyzedMon = makeActivePokemon({ speed: 100, status: "paralysis" });
-    const healthyMon = makeActivePokemon({ speed: 50, status: null });
+    const paralyzedMon = createOnFieldPokemon({ speed: 100, status: STATUSES.paralysis });
+    const healthyMon = createOnFieldPokemon({ speed: 50, status: null });
 
-    (paralyzedMon.pokemon.moves as unknown[]).push({ moveId: "tackle", pp: 35, maxPp: 35 });
-    (healthyMon.pokemon.moves as unknown[]).push({ moveId: "tackle", pp: 35, maxPp: 35 });
+    paralyzedMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
+    healthyMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
 
     const state = buildTwoSideState(paralyzedMon, healthyMon);
     const ruleset = makeRuleset();
@@ -471,11 +524,11 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Source: pret/pokeplatinum — paralyzed speed = floor(speed / 4) = floor(100 * 0.25) = 25
     // Derivation: paralyzed effective speed = 25; healthy slow mon = 20
     // Result: paralyzed (25) > slow healthy (20), so paralyzed moves first
-    const paralyzedMon = makeActivePokemon({ speed: 100, status: "paralysis" });
-    const slowMon = makeActivePokemon({ speed: 20, status: null });
+    const paralyzedMon = createOnFieldPokemon({ speed: 100, status: STATUSES.paralysis });
+    const slowMon = createOnFieldPokemon({ speed: 20, status: null });
 
-    (paralyzedMon.pokemon.moves as unknown[]).push({ moveId: "tackle", pp: 35, maxPp: 35 });
-    (slowMon.pokemon.moves as unknown[]).push({ moveId: "tackle", pp: 35, maxPp: 35 });
+    paralyzedMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
+    slowMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
 
     const state = buildTwoSideState(paralyzedMon, slowMon);
     const ruleset = makeRuleset();
@@ -506,8 +559,7 @@ describe("Gen4Ruleset calculateExpGain", () => {
     // Wild: t = 1.0; s (participants) = 1
     // Result: floor((62 * 50 / 7) / 1 * 1.0) = floor(442.857...) = 442
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const abra = dm.getSpeciesByName("abra");
+    const abra = DATA_MANAGER.getSpecies(SPECIES.abra);
     const result = ruleset.calculateExpGain({
       defeatedSpecies: abra,
       defeatedLevel: 50,
@@ -527,8 +579,7 @@ describe("Gen4Ruleset calculateExpGain", () => {
     // Source: pret/pokeplatinum — trainer battles give 1.5x EXP (same as Gen 3)
     // Classic formula with t=1.5 for trainer battles vs t=1.0 for wild
     const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const bulbasaur = dm.getSpeciesByName("bulbasaur");
+    const bulbasaur = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
 
     const wildResult = ruleset.calculateExpGain({
       defeatedSpecies: bulbasaur,
@@ -582,53 +633,17 @@ describe("Gen4Ruleset getEndOfTurnOrder", () => {
     // Source: Bulbapedia — Diamond/Pearl/Platinum EoT order: weather damage is first
     const ruleset = makeRuleset();
     const order = ruleset.getEndOfTurnOrder();
-    expect(order[0]).toBe("weather-damage");
+    expect(order[0]).toBe(END_OF_TURN.weatherDamage);
   });
 
-  it("given Gen4Ruleset, when getEndOfTurnOrder, then returns all 34 Gen 4 EoT effects in correct order", () => {
+  it("given Gen4Ruleset, when getEndOfTurnOrder, then returns all 35 Gen 4 EoT effects in correct order", () => {
     // Source: Showdown sim/battle.ts Gen 4 mod — full EoT ordering
     // Source: Bulbapedia — Diamond/Pearl/Platinum end-of-turn processing order
     // Key Gen 4 ordering: weather-damage first, toxic/flame orb after weather-countdown,
     // speed-boost and healing-items at end
     const ruleset = makeRuleset();
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toEqual([
-      "weather-damage",
-      "future-attack",
-      "wish",
-      "weather-healing",
-      "shed-skin",
-      "leech-seed",
-      "leftovers",
-      "black-sludge",
-      "aqua-ring",
-      "ingrain",
-      "poison-heal",
-      "status-damage",
-      "nightmare",
-      "curse",
-      "bad-dreams",
-      "bind",
-      "yawn-countdown",
-      "encore-countdown",
-      "taunt-countdown",
-      "disable-countdown",
-      "heal-block-countdown",
-      "embargo-countdown",
-      "magnet-rise-countdown",
-      "perish-song",
-      "screen-countdown",
-      "safeguard-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
-      "gravity-countdown",
-      "weather-countdown",
-      "toxic-orb-activation",
-      "flame-orb-activation",
-      "slow-start-countdown",
-      "speed-boost",
-      "healing-items",
-    ]);
+    expect(order).toEqual(EXPECTED_END_OF_TURN_ORDER);
   });
 
   it("given Gen4Ruleset, when getEndOfTurnOrder, then poison-heal comes before status-damage", () => {
@@ -636,8 +651,8 @@ describe("Gen4Ruleset getEndOfTurnOrder", () => {
     // Source: Bulbapedia — Poison Heal activates instead of taking poison damage
     const ruleset = makeRuleset();
     const order = ruleset.getEndOfTurnOrder();
-    const poisonHealIndex = order.indexOf("poison-heal");
-    const statusDamageIndex = order.indexOf("status-damage");
+    const poisonHealIndex = order.indexOf(ABILITIES.poisonHeal);
+    const statusDamageIndex = order.indexOf(END_OF_TURN.statusDamage);
     expect(poisonHealIndex).toBeLessThan(statusDamageIndex);
   });
 });
@@ -651,10 +666,10 @@ describe("Gen4Ruleset applyHeldItem", () => {
     // Source: Showdown Gen 4 mod — Leftovers heals 1/16 max HP at end of turn
     // This tests that the Gen4Ruleset.applyHeldItem method correctly delegates
     const ruleset = makeRuleset();
-    const pokemon = makePokemonInstance({ maxHp: 160, speed: 100 });
-    pokemon.heldItem = "leftovers";
+    const pokemon = createSyntheticPokemonInstance({ maxHp: 160, speed: 100 });
+    pokemon.heldItem = ITEMS.leftovers;
     pokemon.currentHp = 100;
-    const active = makeActivePokemon({ maxHp: 160, speed: 100 });
+    const active = createOnFieldPokemon({ maxHp: 160, speed: 100 });
     active.pokemon = pokemon;
 
     const ctx = {
@@ -672,7 +687,7 @@ describe("Gen4Ruleset applyHeldItem", () => {
       damage: undefined,
     } as unknown as import("@pokemon-lib-ts/battle").ItemContext;
 
-    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    const result = ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, ctx);
     // Leftovers heals 1/16 max HP = floor(160/16) = 10
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({ type: "heal", value: 10 });

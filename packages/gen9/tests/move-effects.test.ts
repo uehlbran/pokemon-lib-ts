@@ -4,8 +4,27 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveTarget, PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  MoveTarget,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   calculateRevivalHp,
@@ -13,8 +32,15 @@ import {
   calculateShedTailCost,
   canUseRevivalBlessing,
   canUseShedTail,
+  createGen9DataManager,
   executeGen9MoveEffect,
   findRevivalTarget,
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+  Gen9Ruleset,
   getLastRespectsPower,
   getRageFistPower,
   handleMakeItRain,
@@ -24,25 +50,40 @@ import {
   handleTeraBlast,
   handleTidyUp,
   shouldApplyStellarDebuff,
-} from "../src/Gen9MoveEffects";
-import { Gen9Ruleset } from "../src/Gen9Ruleset";
+} from "../src";
+
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS };
+const END_OF_TURN = CORE_END_OF_TURN_EFFECT_IDS;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };
+const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };
+const NATURES = {
+  ...Object.fromEntries(NEUTRAL_NATURES.map((nature) => [nature, nature])),
+  ...GEN9_NATURE_IDS,
+};
+const SPECIES = GEN9_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const SCREENS = CORE_SCREEN_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const GEN9_DATA = createGen9DataManager();
+const TACKLE_DATA = GEN9_DATA.getMove(MOVES.tackle);
+const POPULATION_BOMB_DATA = GEN9_DATA.getMove(MOVES.populationBomb);
 
 // ---------------------------------------------------------------------------
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createSyntheticActivePokemon(overrides: {
   ability?: string;
   heldItem?: string | null;
-  volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
+  volatileStatuses?: Map<VolatileStatus, { turnsLeft: number; data?: Record<string, unknown> }>;
   consecutiveProtects?: number;
   turnsOnField?: number;
   nickname?: string;
   maxHp?: number;
   currentHp?: number;
   moves?: Array<{ moveId: string }>;
-  types?: readonly string[];
-  status?: string | null;
+  types?: readonly PokemonType[];
+  status?: PrimaryStatus | null;
   speciesId?: number;
   substituteHp?: number;
   isTerastallized?: boolean;
@@ -64,15 +105,15 @@ function makeActivePokemon(overrides: {
       currentHp: overrides.currentHp ?? maxHp,
       status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
-      moves: overrides.moves ?? [{ moveId: "tackle" }],
+      moves: overrides.moves ?? [{ moveId: MOVES.tackle }],
       nickname: overrides.nickname ?? null,
-      speciesId: overrides.speciesId ?? 25,
+      speciesId: overrides.speciesId ?? SPECIES.pikachu,
       timesAttacked: overrides.timesAttacked ?? 0,
       teraType: overrides.teraType ?? null,
     },
-    ability: overrides.ability ?? "blaze",
+    ability: overrides.ability ?? ABILITIES.blaze,
     volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: (overrides.types ?? ["normal"]) as readonly string[],
+    types: overrides.types ?? [TYPES.normal],
     consecutiveProtects: overrides.consecutiveProtects ?? 0,
     turnsOnField: overrides.turnsOnField ?? 0,
     substituteHp: overrides.substituteHp ?? 0,
@@ -104,67 +145,55 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    displayName: id,
-    type: "normal",
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 10,
-    priority: 0,
-    target: "self" as MoveTarget,
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 9,
-    ...overrides,
-  } as MoveData;
+function createSyntheticMoveFrom(
+  baseOrMoveId: MoveData | string,
+  overrides?: Partial<MoveData>,
+): MoveData {
+  const base = typeof baseOrMoveId === "string" ? GEN9_DATA.getMove(baseOrMoveId) : baseOrMoveId;
+  const move = { ...base, flags: { ...base.flags } } as MoveData;
+  move.id = overrides?.id ?? base.id;
+  move.displayName = overrides?.displayName ?? base.displayName;
+  move.type = overrides?.type ?? move.type;
+  move.category = overrides?.category ?? move.category;
+  move.power = overrides?.power ?? move.power;
+  move.accuracy = overrides?.accuracy ?? move.accuracy;
+  move.pp = overrides?.pp ?? move.pp;
+  move.priority = overrides?.priority ?? move.priority;
+  move.target = (overrides?.target ?? move.target) as MoveTarget;
+  move.effect = overrides?.effect ?? move.effect ?? null;
+  move.description = overrides?.description ?? move.description;
+  move.generation = overrides?.generation ?? move.generation;
+  move.flags = {
+    ...move.flags,
+    ...overrides?.flags,
+  };
+  return move;
 }
 
-function makePokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInstance {
+function createSyntheticPokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInstance {
   return {
     uid: "test-uid",
-    speciesId: 25,
+    speciesId: SPECIES.pikachu,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "adamant",
+    nature: NATURES.adamant,
     ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
-    moves: [{ moveId: "tackle", currentPp: 35, maxPp: 35 }],
-    ability: "static",
-    abilitySlot: "normal1" as const,
+    moves: [{ moveId: MOVES.tackle, currentPp: TACKLE_DATA.pp, maxPp: TACKLE_DATA.pp }],
+    ability: ABILITIES.static,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 70,
-    gender: "male" as any,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "pallet-town",
     metLevel: 5,
     originalTrainer: "Ash",
     originalTrainerId: 12345,
-    pokeball: "poke-ball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: 200,
       attack: 100,
@@ -177,12 +206,12 @@ function makePokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInsta
   } as PokemonInstance;
 }
 
-function makeSide(overrides?: Partial<BattleSide>): BattleSide {
+function createBattleSide(overrides?: Partial<BattleSide>): BattleSide {
   return {
     index: 0,
     trainer: null,
-    team: [makePokemonInstance()],
-    active: [makeActivePokemon({})],
+    team: [createSyntheticPokemonInstance()],
+    active: [createSyntheticActivePokemon({})],
     hazards: [],
     screens: [],
     tailwind: { active: false, turnsLeft: 0 },
@@ -195,13 +224,13 @@ function makeSide(overrides?: Partial<BattleSide>): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeState(overrides?: {
+function createBattleState(overrides?: {
   sides?: BattleSide[];
   weather?: BattleState["weather"];
 }): BattleState {
   const sides = overrides?.sides ?? [
-    makeSide({ index: 0 as const }),
-    makeSide({ index: 1 as const }),
+    createBattleSide({ index: 0 as const }),
+    createBattleSide({ index: 1 as const }),
   ];
   return {
     trickRoom: { active: false, turnsLeft: 0 },
@@ -215,40 +244,40 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeContext(
+function createMoveEffectContext(
   moveId: string,
   options?: {
     state?: BattleState;
-    attacker?: Parameters<typeof makeActivePokemon>[0];
-    defender?: Parameters<typeof makeActivePokemon>[0];
+    attacker?: Parameters<typeof createSyntheticActivePokemon>[0];
+    defender?: Parameters<typeof createSyntheticActivePokemon>[0];
     moveOverrides?: Partial<MoveData>;
     damage?: number;
     sides?: BattleSide[];
   },
 ): MoveEffectContext {
-  const attacker = makeActivePokemon(options?.attacker ?? {});
-  const defender = makeActivePokemon(options?.defender ?? {});
+  const attacker = createSyntheticActivePokemon(options?.attacker ?? {});
+  const defender = createSyntheticActivePokemon(options?.defender ?? {});
 
   // If sides provided, use them. Otherwise, create default sides with attacker/defender.
   const sides = options?.sides ?? [
     {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon],
     } as unknown as BattleSide,
     {
-      ...makeSide({ index: 1 as const }),
+      ...createBattleSide({ index: 1 as const }),
       active: [defender],
       team: [defender.pokemon],
     } as unknown as BattleSide,
   ];
 
-  const state = options?.state ?? makeState({ sides });
+  const state = options?.state ?? createBattleState({ sides });
 
   return {
     attacker,
     defender,
-    move: makeMove(moveId, options?.moveOverrides),
+    move: createSyntheticMoveFrom(GEN9_DATA.getMove(moveId), options?.moveOverrides),
     damage: options?.damage ?? 0,
     state,
     rng: new SeededRandom(42),
@@ -264,7 +293,7 @@ describe("Gen9 Population Bomb", () => {
     // Source: Showdown data/moves.ts:14112-14126
     // Population Bomb's multi-hit is handled by the engine via multihit:10.
     // The move effect itself has no secondary effects.
-    const ctx = makeContext("population-bomb");
+    const ctx = createMoveEffectContext(MOVES.populationBomb);
     const result = executeGen9MoveEffect(ctx);
     expect(result).not.toBeNull();
     expect(result!.statChanges).toEqual([]);
@@ -276,14 +305,10 @@ describe("Gen9 Population Bomb", () => {
     // Source: Showdown data/moves.ts:14121-14122
     // Population Bomb: multihit: 10, multiaccuracy: true (each hit checks 90% accuracy)
     // Verify that the gen9 moves data file encodes these properties correctly.
-    type MoveEntry = { id: string; accuracy: number; effect?: { min?: number; max?: number } };
-    const movesData: MoveEntry[] = require("../data/moves.json");
-    const populationBomb = movesData.find((m) => m.id === "population-bomb");
-    expect(populationBomb).toBeDefined();
-    expect(populationBomb!.accuracy).toBe(90);
+    expect(POPULATION_BOMB_DATA.accuracy).toBe(90);
     // multihit is encoded as effect.min and effect.max
-    expect(populationBomb!.effect?.min).toBe(10);
-    expect(populationBomb!.effect?.max).toBe(10);
+    expect(POPULATION_BOMB_DATA.effect?.min).toBe(10);
+    expect(POPULATION_BOMB_DATA.effect?.max).toBe(10);
   });
 });
 
@@ -326,7 +351,7 @@ describe("Gen9 Rage Fist -- getRageFistPower", () => {
 describe("Gen9 Rage Fist -- move effect", () => {
   it("given Rage Fist used, when executeGen9MoveEffect is called, then returns base result (power is in damage calc)", () => {
     // Source: Showdown data/moves.ts:15122-15137 -- no secondary effects
-    const ctx = makeContext("rage-fist");
+    const ctx = createMoveEffectContext(MOVES.rageFist);
     const result = executeGen9MoveEffect(ctx);
     expect(result).not.toBeNull();
     expect(result!.statChanges).toEqual([]);
@@ -341,9 +366,9 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
   it("given a Pokemon with 0 timesAttacked, when hit by a move, then timesAttacked increments to 1", () => {
     // Source: Showdown sim/pokemon.ts -- timesAttacked incremented in hitBy()
     const ruleset = new Gen9Ruleset();
-    const defender = makeActivePokemon({ timesAttacked: 0 });
-    const move = makeMove("tackle", { category: "physical", power: 40 });
-    const state = makeState();
+    const defender = createSyntheticActivePokemon({ timesAttacked: 0 });
+    const move = createSyntheticMoveFrom(MOVES.tackle);
+    const state = createBattleState();
 
     ruleset.onDamageReceived(defender, 50, move, state);
 
@@ -353,9 +378,9 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
   it("given a Pokemon with 3 timesAttacked, when hit again, then timesAttacked increments to 4", () => {
     // Source: Showdown sim/pokemon.ts -- timesAttacked tracks cumulative hits
     const ruleset = new Gen9Ruleset();
-    const defender = makeActivePokemon({ timesAttacked: 3 });
-    const move = makeMove("tackle", { category: "physical", power: 40 });
-    const state = makeState();
+    const defender = createSyntheticActivePokemon({ timesAttacked: 3 });
+    const move = createSyntheticMoveFrom(MOVES.tackle);
+    const state = createBattleState();
 
     ruleset.onDamageReceived(defender, 50, move, state);
 
@@ -367,9 +392,9 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
     // Multi-hit moves (e.g., Population Bomb) call onDamageReceived once per hit,
     // but timesAttacked must only increment once per move use.
     const ruleset = new Gen9Ruleset();
-    const defender = makeActivePokemon({ timesAttacked: 0 });
-    const move = makeMove("population-bomb", { category: "physical", power: 20 });
-    const state = { ...makeState(), turnNumber: 2 } as unknown as BattleState;
+    const defender = createSyntheticActivePokemon({ timesAttacked: 0 });
+    const move = createSyntheticMoveFrom(MOVES.populationBomb);
+    const state = { ...createBattleState(), turnNumber: 2 } as unknown as BattleState;
 
     // Simulate two hits of the same multi-hit move in the same turn
     ruleset.onDamageReceived(defender, 20, move, state);
@@ -389,7 +414,7 @@ describe("Gen9 Rage Fist counter -- onDamageReceived", () => {
 describe("Gen9 Make It Rain", () => {
   it("given Make It Rain hits, when move effect resolves, then attacker SpAttack drops by 1", () => {
     // Source: Showdown data/moves.ts:11348-11352 -- self: { boosts: { spa: -1 } }
-    const ctx = makeContext("make-it-rain", { damage: 100 });
+    const ctx = createMoveEffectContext(MOVES.makeItRain, { damage: 100 });
     const result = handleMakeItRain(ctx);
 
     expect(result.statChanges).toEqual([{ target: "attacker", stat: "spAttack", stages: -1 }]);
@@ -397,7 +422,7 @@ describe("Gen9 Make It Rain", () => {
 
   it("given Make It Rain, when dispatched via executeGen9MoveEffect, then returns result with SpA drop", () => {
     // Source: Showdown data/moves.ts:11348-11352 -- self: { boosts: { spa: -1 } }
-    const ctx = makeContext("make-it-rain", { damage: 100 });
+    const ctx = createMoveEffectContext(MOVES.makeItRain, { damage: 100 });
     const result = executeGen9MoveEffect(ctx);
 
     expect(result).not.toBeNull();
@@ -411,7 +436,7 @@ describe("Gen9 Make It Rain", () => {
 
   it("given Make It Rain, when move effect resolves, then messages include SpA fell", () => {
     // Source: Showdown -- standard stat drop message
-    const ctx = makeContext("make-it-rain", {
+    const ctx = createMoveEffectContext(MOVES.makeItRain, {
       attacker: { nickname: "Gholdengo" },
       damage: 100,
     });
@@ -429,16 +454,22 @@ describe("Gen9 Revival Blessing -- canUseRevivalBlessing", () => {
   it("given a side with one fainted member, when checking canUseRevivalBlessing, then returns true", () => {
     // Source: Showdown data/moves.ts:15682-15685
     // onTryHit: return false if no fainted allies
-    const side = makeSide({
-      team: [makePokemonInstance({ currentHp: 200 }), makePokemonInstance({ currentHp: 0 })],
+    const side = createBattleSide({
+      team: [
+        createSyntheticPokemonInstance({ currentHp: 200 }),
+        createSyntheticPokemonInstance({ currentHp: 0 }),
+      ],
     });
     expect(canUseRevivalBlessing(side)).toBe(true);
   });
 
   it("given a side with no fainted members, when checking canUseRevivalBlessing, then returns false", () => {
     // Source: Showdown data/moves.ts:15682-15685
-    const side = makeSide({
-      team: [makePokemonInstance({ currentHp: 200 }), makePokemonInstance({ currentHp: 150 })],
+    const side = createBattleSide({
+      team: [
+        createSyntheticPokemonInstance({ currentHp: 200 }),
+        createSyntheticPokemonInstance({ currentHp: 150 }),
+      ],
     });
     expect(canUseRevivalBlessing(side)).toBe(false);
   });
@@ -447,11 +478,11 @@ describe("Gen9 Revival Blessing -- canUseRevivalBlessing", () => {
 describe("Gen9 Revival Blessing -- findRevivalTarget", () => {
   it("given two fainted members, when finding target, then returns index of first fainted", () => {
     // Source: Showdown -- in simulation, we revive the first fainted member
-    const side = makeSide({
+    const side = createBattleSide({
       team: [
-        makePokemonInstance({ currentHp: 200 }),
-        makePokemonInstance({ currentHp: 0 }),
-        makePokemonInstance({ currentHp: 0 }),
+        createSyntheticPokemonInstance({ currentHp: 200 }),
+        createSyntheticPokemonInstance({ currentHp: 0 }),
+        createSyntheticPokemonInstance({ currentHp: 0 }),
       ],
     });
     expect(findRevivalTarget(side)).toBe(1);
@@ -461,8 +492,8 @@ describe("Gen9 Revival Blessing -- findRevivalTarget", () => {
     // Source: Array.prototype.findIndex returns -1 when no element satisfies the predicate.
     // findRevivalTarget calls side.team.findIndex(p => p.currentHp <= 0), so when all
     // team members are alive (currentHp > 0), the result is -1.
-    const side = makeSide({
-      team: [makePokemonInstance({ currentHp: 100 })],
+    const side = createBattleSide({
+      team: [createSyntheticPokemonInstance({ currentHp: 100 })],
     });
     expect(findRevivalTarget(side)).toBe(-1);
   });
@@ -491,7 +522,7 @@ describe("Gen9 Revival Blessing -- handleRevivalBlessing", () => {
   it("given a fainted ally at 400 max HP, when Revival Blessing is used, then ally is revived at 200 HP", () => {
     // Source: Showdown data/moves.ts:15672-15691
     // Source: Bulbapedia -- "restores it to half of its maximum HP"
-    const faintedPokemon = makePokemonInstance({
+    const faintedPokemon = createSyntheticPokemonInstance({
       currentHp: 0,
       calculatedStats: {
         hp: 400,
@@ -502,21 +533,21 @@ describe("Gen9 Revival Blessing -- handleRevivalBlessing", () => {
         speed: 100,
       },
     });
-    const attacker = makeActivePokemon({});
+    const attacker = createSyntheticActivePokemon({});
     const side0 = {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon, faintedPokemon],
     } as unknown as BattleSide;
-    const side1 = makeSide({ index: 1 as const });
+    const side1 = createBattleSide({ index: 1 as const });
 
-    const ctx = makeContext("revival-blessing", {
+    const ctx = createMoveEffectContext(MOVES.revivalBlessing, {
       sides: [side0, side1],
       attacker: {},
     });
     // Override the context's state to have our custom sides
     Object.assign(ctx, {
-      state: makeState({ sides: [side0, side1] }),
+      state: createBattleState({ sides: [side0, side1] }),
       attacker,
     });
 
@@ -524,25 +555,27 @@ describe("Gen9 Revival Blessing -- handleRevivalBlessing", () => {
 
     expect(faintedPokemon.currentHp).toBe(200);
     expect(faintedPokemon.status).toBeNull();
-    expect(result.messages.length).toBeGreaterThan(0);
+    expect(result.messages).toEqual([
+      `${faintedPokemon.nickname ?? "The Pokemon"} was revived and restored to health!`,
+    ]);
   });
 
   it("given no fainted allies, when Revival Blessing is used, then move fails", () => {
     // Source: Showdown data/moves.ts:15682-15685 -- move fails if no fainted allies
-    const attacker = makeActivePokemon({});
-    const allyAlive = makePokemonInstance({ currentHp: 100 });
+    const attacker = createSyntheticActivePokemon({});
+    const allyAlive = createSyntheticPokemonInstance({ currentHp: 100 });
     const side0 = {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon, allyAlive],
     } as unknown as BattleSide;
-    const side1 = makeSide({ index: 1 as const });
+    const side1 = createBattleSide({ index: 1 as const });
 
-    const ctx = makeContext("revival-blessing", {
+    const ctx = createMoveEffectContext(MOVES.revivalBlessing, {
       sides: [side0, side1],
     });
     Object.assign(ctx, {
-      state: makeState({ sides: [side0, side1] }),
+      state: createBattleState({ sides: [side0, side1] }),
       attacker,
     });
 
@@ -632,10 +665,10 @@ describe("Gen9 Shed Tail -- calculateShedTailCost", () => {
 describe("Gen9 Shed Tail -- canUseShedTail", () => {
   it("given Pokemon at 75% HP with no substitute and allies available, then canUseShedTail returns true", () => {
     // Source: Showdown data/moves.ts:16769-16781
-    const attacker = makeActivePokemon({ maxHp: 400, currentHp: 300, teamSlot: 0 });
-    const allyPokemon = makePokemonInstance({ currentHp: 200 });
+    const attacker = createSyntheticActivePokemon({ maxHp: 400, currentHp: 300, teamSlot: 0 });
+    const allyPokemon = createSyntheticPokemonInstance({ currentHp: 200 });
     const side = {
-      ...makeSide(),
+      ...createBattleSide(),
       active: [attacker],
       team: [attacker.pokemon, allyPokemon],
     } as unknown as BattleSide;
@@ -647,10 +680,10 @@ describe("Gen9 Shed Tail -- canUseShedTail", () => {
     // Source: Showdown data/moves.ts:16778
     // if (source.hp <= Math.ceil(source.maxhp / 2)) fail
     // HP=200, maxHP=400, cost=ceil(400/2)=200 -> 200 <= 200 -> fail
-    const attacker = makeActivePokemon({ maxHp: 400, currentHp: 200, teamSlot: 0 });
-    const allyPokemon = makePokemonInstance({ currentHp: 200 });
+    const attacker = createSyntheticActivePokemon({ maxHp: 400, currentHp: 200, teamSlot: 0 });
+    const allyPokemon = createSyntheticPokemonInstance({ currentHp: 200 });
     const side = {
-      ...makeSide(),
+      ...createBattleSide(),
       active: [attacker],
       team: [attacker.pokemon, allyPokemon],
     } as unknown as BattleSide;
@@ -661,10 +694,10 @@ describe("Gen9 Shed Tail -- canUseShedTail", () => {
   it("given Pokemon at 40% HP, then canUseShedTail returns false (not enough HP)", () => {
     // Source: Showdown data/moves.ts:16778
     // HP=160, maxHP=400, cost=200 -> 160 <= 200 -> fail
-    const attacker = makeActivePokemon({ maxHp: 400, currentHp: 160, teamSlot: 0 });
-    const allyPokemon = makePokemonInstance({ currentHp: 200 });
+    const attacker = createSyntheticActivePokemon({ maxHp: 400, currentHp: 160, teamSlot: 0 });
+    const allyPokemon = createSyntheticPokemonInstance({ currentHp: 200 });
     const side = {
-      ...makeSide(),
+      ...createBattleSide(),
       active: [attacker],
       team: [attacker.pokemon, allyPokemon],
     } as unknown as BattleSide;
@@ -675,15 +708,15 @@ describe("Gen9 Shed Tail -- canUseShedTail", () => {
   it("given Pokemon with existing Substitute, then canUseShedTail returns false", () => {
     // Source: Showdown data/moves.ts:16774
     // if (source.volatiles['substitute']) fail
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       maxHp: 400,
       currentHp: 300,
       substituteHp: 100,
       teamSlot: 0,
     });
-    const allyPokemon = makePokemonInstance({ currentHp: 200 });
+    const allyPokemon = createSyntheticPokemonInstance({ currentHp: 200 });
     const side = {
-      ...makeSide(),
+      ...createBattleSide(),
       active: [attacker],
       team: [attacker.pokemon, allyPokemon],
     } as unknown as BattleSide;
@@ -695,9 +728,9 @@ describe("Gen9 Shed Tail -- canUseShedTail", () => {
   it("given no allies available to switch to, then canUseShedTail returns false", () => {
     // Source: Showdown data/moves.ts:16770
     // if (!this.canSwitch(source.side)) fail
-    const attacker = makeActivePokemon({ maxHp: 400, currentHp: 300, teamSlot: 0 });
+    const attacker = createSyntheticActivePokemon({ maxHp: 400, currentHp: 300, teamSlot: 0 });
     const side = {
-      ...makeSide(),
+      ...createBattleSide(),
       active: [attacker],
       team: [attacker.pokemon], // Only the active Pokemon, no bench
     } as unknown as BattleSide;
@@ -711,18 +744,18 @@ describe("Gen9 Shed Tail -- handleShedTail", () => {
   it("given valid conditions, when Shed Tail is used, then user loses HP and switchOut is true", () => {
     // Source: Showdown data/moves.ts:16784 -- this.directDamage(Math.ceil(target.maxhp / 2))
     // Source: Showdown data/moves.ts:16791 -- selfSwitch: 'shedtail'
-    const attacker = makeActivePokemon({ maxHp: 400, currentHp: 300, teamSlot: 0 });
-    const allyPokemon = makePokemonInstance({ currentHp: 200 });
+    const attacker = createSyntheticActivePokemon({ maxHp: 400, currentHp: 300, teamSlot: 0 });
+    const allyPokemon = createSyntheticPokemonInstance({ currentHp: 200 });
     const side0 = {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon, allyPokemon],
     } as unknown as BattleSide;
-    const side1 = makeSide({ index: 1 as const });
+    const side1 = createBattleSide({ index: 1 as const });
 
-    const ctx = makeContext("shed-tail", { sides: [side0, side1] });
+    const ctx = createMoveEffectContext(MOVES.shedTail, { sides: [side0, side1] });
     Object.assign(ctx, {
-      state: makeState({ sides: [side0, side1] }),
+      state: createBattleState({ sides: [side0, side1] }),
       attacker,
     });
 
@@ -733,26 +766,26 @@ describe("Gen9 Shed Tail -- handleShedTail", () => {
     // Result should indicate switch-out
     expect(result.switchOut).toBe(true);
     // Should have a shed-tail-sub volatile for the incoming Pokemon
-    expect(attacker.volatileStatuses.has("shed-tail-sub" as any)).toBe(true);
-    const subData = attacker.volatileStatuses.get("shed-tail-sub" as any);
+    expect(attacker.volatileStatuses.has(VOLATILES.shedTailSub as any)).toBe(true);
+    const subData = attacker.volatileStatuses.get(VOLATILES.shedTailSub as any);
     // Sub HP should be floor(400/4) = 100
     expect(subData?.data?.substituteHp).toBe(100);
   });
 
   it("given insufficient HP, when Shed Tail is used, then move fails", () => {
     // Source: Showdown data/moves.ts:16778 -- fail if HP <= ceil(maxhp/2)
-    const attacker = makeActivePokemon({ maxHp: 400, currentHp: 160, teamSlot: 0 });
-    const allyPokemon = makePokemonInstance({ currentHp: 200 });
+    const attacker = createSyntheticActivePokemon({ maxHp: 400, currentHp: 160, teamSlot: 0 });
+    const allyPokemon = createSyntheticPokemonInstance({ currentHp: 200 });
     const side0 = {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon, allyPokemon],
     } as unknown as BattleSide;
-    const side1 = makeSide({ index: 1 as const });
+    const side1 = createBattleSide({ index: 1 as const });
 
-    const ctx = makeContext("shed-tail", { sides: [side0, side1] });
+    const ctx = createMoveEffectContext(MOVES.shedTail, { sides: [side0, side1] });
     Object.assign(ctx, {
-      state: makeState({ sides: [side0, side1] }),
+      state: createBattleState({ sides: [side0, side1] }),
       attacker,
     });
 
@@ -773,11 +806,11 @@ describe("Gen9 Tidy Up", () => {
   it("given hazards on both sides and substitutes, when Tidy Up is used, then all cleared and user gets +1 Atk/Spe", () => {
     // Source: Showdown data/moves.ts:20360-20376
     // Removes all substitutes, all hazards from both sides, +1 Atk and +1 Spe
-    const attacker = makeActivePokemon({ substituteHp: 0 });
-    const defender = makeActivePokemon({ substituteHp: 50 });
+    const attacker = createSyntheticActivePokemon({ substituteHp: 0 });
+    const defender = createSyntheticActivePokemon({ substituteHp: 50 });
 
     const side0 = {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon],
       hazards: [
@@ -786,15 +819,15 @@ describe("Gen9 Tidy Up", () => {
       ],
     } as unknown as BattleSide;
     const side1 = {
-      ...makeSide({ index: 1 as const }),
+      ...createBattleSide({ index: 1 as const }),
       active: [defender],
       team: [defender.pokemon],
       hazards: [{ type: "toxic-spikes", layers: 1 }],
     } as unknown as BattleSide;
 
-    const ctx = makeContext("tidy-up", { sides: [side0, side1] });
+    const ctx = createMoveEffectContext(MOVES.tidyUp, { sides: [side0, side1] });
     Object.assign(ctx, {
-      state: makeState({ sides: [side0, side1] }),
+      state: createBattleState({ sides: [side0, side1] }),
       attacker,
       defender,
     });
@@ -816,23 +849,23 @@ describe("Gen9 Tidy Up", () => {
   it("given screens active (Reflect, Light Screen), when Tidy Up is used, then screens are NOT removed", () => {
     // Source: Showdown data/moves.ts:20365
     // removeAll only includes hazard types, NOT screens
-    const attacker = makeActivePokemon({});
+    const attacker = createSyntheticActivePokemon({});
 
     const side0 = {
-      ...makeSide({ index: 0 as const }),
+      ...createBattleSide({ index: 0 as const }),
       active: [attacker],
       team: [attacker.pokemon],
       screens: [
-        { type: "reflect", turnsLeft: 3 },
-        { type: "light-screen", turnsLeft: 2 },
+        { type: SCREENS.reflect, turnsLeft: 3 },
+        { type: SCREENS.lightScreen, turnsLeft: 2 },
       ],
       hazards: [],
     } as unknown as BattleSide;
-    const side1 = makeSide({ index: 1 as const });
+    const side1 = createBattleSide({ index: 1 as const });
 
-    const ctx = makeContext("tidy-up", { sides: [side0, side1] });
+    const ctx = createMoveEffectContext(MOVES.tidyUp, { sides: [side0, side1] });
     Object.assign(ctx, {
-      state: makeState({ sides: [side0, side1] }),
+      state: createBattleState({ sides: [side0, side1] }),
       attacker,
     });
 
@@ -840,14 +873,14 @@ describe("Gen9 Tidy Up", () => {
 
     // Screens should be unchanged
     expect(side0.screens).toHaveLength(2);
-    expect(side0.screens[0].type).toBe("reflect");
-    expect(side0.screens[1].type).toBe("light-screen");
+    expect(side0.screens[0].type).toBe(SCREENS.reflect);
+    expect(side0.screens[1].type).toBe(SCREENS.lightScreen);
   });
 
   it("given no hazards and no substitutes, when Tidy Up is used, then still gets +1 Atk/Spe", () => {
     // Source: Showdown data/moves.ts:20376
     // return !!this.boost({ atk: 1, spe: 1 }) -- boosts happen regardless
-    const ctx = makeContext("tidy-up");
+    const ctx = createMoveEffectContext(MOVES.tidyUp);
     const result = handleTidyUp(ctx);
 
     expect(result.statChanges).toEqual([
@@ -866,40 +899,40 @@ describe("Gen9 Salt Cure -- calculateSaltCureDamage", () => {
     // Source: Showdown data/moves.ts:16226
     // pokemon.baseMaxhp / (pokemon.hasType(['Water', 'Steel']) ? 4 : 8)
     // 400 / 4 = 100
-    expect(calculateSaltCureDamage(400, ["water"])).toBe(100);
+    expect(calculateSaltCureDamage(400, [TYPES.water])).toBe(100);
   });
 
   it("given a Steel-type Pokemon with 400 max HP, when calculating Salt Cure damage, then returns 100 (1/4)", () => {
     // Source: Showdown data/moves.ts:16226 -- Steel is also affected at 1/4
     // 400 / 4 = 100
-    expect(calculateSaltCureDamage(400, ["steel"])).toBe(100);
+    expect(calculateSaltCureDamage(400, [TYPES.steel])).toBe(100);
   });
 
   it("given a Water/Steel dual-type Pokemon with 400 max HP, when calculating Salt Cure damage, then returns 100 (1/4)", () => {
     // Source: Showdown data/moves.ts:16226 -- hasType checks either type
-    expect(calculateSaltCureDamage(400, ["water", "steel"])).toBe(100);
+    expect(calculateSaltCureDamage(400, [TYPES.water, TYPES.steel])).toBe(100);
   });
 
   it("given a Normal-type Pokemon with 400 max HP, when calculating Salt Cure damage, then returns 50 (1/8)", () => {
     // Source: Showdown data/moves.ts:16226 -- non-Water/Steel gets 1/8
     // 400 / 8 = 50
-    expect(calculateSaltCureDamage(400, ["normal"])).toBe(50);
+    expect(calculateSaltCureDamage(400, [TYPES.normal])).toBe(50);
   });
 
   it("given a Fire-type Pokemon with 400 max HP, when calculating Salt Cure damage, then returns 50 (1/8)", () => {
     // Source: Showdown data/moves.ts:16226 -- non-Water/Steel gets 1/8
-    expect(calculateSaltCureDamage(400, ["fire"])).toBe(50);
+    expect(calculateSaltCureDamage(400, [TYPES.fire])).toBe(50);
   });
 
   it("given a Pokemon with 7 max HP, when calculating Salt Cure damage, then returns 1 (minimum)", () => {
     // Source: Showdown -- damage function enforces minimum 1
     // floor(7/8) = 0, max(1, 0) = 1
-    expect(calculateSaltCureDamage(7, ["normal"])).toBe(1);
+    expect(calculateSaltCureDamage(7, [TYPES.normal])).toBe(1);
   });
 
   it("given a Water-type Pokemon with 3 max HP, when calculating Salt Cure damage, then returns 1 (minimum)", () => {
     // floor(3/4) = 0, max(1, 0) = 1
-    expect(calculateSaltCureDamage(3, ["water"])).toBe(1);
+    expect(calculateSaltCureDamage(3, [TYPES.water])).toBe(1);
   });
 });
 
@@ -907,18 +940,18 @@ describe("Gen9 Salt Cure -- handleSaltCure", () => {
   it("given target without Salt Cure, when Salt Cure hits, then applies salt-cure volatile", () => {
     // Source: Showdown data/moves.ts:16232-16234
     // secondary: { chance: 100, volatileStatus: 'saltcure' }
-    const ctx = makeContext("salt-cure", { damage: 30 });
+    const ctx = createMoveEffectContext(MOVES.saltCure, { damage: 30 });
     const result = handleSaltCure(ctx);
 
-    expect(result.volatileInflicted).toBe("salt-cure");
+    expect(result.volatileInflicted).toBe(VOLATILES.saltCure);
     expect(result.volatileData?.turnsLeft).toBe(-1); // No set expiry
   });
 
   it("given target already has Salt Cure, when Salt Cure hits again, then no duplicate volatile applied", () => {
     // Source: Showdown -- noCopy: true, cannot stack
-    const ctx = makeContext("salt-cure", {
+    const ctx = createMoveEffectContext(MOVES.saltCure, {
       defender: {
-        volatileStatuses: new Map([["salt-cure", { turnsLeft: -1 }]]),
+        volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]),
       },
       damage: 30,
     });
@@ -929,14 +962,14 @@ describe("Gen9 Salt Cure -- handleSaltCure", () => {
 });
 
 describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
-  it("given a Normal-type with salt-cure and 400 HP, when processing salt cure EoT, then takes 50 damage", () => {
+  it("given a Normal-type with the 400 HP fixture and salt cure, when processing salt cure EoT, then takes 50 damage", () => {
     // Source: Showdown data/moves.ts:16226 -- 400/8 = 50
     const ruleset = new Gen9Ruleset();
-    const active = makeActivePokemon({
+    const active = createSyntheticActivePokemon({
       maxHp: 400,
       currentHp: 400,
-      types: ["normal"],
-      volatileStatuses: new Map([["salt-cure", { turnsLeft: -1 }]]) as any,
+      types: [TYPES.normal],
+      volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]) as any,
     });
 
     const damage = ruleset.processSaltCureDamage(active);
@@ -947,11 +980,11 @@ describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
   it("given a Water-type with salt-cure and 400 HP, when processing salt cure EoT, then takes 100 damage", () => {
     // Source: Showdown data/moves.ts:16226 -- 400/4 = 100
     const ruleset = new Gen9Ruleset();
-    const active = makeActivePokemon({
+    const active = createSyntheticActivePokemon({
       maxHp: 400,
       currentHp: 400,
-      types: ["water"],
-      volatileStatuses: new Map([["salt-cure", { turnsLeft: -1 }]]) as any,
+      types: [TYPES.water],
+      volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]) as any,
     });
 
     const damage = ruleset.processSaltCureDamage(active);
@@ -961,22 +994,25 @@ describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
 
   it("given a Pokemon without salt-cure, when processing salt cure EoT, then takes 0 damage", () => {
     const ruleset = new Gen9Ruleset();
-    const active = makeActivePokemon({
-      maxHp: 400,
-      currentHp: 400,
+    // Source: this is a symmetric no-op case, so the max HP fixture stays at 400.
+    const MAX_HP = 400;
+    const active = createSyntheticActivePokemon({
+      maxHp: MAX_HP,
+      currentHp: MAX_HP,
     });
 
     const damage = ruleset.processSaltCureDamage(active);
     expect(damage).toBe(0);
-    expect(active.pokemon.currentHp).toBe(400);
+    // No Salt Cure volatile means no residual damage; HP remains unchanged.
+    expect(active.pokemon.currentHp).toBe(active.pokemon.calculatedStats.hp);
   });
 
   it("given a fainted Pokemon with salt-cure, when processing salt cure EoT, then takes 0 damage", () => {
     const ruleset = new Gen9Ruleset();
-    const active = makeActivePokemon({
+    const active = createSyntheticActivePokemon({
       maxHp: 400,
       currentHp: 0,
-      volatileStatuses: new Map([["salt-cure", { turnsLeft: -1 }]]) as any,
+      volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]) as any,
     });
 
     const damage = ruleset.processSaltCureDamage(active);
@@ -992,7 +1028,7 @@ describe("Gen9 Tera Blast -- shouldApplyStellarDebuff", () => {
   it("given Stellar-Tera Pokemon, when checking shouldApplyStellarDebuff, then returns true", () => {
     // Source: Showdown data/moves.ts:19948-19949
     // if (pokemon.terastallized === 'Stellar') move.self = { boosts: { atk: -1, spa: -1 } }
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       isTerastallized: true,
       teraType: "stellar",
     });
@@ -1001,16 +1037,16 @@ describe("Gen9 Tera Blast -- shouldApplyStellarDebuff", () => {
 
   it("given non-Stellar Tera Pokemon (Fire), when checking shouldApplyStellarDebuff, then returns false", () => {
     // Source: Showdown data/moves.ts:19948 -- only Stellar triggers the debuff
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       isTerastallized: true,
-      teraType: "fire",
+      teraType: TYPES.fire,
     });
     expect(shouldApplyStellarDebuff(attacker)).toBe(false);
   });
 
   it("given non-Terastallized Pokemon, when checking shouldApplyStellarDebuff, then returns false", () => {
     // Source: Showdown -- only applies when terastallized
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticActivePokemon({
       isTerastallized: false,
       teraType: null,
     });
@@ -1022,7 +1058,7 @@ describe("Gen9 Tera Blast -- handleTeraBlast", () => {
   it("given Stellar-Tera Pokemon using Tera Blast, when move effect resolves, then user gets -1 Atk and -1 SpA", () => {
     // Source: Showdown data/moves.ts:19948-19949
     // move.self = { boosts: { atk: -1, spa: -1 } }
-    const ctx = makeContext("tera-blast", {
+    const ctx = createMoveEffectContext(MOVES.teraBlast, {
       attacker: { isTerastallized: true, teraType: "stellar" },
       damage: 100,
     });
@@ -1036,8 +1072,8 @@ describe("Gen9 Tera Blast -- handleTeraBlast", () => {
 
   it("given Fire-Tera Pokemon using Tera Blast, when move effect resolves, then no stat changes", () => {
     // Source: Showdown data/moves.ts:19948 -- self-debuff only for Stellar
-    const ctx = makeContext("tera-blast", {
-      attacker: { isTerastallized: true, teraType: "fire" },
+    const ctx = createMoveEffectContext(MOVES.teraBlast, {
+      attacker: { isTerastallized: true, teraType: TYPES.fire },
       damage: 100,
     });
     const result = handleTeraBlast(ctx);
@@ -1047,7 +1083,7 @@ describe("Gen9 Tera Blast -- handleTeraBlast", () => {
 
   it("given non-Terastallized Pokemon using Tera Blast, when move effect resolves, then no stat changes", () => {
     // Source: Showdown -- Tera Blast without Tera is just a normal move
-    const ctx = makeContext("tera-blast", {
+    const ctx = createMoveEffectContext(MOVES.teraBlast, {
       attacker: { isTerastallized: false },
       damage: 80,
     });
@@ -1063,37 +1099,37 @@ describe("Gen9 Tera Blast -- handleTeraBlast", () => {
 
 describe("Gen9 executeGen9MoveEffect -- dispatch", () => {
   it("given an unknown move ID, when dispatched, then returns null (not handled)", () => {
-    const ctx = makeContext("flamethrower");
+    const ctx = createMoveEffectContext(MOVES.flamethrower);
     const result = executeGen9MoveEffect(ctx);
     expect(result).toBeNull();
   });
 
   it("given population-bomb, when dispatched, then returns non-null result", () => {
-    const ctx = makeContext("population-bomb");
+    const ctx = createMoveEffectContext(MOVES.populationBomb);
     expect(executeGen9MoveEffect(ctx)).not.toBeNull();
   });
 
   it("given rage-fist, when dispatched, then returns non-null result", () => {
-    const ctx = makeContext("rage-fist");
+    const ctx = createMoveEffectContext(MOVES.rageFist);
     expect(executeGen9MoveEffect(ctx)).not.toBeNull();
   });
 
   it("given make-it-rain, when dispatched, then returns non-null result with spa drop", () => {
-    const ctx = makeContext("make-it-rain", { damage: 100 });
+    const ctx = createMoveEffectContext(MOVES.makeItRain, { damage: 100 });
     const result = executeGen9MoveEffect(ctx);
     expect(result).not.toBeNull();
     expect(result!.statChanges).toHaveLength(1);
   });
 
   it("given salt-cure, when dispatched, then returns non-null result with volatile", () => {
-    const ctx = makeContext("salt-cure", { damage: 30 });
+    const ctx = createMoveEffectContext(MOVES.saltCure, { damage: 30 });
     const result = executeGen9MoveEffect(ctx);
     expect(result).not.toBeNull();
-    expect(result!.volatileInflicted).toBe("salt-cure");
+    expect(result!.volatileInflicted).toBe(VOLATILES.saltCure);
   });
 
   it("given tera-blast with Stellar, when dispatched, then returns stat drops", () => {
-    const ctx = makeContext("tera-blast", {
+    const ctx = createMoveEffectContext(MOVES.teraBlast, {
       attacker: { isTerastallized: true, teraType: "stellar" },
       damage: 100,
     });
@@ -1103,7 +1139,7 @@ describe("Gen9 executeGen9MoveEffect -- dispatch", () => {
   });
 
   it("given tidy-up, when dispatched, then returns non-null result with stat boosts", () => {
-    const ctx = makeContext("tidy-up");
+    const ctx = createMoveEffectContext(MOVES.tidyUp);
     const result = executeGen9MoveEffect(ctx);
     expect(result).not.toBeNull();
     expect(result!.statChanges).toEqual([
@@ -1120,7 +1156,7 @@ describe("Gen9 executeGen9MoveEffect -- dispatch", () => {
 describe("Gen9Ruleset -- executeMoveEffect integration", () => {
   it("given gen9 ruleset, when executeMoveEffect called with make-it-rain, then delegates to gen9 handler", () => {
     const ruleset = new Gen9Ruleset();
-    const ctx = makeContext("make-it-rain", { damage: 100 });
+    const ctx = createMoveEffectContext(MOVES.makeItRain, { damage: 100 });
     const result = ruleset.executeMoveEffect(ctx);
 
     expect(result.statChanges).toEqual([{ target: "attacker", stat: "spAttack", stages: -1 }]);
@@ -1128,7 +1164,7 @@ describe("Gen9Ruleset -- executeMoveEffect integration", () => {
 
   it("given gen9 ruleset, when executeMoveEffect called with unknown move, then falls back to BaseRuleset", () => {
     const ruleset = new Gen9Ruleset();
-    const ctx = makeContext("flamethrower", { damage: 80 });
+    const ctx = createMoveEffectContext(MOVES.flamethrower, { damage: 80 });
     const result = ruleset.executeMoveEffect(ctx);
 
     // BaseRuleset returns empty result
@@ -1143,8 +1179,8 @@ describe("Gen9Ruleset -- getEndOfTurnOrder includes salt-cure", () => {
     const ruleset = new Gen9Ruleset();
     const order = ruleset.getEndOfTurnOrder();
 
-    const bindIndex = order.indexOf("bind");
-    const saltCureIndex = order.indexOf("salt-cure" as any);
+    const bindIndex = order.indexOf(MOVES.bind);
+    const saltCureIndex = order.indexOf(MOVES.saltCure as any);
 
     expect(bindIndex).toBeGreaterThan(-1);
     expect(saltCureIndex).toBeGreaterThan(-1);
@@ -1156,12 +1192,12 @@ describe("Gen9Ruleset -- getEndOfTurnOrder includes salt-cure", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     // Standard effects from BaseRuleset should still be present
-    expect(order).toContain("weather-damage");
-    expect(order).toContain("status-damage");
-    expect(order).toContain("leech-seed");
-    expect(order).toContain("bind");
-    expect(order).toContain("perish-song");
+    expect(order).toContain(END_OF_TURN.weatherDamage);
+    expect(order).toContain(END_OF_TURN.statusDamage);
+    expect(order).toContain(MOVES.leechSeed);
+    expect(order).toContain(MOVES.bind);
+    expect(order).toContain(MOVES.perishSong);
     // Gen 9 addition
-    expect(order).toContain("salt-cure" as any);
+    expect(order).toContain(MOVES.saltCure);
   });
 });

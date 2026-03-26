@@ -6,13 +6,32 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type {
+  MoveCategory,
+  MoveData,
+  PokemonType,
+  PrimaryStatus,
+  StatBlock,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_NATURE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager } from "../../src/data";
+import { createGen3DataManager, GEN3_ITEM_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { applyGen3HeldItem } from "../../src/Gen3Items";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
+import { createSyntheticOnFieldPokemon as createBaseSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 3 Held Item Tests
@@ -28,7 +47,7 @@ import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
 // ---------------------------------------------------------------------------
 
 /** Create a mock RNG with configurable chance and int results. */
-function createMockRng(chanceResult = false, intResult = 0) {
+function createScriptedRng(chanceResult = false, intResult = 0) {
   return {
     next: () => 0.5,
     int: (_min: number, _max: number) => intResult,
@@ -40,13 +59,24 @@ function createMockRng(chanceResult = false, intResult = 0) {
   };
 }
 
-/** Create a minimal ActivePokemon mock for item tests. */
-function createMockPokemon(opts: {
+const dataManager = createGen3DataManager();
+const DEFAULT_SPECIES = dataManager.getSpecies(GEN3_SPECIES_IDS.bulbasaur);
+const DEFAULT_NATURE_ID = dataManager.getNature(CORE_NATURE_IDS.hardy).id;
+const DEFAULT_TACKLE_MOVE = dataManager.getMove(GEN3_MOVE_IDS.tackle);
+const INFATUATION_VOLATILE_ID = CORE_VOLATILE_IDS.infatuation;
+const ITEM_TRIGGERS = {
+  endOfTurn: CORE_ITEM_TRIGGER_IDS.endOfTurn,
+  onDamageTaken: CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+  onHit: CORE_ITEM_TRIGGER_IDS.onHit,
+  statBoostBetweenTurns: CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns,
+} as const;
+
+/** Create a minimal PokemonInstance mock for item tests. */
+function createSyntheticOnFieldPokemon(opts: {
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
-  types?: PokemonType[];
+  primaryStatus?: PrimaryStatus | null;
   hasConfusion?: boolean;
   hasInfatuation?: boolean;
   ability?: string;
@@ -59,99 +89,57 @@ function createMockPokemon(opts: {
   speciesId?: number;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const stats: StatBlock = {
+  const pokemon = createBaseSyntheticOnFieldPokemon({
+    ability: opts.ability,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    currentHp: opts.currentHp ?? maxHp,
+    evs: createEvs(),
+    gender: CORE_GENDERS.male,
+    heldItem: opts.heldItem ?? null,
+    ivs: createIvs(),
+    level: opts.level ?? 50,
+    moveIds: [DEFAULT_TACKLE_MOVE.id],
+    nature: DEFAULT_NATURE_ID,
+    pokeball: GEN3_ITEM_IDS.pokeBall,
+    speciesId: opts.speciesId ?? DEFAULT_SPECIES.id,
+    status: opts.primaryStatus ?? null,
+  });
+
+  pokemon.pokemon.uid = "test-mon";
+  pokemon.pokemon.calculatedStats = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
     spAttack: opts.spAttack ?? 100,
     spDefense: opts.spDefense ?? 100,
     speed: opts.speed ?? 100,
-  };
-
-  const pokemon = {
-    uid: "test-mon",
-    speciesId: opts.speciesId ?? 1,
-    nickname: null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.currentHp ?? maxHp,
-    moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  };
-
-  const volatileStatuses: Map<string, { turnsLeft: number; data?: Record<string, unknown> }> =
-    new Map();
+  } as StatBlock;
   if (opts.hasConfusion) {
-    volatileStatuses.set("confusion", { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: -1 });
   }
   if (opts.hasInfatuation) {
-    volatileStatuses.set("infatuation", { turnsLeft: -1 });
+    pokemon.volatileStatuses.set(INFATUATION_VOLATILE_ID, { turnsLeft: -1 });
   }
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses,
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
-    lastMoveUsed: null,
-    turnsOnField: 1,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+  return pokemon;
 }
 
 /** Create a mock ItemContext. */
-function createItemContext(opts: {
+function createHeldItemContext(opts: {
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
+  primaryStatus?: PrimaryStatus | null;
   chanceResult?: boolean;
   intResult?: number;
   damage?: number;
   hasConfusion?: boolean;
   hasInfatuation?: boolean;
 }): ItemContext {
-  const pokemon = createMockPokemon({
+  const pokemon = createSyntheticOnFieldPokemon({
     heldItem: opts.heldItem,
     currentHp: opts.currentHp,
     maxHp: opts.maxHp,
-    status: opts.status,
+    primaryStatus: opts.primaryStatus,
     hasConfusion: opts.hasConfusion,
     hasInfatuation: opts.hasInfatuation,
   });
@@ -159,18 +147,18 @@ function createItemContext(opts: {
   return {
     pokemon,
     state: {} as BattleState,
-    rng: createMockRng(opts.chanceResult ?? false, opts.intResult ?? 0) as ItemContext["rng"],
+    rng: createScriptedRng(opts.chanceResult ?? false, opts.intResult ?? 0) as ItemContext["rng"],
     damage: opts.damage,
   };
 }
 
 /** Create a minimal DamageContext for damage calc item tests. */
-function createDamageContext(opts: {
+function createDamageCalcContext(opts: {
   attackerItem?: string | null;
   defenderItem?: string | null;
   moveType?: PokemonType;
   movePower?: number;
-  moveCategory?: "physical" | "special" | "status";
+  moveCategory?: MoveCategory;
   attackerTypes?: PokemonType[];
   defenderTypes?: PokemonType[];
   attackerAttack?: number;
@@ -181,45 +169,40 @@ function createDamageContext(opts: {
   attackerAbility?: string;
   defenderAbility?: string;
   attackerStatus?: string | null;
+  defenderStatus?: string | null;
 }): DamageContext {
-  const attacker = createMockPokemon({
+  const attacker = createSyntheticOnFieldPokemon({
     heldItem: opts.attackerItem ?? null,
-    types: opts.attackerTypes ?? ["normal"],
     attack: opts.attackerAttack ?? 100,
     spAttack: opts.attackerAttack ?? 100,
     level: opts.level ?? 50,
     ability: opts.attackerAbility ?? "",
-    status: opts.attackerStatus ?? null,
+    primaryStatus: opts.attackerStatus ?? null,
   });
 
-  const defender = createMockPokemon({
+  const defender = createSyntheticOnFieldPokemon({
     heldItem: opts.defenderItem ?? null,
-    types: opts.defenderTypes ?? ["normal"],
     defense: opts.defenderDefense ?? 100,
     spDefense: opts.defenderDefense ?? 100,
     ability: opts.defenderAbility ?? "",
+    primaryStatus: opts.defenderStatus ?? null,
   });
 
-  const move: MoveData = {
-    id: "test-move",
-    name: "Test Move",
-    type: opts.moveType ?? "normal",
-    category: opts.moveCategory ?? "physical",
-    power: opts.movePower ?? 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "single" as any,
-    flags: {} as any,
-    generation: 3,
-    critRatio: 0,
-    effectChance: null,
-    effects: [],
-    description: "",
-  };
+  if (opts.attackerTypes) {
+    attacker.types = [...opts.attackerTypes];
+  }
+  if (opts.defenderTypes) {
+    defender.types = [...opts.defenderTypes];
+  }
 
-  const rng = createMockRng(false, opts.rngRoll ?? 100);
+  const move = {
+    ...DEFAULT_TACKLE_MOVE,
+    type: opts.moveType ?? DEFAULT_TACKLE_MOVE.type,
+    category: opts.moveCategory ?? DEFAULT_TACKLE_MOVE.category,
+    power: opts.movePower ?? DEFAULT_TACKLE_MOVE.power,
+  } as MoveData;
+
+  const rng = createScriptedRng(false, opts.rngRoll ?? 100);
 
   return {
     attacker,
@@ -247,13 +230,13 @@ describe("Gen 3 Held Items", () => {
     it("given a Pokemon holding Leftovers with 200 max HP, when end-of-turn triggers, then heals 12 HP (1/16 of 200)", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_LEFTOVERS — heals floor(maxHP / 16) per turn
       // floor(200 / 16) = 12
-      const context = createItemContext({
-        heldItem: "leftovers",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.leftovers,
         currentHp: 150,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
@@ -263,13 +246,13 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Leftovers with 100 max HP, when end-of-turn triggers, then heals 6 HP (1/16 of 100)", () => {
       // Source: pret/pokeemerald — floor(100 / 16) = 6
-      const context = createItemContext({
-        heldItem: "leftovers",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.leftovers,
         currentHp: 50,
         maxHp: 100,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]?.value).toBe(6);
@@ -277,13 +260,13 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Leftovers, when end-of-turn triggers, then Leftovers is NOT consumed", () => {
       // Source: pret/pokeemerald — Leftovers is a permanent hold item
-      const context = createItemContext({
-        heldItem: "leftovers",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.leftovers,
         currentHp: 150,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       const consumeEffects = result.effects.filter((e) => e.type === "consume");
@@ -292,13 +275,13 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Leftovers with 1 max HP (Shedinja edge case), when end-of-turn triggers, then heals minimum 1 HP", () => {
       // Source: pret/pokeemerald — max(1, floor(1 / 16)) = max(1, 0) = 1
-      const context = createItemContext({
-        heldItem: "leftovers",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.leftovers,
         currentHp: 1,
         maxHp: 1,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]?.value).toBe(1);
@@ -309,70 +292,70 @@ describe("Gen 3 Held Items", () => {
     it("given a Pokemon at 50% HP (100/200) holding Sitrus Berry, when end-of-turn triggers, then heals flat 30 HP and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_RESTORE_HP — flat 30 HP in Gen 3 (NOT percentage)
       // Gen 4+ changed to 25% max HP; Gen 3 always heals exactly 30
-      const context = createItemContext({
-        heldItem: "sitrus-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.sitrusBerry,
         currentHp: 100,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
       expect(healEffect?.value).toBe(30);
       const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect?.value).toBe("sitrus-berry");
+      expect(consumeEffect?.value).toBe(GEN3_ITEM_IDS.sitrusBerry);
     });
 
     it("given a Pokemon at 30% HP (60/200) holding Sitrus Berry, when end-of-turn triggers, then heals flat 30 HP", () => {
       // Source: pret/pokeemerald — Sitrus Berry activates when HP <= 50% max, always heals 30
-      const context = createItemContext({
-        heldItem: "sitrus-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.sitrusBerry,
         currentHp: 60,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.find((e) => e.type === "heal")?.value).toBe(30);
     });
 
     it("given a Pokemon above 50% HP holding Sitrus Berry, when end-of-turn triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "sitrus-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.sitrusBerry,
         currentHp: 150,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
 
     it("given a Pokemon at exactly 50% HP holding Sitrus Berry, when end-of-turn triggers, then activates (threshold is inclusive)", () => {
       // Threshold: currentHp <= floor(maxHp / 2) → 100 <= 100 = true
-      const context = createItemContext({
-        heldItem: "sitrus-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.sitrusBerry,
         currentHp: 100,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
     });
 
     it("given Sitrus Berry and HP drops to <= 50% after damage, when on-damage-taken triggers, then heals 30 HP", () => {
       // Source: pret/pokeemerald — berry checks also fire after taking damage
-      const context = createItemContext({
-        heldItem: "sitrus-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.sitrusBerry,
         currentHp: 120,
         maxHp: 200,
         damage: 30, // 120 - 30 = 90, which is <= 100 (50% of 200)
       });
 
-      const result = applyGen3HeldItem("on-damage-taken", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.find((e) => e.type === "heal")?.value).toBe(30);
@@ -382,41 +365,41 @@ describe("Gen 3 Held Items", () => {
   describe("Oran Berry", () => {
     it("given a Pokemon at 50% HP holding Oran Berry, when end-of-turn triggers, then heals 10 HP and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_RESTORE_HP — Oran Berry restores 10 HP
-      const context = createItemContext({
-        heldItem: "oran-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.oranBerry,
         currentHp: 100,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.find((e) => e.type === "heal")?.value).toBe(10);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("oran-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.oranBerry);
     });
 
     it("given a Pokemon at 40% HP (40/100) holding Oran Berry, when end-of-turn triggers, then heals 10 HP", () => {
       // Source: pret/pokeemerald — Oran Berry always heals exactly 10 HP
-      const context = createItemContext({
-        heldItem: "oran-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.oranBerry,
         currentHp: 40,
         maxHp: 100,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.find((e) => e.type === "heal")?.value).toBe(10);
     });
 
     it("given a Pokemon above 50% HP holding Oran Berry, when end-of-turn triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "oran-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.oranBerry,
         currentHp: 150,
         maxHp: 200,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -425,76 +408,81 @@ describe("Gen 3 Held Items", () => {
   describe("Lum Berry", () => {
     it("given a paralyzed Pokemon holding Lum Berry, when end-of-turn triggers, then cures paralysis and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_STATUS — Lum Berry cures any status
-      const context = createItemContext({
-        heldItem: "lum-berry",
-        status: "paralysis",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: CORE_STATUS_IDS.paralysis,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       const _statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("lum-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.lumBerry);
     });
 
     it("given a sleeping Pokemon holding Lum Berry, when end-of-turn triggers, then cures sleep and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_STATUS
-      const context = createItemContext({
-        heldItem: "lum-berry",
-        status: "sleep",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: CORE_STATUS_IDS.sleep,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
     });
 
     it("given a confused Pokemon (no primary status) holding Lum Berry, when end-of-turn triggers, then cures confusion", () => {
       // Source: pret/pokeemerald — Lum Berry also cures confusion (volatile)
-      const context = createItemContext({
-        heldItem: "lum-berry",
-        status: null,
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: null,
         hasConfusion: true,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
-      expect(volatileCure?.value).toBe("confusion");
+      expect(volatileCure?.value).toBe(CORE_VOLATILE_IDS.confusion);
     });
 
     it("given a burned and confused Pokemon holding Lum Berry, when end-of-turn triggers, then cures both", () => {
       // Source: pret/pokeemerald — Lum Berry cures all status conditions simultaneously
-      const context = createItemContext({
-        heldItem: "lum-berry",
-        status: "burn",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: CORE_STATUS_IDS.burn,
         hasConfusion: true,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "volatile-cure")?.value).toBe("confusion");
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("lum-berry");
+      expect(result.effects.find((e) => e.type === "volatile-cure")?.value).toBe(
+        CORE_VOLATILE_IDS.confusion,
+      );
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.lumBerry);
     });
 
     it("given a healthy Pokemon (no status) holding Lum Berry, when end-of-turn triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "lum-berry",
-        status: null,
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: null,
         hasConfusion: false,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
 
     it("given a paralyzed Pokemon holding Lum Berry, when on-damage-taken fires, then no activation", () => {
       // Source: pokeemerald ItemBattleEffects — Lum Berry runs at ITEMEFFECT_ON_RESIDUAL (end-of-turn) only
-      const ctx = createItemContext({ heldItem: "lum-berry", status: "paralysis" });
-      const result = applyGen3HeldItem("on-damage-taken", ctx);
+      const ctx = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: CORE_STATUS_IDS.paralysis,
+      });
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
       expect(result.effects).toHaveLength(0);
     });
@@ -507,24 +495,26 @@ describe("Gen 3 Held Items", () => {
   describe("Cheri Berry (paralysis cure)", () => {
     it("given a paralyzed Pokemon holding Cheri Berry, when end-of-turn triggers, then cures paralysis and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_PAR
-      const context = createItemContext({
-        heldItem: "cheri-berry",
-        status: "paralysis",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.cheriBerry,
+        primaryStatus: CORE_STATUS_IDS.paralysis,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("cheri-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.cheriBerry,
+      );
     });
 
     it("given a burned Pokemon holding Cheri Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
-      const context = createItemContext({
-        heldItem: "cheri-berry",
-        status: "burn",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.cheriBerry,
+        primaryStatus: CORE_STATUS_IDS.burn,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -533,24 +523,26 @@ describe("Gen 3 Held Items", () => {
   describe("Chesto Berry (sleep cure)", () => {
     it("given a sleeping Pokemon holding Chesto Berry, when end-of-turn triggers, then cures sleep and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_SLP
-      const context = createItemContext({
-        heldItem: "chesto-berry",
-        status: "sleep",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.chestoBerry,
+        primaryStatus: CORE_STATUS_IDS.sleep,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("chesto-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.chestoBerry,
+      );
     });
 
     it("given a paralyzed Pokemon holding Chesto Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
-      const context = createItemContext({
-        heldItem: "chesto-berry",
-        status: "paralysis",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.chestoBerry,
+        primaryStatus: CORE_STATUS_IDS.paralysis,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -559,25 +551,27 @@ describe("Gen 3 Held Items", () => {
   describe("Pecha Berry (poison cure)", () => {
     it("given a poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then cures poison and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_PSN
-      const context = createItemContext({
-        heldItem: "pecha-berry",
-        status: "poison",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.pechaBerry,
+        primaryStatus: CORE_STATUS_IDS.poison,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("pecha-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.pechaBerry,
+      );
     });
 
     it("given a badly-poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then cures badly-poisoned and is consumed", () => {
       // Source: pret/pokeemerald — Pecha Berry cures both regular and toxic poison
-      const context = createItemContext({
-        heldItem: "pecha-berry",
-        status: "badly-poisoned",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.pechaBerry,
+        primaryStatus: CORE_STATUS_IDS.badlyPoisoned,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
     });
@@ -586,24 +580,26 @@ describe("Gen 3 Held Items", () => {
   describe("Rawst Berry (burn cure)", () => {
     it("given a burned Pokemon holding Rawst Berry, when end-of-turn triggers, then cures burn and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_BRN
-      const context = createItemContext({
-        heldItem: "rawst-berry",
-        status: "burn",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.rawstBerry,
+        primaryStatus: CORE_STATUS_IDS.burn,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("rawst-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.rawstBerry,
+      );
     });
 
     it("given a sleeping Pokemon holding Rawst Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
-      const context = createItemContext({
-        heldItem: "rawst-berry",
-        status: "sleep",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.rawstBerry,
+        primaryStatus: CORE_STATUS_IDS.sleep,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -612,24 +608,26 @@ describe("Gen 3 Held Items", () => {
   describe("Aspear Berry (freeze cure)", () => {
     it("given a frozen Pokemon holding Aspear Berry, when end-of-turn triggers, then cures freeze and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_FRZ
-      const context = createItemContext({
-        heldItem: "aspear-berry",
-        status: "freeze",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.aspearBerry,
+        primaryStatus: CORE_STATUS_IDS.freeze,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("aspear-berry");
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.aspearBerry,
+      );
     });
 
     it("given a poisoned Pokemon holding Aspear Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
-      const context = createItemContext({
-        heldItem: "aspear-berry",
-        status: "poison",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.aspearBerry,
+        primaryStatus: CORE_STATUS_IDS.poison,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -638,26 +636,28 @@ describe("Gen 3 Held Items", () => {
   describe("Persim Berry (confusion cure)", () => {
     it("given a confused Pokemon holding Persim Berry, when end-of-turn triggers, then cures confusion and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_CONFUSION
-      const context = createItemContext({
-        heldItem: "persim-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.persimBerry,
         hasConfusion: true,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
-      expect(volatileCure?.value).toBe("confusion");
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("persim-berry");
+      expect(volatileCure?.value).toBe(CORE_VOLATILE_IDS.confusion);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.persimBerry,
+      );
     });
 
     it("given a non-confused Pokemon holding Persim Berry, when end-of-turn triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "persim-berry",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.persimBerry,
         hasConfusion: false,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -666,26 +666,28 @@ describe("Gen 3 Held Items", () => {
   describe("Mental Herb (infatuation cure)", () => {
     it("given an infatuated Pokemon holding Mental Herb, when end-of-turn triggers, then cures infatuation and is consumed", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_CURE_ATTRACT
-      const context = createItemContext({
-        heldItem: "mental-herb",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.mentalHerb,
         hasInfatuation: true,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
-      expect(volatileCure?.value).toBe("infatuation");
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe("mental-herb");
+      expect(volatileCure?.value).toBe(INFATUATION_VOLATILE_ID);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.mentalHerb,
+      );
     });
 
     it("given a non-infatuated Pokemon holding Mental Herb, when end-of-turn triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "mental-herb",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.mentalHerb,
         hasInfatuation: false,
       });
 
-      const result = applyGen3HeldItem("end-of-turn", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(false);
     });
@@ -698,15 +700,15 @@ describe("Gen 3 Held Items", () => {
   describe("Focus Band", () => {
     it("given a Pokemon holding Focus Band and RNG succeeds (10% chance), when damage would KO, then survives with 1 HP", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_FOCUS_BAND — 10% (10/100) activation rate
-      const context = createItemContext({
-        heldItem: "focus-band",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.focusBand,
         currentHp: 30,
         maxHp: 200,
         chanceResult: true,
         damage: 50, // 50 > 30, would KO
       });
 
-      const result = applyGen3HeldItem("on-damage-taken", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       expect(result.activated).toBe(true);
       const surviveEffect = result.effects.find((e) => e.type === "survive");
@@ -715,29 +717,29 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Focus Band and RNG fails, when damage would KO, then no activation", () => {
       // Source: pret/pokeemerald — 90% of the time Focus Band does nothing
-      const context = createItemContext({
-        heldItem: "focus-band",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.focusBand,
         currentHp: 30,
         maxHp: 200,
         chanceResult: false,
         damage: 50,
       });
 
-      const result = applyGen3HeldItem("on-damage-taken", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       expect(result.activated).toBe(false);
     });
 
     it("given a Pokemon holding Focus Band, when damage does not KO, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "focus-band",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.focusBand,
         currentHp: 100,
         maxHp: 200,
         chanceResult: true,
         damage: 10, // 100 - 10 = 90, not a KO
       });
 
-      const result = applyGen3HeldItem("on-damage-taken", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       expect(result.activated).toBe(false);
     });
@@ -745,15 +747,15 @@ describe("Gen 3 Held Items", () => {
     it("given a Pokemon holding Focus Band when it activates, then Focus Band is NOT consumed (reusable in Gen 3)", () => {
       // Source: pret/pokeemerald — Focus Band is NOT consumed, can activate multiple times
       // (Gen 4 introduced Focus Sash which IS single-use; Focus Band remains reusable)
-      const context = createItemContext({
-        heldItem: "focus-band",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.focusBand,
         currentHp: 30,
         maxHp: 200,
         chanceResult: true,
         damage: 50,
       });
 
-      const result = applyGen3HeldItem("on-damage-taken", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       expect(result.activated).toBe(true);
       const consumeEffects = result.effects.filter((e) => e.type === "consume");
@@ -769,12 +771,12 @@ describe("Gen 3 Held Items", () => {
     it("given a Pokemon holding King's Rock and RNG succeeds (10% chance), when on-hit triggers, then returns flinch effect", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_FLINCH — 10% flinch chance in Gen 3
       // (Gen 2 was 30/256 ~11.72%; Gen 3 simplified to 10%)
-      const context = createItemContext({
-        heldItem: "kings-rock",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.kingsRock,
         chanceResult: true,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(true);
       const flinchEffect = result.effects.find((e) => e.type === "flinch");
@@ -782,12 +784,12 @@ describe("Gen 3 Held Items", () => {
     });
 
     it("given a Pokemon holding King's Rock and RNG fails, when on-hit triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "kings-rock",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.kingsRock,
         chanceResult: false,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(false);
     });
@@ -804,12 +806,12 @@ describe("Gen 3 Held Items", () => {
     it("given a Pokemon holding Shell Bell that dealt 80 damage, when on-hit triggers, then heals 10 HP (1/8 of 80)", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_SHELL_BELL — heals floor(damage / 8)
       // floor(80 / 8) = 10
-      const context = createItemContext({
-        heldItem: "shell-bell",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.shellBell,
         damage: 80,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(true);
       const healEffect = result.effects.find((e) => e.type === "heal");
@@ -818,12 +820,12 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Shell Bell that dealt 160 damage, when on-hit triggers, then heals 20 HP (1/8 of 160)", () => {
       // Source: pret/pokeemerald — floor(160 / 8) = 20
-      const context = createItemContext({
-        heldItem: "shell-bell",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.shellBell,
         damage: 160,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.find((e) => e.type === "heal")?.value).toBe(20);
@@ -831,12 +833,12 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Shell Bell, when on-hit triggers, then Shell Bell is NOT consumed (permanent item)", () => {
       // Source: pret/pokeemerald — Shell Bell is permanent, not single-use
-      const context = createItemContext({
-        heldItem: "shell-bell",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.shellBell,
         damage: 80,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(true);
       const consumeEffects = result.effects.filter((e) => e.type === "consume");
@@ -845,24 +847,24 @@ describe("Gen 3 Held Items", () => {
 
     it("given a Pokemon holding Shell Bell that dealt 1 damage, when on-hit triggers, then heals minimum 1 HP", () => {
       // Source: pret/pokeemerald — max(1, floor(1 / 8)) = max(1, 0) = 1
-      const context = createItemContext({
-        heldItem: "shell-bell",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.shellBell,
         damage: 1,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects.find((e) => e.type === "heal")?.value).toBe(1);
     });
 
     it("given a Pokemon holding Shell Bell that dealt 0 damage, when on-hit triggers, then no activation", () => {
-      const context = createItemContext({
-        heldItem: "shell-bell",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.shellBell,
         damage: 0,
       });
 
-      const result = applyGen3HeldItem("on-hit", context);
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(false);
     });
@@ -883,21 +885,21 @@ describe("Gen 3 Held Items", () => {
       // With CB (Atk=150):    floor(floor(floor(22) * 80 * 150/100) / 50) + 2 = floor(2640/50)+2 = 52+2 = 54
       //
       // rng roll = 100/100 = 1.0, no STAB, neutral effectiveness => final damage = base damage
-      const withCB = createDamageContext({
-        attackerItem: "choice-band",
-        moveType: "normal",
+      const withCB = createDamageCalcContext({
+        attackerItem: GEN3_ITEM_IDS.choiceBand,
+        moveType: CORE_TYPE_IDS.normal,
         movePower: 80,
-        attackerTypes: ["fire"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.fire],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
-      const withoutCB = createDamageContext({
+      const withoutCB = createDamageCalcContext({
         attackerItem: null,
-        moveType: "normal",
+        moveType: CORE_TYPE_IDS.normal,
         movePower: 80,
-        attackerTypes: ["fire"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.fire],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
@@ -915,21 +917,21 @@ describe("Gen 3 Held Items", () => {
     it("given attacker holding Choice Band using a special move, when calculating damage, then damage is NOT boosted", () => {
       // Source: pret/pokeemerald — Choice Band only boosts physical Attack, not SpAtk
       // Fire is a special type in Gen 3, so Choice Band should NOT apply
-      const withCB = createDamageContext({
-        attackerItem: "choice-band",
-        moveType: "fire",
+      const withCB = createDamageCalcContext({
+        attackerItem: GEN3_ITEM_IDS.choiceBand,
+        moveType: CORE_TYPE_IDS.fire,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
-      const withoutCB = createDamageContext({
+      const withoutCB = createDamageCalcContext({
         attackerItem: null,
-        moveType: "fire",
+        moveType: CORE_TYPE_IDS.fire,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
@@ -952,21 +954,21 @@ describe("Gen 3 Held Items", () => {
       // floor(floor(floor(22) * 80 * 100/100) / 50) + 2 = 37
       // With Charcoal (1.1x): floor(37 * 1.1) = floor(40.7) = 40
       // rng roll = 100 → 37 base, then * 1.1 = floor(37 * 1.1) = 40
-      const withCharcoal = createDamageContext({
-        attackerItem: "charcoal",
-        moveType: "fire",
+      const withCharcoal = createDamageCalcContext({
+        attackerItem: GEN3_ITEM_IDS.charcoal,
+        moveType: CORE_TYPE_IDS.fire,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
-      const withoutCharcoal = createDamageContext({
+      const withoutCharcoal = createDamageCalcContext({
         attackerItem: null,
-        moveType: "fire",
+        moveType: CORE_TYPE_IDS.fire,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
@@ -980,21 +982,21 @@ describe("Gen 3 Held Items", () => {
 
     it("given attacker holding Charcoal using a Water move, when calculating damage, then NO boost is applied (type mismatch)", () => {
       // Source: pret/pokeemerald — Charcoal only boosts Fire moves
-      const withCharcoal = createDamageContext({
-        attackerItem: "charcoal",
-        moveType: "water",
+      const withCharcoal = createDamageCalcContext({
+        attackerItem: GEN3_ITEM_IDS.charcoal,
+        moveType: CORE_TYPE_IDS.water,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
-      const withoutCharcoal = createDamageContext({
+      const withoutCharcoal = createDamageCalcContext({
         attackerItem: null,
-        moveType: "water",
+        moveType: CORE_TYPE_IDS.water,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
@@ -1007,12 +1009,12 @@ describe("Gen 3 Held Items", () => {
     it("given attacker holding Mystic Water using a Water move, when calculating damage, then 1.1x damage boost is applied", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_WATER_POWER — 10% boost
       // Same formula as Charcoal test: base 37 * 1.1 = 40
-      const ctx = createDamageContext({
-        attackerItem: "mystic-water",
-        moveType: "water",
+      const ctx = createDamageCalcContext({
+        attackerItem: GEN3_ITEM_IDS.mysticWater,
+        moveType: CORE_TYPE_IDS.water,
         movePower: 80,
-        attackerTypes: ["normal"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.normal],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
@@ -1025,12 +1027,12 @@ describe("Gen 3 Held Items", () => {
     it("given attacker holding Silk Scarf using a Normal physical move, when calculating damage, then 1.1x damage boost is applied", () => {
       // Source: pret/pokeemerald HOLD_EFFECT_NORMAL_POWER — 10% boost
       // Normal is physical in Gen 3. Base: 37. With Silk Scarf: floor(37 * 1.1) = 40
-      const ctx = createDamageContext({
-        attackerItem: "silk-scarf",
-        moveType: "normal",
+      const ctx = createDamageCalcContext({
+        attackerItem: GEN3_ITEM_IDS.silkScarf,
+        moveType: CORE_TYPE_IDS.normal,
         movePower: 80,
-        attackerTypes: ["fire"],
-        defenderTypes: ["normal"],
+        attackerTypes: [CORE_TYPE_IDS.fire],
+        defenderTypes: [CORE_TYPE_IDS.normal],
         rngRoll: 100,
       });
 
@@ -1048,7 +1050,7 @@ describe("Gen 3 Held Items", () => {
   describe("Scope Lens (crit stage via BaseRuleset.rollCritical)", () => {
     it("given attacker holding Scope Lens, when rolling for crit, then crit stage is increased by 1 (1/8 instead of 1/16)", () => {
       // Source: pret/pokeemerald — Scope Lens adds +1 to crit stage
-      // BaseRuleset.rollCritical already handles this (line 120: if item === "scope-lens" stage += 1)
+      // BaseRuleset.rollCritical already handles this (line 120: if item === GEN3_ITEM_IDS.scopeLens stage += 1)
       // Stage 0 = 1/16 (denominator 16), Stage 1 = 1/8 (denominator 8)
       //
       // With Scope Lens, crit rate = 1/8 = 12.5%
@@ -1065,11 +1067,11 @@ describe("Gen 3 Held Items", () => {
 
       // Test the actual rollCritical: create a context where rng.int returns 1
       // which means "crit" for any denominator > 1 (since 1 === 1)
-      const attacker = createMockPokemon({ heldItem: "scope-lens" });
+      const attacker = createSyntheticOnFieldPokemon({ heldItem: GEN3_ITEM_IDS.scopeLens });
       const move: MoveData = {
-        id: "tackle",
+        id: GEN3_MOVE_IDS.tackle,
         name: "Tackle",
-        type: "normal",
+        type: CORE_TYPE_IDS.normal,
         category: "physical",
         power: 40,
         accuracy: 100,
@@ -1086,7 +1088,7 @@ describe("Gen 3 Held Items", () => {
       };
 
       // rng.int(1, 8) needs to return 1 for crit at stage 1 (denominator 8)
-      const rng = createMockRng(false, 1);
+      const rng = createScriptedRng(false, 1);
 
       const critContext: CritContext = {
         attacker,
@@ -1104,11 +1106,11 @@ describe("Gen 3 Held Items", () => {
       // Without Scope Lens: stage 0, denominator 16, rng.int returns 2
       // 2 !== 1 → not a crit
       const ruleset = new Gen3Ruleset(createGen3DataManager());
-      const attacker = createMockPokemon({ heldItem: null });
+      const attacker = createSyntheticOnFieldPokemon({ heldItem: null });
       const move: MoveData = {
-        id: "tackle",
+        id: GEN3_MOVE_IDS.tackle,
         name: "Tackle",
-        type: "normal",
+        type: CORE_TYPE_IDS.normal,
         category: "physical",
         power: 40,
         accuracy: 100,
@@ -1124,7 +1126,7 @@ describe("Gen 3 Held Items", () => {
         description: "",
       };
 
-      const rng = createMockRng(false, 2);
+      const rng = createScriptedRng(false, 2);
 
       const critContext: CritContext = {
         attacker,
@@ -1149,11 +1151,11 @@ describe("Gen 3 Held Items", () => {
       // Keep the integration test deterministic by forcing the production chance hook to return true.
       const ruleset = new Gen3Ruleset(createGen3DataManager());
 
-      const slowMon = createMockPokemon({
-        heldItem: "quick-claw",
+      const slowMon = createSyntheticOnFieldPokemon({
+        heldItem: GEN3_ITEM_IDS.quickClaw,
         speed: 50,
       });
-      const fastMon = createMockPokemon({
+      const fastMon = createSyntheticOnFieldPokemon({
         heldItem: null,
         speed: 100,
       });
@@ -1168,7 +1170,7 @@ describe("Gen 3 Held Items", () => {
         { type: "move", side: 1, moveIndex: 0 },
       ];
 
-      const rng = createMockRng(true, 0);
+      const rng = createScriptedRng(true, 0);
       const ordered = ruleset.resolveTurnOrder([...actions], state, rng);
 
       // Side 0 (slower but Quick Claw activated) should go first
@@ -1180,11 +1182,11 @@ describe("Gen 3 Held Items", () => {
       // Source: pret/pokeemerald src/battle_main.c:4653 — failing the Quick Claw roll leaves normal turn order intact.
       const ruleset = new Gen3Ruleset(createGen3DataManager());
 
-      const slowMon = createMockPokemon({
-        heldItem: "quick-claw",
+      const slowMon = createSyntheticOnFieldPokemon({
+        heldItem: GEN3_ITEM_IDS.quickClaw,
         speed: 50,
       });
-      const fastMon = createMockPokemon({
+      const fastMon = createSyntheticOnFieldPokemon({
         heldItem: null,
         speed: 100,
       });
@@ -1199,7 +1201,7 @@ describe("Gen 3 Held Items", () => {
         { type: "move", side: 1, moveIndex: 0 },
       ];
 
-      const rng = createMockRng(false, 0);
+      const rng = createScriptedRng(false, 0);
       const ordered = ruleset.resolveTurnOrder([...actions], state, rng);
 
       // Fast mon (side 1) goes first because Quick Claw didn't activate
@@ -1214,23 +1216,23 @@ describe("Gen 3 Held Items", () => {
 
   describe("Edge cases", () => {
     it("given a Pokemon with no held item, when any trigger fires, then no activation", () => {
-      const context = createItemContext({ heldItem: null });
+      const context = createHeldItemContext({ heldItem: null });
 
-      expect(applyGen3HeldItem("end-of-turn", context).activated).toBe(false);
-      expect(applyGen3HeldItem("on-damage-taken", context).activated).toBe(false);
-      expect(applyGen3HeldItem("on-hit", context).activated).toBe(false);
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context).activated).toBe(false);
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context).activated).toBe(false);
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.onHit, context).activated).toBe(false);
     });
 
     it("given a Pokemon with an unknown item, when any trigger fires, then no activation", () => {
-      const context = createItemContext({ heldItem: "mystery-widget" });
+      const context = createHeldItemContext({ heldItem: "mystery-widget" });
 
-      expect(applyGen3HeldItem("end-of-turn", context).activated).toBe(false);
-      expect(applyGen3HeldItem("on-damage-taken", context).activated).toBe(false);
-      expect(applyGen3HeldItem("on-hit", context).activated).toBe(false);
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context).activated).toBe(false);
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context).activated).toBe(false);
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.onHit, context).activated).toBe(false);
     });
 
     it("given any item, when an unknown trigger fires, then no activation", () => {
-      const context = createItemContext({ heldItem: "leftovers" });
+      const context = createHeldItemContext({ heldItem: GEN3_ITEM_IDS.leftovers });
 
       const result = applyGen3HeldItem("unknown-trigger", context);
 
@@ -1250,13 +1252,13 @@ describe("Gen 3 Held Items", () => {
 
     it("given Gen3Ruleset, when calling applyHeldItem with Leftovers, then delegates to Gen3Items correctly", () => {
       const ruleset = new Gen3Ruleset(createGen3DataManager());
-      const context = createItemContext({
-        heldItem: "leftovers",
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.leftovers,
         currentHp: 150,
         maxHp: 200,
       });
 
-      const result = ruleset.applyHeldItem("end-of-turn", context);
+      const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
       expect(result.effects[0]?.type).toBe("heal");
@@ -1266,32 +1268,166 @@ describe("Gen 3 Held Items", () => {
   });
 
   // =========================================================================
-  // Stubs (items that require engine support not yet available)
+  // Pinch berries and Lansat Berry
   // =========================================================================
 
-  // =========================================================================
-  // Accuracy-reducing items — engine-limited stubs
-  // =========================================================================
+  describe("Pinch berries", () => {
+    it("given Liechi Berry and HP drops to 25% from damage, when on-damage-taken fires, then Attack rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Liechi Berry triggers at 1/4 max HP or less.
+      // 200 HP -> 50 HP after damage is exactly the threshold.
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.liechiBerry,
+        currentHp: 120,
+        maxHp: 200,
+        damage: 70,
+      });
 
-  // BrightPowder/Lax Incense accuracy reduction: implemented in Gen3Ruleset.doesMoveHit
-  // Tests in move-item-bugs.test.ts
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
-  // White Herb: implemented in Gen3Items.ts handleStatBoostBetweenTurns
-  // Tests in move-item-bugs.test.ts
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "attack" },
+          { type: "consume", target: "self", value: GEN3_ITEM_IDS.liechiBerry },
+        ],
+        messages: ["Pokemon #1's Liechi Berry raised its Attack!"],
+      });
+    });
 
-  describe("Stubbed items (engine support not available)", () => {
-    it.todo("Salac Berry boosts Speed +1 stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo("Petaya Berry boosts SpAtk +1 stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo("Apicot Berry boosts SpDef +1 stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo(
-      "Liechi Berry boosts Attack +1 stage at <= 25% HP (requires engine stat-boost support)",
-    );
-    it.todo(
-      "Ganlon Berry boosts Defense +1 stage at <= 25% HP (requires engine stat-boost support)",
-    );
-    it.todo("Lansat Berry boosts crit stage at <= 25% HP (requires engine stat-boost support)");
-    it.todo(
-      "Type-resist berries halve SE damage once, consumed (requires DamageContext to carry item consumption info)",
-    );
+    it("given Ganlon Berry and HP is already at 25%, when stat-boost-between-turns fires, then Defense rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Ganlon Berry triggers at 1/4 max HP or less.
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.ganlonBerry,
+        currentHp: 50,
+        maxHp: 200,
+      });
+
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "defense" },
+          { type: "consume", target: "self", value: GEN3_ITEM_IDS.ganlonBerry },
+        ],
+        messages: ["Pokemon #1's Ganlon Berry raised its Defense!"],
+      });
+    });
+
+    it("given Salac Berry and HP drops to 20% from damage, when on-damage-taken fires, then Speed rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Salac Berry triggers at 1/4 max HP or less.
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.salacBerry,
+        currentHp: 90,
+        maxHp: 200,
+        damage: 50,
+      });
+
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "speed" },
+          { type: "consume", target: "self", value: GEN3_ITEM_IDS.salacBerry },
+        ],
+        messages: ["Pokemon #1's Salac Berry raised its Speed!"],
+      });
+    });
+
+    it("given Petaya Berry and HP is already at 10%, when stat-boost-between-turns fires, then Sp. Atk rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Petaya Berry triggers at 1/4 max HP or less.
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.petayaBerry,
+        currentHp: 20,
+        maxHp: 200,
+      });
+
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "spAttack" },
+          { type: "consume", target: "self", value: GEN3_ITEM_IDS.petayaBerry },
+        ],
+        messages: ["Pokemon #1's Petaya Berry raised its Sp. Atk!"],
+      });
+    });
+
+    it("given Apicot Berry and HP drops to 25% from damage, when on-damage-taken fires, then Sp. Def rises and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Apicot Berry triggers at 1/4 max HP or less.
+      // 200 HP -> 50 HP after damage is exactly the threshold.
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.apicotBerry,
+        currentHp: 80,
+        maxHp: 200,
+        damage: 30,
+      });
+
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [
+          { type: "stat-boost", target: "self", value: "spDefense" },
+          { type: "consume", target: "self", value: GEN3_ITEM_IDS.apicotBerry },
+        ],
+        messages: ["Pokemon #1's Apicot Berry raised its Sp. Def!"],
+      });
+    });
+
+    it("given Liechi Berry and HP stays above 25%, when either stat-boost trigger checks it, then it does not activate", () => {
+      // 200 HP -> 60 HP is above the 25% threshold of 50 HP.
+      const damageContext = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.liechiBerry,
+        currentHp: 120,
+        maxHp: 200,
+        damage: 60,
+      });
+      const residualContext = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.liechiBerry,
+        currentHp: 60,
+        maxHp: 200,
+      });
+
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, damageContext)).toEqual({
+        activated: false,
+        effects: [],
+        messages: [],
+      });
+      expect(applyGen3HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, residualContext)).toEqual({
+        activated: false,
+        effects: [],
+        messages: [],
+      });
+    });
   });
+
+  describe("Lansat Berry", () => {
+    it("given Lansat Berry and HP drops to 25% or less, when the item triggers, then focus-energy is set and the berry is consumed", () => {
+      // Source: packages/gen3/data/items.json -- Lansat Berry grants the Focus Energy effect at 1/4 max HP or less.
+      const context = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lansatBerry,
+        currentHp: 100,
+        maxHp: 200,
+        damage: 60,
+      });
+
+      const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
+
+      expect(result).toEqual({
+        activated: true,
+        effects: [{ type: "consume", target: "self", value: GEN3_ITEM_IDS.lansatBerry }],
+        messages: ["Pokemon #1's Lansat Berry raised its critical-hit ratio!"],
+      });
+      expect(context.pokemon.volatileStatuses.get(GEN3_MOVE_IDS.focusEnergy)).toEqual({
+        turnsLeft: -1,
+      });
+    });
+  });
+
+  // BrightPowder/Lax Incense accuracy reduction is covered in move-item-bugs.test.ts.
+  // White Herb restoration is covered in move-item-bugs.test.ts.
+  // Type-resist berries are Gen 4+ items and are not part of the Gen 3 item data.
 });

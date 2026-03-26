@@ -1,8 +1,21 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, StatBlock } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen3Ruleset } from "../../src";
+import { GEN3_ITEM_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 import { createGen3DataManager } from "../../src/data";
 
 /**
@@ -17,22 +30,38 @@ import { createGen3DataManager } from "../../src/data";
 
 const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
+const ITEM_IDS = GEN3_ITEM_IDS;
+const SPECIES_IDS = GEN3_SPECIES_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function createActivePokemon(opts: {
+function createCanonicalMoveSlot(moveId: string) {
+  const moveData = dataManager.getMove(moveId);
+  return createMoveSlot(moveData.id, moveData.pp);
+}
+
+function createSyntheticMoveSlot(moveId: string) {
+  return {
+    moveId,
+    currentPP: 10,
+    maxPP: 10,
+    ppUps: 0,
+  };
+}
+
+function createSyntheticOnFieldPokemon(opts: {
   speed: number;
   heldItem?: string | null;
   moves?: string[];
 }): ActivePokemon {
-  const moves = (opts.moves ?? ["tackle"]).map((id) => {
+  const moves = (opts.moves ?? [CORE_MOVE_IDS.tackle]).map((id) => {
     try {
-      const moveData = dataManager.getMove(id);
-      return { moveId: id, currentPP: moveData.pp, maxPP: moveData.pp, ppUps: 0 };
+      return createCanonicalMoveSlot(id);
     } catch {
-      return { moveId: id, currentPP: 10, maxPP: 10, ppUps: 0 };
+      return createSyntheticMoveSlot(id);
     }
   });
 
@@ -47,45 +76,37 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: `test-spd-${opts.speed}`,
-    speciesId: 1,
+    speciesId: SPECIES_IDS.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: CORE_NATURE_IDS.hardy,
+    ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    evs: createEvs(),
     currentHp: 200,
     moves,
-    ability: "",
-    abilitySlot: "normal1" as const,
+    ability: CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
   return {
     pokemon,
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["normal"],
-    ability: "",
+    types: [TYPE_IDS.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -155,8 +176,8 @@ function createMockRng(opts?: { nextValue?: number; intValue?: number; chanceRes
 describe("Gen 3 Turn Order Determinism", () => {
   it("given same seed, when resolveTurnOrder called twice with same actions, then same order both times", () => {
     // Source: GitHub issue #120 — tiebreak keys must be pre-assigned for PRNG determinism
-    const active0 = createActivePokemon({ speed: 100 });
-    const active1 = createActivePokemon({ speed: 100 });
+    const active0 = createSyntheticOnFieldPokemon({ speed: 100 });
+    const active1 = createSyntheticOnFieldPokemon({ speed: 100 });
     const state = createBattleState(active0, active1);
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -178,8 +199,8 @@ describe("Gen 3 Turn Order Determinism", () => {
 
   it("given faster Pokemon, when resolving turn order, then faster moves first", () => {
     // Source: pret/pokeemerald — higher speed acts first (no Trick Room)
-    const fast = createActivePokemon({ speed: 200 });
-    const slow = createActivePokemon({ speed: 50 });
+    const fast = createSyntheticOnFieldPokemon({ speed: 200 });
+    const slow = createSyntheticOnFieldPokemon({ speed: 50 });
     const state = createBattleState(fast, slow);
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -196,8 +217,8 @@ describe("Gen 3 Turn Order Determinism", () => {
 
   it("given unknown moveId for one side, when resolving turn order, then defaults priority to 0 and still resolves", () => {
     // Covers Gen3Ruleset.ts lines 795-796 — catch block for getMove on unknown moveId
-    const active0 = createActivePokemon({ speed: 100, moves: ["tackle"] });
-    const active1 = createActivePokemon({ speed: 100, moves: ["unknown-fake-move"] });
+    const active0 = createSyntheticOnFieldPokemon({ speed: 100, moves: [CORE_MOVE_IDS.tackle] });
+    const active1 = createSyntheticOnFieldPokemon({ speed: 100, moves: ["unknown-fake-move"] });
     const state = createBattleState(active0, active1);
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0, target: 1 },
@@ -213,8 +234,8 @@ describe("Gen 3 Turn Order Determinism", () => {
   it("given Trick Room active, when faster and slower Pokemon both use moves, then slower moves first", () => {
     // Source: pret/pokeemerald — Trick Room inverts speed order (slower moves first)
     // Covers Gen3Ruleset.ts line 811 — trickRoom.active branch with speedA !== speedB
-    const fast = createActivePokemon({ speed: 200 });
-    const slow = createActivePokemon({ speed: 50 });
+    const fast = createSyntheticOnFieldPokemon({ speed: 200 });
+    const slow = createSyntheticOnFieldPokemon({ speed: 50 });
     const state = createBattleState(fast, slow);
     state.trickRoom = { active: true, turnsLeft: 3 };
     const actions: BattleAction[] = [
@@ -232,8 +253,8 @@ describe("Gen 3 Turn Order Determinism", () => {
 
   it("given two switch actions, when resolving turn order, then tiebreak is PRNG-deterministic", () => {
     // Covers Gen3Ruleset.ts line 817-818 — non-move vs non-move tiebreak fallthrough
-    const active0 = createActivePokemon({ speed: 100 });
-    const active1 = createActivePokemon({ speed: 100 });
+    const active0 = createSyntheticOnFieldPokemon({ speed: 100 });
+    const active1 = createSyntheticOnFieldPokemon({ speed: 100 });
     const state = createBattleState(active0, active1);
     const actions: BattleAction[] = [
       { type: "switch", side: 0, switchIndex: 1 },
@@ -255,8 +276,8 @@ describe("Gen 3 Turn Order Determinism", () => {
     // Source: pret/pokeemerald — Quick Claw activated holder acts first
     // This integration test keeps the scenario deterministic by forcing the
     // Quick Claw branch instead of scanning seeds.
-    const slow = createActivePokemon({ speed: 50, heldItem: "quick-claw" });
-    const fast = createActivePokemon({ speed: 200 });
+    const slow = createSyntheticOnFieldPokemon({ speed: 50, heldItem: ITEM_IDS.quickClaw });
+    const fast = createSyntheticOnFieldPokemon({ speed: 200 });
     const state = createBattleState(slow, fast);
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0, target: 1 },

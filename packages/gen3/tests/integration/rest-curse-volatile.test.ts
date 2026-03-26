@@ -1,7 +1,17 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen3Ruleset } from "../../src";
+import { GEN3_MOVE_IDS, GEN3_NATURE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 import { createGen3DataManager } from "../../src/data";
 
 /**
@@ -36,6 +46,16 @@ function createMockRng(intValue = 0) {
   };
 }
 
+const dataManager = createGen3DataManager();
+const ruleset = new Gen3Ruleset(dataManager);
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = CORE_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS } as const;
+const SPECIES = GEN3_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+
 function createActivePokemon(opts: {
   types: PokemonType[];
   status?: string | null;
@@ -56,27 +76,27 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: opts.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN3_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? 200,
     moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    ability: opts.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -94,7 +114,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -112,32 +132,6 @@ function createActivePokemon(opts: {
     teraType: null,
     stellarBoostedTypes: [],
   } as ActivePokemon;
-}
-
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    name: id,
-    type: "normal",
-    category: "status",
-    power: null,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 3,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
-    ...overrides,
-  } as MoveData;
 }
 
 function createMinimalBattleState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
@@ -187,9 +181,6 @@ function createContext(
   return { attacker, defender, move, damage, state, rng } as MoveEffectContext;
 }
 
-const dataManager = createGen3DataManager();
-const ruleset = new Gen3Ruleset(dataManager);
-
 // ---------------------------------------------------------------------------
 // Rest
 // ---------------------------------------------------------------------------
@@ -198,33 +189,33 @@ describe("Gen 3 Rest", () => {
   it("given attacker at half HP, when Rest used, then healAmount = maxHp and selfStatusInflicted = sleep", () => {
     // Source: pret/pokeemerald — Rest heals fully and inflicts sleep
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       currentHp: 100,
       nickname: "Snorlax",
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("rest");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.rest);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
     // Source: pret/pokeemerald — healAmount = maxHp (200)
     expect(result.healAmount).toBe(200);
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUSES.sleep);
     expect(result.messages).toContain("Snorlax went to sleep and became healthy!");
   });
 
   it("given attacker at full HP, when Rest used, then healAmount still = maxHp", () => {
     // Source: pret/pokeemerald — Rest always heals full HP regardless of current HP
-    const attacker = createActivePokemon({ types: ["normal"], currentHp: 200 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("rest");
+    const attacker = createActivePokemon({ types: [TYPES.normal], currentHp: 200 });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.rest);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.healAmount).toBe(200);
-    expect(result.selfStatusInflicted).toBe("sleep");
+    expect(result.selfStatusInflicted).toBe(STATUSES.sleep);
   });
 });
 
@@ -235,30 +226,30 @@ describe("Gen 3 Rest", () => {
 describe("Gen 3 Curse (Ghost-type)", () => {
   it("given ghost-type attacker, when Curse used, then recoilDamage = 50% maxHp and volatileInflicted = curse", () => {
     // Source: pret/pokeemerald — Ghost-type Curse: lose 50% HP, inflict curse volatile
-    const attacker = createActivePokemon({ types: ["ghost"], nickname: "Dusclops" });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Slaking" });
-    const move = createMove("curse", { type: "ghost" });
+    const attacker = createActivePokemon({ types: [TYPES.ghost], nickname: "Dusclops" });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Slaking" });
+    const move = dataManager.getMove(MOVES.curse);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
     // Source: pret/pokeemerald — floor(200 / 2) = 100
     expect(result.recoilDamage).toBe(100);
-    expect(result.volatileInflicted).toBe("curse");
+    expect(result.volatileInflicted).toBe(VOLATILES.curse);
     expect(result.messages).toContain("Dusclops cut its own HP and laid a curse on Slaking!");
   });
 
   it("given ghost/dark dual-type attacker, when Curse used, then ghost-type path activates", () => {
     // Source: pret/pokeemerald — Curse checks if user includes ghost type
-    const attacker = createActivePokemon({ types: ["ghost", "dark"], nickname: "Sableye" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("curse", { type: "ghost" });
+    const attacker = createActivePokemon({ types: [TYPES.ghost, TYPES.dark], nickname: "Sableye" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.curse);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.recoilDamage).toBe(100);
-    expect(result.volatileInflicted).toBe("curse");
+    expect(result.volatileInflicted).toBe(VOLATILES.curse);
   });
 });
 
@@ -269,9 +260,9 @@ describe("Gen 3 Curse (Ghost-type)", () => {
 describe("Gen 3 Curse (Non-Ghost)", () => {
   it("given non-ghost attacker, when Curse used, then stat changes = -1 Speed, +1 Attack, +1 Defense", () => {
     // Source: pret/pokeemerald — non-Ghost Curse: -1 Speed, +1 Atk, +1 Def
-    const attacker = createActivePokemon({ types: ["steel"], nickname: "Steelix" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("curse", { type: "ghost" });
+    const attacker = createActivePokemon({ types: [TYPES.steel], nickname: "Steelix" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.curse);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -287,9 +278,9 @@ describe("Gen 3 Curse (Non-Ghost)", () => {
 
   it("given normal-type attacker, when Curse used, then non-ghost path activates (no recoil, no curse volatile)", () => {
     // Source: pret/pokeemerald — Curse path depends on whether user has ghost type
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("curse", { type: "ghost" });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.curse);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -308,28 +299,28 @@ describe("Gen 3 Taunt", () => {
   it("given defender not taunted, when Taunt used, then volatileInflicted = taunt with turnsLeft = 2", () => {
     // Source: pret/pokeemerald — Taunt lasts 2 turns in Gen 3
     // Source: Bulbapedia — "In Generation III, Taunt lasts for 2 turns"
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Blissey" });
-    const move = createMove("taunt");
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Blissey" });
+    const move = dataManager.getMove(MOVES.taunt);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("taunt");
+    expect(result.volatileInflicted).toBe(VOLATILES.taunt);
     expect(result.volatileData).toEqual({ turnsLeft: 2 });
     expect(result.messages).toContain("Blissey fell for the taunt!");
   });
 
   it("given defender with no nickname, when Taunt used, then default name in message", () => {
     // Source: pret/pokeemerald — Taunt message format
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("taunt");
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.taunt);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("taunt");
+    expect(result.volatileInflicted).toBe(VOLATILES.taunt);
     expect(result.volatileData).toEqual({ turnsLeft: 2 });
     expect(result.messages).toContain("The foe fell for the taunt!");
   });
@@ -343,38 +334,38 @@ describe("Gen 3 Encore", () => {
   it("given defender used a move last turn, when Encore used with rng=2, then volatileInflicted = encore with turnsLeft = 2", () => {
     // Source: pret/pokeemerald — Encore lasts 2-5 turns in Gen 3
     // Source: Bulbapedia — "In Generation III, Encore lasts 2-5 turns"
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Snorlax" });
-    defender.lastMoveUsed = "body-slam";
-    const move = createMove("encore");
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Snorlax" });
+    defender.lastMoveUsed = MOVES.bodySlam;
+    const move = dataManager.getMove(MOVES.encore);
     const context = createContext(attacker, defender, move, 0, createMockRng(2));
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("encore");
-    expect(result.volatileData).toEqual({ turnsLeft: 2, data: { moveId: "body-slam" } });
+    expect(result.volatileInflicted).toBe(VOLATILES.encore);
+    expect(result.volatileData).toEqual({ turnsLeft: 2, data: { moveId: MOVES.bodySlam } });
     expect(result.messages).toContain("Snorlax got an encore!");
   });
 
   it("given defender used a move last turn, when Encore used with rng=5, then volatileInflicted = encore with turnsLeft = 5", () => {
     // Source: pret/pokeemerald — Encore lasts 2-5 turns, upper bound
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    defender.lastMoveUsed = "thunderbolt";
-    const move = createMove("encore");
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    defender.lastMoveUsed = MOVES.thunderbolt;
+    const move = dataManager.getMove(MOVES.encore);
     const context = createContext(attacker, defender, move, 0, createMockRng(5));
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("encore");
-    expect(result.volatileData).toEqual({ turnsLeft: 5, data: { moveId: "thunderbolt" } });
+    expect(result.volatileInflicted).toBe(VOLATILES.encore);
+    expect(result.volatileData).toEqual({ turnsLeft: 5, data: { moveId: MOVES.thunderbolt } });
   });
 
   it("given defender has no last move, when Encore used, then it fails", () => {
     // Source: pret/pokeemerald — Encore fails if no last move
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("encore");
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.encore);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -385,11 +376,11 @@ describe("Gen 3 Encore", () => {
 
   it("given defender already encored, when Encore used, then it fails", () => {
     // Source: pret/pokeemerald — Encore fails if already affected
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    defender.lastMoveUsed = "tackle";
-    defender.volatileStatuses.set("encore", { turnsLeft: 3 });
-    const move = createMove("encore");
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    defender.lastMoveUsed = MOVES.tackle;
+    defender.volatileStatuses.set(VOLATILES.encore, { turnsLeft: 3 });
+    const move = dataManager.getMove(MOVES.encore);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -407,38 +398,38 @@ describe("Gen 3 Disable", () => {
   it("given defender used a move last turn, when Disable used with rng=2, then volatileInflicted = disable with turnsLeft = 2", () => {
     // Source: pret/pokeemerald — Disable lasts 2-5 turns in Gen 3
     // Source: Bulbapedia — "In Generation III, Disable lasts 2-5 turns"
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"], nickname: "Snorlax" });
-    defender.lastMoveUsed = "body-slam";
-    const move = createMove("disable");
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
+    const defender = createActivePokemon({ types: [TYPES.normal], nickname: "Snorlax" });
+    defender.lastMoveUsed = MOVES.bodySlam;
+    const move = dataManager.getMove(MOVES.disable);
     const context = createContext(attacker, defender, move, 0, createMockRng(2));
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("disable");
-    expect(result.volatileData).toEqual({ turnsLeft: 2, data: { moveId: "body-slam" } });
+    expect(result.volatileInflicted).toBe(VOLATILES.disable);
+    expect(result.volatileData).toEqual({ turnsLeft: 2, data: { moveId: MOVES.bodySlam } });
     expect(result.messages).toContain("Snorlax's body-slam was disabled!");
   });
 
   it("given defender used a move last turn, when Disable used with rng=5, then turnsLeft = 5", () => {
     // Source: pret/pokeemerald — Disable lasts 2-5 turns, upper bound
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    defender.lastMoveUsed = "ice-beam";
-    const move = createMove("disable");
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    defender.lastMoveUsed = MOVES.iceBeam;
+    const move = dataManager.getMove(MOVES.disable);
     const context = createContext(attacker, defender, move, 0, createMockRng(5));
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("disable");
-    expect(result.volatileData).toEqual({ turnsLeft: 5, data: { moveId: "ice-beam" } });
+    expect(result.volatileInflicted).toBe(VOLATILES.disable);
+    expect(result.volatileData).toEqual({ turnsLeft: 5, data: { moveId: MOVES.iceBeam } });
   });
 
   it("given defender has no last move, when Disable used, then it fails", () => {
     // Source: pret/pokeemerald — Disable fails if no last move to disable
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("disable");
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.disable);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
@@ -455,27 +446,27 @@ describe("Gen 3 Disable", () => {
 describe("Gen 3 Endure", () => {
   it("given attacker uses Endure, when executeMoveEffect called, then selfVolatileInflicted = endure", () => {
     // Source: pret/pokeemerald — Endure sets ENDURE volatile
-    const attacker = createActivePokemon({ types: ["normal"], nickname: "Blissey" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("endure");
+    const attacker = createActivePokemon({ types: [TYPES.normal], nickname: "Blissey" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.endure);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.selfVolatileInflicted).toBe("endure");
+    expect(result.selfVolatileInflicted).toBe(VOLATILES.endure);
     expect(result.messages).toContain("Blissey braced itself!");
   });
 
   it("given attacker with no nickname uses Endure, when executeMoveEffect called, then default name in message", () => {
     // Source: pret/pokeemerald — Endure message
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("endure");
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.endure);
     const context = createContext(attacker, defender, move, 0, createMockRng());
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.selfVolatileInflicted).toBe("endure");
+    expect(result.selfVolatileInflicted).toBe(VOLATILES.endure);
     expect(result.messages).toContain("The Pokemon braced itself!");
   });
 });

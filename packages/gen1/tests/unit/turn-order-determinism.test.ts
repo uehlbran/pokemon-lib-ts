@@ -1,13 +1,22 @@
 import type { BattleAction, BattleState } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
+import { CORE_MOVE_IDS, CORE_TYPE_IDS, createMoveSlot, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen1DataManager } from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+
+const dataManager = createGen1DataManager();
+const tackleMove = dataManager.getMove(CORE_MOVE_IDS.tackle);
 
 /**
  * Helper to create a minimal ActivePokemon for turn-order tests.
  * Only the fields read by Gen1Ruleset.resolveTurnOrder are populated.
  */
-function createTurnOrderActive(speed: number, moveId = "tackle", status: string | null = null) {
+function createTurnOrderActive(
+  speed: number,
+  moveId = CORE_MOVE_IDS.tackle,
+  status: string | null = null,
+) {
   return {
     pokemon: {
       speciesId: 1,
@@ -16,7 +25,7 @@ function createTurnOrderActive(speed: number, moveId = "tackle", status: string 
       status,
       heldItem: null,
       nickname: null,
-      moves: [{ moveId, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(moveId, tackleMove.pp)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -27,18 +36,9 @@ function createTurnOrderActive(speed: number, moveId = "tackle", status: string 
       },
     },
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["normal"],
+    types: [CORE_TYPE_IDS.normal],
     ability: "",
     lastMoveUsed: null,
     lastDamageTaken: 0,

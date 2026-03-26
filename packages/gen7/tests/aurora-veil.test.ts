@@ -4,75 +4,87 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, VolatileStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import type { PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createIvs,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import {
   AURORA_VEIL_DEFAULT_TURNS,
   AURORA_VEIL_LIGHT_CLAY_TURNS,
+  createGen7DataManager,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+  Gen7Ruleset,
   handleAuroraVeil,
-} from "../src/Gen7MoveEffects";
-import { Gen7Ruleset } from "../src/Gen7Ruleset";
+} from "@pokemon-lib-ts/gen7";
+import { describe, expect, it } from "vitest";
 
-// ---------------------------------------------------------------------------
-// Test Helpers
-// ---------------------------------------------------------------------------
+const dataManager = createGen7DataManager();
+const AURORA_VEIL_MOVE = dataManager.getMove(GEN7_MOVE_IDS.auroraVeil);
+const HARDY_NATURE = dataManager.getNature(GEN7_NATURE_IDS.hardy).id;
+const NINETALES = dataManager.getSpecies(GEN7_SPECIES_IDS.ninetales);
+const DEFAULT_ABILITY = NINETALES.abilities.normal[0] ?? CORE_ABILITY_IDS.none;
 
-const AURORA_VEIL_MOVE: MoveData = {
-  id: "aurora-veil",
-  displayName: "Aurora Veil",
-  type: "ice",
-  category: "status",
-  power: null,
-  accuracy: null,
-  pp: 20,
-  priority: 0,
-  target: "user-field",
-  flags: {
-    contact: false,
-    sound: false,
-    bullet: false,
-    pulse: false,
-    punch: false,
-    bite: false,
-    wind: false,
-    slicing: false,
-    powder: false,
-    protect: false,
-    mirror: false,
-    snatch: true,
-    gravity: false,
-    defrost: false,
-    recharge: false,
-    charge: false,
-    bypassSubstitute: false,
-  },
-  effect: null,
-  description: "Aurora Veil",
-  generation: 7,
-} as unknown as MoveData;
+/**
+ * Gen 7 Aurora Veil Tests
+ *
+ * Verifies the gen-specific overrides already implemented in Gen7MoveEffects.
+ */
 
-function makeActivePokemon(overrides: {
-  maxHp?: number;
-  types?: string[];
-  ability?: string;
-  nickname?: string;
-  heldItem?: string | null;
-  volatiles?: Map<string, { turnsLeft: number }>;
-}): ActivePokemon {
+function createOnFieldPokemon(
+  overrides: {
+    maxHp?: number;
+    types?: PokemonType[];
+    ability?: string;
+    nickname?: string;
+    heldItem?: string | null;
+    volatiles?: Map<string, { turnsLeft: number }>;
+  } = {},
+): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      calculatedStats: { hp: maxHp },
-      currentHp: maxHp,
+      uid: "test",
+      speciesId: NINETALES.id,
       nickname: overrides.nickname ?? "TestMon",
-      speciesId: 1,
+      level: 50,
+      experience: 0,
+      nature: HARDY_NATURE,
+      ivs: createIvs({ hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 }),
+      evs: createEvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+      currentHp: maxHp,
+      moves: [
+        {
+          moveId: AURORA_VEIL_MOVE.id,
+          pp: AURORA_VEIL_MOVE.pp,
+          maxPp: AURORA_VEIL_MOVE.pp,
+        },
+      ],
+      ability: overrides.ability ?? DEFAULT_ABILITY,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
-      moves: [{ moveId: "aurora-veil", pp: 20, maxPp: 20 }],
+      friendship: 0,
+      gender: CORE_GENDERS.male,
+      isShiny: false,
+      metLocation: "",
+      metLevel: 1,
+      originalTrainer: "",
+      originalTrainerId: 0,
+      pokeball: CORE_ITEM_IDS.pokeBall,
+      calculatedStats: { hp: maxHp },
     },
-    ability: overrides.ability ?? "snow-warning",
-    types: overrides.types ?? ["ice"],
+    teamSlot: 0,
     statStages: {
       attack: 0,
       defense: 0,
@@ -86,10 +98,12 @@ function makeActivePokemon(overrides: {
       (overrides.volatiles as Map<VolatileStatus, { turnsLeft: number }>) ?? new Map(),
     turnsOnField: 0,
     consecutiveProtects: 0,
-  } as unknown as ActivePokemon;
+    types: overrides.types ?? [...NINETALES.types],
+    ability: overrides.ability ?? DEFAULT_ABILITY,
+  } as ActivePokemon;
 }
 
-function makeSide(
+function createBattleSide(
   active: ActivePokemon,
   index: 0 | 1 = 0,
   screens: Array<{ type: string; turnsLeft: number }> = [],
@@ -107,10 +121,10 @@ function makeSide(
     gimmickUsed: false,
     team: [],
     trainer: null,
-  } as unknown as BattleSide;
+  } as BattleSide;
 }
 
-function makeState(
+function createBattleState(
   weatherType: string | null,
   attacker: ActivePokemon,
   defender: ActivePokemon,
@@ -118,14 +132,14 @@ function makeState(
 ): BattleState {
   return {
     weather: weatherType ? { type: weatherType, turnsLeft: 5, source: "test" } : null,
-    sides: [makeSide(attacker, 0, attackerScreens), makeSide(defender, 1)],
+    sides: [createBattleSide(attacker, 0, attackerScreens), createBattleSide(defender, 1)],
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },
     terrain: null,
-  } as unknown as BattleState;
+  } as BattleState;
 }
 
-function makeMoveEffectContext(
+function createAuroraVeilContext(
   attacker: ActivePokemon,
   defender: ActivePokemon,
   state: BattleState,
@@ -140,18 +154,19 @@ function makeMoveEffectContext(
   } as MoveEffectContext;
 }
 
-// ---------------------------------------------------------------------------
-// Aurora Veil Tests
-// ---------------------------------------------------------------------------
+function createSyntheticScreenState(turnsLeft: number): Array<{ type: string; turnsLeft: number }> {
+  // Synthetic probe: this test needs an already-active Aurora Veil screen to
+  // prove the re-use failure branch, and that state is not owned data.
+  return [{ type: AURORA_VEIL_MOVE.id, turnsLeft }];
+}
 
 describe("Gen7 Aurora Veil", () => {
   it("given Hail is not active, when Aurora Veil used, then it fails", () => {
     // Source: Showdown data/moves.ts -- onTry: source.effectiveWeather() === 'hail'
-    // Source: Bulbapedia -- "This move can only be used during hail"
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"], nickname: "Snorlax" });
-    const state = makeState(null, attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ nickname: "Snorlax", types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(null, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toBeUndefined();
@@ -159,11 +174,10 @@ describe("Gen7 Aurora Veil", () => {
   });
 
   it("given sun is active, when Aurora Veil used, then it fails", () => {
-    // Source: Showdown -- onTry only returns true for hail
-    const attacker = makeActivePokemon({ nickname: "Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState("sun", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(CORE_WEATHER_IDS.sun, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toBeUndefined();
@@ -171,11 +185,10 @@ describe("Gen7 Aurora Veil", () => {
   });
 
   it("given rain is active, when Aurora Veil used, then it fails", () => {
-    // Source: Showdown -- onTry only returns true for hail
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeState("rain", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({});
+    const defender = createOnFieldPokemon({});
+    const state = createBattleState(CORE_WEATHER_IDS.rain, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toBeUndefined();
@@ -183,11 +196,10 @@ describe("Gen7 Aurora Veil", () => {
   });
 
   it("given sandstorm is active, when Aurora Veil used, then it fails", () => {
-    // Source: Showdown -- onTry only returns true for hail
-    const attacker = makeActivePokemon({});
-    const defender = makeActivePokemon({});
-    const state = makeState("sand", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({});
+    const defender = createOnFieldPokemon({});
+    const state = createBattleState(CORE_WEATHER_IDS.sand, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toBeUndefined();
@@ -195,43 +207,46 @@ describe("Gen7 Aurora Veil", () => {
   });
 
   it("given Hail is active, when Aurora Veil used, then sets screen on attacker's side for 5 turns", () => {
-    // Source: Showdown data/moves.ts -- auroraveil: sideCondition, duration: 5
-    // Source: Bulbapedia -- "Aurora Veil lasts for five turns"
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState("hail", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(CORE_WEATHER_IDS.hail, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toEqual({
-      screen: "aurora-veil",
+      screen: AURORA_VEIL_MOVE.id,
       turnsLeft: 5,
       side: "attacker",
     });
   });
 
   it("given Hail is active and attacker holds Light Clay, when Aurora Veil used, then lasts 8 turns", () => {
-    // Source: Showdown data/items.ts -- lightclay: extends screen duration by 3 turns
-    // Source: Bulbapedia -- "Lasts for 8 turns if the user is holding Light Clay"
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales", heldItem: "light-clay" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState("hail", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({
+      nickname: "TestMon",
+      heldItem: GEN7_ITEM_IDS.lightClay,
+    });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(CORE_WEATHER_IDS.hail, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toEqual({
-      screen: "aurora-veil",
+      screen: AURORA_VEIL_MOVE.id,
       turnsLeft: 8,
       side: "attacker",
     });
   });
 
   it("given Aurora Veil already active on attacker's side, when Aurora Veil used again, then fails", () => {
-    // Source: Showdown -- sideCondition check: cannot stack
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState("hail", attacker, defender, [{ type: "aurora-veil", turnsLeft: 3 }]);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(
+      CORE_WEATHER_IDS.hail,
+      attacker,
+      defender,
+      createSyntheticScreenState(3),
+    );
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.screenSet).toBeUndefined();
@@ -239,22 +254,17 @@ describe("Gen7 Aurora Veil", () => {
   });
 
   it("given Aurora Veil succeeds, when message checked, then contains descriptive text", () => {
-    // Source: Showdown -- aurora veil message
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState("hail", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(CORE_WEATHER_IDS.hail, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]).toContain("Aurora Veil");
-    expect(result.messages[0]).toContain("Alolan Ninetales");
+    expect(result.messages[0]).toContain("TestMon");
   });
 });
-
-// ---------------------------------------------------------------------------
-// Aurora Veil Constants Tests
-// ---------------------------------------------------------------------------
 
 describe("Gen7 Aurora Veil constants", () => {
   it("given the aurora veil default turns constant, when checked, then equals 5", () => {
@@ -268,34 +278,28 @@ describe("Gen7 Aurora Veil constants", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Integration: executeMoveEffect via Gen7Ruleset
-// ---------------------------------------------------------------------------
-
 describe("Gen7 Ruleset executeMoveEffect - Aurora Veil", () => {
   it("given Hail active, when Gen7Ruleset.executeMoveEffect called with aurora-veil, then returns screen set", () => {
-    // Source: Showdown data/moves.ts -- auroraveil handler
     const ruleset = new Gen7Ruleset();
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState("hail", attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(CORE_WEATHER_IDS.hail, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = ruleset.executeMoveEffect(ctx);
     expect(result.screenSet).toEqual({
-      screen: "aurora-veil",
+      screen: AURORA_VEIL_MOVE.id,
       turnsLeft: 5,
       side: "attacker",
     });
   });
 
   it("given no Hail, when Gen7Ruleset.executeMoveEffect called with aurora-veil, then fails", () => {
-    // Source: Showdown -- onTry: effectiveWeather() === 'hail'
     const ruleset = new Gen7Ruleset();
-    const attacker = makeActivePokemon({ nickname: "Alolan Ninetales" });
-    const defender = makeActivePokemon({ types: ["normal"] });
-    const state = makeState(null, attacker, defender);
-    const ctx = makeMoveEffectContext(attacker, defender, state);
+    const attacker = createOnFieldPokemon({ nickname: "TestMon" });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createBattleState(null, attacker, defender);
+    const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = ruleset.executeMoveEffect(ctx);
     expect(result.screenSet).toBeUndefined();

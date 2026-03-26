@@ -1,24 +1,228 @@
-import { CRIT_RATE_PROBABILITIES_GEN6, DataManager } from "@pokemon-lib-ts/core";
+import type { BattleSide, BattleState, CritContext } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  CORE_VOLATILE_IDS,
+  CRIT_RATE_PROBABILITIES_GEN6,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
   GEN9_CRIT_MULTIPLIER,
   GEN9_CRIT_RATE_PROBABILITIES,
   GEN9_CRIT_RATE_TABLE,
   GEN9_CRIT_RATES,
-} from "../src/Gen9CritCalc";
-import { Gen9Ruleset } from "../src/Gen9Ruleset";
+  GEN9_ITEM_IDS,
+  GEN9_SPECIES_IDS,
+  Gen9Ruleset,
+} from "../src";
 
-// ---------------------------------------------------------------------------
-// Gen 9 Critical Hit Constants
-//
-// Gen 9 uses the same crit system as Gen 6-8:
-//   - Crit multiplier: 1.5x (unchanged from Gen 6; was 2.0x in Gen 3-5)
-//   - Crit rate table: [24, 8, 2, 1] (stages 0-3+, same as Gen 6-8)
-//   - Stage 3+ is a guaranteed crit (1/1)
-//
-// Source: Showdown sim/battle-actions.ts -- Gen 9 crit multiplier and rate table
-// Source: Bulbapedia "Critical hit" Gen 9 section -- unchanged from Gen 6-8
-// ---------------------------------------------------------------------------
+const dataManager = createGen9DataManager();
+const ruleset = new Gen9Ruleset(dataManager);
+const defaultNatureId = dataManager.getNature(CORE_NATURE_IDS.hardy).id;
+const defaultLevel = 50;
+const defaultSeed = 42;
+
+const moveIds = {
+  tackle: dataManager.getMove(CORE_MOVE_IDS.tackle).id,
+} as const;
+
+const abilityIds = {
+  battleArmor: GEN9_ABILITY_IDS.battleArmor,
+  blaze: CORE_ABILITY_IDS.blaze,
+  intimidate: CORE_ABILITY_IDS.intimidate,
+  shellArmor: GEN9_ABILITY_IDS.shellArmor,
+  superLuck: GEN9_ABILITY_IDS.superLuck,
+} as const;
+
+const itemIds = {
+  pokeBall: CORE_ITEM_IDS.pokeBall,
+  scopeLens: GEN9_ITEM_IDS.scopeLens,
+} as const;
+
+const speciesIds = {
+  battleArmor: GEN9_SPECIES_IDS.perrserker,
+  blaze: GEN9_SPECIES_IDS.charizard,
+  intimidate: GEN9_SPECIES_IDS.ekans,
+  shellArmor: GEN9_SPECIES_IDS.shellder,
+  superLuck: GEN9_SPECIES_IDS.murkrow,
+  pikachu: GEN9_SPECIES_IDS.pikachu,
+} as const;
+
+const defaultSpeciesIdsByAbility = {
+  [abilityIds.battleArmor]: speciesIds.battleArmor,
+  [abilityIds.blaze]: speciesIds.blaze,
+  [abilityIds.intimidate]: speciesIds.intimidate,
+  [abilityIds.shellArmor]: speciesIds.shellArmor,
+  [abilityIds.superLuck]: speciesIds.superLuck,
+} as const satisfies Record<string, number>;
+
+function createGuaranteedCritRng(): SeededRandom {
+  return {
+    next: () => 0,
+    int: (min: number, _max: number) => min,
+    chance: (probability: number) => probability >= 1,
+    seed: 0,
+  } as unknown as SeededRandom;
+}
+
+function resolveDefaultSpeciesId(abilityId?: string): number {
+  if (abilityId && abilityId in defaultSpeciesIdsByAbility) {
+    return defaultSpeciesIdsByAbility[abilityId];
+  }
+
+  return speciesIds.blaze;
+}
+
+function createSyntheticCritPokemon(
+  options: {
+    speciesId?: number;
+    ability?: string;
+    heldItem?: string | null;
+    volatiles?: readonly string[];
+    types?: readonly PokemonType[];
+  } = {},
+) {
+  const resolvedAbilityId = options.ability ?? abilityIds.blaze;
+  const species = dataManager.getSpecies(
+    options.speciesId ?? resolveDefaultSpeciesId(resolvedAbilityId),
+  );
+  const pokemon = createPokemonInstance(species, defaultLevel, new SeededRandom(defaultSeed), {
+    nature: defaultNatureId,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: options.heldItem ?? null,
+    friendship: createFriendship(species.baseFriendship),
+    gender: species.genderRatio === -1 ? CORE_GENDERS.genderless : CORE_GENDERS.male,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: itemIds.pokeBall,
+    moves: [moveIds.tackle],
+  });
+
+  pokemon.ability = resolvedAbilityId;
+
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, [
+    ...(options.types ?? species.types),
+  ]);
+  activePokemon.volatileStatuses = new Map(
+    (options.volatiles ?? []).map((volatileId) => [
+      volatileId as Parameters<typeof activePokemon.volatileStatuses.set>[0],
+      { turnsLeft: -1 },
+    ]),
+  );
+  return activePokemon;
+}
+
+function createSyntheticMoveFrom(moveId: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(moveId);
+  return {
+    ...baseMove,
+    ...overrides,
+    flags: {
+      ...baseMove.flags,
+      ...overrides?.flags,
+    },
+  };
+}
+
+function createBattleSide(
+  index: 0 | 1,
+  activePokemon: ReturnType<typeof createSyntheticCritPokemon>,
+): BattleSide {
+  return {
+    index,
+    trainer: null,
+    team: [activePokemon.pokemon],
+    active: [activePokemon],
+    hazards: [],
+    screens: [],
+    tailwind: { active: false, turnsLeft: 0 },
+    luckyChant: { active: false, turnsLeft: 0 },
+    wish: null,
+    futureAttack: null,
+    faintCount: 0,
+    gimmickUsed: false,
+  };
+}
+
+function createSyntheticBattleState(
+  attacker: ReturnType<typeof createSyntheticCritPokemon>,
+  defender: ReturnType<typeof createSyntheticCritPokemon>,
+): BattleState {
+  return {
+    phase: "turn-start",
+    generation: 9,
+    format: "singles",
+    turnNumber: 1,
+    sides: [createBattleSide(0, attacker), createBattleSide(1, defender)],
+    weather: null,
+    terrain: null,
+    trickRoom: { active: false, turnsLeft: 0 },
+    magicRoom: { active: false, turnsLeft: 0 },
+    wonderRoom: { active: false, turnsLeft: 0 },
+    gravity: { active: false, turnsLeft: 0 },
+    turnHistory: [],
+    rng: createGuaranteedCritRng(),
+    isWildBattle: false,
+    fleeAttempts: 0,
+    ended: false,
+    winner: null,
+  };
+}
+
+function createSyntheticCritContext(
+  options: {
+    defenderAbility?: string;
+    attackerVolatiles?: readonly string[];
+    attackerItem?: string;
+    attackerSpeciesId?: number;
+    attackerAbility?: string;
+    moveCritRatio?: number;
+  } = {},
+): CritContext {
+  const attacker = createSyntheticCritPokemon({
+    speciesId: options.attackerSpeciesId ?? resolveDefaultSpeciesId(options.attackerAbility),
+    ability: options.attackerAbility,
+    heldItem: options.attackerItem ?? null,
+    volatiles: options.attackerVolatiles,
+  });
+  const defender = options.defenderAbility
+    ? createSyntheticCritPokemon({
+        speciesId: resolveDefaultSpeciesId(options.defenderAbility),
+        ability: options.defenderAbility,
+      })
+    : undefined;
+  const move =
+    options.moveCritRatio !== undefined
+      ? createSyntheticMoveFrom(moveIds.tackle, { critRatio: options.moveCritRatio })
+      : dataManager.getMove(moveIds.tackle);
+
+  return {
+    attacker,
+    defender,
+    move,
+    state: createSyntheticBattleState(
+      attacker,
+      defender ?? createSyntheticCritPokemon({ speciesId: speciesIds.pikachu }),
+    ),
+    rng: createGuaranteedCritRng(),
+  };
+}
 
 describe("Gen 9 critical hit constants", () => {
   it("given GEN9_CRIT_RATE_TABLE, then stage 0 denominator is 24 (~4.2%)", () => {
@@ -71,122 +275,60 @@ describe("Gen 9 critical hit constants", () => {
 
   it("given GEN9_CRIT_MULTIPLIER is 1.5, then it differs from Gen 5's 2.0x", () => {
     // Source: Bulbapedia "Critical hit" -- Gen 5 used 2.0x, Gen 6+ changed to 1.5x
-    // Triangulation: verify the value is specifically 1.5, not 2.0
     expect(GEN9_CRIT_MULTIPLIER).not.toBe(2.0);
     expect(GEN9_CRIT_MULTIPLIER).toBe(1.5);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Gen 9 Critical Hit Roll (via Gen9Ruleset.rollCritical)
-//
-// Gen 9 inherits the BaseRuleset.rollCritical logic and adds
-// Battle Armor / Shell Armor immunity (same as Gen 6-8).
-//
-// Source: Bulbapedia -- Battle Armor / Shell Armor prevent critical hits
-// Source: Showdown sim/battle-actions.ts -- crit immunity check
-// ---------------------------------------------------------------------------
-
 describe("Gen 9 critical hit roll behavior", () => {
-  const ruleset = new Gen9Ruleset(new DataManager());
-
-  /**
-   * Helper: create a minimal CritContext for testing.
-   */
-  function makeCritContext(overrides: {
-    defenderAbility?: string;
-    attackerVolatiles?: string[];
-    moveCritRatio?: number;
-    attackerItem?: string;
-    attackerSpeciesId?: number;
-    attackerAbility?: string;
-  }) {
-    const fakeRng = {
-      next: () => 0.5,
-      int: (min: number, _max: number) => {
-        // Return min to trigger a crit (rng.int(1, rate) === 1 when rate > 1)
-        return min;
-      },
-      chance: (p: number) => p >= 0.5,
-      seed: 12345,
-    };
-
-    const volatileSet = new Set(overrides.attackerVolatiles ?? []);
-
-    return {
-      attacker: {
-        pokemon: {
-          heldItem: overrides.attackerItem ?? null,
-          speciesId: overrides.attackerSpeciesId ?? 25,
-          moves: [],
-        },
-        ability: overrides.attackerAbility ?? null,
-        statStages: { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-        volatileStatuses: volatileSet,
-        types: ["electric" as const],
-      },
-      defender: overrides.defenderAbility
-        ? {
-            pokemon: { heldItem: null, speciesId: 1, moves: [] },
-            ability: overrides.defenderAbility,
-            statStages: { attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-            volatileStatuses: new Set(),
-            types: ["normal" as const],
-          }
-        : undefined,
-      move: {
-        critRatio: overrides.moveCritRatio ?? 0,
-      },
-      rng: fakeRng,
-    } as any;
-  }
-
   it("given defender has Battle Armor ability, when rolling crit, then crit is prevented", () => {
     // Source: Bulbapedia -- Battle Armor prevents critical hits
     // Source: Showdown sim/battle-actions.ts -- crit immunity for Battle Armor
-    const context = makeCritContext({ defenderAbility: "battle-armor" });
+    const context = createSyntheticCritContext({ defenderAbility: abilityIds.battleArmor });
     expect(ruleset.rollCritical(context)).toBe(false);
   });
 
   it("given defender has Shell Armor ability, when rolling crit, then crit is prevented", () => {
     // Source: Bulbapedia -- Shell Armor prevents critical hits (same effect as Battle Armor)
     // Source: Showdown sim/battle-actions.ts -- crit immunity for Shell Armor
-    const context = makeCritContext({ defenderAbility: "shell-armor" });
+    const context = createSyntheticCritContext({ defenderAbility: abilityIds.shellArmor });
     expect(ruleset.rollCritical(context)).toBe(false);
   });
 
   it("given defender has no crit-blocking ability, when rolling crit with favorable RNG, then crit can occur", () => {
     // Source: Bulbapedia -- without Battle Armor/Shell Armor, crits are possible
-    // With our fake RNG that returns min (=1), and stage 0 rate of 24,
+    // With our synthetic RNG that returns the minimum roll, and stage 0 rate of 24,
     // rng.int(1, 24) === 1 is true, so crit occurs
-    const context = makeCritContext({ defenderAbility: "intimidate" });
+    const context = createSyntheticCritContext({ defenderAbility: abilityIds.intimidate });
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given attacker has Focus Energy (+2 crit stage), when rolling crit, then crit stage is boosted", () => {
     // Source: Showdown sim/battle-actions.ts -- Focus Energy adds +2 to crit stage
     // Stage 2 rate = 2, so rng.int(1, 2) === 1 is true with our favorable RNG
-    const context = makeCritContext({ attackerVolatiles: ["focus-energy"] });
+    const context = createSyntheticCritContext({
+      attackerVolatiles: [CORE_VOLATILE_IDS.focusEnergy],
+    });
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given attacker has Scope Lens (+1 crit stage), when rolling crit, then crit stage is boosted by +1", () => {
-    // Source: Showdown sim/battle-actions.ts -- Scope Lens adds +1 to crit stage
+    // Source: Showdown sim/battle-actions.ts -- Scope Lens adds +1 crit stage
     // Stage 1 rate = 8, so rng.int(1, 8) === 1 is true with our favorable RNG
-    const context = makeCritContext({ attackerItem: "scope-lens" });
+    const context = createSyntheticCritContext({ attackerItem: itemIds.scopeLens });
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given attacker has Super Luck ability (+1 crit stage), when rolling crit, then crit stage is boosted by +1", () => {
     // Source: Showdown sim/battle-actions.ts -- Super Luck adds +1 crit stage
     // Stage 1 rate = 8, so rng.int(1, 8) === 1 is true with our favorable RNG
-    const context = makeCritContext({ attackerAbility: "super-luck" });
+    const context = createSyntheticCritContext({ attackerAbility: abilityIds.superLuck });
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given no defender (e.g., field move), when rolling crit with favorable RNG, then crit can occur", () => {
     // Source: Showdown -- crit check with no defender has no immunity check
-    const context = makeCritContext({});
+    const context = createSyntheticCritContext();
     expect(ruleset.rollCritical(context)).toBe(true);
   });
 });

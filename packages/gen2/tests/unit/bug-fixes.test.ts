@@ -13,26 +13,53 @@
  */
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonSpeciesData,
-  PokemonType,
-  StatBlock,
-  TypeChart,
+import type { PokemonInstance, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  createDvs,
+  createFriendship,
+  createStatExp,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { getGen2CritStage } from "../../src/Gen2CritCalc";
-import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
-import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+import {
+  calculateGen2Damage,
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_NATURE_IDS,
+  GEN2_SPECIES_IDS,
+  Gen2Ruleset,
+  getGen2CritStage,
+} from "../../src";
+
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = GEN2_ITEM_IDS;
+const MOVES = GEN2_MOVE_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const WEATHERS = CORE_WEATHER_IDS;
+const DEFAULT_NATURE = GEN2_NATURE_IDS.hardy;
+const PERFECT_DVS = createDvs();
+const ZERO_STAT_EXP = createStatExp();
+const DEFAULT_FRIENDSHIP = createFriendship(70);
+const gen2Data = createGen2DataManager();
+const DEFAULT_SPECIES = gen2Data.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_MOVE = gen2Data.getMove(MOVES.tackle);
+const SLASH = gen2Data.getMove(MOVES.slash);
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
 /** A mock RNG whose int() always returns a fixed value (deterministic max roll). */
-function _createMaxRng() {
+function createMaxRng() {
   return {
     next: () => 0,
     int: (_min: number, max: number) => max,
@@ -44,21 +71,8 @@ function _createMaxRng() {
   };
 }
 
-/** A mock RNG whose int() always returns a fixed value. */
-function createMockRng(intReturnValue: number) {
-  return {
-    next: () => 0,
-    int: (_min: number, _max: number) => intReturnValue,
-    chance: (_p: number) => false,
-    pick: <T>(arr: readonly T[]) => arr[0] as T,
-    shuffle: <T>(arr: readonly T[]) => [...arr],
-    getState: () => 0,
-    setState: () => {},
-  };
-}
-
 /** Create a minimal PokemonInstance. */
-function _createPokemonInstance(opts: {
+function createSyntheticPokemonInstance(opts: {
   speciesId?: number;
   level?: number;
   maxHp?: number;
@@ -72,27 +86,27 @@ function _createPokemonInstance(opts: {
   const maxHp = opts.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
     nickname: null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: DEFAULT_NATURE,
+    ivs: PERFECT_DVS,
+    evs: ZERO_STAT_EXP,
     currentHp: maxHp,
     moves: [],
-    ability: "",
-    abilitySlot: "normal1" as const,
+    ability: ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: null,
-    friendship: 70,
-    gender: "male" as const,
+    friendship: DEFAULT_FRIENDSHIP,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "test",
     metLevel: 5,
     originalTrainer: "Test",
     originalTrainerId: 12345,
-    pokeball: "poke-ball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: opts.attack ?? 100,
@@ -105,7 +119,7 @@ function _createPokemonInstance(opts: {
 }
 
 /** Create a minimal ActivePokemon. */
-function createActivePokemon(opts: {
+function createSyntheticActivePokemon(opts: {
   speciesId?: number;
   level?: number;
   maxHp?: number;
@@ -119,41 +133,18 @@ function createActivePokemon(opts: {
   volatileStatuses?: Map<string, unknown>;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const stats: StatBlock = {
-    hp: maxHp,
-    attack: opts.attack ?? 100,
-    defense: opts.defense ?? 100,
-    spAttack: opts.spAttack ?? 100,
-    spDefense: opts.spDefense ?? 100,
-    speed: opts.speed ?? 100,
-  };
-
   return {
-    pokemon: {
-      uid: "test",
-      speciesId: opts.speciesId ?? 1,
-      nickname: null,
-      level: opts.level ?? 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: maxHp,
-      moves: [],
-      ability: "",
-      abilitySlot: "normal1" as const,
-      heldItem: opts.heldItem ?? null,
-      status: null,
-      friendship: 70,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "test",
-      metLevel: 5,
-      originalTrainer: "Test",
-      originalTrainerId: 12345,
-      pokeball: "poke-ball",
-      calculatedStats: stats,
-    } as PokemonInstance,
+    pokemon: createSyntheticPokemonInstance({
+      speciesId: opts.speciesId,
+      level: opts.level,
+      maxHp,
+      heldItem: opts.heldItem,
+      attack: opts.attack,
+      defense: opts.defense,
+      spAttack: opts.spAttack,
+      spDefense: opts.spDefense,
+      speed: opts.speed,
+    }),
     teamSlot: 0,
     statStages: {
       hp: 0,
@@ -166,8 +157,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: (opts.volatileStatuses ?? new Map()) as Map<never, never>,
-    types: opts.types ?? ["normal"],
-    ability: "",
+    types: opts.types ?? [TYPES.normal],
+    ability: ABILITIES.none,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,
@@ -184,94 +175,44 @@ function createActivePokemon(opts: {
   } as unknown as ActivePokemon;
 }
 
-/** Create a minimal MoveData. */
-function createMove(opts: {
-  id?: string;
+/** Create an explicit synthetic move probe. */
+function createSyntheticMoveFrom(opts: {
   type: PokemonType;
   power?: number;
   category?: "physical" | "special" | "status";
-}): MoveData {
+}) {
   return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
+    ...DEFAULT_MOVE,
+    id: "synthetic-move",
+    displayName: "Synthetic Move",
     type: opts.type,
     category: opts.category ?? "physical",
     power: opts.power ?? 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
+    flags: { ...DEFAULT_MOVE.flags },
     effect: null,
-    description: "",
-    generation: 2,
-  } as MoveData;
-}
-
-/** Create a minimal species data mock. */
-function createSpecies(opts: { types?: PokemonType[] } = {}): PokemonSpeciesData {
-  return {
-    id: 1,
-    name: "test",
-    displayName: "Test",
-    types: opts.types ?? ["normal"],
-    baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-    abilities: { normal: [""], hidden: null },
-    genderRatio: 50,
-    catchRate: 45,
-    baseExp: 64,
-    expGroup: "medium-slow",
-    evYield: {},
-    eggGroups: ["monster"],
-    learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-    evolution: null,
-    dimensions: { height: 1, weight: 10 },
-    spriteKey: "test",
-    baseFriendship: 70,
-    generation: 2,
-    isLegendary: false,
-    isMythical: false,
-  } as PokemonSpeciesData;
+  };
 }
 
 /** Create a neutral type chart (all interactions = 1). */
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    TYPES.normal,
+    TYPES.fire,
+    TYPES.water,
+    TYPES.electric,
+    TYPES.grass,
+    TYPES.ice,
+    TYPES.fighting,
+    TYPES.poison,
+    TYPES.ground,
+    TYPES.flying,
+    TYPES.psychic,
+    TYPES.bug,
+    TYPES.rock,
+    TYPES.ghost,
+    TYPES.dragon,
+    TYPES.dark,
+    TYPES.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -292,8 +233,8 @@ function createTypeChart(overrides: Record<string, Record<string, number>>): Typ
   return base as unknown as TypeChart;
 }
 
-/** Create a minimal BattleState mock. */
-function createMockState(
+/** Create a minimal BattleState mock for damage contexts. */
+function createSyntheticDamageState(
   weather?: { type: string; turnsLeft: number; source: string } | null,
 ): DamageContext["state"] {
   return {
@@ -310,46 +251,57 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
   describe("Given Farfetch'd (#83) holding Stick", () => {
     it("when calculating crit stage, then stage is 2 (not 0)", () => {
       // Arrange — Farfetch'd is species #83
-      const farfetchd = createActivePokemon({ speciesId: 83, heldItem: "stick" });
-      const move = createMove({ type: "normal" });
+      const farfetchd = createSyntheticActivePokemon({
+        speciesId: SPECIES.farfetchd,
+        heldItem: ITEMS.stick,
+      });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(farfetchd, move);
 
       // Assert — Stick adds +2 crit stage for Farfetch'd only
       // Source: gen2-ground-truth.md §4 — "Stick (Farfetch'd held item): +2"
+      // Source: gen2-ground-truth.md §4 — Stick (Farfetch'd held item) adds +2 crit stages.
       expect(stage).toBe(2);
     });
 
     it("when Farfetch'd holds Stick with Scope Lens too, then stage is clamped to 4", () => {
       // Arrange
-      const _farfetchd = createActivePokemon({ speciesId: 83, heldItem: "stick" });
-      // Override to also have scope lens — not possible in-game but tests clamping
-      const farfetchdWithScopeLens = createActivePokemon({
-        speciesId: 83,
-        heldItem: "scope-lens",
+      const _farfetchd = createSyntheticActivePokemon({
+        speciesId: SPECIES.farfetchd,
+        heldItem: ITEMS.stick,
       });
-      const focusEnergyVolatiles = new Map([["focus-energy", { turnsLeft: -1 }]]);
-      const farfetchdFullStack = createActivePokemon({
-        speciesId: 83,
-        heldItem: "stick",
+      // Override to also have scope lens — not possible in-game but tests clamping
+      const farfetchdWithScopeLens = createSyntheticActivePokemon({
+        speciesId: SPECIES.farfetchd,
+        heldItem: ITEMS.scopeLens,
+      });
+      const focusEnergyVolatiles = new Map([[MOVES.focusEnergy, { turnsLeft: -1 }]]);
+      const farfetchdFullStack = createSyntheticActivePokemon({
+        speciesId: SPECIES.farfetchd,
+        heldItem: ITEMS.stick,
         volatileStatuses: focusEnergyVolatiles,
       });
-      const highCritMove = createMove({ id: "slash", type: "normal" });
+      const highCritMove = SLASH;
 
       // Act — Stick(+2) + Focus Energy(+1) + Slash(+1) = 4, clamped at 4
       const stage = getGen2CritStage(farfetchdFullStack, highCritMove);
 
       // Assert — stage must not exceed 4 (max index in GEN2_CRIT_RATES)
+      // Source: gen2-ground-truth.md §4 — Stick (+2) + Focus Energy (+1) + Slash (+1) caps at stage 4.
       expect(stage).toBe(4);
       // With Scope Lens alone (no Stick), stage is 0+1=1
-      expect(getGen2CritStage(farfetchdWithScopeLens, createMove({ type: "normal" }))).toBe(1);
+      expect(getGen2CritStage(farfetchdWithScopeLens, DEFAULT_MOVE)).toBe(1);
     });
 
     it("when a different species holds Stick, then no crit bonus is applied", () => {
       // Arrange — Stick only works for Farfetch'd (#83)
-      const charizard = createActivePokemon({ speciesId: 6, heldItem: "stick" });
-      const move = createMove({ type: "normal" });
+      const charizard = createSyntheticActivePokemon({
+        speciesId: SPECIES.charizard,
+        heldItem: ITEMS.stick,
+      });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(charizard, move);
@@ -362,8 +314,11 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
   describe("Given Chansey (#113) holding Lucky Punch", () => {
     it("when calculating crit stage, then stage is 2 (not 0)", () => {
       // Arrange — Chansey is species #113
-      const chansey = createActivePokemon({ speciesId: 113, heldItem: "lucky-punch" });
-      const move = createMove({ type: "normal" });
+      const chansey = createSyntheticActivePokemon({
+        speciesId: SPECIES.chansey,
+        heldItem: ITEMS.luckyPunch,
+      });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(chansey, move);
@@ -375,8 +330,11 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
 
     it("when a different species holds Lucky Punch, then no crit bonus is applied", () => {
       // Arrange — Lucky Punch only works for Chansey (#113)
-      const blissey = createActivePokemon({ speciesId: 242, heldItem: "lucky-punch" });
-      const move = createMove({ type: "normal" });
+      const blissey = createSyntheticActivePokemon({
+        speciesId: SPECIES.blissey,
+        heldItem: ITEMS.luckyPunch,
+      });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stage = getGen2CritStage(blissey, move);
@@ -387,8 +345,11 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
 
     it("when Chansey holds Lucky Punch and uses a high-crit move, then stage is 4 (Lucky Punch +2, Slash +2, capped at max)", () => {
       // Arrange
-      const chansey = createActivePokemon({ speciesId: 113, heldItem: "lucky-punch" });
-      const highCritMove = createMove({ id: "slash", type: "normal" });
+      const chansey = createSyntheticActivePokemon({
+        speciesId: SPECIES.chansey,
+        heldItem: ITEMS.luckyPunch,
+      });
+      const highCritMove = SLASH;
 
       // Act — Lucky Punch(+2) + Slash(+2) = 4 (capped at max stage 4 = 128/256 = 50%)
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2 for high-crit
@@ -405,12 +366,15 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
   describe("Given Farfetch'd with Stick vs Scope Lens (stage comparison)", () => {
     it("Stick (+2) gives higher stage than Scope Lens (+1)", () => {
       // Arrange
-      const farfetchdWithStick = createActivePokemon({ speciesId: 83, heldItem: "stick" });
-      const farfetchdWithScopeLens = createActivePokemon({
-        speciesId: 83,
-        heldItem: "scope-lens",
+      const farfetchdWithStick = createSyntheticActivePokemon({
+        speciesId: SPECIES.farfetchd,
+        heldItem: ITEMS.stick,
       });
-      const move = createMove({ type: "normal" });
+      const farfetchdWithScopeLens = createSyntheticActivePokemon({
+        speciesId: SPECIES.farfetchd,
+        heldItem: ITEMS.scopeLens,
+      });
+      const move = DEFAULT_MOVE;
 
       // Act
       const stickStage = getGen2CritStage(farfetchdWithStick, move);
@@ -432,7 +396,7 @@ describe("Bug #95 — Stick and Lucky Punch crit stage bonuses", () => {
 describe("Bug #96 — onSwitchOut clears trapped volatile from opposing Pokemon", () => {
   const ruleset = new Gen2Ruleset();
 
-  function buildBattleState(
+  function createSyntheticBattleState(
     side0Active: ActivePokemon | null,
     side1Active: ActivePokemon | null,
   ): BattleState {
@@ -486,70 +450,70 @@ describe("Bug #96 — onSwitchOut clears trapped volatile from opposing Pokemon"
 
   it("given side-0 uses Mean Look and then switches out, when onSwitchOut is called, then trapped volatile is cleared from side-1 Pokemon", () => {
     // Arrange
-    const trapper = createActivePokemon({ types: ["ghost"] }); // The Mean Look user (side 0)
-    const trapped = createActivePokemon({
-      types: ["normal"],
-      volatileStatuses: new Map([["trapped", { turnsLeft: -1 }]]),
+    const trapper = createSyntheticActivePokemon({ types: [TYPES.ghost] }); // The Mean Look user (side 0)
+    const trapped = createSyntheticActivePokemon({
+      types: [TYPES.normal],
+      volatileStatuses: new Map([[VOLATILES.trapped, { turnsLeft: -1 }]]),
     });
-    expect(trapped.volatileStatuses.has("trapped")).toBe(true);
+    expect(trapped.volatileStatuses.has(VOLATILES.trapped)).toBe(true);
 
-    const state = buildBattleState(trapper, trapped);
+    const state = createSyntheticBattleState(trapper, trapped);
 
     // Act — trapper switches out
     ruleset.onSwitchOut(trapper, state);
 
     // Assert — opponent's "trapped" volatile must be cleared
     // Source: gen2-ground-truth.md §9 — "Effect ends when the user switches out"
-    expect(trapped.volatileStatuses.has("trapped")).toBe(false);
+    expect(trapped.volatileStatuses.has(VOLATILES.trapped)).toBe(false);
   });
 
   it("given side-1 uses Spider Web and then switches out, when onSwitchOut is called, then trapped volatile is cleared from side-0 Pokemon", () => {
     // Arrange
-    const trapped = createActivePokemon({
-      types: ["normal"],
-      volatileStatuses: new Map([["trapped", { turnsLeft: -1 }]]),
+    const trapped = createSyntheticActivePokemon({
+      types: [TYPES.normal],
+      volatileStatuses: new Map([[VOLATILES.trapped, { turnsLeft: -1 }]]),
     });
-    const trapper = createActivePokemon({ types: ["bug"] }); // Spider Web user (side 1)
-    const state = buildBattleState(trapped, trapper);
+    const trapper = createSyntheticActivePokemon({ types: [TYPES.bug] }); // Spider Web user (side 1)
+    const state = createSyntheticBattleState(trapped, trapper);
 
     // Act — trapper on side 1 switches out
     ruleset.onSwitchOut(trapper, state);
 
     // Assert — side-0 Pokemon's "trapped" volatile is cleared
-    expect(trapped.volatileStatuses.has("trapped")).toBe(false);
+    expect(trapped.volatileStatuses.has(VOLATILES.trapped)).toBe(false);
   });
 
   it("given no trapped volatile exists on opponent, when onSwitchOut is called, then no error and state is unchanged", () => {
     // Arrange
-    const trapper = createActivePokemon({ types: ["ghost"] });
-    const opponent = createActivePokemon({ types: ["normal"] }); // no "trapped" volatile
-    const state = buildBattleState(trapper, opponent);
+    const trapper = createSyntheticActivePokemon({ types: [TYPES.ghost] });
+    const opponent = createSyntheticActivePokemon({ types: [TYPES.normal] }); // no trapped volatile
+    const state = createSyntheticBattleState(trapper, opponent);
 
     // Act
     expect(() => ruleset.onSwitchOut(trapper, state)).not.toThrow();
 
     // Assert — still no trapped volatile (nothing to clear)
-    expect(opponent.volatileStatuses.has("trapped")).toBe(false);
+    expect(opponent.volatileStatuses.has(VOLATILES.trapped)).toBe(false);
   });
 
   it("given switching Pokemon switches out without having applied trapping, other volatiles on opponent are NOT cleared", () => {
     // Arrange
-    const switcher = createActivePokemon({ types: ["normal"] });
-    const opponent = createActivePokemon({
-      types: ["normal"],
+    const switcher = createSyntheticActivePokemon({ types: [TYPES.normal] });
+    const opponent = createSyntheticActivePokemon({
+      types: [TYPES.normal],
       volatileStatuses: new Map([
-        ["confusion", { turnsLeft: 3 }],
-        ["leech-seed", { turnsLeft: -1 }],
+        [VOLATILES.confusion, { turnsLeft: 3 }],
+        [VOLATILES.leechSeed, { turnsLeft: -1 }],
       ]),
     });
-    const state = buildBattleState(switcher, opponent);
+    const state = createSyntheticBattleState(switcher, opponent);
 
     // Act
     ruleset.onSwitchOut(switcher, state);
 
     // Assert — only "trapped" would be cleared; confusion/leech-seed on opponent persist
-    expect(opponent.volatileStatuses.has("confusion")).toBe(true);
-    expect(opponent.volatileStatuses.has("leech-seed")).toBe(true);
+    expect(opponent.volatileStatuses.has(VOLATILES.confusion)).toBe(true);
+    expect(opponent.volatileStatuses.has(VOLATILES.leechSeed)).toBe(true);
   });
 });
 
@@ -566,28 +530,32 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
       // Move: 80 power Water-type
       // Rain Dance doubles Water (1.5x weather modifier)
       // Ground truth order: base_damage → STAB (+50%) → type_effectiveness (neutral) → weather (×1.5)
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticActivePokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["water"],
+        types: [TYPES.water],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticActivePokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove({ type: "water", power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({ type: TYPES.water, power: 80, category: "special" });
       // Use neutral type chart — no type effectiveness
       const typeChart = createNeutralTypeChart();
-      const state = createMockState({ type: "rain", turnsLeft: 3, source: "rain-dance" });
+      const state = createSyntheticDamageState({
+        type: WEATHERS.rain,
+        turnsLeft: 3,
+        source: MOVES.rainDance,
+      });
       // Use max random roll for determinism
-      const rng = createMockRng(255);
+      const rng = createMaxRng();
 
       const context: DamageContext = {
         attacker,
@@ -599,7 +567,7 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — verify the result is positive damage (non-zero)
       // base = floor(floor((floor(2*50/5)+2) * 80 * 100) / 100) / 50) = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
@@ -613,26 +581,30 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
 
     it("when computing damage without STAB but with rain, result is lower than STAB+rain", () => {
       // Arrange — Normal-type attacker using Water move (no STAB) in Rain
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticActivePokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"], // No STAB for water move
+        types: [TYPES.normal], // No STAB for water move
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticActivePokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["normal"],
+        types: [TYPES.normal],
       });
-      const move = createMove({ type: "water", power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({ type: TYPES.water, power: 80, category: "special" });
       const typeChart = createNeutralTypeChart();
-      const state = createMockState({ type: "rain", turnsLeft: 3, source: "rain-dance" });
-      const rng = createMockRng(255);
+      const state = createSyntheticDamageState({
+        type: WEATHERS.rain,
+        turnsLeft: 3,
+        source: MOVES.rainDance,
+      });
+      const rng = createMaxRng();
 
       const context: DamageContext = {
         attacker,
@@ -644,7 +616,7 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — base 37 → no STAB → weather floor(37 * 1.5) = 55 → random: 55
       // With STAB the result is 82, without STAB it's 55
@@ -664,28 +636,32 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       // Arrange
       // Rock/Flying defender hit by Electric (2x vs Flying, 1x vs Rock → net 2x)
       // Ground truth: floor(damage * 20/10)  [vs Flying = 2x], then * 1 [vs Rock = neutral]
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticActivePokemon({
         level: 50,
         spAttack: 100,
         spDefense: 100,
         attack: 100,
         defense: 100,
-        types: ["electric"],
+        types: [TYPES.electric],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticActivePokemon({
         level: 50,
         defense: 100,
         spDefense: 100,
         attack: 100,
         spAttack: 100,
-        types: ["rock", "flying"], // electric 2x vs flying, 1x vs rock
+        types: [TYPES.rock, TYPES.flying], // electric 2x vs flying, 1x vs rock
       });
-      const move = createMove({ type: "electric", power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({
+        type: TYPES.electric,
+        power: 80,
+        category: "special",
+      });
       const typeChart = createTypeChart({
-        electric: { rock: 1, flying: 2 },
+        [TYPES.electric]: { [TYPES.rock]: 1, [TYPES.flying]: 2 },
       });
-      const state = createMockState();
-      const rng = createMockRng(255);
+      const state = createSyntheticDamageState();
+      const rng = createMaxRng();
 
       const context: DamageContext = {
         attacker,
@@ -697,7 +673,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — sequential calculation:
       //   base = floor(floor(22*80*100)/100/50) = 35, clamped 35, +2 = 37
@@ -714,28 +690,28 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
   describe("Given a dual-type defender (Rock/Flying) hit by Ground move", () => {
     it("when defender has Ground immunity (0x vs Flying type), returns 0 damage regardless", () => {
       // Arrange — Ground is immune to Flying (0x) but normally SE vs Rock
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticActivePokemon({
         level: 50,
         attack: 100,
         defense: 100,
         spAttack: 100,
         spDefense: 100,
-        types: ["ground"],
+        types: [TYPES.ground],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticActivePokemon({
         level: 50,
         defense: 100,
         spDefense: 100,
         attack: 100,
         spAttack: 100,
-        types: ["rock", "flying"],
+        types: [TYPES.rock, TYPES.flying],
       });
-      const move = createMove({ type: "ground", power: 80 });
+      const move = createSyntheticMoveFrom({ type: TYPES.ground, power: 80 });
       const typeChart = createTypeChart({
-        ground: { rock: 2, flying: 0 },
+        [TYPES.ground]: { [TYPES.rock]: 2, [TYPES.flying]: 0 },
       });
-      const state = createMockState();
-      const rng = createMockRng(255);
+      const state = createSyntheticDamageState();
+      const rng = createMaxRng();
 
       const context: DamageContext = {
         attacker,
@@ -747,7 +723,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — immunity overrides all, result is 0 damage
       expect(result.damage).toBe(0);
@@ -761,28 +737,28 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       // Water vs Fire: 2x (but fire is NVE-to-water in real chart — for test purposes we specify)
       // Actually: Water 2x vs Fire, 1x vs Rock → net 2x
       // Use custom chart for predictable test
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticActivePokemon({
         level: 50,
         spAttack: 100,
         spDefense: 100,
         attack: 100,
         defense: 100,
-        types: ["water"],
+        types: [TYPES.water],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticActivePokemon({
         level: 50,
         defense: 100,
         spDefense: 100,
         attack: 100,
         spAttack: 100,
-        types: ["fire", "rock"], // water 2x vs fire, 0.5x vs rock → net 1x
+        types: [TYPES.fire, TYPES.rock], // water 2x vs fire, 0.5x vs rock → net 1x
       });
-      const move = createMove({ type: "water", power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({ type: TYPES.water, power: 80, category: "special" });
       const typeChart = createTypeChart({
-        water: { fire: 2, rock: 0.5 },
+        [TYPES.water]: { [TYPES.fire]: 2, [TYPES.rock]: 0.5 },
       });
-      const state = createMockState();
-      const rng = createMockRng(255);
+      const state = createSyntheticDamageState();
+      const rng = createMaxRng();
 
       const context: DamageContext = {
         attacker,
@@ -794,7 +770,7 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
       };
 
       // Act
-      const result = calculateGen2Damage(context, typeChart, createSpecies());
+      const result = calculateGen2Damage(context, typeChart, DEFAULT_SPECIES);
 
       // Assert — STAB water: floor(37 * 1.5) = 55
       // SE vs fire: floor(55 * 20/10) = 110
@@ -820,7 +796,7 @@ describe("Bug #318 — Protect success uses divide-by-3 formula per gen2-ground-
   const ruleset = new Gen2Ruleset();
 
   describe("Given consecutiveProtects = 0 (first use)", () => {
-    it("when rolling protect success, then always succeeds", () => {
+    it("given the first consecutive Protect use, when rolling success, then it always succeeds", () => {
       // Arrange
       const rng = new SeededRandom(42);
 
@@ -923,7 +899,7 @@ describe("Bug #317 — Struggle recoil is 1/4 of MAX HP (not damage dealt)", () 
   describe("Given an attacker with maxHp=200 and 40 damage dealt", () => {
     it("when calculating struggle recoil, then result is 50 (floor(200/4)), not 10 (floor(40/4))", () => {
       // Arrange
-      const attacker = createActivePokemon({ maxHp: 200 });
+      const attacker = createSyntheticActivePokemon({ maxHp: 200 });
       const damageDealt = 40;
 
       // Act
@@ -938,7 +914,7 @@ describe("Bug #317 — Struggle recoil is 1/4 of MAX HP (not damage dealt)", () 
   describe("Given an attacker with maxHp=100 and 200 damage dealt", () => {
     it("when calculating struggle recoil, then result is 25 (floor(100/4)), not 50 (floor(200/4))", () => {
       // Arrange — triangulation: different maxHp proves it's HP-based not damage-based
-      const attacker = createActivePokemon({ maxHp: 100 });
+      const attacker = createSyntheticActivePokemon({ maxHp: 100 });
       const damageDealt = 200;
 
       // Act
@@ -953,7 +929,7 @@ describe("Bug #317 — Struggle recoil is 1/4 of MAX HP (not damage dealt)", () 
   describe("Given an attacker with maxHp=1", () => {
     it("when calculating struggle recoil, then minimum 1 is returned", () => {
       // Arrange
-      const attacker = createActivePokemon({ maxHp: 1 });
+      const attacker = createSyntheticActivePokemon({ maxHp: 1 });
       const damageDealt = 50;
 
       // Act
@@ -967,7 +943,7 @@ describe("Bug #317 — Struggle recoil is 1/4 of MAX HP (not damage dealt)", () 
   describe("Given an attacker with maxHp=300", () => {
     it("when calculating struggle recoil, then result is 75 (floor(300/4))", () => {
       // Arrange
-      const attacker = createActivePokemon({ maxHp: 300 });
+      const attacker = createSyntheticActivePokemon({ maxHp: 300 });
       const damageDealt = 10;
 
       // Act
@@ -982,7 +958,7 @@ describe("Bug #317 — Struggle recoil is 1/4 of MAX HP (not damage dealt)", () 
   describe("Given an attacker with maxHp=3 (edge case)", () => {
     it("when calculating struggle recoil, minimum 1 is returned", () => {
       // Arrange
-      const attacker = createActivePokemon({ maxHp: 3 });
+      const attacker = createSyntheticActivePokemon({ maxHp: 3 });
       const damageDealt = 100;
 
       // Act

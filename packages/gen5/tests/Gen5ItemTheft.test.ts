@@ -16,19 +16,39 @@ import type {
   AbilityContext,
   ActivePokemon,
   BattleState,
+  MoveData,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen5";
 import { describe, expect, it } from "vitest";
 import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
 import { handleGen5BehaviorMove } from "../src/Gen5MoveEffectsBehavior";
+
+const dataManager = createGen5DataManager();
+// Gen 5 currently does not expose a named volatile-id surface for the gem-consumed marker.
+const GEM_USED_VOLATILE = "gem-used" as const;
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function createSyntheticBattlePokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -37,7 +57,7 @@ function makeActive(overrides: {
   speed?: number;
   hp?: number;
   currentHp?: number;
-  types?: PokemonType[];
+  types?: readonly string[];
   ability?: string;
   heldItem?: string | null;
   status?: string | null;
@@ -56,27 +76,27 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? GEN5_SPECIES_IDS.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
+      nature: GEN5_NATURE_IDS.hardy,
       ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
-      abilitySlot: "normal1" as const,
+      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: GEN5_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -90,8 +110,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -114,50 +134,17 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  priority?: number;
-  contact?: boolean;
-}): MoveData {
+function createSyntheticMove(moveId: string) {
+  const baseMove = dataManager.getMove(moveId);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 5,
-    priority: overrides.priority ?? 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: overrides.contact ?? false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 5,
+    ...baseMove,
+    id: moveId,
+    displayName: baseMove.displayName,
+    flags: { ...baseMove.flags },
   } as MoveData;
 }
 
-function makeState(): BattleState {
+function createSyntheticBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -202,7 +189,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeContext(overrides: {
+function createSyntheticMoveContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -211,27 +198,27 @@ function makeContext(overrides: {
   brokeSubstitute?: boolean;
 }): MoveEffectContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    attacker: overrides.attacker ?? createSyntheticBattlePokemon({}),
+    defender: overrides.defender ?? createSyntheticBattlePokemon({}),
+    move: overrides.move ?? createSyntheticMove(GEN5_MOVE_IDS.tackle),
     damage: overrides.damage ?? 0,
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createSyntheticBattleState(),
     rng: new SeededRandom(42),
     brokeSubstitute: overrides.brokeSubstitute ?? false,
   };
 }
 
-function makeAbilityContext(opts: {
+function createSyntheticAbilityContext(opts: {
   ability: string;
   trigger: string;
-  types?: PokemonType[];
+  types?: readonly string[];
   opponent?: ActivePokemon;
   heldItem?: string | null;
   move?: MoveData;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): AbilityContext {
-  const state = makeState();
-  const pokemon = makeActive({
+  const state = createSyntheticBattleState();
+  const pokemon = createSyntheticBattlePokemon({
     ability: opts.ability,
     types: opts.types,
     heldItem: opts.heldItem,
@@ -264,10 +251,18 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief.onAfterHit:
   //   steals target's item if user has no item and target has one
   it("given user with no item and target with leftovers, when Thief deals damage, then returns itemTransfer from defender to attacker", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -279,10 +274,18 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief.onAfterHit:
   //   `if (source.item || source.volatiles['gem']) return;` -- user already holding item
   it("given user already holding an item, when Thief deals damage, then does not steal", () => {
-    const attacker = makeActive({ heldItem: "choice-band", nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.choiceBand,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -294,10 +297,18 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief.onAfterHit:
   //   `let yourItem = target.takeItem(source); if (!yourItem) return;` -- target has no item
   it("given target with no item, when Thief deals damage, then does not steal", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: null, nickname: "Blissey" });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -309,10 +320,18 @@ describe("Gen 5 Thief -- item theft after damage", () => {
   // Source: Showdown data/moves.ts -- thief uses onAfterHit (not onHit):
   //   onAfterHit only fires when damage > 0
   it("given damage is 0 (type immunity), when Thief is used, then does not steal", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Sableye" });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 0 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Sableye",
+      speciesId: GEN5_SPECIES_IDS.sableye,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 0 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -329,10 +348,18 @@ describe("Gen 5 Thief -- item theft after damage", () => {
 describe("Gen 5 Covet -- item theft after damage (same logic as Thief)", () => {
   // Source: Showdown data/moves.ts -- covet.onAfterHit: identical steal logic to thief
   it("given user with no item and target with berry, when Covet deals damage, then returns itemTransfer", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Cinccino" });
-    const defender = makeActive({ heldItem: "sitrus-berry", nickname: "Chansey" });
-    const move = makeMove({ id: "covet", type: "normal", category: "physical", power: 60 });
-    const ctx = makeContext({ attacker, defender, move, damage: 45 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Cinccino",
+      speciesId: GEN5_SPECIES_IDS.cinccino,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.sitrusBerry,
+      nickname: "Chansey",
+      speciesId: GEN5_SPECIES_IDS.chansey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.covet);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 45 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -344,10 +371,18 @@ describe("Gen 5 Covet -- item theft after damage (same logic as Thief)", () => {
   // Source: Showdown data/moves.ts -- covet.onAfterHit:
   //   same `if (source.item) return;` check as thief
   it("given user already holding an item, when Covet deals damage, then does not steal", () => {
-    const attacker = makeActive({ heldItem: "life-orb", nickname: "Cinccino" });
-    const defender = makeActive({ heldItem: "sitrus-berry", nickname: "Chansey" });
-    const move = makeMove({ id: "covet", type: "normal", category: "physical", power: 60 });
-    const ctx = makeContext({ attacker, defender, move, damage: 45 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.lifeOrb,
+      nickname: "Cinccino",
+      speciesId: GEN5_SPECIES_IDS.cinccino,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.sitrusBerry,
+      nickname: "Chansey",
+      speciesId: GEN5_SPECIES_IDS.chansey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.covet);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 45 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -365,43 +400,53 @@ describe("Gen 5 Thief/Covet -- Unburden interaction", () => {
   // Source: Showdown data/abilities.ts -- Unburden: activates when item is lost by any means
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
   it("given target has Unburden ability, when Thief steals its item, then sets unburden volatile on target", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({
-      heldItem: "leftovers",
-      ability: "unburden",
-      nickname: "Hitmonlee",
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
     });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      ability: GEN5_ABILITY_IDS.unburden,
+      nickname: "Hitmonlee",
+      speciesId: GEN5_SPECIES_IDS.hitmonlee,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
 
     expect(result).not.toBeNull();
     expect(result!.itemTransfer).toEqual({ from: "defender", to: "attacker" });
-    expect(defender.volatileStatuses.has("unburden")).toBe(true);
-    expect(defender.volatileStatuses.get("unburden")!.turnsLeft).toBe(-1);
+    expect(defender.volatileStatuses.has(GEN5_ABILITY_IDS.unburden)).toBe(true);
+    expect(defender.volatileStatuses.get(GEN5_ABILITY_IDS.unburden)!.turnsLeft).toBe(-1);
   });
 
   // Source: Showdown data/abilities.ts -- Unburden volatile is permanent once set
   it("given target already has unburden volatile, when Covet steals item, then does not duplicate the volatile", () => {
-    const existingVolatiles = new Map([["unburden", { turnsLeft: -1 }]]);
-    const attacker = makeActive({ heldItem: null, nickname: "Cinccino" });
-    const defender = makeActive({
-      heldItem: "focus-sash",
-      ability: "unburden",
+    const existingVolatiles = new Map([[GEN5_ABILITY_IDS.unburden, { turnsLeft: -1 }]]);
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Cinccino",
+      speciesId: GEN5_SPECIES_IDS.cinccino,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.focusSash,
+      ability: GEN5_ABILITY_IDS.unburden,
       nickname: "Hitmonlee",
+      speciesId: GEN5_SPECIES_IDS.hitmonlee,
       volatiles: existingVolatiles,
     });
-    const move = makeMove({ id: "covet", type: "normal", category: "physical", power: 60 });
-    const ctx = makeContext({ attacker, defender, move, damage: 45 });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.covet);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 45 });
 
     const result = handleGen5BehaviorMove(ctx);
 
     expect(result).not.toBeNull();
     expect(result!.itemTransfer).toEqual({ from: "defender", to: "attacker" });
     // Volatile should still be there with original value (not duplicated or reset)
-    expect(defender.volatileStatuses.has("unburden")).toBe(true);
-    expect(defender.volatileStatuses.get("unburden")!.turnsLeft).toBe(-1);
+    expect(defender.volatileStatuses.has(GEN5_ABILITY_IDS.unburden)).toBe(true);
+    expect(defender.volatileStatuses.get(GEN5_ABILITY_IDS.unburden)!.turnsLeft).toBe(-1);
   });
 });
 
@@ -415,64 +460,77 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
   //   ctx.pokemon = defender with Pickpocket, ctx.opponent = attacker
   // Source: Bulbapedia -- Pickpocket: "Steals an item from an attacker that made contact."
   it("given Pickpocket holder has no item and attacker has one, when contact move is used, then steals the item via direct mutation", () => {
-    const attacker = makeActive({ heldItem: "life-orb", nickname: "Attacker" });
-    const _defender = makeActive({
-      ability: "pickpocket",
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.lifeOrb,
+      nickname: "Attacker",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const _defender = createSyntheticBattlePokemon({
+      ability: GEN5_ABILITY_IDS.pickpocket,
       heldItem: null,
       nickname: "Pickpocket Mon",
+      speciesId: GEN5_SPECIES_IDS.hitmonlee,
     });
-    const move = makeMove({ id: "tackle", contact: true });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.tackle);
 
-    const ctx = makeAbilityContext({
-      ability: "pickpocket",
-      trigger: "on-contact",
+    const ctx = createSyntheticAbilityContext({
+      ability: GEN5_ABILITY_IDS.pickpocket,
+      trigger: CORE_ITEM_TRIGGER_IDS.onContact,
       heldItem: null,
       opponent: attacker,
       move,
     });
 
-    const result = handleGen5SwitchAbility("on-contact", ctx);
+    const result = handleGen5SwitchAbility(CORE_ITEM_TRIGGER_IDS.onContact, ctx);
 
     expect(result.activated).toBe(true);
     // Direct mutation: item transferred from opponent to holder
-    expect(ctx.pokemon.pokemon.heldItem).toBe("life-orb");
+    expect(ctx.pokemon.pokemon.heldItem).toBe(GEN5_ITEM_IDS.lifeOrb);
     expect(attacker.pokemon.heldItem).toBeNull();
     expect(result.messages[0]).toContain("Pickpocket");
-    expect(result.messages[0]).toContain("life-orb");
+    expect(result.messages[0]).toContain(GEN5_ITEM_IDS.lifeOrb);
   });
 
   // Source: Showdown data/abilities.ts -- Pickpocket:
   //   `if (pokemon.item) return;` -- holder already has an item
   it("given Pickpocket holder already has an item, when contact move is used, then does not steal", () => {
-    const attacker = makeActive({ heldItem: "life-orb", nickname: "Attacker" });
-    const ctx = makeAbilityContext({
-      ability: "pickpocket",
-      trigger: "on-contact",
-      heldItem: "leftovers",
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.lifeOrb,
+      nickname: "Attacker",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const ctx = createSyntheticAbilityContext({
+      ability: GEN5_ABILITY_IDS.pickpocket,
+      trigger: CORE_ITEM_TRIGGER_IDS.onContact,
+      heldItem: GEN5_ITEM_IDS.leftovers,
       opponent: attacker,
-      move: makeMove({ id: "tackle", contact: true }),
+      move: createSyntheticMove(GEN5_MOVE_IDS.tackle),
     });
 
-    const result = handleGen5SwitchAbility("on-contact", ctx);
+    const result = handleGen5SwitchAbility(CORE_ITEM_TRIGGER_IDS.onContact, ctx);
 
     expect(result.activated).toBe(false);
     // No mutation should occur
-    expect(attacker.pokemon.heldItem).toBe("life-orb");
+    expect(attacker.pokemon.heldItem).toBe(GEN5_ITEM_IDS.lifeOrb);
   });
 
   // Source: Showdown data/abilities.ts -- Pickpocket:
   //   `let yourItem = source.takeItem(); if (!yourItem) return;` -- attacker has no item
   it("given attacker has no item, when contact move hits Pickpocket holder, then does not steal", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Attacker" });
-    const ctx = makeAbilityContext({
-      ability: "pickpocket",
-      trigger: "on-contact",
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Attacker",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const ctx = createSyntheticAbilityContext({
+      ability: GEN5_ABILITY_IDS.pickpocket,
+      trigger: CORE_ITEM_TRIGGER_IDS.onContact,
       heldItem: null,
       opponent: attacker,
-      move: makeMove({ id: "tackle", contact: true }),
+      move: createSyntheticMove(GEN5_MOVE_IDS.tackle),
     });
 
-    const result = handleGen5SwitchAbility("on-contact", ctx);
+    const result = handleGen5SwitchAbility(CORE_ITEM_TRIGGER_IDS.onContact, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -480,28 +538,29 @@ describe("Gen 5 Pickpocket -- item theft on contact", () => {
   // Source: Showdown data/abilities.ts -- Unburden activates when item is lost by any means
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
   it("given attacker has Unburden, when Pickpocket steals its item, then sets unburden volatile on attacker", () => {
-    const attacker = makeActive({
-      heldItem: "choice-scarf",
-      ability: "unburden",
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.choiceScarf,
+      ability: GEN5_ABILITY_IDS.unburden,
       nickname: "Hitmonlee",
+      speciesId: GEN5_SPECIES_IDS.hitmonlee,
     });
-    const ctx = makeAbilityContext({
-      ability: "pickpocket",
-      trigger: "on-contact",
+    const ctx = createSyntheticAbilityContext({
+      ability: GEN5_ABILITY_IDS.pickpocket,
+      trigger: CORE_ITEM_TRIGGER_IDS.onContact,
       heldItem: null,
       opponent: attacker,
-      move: makeMove({ id: "tackle", contact: true }),
+      move: createSyntheticMove(GEN5_MOVE_IDS.tackle),
     });
 
-    const result = handleGen5SwitchAbility("on-contact", ctx);
+    const result = handleGen5SwitchAbility(CORE_ITEM_TRIGGER_IDS.onContact, ctx);
 
     expect(result.activated).toBe(true);
     // Direct mutation: item transferred
-    expect(ctx.pokemon.pokemon.heldItem).toBe("choice-scarf");
+    expect(ctx.pokemon.pokemon.heldItem).toBe(GEN5_ITEM_IDS.choiceScarf);
     expect(attacker.pokemon.heldItem).toBeNull();
     // Unburden volatile set on victim (the attacker who lost the item)
-    expect(attacker.volatileStatuses.has("unburden")).toBe(true);
-    expect(attacker.volatileStatuses.get("unburden")!.turnsLeft).toBe(-1);
+    expect(attacker.volatileStatuses.has(GEN5_ABILITY_IDS.unburden)).toBe(true);
+    expect(attacker.volatileStatuses.get(GEN5_ABILITY_IDS.unburden)!.turnsLeft).toBe(-1);
   });
 });
 
@@ -513,12 +572,26 @@ describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
   // Source: Showdown sim/battle-actions.ts -- onAfterHit only fires when the target is hit directly.
   // When the move breaks a Substitute, the Pokemon itself was not hit -- no theft allowed.
   it("given defender has a Substitute that is broken, when Thief deals damage, then does not steal", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
-    defender.volatileStatuses.set("substitute", { turnsLeft: -1 });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    defender.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
     // brokeSubstitute: true -- the hit destroyed the sub
-    const ctx = makeContext({ attacker, defender, move, damage: 50, brokeSubstitute: true });
+    const ctx = createSyntheticMoveContext({
+      attacker,
+      defender,
+      move,
+      damage: 50,
+      brokeSubstitute: true,
+    });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -530,12 +603,26 @@ describe("Gen 5 Thief/Covet -- cannot steal through Substitute", () => {
   // Source: Showdown sim/battle-actions.ts -- onAfterHit only fires on direct hits.
   // If the Substitute is still up (hit did not break it), theft is also blocked.
   it("given defender has an active Substitute (hit absorbed, sub survives), when Thief deals damage, then does not steal", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
-    defender.volatileStatuses.set("substitute", { turnsLeft: -1 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    defender.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
     // substituteHp > 0 simulated by the volatile still being present and brokeSubstitute: false
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 30, brokeSubstitute: false });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({
+      attacker,
+      defender,
+      move,
+      damage: 30,
+      brokeSubstitute: false,
+    });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -554,12 +641,20 @@ describe("Gen 5 Thief/Covet -- cannot steal when user consumed a Gem this move",
   //   `if (source.item || source.volatiles['gem']) return;`
   // The gem-used volatile is set by Gen5DamageCalc when a gem item is consumed.
   it("given user consumed a gem (gem-used volatile present), when Thief deals damage, then does not steal", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
     // Simulate post-gem-consumption: heldItem is null but gem-used volatile is set
-    attacker.volatileStatuses.set("gem-used", { turnsLeft: 1 });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+    attacker.volatileStatuses.set(GEM_USED_VOLATILE, { turnsLeft: 1 });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
 
@@ -570,10 +665,18 @@ describe("Gen 5 Thief/Covet -- cannot steal when user consumed a Gem this move",
 
   // Triangulation: without the gem-used volatile, theft proceeds normally.
   it("given user has no item and no gem-used volatile, when Thief deals damage, then steals normally", () => {
-    const attacker = makeActive({ heldItem: null, nickname: "Sneasel" });
-    const defender = makeActive({ heldItem: "leftovers", nickname: "Blissey" });
-    const move = makeMove({ id: "thief", type: "dark", category: "physical", power: 40 });
-    const ctx = makeContext({ attacker, defender, move, damage: 50 });
+    const attacker = createSyntheticBattlePokemon({
+      heldItem: null,
+      nickname: "Sneasel",
+      speciesId: GEN5_SPECIES_IDS.sneasel,
+    });
+    const defender = createSyntheticBattlePokemon({
+      heldItem: GEN5_ITEM_IDS.leftovers,
+      nickname: "Blissey",
+      speciesId: GEN5_SPECIES_IDS.blissey,
+    });
+    const move = createSyntheticMove(GEN5_MOVE_IDS.thief);
+    const ctx = createSyntheticMoveContext({ attacker, defender, move, damage: 50 });
 
     const result = handleGen5BehaviorMove(ctx);
 

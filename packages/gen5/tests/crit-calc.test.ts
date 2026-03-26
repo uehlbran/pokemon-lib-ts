@@ -1,5 +1,25 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import { CRIT_MULTIPLIER_CLASSIC, CRIT_RATES_GEN3_5, SeededRandom } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_VOLATILE_IDS,
+  CRIT_MULTIPLIER_CLASSIC,
+  CRIT_RATES_GEN3_5,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen5DataManager,
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen5";
 import { describe, expect, it } from "vitest";
 import {
   GEN5_CRIT_MULTIPLIER,
@@ -123,90 +143,49 @@ describe("Gen5Ruleset crit methods", () => {
 // Helper factories for crit tests
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen5DataManager();
+
 function makeActiveWithAbility(
   ability: string,
   overrides?: { heldItem?: string | null },
 ): ActivePokemon {
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: 1,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: 200,
-      moves: [],
-      ability,
-      abilitySlot: "normal1" as const,
-      heldItem: overrides?.heldItem ?? null,
-      status: null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp: 200,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 100,
-      },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: ["normal"],
-    ability,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-  } as ActivePokemon;
+  const species = DATA_MANAGER.getSpecies(GEN5_SPECIES_IDS.bulbasaur);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(42), {
+    nature: GEN5_NATURE_IDS.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    heldItem: overrides?.heldItem ?? null,
+    friendship: species.baseFriendship,
+    pokeball: GEN5_ITEM_IDS.pokeBall,
+  });
+  pokemon.ability = ability;
+  pokemon.currentHp = 200;
+  pokemon.calculatedStats = {
+    hp: 200,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return createBattleOnFieldPokemon(pokemon, 0, [...species.types]);
 }
 
 /** Stub BattleState -- unused but required by CritContext. */
 const STUB_STATE = {} as Parameters<Gen5Ruleset["rollCritical"]>[0]["state"];
 
 /** Minimal MoveData stub -- critRatio 0 means base stage. */
-const STUB_MOVE = { id: "tackle", critRatio: 0 } as Parameters<
+const STUB_MOVE = DATA_MANAGER.getMove(GEN5_MOVE_IDS.tackle) as Parameters<
   Gen5Ruleset["rollCritical"]
 >[0]["move"];
 
 /** High-crit move: critRatio 1 means +1 stage. */
-const HIGH_CRIT_MOVE = { id: "slash", critRatio: 1 } as Parameters<
-  Gen5Ruleset["rollCritical"]
->[0]["move"];
+const HIGH_CRIT_MOVE = {
+  ...DATA_MANAGER.getMove(GEN5_MOVE_IDS.slash),
+  critRatio: 1,
+} as Parameters<Gen5Ruleset["rollCritical"]>[0]["move"];
 
 /**
  * Helper: roll N crits and return the count of true results.
@@ -220,22 +199,15 @@ function countCrits(
   trials: number,
   baseSeed: number,
 ): number {
-  let crits = 0;
-  for (let i = 0; i < trials; i++) {
-    const rng = new SeededRandom(baseSeed + i);
-    if (
-      ruleset.rollCritical({
-        attacker,
-        defender,
-        move,
-        state: STUB_STATE,
-        rng,
-      })
-    ) {
-      crits++;
-    }
-  }
-  return crits;
+  return Array.from({ length: trials }, (_, i) =>
+    ruleset.rollCritical({
+      attacker,
+      defender,
+      move,
+      state: STUB_STATE,
+      rng: new SeededRandom(baseSeed + i),
+    }),
+  ).filter(Boolean).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -247,8 +219,8 @@ describe("Gen5Ruleset rollCritical -- Battle Armor / Shell Armor immunity", () =
     // Source: https://bulbapedia.bulbagarden.net/wiki/Battle_Armor_(Ability)
     // Battle Armor prevents critical hits entirely
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none");
-    const defender = makeActiveWithAbility("battle-armor");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none);
+    const defender = makeActiveWithAbility(GEN5_ABILITY_IDS.battleArmor);
 
     for (let seed = 1; seed <= 100; seed++) {
       const rng = new SeededRandom(seed);
@@ -267,8 +239,8 @@ describe("Gen5Ruleset rollCritical -- Battle Armor / Shell Armor immunity", () =
     // Source: https://bulbapedia.bulbagarden.net/wiki/Shell_Armor_(Ability)
     // Shell Armor prevents critical hits entirely
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none");
-    const defender = makeActiveWithAbility("shell-armor");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none);
+    const defender = makeActiveWithAbility(GEN5_ABILITY_IDS.shellArmor);
 
     for (let seed = 1; seed <= 100; seed++) {
       const rng = new SeededRandom(seed);
@@ -286,8 +258,10 @@ describe("Gen5Ruleset rollCritical -- Battle Armor / Shell Armor immunity", () =
   it("given defender with Battle Armor and attacker with Scope Lens + Super Luck, when rolling crit 100 times, then always returns false", () => {
     // Source: Bulbapedia -- Battle Armor prevents crits regardless of attacker's crit stage
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("super-luck", { heldItem: "scope-lens" });
-    const defender = makeActiveWithAbility("battle-armor");
+    const attacker = makeActiveWithAbility(GEN5_ABILITY_IDS.superLuck, {
+      heldItem: GEN5_ITEM_IDS.scopeLens,
+    });
+    const defender = makeActiveWithAbility(GEN5_ABILITY_IDS.battleArmor);
 
     for (let seed = 1; seed <= 100; seed++) {
       const rng = new SeededRandom(seed);
@@ -313,8 +287,8 @@ describe("Gen5Ruleset rollCritical -- high-crit move stage", () => {
     // Stage 1 = 1/8 = 12.5%. Expected: ~250 crits out of 2000 trials.
     // Tolerance: 150-350 for PRNG variance.
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none");
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none);
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, HIGH_CRIT_MOVE, 2000, 42);
     expect(crits).toBeGreaterThanOrEqual(150);
     expect(crits).toBeLessThanOrEqual(350);
@@ -323,8 +297,8 @@ describe("Gen5Ruleset rollCritical -- high-crit move stage", () => {
   it("given high-crit move (seed=7777), when computing crit stage, then applies +1 stage (crit rate ~1/8)", () => {
     // Source: Showdown -- same mechanic, different seed for triangulation
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none");
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none);
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, HIGH_CRIT_MOVE, 2000, 7777);
     expect(crits).toBeGreaterThanOrEqual(150);
     expect(crits).toBeLessThanOrEqual(350);
@@ -341,9 +315,9 @@ describe("Gen5Ruleset rollCritical -- Focus Energy", () => {
     // Focus Energy adds +2 crit stages. Base 0 + 2 = stage 2 = 1/4 = 25%
     // Expected: ~500 crits out of 2000 trials. Tolerance: 380-620.
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none");
-    attacker.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none);
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.focusEnergy, { turnsLeft: -1 });
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, STUB_MOVE, 2000, 42);
     expect(crits).toBeGreaterThanOrEqual(380);
     expect(crits).toBeLessThanOrEqual(620);
@@ -352,9 +326,9 @@ describe("Gen5Ruleset rollCritical -- Focus Energy", () => {
   it("given Focus Energy volatile (seed=1234), when computing crit stage, then applies +2 stages (crit rate ~1/4)", () => {
     // Source: https://bulbapedia.bulbagarden.net/wiki/Focus_Energy -- triangulation
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none");
-    attacker.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none);
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.focusEnergy, { turnsLeft: -1 });
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, STUB_MOVE, 2000, 1234);
     expect(crits).toBeGreaterThanOrEqual(380);
     expect(crits).toBeLessThanOrEqual(620);
@@ -369,8 +343,10 @@ describe("Gen5Ruleset rollCritical -- Scope Lens crit boost", () => {
   it("given attacker with Scope Lens (seed=42), when rollCritical is called 2000 times, then crit rate is approximately 12.5% (stage 1 = 1/8)", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- Scope Lens adds +1 crit stage
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none", { heldItem: "scope-lens" });
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none, {
+      heldItem: GEN5_ITEM_IDS.scopeLens,
+    });
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, STUB_MOVE, 2000, 42);
     expect(crits).toBeGreaterThanOrEqual(150);
     expect(crits).toBeLessThanOrEqual(350);
@@ -379,8 +355,10 @@ describe("Gen5Ruleset rollCritical -- Scope Lens crit boost", () => {
   it("given attacker with Scope Lens (seed=1000), when rollCritical is called 2000 times, then crit rate is approximately 12.5% (stage 1 = 1/8)", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- triangulation
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("none", { heldItem: "scope-lens" });
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(CORE_ABILITY_IDS.none, {
+      heldItem: GEN5_ITEM_IDS.scopeLens,
+    });
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, STUB_MOVE, 2000, 1000);
     expect(crits).toBeGreaterThanOrEqual(150);
     expect(crits).toBeLessThanOrEqual(350);
@@ -391,8 +369,8 @@ describe("Gen5Ruleset rollCritical -- Super Luck crit boost", () => {
   it("given attacker with Super Luck ability (seed=42), when rollCritical is called 2000 times, then crit rate is approximately 12.5% (stage 1 = 1/8)", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- Super Luck adds +1 crit stage
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("super-luck");
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(GEN5_ABILITY_IDS.superLuck);
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, STUB_MOVE, 2000, 42);
     expect(crits).toBeGreaterThanOrEqual(150);
     expect(crits).toBeLessThanOrEqual(350);
@@ -401,8 +379,8 @@ describe("Gen5Ruleset rollCritical -- Super Luck crit boost", () => {
   it("given attacker with Super Luck ability (seed=5555), when rollCritical is called 2000 times, then crit rate is approximately 12.5% (stage 1 = 1/8)", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- triangulation
     const ruleset = new Gen5Ruleset();
-    const attacker = makeActiveWithAbility("super-luck");
-    const defender = makeActiveWithAbility("none");
+    const attacker = makeActiveWithAbility(GEN5_ABILITY_IDS.superLuck);
+    const defender = makeActiveWithAbility(CORE_ABILITY_IDS.none);
     const crits = countCrits(ruleset, attacker, defender, STUB_MOVE, 2000, 5555);
     expect(crits).toBeGreaterThanOrEqual(150);
     expect(crits).toBeLessThanOrEqual(350);

@@ -29,7 +29,12 @@ npm run build
 ## Usage
 
 ```typescript
-import { Gen7Ruleset, createGen7DataManager } from "@pokemon-lib-ts/gen7";
+import {
+  GEN7_MOVE_IDS,
+  GEN7_WEATHER_DAMAGE_MULTIPLIERS,
+  Gen7Ruleset,
+  createGen7DataManager,
+} from "@pokemon-lib-ts/gen7";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 
 // Load Gen 7 data
@@ -38,8 +43,9 @@ const mimikyu = dm.getSpecies(778);
 console.log(mimikyu.baseStats);
 // { hp: 55, attack: 90, defense: 80, spAttack: 50, spDefense: 105, speed: 96 }
 
-const playRough = dm.getMove("play-rough");
+const playRough = dm.getMove(GEN7_MOVE_IDS.playRough);
 console.log(playRough.power, playRough.type); // 90, 'fairy'
+console.log(GEN7_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost); // 1.5
 
 // Create a Gen 7 battle
 const ruleset = new Gen7Ruleset();
@@ -52,6 +58,11 @@ const engine = new BattleEngine(
 engine.on((event) => console.log(event));
 engine.start();
 ```
+
+## Test/Reference Exports
+
+- `GEN7_*_IDS` exports are generated from the committed Gen 7 `data/*.json` bundle and are the preferred source for canonical move/item/ability/species ids in tests.
+- `GEN7_WEATHER_DAMAGE_MULTIPLIERS` exposes Gen 7-owned weather damage multipliers so tests do not duplicate mechanic literals.
 
 ## Gen 7 Key Mechanics
 

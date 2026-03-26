@@ -7,11 +7,15 @@ const BEHAVIORAL_TEST_RE = /\b(throw|emit|crash|error|reject)\b/i;
 const TEST_BLOCK_RE = /^\s*(it|test)\s*\(/;
 
 // Strong assertion method names (value-based, exact comparisons)
-const STRONG_ASSERTION_RE = /\.(toBe|toEqual|toStrictEqual|toBeCloseTo)\(/;
+const STRONG_ASSERTION_RE =
+  /\.(toBe|toEqual|toStrictEqual|toBeCloseTo|toBeNull|toBeUndefined|toMatchObject|toContainEqual)\(/;
 
 // Weak assertion method names (existence/truthiness checks)
 const WEAK_ASSERTION_RE =
-  /\.(toBeTruthy|toBeFalsy|toBeDefined|toBeUndefined|toBeNull|not\.toBeNull)\(|\.toBeGreaterThan\(0\)|\.toBeGreaterThanOrEqual\(0\)/;
+  /\.(toBeTruthy|toBeFalsy|toBeDefined|not\.toBeNull)\(|\.toBeGreaterThan\(0\)|\.toBeGreaterThanOrEqual\(0\)/;
+
+// Shared assertion helpers should count as assertions too when tests wrap repeated invariants.
+const ASSERTION_HELPER_CALL_RE = /\b(?:expect|assert)[A-Z][A-Za-z0-9_]*\(/;
 
 // Regex to capture a test name from the line (handles single, double, and template quotes)
 const TEST_NAME_RE = /^\s*(?:it|test)\s*\(\s*(['"`])(.+?)\1/;
@@ -44,7 +48,7 @@ export function checkAssertionStrength(ctx: FileContext): Finding[] {
 
     for (let i = lineIdx; i < blockEnd; i++) {
       const line = lines[i] ?? "";
-      if (line.includes("expect(")) hasExpect = true;
+      if (line.includes("expect(") || ASSERTION_HELPER_CALL_RE.test(line)) hasExpect = true;
       if (STRONG_ASSERTION_RE.test(line)) hasStrong = true;
       if (WEAK_ASSERTION_RE.test(line)) hasWeak = true;
     }

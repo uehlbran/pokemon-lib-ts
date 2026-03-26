@@ -1,11 +1,34 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig } from "../../../src/context";
+import type { BattleConfig, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+
+const NO_OP_MOVE_EFFECT_RESULT: MoveEffectResult = {
+  statusInflicted: null,
+  volatileInflicted: null,
+  statChanges: [],
+  recoilDamage: 0,
+  healAmount: 0,
+  switchOut: false,
+  messages: [],
+};
+
+function createMoveEffectSequence(...results: MoveEffectResult[]) {
+  const queuedResults = [...results];
+  return () => queuedResults.shift() ?? NO_OP_MOVE_EFFECT_RESULT;
+}
 
 function createEngine(overrides?: {
   seed?: number;
@@ -18,10 +41,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -35,10 +58,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -80,7 +103,7 @@ describe("processEffectResult — self-targeted effects", () => {
           healAmount: 0,
           switchOut: false,
           messages: [],
-          selfStatusInflicted: "sleep" as const,
+          selfStatusInflicted: CORE_STATUS_IDS.sleep as const,
           selfVolatileData: { turnsLeft: 2 },
         });
 
@@ -94,14 +117,16 @@ describe("processEffectResult — self-targeted effects", () => {
         // Assert — attacker (side 0, Charizard) gets sleep status
         const statusInflict = events.find((e) => e.type === "status-inflict" && e.side === 0);
         expect(statusInflict).toBeDefined();
-        expect(statusInflict?.type === "status-inflict" && statusInflict.status).toBe("sleep");
+        expect(statusInflict?.type === "status-inflict" && statusInflict.status).toBe(
+          CORE_STATUS_IDS.sleep,
+        );
 
         // Assert — attacker's active pokemon has sleep status
         const attackerActive = engine.state.sides[0].active[0];
-        expect(attackerActive?.pokemon.status).toBe("sleep");
+        expect(attackerActive?.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
 
         // Assert — sleep-counter volatile is set with turnsLeft=2 (NOT rolled from ruleset)
-        const sleepCounter = attackerActive?.volatileStatuses.get("sleep-counter");
+        const sleepCounter = attackerActive?.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
         expect(sleepCounter).toBeDefined();
         expect(sleepCounter?.turnsLeft).toBe(2);
         // Verify startTime is stored for Gen 5 sleep counter reset
@@ -125,7 +150,7 @@ describe("processEffectResult — self-targeted effects", () => {
           healAmount: 0,
           switchOut: false,
           messages: [],
-          selfStatusInflicted: "sleep" as const,
+          selfStatusInflicted: CORE_STATUS_IDS.sleep as const,
         });
 
         const { engine, events } = createEngine({ ruleset });
@@ -134,7 +159,7 @@ describe("processEffectResult — self-targeted effects", () => {
         // Pre-condition: attacker already has burn
         const attackerActive = engine.state.sides[0].active[0];
         if (attackerActive) {
-          attackerActive.pokemon.status = "burn";
+          attackerActive.pokemon.status = CORE_STATUS_IDS.burn;
         }
 
         // Act
@@ -142,11 +167,11 @@ describe("processEffectResult — self-targeted effects", () => {
         engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
         // Assert — status is still burn, not sleep
-        expect(attackerActive?.pokemon.status).toBe("burn");
+        expect(attackerActive?.pokemon.status).toBe(CORE_STATUS_IDS.burn);
 
         // Assert — no sleep status-inflict event for side 0
         const sleepInflict = events.find(
-          (e) => e.type === "status-inflict" && e.side === 0 && e.status === "sleep",
+          (e) => e.type === "status-inflict" && e.side === 0 && e.status === CORE_STATUS_IDS.sleep,
         );
         expect(sleepInflict).toBeUndefined();
       },
@@ -155,8 +180,8 @@ describe("processEffectResult — self-targeted effects", () => {
 
   describe("selfVolatileInflicted", () => {
     it(
-      "given selfVolatileInflicted='mist'," +
-        " when move is used, then attacker gains mist volatile in volatileStatuses",
+      `given selfVolatileInflicted=${CORE_VOLATILE_IDS.mist},` +
+        ` when move is used, then attacker gains ${CORE_VOLATILE_IDS.mist} volatile in volatileStatuses`,
       () => {
         // Arrange
         const ruleset = new MockRuleset();
@@ -168,7 +193,7 @@ describe("processEffectResult — self-targeted effects", () => {
           healAmount: 0,
           switchOut: false,
           messages: [],
-          selfVolatileInflicted: "mist" as const,
+          selfVolatileInflicted: CORE_VOLATILE_IDS.mist as const,
         });
 
         const { engine, events } = createEngine({ ruleset });
@@ -180,19 +205,20 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Assert — attacker (side 0) has mist in volatileStatuses
         const attackerActive = engine.state.sides[0].active[0];
-        expect(attackerActive?.volatileStatuses.has("mist")).toBe(true);
+        expect(attackerActive?.volatileStatuses.has(CORE_VOLATILE_IDS.mist)).toBe(true);
 
-        // Assert — volatile-start event emitted for side 0 with volatile="mist"
+        // Assert — volatile-start event emitted for side 0 with volatile=CORE_VOLATILE_IDS.mist
         const volatileStart = events.find(
-          (e) => e.type === "volatile-start" && e.side === 0 && e.volatile === "mist",
+          (e) =>
+            e.type === "volatile-start" && e.side === 0 && e.volatile === CORE_VOLATILE_IDS.mist,
         );
         expect(volatileStart).toBeDefined();
       },
     );
 
     it(
-      "given selfVolatileInflicted='mist' when attacker already has mist," +
-        " when move is used, then mist is NOT applied again",
+      `given selfVolatileInflicted=${CORE_VOLATILE_IDS.mist} when attacker already has mist,` +
+        ` when move is used, then ${CORE_VOLATILE_IDS.mist} is NOT applied again`,
       () => {
         // Arrange
         const ruleset = new MockRuleset();
@@ -204,7 +230,7 @@ describe("processEffectResult — self-targeted effects", () => {
           healAmount: 0,
           switchOut: false,
           messages: [],
-          selfVolatileInflicted: "mist" as const,
+          selfVolatileInflicted: CORE_VOLATILE_IDS.mist as const,
         });
 
         const { engine, events } = createEngine({ ruleset });
@@ -212,7 +238,7 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Pre-condition: attacker already has mist
         const attackerActive = engine.state.sides[0].active[0];
-        attackerActive?.volatileStatuses.set("mist", { turnsLeft: -1 });
+        attackerActive?.volatileStatuses.set(CORE_VOLATILE_IDS.mist, { turnsLeft: -1 });
 
         // Act
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -222,7 +248,8 @@ describe("processEffectResult — self-targeted effects", () => {
         // NOTE: side 1 may still get mist from their own move execution, but we
         // only care that side 0 did NOT get a duplicate volatile-start
         const volatileStartsSide0 = events.filter(
-          (e) => e.type === "volatile-start" && e.volatile === "mist" && e.side === 0,
+          (e) =>
+            e.type === "volatile-start" && e.volatile === CORE_VOLATILE_IDS.mist && e.side === 0,
         );
         expect(volatileStartsSide0).toHaveLength(0);
       },
@@ -244,7 +271,7 @@ describe("processEffectResult — self-targeted effects", () => {
           healAmount: 0,
           switchOut: false,
           messages: [],
-          typeChange: { target: "attacker" as const, types: ["water" as const] },
+          typeChange: { target: "attacker" as const, types: [CORE_TYPE_IDS.water as const] },
         });
 
         const { engine, events } = createEngine({ ruleset });
@@ -256,7 +283,7 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Assert — attacker's types updated
         const attackerActive = engine.state.sides[0].active[0];
-        expect(attackerActive?.types).toEqual(["water"]);
+        expect(attackerActive?.types).toEqual([CORE_TYPE_IDS.water]);
 
         // Assert — message event emitted with type-changed text
         const messageEvent = events.find(
@@ -282,7 +309,7 @@ describe("processEffectResult — self-targeted effects", () => {
           messages: [],
           typeChange: {
             target: "defender" as const,
-            types: ["fire" as const, "flying" as const],
+            types: [CORE_TYPE_IDS.fire as const, CORE_TYPE_IDS.flying as const],
           },
         });
 
@@ -295,7 +322,7 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Assert — defender's types updated
         const defenderActive = engine.state.sides[1].active[0];
-        expect(defenderActive?.types).toEqual(["fire", "flying"]);
+        expect(defenderActive?.types).toEqual([CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
 
         // Assert — message event emitted
         const messageEvent = events.find(
@@ -307,35 +334,21 @@ describe("processEffectResult — self-targeted effects", () => {
   });
 
   describe("screenSet", () => {
-    it("given screenSet screen='lucky-chant' on the attacker, when move is used, then the lucky-chant screen and side field stay synchronized", () => {
+    it(`given screenSet screen=${CORE_SCREEN_IDS.luckyChant} on the attacker, when move is used, then the ${CORE_SCREEN_IDS.luckyChant} screen and side field stay synchronized`, () => {
       // Arrange
       const ruleset = new MockRuleset();
       ruleset.getEndOfTurnOrder = () => [];
-      let callCount = 0;
-      ruleset.executeMoveEffect = () => {
-        callCount++;
-        if (callCount === 1) {
-          return {
-            statusInflicted: null,
-            volatileInflicted: null,
-            statChanges: [],
-            recoilDamage: 0,
-            healAmount: 0,
-            switchOut: false,
-            messages: [],
-            screenSet: { screen: "lucky-chant", turnsLeft: 5, side: "attacker" as const },
-          };
-        }
-        return {
-          statusInflicted: null,
-          volatileInflicted: null,
-          statChanges: [],
-          recoilDamage: 0,
-          healAmount: 0,
-          switchOut: false,
-          messages: [],
-        };
-      };
+      ruleset.executeMoveEffect = createMoveEffectSequence(
+        {
+          ...NO_OP_MOVE_EFFECT_RESULT,
+          screenSet: {
+            screen: CORE_SCREEN_IDS.luckyChant,
+            turnsLeft: 5,
+            side: "attacker" as const,
+          },
+        },
+        NO_OP_MOVE_EFFECT_RESULT,
+      );
 
       const { engine } = createEngine({ ruleset });
       engine.start();
@@ -346,9 +359,10 @@ describe("processEffectResult — self-targeted effects", () => {
 
       // Assert — Lucky Chant is tracked in both places so Gen 4 crit suppression can read it
       expect(engine.state.sides[0].screens).toHaveLength(1);
+      // Source: Lucky Chant lasts 5 turns in the shared screen constants.
       expect(engine.state.sides[0].screens[0]?.turnsLeft).toBe(5);
       expect((engine.state.sides[0].screens[0] as { type: string } | undefined)?.type).toBe(
-        "lucky-chant",
+        CORE_SCREEN_IDS.luckyChant,
       );
       expect(engine.state.sides[0].luckyChant).toEqual({ active: true, turnsLeft: 5 });
     });
@@ -366,31 +380,13 @@ describe("processEffectResult — self-targeted effects", () => {
         // are not reset and we can verify defender stages are unaffected.
         // Source: pokered move_effects/haze.asm:15-43 — attacker side stages reset independently
         const ruleset = new MockRuleset();
-        let callCount = 0;
-        ruleset.executeMoveEffect = () => {
-          callCount++;
-          if (callCount === 1) {
-            return {
-              statusInflicted: null,
-              volatileInflicted: null,
-              statChanges: [],
-              recoilDamage: 0,
-              healAmount: 0,
-              switchOut: false,
-              messages: [],
-              statStagesReset: { target: "attacker" as const },
-            };
-          }
-          return {
-            statusInflicted: null,
-            volatileInflicted: null,
-            statChanges: [],
-            recoilDamage: 0,
-            healAmount: 0,
-            switchOut: false,
-            messages: [],
-          };
-        };
+        ruleset.executeMoveEffect = createMoveEffectSequence(
+          {
+            ...NO_OP_MOVE_EFFECT_RESULT,
+            statStagesReset: { target: "attacker" as const },
+          },
+          NO_OP_MOVE_EFFECT_RESULT,
+        );
 
         const { engine, events } = createEngine({ ruleset });
         engine.start();
@@ -401,7 +397,7 @@ describe("processEffectResult — self-targeted effects", () => {
         const defenderActive = engine.state.sides[1].active[0];
         if (attackerActive) {
           attackerActive.statStages.attack = 3;
-          attackerActive.pokemon.status = "burn";
+          attackerActive.pokemon.status = CORE_STATUS_IDS.burn;
         }
         if (defenderActive) {
           defenderActive.statStages.defense = 2;
@@ -414,7 +410,7 @@ describe("processEffectResult — self-targeted effects", () => {
         // Assert — attacker attack stage reset to 0
         expect(attackerActive?.statStages.attack).toBe(0);
         // Assert — attacker status NOT cured (statStagesReset never touches status)
-        expect(attackerActive?.pokemon.status).toBe("burn");
+        expect(attackerActive?.pokemon.status).toBe(CORE_STATUS_IDS.burn);
         // Assert — defender defense stage unchanged (Blastoise used a no-op move)
         expect(defenderActive?.statStages.defense).toBe(2);
         // Assert — the reset is surfaced as a stat-change event for downstream listeners
@@ -477,31 +473,13 @@ describe("processEffectResult — self-targeted effects", () => {
         // verify that attacker stages are not touched by Blastoise's own action.
         // Source: pokered move_effects/haze.asm:15-43 — defender side reset independently
         const ruleset = new MockRuleset();
-        let callCount = 0;
-        ruleset.executeMoveEffect = () => {
-          callCount++;
-          if (callCount === 1) {
-            return {
-              statusInflicted: null,
-              volatileInflicted: null,
-              statChanges: [],
-              recoilDamage: 0,
-              healAmount: 0,
-              switchOut: false,
-              messages: [],
-              statStagesReset: { target: "defender" as const },
-            };
-          }
-          return {
-            statusInflicted: null,
-            volatileInflicted: null,
-            statChanges: [],
-            recoilDamage: 0,
-            healAmount: 0,
-            switchOut: false,
-            messages: [],
-          };
-        };
+        ruleset.executeMoveEffect = createMoveEffectSequence(
+          {
+            ...NO_OP_MOVE_EFFECT_RESULT,
+            statStagesReset: { target: "defender" as const },
+          },
+          NO_OP_MOVE_EFFECT_RESULT,
+        );
 
         const { engine, events } = createEngine({ ruleset });
         engine.start();
@@ -543,31 +521,13 @@ describe("processEffectResult — self-targeted effects", () => {
         // Arrange — only the first executeMoveEffect call returns statusCured; the second
         // call returns a no-op so the defender's own action does not affect the assertion.
         const ruleset = new MockRuleset();
-        let callCount = 0;
-        ruleset.executeMoveEffect = () => {
-          callCount++;
-          if (callCount === 1) {
-            return {
-              statusInflicted: null,
-              volatileInflicted: null,
-              statChanges: [],
-              recoilDamage: 0,
-              healAmount: 0,
-              switchOut: false,
-              messages: [],
-              statusCured: { target: "attacker" as const },
-            };
-          }
-          return {
-            statusInflicted: null,
-            volatileInflicted: null,
-            statChanges: [],
-            recoilDamage: 0,
-            healAmount: 0,
-            switchOut: false,
-            messages: [],
-          };
-        };
+        ruleset.executeMoveEffect = createMoveEffectSequence(
+          {
+            ...NO_OP_MOVE_EFFECT_RESULT,
+            statusCured: { target: "attacker" as const },
+          },
+          NO_OP_MOVE_EFFECT_RESULT,
+        );
 
         const { engine, events } = createEngine({ ruleset });
         engine.start();
@@ -575,7 +535,7 @@ describe("processEffectResult — self-targeted effects", () => {
         const attackerActive = engine.state.sides[0].active[0];
         if (attackerActive) {
           attackerActive.statStages.attack = 2;
-          attackerActive.pokemon.status = "burn";
+          attackerActive.pokemon.status = CORE_STATUS_IDS.burn;
         }
 
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -585,7 +545,7 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.pokemon.status).toBeNull();
 
         const statusCure = events.find(
-          (e) => e.type === "status-cure" && e.side === 0 && e.status === "burn",
+          (e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.burn,
         );
         expect(statusCure).toBeDefined();
 
@@ -623,7 +583,7 @@ describe("processEffectResult — self-targeted effects", () => {
         // Pre-condition: attacker has burn and +2 attack stage
         const attackerActive = engine.state.sides[0].active[0];
         if (attackerActive) {
-          attackerActive.pokemon.status = "burn";
+          attackerActive.pokemon.status = CORE_STATUS_IDS.burn;
           attackerActive.statStages.attack = 2;
         }
 
@@ -639,7 +599,7 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Assert — status-cure event emitted for side 0
         const statusCure = events.find(
-          (e) => e.type === "status-cure" && e.side === 0 && e.status === "burn",
+          (e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.burn,
         );
         expect(statusCure).toBeDefined();
       },

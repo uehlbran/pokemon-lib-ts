@@ -83,7 +83,8 @@ than any remote AI reviewer. Do not skip it.
 
 1. **`npm run verify:local` is required** -- Run it before every PR.
 2. **`/review` is required** -- Run falcon/kestrel/sentinel locally before every PR.
-3. **AI reviews are advisory** -- Remote reviewers comment but never approve. A human reviewer must approve every PR.
-4. **Don't blindly fix** -- Evaluate AI suggestions critically. They can be wrong.
-5. **Dismiss false positives** -- React with :thumbsdown: or reply explaining why the suggestion doesn't apply.
-6. **Security findings are high priority** -- If an AI flags a security issue, investigate before dismissing.
+3. **Tests-first is required** -- If a PR changes behavior, the test work must land with or before the implementation. Missing tests for changed behavior are a review failure.
+4. **AI reviews are advisory** -- Remote reviewers comment but never approve. A human reviewer must approve every PR.
+5. **Don't blindly fix** -- Evaluate AI suggestions critically. They can be wrong.
+6. **Dismiss false positives** -- React with :thumbsdown: or reply explaining why the suggestion doesn't apply.
+7. **Security findings are high priority** -- If an AI flags a security issue, investigate before dismissing.

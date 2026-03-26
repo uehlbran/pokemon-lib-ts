@@ -1,84 +1,98 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
+import type { Gender, PokemonInstance, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_HAZARD_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import { createGen4DataManager, GEN4_ABILITY_IDS, GEN4_MOVE_IDS, GEN4_SPECIES_IDS } from "../src";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+const GEN4_DATA = createGen4DataManager();
+
+const DEFAULT_NATURE_ID = ALL_NATURES[0]!.id;
+const DEFAULT_SPECIES_ID = GEN4_SPECIES_IDS.mewtwo;
+const DEFAULT_POKEBALL = GEN4_DATA.getSpecies(DEFAULT_SPECIES_ID).pokeball;
+
+const TYPE_IDS = CORE_TYPE_IDS;
+const STATUS_IDS = CORE_STATUS_IDS;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
+const MOVE_IDS = GEN4_MOVE_IDS;
+const ABILITY_IDS = GEN4_ABILITY_IDS;
+const HAZARD_IDS = CORE_HAZARD_IDS;
+
+function createRuleset(): Gen4Ruleset {
+  return new Gen4Ruleset(GEN4_DATA);
 }
 
-function makePokemonInstance(overrides: {
-  maxHp?: number;
-  status?: PokemonInstance["status"];
-  heldItem?: string | null;
-}): PokemonInstance {
+function createPokemonInstanceFixture(
+  overrides: {
+    maxHp?: number;
+    status?: PokemonInstance["status"];
+    heldItem?: string | null;
+    gender?: Gender;
+    speciesId?: number;
+  } = {},
+): PokemonInstance {
+  const species = GEN4_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: "test",
-    speciesId: 1,
-    nickname: null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: maxHp,
-    moves: [],
-    ability: "",
-    abilitySlot: "normal1" as const,
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(36), {
+    nature: DEFAULT_NATURE_ID,
     heldItem: overrides.heldItem ?? null,
-    status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+    pokeball: DEFAULT_POKEBALL,
+    gender: overrides.gender,
+  });
+
+  pokemon.currentHp = maxHp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
-  maxHp?: number;
-  status?: PokemonInstance["status"];
-  types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-}): ActivePokemon {
+function createActivePokemonFixture(
+  overrides: {
+    maxHp?: number;
+    status?: PokemonInstance["status"];
+    types?: PokemonType[];
+    ability?: string;
+    heldItem?: string | null;
+    gender?: Gender;
+    speciesId?: number;
+  } = {},
+): ActivePokemon {
+  const species = GEN4_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
+  const pokemon = createPokemonInstanceFixture({
+    maxHp: overrides.maxHp,
+    status: overrides.status,
+    heldItem: overrides.heldItem,
+    gender: overrides.gender,
+    speciesId: overrides.speciesId,
+  });
   return {
-    pokemon: makePokemonInstance({
-      maxHp: overrides.maxHp,
-      status: overrides.status,
-      heldItem: overrides.heldItem,
-    }),
+    pokemon,
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [...species.types],
+    ability: overrides.ability ?? pokemon.ability,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -98,7 +112,7 @@ function makeActivePokemon(overrides: {
 }
 
 /** Build a minimal BattleSide with specified hazards. */
-function makeSideWithHazards(
+function createBattleSideFixture(
   active: ActivePokemon,
   hazards: Array<{ type: string; layers: number }>,
 ) {
@@ -127,9 +141,9 @@ describe("Gen4Ruleset applyEntryHazards — Stealth Rock", () => {
     // Source: Bulbapedia — Stealth Rock: base 1/8 max HP × type effectiveness of Rock
     // Neutral effectiveness (1x): 1/8 maxHP
     // Derivation: floor(200 * 1 / 8) = 25
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, [{ type: "stealth-rock", layers: 1 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.stealthRock, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -142,9 +156,9 @@ describe("Gen4Ruleset applyEntryHazards — Stealth Rock", () => {
     // Source: Bulbapedia — Stealth Rock: Rock vs Fire = 2x, Rock vs Flying = 2x → 4x total
     // 4x weak: base 1/8 * 4 = 1/2 maxHP
     // Derivation: floor(200 * 4 / 8) = 100
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["fire", "flying"] });
-    const side = makeSideWithHazards(mon, [{ type: "stealth-rock", layers: 1 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.fire, TYPE_IDS.flying] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.stealthRock, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -157,9 +171,9 @@ describe("Gen4Ruleset applyEntryHazards — Stealth Rock", () => {
     // Source: Bulbapedia — Stealth Rock: Rock vs Ground = 0.5x (resist)
     // 0.5x resist: base 1/8 * 0.5 = 1/16 maxHP
     // Derivation: floor(200 * 0.5 / 8) = floor(12.5) = 12
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["ground"] });
-    const side = makeSideWithHazards(mon, [{ type: "stealth-rock", layers: 1 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.ground] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.stealthRock, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -170,9 +184,9 @@ describe("Gen4Ruleset applyEntryHazards — Stealth Rock", () => {
 
   it("given a Pokemon and no hazards, when switching in, then takes 0 damage", () => {
     // Source: pret/pokeplatinum — no hazards = no damage
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, []);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, []);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -190,9 +204,9 @@ describe("Gen4Ruleset applyEntryHazards — Spikes", () => {
   it("given a grounded Pokemon and 1 Spike layer, when switching in, then takes 1/8 maxHP damage", () => {
     // Source: pret/pokeplatinum — Spikes 1 layer = 1/8 maxHP (same as Gen 3)
     // Derivation: floor(200 * (1/8)) = 25
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 1 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.spikes, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -204,9 +218,9 @@ describe("Gen4Ruleset applyEntryHazards — Spikes", () => {
   it("given a grounded Pokemon and 2 Spike layers, when switching in, then takes 1/6 maxHP damage", () => {
     // Source: pret/pokeplatinum — Spikes 2 layers = 1/6 maxHP
     // Derivation: floor(200 * (1/6)) = floor(33.33...) = 33
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 2 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.spikes, layers: 2 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -218,9 +232,9 @@ describe("Gen4Ruleset applyEntryHazards — Spikes", () => {
   it("given a grounded Pokemon and 3 Spike layers, when switching in, then takes 1/4 maxHP damage", () => {
     // Source: pret/pokeplatinum — Spikes 3 layers = 1/4 maxHP
     // Derivation: floor(200 * (1/4)) = 50
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 3 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.spikes, layers: 3 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -232,9 +246,9 @@ describe("Gen4Ruleset applyEntryHazards — Spikes", () => {
   it("given a Flying-type Pokemon and Spikes, when switching in, then takes 0 damage (immune)", () => {
     // Source: Bulbapedia — Flying-type Pokemon are not affected by Spikes
     // Source: pret/pokeplatinum — grounded check excludes Flying-types
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["flying"] });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 3 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.flying] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.spikes, layers: 3 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -245,9 +259,13 @@ describe("Gen4Ruleset applyEntryHazards — Spikes", () => {
 
   it("given a Levitate Pokemon and Spikes, when switching in, then takes 0 damage (immune)", () => {
     // Source: pret/pokeplatinum — Levitate ability grants Ground immunity, including Spikes
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"], ability: "levitate" });
-    const side = makeSideWithHazards(mon, [{ type: "spikes", layers: 3 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({
+      maxHp: 200,
+      types: [TYPE_IDS.normal],
+      ability: ABILITY_IDS.levitate,
+    });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.spikes, layers: 3 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -265,37 +283,37 @@ describe("Gen4Ruleset applyEntryHazards — Toxic Spikes", () => {
   it("given a grounded non-Poison Pokemon and 1 Toxic Spike layer, when switching in, then inflicts poison", () => {
     // Source: Bulbapedia — Toxic Spikes: 1 layer = regular poison
     // Source: pret/pokeplatinum — 1 layer of Toxic Spikes inflicts PSN (poison)
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, [{ type: "toxic-spikes", layers: 1 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.toxicSpikes, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
       side as Parameters<Gen4Ruleset["applyEntryHazards"]>[1],
     );
-    expect(result.statusInflicted).toBe("poison");
+    expect(result.statusInflicted).toBe(STATUS_IDS.poison);
   });
 
   it("given a grounded non-Poison Pokemon and 2 Toxic Spike layers, when switching in, then inflicts badly-poisoned", () => {
     // Source: Bulbapedia — Toxic Spikes: 2 layers = badly poisoned (toxic)
     // Source: pret/pokeplatinum — 2 layers of Toxic Spikes inflicts TOX (badly-poisoned)
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["normal"] });
-    const side = makeSideWithHazards(mon, [{ type: "toxic-spikes", layers: 2 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.normal] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.toxicSpikes, layers: 2 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
       side as Parameters<Gen4Ruleset["applyEntryHazards"]>[1],
     );
-    expect(result.statusInflicted).toBe("badly-poisoned");
+    expect(result.statusInflicted).toBe(STATUS_IDS.badlyPoisoned);
   });
 
   it("given a grounded Poison-type Pokemon and Toxic Spikes, when switching in, then absorbs spikes (no status)", () => {
     // Source: Bulbapedia — Poison-types absorb (remove) Toxic Spikes on switch-in
     // Source: pret/pokeplatinum — grounded Poison-type clears Toxic Spikes, no status inflicted
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["poison"] });
-    const side = makeSideWithHazards(mon, [{ type: "toxic-spikes", layers: 2 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.poison] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.toxicSpikes, layers: 2 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -303,15 +321,15 @@ describe("Gen4Ruleset applyEntryHazards — Toxic Spikes", () => {
     );
     expect(result.statusInflicted).toBeNull();
     // Source: Bulbapedia — Poison-types absorb (remove) Toxic Spikes on switch-in
-    expect(result.hazardsToRemove).toEqual(["toxic-spikes"]);
+    expect(result.hazardsToRemove).toEqual([HAZARD_IDS.toxicSpikes]);
   });
 
   it("given a grounded Steel-type Pokemon and Toxic Spikes, when switching in, then no status inflicted (Steel immune to poison)", () => {
     // Source: Bulbapedia — Steel-type Pokemon cannot be poisoned
     // Source: pret/pokeplatinum — Steel-type check prevents poison from Toxic Spikes
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["steel"] });
-    const side = makeSideWithHazards(mon, [{ type: "toxic-spikes", layers: 1 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.steel] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.toxicSpikes, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -322,9 +340,9 @@ describe("Gen4Ruleset applyEntryHazards — Toxic Spikes", () => {
 
   it("given a Flying-type Pokemon and Toxic Spikes, when switching in, then no status inflicted (immune)", () => {
     // Source: Bulbapedia — Flying-types are not grounded, so not affected by Toxic Spikes
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, types: ["flying"] });
-    const side = makeSideWithHazards(mon, [{ type: "toxic-spikes", layers: 2 }]);
+    const ruleset = createRuleset();
+    const mon = createActivePokemonFixture({ maxHp: 200, types: [TYPE_IDS.flying] });
+    const side = createBattleSideFixture(mon, [{ type: HAZARD_IDS.toxicSpikes, layers: 2 }]);
 
     const result = ruleset.applyEntryHazards(
       mon,
@@ -341,18 +359,18 @@ describe("Gen4Ruleset applyEntryHazards — Toxic Spikes", () => {
 /** Minimal MoveData for accuracy tests. */
 type AccuracyContext = Parameters<Gen4Ruleset["doesMoveHit"]>[0];
 
-function makeAccuracyContext(overrides: {
+function createAccuracyContextFixture(overrides: {
   moveAccuracy?: number | null;
   attackerAbility?: string;
   defenderAbility?: string;
   accStage?: number;
   evaStage?: number;
-  weather?: string | null;
+  weather?: WeatherType | null;
   attackerItem?: string | null;
-  moveCategory?: "physical" | "special" | "status";
+  moveCategory?: (typeof MOVE_CATEGORIES)[keyof typeof MOVE_CATEGORIES];
 }): AccuracyContext {
-  const attacker = makeActivePokemon({ ability: overrides.attackerAbility ?? "" });
-  const defender = makeActivePokemon({ ability: overrides.defenderAbility ?? "" });
+  const attacker = createActivePokemonFixture({ ability: overrides.attackerAbility });
+  const defender = createActivePokemonFixture({ ability: overrides.defenderAbility });
   if (overrides.attackerItem) {
     (attacker.pokemon as { heldItem: string | null }).heldItem = overrides.attackerItem;
   }
@@ -367,9 +385,9 @@ function makeAccuracyContext(overrides: {
     attacker,
     defender,
     move: {
-      id: "tackle",
+      id: MOVE_IDS.tackle,
       accuracy: overrides.moveAccuracy !== undefined ? overrides.moveAccuracy : 100,
-      category: overrides.moveCategory ?? "physical",
+      category: overrides.moveCategory ?? MOVE_CATEGORIES.physical,
     } as AccuracyContext["move"],
     state: {
       weather: overrides.weather ? { type: overrides.weather } : null,
@@ -381,22 +399,28 @@ function makeAccuracyContext(overrides: {
 describe("Gen4Ruleset doesMoveHit", () => {
   it("given a move with null accuracy (never-miss), when doesMoveHit, then always returns true", () => {
     // Source: pret/pokeplatinum — moves with accuracy=null always hit (e.g., Swift, Aerial Ace)
-    const ruleset = makeRuleset();
-    const ctx = makeAccuracyContext({ moveAccuracy: null });
+    const ruleset = createRuleset();
+    const ctx = createAccuracyContextFixture({ moveAccuracy: null });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
   it("given attacker with No Guard ability, when doesMoveHit, then always returns true", () => {
     // Source: Bulbapedia — No Guard: all moves used by or against the user always hit
-    const ruleset = makeRuleset();
-    const ctx = makeAccuracyContext({ attackerAbility: "no-guard", moveAccuracy: 50 });
+    const ruleset = createRuleset();
+    const ctx = createAccuracyContextFixture({
+      attackerAbility: ABILITY_IDS.noGuard,
+      moveAccuracy: 50,
+    });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
   it("given defender with No Guard ability, when doesMoveHit, then always returns true", () => {
     // Source: Bulbapedia — No Guard: all moves used by or against the user always hit
-    const ruleset = makeRuleset();
-    const ctx = makeAccuracyContext({ defenderAbility: "no-guard", moveAccuracy: 50 });
+    const ruleset = createRuleset();
+    const ctx = createAccuracyContextFixture({
+      defenderAbility: ABILITY_IDS.noGuard,
+      moveAccuracy: 50,
+    });
     expect(ruleset.doesMoveHit(ctx)).toBe(true);
   });
 
@@ -405,11 +429,15 @@ describe("Gen4Ruleset doesMoveHit", () => {
     // Stage 0 ratio: dividend=1, divisor=1 → calc = floor(1 * 100 / 1) = 100
     // Any roll 1-100 <= 100, so always hits
     // Using seed 1 which rolls an early value <= 100
-    const ruleset = makeRuleset();
-    const _ctx = makeAccuracyContext({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
+    const ruleset = createRuleset();
+    const _ctx = createAccuracyContextFixture({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
     // With 100% accuracy at stage 0, the move always hits
     const results = Array.from({ length: 20 }, (_, i) => {
-      const localCtx = makeAccuracyContext({ moveAccuracy: 100, accStage: 0, evaStage: 0 });
+      const localCtx = createAccuracyContextFixture({
+        moveAccuracy: 100,
+        accStage: 0,
+        evaStage: 0,
+      });
       (localCtx as { rng: unknown }).rng = new SeededRandom(i + 1);
       return ruleset.doesMoveHit(localCtx);
     });
@@ -423,17 +451,21 @@ describe("Gen4Ruleset doesMoveHit", () => {
     // Seed 2 produces SeededRandom.int(1,100) = 74
     // Without Compound Eyes: 74 > 70 → miss
     // With Compound Eyes:    74 <= 91 → hit
-    const ruleset = makeRuleset();
+    const ruleset = createRuleset();
 
-    const ctxStandard = makeAccuracyContext({ moveAccuracy: 70, accStage: 0, evaStage: 0 });
-    (ctxStandard as { rng: unknown }).rng = new SeededRandom(2);
-    expect(ruleset.doesMoveHit(ctxStandard)).toBe(false);
-
-    const ctxCompound = makeAccuracyContext({
+    const ctxStandard = createAccuracyContextFixture({
       moveAccuracy: 70,
       accStage: 0,
       evaStage: 0,
-      attackerAbility: "compound-eyes",
+    });
+    (ctxStandard as { rng: unknown }).rng = new SeededRandom(2);
+    expect(ruleset.doesMoveHit(ctxStandard)).toBe(false);
+
+    const ctxCompound = createAccuracyContextFixture({
+      moveAccuracy: 70,
+      accStage: 0,
+      evaStage: 0,
+      attackerAbility: ABILITY_IDS.compoundEyes,
     });
     (ctxCompound as { rng: unknown }).rng = new SeededRandom(2);
     expect(ruleset.doesMoveHit(ctxCompound)).toBe(true);

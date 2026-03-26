@@ -17,37 +17,43 @@ const ALL_GROUPS: ExperienceGroup[] = [
 ];
 
 describe("getExpForLevel", () => {
-  it("should return 0 for level 1", () => {
+  it("given any experience group, when querying level 1, then total EXP is 0", () => {
     for (const group of ALL_GROUPS) {
       expect(getExpForLevel(group, 1)).toBe(0);
     }
   });
 
-  it("should return 1,000,000 for medium-fast at L100", () => {
+  it("given medium-fast, when querying level 100, then total EXP is 1,000,000", () => {
+    // Source: Bulbapedia — Medium Fast uses n^3, so 100^3 = 1,000,000.
     expect(getExpForLevel("medium-fast", 100)).toBe(1_000_000);
   });
 
-  it("should return 800,000 for fast at L100", () => {
+  it("given fast, when querying level 100, then total EXP is 800,000", () => {
+    // Source: Bulbapedia — Fast uses floor(4n^3 / 5), so floor(4 * 100^3 / 5) = 800,000.
     expect(getExpForLevel("fast", 100)).toBe(800_000);
   });
 
-  it("should return 1,250,000 for slow at L100", () => {
+  it("given slow, when querying level 100, then total EXP is 1,250,000", () => {
+    // Source: Bulbapedia — Slow uses floor(5n^3 / 4), so floor(5 * 100^3 / 4) = 1,250,000.
     expect(getExpForLevel("slow", 100)).toBe(1_250_000);
   });
 
-  it("should return 600,000 for erratic at L100", () => {
+  it("given erratic, when querying level 100, then total EXP is 600,000", () => {
+    // Source: Bulbapedia — Erratic at level 100 uses floor(n^3 * (160 - n) / 100).
     expect(getExpForLevel("erratic", 100)).toBe(600_000);
   });
 
-  it("should return 1,059,860 for medium-slow at L100", () => {
+  it("given medium-slow, when querying level 100, then total EXP is 1,059,860", () => {
+    // Source: Bulbapedia — Medium Slow uses floor(6/5 n^3 - 15n^2 + 100n - 140).
     expect(getExpForLevel("medium-slow", 100)).toBe(1_059_860);
   });
 
-  it("should return 1,640,000 for fluctuating at L100", () => {
+  it("given fluctuating, when querying level 100, then total EXP is 1,640,000", () => {
+    // Source: Bulbapedia — Fluctuating at level 100 uses floor(n^3 * (floor(n / 2) + 32) / 50).
     expect(getExpForLevel("fluctuating", 100)).toBe(1_640_000);
   });
 
-  it("should be monotonically increasing from L2 to L100 for all groups", () => {
+  it("given every experience group, when walking levels 2 through 100, then total EXP increases monotonically", () => {
     for (const group of ALL_GROUPS) {
       let prev = getExpForLevel(group, 2);
       for (let level = 3; level <= 100; level++) {
@@ -58,38 +64,32 @@ describe("getExpForLevel", () => {
     }
   });
 
-  it("should return known values for medium-fast", () => {
-    // n^3 formula
+  it("given medium-fast, when sampling a few levels, then the cubic formula matches known totals", () => {
+    // Source: Bulbapedia — Medium Fast uses n^3, so the exact totals are direct cubes.
     expect(getExpForLevel("medium-fast", 2)).toBe(8);
     expect(getExpForLevel("medium-fast", 10)).toBe(1_000);
     expect(getExpForLevel("medium-fast", 50)).toBe(125_000);
   });
 
-  it("should return positive values for all levels > 1", () => {
-    for (const group of ALL_GROUPS) {
-      for (let level = 2; level <= 100; level++) {
-        expect(getExpForLevel(group, level)).toBeGreaterThan(0);
-      }
-    }
+  it("given every experience group, when querying level 2, then the totals match the documented formulas", () => {
+    // Source: Bulbapedia — these level-2 totals are direct formula results.
+    expect(getExpForLevel("erratic", 2)).toBe(15);
+    expect(getExpForLevel("fast", 2)).toBe(6);
+    expect(getExpForLevel("medium-fast", 2)).toBe(8);
+    expect(getExpForLevel("medium-slow", 2)).toBe(9);
+    expect(getExpForLevel("slow", 2)).toBe(10);
+    expect(getExpForLevel("fluctuating", 2)).toBe(4);
   });
 });
 
 describe("getExpToNextLevel", () => {
-  it("should return 0 at level 100", () => {
+  it("given every experience group, when querying level 100, then EXP to next level is 0", () => {
     for (const group of ALL_GROUPS) {
       expect(getExpToNextLevel(group, 100)).toBe(0);
     }
   });
 
-  it("should return positive values for levels below 100", () => {
-    for (const group of ALL_GROUPS) {
-      for (let level = 1; level < 100; level++) {
-        expect(getExpToNextLevel(group, level)).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it("should equal the difference between consecutive getExpForLevel calls", () => {
+  it("given adjacent levels, when comparing cumulative totals, then the delta matches getExpToNextLevel", () => {
     for (const group of ALL_GROUPS) {
       for (let level = 1; level < 100; level++) {
         const expected = getExpForLevel(group, level + 1) - getExpForLevel(group, level);
@@ -100,61 +100,67 @@ describe("getExpToNextLevel", () => {
 });
 
 describe("calculateExpGain (Gen 5+ scaled)", () => {
-  it("should return at least 1", () => {
-    expect(calculateExpGain(1, 1, 100, false)).toBeGreaterThanOrEqual(1);
+  it("given the minimum possible battle values, when calculating scaled EXP, then the floor result is clamped to 1", () => {
+    // Source: Bulbapedia — Experience gain is always at least 1.
+    expect(calculateExpGain(1, 1, 100, false)).toBe(1);
   });
 
-  it("should give more EXP for trainer battles (1.5x)", () => {
+  it("given identical battle parameters except trainer flag, when calculating scaled EXP, then trainer battles award more", () => {
     const wild = calculateExpGain(64, 25, 25, false);
     const trainer = calculateExpGain(64, 25, 25, true);
-    expect(trainer).toBeGreaterThan(wild);
+    // Source: Showdown sim/battle-actions.ts — trainer battles apply a 1.5x multiplier.
+    expect(wild).toBe(640);
+    expect(trainer).toBe(960);
   });
 
-  it("should give more EXP with Lucky Egg (1.5x)", () => {
+  it("given identical battle parameters except Lucky Egg, when calculating scaled EXP, then Lucky Egg boosts the reward", () => {
     const noEgg = calculateExpGain(64, 25, 25, false, 1, false);
     const withEgg = calculateExpGain(64, 25, 25, false, 1, true);
-    expect(withEgg).toBeGreaterThan(noEgg);
+    // Source: Showdown sim/battle-actions.ts — Lucky Egg applies a 1.5x multiplier.
+    expect(noEgg).toBe(640);
+    expect(withEgg).toBe(960);
   });
 
-  it("should reduce EXP when participant is higher level", () => {
+  it("given the same battle but a higher participant level, when calculating scaled EXP, then the level penalty reduces the reward", () => {
     const sameLevelExp = calculateExpGain(64, 50, 50, false);
     const higherLevelExp = calculateExpGain(64, 50, 80, false);
-    expect(higherLevelExp).toBeLessThan(sameLevelExp);
+    // Source: Bulbapedia — the Gen 5+ formula scales EXP down for higher-level participants.
+    expect(sameLevelExp).toBe(1_280);
+    expect(higherLevelExp).toBe(990);
   });
 
-  it("should split EXP among participants", () => {
+  it("given one participant versus two, when calculating scaled EXP, then the split is exact", () => {
     const solo = calculateExpGain(64, 25, 25, false, 1);
     const duo = calculateExpGain(64, 25, 25, false, 2);
-    expect(duo).toBeLessThan(solo);
+    // Source: Bulbapedia — participant count divides the EXP before other multipliers.
+    expect(solo).toBe(640);
+    expect(duo).toBe(320);
   });
 });
 
 describe("calculateExpGainClassic (Gen 1-4)", () => {
-  it("should return at least 1", () => {
-    expect(calculateExpGainClassic(1, 1, false)).toBeGreaterThanOrEqual(1);
+  it("given the minimum possible classic battle values, when calculating EXP, then the floor result is clamped to 1", () => {
+    // Source: Bulbapedia — Experience gain is always at least 1.
+    expect(calculateExpGainClassic(1, 1, false)).toBe(1);
   });
 
-  it("should give more EXP for trainer battles (1.5x)", () => {
+  it("given identical classic battle parameters except trainer flag, when calculating EXP, then trainer battles award more", () => {
     const wild = calculateExpGainClassic(64, 25, false);
     const trainer = calculateExpGainClassic(64, 25, true);
-    expect(trainer).toBeGreaterThan(wild);
+    // Source: pret/pokeemerald src/battle_script_commands.c — trainer battles apply a 1.5x multiplier.
+    expect(wild).toBe(228);
+    expect(trainer).toBe(342);
   });
 
-  it("should split EXP among participants", () => {
+  it("given one participant versus two, when calculating classic EXP, then the split is exact", () => {
     const solo = calculateExpGainClassic(64, 25, false, 1);
     const duo = calculateExpGainClassic(64, 25, false, 2);
-    expect(duo).toBeLessThan(solo);
+    // Source: pret/pokeemerald src/battle_script_commands.c — participant count divides before multipliers.
+    expect(solo).toBe(228);
+    expect(duo).toBe(114);
   });
 
-  it("should not scale with participant level (unlike Gen 5+)", () => {
-    // In classic formula, participant level doesn't matter
-    const lowLevel = calculateExpGainClassic(64, 25, false, 1);
-    // The classic formula only uses defeated level, not participant level.
-    // Calling with same params should give same result.
-    expect(lowLevel).toBe(calculateExpGainClassic(64, 25, false, 1));
-  });
-
-  it("given baseExpYield=64, defeatedLevel=50, trainer battle, 1 participant, when calculating EXP, then applies step-by-step truncation yielding 685", () => {
+  it("given baseExpYield=64, defeatedLevel=50, trainer battle, and 1 participant, when calculating classic EXP, then step-by-step truncation yields 685", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp
     //   Step 1: floor(64 * 50 / 7) = floor(457.14) = 457
     //   Step 2: floor(457 / 1) = 457
@@ -163,7 +169,7 @@ describe("calculateExpGainClassic (Gen 1-4)", () => {
     expect(result).toBe(685);
   });
 
-  it("given baseExpYield=65, defeatedLevel=50, trainer battle, 3 participants, when calculating EXP, then step-by-step truncation yields 231 (not 232)", () => {
+  it("given baseExpYield=65, defeatedLevel=50, trainer battle, and 3 participants, when calculating classic EXP, then step-by-step truncation yields 231", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Cmd_getexp
     //   Step 1: floor(65 * 50 / 7) = floor(464.2857) = 464
     //   Step 2: floor(464 / 3) = floor(154.666) = 154
@@ -174,7 +180,7 @@ describe("calculateExpGainClassic (Gen 1-4)", () => {
     expect(result).toBe(231);
   });
 
-  it("given baseExpYield=100, defeatedLevel=30, wild battle, 1 participant with Lucky Egg, when calculating EXP, then Lucky Egg applies 1.5x multiplier", () => {
+  it("given baseExpYield=100, defeatedLevel=30, wild battle, and 1 participant with Lucky Egg, when calculating classic EXP, then Lucky Egg applies a 1.5x multiplier", () => {
     // Source: pret/pokeemerald — Lucky Egg 1.5x multiplier after trainer bonus
     //   Step 1: floor(100 * 30 / 7) = floor(428.57) = 428
     //   Step 2: floor(428 / 1) = 428
@@ -186,7 +192,7 @@ describe("calculateExpGainClassic (Gen 1-4)", () => {
     expect(withEgg).toBe(642);
   });
 
-  it("given baseExpYield=64, defeatedLevel=50, wild battle, 1 participant with Lucky Egg, when calculating EXP, then returns floor(457 * 1.5) = 685", () => {
+  it("given baseExpYield=64, defeatedLevel=50, wild battle, and 1 participant with Lucky Egg, when calculating classic EXP, then returns floor(457 * 1.5) = 685", () => {
     // Source: pret/pokeemerald — Lucky Egg multiplier
     //   Step 1: floor(64 * 50 / 7) = floor(457.14) = 457
     //   Step 2: floor(457 / 1) = 457
@@ -196,8 +202,8 @@ describe("calculateExpGainClassic (Gen 1-4)", () => {
     expect(result).toBe(685);
   });
 
-  it("given very small values, when calculating EXP, then returns minimum 1", () => {
-    // Source: pret/pokeemerald — EXP is always at least 1
+  it("given very small values, when calculating classic EXP, then the minimum result is 1", () => {
+    // Source: pret/pokeemerald — EXP is always at least 1.
     const result = calculateExpGainClassic(1, 1, false, 7);
     // floor(1 * 1 / 7) = 0, but max(1, 0) = 1
     expect(result).toBe(1);

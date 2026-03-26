@@ -1,10 +1,77 @@
 import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
+
+const {
+  bug,
+  dark,
+  dragon,
+  electric,
+  fighting,
+  fire,
+  flying,
+  ghost,
+  grass,
+  ground,
+  ice,
+  normal,
+  poison,
+  psychic,
+  rock,
+  steel,
+  water,
+} = CORE_TYPE_IDS;
+const { futureAttack, screenCountdown, statusDamage, weatherCountdown, weatherDamage, wish } =
+  CORE_END_OF_TURN_EFFECT_IDS;
+const { blackSludge, leftovers } = CORE_ITEM_IDS;
+const { bind, leechSeed, perishSong } = CORE_MOVE_IDS;
+const { curse, nightmare } = CORE_VOLATILE_IDS;
+const GEN5_SUPPORTED_TYPES = [
+  normal,
+  fire,
+  water,
+  electric,
+  grass,
+  ice,
+  fighting,
+  poison,
+  ground,
+  flying,
+  psychic,
+  bug,
+  rock,
+  ghost,
+  dragon,
+  dark,
+  steel,
+] as const satisfies readonly PokemonType[];
+const DEFAULT_END_OF_TURN_ORDER = [
+  futureAttack,
+  wish,
+  weatherDamage,
+  leftovers,
+  blackSludge,
+  leechSeed,
+  statusDamage,
+  nightmare,
+  curse,
+  bind,
+  perishSong,
+  screenCountdown,
+  weatherCountdown,
+] as const;
 
 // Concrete implementation of BaseRuleset for testing (minimal overrides)
 class TestRuleset extends BaseRuleset {
@@ -25,25 +92,7 @@ class TestRuleset extends BaseRuleset {
   }
 
   getAvailableTypes(): readonly PokemonType[] {
-    return [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-    ];
+    return GEN5_SUPPORTED_TYPES;
   }
 
   calculateDamage(_context: DamageContext): DamageResult {
@@ -63,8 +112,8 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
   it("given default EOT order, when getEndOfTurnOrder is called, then future-attack comes before weather-damage", () => {
     // Arrange & Act
     const order = ruleset.getEndOfTurnOrder();
-    const futureIdx = order.indexOf("future-attack");
-    const weatherIdx = order.indexOf("weather-damage");
+    const futureIdx = order.indexOf(futureAttack);
+    const weatherIdx = order.indexOf(weatherDamage);
 
     // Assert
     expect(futureIdx).not.toBe(-1);
@@ -76,8 +125,8 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
   it("given default EOT order, when getEndOfTurnOrder is called, then wish comes before weather-damage", () => {
     // Arrange & Act
     const order = ruleset.getEndOfTurnOrder();
-    const wishIdx = order.indexOf("wish");
-    const weatherIdx = order.indexOf("weather-damage");
+    const wishIdx = order.indexOf(wish);
+    const weatherIdx = order.indexOf(weatherDamage);
 
     // Assert
     expect(wishIdx).not.toBe(-1);
@@ -89,8 +138,8 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
   it("given default EOT order, when getEndOfTurnOrder is called, then leftovers comes before leech-seed", () => {
     // Arrange & Act
     const order = ruleset.getEndOfTurnOrder();
-    const leftIdx = order.indexOf("leftovers");
-    const leechIdx = order.indexOf("leech-seed");
+    const leftIdx = order.indexOf(leftovers);
+    const leechIdx = order.indexOf(leechSeed);
 
     // Assert
     expect(leftIdx).not.toBe(-1);
@@ -103,8 +152,8 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
   it("given default EOT order, when getEndOfTurnOrder is called, then leech-seed comes before status-damage", () => {
     // Arrange & Act
     const order = ruleset.getEndOfTurnOrder();
-    const leechIdx = order.indexOf("leech-seed");
-    const statusIdx = order.indexOf("status-damage");
+    const leechIdx = order.indexOf(leechSeed);
+    const statusIdx = order.indexOf(statusDamage);
 
     // Assert
     expect(leechIdx).not.toBe(-1);
@@ -117,8 +166,8 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
   it("given default EOT order, when getEndOfTurnOrder is called, then nightmare comes before bind", () => {
     // Arrange & Act
     const order = ruleset.getEndOfTurnOrder();
-    const nightmareIdx = order.indexOf("nightmare");
-    const bindIdx = order.indexOf("bind");
+    const nightmareIdx = order.indexOf(nightmare);
+    const bindIdx = order.indexOf(bind);
 
     // Assert
     expect(nightmareIdx).not.toBe(-1);
@@ -131,8 +180,8 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
   it("given default EOT order, when getEndOfTurnOrder is called, then curse comes before bind", () => {
     // Arrange & Act
     const order = ruleset.getEndOfTurnOrder();
-    const curseIdx = order.indexOf("curse");
-    const bindIdx = order.indexOf("bind");
+    const curseIdx = order.indexOf(curse);
+    const bindIdx = order.indexOf(bind);
 
     // Assert
     expect(curseIdx).not.toBe(-1);
@@ -146,19 +195,20 @@ describe("BaseRuleset end-of-turn order (#555)", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     // Assert: verify key relative orderings from Showdown residualOrder
-    const futureIdx = order.indexOf("future-attack"); // 3
-    const wishIdx = order.indexOf("wish"); // 4
-    const weatherDmgIdx = order.indexOf("weather-damage"); // 5
-    const leftIdx = order.indexOf("leftovers"); // 5.2
-    const blackSludgeIdx = order.indexOf("black-sludge"); // 5.2
-    const leechIdx = order.indexOf("leech-seed"); // 8
-    const statusIdx = order.indexOf("status-damage"); // 9-10
-    const nightmareIdx = order.indexOf("nightmare"); // 11
-    const curseIdx = order.indexOf("curse"); // 12
-    const bindIdx = order.indexOf("bind"); // 13
-    const perishIdx = order.indexOf("perish-song"); // 24
-    const screenIdx = order.indexOf("screen-countdown"); // 26
-    const weatherCountIdx = order.indexOf("weather-countdown"); // 26
+    expect(order).toEqual(expect.arrayContaining(DEFAULT_END_OF_TURN_ORDER));
+    const futureIdx = order.indexOf(futureAttack); // 3
+    const wishIdx = order.indexOf(wish); // 4
+    const weatherDmgIdx = order.indexOf(weatherDamage); // 5
+    const leftIdx = order.indexOf(leftovers); // 5.2
+    const blackSludgeIdx = order.indexOf(blackSludge); // 5.2
+    const leechIdx = order.indexOf(leechSeed); // 8
+    const statusIdx = order.indexOf(statusDamage); // 9-10
+    const nightmareIdx = order.indexOf(nightmare); // 11
+    const curseIdx = order.indexOf(curse); // 12
+    const bindIdx = order.indexOf(bind); // 13
+    const perishIdx = order.indexOf(perishSong); // 24
+    const screenIdx = order.indexOf(screenCountdown); // 26
+    const weatherCountIdx = order.indexOf(weatherCountdown); // 26
 
     // future-attack(3) -> wish(4) -> weather(5)
     expect(futureIdx).toBeLessThan(wishIdx);
@@ -195,7 +245,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
   // like normal damage: damage = tr(damage * randomFactor / 100) where randomFactor in [85,100]
   it("given two different RNG seeds, when calculateConfusionDamage is called, then results differ due to random factor", () => {
     // Arrange
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 153,
         attack: 100,
@@ -205,7 +255,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
     const state = {} as BattleState;
 
     const rng1 = new SeededRandom(42);
@@ -234,7 +284,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
   // So confusion damage should be in range [16, 19] for this setup.
   it("given a L50 pokemon with 100 atk/def, when calculateConfusionDamage is called many times, then damage is bounded by 85-100% of base", () => {
     // Arrange
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 153,
         attack: 100,
@@ -244,7 +294,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+    const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
     const state = {} as BattleState;
 
     // Inline derivation of expected values:

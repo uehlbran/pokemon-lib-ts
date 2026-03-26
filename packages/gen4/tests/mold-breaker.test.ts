@@ -1,6 +1,21 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
@@ -26,6 +41,18 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const A = GEN4_ABILITY_IDS;
+const CA = CORE_ABILITY_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
+const CORE_ITEMS = CORE_ITEM_IDS;
+const T = CORE_TYPE_IDS;
+const M = GEN4_MOVE_IDS;
+const N = GEN4_NATURE_IDS;
+const SP = GEN4_SPECIES_IDS;
+const dataManager = createGen4DataManager();
+
 function createMockRng(intReturnValue: number) {
   return {
     next: () => 0,
@@ -49,7 +76,7 @@ function createActivePokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PokemonInstance["status"];
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
 }): ActivePokemon {
@@ -66,27 +93,27 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? SP.bulbasaur,
     nickname: null,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: N.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    ability: opts.ability ?? CA.none,
+    abilitySlot: ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -103,8 +130,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [T.normal],
+    ability: opts.ability ?? CA.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -125,45 +152,8 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 4,
-  } as MoveData;
+function createMove(id: string): MoveData {
+  return dataManager.getMove(id);
 }
 
 function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
@@ -199,13 +189,13 @@ describe("Mold Breaker", () => {
   describe("on-switch-in message", () => {
     it("given a Pokemon with Mold Breaker, when it switches in, then the announcement message is emitted", () => {
       // Source: Showdown Gen 4 — Mold Breaker switch-in announcement
-      const pokemon = createActivePokemon({ ability: "mold-breaker" });
+      const pokemon = createActivePokemon({ ability: A.moldBreaker, speciesId: SP.rampardos });
       pokemon.pokemon.nickname = "Rampardos";
-      const result = applyGen4Ability("on-switch-in", {
+      const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, {
         pokemon,
         state: createMockState() as never,
         rng: createMockRng(100) as never,
-        trigger: "on-switch-in",
+        trigger: ABILITY_TRIGGERS.onSwitchIn,
       });
       expect(result.activated).toBe(true);
       expect(result.messages).toContain("Rampardos breaks the mold!");
@@ -216,9 +206,9 @@ describe("Mold Breaker", () => {
     it("given attacker with Mold Breaker, when Ground move targets Levitate Pokemon, then Levitate immunity bypassed and damage dealt", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Levitate ground immunity
       // Source: Bulbapedia — Mold Breaker negates Levitate
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
-      const defender = createActivePokemon({ ability: "levitate", types: ["psychic"] });
-      const move = createMove({ type: "ground", power: 80 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
+      const defender = createActivePokemon({ ability: A.levitate, types: [T.psychic] });
+      const move = createMove(M.earthquake);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -233,8 +223,8 @@ describe("Mold Breaker", () => {
     it("given attacker without Mold Breaker, when Ground move targets Levitate Pokemon, then Levitate immunity applies", () => {
       // Source: Showdown Gen 4 — Levitate grants Ground immunity normally
       const attacker = createActivePokemon({ attack: 150 });
-      const defender = createActivePokemon({ ability: "levitate", types: ["psychic"] });
-      const move = createMove({ type: "ground", power: 80 });
+      const defender = createActivePokemon({ ability: A.levitate, types: [T.psychic] });
+      const move = createMove(M.earthquake);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -249,16 +239,17 @@ describe("Mold Breaker", () => {
     it("given attacker with Mold Breaker, when non-SE move targets Wonder Guard holder, then damage dealt", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Wonder Guard
       // Source: Bulbapedia — Mold Breaker negates Wonder Guard
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
       // Shedinja with Bug/Ghost typing; Normal is NOT super effective (0x against Ghost)
       // Use Fighting which is resisted by Ghost (not very effective)
       // But actually Normal hits Ghost for 0x via type chart, not Wonder Guard
       // Let's use a Water move vs Bug/Ghost — Water is neutral to both
       const defender = createActivePokemon({
-        ability: "wonder-guard",
-        types: ["bug", "ghost"],
+        ability: A.wonderGuard,
+        speciesId: SP.shedinja,
+        types: [T.bug, T.ghost],
       });
-      const move = createMove({ type: "water", power: 80 });
+      const move = createMove(M.waterfall);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -267,16 +258,18 @@ describe("Mold Breaker", () => {
       // Water vs Bug/Ghost is 1x (neutral) — normally blocked by Wonder Guard
       // But Mold Breaker bypasses Wonder Guard so damage goes through
       expect(result.damage).toBeGreaterThan(0);
+      expect(result.effectiveness).toBe(1);
     });
 
     it("given attacker without Mold Breaker, when non-SE move targets Wonder Guard holder, then 0 damage", () => {
       // Source: Showdown Gen 4 — Wonder Guard blocks non-SE moves
       const attacker = createActivePokemon({ attack: 150 });
       const defender = createActivePokemon({
-        ability: "wonder-guard",
-        types: ["bug", "ghost"],
+        ability: A.wonderGuard,
+        speciesId: SP.shedinja,
+        types: [T.bug, T.ghost],
       });
-      const move = createMove({ type: "water", power: 80 });
+      const move = createMove(M.waterfall);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -290,10 +283,10 @@ describe("Mold Breaker", () => {
     it("given attacker with Mold Breaker, when SE move targets Filter holder, then damage not reduced (full SE damage)", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Filter
       // Source: Bulbapedia — Filter reduces SE damage by 25%
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
       // Rock type, weak to Water (2x SE)
-      const defender = createActivePokemon({ ability: "filter", types: ["rock"] });
-      const move = createMove({ type: "water", power: 80 });
+      const defender = createActivePokemon({ ability: A.filter, types: [T.rock] });
+      const move = createMove(M.waterfall);
 
       const resultWithMoldBreaker = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -302,7 +295,7 @@ describe("Mold Breaker", () => {
 
       // Now same scenario without Mold Breaker — Filter should reduce damage
       const attackerNoMB = createActivePokemon({ attack: 150 });
-      const defenderFilter = createActivePokemon({ ability: "filter", types: ["rock"] });
+      const defenderFilter = createActivePokemon({ ability: A.filter, types: [T.rock] });
 
       const resultWithFilter = calculateGen4Damage(
         createDamageContext({ attacker: attackerNoMB, defender: defenderFilter, move }),
@@ -317,9 +310,9 @@ describe("Mold Breaker", () => {
   describe("Volt Absorb bypass", () => {
     it("given attacker with Mold Breaker, when Electric move targets Volt Absorb holder, then damage dealt not absorbed", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Volt Absorb
-      const attacker = createActivePokemon({ ability: "mold-breaker", spAttack: 150 });
-      const defender = createActivePokemon({ ability: "volt-absorb", types: ["water"] });
-      const move = createMove({ type: "electric", power: 90, category: "special" });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, spAttack: 150 });
+      const defender = createActivePokemon({ ability: A.voltAbsorb, types: [T.water] });
+      const move = createMove(M.thunderbolt);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -328,13 +321,14 @@ describe("Mold Breaker", () => {
       // Without Mold Breaker, Volt Absorb absorbs Electric moves (0 damage)
       // With Mold Breaker, Volt Absorb is bypassed
       expect(result.damage).toBeGreaterThan(0);
+      expect(result.effectiveness).toBe(2);
     });
 
     it("given attacker without Mold Breaker, when Electric move targets Volt Absorb holder, then 0 damage", () => {
       // Source: Showdown Gen 4 — Volt Absorb absorbs Electric moves
       const attacker = createActivePokemon({ spAttack: 150 });
-      const defender = createActivePokemon({ ability: "volt-absorb", types: ["water"] });
-      const move = createMove({ type: "electric", power: 90, category: "special" });
+      const defender = createActivePokemon({ ability: A.voltAbsorb, types: [T.water] });
+      const move = createMove(M.thunderbolt);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -349,9 +343,9 @@ describe("Mold Breaker", () => {
     it("given attacker with Mold Breaker, when Fire move targets Thick Fat holder, then damage not halved", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Thick Fat
       // Source: Bulbapedia — Thick Fat halves Fire/Ice damage
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
-      const defender = createActivePokemon({ ability: "thick-fat", types: ["normal"] });
-      const move = createMove({ type: "fire", power: 80 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
+      const defender = createActivePokemon({ ability: A.thickFat, types: [T.normal] });
+      const move = createMove(M.blazeKick);
 
       const resultWithMoldBreaker = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -360,7 +354,7 @@ describe("Mold Breaker", () => {
 
       // Same scenario without Mold Breaker — Thick Fat halves damage
       const attackerNoMB = createActivePokemon({ attack: 150 });
-      const defenderThickFat = createActivePokemon({ ability: "thick-fat", types: ["normal"] });
+      const defenderThickFat = createActivePokemon({ ability: A.thickFat, types: [T.normal] });
 
       const resultWithThickFat = calculateGen4Damage(
         createDamageContext({ attacker: attackerNoMB, defender: defenderThickFat, move }),
@@ -376,9 +370,9 @@ describe("Mold Breaker", () => {
     it("given attacker with Mold Breaker, when Fire move targets Dry Skin holder, then base power not boosted by 1.25x", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Dry Skin fire weakness boost
       // Source: Bulbapedia — Dry Skin increases Fire damage by 25%
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
-      const defender = createActivePokemon({ ability: "dry-skin", types: ["grass"] });
-      const move = createMove({ type: "fire", power: 80 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
+      const defender = createActivePokemon({ ability: A.drySkin, types: [T.grass] });
+      const move = createMove(M.blazeKick);
 
       const resultWithMoldBreaker = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
@@ -387,7 +381,7 @@ describe("Mold Breaker", () => {
 
       // Without Mold Breaker — Dry Skin boosts fire damage by 1.25x
       const attackerNoMB = createActivePokemon({ attack: 150 });
-      const defenderDrySkin = createActivePokemon({ ability: "dry-skin", types: ["grass"] });
+      const defenderDrySkin = createActivePokemon({ ability: A.drySkin, types: [T.grass] });
 
       const resultWithDrySkin = calculateGen4Damage(
         createDamageContext({ attacker: attackerNoMB, defender: defenderDrySkin, move }),
@@ -402,45 +396,48 @@ describe("Mold Breaker", () => {
   describe("Water Absorb bypass", () => {
     it("given attacker with Mold Breaker, when Water move targets Water Absorb holder, then damage dealt", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Water Absorb
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
-      const defender = createActivePokemon({ ability: "water-absorb", types: ["fire"] });
-      const move = createMove({ type: "water", power: 80 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
+      const defender = createActivePokemon({ ability: A.waterAbsorb, types: [T.fire] });
+      const move = createMove(M.waterfall);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
         GEN4_TYPE_CHART,
       );
       expect(result.damage).toBeGreaterThan(0);
+      expect(result.effectiveness).toBe(2);
     });
   });
 
   describe("Flash Fire bypass", () => {
     it("given attacker with Mold Breaker, when Fire move targets Flash Fire holder, then damage dealt", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Flash Fire immunity
-      const attacker = createActivePokemon({ ability: "mold-breaker", attack: 150 });
-      const defender = createActivePokemon({ ability: "flash-fire", types: ["grass"] });
-      const move = createMove({ type: "fire", power: 80 });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, attack: 150 });
+      const defender = createActivePokemon({ ability: CA.flashFire, types: [T.grass] });
+      const move = createMove(M.blazeKick);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
         GEN4_TYPE_CHART,
       );
       expect(result.damage).toBeGreaterThan(0);
+      expect(result.effectiveness).toBe(2);
     });
   });
 
   describe("Motor Drive bypass", () => {
     it("given attacker with Mold Breaker, when Electric move targets Motor Drive holder, then damage dealt", () => {
       // Source: Showdown Gen 4 — Mold Breaker bypasses Motor Drive
-      const attacker = createActivePokemon({ ability: "mold-breaker", spAttack: 150 });
-      const defender = createActivePokemon({ ability: "motor-drive", types: ["normal"] });
-      const move = createMove({ type: "electric", power: 90, category: "special" });
+      const attacker = createActivePokemon({ ability: A.moldBreaker, spAttack: 150 });
+      const defender = createActivePokemon({ ability: A.motorDrive, types: [T.normal] });
+      const move = createMove(M.thunderbolt);
 
       const result = calculateGen4Damage(
         createDamageContext({ attacker, defender, move }),
         GEN4_TYPE_CHART,
       );
       expect(result.damage).toBeGreaterThan(0);
+      expect(result.effectiveness).toBe(1);
     });
   });
 });

@@ -1,8 +1,16 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_IDS, createPokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen6Damage } from "../src/Gen6DamageCalc";
+import {
+  calculateGen6Damage,
+  createGen6DataManager,
+  GEN6_ITEM_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
 import { GEM_TYPES } from "../src/Gen6Items";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
@@ -10,7 +18,24 @@ import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 // Helper factories (same pattern as damage-calc.test.ts)
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+const DATA_MANAGER = createGen6DataManager();
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN6_ITEM_IDS } as const;
+const MOVES = GEN6_MOVE_IDS;
+const NATURES = GEN6_NATURE_IDS;
+const SPECIES = GEN6_SPECIES_IDS;
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const EMBER = DATA_MANAGER.getMove(MOVES.ember);
+const DEFAULT_LEVEL = 50;
+const DEFAULT_NATURE = DATA_MANAGER.getNature(NATURES.hardy).id;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.rattata);
+const ROCK_SPECIES = DATA_MANAGER.getSpecies(SPECIES.geodude);
+const FIRE_SPECIES = DATA_MANAGER.getSpecies(SPECIES.charmander);
+const GEN6_GEM_ITEM_IDS = DATA_MANAGER.getAllItems()
+  .filter((item) => item.id.endsWith("-gem"))
+  .map((item) => item.id);
+
+function createSyntheticActivePokemon(overrides: {
+  speciesId?: number;
   level?: number;
   attack?: number;
   defense?: number;
@@ -19,128 +44,64 @@ function makeActive(overrides: {
   speed?: number;
   hp?: number;
   currentHp?: number;
-  types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
   status?: string | null;
-  speciesId?: number;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? 1,
-      nickname: null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? "none",
-      abilitySlot: "normal1" as const,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: "male" as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp,
-        attack: overrides.attack ?? 100,
-        defense: overrides.defense ?? 100,
-        spAttack: overrides.spAttack ?? 100,
-        spDefense: overrides.spDefense ?? 100,
-        speed: overrides.speed ?? 100,
-      },
+  const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(
+    species,
+    overrides.level ?? DEFAULT_LEVEL,
+    new SeededRandom(6),
+    {
+      nature: DEFAULT_NATURE,
     },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-  } as ActivePokemon;
+  );
+
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = (overrides.status ?? null) as any;
+  if (overrides.ability != null) {
+    pokemon.ability = overrides.ability;
+  }
+  pokemon.calculatedStats = {
+    ...pokemon.calculatedStats,
+    hp,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: overrides.speed ?? 100,
+  };
+
+  const onFieldPokemon = createBattleOnFieldPokemon(pokemon, 0, [...species.types]);
+  onFieldPokemon.ability = overrides.ability ?? pokemon.ability;
+  onFieldPokemon.volatileStatuses = overrides.volatiles ?? new Map();
+  return onFieldPokemon;
 }
 
-function makeMove(overrides?: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-}): MoveData {
+function createSyntheticMoveFrom(
+  baseMove: MoveData,
+  overrides?: {
+    power?: number | null;
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+  },
+): MoveData {
   return {
-    id: overrides?.id ?? "tackle",
-    displayName: overrides?.id ?? "Tackle",
-    type: overrides?.type ?? "normal",
-    category: overrides?.category ?? "physical",
-    power: overrides?.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    ...baseMove,
+    power: overrides?.power ?? baseMove.power,
     flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...baseMove.flags,
       ...overrides?.flags,
     },
-    effect: overrides?.effect ?? null,
-    description: "",
-    generation: 6,
-    critRatio: 0,
+    effect: overrides?.effect ?? baseMove.effect ?? null,
   } as MoveData;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -155,7 +116,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -163,10 +124,10 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove(),
-    state: makeState(),
+    attacker: overrides.attacker ?? createSyntheticActivePokemon({}),
+    defender: overrides.defender ?? createSyntheticActivePokemon({}),
+    move: overrides.move ?? TACKLE,
+    state: createBattleState(),
     isCrit: overrides.isCrit ?? false,
     rng: new SeededRandom(overrides.seed ?? 42),
   };
@@ -177,37 +138,14 @@ function makeDamageContext(overrides: {
 // ---------------------------------------------------------------------------
 
 describe("Gen 6 Gems -- GEM_TYPES map", () => {
-  it("given GEM_TYPES map, when checking entries, then contains 18 types including fairy", () => {
-    // Source: Bulbapedia "Gem" -- Gen 6 has all 18 types of gems including Fairy
-    expect(Object.keys(GEM_TYPES).length).toBe(18);
-    expect(GEM_TYPES["fairy-gem"]).toBe("fairy");
+  it("given Gen 6 item data, when checking gem items, then only Normal Gem exists", () => {
+    // Source: packages/gen6/data/items.json -- only Normal Gem is present in the committed Gen 6 item data
+    expect(GEN6_GEM_ITEM_IDS).toEqual([ITEMS.normalGem]);
   });
 
-  it("given GEM_TYPES map, when checking for all 18 types, then each is present", () => {
-    // Source: Bulbapedia "Gem" -- full list of gem types in Gen 6
-    const expectedTypes = [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-      "fairy",
-    ];
-    for (const type of expectedTypes) {
-      expect(GEM_TYPES[`${type}-gem`]).toBe(type);
-    }
+  it("given GEM_TYPES map, when checking supported entries, then it matches the Gen 6 data surface", () => {
+    // Source: packages/gen6/data/items.json + Gen6Items.ts -- Gen 6 only supports Normal Gem
+    expect(GEM_TYPES).toEqual({ [ITEMS.normalGem]: TACKLE.type });
   });
 });
 
@@ -223,20 +161,20 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
     // Without gem: base damage = floor((2*50/5+2) * 50 * 100/100 / 50) + 2 = 24
     // With gem: power boosted by pokeRound(50, 5325) = floor((50*5325+2047)/4096) = 65
     //   base damage = floor((2*50/5+2) * 65 * 100/100 / 50) + 2 = 30
-    const attacker = makeActive({
-      heldItem: "normal-gem",
-      types: ["normal"],
+    const attacker = createSyntheticActivePokemon({
+      speciesId: SPECIES.rattata,
+      heldItem: ITEMS.normalGem,
       attack: 100,
     });
-    const defender = makeActive({
-      types: ["rock"], // Rock resists Normal
+    const defender = createSyntheticActivePokemon({
+      speciesId: ROCK_SPECIES.id, // Rock resists Normal
       defense: 100,
     });
-    const moveWithGem = makeMove({ id: "tackle", type: "normal", power: 50 });
-    const moveNoGem = makeMove({ id: "tackle", type: "normal", power: 50 });
+    const moveWithGem = TACKLE;
+    const moveNoGem = TACKLE;
 
     // Calculate with gem
-    const ctxWithGem = makeDamageContext({
+    const ctxWithGem = createDamageContext({
       attacker: { ...attacker },
       defender,
       move: moveWithGem,
@@ -248,12 +186,12 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
     );
 
     // Calculate without gem (remove item)
-    const attackerNoGem = makeActive({
+    const attackerNoGem = createSyntheticActivePokemon({
+      speciesId: SPECIES.rattata,
       heldItem: null,
-      types: ["normal"],
       attack: 100,
     });
-    const ctxNoGem = makeDamageContext({
+    const ctxNoGem = createDamageContext({
       attacker: attackerNoGem,
       defender,
       move: moveNoGem,
@@ -279,36 +217,25 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
     expect(ctxWithGem.attacker.pokemon.heldItem).toBeNull();
   });
 
-  it("given a Fire-type attacker holding Fire Gem using Ember (40 BP), when calculating damage, then fire gem applies 1.3x boost", () => {
-    // Source: Bulbapedia "Gem" -- Gen VI: 1.3x boost
-    // Source: Showdown data/items.ts -- firegem: type Fire, gem boost
-    //
-    // Fire Gem with Fire-type move should get the 1.3x boost
-    const attacker = makeActive({
-      heldItem: "fire-gem",
-      types: ["fire"],
+  it("given a Fire-type attacker holding Normal Gem using Ember, when calculating damage, then Normal Gem does not activate", () => {
+    // Source: packages/gen6/data/items.json -- only Normal Gem exists in Gen 6
+    const attacker = createSyntheticActivePokemon({
+      speciesId: FIRE_SPECIES.id,
+      heldItem: ITEMS.normalGem,
       spAttack: 100,
     });
-    const defender = makeActive({
-      types: ["normal"],
+    const defender = createSyntheticActivePokemon({
+      speciesId: SPECIES.rattata,
       spDefense: 100,
     });
-    const moveWithGem = makeMove({
-      id: "ember",
-      type: "fire",
-      power: 40,
-      category: "special",
+    const moveWithGem = createSyntheticMoveFrom(EMBER, {
       flags: { contact: false },
     });
-    const moveNoGem = makeMove({
-      id: "ember",
-      type: "fire",
-      power: 40,
-      category: "special",
+    const moveNoGem = createSyntheticMoveFrom(EMBER, {
       flags: { contact: false },
     });
 
-    const ctxWithGem = makeDamageContext({
+    const ctxWithGem = createDamageContext({
       attacker: { ...attacker },
       defender,
       move: moveWithGem,
@@ -319,12 +246,12 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    const attackerNoGem = makeActive({
+    const attackerNoGem = createSyntheticActivePokemon({
+      speciesId: FIRE_SPECIES.id,
       heldItem: null,
-      types: ["fire"],
       spAttack: 100,
     });
-    const ctxNoGem = makeDamageContext({
+    const ctxNoGem = createDamageContext({
       attacker: attackerNoGem,
       defender,
       move: moveNoGem,
@@ -335,37 +262,27 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
-    // Derivation (seed=42, Showdown Gen 6 formula, Normal takes 1x from Fire, special move):
-    //   Boosted power = pokeRound(40, 5325) = floor((40*5325+2047)/4096) = 52
-    //   Base damage without gem: floor((2*50/5+2)*40*100/100/50)+2 = 19; 1x = 19
-    //   Base damage with gem:    floor((2*50/5+2)*52*100/100/50)+2 = 24; 1x = 24
-    //   After seed=42 random roll: withGem=33, noGem=25
-    //   (Fire is STAB for attacker, boosting by 1.5x)
-    //   If gem were 1.5x (Gen 5 rate), boosted power would be 60, damage would be > 33
-    // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
     expect(resultNoGem.damage).toBe(25);
-    expect(resultWithGem.damage).toBe(33);
-    // Gem should be consumed
-    expect(ctxWithGem.attacker.pokemon.heldItem).toBeNull();
+    expect(resultWithGem.damage).toBe(resultNoGem.damage);
+    expect(ctxWithGem.attacker.pokemon.heldItem).toBe(ITEMS.normalGem);
   });
 
-  it("given a Normal-type attacker holding Fire Gem using Tackle (Normal move), when calculating damage, then Fire Gem does NOT activate (type mismatch)", () => {
-    // Source: Showdown data/items.ts -- gems only activate for matching move type
-    const attacker = makeActive({
-      heldItem: "fire-gem",
-      types: ["normal"],
+  it("given a Fire-type attacker holding Normal Gem using Tackle, when calculating damage, then Normal Gem still activates because the move is Normal-type", () => {
+    // Source: packages/gen6/data/items.json + Gen6DamageCalc.ts -- the only supported Gem in Gen 6 is Normal Gem
+    const attacker = createSyntheticActivePokemon({
+      speciesId: FIRE_SPECIES.id,
+      heldItem: ITEMS.normalGem,
       attack: 100,
     });
-    const defender = makeActive({
-      types: ["normal"],
+    const defender = createSyntheticActivePokemon({
+      speciesId: SPECIES.rattata,
       defense: 100,
     });
-    const move = makeMove({ id: "tackle", type: "normal", power: 50 });
+    const move = TACKLE;
 
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     calculateGen6Damage(ctx, GEN6_TYPE_CHART as Record<string, Record<string, number>>);
 
-    // Fire gem should NOT be consumed because move type doesn't match
-    expect(ctx.attacker.pokemon.heldItem).toBe("fire-gem");
+    expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });
 });

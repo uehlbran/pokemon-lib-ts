@@ -10295,6 +10295,7 @@
       "bypassSubstitute": false
     },
     "effect": null,
+    "hasCrashDamage": true,
     "description": "If this attack is not successful, the user loses half of its maximum HP, rounded down, as crash damage. Pokemon with the Magic Guard Ability are unaffected by crash damage.",
     "generation": 1
   },

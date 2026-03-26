@@ -1,11 +1,13 @@
 import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import type { BattleAction } from "../../../src/events";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
+
+const TYPE_IDS = CORE_TYPE_IDS;
 
 /**
  * Concrete stub of BaseRuleset for testing resolveTurnOrder RNG determinism.
@@ -28,7 +30,7 @@ class StubRuleset extends BaseRuleset {
   }
 
   getAvailableTypes(): readonly PokemonType[] {
-    return ["normal", "fire", "water"];
+    return [TYPE_IDS.normal, TYPE_IDS.fire, TYPE_IDS.water];
   }
 
   calculateDamage(_context: DamageContext): DamageResult {
@@ -51,7 +53,7 @@ describe("BaseRuleset — resolveTurnOrder RNG determinism", () => {
     // Arrange: 3 Pokemon all at speed 100 — forces the speed-tie tiebreak path
     const ruleset = new StubRuleset();
 
-    const makeState = (): { state: BattleState; actions: BattleAction[] } => {
+    const createSyntheticBattleState = (): { state: BattleState; actions: BattleAction[] } => {
       const pokemon0 = createTestPokemon(1, 50, {
         calculatedStats: {
           hp: 200,
@@ -82,9 +84,9 @@ describe("BaseRuleset — resolveTurnOrder RNG determinism", () => {
           speed: 100,
         },
       });
-      const active0 = createActivePokemon(pokemon0, 0, ["normal"]);
-      const active1 = createActivePokemon(pokemon1, 0, ["normal"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["normal"]);
+      const active0 = createOnFieldPokemon(pokemon0, 0, [TYPE_IDS.normal]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [TYPE_IDS.normal]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [TYPE_IDS.normal]);
 
       // 3-slot battle state (unusual but valid for testing tiebreaks)
       const state = {
@@ -102,11 +104,11 @@ describe("BaseRuleset — resolveTurnOrder RNG determinism", () => {
     };
 
     // Act: call resolveTurnOrder twice with the same seed
-    const { state: state1, actions: actions1 } = makeState();
+    const { state: state1, actions: actions1 } = createSyntheticBattleState();
     const rng1 = new SeededRandom(12345);
     const order1 = ruleset.resolveTurnOrder(actions1, state1, rng1);
 
-    const { state: state2, actions: actions2 } = makeState();
+    const { state: state2, actions: actions2 } = createSyntheticBattleState();
     const rng2 = new SeededRandom(12345);
     const order2 = ruleset.resolveTurnOrder(actions2, state2, rng2);
 
@@ -149,9 +151,9 @@ describe("BaseRuleset — resolveTurnOrder RNG determinism", () => {
         speed: 100,
       },
     });
-    const active0 = createActivePokemon(pokemon0, 0, ["normal"]);
-    const active1 = createActivePokemon(pokemon1, 0, ["normal"]);
-    const active2 = createActivePokemon(pokemon2, 0, ["normal"]);
+    const active0 = createOnFieldPokemon(pokemon0, 0, [TYPE_IDS.normal]);
+    const active1 = createOnFieldPokemon(pokemon1, 0, [TYPE_IDS.normal]);
+    const active2 = createOnFieldPokemon(pokemon2, 0, [TYPE_IDS.normal]);
 
     const state = {
       sides: [{ active: [active0] }, { active: [active1] }, { active: [active2] }],

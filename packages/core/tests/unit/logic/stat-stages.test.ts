@@ -11,126 +11,93 @@ import {
   getStatStageMultiplier,
 } from "../../../src/logic/stat-stages";
 
+// Source: classic stat-stage table used in Gen 1-2 and preserved as the generic
+// multiplier helper here: positive stages use (2 + stage) / 2, negative stages use 2 / (2 - stage).
+const EXPECTED_STAT_STAGE_MULTIPLIERS = [
+  { stage: -6, expected: 0.25 },
+  { stage: -5, expected: 2 / 7 },
+  { stage: -4, expected: 2 / 6 },
+  { stage: -3, expected: 0.4 },
+  { stage: -2, expected: 0.5 },
+  { stage: -1, expected: 2 / 3 },
+  { stage: 0, expected: 1.0 },
+  { stage: 1, expected: 1.5 },
+  { stage: 2, expected: 2.0 },
+  { stage: 3, expected: 2.5 },
+  { stage: 4, expected: 3.0 },
+  { stage: 5, expected: 3.5 },
+  { stage: 6, expected: 4.0 },
+] as const;
+
+// Source: pokeemerald accuracy/evasion stage ratios: positive stages use (3 + stage) / 3,
+// negative stages use 3 / (3 - stage).
+const EXPECTED_ACCURACY_EVASION_MULTIPLIERS = [
+  { stage: -6, expected: 3 / 9 },
+  { stage: -3, expected: 0.5 },
+  { stage: -2, expected: 0.6 },
+  { stage: -1, expected: 0.75 },
+  { stage: 0, expected: 1.0 },
+  { stage: 1, expected: 4 / 3 },
+  { stage: 2, expected: 5 / 3 },
+  { stage: 3, expected: 2.0 },
+  { stage: 6, expected: 3.0 },
+] as const;
+
 describe("getStatStageMultiplier", () => {
-  it("should return 1.0 at stage 0", () => {
-    expect(getStatStageMultiplier(0)).toBe(1.0);
+  it.each(
+    EXPECTED_STAT_STAGE_MULTIPLIERS,
+  )("given stage $stage, when getStatStageMultiplier is called, then it returns $expected", ({
+    stage,
+    expected,
+  }) => {
+    expect(getStatStageMultiplier(stage)).toBeCloseTo(expected);
   });
 
-  it("should return 4.0 at stage +6", () => {
-    expect(getStatStageMultiplier(6)).toBe(4.0);
+  it("given out-of-range stages, when getStatStageMultiplier is called, then it clamps to the stage +/-6 entries", () => {
+    const minStageExpected =
+      EXPECTED_STAT_STAGE_MULTIPLIERS.find((entry) => entry.stage === -6)?.expected ?? 0;
+    const maxStageExpected =
+      EXPECTED_STAT_STAGE_MULTIPLIERS.find((entry) => entry.stage === 6)?.expected ?? 0;
+
+    expect(getStatStageMultiplier(7)).toBe(maxStageExpected);
+    expect(getStatStageMultiplier(10)).toBe(maxStageExpected);
+    expect(getStatStageMultiplier(-7)).toBe(minStageExpected);
+    expect(getStatStageMultiplier(-10)).toBe(minStageExpected);
   });
 
-  it("should return 0.25 at stage -6", () => {
-    expect(getStatStageMultiplier(-6)).toBe(0.25);
+  it("given every stage from -6 to +6, when getStatStageMultiplier is called, then the full lookup table matches the sourced positive ratios", () => {
+    expect(
+      EXPECTED_STAT_STAGE_MULTIPLIERS.map(({ stage }) => getStatStageMultiplier(stage)),
+    ).toEqual(EXPECTED_STAT_STAGE_MULTIPLIERS.map(({ expected }) => expected));
   });
 
-  it("should return 1.5 at stage +1", () => {
-    expect(getStatStageMultiplier(1)).toBe(1.5);
-  });
-
-  it("should return 2.0 at stage +2", () => {
-    expect(getStatStageMultiplier(2)).toBe(2.0);
-  });
-
-  it("should return 2.5 at stage +3", () => {
-    expect(getStatStageMultiplier(3)).toBe(2.5);
-  });
-
-  it("should return 3.0 at stage +4", () => {
-    expect(getStatStageMultiplier(4)).toBe(3.0);
-  });
-
-  it("should return 3.5 at stage +5", () => {
-    expect(getStatStageMultiplier(5)).toBe(3.5);
-  });
-
-  it("should return 2/3 at stage -1", () => {
-    expect(getStatStageMultiplier(-1)).toBeCloseTo(2 / 3);
-  });
-
-  it("should return 0.5 at stage -2", () => {
-    expect(getStatStageMultiplier(-2)).toBe(0.5);
-  });
-
-  it("should return 0.4 at stage -3", () => {
-    expect(getStatStageMultiplier(-3)).toBe(0.4);
-  });
-
-  it("should return 2/6 at stage -4", () => {
-    expect(getStatStageMultiplier(-4)).toBeCloseTo(2 / 6);
-  });
-
-  it("should return 2/7 at stage -5", () => {
-    expect(getStatStageMultiplier(-5)).toBeCloseTo(2 / 7);
-  });
-
-  it("should clamp values beyond +6", () => {
-    expect(getStatStageMultiplier(7)).toBe(4.0);
-    expect(getStatStageMultiplier(10)).toBe(4.0);
-  });
-
-  it("should clamp values beyond -6", () => {
-    expect(getStatStageMultiplier(-7)).toBe(0.25);
-    expect(getStatStageMultiplier(-10)).toBe(0.25);
-  });
-
-  it("should always be positive", () => {
-    for (let stage = -6; stage <= 6; stage++) {
-      expect(getStatStageMultiplier(stage)).toBeGreaterThan(0);
-    }
-  });
-
-  it("should be symmetric: stage(n) * stage(-n) = 1 (approximately)", () => {
+  it("given matching positive and negative stages, when multiplying their values, then each pair remains reciprocal", () => {
+    const reciprocalProduct = 1;
     for (let n = 1; n <= 6; n++) {
       const product = getStatStageMultiplier(n) * getStatStageMultiplier(-n);
-      expect(product).toBeCloseTo(1.0);
+      expect(product).toBeCloseTo(reciprocalProduct);
     }
   });
 });
 
 describe("getAccuracyEvasionMultiplier", () => {
-  it("should return 1.0 at stage 0", () => {
-    expect(getAccuracyEvasionMultiplier(0)).toBe(1.0);
+  it.each(
+    EXPECTED_ACCURACY_EVASION_MULTIPLIERS,
+  )("given stage $stage, when getAccuracyEvasionMultiplier is called, then it returns $expected", ({
+    stage,
+    expected,
+  }) => {
+    expect(getAccuracyEvasionMultiplier(stage)).toBeCloseTo(expected);
   });
 
-  it("should return 3.0 at stage +6", () => {
-    expect(getAccuracyEvasionMultiplier(6)).toBe(3.0);
-  });
+  it("given out-of-range stages, when getAccuracyEvasionMultiplier is called, then it clamps to the stage +/-6 entries", () => {
+    const minStageExpected =
+      EXPECTED_ACCURACY_EVASION_MULTIPLIERS.find((entry) => entry.stage === -6)?.expected ?? 0;
+    const maxStageExpected =
+      EXPECTED_ACCURACY_EVASION_MULTIPLIERS.find((entry) => entry.stage === 6)?.expected ?? 0;
 
-  it("should return 3/9 at stage -6", () => {
-    expect(getAccuracyEvasionMultiplier(-6)).toBeCloseTo(3 / 9);
-  });
-
-  it("should return 4/3 at stage +1", () => {
-    expect(getAccuracyEvasionMultiplier(1)).toBeCloseTo(4 / 3);
-  });
-
-  it("should return 5/3 at stage +2", () => {
-    expect(getAccuracyEvasionMultiplier(2)).toBeCloseTo(5 / 3);
-  });
-
-  it("should return 2.0 at stage +3", () => {
-    expect(getAccuracyEvasionMultiplier(3)).toBe(2.0);
-  });
-
-  it("should return 0.75 at stage -1", () => {
-    expect(getAccuracyEvasionMultiplier(-1)).toBe(0.75);
-  });
-
-  it("should return 0.6 at stage -2", () => {
-    expect(getAccuracyEvasionMultiplier(-2)).toBe(0.6);
-  });
-
-  it("should return 0.5 at stage -3", () => {
-    expect(getAccuracyEvasionMultiplier(-3)).toBe(0.5);
-  });
-
-  it("should clamp values beyond +6", () => {
-    expect(getAccuracyEvasionMultiplier(7)).toBe(3.0);
-  });
-
-  it("should clamp values beyond -6", () => {
-    expect(getAccuracyEvasionMultiplier(-7)).toBeCloseTo(3 / 9);
+    expect(getAccuracyEvasionMultiplier(7)).toBe(maxStageExpected);
+    expect(getAccuracyEvasionMultiplier(-7)).toBeCloseTo(minStageExpected);
   });
 });
 

@@ -8,9 +8,31 @@
  * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
  */
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import {
+  createOnFieldPokemon as createBattleOnFieldPokemon,
+  createDefaultStatStages,
+} from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen6DataManager,
+  GEN6_ABILITY_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
 import { calculateGen6Damage } from "../src/Gen6DamageCalc.js";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart.js";
 import {
@@ -19,11 +41,44 @@ import {
   isWeatherSuppressedOnFieldGen6,
 } from "../src/Gen6Weather.js";
 
+const abilityIds = GEN6_ABILITY_IDS;
+const moveIds = GEN6_MOVE_IDS;
+const natureIds = GEN6_NATURE_IDS;
+const speciesIds = GEN6_SPECIES_IDS;
+const typeIds = CORE_TYPE_IDS;
+const weatherIds = CORE_WEATHER_IDS;
+const dataManager = createGen6DataManager();
+const defaultNatureId = dataManager.getNature(natureIds.hardy).id;
+const DEFAULT_LEVEL = 50;
+const DEFAULT_CONTEXT_SEED = 42;
+const DEFAULT_TEST_STATS = {
+  hp: 200,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
+} as const;
+const defaultSpeciesIdsByAbility = {
+  [abilityIds.blaze]: speciesIds.charmander,
+  [abilityIds.torrent]: speciesIds.squirtle,
+  [abilityIds.cloudNine]: speciesIds.golduck,
+  [abilityIds.airLock]: speciesIds.rayquaza,
+} as const satisfies Record<string, number>;
+
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function resolveDefaultSpeciesId(abilityId?: string): number {
+  if (abilityId && abilityId in defaultSpeciesIdsByAbility) {
+    return defaultSpeciesIdsByAbility[abilityId];
+  }
+
+  return speciesIds.charmander;
+}
+
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -38,118 +93,54 @@ function makeActive(overrides: {
   status?: string | null;
   speciesId?: number;
 }): ActivePokemon {
-  const hp = overrides.hp ?? 200;
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? 1,
-      nickname: null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? "none",
-      abilitySlot: "normal1" as const,
+  const resolvedAbilityId = overrides.ability ?? abilityIds.blaze;
+  const species = dataManager.getSpecies(
+    overrides.speciesId ?? resolveDefaultSpeciesId(resolvedAbilityId),
+  );
+  const hp = overrides.hp ?? DEFAULT_TEST_STATS.hp;
+  const pokemon = createPokemonInstance(
+    species,
+    overrides.level ?? DEFAULT_LEVEL,
+    new SeededRandom(DEFAULT_CONTEXT_SEED),
+    {
+      nature: defaultNatureId,
+      ivs: createIvs(),
+      evs: createEvs(),
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: "male" as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
+      friendship: createFriendship(species.baseFriendship),
+      gender: species.genderRatio === -1 ? CORE_GENDERS.genderless : CORE_GENDERS.male,
+      metLocation: "test",
+      originalTrainer: "Test",
       originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: {
-        hp,
-        attack: overrides.attack ?? 100,
-        defense: overrides.defense ?? 100,
-        spAttack: overrides.spAttack ?? 100,
-        spDefense: overrides.spDefense ?? 100,
-        speed: overrides.speed ?? 100,
-      },
+      pokeball: CORE_ITEM_IDS.pokeBall,
+      moves: [],
     },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-  } as ActivePokemon;
+  );
+
+  pokemon.uid = `test-${species.id}-${pokemon.level}`;
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = resolvedAbilityId;
+  pokemon.status = (overrides.status ?? null) as typeof pokemon.status;
+  pokemon.calculatedStats = {
+    hp,
+    attack: overrides.attack ?? DEFAULT_TEST_STATS.attack,
+    defense: overrides.defense ?? DEFAULT_TEST_STATS.defense,
+    spAttack: overrides.spAttack ?? DEFAULT_TEST_STATS.spAttack,
+    spDefense: overrides.spDefense ?? DEFAULT_TEST_STATS.spDefense,
+    speed: overrides.speed ?? DEFAULT_TEST_STATS.speed,
+  };
+
+  const onFieldPokemon = createBattleOnFieldPokemon(
+    pokemon,
+    0,
+    overrides.types ?? [...species.types],
+  );
+  onFieldPokemon.statStages = createDefaultStatStages();
+  return onFieldPokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-}): MoveData {
-  return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 6,
-    critRatio: 0,
-  } as MoveData;
-}
-
-function makeState(overrides?: {
+function createBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   sides?: [BattleSide, BattleSide];
 }): BattleState {
@@ -167,10 +158,10 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
+function createBattleSide(activePokemon: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   return {
     index,
-    active: [active],
+    active: [activePokemon],
     hazards: [],
     screens: [],
     tailwind: { active: false, turnsLeft: 0 },
@@ -184,7 +175,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -193,11 +184,11 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
-    state: overrides.state ?? makeState(),
-    rng: new SeededRandom(overrides.seed ?? 42),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? dataManager.getMove(moveIds.tackle),
+    state: overrides.state ?? createBattleState(),
+    rng: new SeededRandom(overrides.seed ?? DEFAULT_CONTEXT_SEED),
     isCrit: overrides.isCrit ?? false,
   };
 }
@@ -209,21 +200,21 @@ function makeDamageContext(overrides: {
 describe("isWeatherSuppressedGen6", () => {
   it("given attacker has Cloud Nine, when checking suppression, then returns true", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() returns true for Cloud Nine
-    const cloudNine = makeActive({ ability: "cloud-nine" });
-    const normal = makeActive({ ability: "blaze" });
+    const cloudNine = createSyntheticOnFieldPokemon({ ability: abilityIds.cloudNine });
+    const normal = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
     expect(isWeatherSuppressedGen6(cloudNine, normal)).toBe(true);
   });
 
   it("given defender has Air Lock, when checking suppression, then returns true", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() returns true for Air Lock
-    const normal = makeActive({ ability: "blaze" });
-    const airLock = makeActive({ ability: "air-lock" });
+    const normal = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
+    const airLock = createSyntheticOnFieldPokemon({ ability: abilityIds.airLock });
     expect(isWeatherSuppressedGen6(normal, airLock)).toBe(true);
   });
 
   it("given neither has Cloud Nine or Air Lock, when checking suppression, then returns false", () => {
-    const a = makeActive({ ability: "blaze" });
-    const b = makeActive({ ability: "torrent" });
+    const a = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
+    const b = createSyntheticOnFieldPokemon({ ability: abilityIds.torrent });
     expect(isWeatherSuppressedGen6(a, b)).toBe(false);
   });
 });
@@ -234,31 +225,31 @@ describe("isWeatherSuppressedGen6", () => {
 
 describe("isWeatherSuppressedOnFieldGen6", () => {
   it("given Cloud Nine user on side 0, when checking field, then returns true", () => {
-    const cloudNine = makeActive({ ability: "cloud-nine" });
-    const normal = makeActive({ ability: "blaze" });
-    const state = makeState({
-      weather: { type: "sand", turnsLeft: 5, source: "test" },
-      sides: [makeSide(cloudNine, 0), makeSide(normal, 1)],
+    const cloudNine = createSyntheticOnFieldPokemon({ ability: abilityIds.cloudNine });
+    const normal = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
+    const state = createBattleState({
+      weather: { type: weatherIds.sand, turnsLeft: 5, source: "test" },
+      sides: [createBattleSide(cloudNine, 0), createBattleSide(normal, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen6(state)).toBe(true);
   });
 
   it("given Air Lock user on side 1, when checking field, then returns true", () => {
-    const normal = makeActive({ ability: "blaze" });
-    const airLock = makeActive({ ability: "air-lock" });
-    const state = makeState({
-      weather: { type: "rain", turnsLeft: 5, source: "test" },
-      sides: [makeSide(normal, 0), makeSide(airLock, 1)],
+    const normal = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
+    const airLock = createSyntheticOnFieldPokemon({ ability: abilityIds.airLock });
+    const state = createBattleState({
+      weather: { type: weatherIds.rain, turnsLeft: 5, source: "test" },
+      sides: [createBattleSide(normal, 0), createBattleSide(airLock, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen6(state)).toBe(true);
   });
 
   it("given no suppression abilities on field, when checking, then returns false", () => {
-    const a = makeActive({ ability: "blaze" });
-    const b = makeActive({ ability: "torrent" });
-    const state = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "test" },
-      sides: [makeSide(a, 0), makeSide(b, 1)],
+    const a = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
+    const b = createSyntheticOnFieldPokemon({ ability: abilityIds.torrent });
+    const state = createBattleState({
+      weather: { type: weatherIds.sun, turnsLeft: 5, source: "test" },
+      sides: [createBattleSide(a, 0), createBattleSide(b, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen6(state)).toBe(false);
   });
@@ -271,21 +262,29 @@ describe("isWeatherSuppressedOnFieldGen6", () => {
 describe("Gen6 Cloud Nine damage calc integration", () => {
   it("given Cloud Nine attacker in rain, when using Water move, then no 1.5x rain boost applied", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather modifier in damage calc
-    const attacker = makeActive({ ability: "cloud-nine", attack: 100, types: ["water"] });
-    const defender = makeActive({ ability: "blaze", defense: 100, types: ["normal"] });
-    const waterMove = makeMove({ id: "surf", type: "water", category: "special", power: 90 });
-
-    const rainState = makeState({
-      weather: { type: "rain", turnsLeft: 5, source: "test" },
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: abilityIds.cloudNine,
+      attack: DEFAULT_TEST_STATS.attack,
+      types: [typeIds.water],
     });
-    const noWeatherState = makeState();
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      defense: DEFAULT_TEST_STATS.defense,
+      types: [typeIds.normal],
+    });
+    const waterMove = dataManager.getMove(moveIds.surf);
+
+    const rainState = createBattleState({
+      weather: { type: weatherIds.rain, turnsLeft: 5, source: "test" },
+    });
+    const noWeatherState = createBattleState();
 
     const rainResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 12345 }),
+      createDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 12345 }),
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker,
         defender,
         move: waterMove,
@@ -301,21 +300,35 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
 
   it("given Air Lock defender in sun, when using Fire move, then no 1.5x sun boost applied", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather modifier in damage calc
-    const attacker = makeActive({ ability: "blaze", attack: 100, types: ["fire"] });
-    const defender = makeActive({ ability: "air-lock", defense: 100, types: ["normal"] });
-    const fireMove = makeMove({ id: "flamethrower", type: "fire", category: "special", power: 90 });
-
-    const sunState = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "test" },
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      attack: DEFAULT_TEST_STATS.attack,
+      types: [typeIds.fire],
     });
-    const noWeatherState = makeState();
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.airLock,
+      defense: DEFAULT_TEST_STATS.defense,
+      types: [typeIds.normal],
+    });
+    const fireMove = dataManager.getMove(moveIds.flamethrower);
+
+    const sunState = createBattleState({
+      weather: { type: weatherIds.sun, turnsLeft: 5, source: "test" },
+    });
+    const noWeatherState = createBattleState();
 
     const sunResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 99999 }),
+      createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 99999 }),
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, state: noWeatherState, seed: 99999 }),
+      createDamageContext({
+        attacker,
+        defender,
+        move: fireMove,
+        state: noWeatherState,
+        seed: 99999,
+      }),
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
@@ -325,21 +338,35 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
 
   it("given no suppression in sun, when using Fire move, then 1.5x sun boost IS applied", () => {
     // Source: Showdown sim/battle-actions.ts — weather modifier 1.5x for Fire in sun
-    const attacker = makeActive({ ability: "blaze", attack: 100, types: ["fire"] });
-    const defender = makeActive({ ability: "torrent", defense: 100, types: ["normal"] });
-    const fireMove = makeMove({ id: "flamethrower", type: "fire", category: "special", power: 90 });
-
-    const sunState = makeState({
-      weather: { type: "sun", turnsLeft: 5, source: "test" },
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      attack: DEFAULT_TEST_STATS.attack,
+      types: [typeIds.fire],
     });
-    const noWeatherState = makeState();
+    const defender = createSyntheticOnFieldPokemon({
+      ability: abilityIds.torrent,
+      defense: DEFAULT_TEST_STATS.defense,
+      types: [typeIds.normal],
+    });
+    const fireMove = dataManager.getMove(moveIds.flamethrower);
+
+    const sunState = createBattleState({
+      weather: { type: weatherIds.sun, turnsLeft: 5, source: "test" },
+    });
+    const noWeatherState = createBattleState();
 
     const sunResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 12345 }),
+      createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 12345 }),
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
     const noWeatherResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, state: noWeatherState, seed: 12345 }),
+      createDamageContext({
+        attacker,
+        defender,
+        move: fireMove,
+        state: noWeatherState,
+        seed: 12345,
+      }),
       GEN6_TYPE_CHART as Record<string, Record<string, number>>,
     );
 
@@ -355,16 +382,22 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
 describe("Gen6 Cloud Nine weather chip suppression", () => {
   it("given Cloud Nine user on field in sandstorm, when applying weather effects, then no chip damage dealt", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
-    const cloudNine = makeActive({
-      ability: "cloud-nine",
-      types: ["normal"],
-      hp: 200,
-      currentHp: 200,
+    const maxHp = DEFAULT_TEST_STATS.hp;
+    const cloudNine = createSyntheticOnFieldPokemon({
+      ability: abilityIds.cloudNine,
+      types: [typeIds.normal],
+      hp: maxHp,
+      currentHp: maxHp,
     });
-    const normalMon = makeActive({ ability: "blaze", types: ["normal"], hp: 200, currentHp: 200 });
-    const state = makeState({
-      weather: { type: "sand", turnsLeft: 5, source: "test" },
-      sides: [makeSide(cloudNine, 0), makeSide(normalMon, 1)],
+    const normalMon = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      types: [typeIds.normal],
+      hp: maxHp,
+      currentHp: maxHp,
+    });
+    const state = createBattleState({
+      weather: { type: weatherIds.sand, turnsLeft: 5, source: "test" },
+      sides: [createBattleSide(cloudNine, 0), createBattleSide(normalMon, 1)],
     });
 
     const results = applyGen6WeatherEffects(state);
@@ -373,11 +406,22 @@ describe("Gen6 Cloud Nine weather chip suppression", () => {
 
   it("given Air Lock user on field in hail, when applying weather effects, then no chip damage dealt", () => {
     // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
-    const normalMon = makeActive({ ability: "blaze", types: ["normal"], hp: 200, currentHp: 200 });
-    const airLock = makeActive({ ability: "air-lock", types: ["normal"], hp: 200, currentHp: 200 });
-    const state = makeState({
-      weather: { type: "hail", turnsLeft: 5, source: "test" },
-      sides: [makeSide(normalMon, 0), makeSide(airLock, 1)],
+    const maxHp = DEFAULT_TEST_STATS.hp;
+    const normalMon = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      types: [typeIds.normal],
+      hp: maxHp,
+      currentHp: maxHp,
+    });
+    const airLock = createSyntheticOnFieldPokemon({
+      ability: abilityIds.airLock,
+      types: [typeIds.normal],
+      hp: maxHp,
+      currentHp: maxHp,
+    });
+    const state = createBattleState({
+      weather: { type: weatherIds.hail, turnsLeft: 5, source: "test" },
+      sides: [createBattleSide(normalMon, 0), createBattleSide(airLock, 1)],
     });
 
     const results = applyGen6WeatherEffects(state);
@@ -386,18 +430,28 @@ describe("Gen6 Cloud Nine weather chip suppression", () => {
 
   it("given no suppression in hail, when applying weather effects, then chip damage is dealt to non-immune Pokemon", () => {
     // Source: Showdown data/conditions.ts — hail deals 1/16 max HP chip damage
-    const normalMon1 = makeActive({ ability: "blaze", types: ["normal"], hp: 200, currentHp: 200 });
-    const normalMon2 = makeActive({ ability: "blaze", types: ["fire"], hp: 240, currentHp: 240 });
-    const state = makeState({
-      weather: { type: "hail", turnsLeft: 5, source: "test" },
-      sides: [makeSide(normalMon1, 0), makeSide(normalMon2, 1)],
+    const firstMaxHp = DEFAULT_TEST_STATS.hp;
+    const secondMaxHp = 240;
+    const normalMon1 = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      types: [typeIds.normal],
+      hp: firstMaxHp,
+      currentHp: firstMaxHp,
+    });
+    const normalMon2 = createSyntheticOnFieldPokemon({
+      ability: abilityIds.blaze,
+      types: [typeIds.fire],
+      hp: secondMaxHp,
+      currentHp: secondMaxHp,
+    });
+    const state = createBattleState({
+      weather: { type: weatherIds.hail, turnsLeft: 5, source: "test" },
+      sides: [createBattleSide(normalMon1, 0), createBattleSide(normalMon2, 1)],
     });
 
     const results = applyGen6WeatherEffects(state);
     expect(results.length).toBe(2);
-    // floor(200/16) = 12
-    expect(results[0].damage).toBe(12);
-    // floor(240/16) = 15
-    expect(results[1].damage).toBe(15);
+    expect(results[0].damage).toBe(Math.floor(firstMaxHp / 16));
+    expect(results[1].damage).toBe(Math.floor(secondMaxHp / 16));
   });
 });

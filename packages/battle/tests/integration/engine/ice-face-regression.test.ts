@@ -1,7 +1,24 @@
 import type { BattleConfig, BattleEvent } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { createGen8DataManager, Gen8Ruleset } from "@pokemon-lib-ts/gen8";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+  Gen8Ruleset,
+} from "@pokemon-lib-ts/gen8";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -17,9 +34,9 @@ function createBattle(): { engine: BattleEngine; events: BattleEvent[] } {
   const ruleset = new Gen8Ruleset(dataManager);
   const events: BattleEvent[] = [];
 
-  const team1 = [makePokemon(25, "Pikachu", "static")];
+  const team1 = [createBattlePokemon(GEN8_SPECIES_IDS.pikachu, "Pikachu", GEN8_ABILITY_IDS.static)];
 
-  const team2 = [makePokemon(875, "Eiscue", "ice-face")];
+  const team2 = [createBattlePokemon(GEN8_SPECIES_IDS.eiscue, "Eiscue", GEN8_ABILITY_IDS.iceFace)];
 
   const config: BattleConfig = {
     generation: 8,
@@ -34,39 +51,41 @@ function createBattle(): { engine: BattleEngine; events: BattleEvent[] } {
   return { engine, events };
 }
 
-function makePokemon(speciesId: number, nickname: string, ability: string): PokemonInstance {
-  return {
-    uid: `${nickname.toLowerCase()}-${speciesId}`,
-    speciesId,
+function createBattlePokemon(
+  speciesId: number,
+  nickname: string,
+  abilityId: string,
+): PokemonInstance {
+  const dataManager = createGen8DataManager();
+  const species = dataManager.getSpecies(speciesId);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(42), {
     nickname,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 1,
-    moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-    ability,
-    abilitySlot: "normal1",
+    nature: GEN8_NATURE_IDS.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
+    moves: [GEN8_MOVE_IDS.tackle],
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
-    status: null,
-    friendship: 0,
-    gender: "male",
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    friendship: createFriendship(species.baseFriendship),
+    gender: species.genderRatio === null ? CORE_GENDERS.genderless : CORE_GENDERS.male,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: 1,
-      attack: 1,
-      defense: 1,
-      spAttack: 1,
-      spDefense: 1,
-      speed: 1,
-    },
-  } as PokemonInstance;
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
+
+  pokemon.uid = `${nickname.toLowerCase()}-${speciesId}`;
+  pokemon.ability = abilityId;
+  pokemon.currentHp = 1;
+  pokemon.calculatedStats = {
+    hp: 1,
+    attack: 1,
+    defense: 1,
+    spAttack: 1,
+    spDefense: 1,
+    speed: 1,
+  };
+  return pokemon;
 }
 
 describe("Bug #890 - Gen 8 Ice Face pre-damage blocking", () => {

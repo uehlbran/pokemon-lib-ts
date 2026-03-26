@@ -5,10 +5,29 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  type CORE_MOVE_CATEGORIES,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen3Ruleset } from "../../src";
-import { createGen3DataManager } from "../../src/data";
-import { applyGen3HeldItem } from "../../src/Gen3Items";
+import {
+  applyGen3HeldItem,
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_SPECIES_IDS,
+  Gen3Ruleset,
+} from "../../src";
 
 /**
  * Tests for Gen 3 move effect and item bug fixes.
@@ -24,6 +43,15 @@ import { applyGen3HeldItem } from "../../src/Gen3Items";
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
+
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS } as const;
+const itemIds = GEN3_ITEM_IDS;
+const moveIds = GEN3_MOVE_IDS;
+const speciesIds = GEN3_SPECIES_IDS;
+const SCREENS = CORE_SCREEN_IDS;
+const statusIds = CORE_STATUS_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
 
 function createMockRng(intReturnValue: number, chanceResult = false) {
   return {
@@ -65,27 +93,34 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: speciesIds.bulbasaur,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: NEUTRAL_NATURES[0],
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
-    moves: opts.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    moves: opts.moves?.map((move) => ({
+      moveId: move.moveId,
+      currentPP: move.pp,
+      maxPP: move.maxPp,
+      ppUps: 0,
+    })) ?? [
+      { moveId: moveIds.tackle, currentPP: DEFAULT_MOVE.pp, maxPP: DEFAULT_MOVE.pp, ppUps: 0 },
+    ],
+    ability: opts.ability ?? abilityIds.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -103,12 +138,15 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: opts.volatiles ?? new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? abilityIds.none,
     suppressedAbility: null,
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: opts.lastDamageTaken ?? 0,
     lastDamageType: null,
-    lastDamageCategory: (opts.lastDamageCategory as "physical" | "special" | null) ?? null,
+    lastDamageCategory:
+      (opts.lastDamageCategory as
+        | (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES]
+        | null) ?? null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
@@ -126,28 +164,20 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function createSyntheticMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove: MoveData = (() => {
+    try {
+      return dataManager.getMove(id);
+    } catch {
+      return { ...DEFAULT_MOVE, id, displayName: id };
+    }
+  })();
   return {
-    id,
-    name: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 3,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...baseMove,
+    flags: {
+      ...baseMove.flags,
+      ...(overrides?.flags ?? {}),
+    },
     ...overrides,
   } as MoveData;
 }
@@ -216,6 +246,7 @@ function createContext(
 
 const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
+const DEFAULT_MOVE = dataManager.getMove(moveIds.tackle);
 
 // ===========================================================================
 // #338 — Whirlwind/Roar forcedSwitch flag
@@ -225,9 +256,9 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
   it("given Whirlwind used, when executeMoveEffect called, then sets both switchOut=true and forcedSwitch=true", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Whirlwind/Roar set FORCED_SWITCH
     // Source: BattleEngine checks result.switchOut && result.forcedSwitch for phazing
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("whirlwind");
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({ types: [typeIds.normal], nickname: "Defender" });
+    const move = dataManager.getMove(moveIds.whirlwind);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -239,9 +270,9 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
 
   it("given Roar used, when executeMoveEffect called, then sets both switchOut=true and forcedSwitch=true", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Roar uses same effect as Whirlwind
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("roar");
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.roar);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -253,9 +284,12 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
 
   it("given defender has Suction Cups, when Whirlwind used, then phazing fails and message shown", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SUCTION_CUPS blocks phazing
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], ability: "suction-cups" });
-    const move = dataManager.getMove("whirlwind");
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({
+      types: [typeIds.normal],
+      ability: abilityIds.suctionCups,
+    });
+    const move = dataManager.getMove(moveIds.whirlwind);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -263,18 +297,18 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
 
     expect(result.switchOut).toBe(false);
     expect(result.forcedSwitch).toBeUndefined();
-    expect(result.messages.length).toBeGreaterThan(0);
+    expect(result.messages).not.toEqual([]);
   });
 
   it("given defender has Ingrain, when Roar used, then phazing fails and message shown", () => {
     // Source: pret/pokeemerald src/battle_util.c — STATUS3_ROOTED blocks phazing
-    const volatiles = new Map([["ingrain", { turnsLeft: -1 }]]);
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const volatiles = new Map([[volatileIds.ingrain, { turnsLeft: -1 }]]);
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
     const defender = createActivePokemon({
-      types: ["grass"],
+      types: [typeIds.grass],
       volatiles: volatiles as any,
     });
-    const move = dataManager.getMove("roar");
+    const move = dataManager.getMove(moveIds.roar);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -294,9 +328,9 @@ describe("#343 — Pursuit", () => {
   it("given Pursuit used, when executeMoveEffect called, then does not intercept (engine handles switch-doubling)", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_PURSUIT handled at action level
     // Pursuit's switch-double is an engine-level mechanic; the move handler just needs to exist
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("pursuit");
+    const attacker = createActivePokemon({ types: [typeIds.dark] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.pursuit);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 40, rng);
 
@@ -309,9 +343,9 @@ describe("#343 — Pursuit", () => {
 
   it("given Pursuit used against non-switching target, when executeMoveEffect called, then no special effect triggered", () => {
     // Source: Showdown data/mods/gen3/moves.ts — Pursuit only doubles on switch
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("pursuit");
+    const attacker = createActivePokemon({ types: [typeIds.dark] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.pursuit);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 40, rng);
 
@@ -326,12 +360,12 @@ describe("#343 — Brick Break", () => {
   it("given Brick Break used against side with Reflect, when executeMoveEffect called, then screensCleared='defender' and message shown", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_BRICK_BREAK
     // Source: Bulbapedia — "Brick Break removes Reflect and Light Screen from the target's side"
-    const attacker = createActivePokemon({ types: ["fighting"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("brick-break");
+    const attacker = createActivePokemon({ types: [typeIds.fighting] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.brickBreak);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 75, rng, {
-      defenderScreens: [{ type: "reflect", turnsLeft: 3 }],
+      defenderScreens: [{ type: SCREENS.reflect, turnsLeft: 3 }],
     });
 
     const result = ruleset.executeMoveEffect(context);
@@ -343,9 +377,9 @@ describe("#343 — Brick Break", () => {
   it("given Brick Break used against side with no screens, when executeMoveEffect called, then screensCleared='defender' but no shatter message", () => {
     // Source: pret/pokeemerald — Brick Break always sets the screen-clear flag
     // but the "shattered" message only shows if screens were present
-    const attacker = createActivePokemon({ types: ["fighting"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("brick-break");
+    const attacker = createActivePokemon({ types: [typeIds.fighting] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.brickBreak);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 75, rng);
 
@@ -361,9 +395,9 @@ describe("#343 — Focus Punch", () => {
   it("given Focus Punch user took no damage this turn, when executeMoveEffect called, then move succeeds (not intercepted)", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Focus Punch succeeds if not hit
     // Source: Bulbapedia — "Focus Punch fails if the user is hit before it attacks"
-    const attacker = createActivePokemon({ types: ["fighting"], lastDamageTaken: 0 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("focus-punch");
+    const attacker = createActivePokemon({ types: [typeIds.fighting], lastDamageTaken: 0 });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.focusPunch);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 150, rng);
 
@@ -375,9 +409,9 @@ describe("#343 — Focus Punch", () => {
 
   it("given Focus Punch user took damage this turn, when executeMoveEffect called, then move fails with message", () => {
     // Source: pret/pokeemerald — Focus Punch fails if lastDamageTaken > 0
-    const attacker = createActivePokemon({ types: ["fighting"], lastDamageTaken: 50 });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("focus-punch");
+    const attacker = createActivePokemon({ types: [typeIds.fighting], lastDamageTaken: 50 });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.focusPunch);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -392,9 +426,9 @@ describe("#343 — Secret Power", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_SECRET_POWER
     // Source: Bulbapedia — "30% chance of paralysis (default terrain)"
     // Default terrain = paralysis
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("secret-power");
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.secretPower);
     // RNG: int returns value that triggers the 30% chance (< 30)
     const rng = createMockRng(10);
     const context = createContext(attacker, defender, move, 70, rng);
@@ -404,14 +438,14 @@ describe("#343 — Secret Power", () => {
     // Secret Power's data-driven effect is status-chance (paralysis, 30%)
     // The interceptor ALSO checks for paralysis, but since data-driven also applies,
     // we just verify paralysis is inflicted
-    expect(result.statusInflicted).toBe("paralysis");
+    expect(result.statusInflicted).toBe(statusIds.paralysis);
   });
 
   it("given Secret Power used and RNG does not trigger, when executeMoveEffect called, then no status inflicted", () => {
     // Source: pret/pokeemerald — 30% chance roll fails
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("secret-power");
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.secretPower);
     // RNG: int returns 90 which is >= 30, so the 30% chance fails
     const rng = createMockRng(90);
     const context = createContext(attacker, defender, move, 70, rng);
@@ -426,27 +460,27 @@ describe("#343 — Torment", () => {
   it("given Torment used on target without Torment, when executeMoveEffect called, then torment volatile is inflicted", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_TORMENT
     // Source: Bulbapedia — "Torment prevents the target from selecting the same move twice in a row"
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("torment");
+    const attacker = createActivePokemon({ types: [typeIds.dark] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.torment);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("torment");
-    expect(result.messages.some((m) => m.includes("torment"))).toBe(true);
+    expect(result.volatileInflicted).toBe(moveIds.torment);
+    expect(result.messages).toContain("The foe was subjected to torment!");
   });
 
   it("given Torment used on target that already has Torment, when executeMoveEffect called, then move fails", () => {
     // Source: pret/pokeemerald — Torment fails if target already has it
-    const volatiles = new Map([["torment", { turnsLeft: -1 }]]);
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const volatiles = new Map([[moveIds.torment, { turnsLeft: -1 }]]);
+    const attacker = createActivePokemon({ types: [typeIds.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [typeIds.normal],
       volatiles: volatiles as any,
     });
-    const move = dataManager.getMove("torment");
+    const move = dataManager.getMove(moveIds.torment);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -462,27 +496,27 @@ describe("#343 — Ingrain", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_INGRAIN
     // Source: Bulbapedia — "Ingrain causes the user to restore 1/16 of its maximum HP
     //   at the end of each turn. The user cannot be switched out."
-    const attacker = createActivePokemon({ types: ["grass"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("ingrain");
+    const attacker = createActivePokemon({ types: [typeIds.grass] });
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.ingrain);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.selfVolatileInflicted).toBe("ingrain");
+    expect(result.selfVolatileInflicted).toBe(volatileIds.ingrain);
     expect(result.messages.some((m) => m.includes("planted its roots"))).toBe(true);
   });
 
   it("given Ingrain used when already ingrained, when executeMoveEffect called, then move fails", () => {
     // Source: pret/pokeemerald — Ingrain fails if already active
-    const volatiles = new Map([["ingrain", { turnsLeft: -1 }]]);
+    const volatiles = new Map([[volatileIds.ingrain, { turnsLeft: -1 }]]);
     const attacker = createActivePokemon({
-      types: ["grass"],
+      types: [typeIds.grass],
       volatiles: volatiles as any,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("ingrain");
+    const defender = createActivePokemon({ types: [typeIds.normal] });
+    const move = dataManager.getMove(moveIds.ingrain);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -492,10 +526,10 @@ describe("#343 — Ingrain", () => {
     expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
   });
 
-  it("given Ingrain is in Gen3Ruleset end-of-turn order, then 'ingrain' appears in the order list", () => {
+  it("given Ingrain is in Gen3Ruleset end-of-turn order, then the rooted residual step appears in the order list", () => {
     // Source: pret/pokeemerald src/battle_main.c — ingrain is in end-of-turn residual order
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain("ingrain");
+    expect(order).toContain(volatileIds.ingrain);
   });
 });
 
@@ -509,9 +543,12 @@ describe("#348 — BrightPowder accuracy reduction", () => {
     // BrightPowder reduces accuracy by 10% (calc * 90 / 100)
     // With 100 accuracy: floor(100 * 90 / 100) = 90
     // So the move needs roll <= 90 to hit (instead of <= 100)
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "bright-powder" });
-    const move = createMove("tackle", { accuracy: 100 });
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({
+      types: [typeIds.normal],
+      heldItem: itemIds.brightPowder,
+    });
+    const move = dataManager.getMove(moveIds.tackle);
     const state = createMinimalBattleState(attacker, defender);
     // RNG returns 95 which is > 90 (should miss with BrightPowder) but <= 100 (would hit without)
     const rng = createMockRng(95);
@@ -531,9 +568,12 @@ describe("#348 — BrightPowder accuracy reduction", () => {
   it("given defender holds BrightPowder and a 100 accuracy move is used, when RNG roll is low enough, then move still hits", () => {
     // Source: pret/pokeemerald — BrightPowder reduces but doesn't prevent hits
     // With 100 accuracy + BrightPowder: calc = 90. Roll 50 <= 90 = hit
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "bright-powder" });
-    const move = createMove("tackle", { accuracy: 100 });
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({
+      types: [typeIds.normal],
+      heldItem: itemIds.brightPowder,
+    });
+    const move = dataManager.getMove(moveIds.tackle);
     const state = createMinimalBattleState(attacker, defender);
     const rng = createMockRng(50);
 
@@ -553,9 +593,9 @@ describe("#348 — Lax Incense accuracy reduction", () => {
   it("given defender holds Lax Incense and a 100 accuracy move is used, when RNG roll is 95, then move misses", () => {
     // Source: pret/pokeemerald — Lax Incense has same effect as BrightPowder (10% reduction)
     // Source: Showdown data/mods/gen3/items.ts — Lax Incense: 0.9x accuracy
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "lax-incense" });
-    const move = createMove("tackle", { accuracy: 100 });
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({ types: [typeIds.normal], heldItem: itemIds.laxIncense });
+    const move = dataManager.getMove(moveIds.tackle);
     const state = createMinimalBattleState(attacker, defender);
     const rng = createMockRng(95);
 
@@ -573,9 +613,9 @@ describe("#348 — Lax Incense accuracy reduction", () => {
 
   it("given defender holds Lax Incense and a 100 accuracy move is used, when RNG roll is 50, then move hits", () => {
     // Source: pret/pokeemerald — same as BrightPowder
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], heldItem: "lax-incense" });
-    const move = createMove("tackle", { accuracy: 100 });
+    const attacker = createActivePokemon({ types: [typeIds.normal] });
+    const defender = createActivePokemon({ types: [typeIds.normal], heldItem: itemIds.laxIncense });
+    const move = dataManager.getMove(moveIds.tackle);
     const state = createMinimalBattleState(attacker, defender);
     const rng = createMockRng(50);
 
@@ -596,8 +636,8 @@ describe("#348 — White Herb", () => {
     // Source: pret/pokeemerald src/battle_util.c HOLD_EFFECT_RESTORE_STATS
     // Source: Bulbapedia — "White Herb restores any lowered stat stages to 0 when held"
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "white-herb",
+      types: [typeIds.normal],
+      heldItem: itemIds.whiteHerb,
       statStages: { attack: -2 },
     });
     const context: ItemContext = {
@@ -606,7 +646,7 @@ describe("#348 — White Herb", () => {
       rng: createMockRng(0) as ItemContext["rng"],
     };
 
-    const result = applyGen3HeldItem("stat-boost-between-turns", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns, context);
 
     expect(result.activated).toBe(true);
     expect(pokemon.statStages.attack).toBe(0);
@@ -617,8 +657,8 @@ describe("#348 — White Herb", () => {
   it("given Pokemon with multiple lowered stats holding White Herb, when stat-boost-between-turns triggers, then all lowered stats restored to 0", () => {
     // Source: pret/pokeemerald — White Herb restores ALL lowered stats, not just one
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "white-herb",
+      types: [typeIds.normal],
+      heldItem: itemIds.whiteHerb,
       statStages: { attack: -1, defense: -3, speed: -2 },
     });
     const context: ItemContext = {
@@ -627,7 +667,7 @@ describe("#348 — White Herb", () => {
       rng: createMockRng(0) as ItemContext["rng"],
     };
 
-    const result = applyGen3HeldItem("stat-boost-between-turns", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns, context);
 
     expect(result.activated).toBe(true);
     expect(pokemon.statStages.attack).toBe(0);
@@ -638,8 +678,8 @@ describe("#348 — White Herb", () => {
   it("given Pokemon with no lowered stats holding White Herb, when stat-boost-between-turns triggers, then no activation", () => {
     // Source: pret/pokeemerald — White Herb only activates when stats are lowered
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "white-herb",
+      types: [typeIds.normal],
+      heldItem: itemIds.whiteHerb,
       statStages: { attack: 2, defense: 0 },
     });
     const context: ItemContext = {
@@ -648,7 +688,7 @@ describe("#348 — White Herb", () => {
       rng: createMockRng(0) as ItemContext["rng"],
     };
 
-    const result = applyGen3HeldItem("stat-boost-between-turns", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns, context);
 
     expect(result.activated).toBe(false);
   });
@@ -662,19 +702,19 @@ describe("#348 — Macho Brace speed halving", () => {
     // A Pokemon with 100 speed holding Macho Brace should have effective speed = 50
     // We test via sortActionsByPriority which calls getEffectiveSpeed internally
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "macho-brace",
+      types: [typeIds.normal],
+      heldItem: itemIds.machoBrace,
     });
     // Access the protected method via the ruleset's public API
     // We test the result indirectly: Macho Brace holder should be slower
-    const pokemonNoItem = createActivePokemon({ types: ["normal"] });
+    const pokemonNoItem = createActivePokemon({ types: [typeIds.normal] });
 
     // Create battle state with both as active on opposite sides
     const state = createMinimalBattleState(pokemon, pokemonNoItem);
     const rng = createMockRng(0);
     const actions = [
-      { type: "move" as const, side: 0 as const, slot: 0, moveIndex: 0, moveId: "tackle" },
-      { type: "move" as const, side: 1 as const, slot: 0, moveIndex: 0, moveId: "tackle" },
+      { type: "move" as const, side: 0 as const, slot: 0, moveIndex: 0, moveId: moveIds.tackle },
+      { type: "move" as const, side: 1 as const, slot: 0, moveIndex: 0, moveId: moveIds.tackle },
     ];
 
     const sorted = ruleset.resolveTurnOrder(actions, state, rng as any);
@@ -688,12 +728,12 @@ describe("#348 — Macho Brace speed halving", () => {
     // Source: pret/pokeemerald — Macho Brace halves speed, then paralysis quarters it
     // Speed = floor(floor(100 / 2) * 0.25) = floor(50 * 0.25) = 12
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "macho-brace",
-      status: "paralysis",
+      types: [typeIds.normal],
+      heldItem: itemIds.machoBrace,
+      status: statusIds.paralysis,
     });
     // Create a much slower opponent (speed 15) to verify exact ordering
-    const slowPokemon = createActivePokemon({ types: ["normal"] });
+    const slowPokemon = createActivePokemon({ types: [typeIds.normal] });
     // Override speed to 15
     slowPokemon.pokemon.calculatedStats = {
       ...slowPokemon.pokemon.calculatedStats!,
@@ -703,8 +743,8 @@ describe("#348 — Macho Brace speed halving", () => {
     const state = createMinimalBattleState(pokemon, slowPokemon);
     const rng = createMockRng(0);
     const actions = [
-      { type: "move" as const, side: 0 as const, slot: 0, moveIndex: 0, moveId: "tackle" },
-      { type: "move" as const, side: 1 as const, slot: 0, moveIndex: 0, moveId: "tackle" },
+      { type: "move" as const, side: 0 as const, slot: 0, moveIndex: 0, moveId: moveIds.tackle },
+      { type: "move" as const, side: 1 as const, slot: 0, moveIndex: 0, moveId: moveIds.tackle },
     ];
 
     const sorted = ruleset.resolveTurnOrder(actions, state, rng as any);
@@ -721,10 +761,11 @@ describe("#348 — King's Rock flinch restriction", () => {
   it("given Pokemon holding King's Rock uses a move without inherent flinch and RNG succeeds, when on-hit triggers, then flinch is applied", () => {
     // Source: pret/pokeemerald src/battle_util.c HOLD_EFFECT_FLINCH — 10% chance
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "kings-rock",
+      types: [typeIds.normal],
+      heldItem: itemIds.kingsRock,
+      nickname: "Attacker",
     });
-    const move = createMove("tackle", { effect: null });
+    const move = dataManager.getMove(moveIds.tackle);
     const context: ItemContext = {
       pokemon,
       state: {} as BattleState,
@@ -733,28 +774,22 @@ describe("#348 — King's Rock flinch restriction", () => {
       damage: 50,
     };
 
-    const result = applyGen3HeldItem("on-hit", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e) => e.type === "flinch")).toBe(true);
+    expect(result.effects).toHaveLength(1);
+    expect(result.messages).toContain("Attacker's King's Rock caused flinching!");
   });
 
   it("given Pokemon holding King's Rock uses Bite (has 30% flinch), when on-hit triggers, then King's Rock does NOT add extra flinch", () => {
     // Source: pret/pokeemerald — King's Rock only applies to moves without inherent flinch
     // Source: Bulbapedia — "King's Rock will not activate on moves that already have a flinch chance"
     const pokemon = createActivePokemon({
-      types: ["dark"],
-      heldItem: "kings-rock",
+      types: [typeIds.dark],
+      heldItem: itemIds.kingsRock,
     });
     // Bite has a volatile-status flinch effect with 30% chance
-    const move = createMove("bite", {
-      type: "dark",
-      effect: {
-        type: "volatile-status",
-        status: "flinch",
-        chance: 30,
-      },
-    });
+    const move = dataManager.getMove(moveIds.bite);
     const context: ItemContext = {
       pokemon,
       state: {} as BattleState,
@@ -763,7 +798,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       damage: 50,
     };
 
-    const result = applyGen3HeldItem("on-hit", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
 
     expect(result.activated).toBe(false);
   });
@@ -771,14 +806,17 @@ describe("#348 — King's Rock flinch restriction", () => {
   it("given Pokemon holding King's Rock uses a multi-effect move containing flinch, when on-hit triggers, then King's Rock does NOT activate", () => {
     // Source: pret/pokeemerald — flinch check is recursive through multi effects
     const pokemon = createActivePokemon({
-      types: ["normal"],
-      heldItem: "kings-rock",
+      types: [typeIds.normal],
+      heldItem: itemIds.kingsRock,
     });
     // A multi-effect move where one sub-effect is flinch
-    const move = createMove("headbutt-like", {
+    const move = createSyntheticMove("headbutt-like", {
       effect: {
         type: "multi",
-        effects: [{ type: "damage" }, { type: "volatile-status", status: "flinch", chance: 30 }],
+        effects: [
+          { type: "damage" },
+          { type: "volatile-status", status: volatileIds.flinch, chance: 30 },
+        ],
       } as any,
     });
     const context: ItemContext = {
@@ -789,7 +827,7 @@ describe("#348 — King's Rock flinch restriction", () => {
       damage: 50,
     };
 
-    const result = applyGen3HeldItem("on-hit", context);
+    const result = applyGen3HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
 
     expect(result.activated).toBe(false);
   });

@@ -1,112 +1,90 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { PokemonInstance, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen4DataManager } from "../src/data";
+import { GEN4_SPECIES_IDS } from "../src/data/reference-ids";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
+const dataManager = createGen4DataManager();
+const GEN4_TEST_LEVEL = 50;
+const BASE_CURRENT_HP = 200;
+const BASE_STAT = 100;
 
-function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+function createGen4Ruleset(): Gen4Ruleset {
+  return new Gen4Ruleset(dataManager);
 }
 
-/** Minimal PokemonInstance for mechanic tests. */
-function makePokemonInstance(overrides: {
-  maxHp?: number;
-  speed?: number;
-  status?: PokemonInstance["status"];
-  ability?: string;
-  heldItem?: string | null;
-}): PokemonInstance {
-  const maxHp = overrides.maxHp ?? 200;
-  const speed = overrides.speed ?? 100;
-  return {
-    uid: "test",
-    speciesId: 1,
-    nickname: null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: maxHp,
-    moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: overrides.heldItem ?? null,
-    status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed,
+function createGen4PokemonInstance(
+  speciesId: number,
+  options: {
+    abilitySlot?: PokemonInstance["abilitySlot"];
+    currentHp?: number;
+    heldItem?: string | null;
+    seedOffset?: number;
+    condition?: PrimaryStatus;
+  } = {},
+): PokemonInstance {
+  const species = dataManager.getSpecies(speciesId);
+  const pokemon = createPokemonInstance(
+    species,
+    GEN4_TEST_LEVEL,
+    new SeededRandom(0x4d74 + speciesId + (options.seedOffset ?? 0)),
+    {
+      nature: CORE_NATURE_IDS.hardy,
+      pokeball: CORE_ITEM_IDS.pokeBall,
+      abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
+      heldItem: options.heldItem ?? null,
     },
-  } as PokemonInstance;
+  );
+
+  const currentHp = options.currentHp ?? BASE_CURRENT_HP;
+  pokemon.currentHp = currentHp;
+  pokemon.calculatedStats = {
+    hp: currentHp,
+    attack: BASE_STAT,
+    defense: BASE_STAT,
+    spAttack: BASE_STAT,
+    spDefense: BASE_STAT,
+    speed: BASE_STAT,
+  };
+  if (options.condition !== undefined) {
+    pokemon.status = options.condition;
+  }
+
+  return pokemon;
 }
 
-/** Minimal ActivePokemon for mechanic tests. */
-function makeActivePokemon(overrides: {
-  maxHp?: number;
-  speed?: number;
-  status?: PokemonInstance["status"];
-  types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-}): ActivePokemon {
+function createGen4ActivePokemon(
+  speciesId: number,
+  options: {
+    abilitySlot?: PokemonInstance["abilitySlot"];
+    currentHp?: number;
+    heldItem?: string | null;
+    seedOffset?: number;
+    condition?: PrimaryStatus;
+    teamSlot?: number;
+  } = {},
+): ActivePokemon {
+  const species = dataManager.getSpecies(speciesId);
+  const pokemon = createGen4PokemonInstance(speciesId, options);
+  return createOnFieldPokemon(pokemon, options.teamSlot ?? 0, [...species.types]);
+}
+
+function createBattleSide(index: 0 | 1, active: ActivePokemon) {
   return {
-    pokemon: makePokemonInstance(overrides),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
-}
-
-/**
- * Build a minimal BattleState with two sides for canSwitch tests.
- * side0 = the pokemon being tested for switching, side1 = the opponent.
- */
-function buildTwoSideState(side0Pokemon: ActivePokemon, side1Pokemon: ActivePokemon): BattleState {
-  const makeSide = (index: 0 | 1, active: ActivePokemon) => ({
     index,
     trainer: null,
-    team: [],
+    team: [active.pokemon],
     active: [active],
     hazards: [],
     screens: [],
@@ -116,14 +94,19 @@ function buildTwoSideState(side0Pokemon: ActivePokemon, side1Pokemon: ActivePoke
     futureAttack: null,
     faintCount: 0,
     gimmickUsed: false,
-  });
+  };
+}
 
+function createTwoSideBattleState(
+  side0Pokemon: ActivePokemon,
+  side1Pokemon: ActivePokemon,
+): BattleState {
   return {
     phase: "action-select",
     generation: 4,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0, side0Pokemon), makeSide(1, side1Pokemon)],
+    sides: [createBattleSide(0, side0Pokemon), createBattleSide(1, side1Pokemon)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -131,22 +114,24 @@ function buildTwoSideState(side0Pokemon: ActivePokemon, side1Pokemon: ActivePoke
     wonderRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },
     turnHistory: [],
-    rng: {
-      next: () => 0,
-      int: () => 1,
-      chance: () => false,
-      pick: <T>(arr: readonly T[]) => arr[0] as T,
-      shuffle: <T>(arr: T[]) => arr,
-      getState: () => 0,
-      setState: () => {},
-    },
+    rng: new SeededRandom(0),
     ended: false,
     winner: null,
-  } as unknown as BattleState;
+  } as BattleState;
 }
 
-/** Minimal BattleState stub for processSleepTurn (doesn't need sides). */
-const STUB_STATE = {} as BattleState;
+function setSleepCounter(activePokemon: ActivePokemon, turnsLeft: number): void {
+  activePokemon.pokemon.status = CORE_STATUS_IDS.sleep;
+  activePokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, { turnsLeft });
+}
+
+const GEN4_CHARMANDER = GEN4_SPECIES_IDS.charmander;
+const GEN4_DIGLETT = GEN4_SPECIES_IDS.diglett;
+const GEN4_GENGAR = GEN4_SPECIES_IDS.gengar;
+const GEN4_MAGNEMITE = GEN4_SPECIES_IDS.magnemite;
+const GEN4_PIDGEY = GEN4_SPECIES_IDS.pidgey;
+const GEN4_STEELIX = GEN4_SPECIES_IDS.steelix;
+const GEN4_WOBBUFFET = GEN4_SPECIES_IDS.wobbuffet;
 
 // ---------------------------------------------------------------------------
 // processSleepTurn
@@ -160,11 +145,12 @@ describe("Gen4Ruleset processSleepTurn", () => {
     // Source: Showdown Gen 4 mod — BaseRuleset processSleepTurn returns true on wake
     // Gen 4 wake behavior: Pokemon CAN act (unlike Gen 1-2 where wake turn is lost)
     // Bug #354: previous code incorrectly returned false here
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+    const ruleset = createGen4Ruleset();
+    const mon = createGen4ActivePokemon(GEN4_CHARMANDER, { primaryStatus: CORE_STATUS_IDS.sleep });
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
+    setSleepCounter(mon, 0);
 
-    const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
+    const canAct = ruleset.processSleepTurn(mon, createTwoSideBattleState(mon, opponent));
     expect(canAct).toBe(true);
   });
 
@@ -172,50 +158,53 @@ describe("Gen4Ruleset processSleepTurn", () => {
     // Source: specs/battle/05-gen4.md — counter reaching 0 means wake + can act
     // Source: Showdown Gen 4 mod — Gen 3-4: can act on wake turn
     // With turnsLeft=1: decrement to 0, wake up, return true (Bug #354 fix)
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    const ruleset = createGen4Ruleset();
+    const mon = createGen4ActivePokemon(GEN4_CHARMANDER, { primaryStatus: CORE_STATUS_IDS.sleep });
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
+    setSleepCounter(mon, 1);
 
-    const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
+    const canAct = ruleset.processSleepTurn(mon, createTwoSideBattleState(mon, opponent));
     expect(canAct).toBe(true);
   });
 
   it("given sleep counter reaches 0 after decrement, when processSleepTurn called, then clears status and sleep-counter volatile", () => {
     // Source: specs/battle/05-gen4.md — when sleep counter hits 0, status is cleared
     // Verify both pokemon.status and the volatile are cleaned up
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+    const ruleset = createGen4Ruleset();
+    const mon = createGen4ActivePokemon(GEN4_CHARMANDER, { primaryStatus: CORE_STATUS_IDS.sleep });
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
+    setSleepCounter(mon, 1);
 
-    ruleset.processSleepTurn(mon, STUB_STATE);
+    ruleset.processSleepTurn(mon, createTwoSideBattleState(mon, opponent));
 
     expect(mon.pokemon.status).toBeNull();
-    expect(mon.volatileStatuses.has("sleep-counter")).toBe(false);
+    expect(mon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(false);
   });
 
   it("given sleep counter is 3, when processSleepTurn called, then counter decrements to 2 and pokemon stays asleep (cannot act)", () => {
     // Source: specs/battle/05-gen4.md — counter > 0 after decrement: still sleeping
     // turnsLeft=3: decrement to 2, still sleeping, return false
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    mon.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+    const ruleset = createGen4Ruleset();
+    const mon = createGen4ActivePokemon(GEN4_CHARMANDER, { primaryStatus: CORE_STATUS_IDS.sleep });
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
+    setSleepCounter(mon, 3);
 
-    const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
+    const canAct = ruleset.processSleepTurn(mon, createTwoSideBattleState(mon, opponent));
 
     expect(canAct).toBe(false);
-    expect(mon.pokemon.status).toBe("sleep");
-    expect(mon.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
+    expect(mon.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
+    expect(mon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter)?.turnsLeft).toBe(2);
   });
 
   it("given no sleep-counter volatile present, when processSleepTurn called, then clears status and returns true (can act)", () => {
     // Source: specs/battle/05-gen4.md — if sleep counter is missing, treat as woken up
     // Edge case: sleep status present but no volatile counter — treats as immediate wake
     // Bug #354 fix: wake means can act (Gen 3-4)
-    const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ status: "sleep" });
-    // Deliberately not setting sleep-counter volatile
+    const ruleset = createGen4Ruleset();
+    const mon = createGen4ActivePokemon(GEN4_CHARMANDER, { primaryStatus: CORE_STATUS_IDS.sleep });
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
 
-    const canAct = ruleset.processSleepTurn(mon, STUB_STATE);
+    const canAct = ruleset.processSleepTurn(mon, createTwoSideBattleState(mon, opponent));
 
     expect(canAct).toBe(true);
     expect(mon.pokemon.status).toBeNull();
@@ -230,10 +219,10 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given opponent has Shadow Tag and self has different ability, when canSwitch called, then returns false", () => {
     // Source: Showdown Gen 4 mod — Shadow Tag traps non-Shadow-Tag opponents
     // Source: Bulbapedia — Shadow Tag: "prevents adjacent opposing Pokemon from fleeing or switching"
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const opponent = makeActivePokemon({ ability: "shadow-tag", types: ["ghost"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const opponent = createGen4ActivePokemon(GEN4_WOBBUFFET);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(false);
   });
@@ -241,10 +230,10 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given both Pokemon have Shadow Tag, when canSwitch called, then returns true", () => {
     // Source: Showdown Gen 4 mod — Shadow Tag does not trap other Shadow Tag holders
     // Source: Bulbapedia — "A Pokemon with Shadow Tag will not be trapped by another Pokemon with Shadow Tag"
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "shadow-tag", types: ["ghost"] });
-    const opponent = makeActivePokemon({ ability: "shadow-tag", types: ["ghost"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_WOBBUFFET);
+    const opponent = createGen4ActivePokemon(GEN4_WOBBUFFET);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
   });
@@ -253,10 +242,12 @@ describe("Gen4Ruleset canSwitch", () => {
     // Source: Showdown Gen 4 mod — Arena Trap traps grounded opponents
     // Source: Bulbapedia — "Arena Trap prevents opposing Pokemon from fleeing or switching out
     //   as long as the opponent is grounded"
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const opponent = makeActivePokemon({ ability: "arena-trap", types: ["ground"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(false);
   });
@@ -264,10 +255,12 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given opponent has Arena Trap and self is Flying-type, when canSwitch called, then returns true", () => {
     // Source: Bulbapedia — "Arena Trap does not affect Flying-type Pokemon"
     // Flying-type is not grounded, so Arena Trap does not trap
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "keen-eye", types: ["normal", "flying"] });
-    const opponent = makeActivePokemon({ ability: "arena-trap", types: ["ground"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_PIDGEY);
+    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
   });
@@ -275,10 +268,12 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given opponent has Arena Trap and self has Levitate, when canSwitch called, then returns true", () => {
     // Source: Bulbapedia — "Arena Trap does not affect Pokemon with the Levitate Ability"
     // Levitate makes the Pokemon non-grounded
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "levitate", types: ["ghost"] });
-    const opponent = makeActivePokemon({ ability: "arena-trap", types: ["ground"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_GENGAR);
+    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
   });
@@ -286,20 +281,20 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given opponent has Magnet Pull and self is Steel-type, when canSwitch called, then returns false", () => {
     // Source: Showdown Gen 4 mod — Magnet Pull traps Steel-type opponents
     // Source: Bulbapedia — "Magnet Pull prevents opposing Steel-type Pokemon from fleeing or switching"
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "sturdy", types: ["steel", "rock"] });
-    const opponent = makeActivePokemon({ ability: "magnet-pull", types: ["electric", "steel"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_STEELIX, { abilitySlot: CORE_ABILITY_SLOTS.normal2 });
+    const opponent = createGen4ActivePokemon(GEN4_MAGNEMITE);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(false);
   });
 
   it("given opponent has Magnet Pull and self is non-Steel type, when canSwitch called, then returns true", () => {
     // Source: Bulbapedia — Magnet Pull only traps Steel-type Pokemon; non-Steel are unaffected
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const opponent = makeActivePokemon({ ability: "magnet-pull", types: ["electric", "steel"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const opponent = createGen4ActivePokemon(GEN4_MAGNEMITE);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
   });
@@ -307,11 +302,11 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given pokemon has trapped volatile status, when canSwitch called, then returns false", () => {
     // Source: Showdown Gen 4 mod — Mean Look/Spider Web/Block set "trapped" volatile
     // Source: Bulbapedia — Mean Look: "prevents the target from switching out"
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    self.volatileStatuses.set("trapped", { turnsLeft: -1 });
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_CHARMANDER);
+    self.volatileStatuses.set(CORE_VOLATILE_IDS.trapped, { turnsLeft: -1 });
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(false);
   });
@@ -319,11 +314,11 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given opponent is fainted, when canSwitch called, then returns true regardless of opponent ability", () => {
     // Source: Showdown — fainted opponents cannot trap
     // Edge case: opponent has Shadow Tag but is fainted (0 HP)
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const opponent = makeActivePokemon({ ability: "shadow-tag", types: ["ghost"], maxHp: 200 });
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const opponent = createGen4ActivePokemon(GEN4_WOBBUFFET);
     opponent.pokemon.currentHp = 0;
-    const state = buildTwoSideState(self, opponent);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
   });
@@ -331,10 +326,10 @@ describe("Gen4Ruleset canSwitch", () => {
   it("given no trapping conditions present, when canSwitch called, then returns true", () => {
     // Source: Showdown — default: Pokemon can switch freely when not trapped
     // Baseline: no trapping ability, no trapped volatile
-    const ruleset = makeRuleset();
-    const self = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const opponent = makeActivePokemon({ ability: "blaze", types: ["fire"] });
-    const state = buildTwoSideState(self, opponent);
+    const ruleset = createGen4Ruleset();
+    const self = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const opponent = createGen4ActivePokemon(GEN4_CHARMANDER);
+    const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
   });

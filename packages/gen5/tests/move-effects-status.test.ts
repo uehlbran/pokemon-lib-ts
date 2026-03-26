@@ -8,9 +8,26 @@
 
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { executeGen5MoveEffect } from "../src/Gen5MoveEffects";
+import {
+  createGen5DataManager,
+  executeGen5MoveEffect,
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
 import {
   ENTRAINMENT_SOURCE_BLOCKED,
   ENTRAINMENT_TARGET_BLOCKED,
@@ -18,11 +35,21 @@ import {
   isBerry,
 } from "../src/Gen5MoveEffectsStatus";
 
+const TYPES = CORE_TYPE_IDS;
+const CORE_ABILITIES = CORE_ABILITY_IDS;
+const CORE_ITEMS = CORE_ITEM_IDS;
+const ABILITIES = GEN5_ABILITY_IDS;
+const ITEMS = GEN5_ITEM_IDS;
+const MOVES = GEN5_MOVE_IDS;
+const NATURES = GEN5_NATURE_IDS;
+const SPECIES = GEN5_SPECIES_IDS;
+const gen5Data = createGen5DataManager();
+
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -50,27 +77,27 @@ function makeActive(overrides: {
   return {
     pokemon: {
       uid: "test",
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      nature: NATURES.hardy,
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
-      ability: overrides.ability ?? "none",
-      abilitySlot: "normal1" as const,
+      ability: overrides.ability ?? CORE_ABILITIES.none,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEMS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -84,8 +111,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
+    types: overrides.types ?? [TYPES.normal],
+    ability: overrides.ability ?? CORE_ABILITIES.none,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -108,49 +135,38 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  priority?: number;
-}): MoveData {
+function createCanonicalMove(
+  moveId: string = MOVES.tackle,
+  overrides: {
+    priority?: number;
+  } = {},
+): MoveData {
+  const move = gen5Data.getMove(moveId);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: overrides.priority ?? 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 5,
+    ...move,
+    ...overrides,
+    priority: overrides.priority ?? move.priority,
   } as MoveData;
 }
 
-function makeState(overrides?: { sides?: any[] }): BattleState {
+function createSyntheticMove(
+  reason: string,
+  overrides: {
+    id?: string;
+    baseMoveId?: string;
+  },
+): MoveData {
+  // Intentional synthetic move for dispatch fallthrough scenarios with no owning Gen 5 move id.
+  void reason;
+  const base = createCanonicalMove(overrides.baseMoveId ?? MOVES.tackle);
+  return {
+    ...base,
+    id: overrides.id ?? base.id,
+    displayName: overrides.id ?? base.displayName,
+  } as MoveData;
+}
+
+function createBattleState(overrides?: { sides?: any[] }): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -195,7 +211,7 @@ function makeState(overrides?: { sides?: any[] }): BattleState {
   } as unknown as BattleState;
 }
 
-function makeContext(overrides: {
+function createMoveEffectContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -203,12 +219,24 @@ function makeContext(overrides: {
   state?: BattleState;
 }): MoveEffectContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove({}),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? createCanonicalMove(),
     damage: overrides.damage ?? 0,
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
+  };
+}
+
+function baseMoveResult(overrides: Record<string, unknown>) {
+  return {
+    statusInflicted: null,
+    volatileInflicted: null,
+    statChanges: [],
+    recoilDamage: 0,
+    healAmount: 0,
+    switchOut: false,
+    ...overrides,
   };
 }
 
@@ -219,22 +247,22 @@ function makeContext(overrides: {
 describe("isBerry", () => {
   it("given a sitrus-berry, when checked, then returns true", () => {
     // Source: Showdown data/items.ts -- sitrus-berry has isBerry: true
-    expect(isBerry("sitrus-berry")).toBe(true);
+    expect(isBerry(ITEMS.sitrusBerry)).toBe(true);
   });
 
   it("given a lum-berry, when checked, then returns true", () => {
     // Source: Showdown data/items.ts -- lum-berry has isBerry: true
-    expect(isBerry("lum-berry")).toBe(true);
+    expect(isBerry(ITEMS.lumBerry)).toBe(true);
   });
 
   it("given a leftovers (not a berry), when checked, then returns false", () => {
     // Source: Showdown data/items.ts -- leftovers is not a berry
-    expect(isBerry("leftovers")).toBe(false);
+    expect(isBerry(CORE_ITEMS.leftovers)).toBe(false);
   });
 
   it("given a life-orb (not a berry), when checked, then returns false", () => {
     // Source: Showdown data/items.ts -- life-orb is not a berry
-    expect(isBerry("life-orb")).toBe(false);
+    expect(isBerry(ITEMS.lifeOrb)).toBe(false);
   });
 
   it("given null, when checked, then returns false", () => {
@@ -264,9 +292,9 @@ describe("Heal Pulse", () => {
   it("given a target with 200 max HP, when Heal Pulse is used, then heals 100 HP (ceil of 50%)", () => {
     // Source: Showdown gen5/moves.ts healpulse -- Math.ceil(target.baseMaxhp * 0.5)
     // 200 * 0.5 = 100, ceil(100) = 100
-    const ctx = makeContext({
-      defender: makeActive({ hp: 200, currentHp: 50 }),
-      move: makeMove({ id: "heal-pulse", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ hp: 200, currentHp: 50 }),
+      move: createCanonicalMove(MOVES.healPulse),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -278,9 +306,9 @@ describe("Heal Pulse", () => {
   it("given a target with 201 max HP, when Heal Pulse is used, then heals 101 HP (ceil rounds up)", () => {
     // Source: Showdown gen5/moves.ts healpulse -- Math.ceil(target.baseMaxhp * 0.5)
     // 201 * 0.5 = 100.5, ceil(100.5) = 101
-    const ctx = makeContext({
-      defender: makeActive({ hp: 201, currentHp: 50 }),
-      move: makeMove({ id: "heal-pulse", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ hp: 201, currentHp: 50 }),
+      move: createCanonicalMove(MOVES.healPulse),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -291,9 +319,9 @@ describe("Heal Pulse", () => {
 
   it("given a target with 1 max HP (Shedinja), when Heal Pulse is used, then heals 1 HP", () => {
     // Source: Showdown gen5/moves.ts healpulse -- Math.ceil(1 * 0.5) = 1
-    const ctx = makeContext({
-      defender: makeActive({ hp: 1, currentHp: 1 }),
-      move: makeMove({ id: "heal-pulse", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ hp: 1, currentHp: 1 }),
+      move: createCanonicalMove(MOVES.healPulse),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -310,31 +338,33 @@ describe("Heal Pulse", () => {
 describe("Aromatherapy", () => {
   it("given Aromatherapy is used, when executed, then cures status for the attacker's team", () => {
     // Source: Showdown gen5/moves.ts aromatherapy -- cures ALL allies, no Soundproof check
-    const ctx = makeContext({
-      move: makeMove({ id: "aromatherapy", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.aromatherapy),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    expect(result!.messages).toContain("A soothing aroma wafted through the area!");
+    expect(result).toMatchObject({
+      teamStatusCure: { side: "attacker" },
+      messages: ["A soothing aroma wafted through the area!"],
+    });
   });
 
   it("given Aromatherapy result, when checking, then does NOT reset stat stages", () => {
     // Source: Showdown gen5/moves.ts -- aromatherapy only cures status, no stat reset
     // teamStatusCure (not statusCured) means no stat reset -- just cures team status
-    const ctx = makeContext({
-      move: makeMove({ id: "aromatherapy", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.aromatherapy),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // teamStatusCure cures entire team status without resetting stat stages
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    // statStagesReset should not be set
-    expect(result!.statStagesReset).toBeUndefined();
+    expect(result).toEqual(
+      baseMoveResult({
+        teamStatusCure: { side: "attacker" },
+        messages: ["A soothing aroma wafted through the area!"],
+      }),
+    );
   });
 });
 
@@ -345,29 +375,32 @@ describe("Aromatherapy", () => {
 describe("Heal Bell", () => {
   it("given Heal Bell is used, when executed, then cures status for the attacker's team", () => {
     // Source: Showdown gen5/moves.ts healbell -- cures ALL allies, no Soundproof check
-    const ctx = makeContext({
-      move: makeMove({ id: "heal-bell", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.healBell),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    expect(result!.messages).toContain("A bell chimed!");
+    expect(result).toMatchObject({
+      teamStatusCure: { side: "attacker" },
+      messages: ["A bell chimed!"],
+    });
   });
 
   it("given Heal Bell result, when checking, then does NOT reset stat stages", () => {
     // Source: Showdown gen5/moves.ts -- healbell only cures status, no stat reset
-    const ctx = makeContext({
-      move: makeMove({ id: "heal-bell", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.healBell),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // teamStatusCure cures entire team status without resetting stat stages
-    expect(result!.teamStatusCure).toEqual({ side: "attacker" });
-    expect(result!.statStagesReset).toBeUndefined();
+    expect(result).toEqual(
+      baseMoveResult({
+        teamStatusCure: { side: "attacker" },
+        messages: ["A bell chimed!"],
+      }),
+    );
   });
 });
 
@@ -378,57 +411,71 @@ describe("Heal Bell", () => {
 describe("Soak", () => {
   it("given a Normal-type target, when Soak is used, then changes target to Water type", () => {
     // Source: Showdown gen5/moves.ts soak -- sets target type to Water
-    const ctx = makeContext({
-      defender: makeActive({ types: ["normal"] }),
-      move: makeMove({ id: "soak", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ types: [TYPES.normal] }),
+      move: createCanonicalMove(MOVES.soak),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.typeChange).toEqual({ target: "defender", types: ["water"] });
+    expect(result).toEqual(
+      baseMoveResult({
+        typeChange: { target: "defender", types: [TYPES.water] },
+        messages: ["The target transformed into the Water type!"],
+      }),
+    );
   });
 
   it("given a Water-type target in Gen 5, when Soak is used, then SUCCEEDS (no Water-type failure check)", () => {
     // Source: Showdown gen5/moves.ts soak -- no `target.getTypes().join() === 'Water'` check
     // This is the key Gen 5 vs Gen 6+ difference: Gen 5 does NOT fail on Water-type targets.
-    const ctx = makeContext({
-      defender: makeActive({ types: ["water"] }),
-      move: makeMove({ id: "soak", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ types: [TYPES.water] }),
+      move: createCanonicalMove(MOVES.soak),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.typeChange).toEqual({ target: "defender", types: ["water"] });
+    expect(result).toEqual(
+      baseMoveResult({
+        typeChange: { target: "defender", types: [TYPES.water] },
+        messages: ["The target transformed into the Water type!"],
+      }),
+    );
   });
 
   it("given a Fire/Flying target, when Soak is used, then changes to pure Water type", () => {
     // Source: Showdown gen5/moves.ts soak -- replaces all types with Water
-    const ctx = makeContext({
-      defender: makeActive({ types: ["fire", "flying"] }),
-      move: makeMove({ id: "soak", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ types: [TYPES.fire, TYPES.flying] }),
+      move: createCanonicalMove(MOVES.soak),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.typeChange).toEqual({ target: "defender", types: ["water"] });
+    expect(result).toEqual(
+      baseMoveResult({
+        typeChange: { target: "defender", types: [TYPES.water] },
+        messages: ["The target transformed into the Water type!"],
+      }),
+    );
   });
 
   it("given a target with Multitype, when Soak is used, then fails", () => {
     // Source: Showdown gen5/moves.ts soak -- fails if setType returns false
     // Multitype prevents type changes (cantsuppress flag)
-    const ctx = makeContext({
-      defender: makeActive({ types: ["normal"], ability: "multitype" }),
-      move: makeMove({ id: "soak", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({
+        types: [TYPES.normal],
+        ability: ABILITIES.multitype,
+      }),
+      move: createCanonicalMove(MOVES.soak),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
     expect(result!.typeChange).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
   });
 });
 
@@ -439,110 +486,118 @@ describe("Soak", () => {
 describe("Incinerate", () => {
   it("given a target holding a sitrus-berry, when Incinerate is used, then destroys the berry", () => {
     // Source: Showdown gen5/moves.ts incinerate -- if (item.isBerry) takeItem
-    const defender = makeActive({ heldItem: "sitrus-berry" });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({ heldItem: ITEMS.sitrusBerry });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(
+      baseMoveResult({ messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`] }),
+    );
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(result!.messages[0]).toContain("sitrus-berry");
-    expect(result!.messages[0]).toContain("incinerated");
   });
 
   it("given a target holding a lum-berry, when Incinerate is used, then destroys the berry", () => {
     // Source: Showdown gen5/moves.ts incinerate -- if (item.isBerry) takeItem
-    const defender = makeActive({ heldItem: "lum-berry" });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({ heldItem: ITEMS.lumBerry });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(
+      baseMoveResult({ messages: [`The target's ${ITEMS.lumBerry} was incinerated!`] }),
+    );
     expect(defender.pokemon.heldItem).toBeNull();
   });
 
   it("given a target holding a fire-gem in Gen 5, when Incinerate is used, then does NOT destroy the gem", () => {
     // Source: Showdown gen5/moves.ts incinerate -- only checks item.isBerry, NOT item.isGem
     // This is the key Gen 5 vs Gen 6+ difference: Gen 5 Incinerate only destroys Berries
-    const defender = makeActive({ heldItem: "fire-gem" });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({ heldItem: ITEMS.fireGem });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // Gem should NOT be destroyed
-    expect(defender.pokemon.heldItem).toBe("fire-gem");
-    expect(result!.messages).toEqual([]);
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
+    expect(defender.pokemon.heldItem).toBe(ITEMS.fireGem);
   });
 
   it("given a target with no item, when Incinerate is used, then no item is destroyed", () => {
     // Source: Showdown gen5/moves.ts incinerate -- no item to destroy
-    const defender = makeActive({ heldItem: null });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({ heldItem: null });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toEqual([]);
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
   });
 
   it("given a target holding leftovers, when Incinerate is used, then does not destroy it", () => {
     // Source: Showdown gen5/moves.ts incinerate -- leftovers is not a berry
-    const defender = makeActive({ heldItem: "leftovers" });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({ heldItem: CORE_ITEMS.leftovers });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(defender.pokemon.heldItem).toBe("leftovers");
-    expect(result!.messages).toEqual([]);
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
+    expect(defender.pokemon.heldItem).toBe(CORE_ITEMS.leftovers);
   });
 
   it("given a target with Unburden holding a berry, when Incinerate is used, then sets unburden volatile", () => {
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem:
     //   activates when item is lost by any means (consumed, stolen, knocked off, incinerated).
     // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
-    const defender = makeActive({ heldItem: "sitrus-berry", ability: "unburden" });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({
+      heldItem: ITEMS.sitrusBerry,
+      ability: ABILITIES.unburden,
+    });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(
+      baseMoveResult({ messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`] }),
+    );
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(defender.volatileStatuses.has("unburden")).toBe(true);
+    expect(defender.volatileStatuses.has(ABILITIES.unburden)).toBe(true);
   });
 
   it("given a target without Unburden holding a berry, when Incinerate is used, then does NOT set unburden volatile", () => {
     // Source: Showdown data/abilities.ts -- Unburden only activates for holders of the ability
-    const defender = makeActive({ heldItem: "sitrus-berry", ability: "blaze" });
-    const ctx = makeContext({
+    const defender = createSyntheticOnFieldPokemon({
+      heldItem: ITEMS.sitrusBerry,
+      ability: CORE_ABILITIES.blaze,
+    });
+    const ctx = createMoveEffectContext({
       defender,
-      move: makeMove({ id: "incinerate", type: "fire", power: 30 }),
+      move: createCanonicalMove(MOVES.incinerate),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(
+      baseMoveResult({ messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`] }),
+    );
     expect(defender.pokemon.heldItem).toBeNull();
-    expect(defender.volatileStatuses.has("unburden")).toBe(false);
+    expect(defender.volatileStatuses.has(ABILITIES.unburden)).toBe(false);
   });
 });
 
@@ -553,46 +608,51 @@ describe("Incinerate", () => {
 describe("Bestow", () => {
   it("given user has leftovers and target has no item, when Bestow is used, then transfers item", () => {
     // Source: Showdown data/moves.ts bestow -- source.takeItem() + target.setItem()
-    const ctx = makeContext({
-      attacker: makeActive({ heldItem: "leftovers", nickname: "Audino" }),
-      defender: makeActive({ heldItem: null, nickname: "Chansey" }),
-      move: makeMove({ id: "bestow", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({
+        heldItem: CORE_ITEMS.leftovers,
+        nickname: "Audino",
+      }),
+      defender: createSyntheticOnFieldPokemon({ heldItem: null, nickname: "Chansey" }),
+      move: createCanonicalMove(MOVES.bestow),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.itemTransfer).toEqual({ from: "attacker", to: "defender" });
+    expect(result).toEqual(
+      baseMoveResult({
+        itemTransfer: { from: "attacker", to: "defender" },
+        messages: [`Audino gave its ${CORE_ITEMS.leftovers} to Chansey!`],
+      }),
+    );
   });
 
   it("given target already has an item, when Bestow is used, then fails", () => {
     // Source: Showdown data/moves.ts bestow -- if (target.item) return false
-    const ctx = makeContext({
-      attacker: makeActive({ heldItem: "leftovers" }),
-      defender: makeActive({ heldItem: "life-orb" }),
-      move: makeMove({ id: "bestow", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ heldItem: CORE_ITEMS.leftovers }),
+      defender: createSyntheticOnFieldPokemon({ heldItem: ITEMS.lifeOrb }),
+      move: createCanonicalMove(MOVES.bestow),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
     expect(result!.itemTransfer).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
   });
 
   it("given user has no item, when Bestow is used, then fails", () => {
     // Source: Showdown data/moves.ts bestow -- const myItem = source.takeItem(); if (!myItem) return false
-    const ctx = makeContext({
-      attacker: makeActive({ heldItem: null }),
-      defender: makeActive({ heldItem: null }),
-      move: makeMove({ id: "bestow", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ heldItem: null }),
+      defender: createSyntheticOnFieldPokemon({ heldItem: null }),
+      move: createCanonicalMove(MOVES.bestow),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
     expect(result!.itemTransfer).toBeUndefined();
-    expect(result!.messages).toContain("But it failed!");
   });
 });
 
@@ -604,116 +664,114 @@ describe("Entrainment", () => {
   it("given user has Intimidate and target has Overgrow, when Entrainment is used, then changes target ability to Intimidate", () => {
     // Source: Showdown data/moves.ts entrainment -- target.setAbility(source.ability)
     // Source: Bulbapedia -- "Entrainment changes the target's Ability to match the user's"
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "intimidate" }),
-      defender: makeActive({ ability: "overgrow", nickname: "Serperior" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.intimidate }),
+      defender: createSyntheticOnFieldPokemon({
+        ability: ABILITIES.overgrow,
+        nickname: "Serperior",
+      }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // Verify the abilityChange field instructs the engine to change the defender's ability
-    expect(result!.abilityChange).toEqual({ target: "defender", ability: "intimidate" });
-    expect(result!.messages[0]).toContain("intimidate");
+    expect(result).toEqual(
+      baseMoveResult({
+        abilityChange: { target: "defender", ability: ABILITIES.intimidate },
+        messages: ["Serperior acquired intimidate!"],
+      }),
+    );
   });
 
   it("given target already has the same ability, when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- target.ability === source.ability -> false
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "intimidate" }),
-      defender: makeActive({ ability: "intimidate" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.intimidate }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given target has Truant, when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- target.ability === 'truant' -> false
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "intimidate" }),
-      defender: makeActive({ ability: "truant" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.truant }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given target has Multitype, when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- cantsuppress flag blocks
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "intimidate" }),
-      defender: makeActive({ ability: "multitype" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.multitype }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given target has Zen Mode, when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- cantsuppress flag blocks
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "intimidate" }),
-      defender: makeActive({ ability: "zen-mode" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.zenMode }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given user has Trace (source-blocked), when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- source.getAbility().flags['noentrain']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "trace" }),
-      defender: makeActive({ ability: "overgrow" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.trace }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.overgrow }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given user has Forecast (source-blocked), when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- source.getAbility().flags['noentrain']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "forecast" }),
-      defender: makeActive({ ability: "overgrow" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.forecast }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.overgrow }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toEqual(baseMoveResult({ messages: ["But it failed!"] }));
   });
 
   it("given user has Illusion (source-blocked), when Entrainment is used, then fails", () => {
     // Source: Showdown data/moves.ts entrainment -- source.getAbility().flags['noentrain']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: "illusion" }),
-      defender: makeActive({ ability: "overgrow" }),
-      move: makeMove({ id: "entrainment", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: ABILITIES.illusion }),
+      defender: createSyntheticOnFieldPokemon({ ability: ABILITIES.overgrow }),
+      move: createCanonicalMove(MOVES.entrainment),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    expect(result!.messages).toContain("But it failed!");
+    expect(result).toMatchObject({ messages: ["But it failed!"] });
   });
 });
 
@@ -724,21 +782,21 @@ describe("Entrainment", () => {
 describe("Entrainment blocked sets", () => {
   it("given ENTRAINMENT_TARGET_BLOCKED, when checked, then contains multitype, zen-mode, truant", () => {
     // Source: Showdown data/moves.ts entrainment -- cantsuppress + truant check
-    expect(ENTRAINMENT_TARGET_BLOCKED.has("multitype")).toBe(true);
-    expect(ENTRAINMENT_TARGET_BLOCKED.has("zen-mode")).toBe(true);
-    expect(ENTRAINMENT_TARGET_BLOCKED.has("truant")).toBe(true);
+    expect(ENTRAINMENT_TARGET_BLOCKED.has(ABILITIES.multitype)).toBe(true);
+    expect(ENTRAINMENT_TARGET_BLOCKED.has(ABILITIES.zenMode)).toBe(true);
+    expect(ENTRAINMENT_TARGET_BLOCKED.has(ABILITIES.truant)).toBe(true);
     expect(ENTRAINMENT_TARGET_BLOCKED.size).toBe(3);
   });
 
   it("given ENTRAINMENT_SOURCE_BLOCKED, when checked, then contains noentrain abilities", () => {
     // Source: Showdown data/moves.ts entrainment -- source.getAbility().flags['noentrain']
     // Source: Bulbapedia -- Entrainment: Flower Gift, Forecast, Illusion, Imposter, Trace, Zen Mode
-    expect(ENTRAINMENT_SOURCE_BLOCKED.has("flower-gift")).toBe(true);
-    expect(ENTRAINMENT_SOURCE_BLOCKED.has("forecast")).toBe(true);
-    expect(ENTRAINMENT_SOURCE_BLOCKED.has("illusion")).toBe(true);
-    expect(ENTRAINMENT_SOURCE_BLOCKED.has("imposter")).toBe(true);
-    expect(ENTRAINMENT_SOURCE_BLOCKED.has("trace")).toBe(true);
-    expect(ENTRAINMENT_SOURCE_BLOCKED.has("zen-mode")).toBe(true);
+    expect(ENTRAINMENT_SOURCE_BLOCKED.has(ABILITIES.flowerGift)).toBe(true);
+    expect(ENTRAINMENT_SOURCE_BLOCKED.has(ABILITIES.forecast)).toBe(true);
+    expect(ENTRAINMENT_SOURCE_BLOCKED.has(ABILITIES.illusion)).toBe(true);
+    expect(ENTRAINMENT_SOURCE_BLOCKED.has(ABILITIES.imposter)).toBe(true);
+    expect(ENTRAINMENT_SOURCE_BLOCKED.has(ABILITIES.trace)).toBe(true);
+    expect(ENTRAINMENT_SOURCE_BLOCKED.has(ABILITIES.zenMode)).toBe(true);
     expect(ENTRAINMENT_SOURCE_BLOCKED.size).toBe(6);
   });
 });
@@ -751,15 +809,13 @@ describe("Round", () => {
   it("given Round is used in singles, when executed, then returns a result (no doubling in singles)", () => {
     // Source: Showdown data/moves.ts round -- basePowerCallback doubles if move.sourceEffect === 'round'
     // In singles, there's no ally, so the doubling doesn't apply.
-    const ctx = makeContext({
-      move: makeMove({ id: "round", type: "normal", category: "special", power: 60 }),
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.round),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // Round's effect handler returns a normal result; BP doubling is in damage calc
-    expect(result!.messages).toEqual([]);
+    expect(result).toEqual(baseMoveResult({ messages: [] }));
   });
 });
 
@@ -770,27 +826,25 @@ describe("Round", () => {
 describe("handleGen5StatusMove dispatch", () => {
   it("given an unrecognized move, when dispatched, then returns null", () => {
     // Source: dispatcher pattern -- returns null for unrecognized moves
-    const ctx = makeContext({
-      move: makeMove({ id: "thunderbolt", type: "electric", category: "special", power: 95 }),
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.thunderbolt),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).toBeNull();
+    expect(result).toEqual(null);
   });
 
   it("given Heal Pulse, when dispatched through handleGen5StatusMove, then returns a heal result", () => {
     // Source: Showdown gen5/moves.ts healpulse -- verify dispatch routing
-    const ctx = makeContext({
-      defender: makeActive({ hp: 300 }),
-      move: makeMove({ id: "heal-pulse", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ hp: 300 }),
+      move: createCanonicalMove(MOVES.healPulse),
     });
 
     const result = handleGen5StatusMove(ctx);
 
-    expect(result).not.toBeNull();
-    // 300 * 0.5 = 150, ceil(150) = 150
-    expect(result!.defenderHealAmount).toBe(150);
+    expect(result).toEqual(baseMoveResult({ defenderHealAmount: 150, messages: [] }));
   });
 });
 
@@ -801,30 +855,30 @@ describe("handleGen5StatusMove dispatch", () => {
 describe("executeGen5MoveEffect integration", () => {
   it("given a status move (Heal Pulse), when dispatched through master dispatcher, then reaches status handler", () => {
     // Source: Gen5MoveEffects.ts master dispatcher -- step 4: status handler
-    const ctx = makeContext({
-      defender: makeActive({ hp: 400 }),
-      move: makeMove({ id: "heal-pulse", category: "status", power: null }),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ hp: 400 }),
+      move: createCanonicalMove(MOVES.healPulse),
     });
     const rng = new SeededRandom(42);
     const rollProtectSuccess = () => true;
 
     const result = executeGen5MoveEffect(ctx, rng, rollProtectSuccess);
 
-    expect(result).not.toBeNull();
-    // 400 * 0.5 = 200, ceil(200) = 200
-    expect(result!.defenderHealAmount).toBe(200);
+    expect(result).toEqual(baseMoveResult({ defenderHealAmount: 200, messages: [] }));
   });
 
   it("given an unrecognized move, when dispatched through master dispatcher, then returns null", () => {
     // Source: Gen5MoveEffects.ts master dispatcher -- falls through all handlers
-    const ctx = makeContext({
-      move: makeMove({ id: "unknown-move" }),
+    const ctx = createMoveEffectContext({
+      move: createSyntheticMove("Exercise the unrecognized move dispatcher path.", {
+        id: "unknown-move",
+      }),
     });
     const rng = new SeededRandom(42);
     const rollProtectSuccess = () => true;
 
     const result = executeGen5MoveEffect(ctx, rng, rollProtectSuccess);
 
-    expect(result).toBeNull();
+    expect(result).toEqual(null);
   });
 });

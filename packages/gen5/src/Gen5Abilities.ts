@@ -80,7 +80,7 @@ const NO_ACTIVATION: AbilityResult = {
  *     Technician; defenders like Multiscale, Solid Rock) and on-damage-taken immunity
  *     (Sturdy OHKO block)
  *   - **Stat** (Gen5AbilitiesStat): on-priority-check (Prankster), on-after-move-used
- *     (Moxie), on-stat-change (Defiant, Competitive, Contrary, Simple), on-damage-taken
+ *     (Moxie), on-stat-change (Defiant, Contrary, Simple), on-damage-taken
  *     (Justified, Weak Armor), on-turn-end (Speed Boost, Moody), on-flinch (Steadfast),
  *     on-item-use (Unnerve)
  *   - **Switch** (Gen5AbilitiesSwitch): on-switch-in (Intimidate, Drizzle, etc.),
@@ -143,7 +143,7 @@ export function applyGen5Ability(trigger: AbilityTrigger, ctx: AbilityContext): 
     }
 
     case "on-stat-change": {
-      // Stat abilities (Defiant, Competitive, Contrary, Simple) first,
+      // Stat abilities (Defiant, Contrary, Simple) first,
       // then Switch (Big Pecks)
       const statResult = handleGen5StatAbility(ctx);
       if (statResult.activated) return statResult;

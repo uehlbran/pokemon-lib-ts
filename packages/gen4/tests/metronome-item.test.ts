@@ -1,13 +1,22 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  StatBlock,
-  TypeChart,
+import type { MoveData, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen4Damage } from "../src/Gen4DamageCalc";
+import {
+  calculateGen4Damage,
+  createGen4DataManager,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  GEN4_TYPES,
+} from "../src";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Regression tests for Metronome item — no consecutive-use cap in Gen 4.
@@ -27,6 +36,14 @@ import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 // ---------------------------------------------------------------------------
 // Test helpers (mirrors damage-calc.test.ts helpers)
 // ---------------------------------------------------------------------------
+
+const dataManager = createGen4DataManager();
+const STRENGTH_MOVE = dataManager.getMove(GEN4_MOVE_IDS.strength);
+const METRONOME_ITEM = GEN4_ITEM_IDS.metronome;
+const DEFAULT_SPECIES_ID = GEN4_SPECIES_IDS.bulbasaur;
+const DEFAULT_NATURE = GEN4_NATURE_IDS.hardy;
+const DEFAULT_POKEBALL = GEN4_ITEM_IDS.pokeBall;
+const METRONOME_COUNT_VOLATILE = "metronome-count";
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -49,15 +66,14 @@ function createActivePokemon(opts: {
   hp?: number;
   currentHp?: number;
   types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: "burn" | "poison" | "paralysis" | "sleep" | "freeze" | null;
+  ability?: PokemonInstance["ability"];
+  heldItem?: PokemonInstance["heldItem"];
+  status?: PokemonInstance["status"];
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -65,105 +81,21 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? 1,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
+    level: opts.level ?? 50,
+    nature: DEFAULT_NATURE,
+    pokeball: DEFAULT_POKEBALL,
+    speciesId: opts.speciesId ?? DEFAULT_SPECIES_ID,
+    statStages: opts.statStages,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: opts.statStages?.attack ?? 0,
-      defense: opts.statStages?.defense ?? 0,
-      spAttack: opts.statStages?.spAttack ?? 0,
-      spDefense: opts.statStages?.spDefense ?? 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
-}
-
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 4,
-  } as MoveData;
+    types: opts.types ?? [CORE_TYPE_IDS.normal],
+  });
 }
 
 function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
@@ -173,29 +105,12 @@ function createMockState(weather?: { type: string; turnsLeft: number; source: st
 }
 
 function createNeutralTypeChart(): TypeChart {
-  const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-  ];
   const chart = {} as Record<string, Record<string, number>>;
-  for (const atk of types) {
+  // Synthetic neutral chart on purpose: these tests isolate Metronome's damage multiplier
+  // from type-matchup effects, which no canonical Gen 4 chart can represent globally.
+  for (const atk of GEN4_TYPES) {
     chart[atk] = {};
-    for (const def of types) {
+    for (const def of GEN4_TYPES) {
       (chart[atk] as Record<string, number>)[def] = 1;
     }
   }
@@ -243,24 +158,23 @@ describe("Gen 4 Metronome item — no consecutive-use cap (bug #559)", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"], // no STAB on normal move
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
+      heldItem: METRONOME_ITEM,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(METRONOME_COUNT_VOLATILE, {
       turnsLeft: -1,
-      data: { count: 7, moveId: "test-move" },
+      data: { count: 7, moveId: STRENGTH_MOVE.id },
     });
 
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
-      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      createDamageContext({ attacker, defender, move: STRENGTH_MOVE, rng: createMockRng(100) }),
       chart,
     );
 
@@ -276,24 +190,23 @@ describe("Gen 4 Metronome item — no consecutive-use cap (bug #559)", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: METRONOME_ITEM,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(METRONOME_COUNT_VOLATILE, {
       turnsLeft: -1,
-      data: { count: 11, moveId: "test-move" },
+      data: { count: 11, moveId: STRENGTH_MOVE.id },
     });
 
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
-      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      createDamageContext({ attacker, defender, move: STRENGTH_MOVE, rng: createMockRng(100) }),
       chart,
     );
 
@@ -309,24 +222,23 @@ describe("Gen 4 Metronome item — no consecutive-use cap (bug #559)", () => {
     const attacker = createActivePokemon({
       level: 50,
       attack: 100,
-      types: ["fighting"],
-      heldItem: "metronome",
+      types: [CORE_TYPE_IDS.fighting],
+      heldItem: METRONOME_ITEM,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(METRONOME_COUNT_VOLATILE, {
       turnsLeft: -1,
-      data: { count: 21, moveId: "test-move" },
+      data: { count: 21, moveId: STRENGTH_MOVE.id },
     });
 
     const defender = createActivePokemon({
       level: 50,
       defense: 100,
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
-      createDamageContext({ attacker, defender, move, rng: createMockRng(100) }),
+      createDamageContext({ attacker, defender, move: STRENGTH_MOVE, rng: createMockRng(100) }),
       chart,
     );
 

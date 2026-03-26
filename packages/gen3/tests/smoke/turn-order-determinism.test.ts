@@ -1,14 +1,34 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, StatBlock } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen3Ruleset } from "../../src";
+import { GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 import { createGen3DataManager } from "../../src/data";
 
 const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
+const SPECIES_IDS = GEN3_SPECIES_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
 
-function createActivePokemon(speed: number): ActivePokemon {
+function createCanonicalTackleSlot() {
+  const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
+  return createMoveSlot(tackle.id, tackle.pp);
+}
+
+function createSyntheticOnFieldPokemon(speed: number): ActivePokemon {
   const stats: StatBlock = {
     hp: 200,
     attack: 100,
@@ -20,45 +40,37 @@ function createActivePokemon(speed: number): ActivePokemon {
 
   const pokemon = {
     uid: `turn-order-${speed}`,
-    speciesId: 1,
+    speciesId: SPECIES_IDS.bulbasaur,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: CORE_NATURE_IDS.hardy,
+    ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    evs: createEvs(),
     currentHp: 200,
-    moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-    ability: "",
-    abilitySlot: "normal1" as const,
+    moves: [createCanonicalTackleSlot()],
+    ability: CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
   return {
     pokemon,
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["normal"],
-    ability: "",
+    types: [TYPE_IDS.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -116,7 +128,10 @@ function createBattleState(active0: ActivePokemon, active1: ActivePokemon): Batt
 describe("Gen 3 Turn Order Smoke", () => {
   it("given the same speed tie and seed, when resolved repeatedly, then the first mover stays stable", () => {
     // Source: issue #120 — resolveTurnOrder must remain seed-deterministic across repeated calls.
-    const state = createBattleState(createActivePokemon(100), createActivePokemon(100));
+    const state = createBattleState(
+      createSyntheticOnFieldPokemon(100),
+      createSyntheticOnFieldPokemon(100),
+    );
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0, target: 1 },
       { type: "move", side: 1, moveIndex: 0, target: 0 },
@@ -133,7 +148,10 @@ describe("Gen 3 Turn Order Smoke", () => {
 
   it("given many seeds for the same speed tie, when resolved across the smoke suite, then both battlers eventually move first", () => {
     // Source: pret/pokeemerald — equal-speed tiebreaks depend on RNG, so a seed sweep should exercise both sides.
-    const state = createBattleState(createActivePokemon(100), createActivePokemon(100));
+    const state = createBattleState(
+      createSyntheticOnFieldPokemon(100),
+      createSyntheticOnFieldPokemon(100),
+    );
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0, target: 1 },
       { type: "move", side: 1, moveIndex: 0, target: 0 },

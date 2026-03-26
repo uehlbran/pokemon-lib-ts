@@ -1,4 +1,5 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_GIMMICK_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, DamageContext, DamageResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -8,6 +9,7 @@ import { GenerationRegistry } from "../../../src/ruleset/GenerationRegistry";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // A MockRuleset subclass that returns super-effective + crit damage
 class SuperEffectiveCritRuleset extends MockRuleset {
@@ -47,7 +49,7 @@ class SharedStateRuleset extends MockRuleset {
   private readonly gimmick: TrackingGimmick = new TrackingGimmickImpl();
 
   override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
-    return type === "mega" ? this.gimmick : null;
+    return type === CORE_GIMMICK_IDS.mega ? this.gimmick : null;
   }
 }
 
@@ -65,7 +67,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -82,7 +84,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -124,8 +126,8 @@ describe("BattleEngine — simple bug fixes", () => {
       const { engine: engine1 } = createEngine({ ruleset: ruleset1 });
       const { engine: engine2 } = createEngine({ ruleset: ruleset2 });
 
-      const gimmick1 = ruleset1.getBattleGimmick("mega") as TrackingGimmick;
-      const gimmick2 = ruleset2.getBattleGimmick("mega") as TrackingGimmick;
+      const gimmick1 = ruleset1.getBattleGimmick(CORE_GIMMICK_IDS.mega) as TrackingGimmick;
+      const gimmick2 = ruleset2.getBattleGimmick(CORE_GIMMICK_IDS.mega) as TrackingGimmick;
 
       // Act — battle 1 consumes gimmick state, then battle 2 starts
       engine1.start();
@@ -149,7 +151,7 @@ describe("BattleEngine — simple bug fixes", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -163,7 +165,7 @@ describe("BattleEngine — simple bug fixes", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -255,20 +257,15 @@ describe("BattleEngine — simple bug fixes", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — find the relative ordering of the three event types
-      const effectivenessIdx = events.findIndex((e) => e.type === "effectiveness");
-      const critIdx = events.findIndex((e) => e.type === "critical-hit");
-      const damageIdx = events.findIndex((e) => e.type === "damage");
+      const relevantEventTypes = events
+        .filter(
+          (e) => e.type === "effectiveness" || e.type === "critical-hit" || e.type === "damage",
+        )
+        .map((e) => e.type);
 
-      expect(effectivenessIdx).toBeGreaterThanOrEqual(0);
-      expect(critIdx).toBeGreaterThanOrEqual(0);
-      expect(damageIdx).toBeGreaterThanOrEqual(0);
-
-      // effectiveness must come before damage
-      expect(effectivenessIdx).toBeLessThan(damageIdx);
-      // critical-hit must come before damage
-      expect(critIdx).toBeLessThan(damageIdx);
-      // effectiveness before critical-hit (natural ordering)
-      expect(effectivenessIdx).toBeLessThan(critIdx);
+      expect(relevantEventTypes).toHaveLength(6);
+      expect(relevantEventTypes.slice(0, 3)).toEqual(["effectiveness", "critical-hit", "damage"]);
+      expect(relevantEventTypes.slice(3, 6)).toEqual(["effectiveness", "critical-hit", "damage"]);
     });
 
     it("given a super-effective non-crit move, when damage is dealt, then effectiveness event appears before damage event", () => {
@@ -284,12 +281,13 @@ describe("BattleEngine — simple bug fixes", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const effectivenessIdx = events.findIndex((e) => e.type === "effectiveness");
-      const damageIdx = events.findIndex((e) => e.type === "damage");
+      const relevantEventTypes = events
+        .filter((e) => e.type === "effectiveness" || e.type === "damage")
+        .map((e) => e.type);
 
-      expect(effectivenessIdx).toBeGreaterThanOrEqual(0);
-      expect(damageIdx).toBeGreaterThanOrEqual(0);
-      expect(effectivenessIdx).toBeLessThan(damageIdx);
+      expect(relevantEventTypes).toHaveLength(4);
+      expect(relevantEventTypes.slice(0, 2)).toEqual(["effectiveness", "damage"]);
+      expect(relevantEventTypes.slice(2, 4)).toEqual(["effectiveness", "damage"]);
 
       // No crit event should be emitted
       const critIdx = events.findIndex((e) => e.type === "critical-hit");

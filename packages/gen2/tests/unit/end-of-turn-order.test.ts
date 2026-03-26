@@ -1,12 +1,32 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_NATURE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 
 /**
  * Helper to create a minimal ActivePokemon mock for testing.
  */
+const DATA_MANAGER = createGen2DataManager();
+const END_OF_TURN = CORE_END_OF_TURN_EFFECT_IDS;
+const _ITEMS = { ...CORE_ITEM_IDS, ...GEN2_ITEM_IDS } as const;
+const MOVES = CORE_MOVE_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN2_NATURE_IDS.hardy;
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+
 function createMockActive(
   overrides: Partial<{
     level: number;
@@ -28,15 +48,16 @@ function createMockActive(
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
       status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
       heldItem: overrides.heldItem ?? null,
       nickname: overrides.nickname ?? null,
+      nature: DEFAULT_NATURE,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moves: overrides.moves ?? [{ moveId: TACKLE.id, pp: TACKLE.pp, maxPp: TACKLE.pp }],
       calculatedStats: {
         hp: maxHp,
         attack: overrides.attack ?? 100,
@@ -58,8 +79,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
-    ability: "",
+    types: (overrides.types as unknown as PokemonType[]) ?? [TYPES.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -91,20 +112,20 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     // Assert — every effect from the decomp is present
-    expect(order).toContain("future-attack"); // HandleFutureSight
-    expect(order).toContain("weather-damage"); // HandleWeather (damage part)
-    expect(order).toContain("weather-countdown"); // HandleWeather (countdown part)
-    expect(order).toContain("bind"); // HandleWrap
-    expect(order).toContain("perish-song"); // HandlePerishSong
-    expect(order).toContain("leftovers"); // HandleLeftovers
-    expect(order).toContain("mystery-berry"); // HandleMysteryberry
-    expect(order).toContain("defrost"); // HandleDefrost
+    expect(order).toContain(END_OF_TURN.futureAttack); // HandleFutureSight
+    expect(order).toContain(END_OF_TURN.weatherDamage); // HandleWeather (damage part)
+    expect(order).toContain(END_OF_TURN.weatherCountdown); // HandleWeather (countdown part)
+    expect(order).toContain(END_OF_TURN.bind); // HandleWrap
+    expect(order).toContain(END_OF_TURN.perishSong); // HandlePerishSong
+    expect(order).toContain(END_OF_TURN.leftovers); // HandleLeftovers
+    expect(order).toContain(END_OF_TURN.mysteryBerry); // HandleMysteryberry
+    expect(order).toContain(END_OF_TURN.defrost); // HandleDefrost
     // Note: safeguard-countdown is intentionally absent — Safeguard is now stored as a
     // ScreenType screen and decremented by screen-countdown to avoid double-decrement.
-    expect(order).toContain("screen-countdown"); // HandleScreens + Safeguard
-    expect(order).toContain("stat-boosting-items"); // HandleStatBoostingHeldItems
-    expect(order).toContain("healing-items"); // HandleHealingItems
-    expect(order).toContain("encore-countdown"); // HandleEncore
+    expect(order).toContain(END_OF_TURN.screenCountdown); // HandleScreens + Safeguard
+    expect(order).toContain(END_OF_TURN.statBoostingItems); // HandleStatBoostingHeldItems
+    expect(order).toContain(END_OF_TURN.healingItems); // HandleHealingItems
+    expect(order).toContain(END_OF_TURN.encoreCountdown); // HandleEncore
   });
 
   it("given Gen 2 ruleset, when checking end-of-turn order, then weather-countdown fires immediately after weather-damage", () => {
@@ -116,8 +137,8 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
-    const dmgIdx = order.indexOf("weather-damage");
-    const cntIdx = order.indexOf("weather-countdown");
+    const dmgIdx = order.indexOf(END_OF_TURN.weatherDamage);
+    const cntIdx = order.indexOf(END_OF_TURN.weatherCountdown);
 
     // Assert — countdown immediately follows damage
     expect(dmgIdx).toBeGreaterThanOrEqual(0);
@@ -132,8 +153,8 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
-    const berryIdx = order.indexOf("mystery-berry");
-    const defrostIdx = order.indexOf("defrost");
+    const berryIdx = order.indexOf(END_OF_TURN.mysteryBerry);
+    const defrostIdx = order.indexOf(END_OF_TURN.defrost);
 
     // Assert
     expect(berryIdx).toBeLessThan(defrostIdx);
@@ -148,8 +169,8 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
 
     const order = ruleset.getEndOfTurnOrder();
 
-    expect(order).toContain("screen-countdown");
-    expect(order).not.toContain("safeguard-countdown");
+    expect(order).toContain(END_OF_TURN.screenCountdown);
+    expect(order).not.toContain(END_OF_TURN.safeguardCountdown);
   });
 
   it("given Gen 2 ruleset, when checking end-of-turn order, then encore-countdown is the last effect", () => {
@@ -161,7 +182,7 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     // Assert
-    expect(order[order.length - 1]).toBe("encore-countdown");
+    expect(order[order.length - 1]).toBe(END_OF_TURN.encoreCountdown);
   });
 
   it("given Gen 2 ruleset, when checking end-of-turn order, then defrost fires after leftovers", () => {
@@ -172,8 +193,8 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
 
     // Act
     const order = ruleset.getEndOfTurnOrder();
-    const leftIdx = order.indexOf("leftovers");
-    const defrostIdx = order.indexOf("defrost");
+    const leftIdx = order.indexOf(END_OF_TURN.leftovers);
+    const defrostIdx = order.indexOf(END_OF_TURN.defrost);
 
     // Assert
     expect(leftIdx).toBeLessThan(defrostIdx);
@@ -188,7 +209,7 @@ describe("Gen 2 End-of-Turn Order — Bug 4I", () => {
     const order = ruleset.getPostAttackResidualOrder();
 
     // Assert — defrost should NOT be in Phase 1
-    expect(order).not.toContain("defrost");
+    expect(order).not.toContain(END_OF_TURN.defrost);
   });
 });
 
@@ -203,7 +224,7 @@ describe("Gen 2 Freeze Thaw Timing — Bug 4J", () => {
     // so the pre-move check must always return false.
     // Arrange
     const ruleset = new Gen2Ruleset();
-    const frozen = createMockActive({ status: "freeze" });
+    const frozen = createMockActive({ status: STATUSES.freeze });
     const rng = new SeededRandom(42);
 
     // Act
@@ -218,17 +239,10 @@ describe("Gen 2 Freeze Thaw Timing — Bug 4J", () => {
     // Triangulation: across 500 different seeds, pre-move thaw must never happen
     // Arrange
     const ruleset = new Gen2Ruleset();
-    const frozen = createMockActive({ status: "freeze" });
-    let anyThaw = false;
-
-    // Act
-    for (let seed = 0; seed < 500; seed++) {
-      const rng = new SeededRandom(seed);
-      if (ruleset.checkFreezeThaw(frozen, rng)) {
-        anyThaw = true;
-        break;
-      }
-    }
+    const frozen = createMockActive({ status: STATUSES.freeze });
+    const anyThaw = Array.from({ length: 500 }, (_, seed) =>
+      ruleset.checkFreezeThaw(frozen, new SeededRandom(seed)),
+    ).some(Boolean);
 
     // Assert
     expect(anyThaw).toBe(false);
@@ -245,7 +259,7 @@ describe("Gen 2 Freeze Thaw Timing — Bug 4J", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     // Assert
-    expect(order).toContain("defrost");
+    expect(order).toContain(END_OF_TURN.defrost);
   });
 
   it("given checkFreezeThaw returns false, when checking that RNG is not consumed, then RNG state is unchanged", () => {
@@ -254,7 +268,7 @@ describe("Gen 2 Freeze Thaw Timing — Bug 4J", () => {
     // any RNG values. This ensures battle replay determinism is preserved.
     // Arrange
     const ruleset = new Gen2Ruleset();
-    const frozen = createMockActive({ status: "freeze" });
+    const frozen = createMockActive({ status: STATUSES.freeze });
     const rng = new SeededRandom(42);
 
     // Capture RNG state by generating a reference value

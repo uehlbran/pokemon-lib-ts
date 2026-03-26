@@ -8,7 +8,7 @@
  * Source: Showdown sim/battle-actions.ts — Z-Move base power override happens in useMove,
  *   after the gimmick is activated but before the damage step.
  */
-import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, type MoveData, type PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type {
   BattleConfig,
@@ -20,10 +20,14 @@ import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const MOCK_DATA_MANAGER = createMockDataManager();
+const TACKLE_POWER = MOCK_DATA_MANAGER.getMove(CORE_MOVE_IDS.tackle).power ?? 0;
 
 function createEngine(overrides?: {
   seed?: number;
@@ -36,10 +40,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -53,10 +57,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -87,11 +91,12 @@ function createEngine(overrides?: {
 
 describe("BattleGimmick.modifyMove() engine hook", () => {
   it("given a Z-Move gimmick with modifyMove that doubles base power, when a move executes with action.zMove=true, then calculateDamage receives the doubled power", () => {
-    // Source: Showdown sim/battle-actions.ts — Z-Move modifies move power before damage calc
-    // Tackle has base power 40 in MockRuleset. After modifyMove doubles it, damage calc
-    // should receive power 80.
+    // Source: Showdown sim/battle-actions.ts — Z-Move modifies move power before damage calc.
+    // The canonical mock Tackle payload comes from the Gen 1 data bundle; this test doubles
+    // that real power instead of relying on a handwritten literal.
     const ruleset = new MockRuleset();
     const capturedContexts: DamageContext[] = [];
+    const callOrder: string[] = [];
 
     // Capture the DamageContext passed to calculateDamage
     const originalCalcDamage = ruleset.calculateDamage.bind(ruleset);
@@ -99,9 +104,6 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
       capturedContexts.push(ctx);
       return originalCalcDamage(ctx);
     };
-
-    let activateCalled = false;
-    let modifyMoveCalled = false;
 
     const mockZMoveGimmick: BattleGimmick = {
       name: "Z-Move",
@@ -112,11 +114,11 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
         _side: BattleSide,
         _state: BattleState,
       ): BattleEvent[] => {
-        activateCalled = true;
+        callOrder.push("activate");
         return [];
       },
       modifyMove: (move: MoveData, _pokemon: ActivePokemon): MoveData => {
-        modifyMoveCalled = true;
+        callOrder.push("modifyMove");
         // Double the base power (simulating Z-Move power transformation)
         return { ...move, power: move.power !== null ? move.power * 2 : move.power };
       },
@@ -134,18 +136,11 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, zMove: true });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — both activate and modifyMove were called
-    expect(activateCalled).toBe(true);
-    expect(modifyMoveCalled).toBe(true);
-
-    // Assert — the first calculateDamage call (side 0 moves first, higher speed)
-    // should have the doubled power.
-    // MockRuleset getMoveData returns tackle with power 40.
-    // After modifyMove doubles it: expected power = 80.
-    // Source: MockRuleset tackle power = 40 (see mock-ruleset.ts getMoveData)
-    expect(capturedContexts.length).toBeGreaterThanOrEqual(1);
-    const zMoveContext = capturedContexts[0];
-    expect(zMoveContext.move.power).toBe(80); // 40 * 2 = 80
+    // Assert — activate runs before modifyMove, then damage is calculated for both sides.
+    expect(callOrder).toEqual(["activate", "modifyMove"]);
+    expect(capturedContexts).toHaveLength(2);
+    expect(capturedContexts[0]?.move.power).toBe(TACKLE_POWER * 2);
+    expect(capturedContexts[1]?.move.power).toBe(TACKLE_POWER);
   });
 
   it("given a gimmick WITHOUT modifyMove, when a move executes with action.mega=true, then calculateDamage receives the original move power unchanged", () => {
@@ -180,11 +175,10 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, mega: true });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — power should be unmodified (tackle = 40)
-    // Source: MockRuleset tackle power = 40
+    // Assert — power should be unmodified (canonical mock Tackle power)
     expect(capturedContexts.length).toBeGreaterThanOrEqual(1);
     const megaMoveContext = capturedContexts[0];
-    expect(megaMoveContext.move.power).toBe(40);
+    expect(megaMoveContext.move.power).toBe(TACKLE_POWER);
   });
 
   it("given a gimmick with modifyMove, when modifyMove is called, then it runs AFTER activate (ordering guarantee)", () => {
@@ -223,7 +217,13 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
   it("given no gimmick flag on the action, when move executes, then modifyMove is never called even if gimmick implements it", () => {
     // Source: modifyMove should only fire when a gimmick flag is set on the action
     const ruleset = new MockRuleset();
-    let modifyMoveCalled = false;
+    const capturedContexts: DamageContext[] = [];
+
+    const originalCalcDamage = ruleset.calculateDamage.bind(ruleset);
+    ruleset.calculateDamage = (ctx: DamageContext) => {
+      capturedContexts.push(ctx);
+      return originalCalcDamage(ctx);
+    };
 
     const mockGimmick: BattleGimmick = {
       name: "Z-Move",
@@ -231,8 +231,7 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
       canUse: () => true,
       activate: (): BattleEvent[] => [],
       modifyMove: (move: MoveData): MoveData => {
-        modifyMoveCalled = true;
-        return move;
+        return { ...move, power: 9999 };
       },
     };
 
@@ -246,7 +245,9 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(modifyMoveCalled).toBe(false);
+    expect(capturedContexts).toHaveLength(2);
+    expect(capturedContexts[0]?.move.power).toBe(TACKLE_POWER);
+    expect(capturedContexts[1]?.move.power).toBe(TACKLE_POWER);
   });
 
   it("given a gimmick with modifyMove that changes move type, when damage calc runs, then the modified type is in the DamageContext", () => {
@@ -284,7 +285,7 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — the damage context should have the modified type and power
-    // Source: MockRuleset tackle is normal/40; after modifyMove it should be fire/160
+    // Source: canonical mock Tackle is normal-type; after modifyMove it should be fire/160
     expect(capturedContexts.length).toBeGreaterThanOrEqual(1);
     const zMoveContext = capturedContexts[0];
     expect(zMoveContext.move.type).toBe("fire");
@@ -296,7 +297,13 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     // flag, even if canUse() returned false and activation was skipped.
     // Source: Showdown sim/battle-actions.ts — modifyMove only runs after activation succeeds
     const ruleset = new MockRuleset();
-    let modifyMoveCalled = false;
+    const capturedContexts: DamageContext[] = [];
+
+    const originalCalcDamage = ruleset.calculateDamage.bind(ruleset);
+    ruleset.calculateDamage = (ctx: DamageContext) => {
+      capturedContexts.push(ctx);
+      return originalCalcDamage(ctx);
+    };
 
     const mockGimmick: BattleGimmick = {
       name: "Z-Move",
@@ -305,7 +312,6 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
       canUse: (_pokemon: ActivePokemon, _side: BattleSide, _state: BattleState) => false,
       activate: (): BattleEvent[] => [],
       modifyMove: (move: MoveData): MoveData => {
-        modifyMoveCalled = true;
         return { ...move, power: 9999 };
       },
     };
@@ -320,8 +326,10 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, zMove: true });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // modifyMove must NOT have been called since canUse() returned false
-    expect(modifyMoveCalled).toBe(false);
+    // modifyMove must NOT have been called since canUse() returned false.
+    expect(capturedContexts).toHaveLength(2);
+    expect(capturedContexts[0]?.move.power).toBe(TACKLE_POWER);
+    expect(capturedContexts[1]?.move.power).toBe(TACKLE_POWER);
   });
 
   it("given a gimmick with reset(), when BattleEngine is constructed, then reset() is called to clear cross-battle state", () => {
@@ -351,7 +359,7 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     // reset() must have been called once per construction (once per gimmick type attempted)
     // The engine iterates ["mega","zmove","dynamax","tera"] but getBattleGimmick always
     // returns the same mock, so reset fires 4 times per construction × 2 constructions = 8
-    expect(resetCallCount).toBeGreaterThan(0);
+    expect(resetCallCount).toBe(8);
   });
 
   it("given a gimmick without reset(), when BattleEngine is constructed, then no error is thrown", () => {

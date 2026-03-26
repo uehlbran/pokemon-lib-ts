@@ -30,6 +30,12 @@ export {
   getExpToNextLevel,
 } from "./experience";
 export {
+  createFriendship,
+  MAX_FRIENDSHIP,
+  MIN_FRIENDSHIP,
+  validateFriendship,
+} from "./friendship-inputs";
+export {
   calculateStatExpContribution,
   gen1to2FullParalysisCheck,
   gen1to4MultiHitRoll,
@@ -43,6 +49,37 @@ export {
   getDefaultMoves,
 } from "./pokemon-factory";
 export { calculateAllStats, calculateHp, calculateStat, getNatureModifier } from "./stat-calc";
+export {
+  createDvs,
+  createEvs,
+  createIvs,
+  createStatExp,
+  DEFAULT_DV,
+  DEFAULT_EV,
+  DEFAULT_IV,
+  DEFAULT_STAT_EXP,
+  type DvOverrides,
+  type Dvs,
+  type EvOverrides,
+  type Evs,
+  type IvOverrides,
+  type Ivs,
+  MAX_DV,
+  MAX_EV,
+  MAX_IV,
+  MAX_STAT_EXP,
+  MAX_TOTAL_EVS,
+  MIN_DV,
+  MIN_EV,
+  MIN_IV,
+  MIN_STAT_EXP,
+  type StatExpOverrides,
+  type StatExpValues,
+  validateDvs,
+  validateEvs,
+  validateIvs,
+  validateStatExp,
+} from "./stat-inputs";
 export {
   ACCURACY_STAGE_RATIOS,
   calculateAccuracy,

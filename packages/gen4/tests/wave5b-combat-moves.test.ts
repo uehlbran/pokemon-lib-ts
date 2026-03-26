@@ -1,7 +1,26 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
+import {
+  createGen4DataManager,
+  executeGen4MoveEffect,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Wave 5B -- Combat Move Effects Tests
@@ -15,6 +34,26 @@ import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
 // ---------------------------------------------------------------------------
 // Test helpers (same pattern as wave5a-volatile-moves.test.ts)
 // ---------------------------------------------------------------------------
+
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const SPECIES = GEN4_SPECIES_IDS;
+const NATURES = GEN4_NATURE_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const EMBER = DATA_MANAGER.getMove(MOVES.ember);
+const SUCKER_PUNCH = DATA_MANAGER.getMove(MOVES.suckerPunch);
+const FEINT = DATA_MANAGER.getMove(MOVES.feint);
+const FOCUS_PUNCH = DATA_MANAGER.getMove(MOVES.focusPunch);
+const TRICK = DATA_MANAGER.getMove(MOVES.trick);
+const SWITCHEROO = DATA_MANAGER.getMove(MOVES.switcheroo);
+const DOOM_DESIRE = DATA_MANAGER.getMove(MOVES.doomDesire);
+const TOXIC = DATA_MANAGER.getMove(MOVES.toxic);
+const PROTECT = VOLATILES.protect;
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -45,7 +84,7 @@ function createActivePokemon(opts: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: 100,
     defense: 100,
@@ -53,98 +92,32 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: 1,
-    nickname: opts.nickname ?? null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.currentHp ?? maxHp,
-    moves: opts.moves ?? [
-      { moveId: "tackle", currentPP: 35, maxPP: 35 },
-      { moveId: "ember", currentPP: 25, maxPP: 25 },
-    ],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
-
   const volatiles =
     opts.volatiles ?? new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: volatiles,
-    types: opts.types,
-    ability: opts.ability ?? "",
-    lastMoveUsed: opts.lastMoveUsed ?? null,
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
+    currentHp: opts.currentHp ?? maxHp,
+    gender: CORE_GENDERS.male,
+    heldItem: opts.heldItem ?? null,
+    lastDamageCategory: opts.lastDamageCategory as ActivePokemon["lastDamageCategory"],
     lastDamageTaken: opts.lastDamageTaken ?? 0,
-    lastDamageType: null,
-    lastDamageCategory: (opts.lastDamageCategory ?? null) as any,
-    turnsOnField: 0,
+    lastMoveUsed: opts.lastMoveUsed ?? null,
+    level: opts.level ?? 50,
+    moveSlots: opts.moves ?? [
+      createMoveSlot(TACKLE.id, TACKLE.pp),
+      createMoveSlot(EMBER.id, EMBER.pp),
+    ],
     movedThisTurn: opts.movedThisTurn ?? false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
-}
-
-function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    name: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
-    ...overrides,
-  } as MoveData;
+    nickname: opts.nickname ?? null,
+    nature: NATURES.hardy,
+    pokeball: ITEMS.pokeBall,
+    speciesId: opts.nickname === "Jirachi" ? SPECIES.jirachi : SPECIES.alakazam,
+    status: opts.status ?? null,
+    types: opts.types,
+    volatileStatuses: volatiles,
+  });
 }
 
 function createMinimalBattleState(
@@ -225,12 +198,12 @@ describe("Sucker Punch", () => {
     //   target selected a damaging move
     // Source: Bulbapedia — "Sucker Punch will succeed if the target has selected
     //   a physical or special move to use this turn"
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       movedThisTurn: false,
     });
-    const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
+    const move = SUCKER_PUNCH;
     const rng = createMockRng(0);
     // Engine populates defenderSelectedMove with the defender's chosen move and its category
     const ctx = createContext(
@@ -240,7 +213,7 @@ describe("Sucker Punch", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: "tackle", category: "physical" },
+        defenderSelectedMove: { id: TACKLE.id, category: "physical" },
       },
     );
 
@@ -257,12 +230,12 @@ describe("Sucker Punch", () => {
     //   a move that deals damage"
     // The engine now populates defenderSelectedMove with the move's category,
     // so the effect handler can properly check for status moves.
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       movedThisTurn: false,
     });
-    const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
+    const move = SUCKER_PUNCH;
     const rng = createMockRng(0);
     // Defender selected Toxic (status move) — Sucker Punch should fail
     const ctx = createContext(
@@ -272,7 +245,7 @@ describe("Sucker Punch", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: "toxic", category: "status" },
+        defenderSelectedMove: { id: TOXIC.id, category: "status" },
       },
     );
 
@@ -287,12 +260,12 @@ describe("Sucker Punch", () => {
     //   target is not using a damaging move (switching counts as "not attacking")
     // Source: Bulbapedia — "Sucker Punch will fail if the target does not select
     //   a move that deals damage"
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       movedThisTurn: false,
     });
-    const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
+    const move = SUCKER_PUNCH;
     const rng = createMockRng(0);
     // Defender is switching — defenderSelectedMove is null (not using a move)
     const ctx = createContext(
@@ -315,12 +288,12 @@ describe("Sucker Punch", () => {
     // Source: Showdown Gen 4 — Sucker Punch fails if target already moved
     // Source: Bulbapedia — "Sucker Punch will fail if the target moves before
     //   the user"
-    const attacker = createActivePokemon({ types: ["dark"] });
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       movedThisTurn: true, // defender already acted
     });
-    const move = createMove("sucker-punch", { type: "dark", power: 80, priority: 1 });
+    const move = SUCKER_PUNCH;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -339,22 +312,22 @@ describe("Feint", () => {
     // Source: Showdown sim/battle-actions.ts Gen 4 — Feint breaks through Protect
     // Source: Bulbapedia — "If the target has used Protect or Detect, Feint will
     //   remove the effect and damage the target normally"
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const protectVolatiles = new Map<string, { turnsLeft: number }>();
-    protectVolatiles.set("protect", { turnsLeft: 1 });
+    protectVolatiles.set(PROTECT, { turnsLeft: 1 });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       nickname: "Blissey",
       volatiles: protectVolatiles,
     });
-    const move = createMove("feint", { type: "normal", power: 50, priority: 2 });
+    const move = FEINT;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     // Feint removes the protect volatile
-    expect(result.volatilesToClear).toEqual([{ target: "defender", volatile: "protect" }]);
+    expect(result.volatilesToClear).toEqual([{ target: "defender", volatile: PROTECT }]);
     // Success message
     expect(result.messages).toContain("Blissey fell for the feint!");
     // No failure
@@ -366,9 +339,9 @@ describe("Feint", () => {
     //   not protecting
     // Source: Bulbapedia — "Feint will fail if the target has not used Protect
     //   or Detect during the turn"
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("feint", { type: "normal", power: 50, priority: 2 });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = FEINT;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -379,25 +352,25 @@ describe("Feint", () => {
     expect(result.volatilesToClear).toBeUndefined();
   });
 
-  it("given defender has Protect volatile from Detect (both use 'protect' volatile), when Feint is used, then it succeeds", () => {
-    // Source: Showdown Gen 4 — Detect and Protect both set the same "protect"
+  it("given defender has PROTECT volatile from Detect, when Feint is used, then it succeeds", () => {
+    // Source: Showdown Gen 4 — Detect and Protect both set the same PROTECT
     //   volatile status; Feint removes it in either case
     // Source: Bulbapedia — Detect "functions identically to Protect"
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const protectVolatiles = new Map<string, { turnsLeft: number }>();
-    protectVolatiles.set("protect", { turnsLeft: 1 }); // Detect also uses "protect" volatile
+    protectVolatiles.set(PROTECT, { turnsLeft: 1 }); // Detect also uses the PROTECT volatile
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       nickname: "Starmie",
       volatiles: protectVolatiles,
     });
-    const move = createMove("feint", { type: "normal", power: 50, priority: 2 });
+    const move = FEINT;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.volatilesToClear).toEqual([{ target: "defender", volatile: "protect" }]);
+    expect(result.volatilesToClear).toEqual([{ target: "defender", volatile: PROTECT }]);
     expect(result.messages).toContain("Starmie fell for the feint!");
   });
 });
@@ -413,15 +386,11 @@ describe("Focus Punch", () => {
     // Source: Bulbapedia — "If the user is not hit by a damaging move before
     //   it can attack, Focus Punch deals damage normally"
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [TYPES.fighting],
       lastDamageTaken: 0, // no damage taken this turn
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("focus-punch", {
-      type: "fighting",
-      power: 150,
-      priority: -3,
-    });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = FOCUS_PUNCH;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -437,16 +406,12 @@ describe("Focus Punch", () => {
     // Source: Bulbapedia — "The user will lose its focus and be unable to attack
     //   if it is hit by a damaging move before it can execute Focus Punch"
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [TYPES.fighting],
       nickname: "Breloom",
       lastDamageTaken: 45, // took 45 damage this turn
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("focus-punch", {
-      type: "fighting",
-      power: 150,
-      priority: -3,
-    });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = FOCUS_PUNCH;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -459,16 +424,12 @@ describe("Focus Punch", () => {
     // Source: Showdown Gen 4 — any non-zero damage causes Focus Punch to fail
     // Even minimal chip damage (1 HP) interrupts Focus Punch
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [TYPES.fighting],
       nickname: "Infernape",
       lastDamageTaken: 1, // minimal damage still interrupts
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("focus-punch", {
-      type: "fighting",
-      power: 150,
-      priority: -3,
-    });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = FOCUS_PUNCH;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -487,24 +448,24 @@ describe("Trick / Switcheroo", () => {
     // Source: Showdown sim/battle-actions.ts Gen 4 — Trick swaps held items
     // Source: Bulbapedia — "The user swaps its held item with the target's held item"
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       nickname: "Alakazam",
-      heldItem: "choice-scarf",
+      heldItem: ITEMS.choiceScarf,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       nickname: "Blissey",
-      heldItem: "leftovers",
+      heldItem: ITEMS.leftovers,
     });
-    const move = createMove("trick", { type: "psychic", category: "status", power: 0 });
+    const move = TRICK;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     // Items swapped
-    expect(attacker.pokemon.heldItem).toBe("leftovers");
-    expect(defender.pokemon.heldItem).toBe("choice-scarf");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.leftovers);
+    expect(defender.pokemon.heldItem).toBe(ITEMS.choiceScarf);
     expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
     expect(result.messages).toContain("Alakazam switched items with Blissey!");
   });
@@ -515,16 +476,16 @@ describe("Trick / Switcheroo", () => {
     // Source: Bulbapedia — "If one Pokemon has an item and the other does not,
     //   then the item is simply transferred"
     const attacker = createActivePokemon({
-      types: ["dark"],
+      types: [TYPES.dark],
       nickname: "Lopunny",
-      heldItem: "toxic-orb",
+      heldItem: ITEMS.toxicOrb,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       nickname: "Snorlax",
       heldItem: null,
     });
-    const move = createMove("switcheroo", { type: "dark", category: "status", power: 0 });
+    const move = SWITCHEROO;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -532,7 +493,7 @@ describe("Trick / Switcheroo", () => {
 
     // Attacker gave its item away, now has nothing
     expect(attacker.pokemon.heldItem).toBeNull();
-    expect(defender.pokemon.heldItem).toBe("toxic-orb");
+    expect(defender.pokemon.heldItem).toBe(ITEMS.toxicOrb);
     expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
     expect(result.messages).toContain("Lopunny gave toxic-orb to Snorlax!");
   });
@@ -542,14 +503,14 @@ describe("Trick / Switcheroo", () => {
     // Source: Bulbapedia — "Trick will fail if neither the user nor the target
     //   is holding an item"
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       heldItem: null,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       heldItem: null,
     });
-    const move = createMove("trick", { type: "psychic", category: "status", power: 0 });
+    const move = TRICK;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -564,16 +525,16 @@ describe("Trick / Switcheroo", () => {
     // Source: Bulbapedia — "Sticky Hold prevents the Pokemon's held item from
     //   being taken or removed by the foe"
     const attacker = createActivePokemon({
-      types: ["psychic"],
-      heldItem: "choice-scarf",
+      types: [TYPES.psychic],
+      heldItem: ITEMS.choiceScarf,
     });
     const defender = createActivePokemon({
-      types: ["poison"],
+      types: [TYPES.poison],
       nickname: "Muk",
-      heldItem: "black-sludge",
-      ability: "sticky-hold",
+      heldItem: ITEMS.blackSludge,
+      ability: ABILITIES.stickyHold,
     });
-    const move = createMove("trick", { type: "psychic", category: "status", power: 0 });
+    const move = TRICK;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -581,8 +542,8 @@ describe("Trick / Switcheroo", () => {
 
     expect(result.messages).toContain("Muk's Sticky Hold made Trick fail!");
     // Items unchanged
-    expect(attacker.pokemon.heldItem).toBe("choice-scarf");
-    expect(defender.pokemon.heldItem).toBe("black-sludge");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.choiceScarf);
+    expect(defender.pokemon.heldItem).toBe(ITEMS.blackSludge);
   });
 
   it("given either has Multitype ability, when Trick is used, then it fails", () => {
@@ -590,15 +551,15 @@ describe("Trick / Switcheroo", () => {
     // Source: Bulbapedia — "Trick will fail if either Pokemon has the Multitype
     //   Ability" (Arceus with type-changing plates)
     const attacker = createActivePokemon({
-      types: ["normal"],
-      heldItem: "choice-scarf",
-      ability: "multitype",
+      types: [TYPES.normal],
+      heldItem: ITEMS.choiceScarf,
+      ability: ABILITIES.multitype,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
-      heldItem: "leftovers",
+      types: [TYPES.normal],
+      heldItem: ITEMS.leftovers,
     });
-    const move = createMove("trick", { type: "psychic", category: "status", power: 0 });
+    const move = TRICK;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -606,8 +567,8 @@ describe("Trick / Switcheroo", () => {
 
     expect(result.messages).toContain("But it failed!");
     // Items unchanged
-    expect(attacker.pokemon.heldItem).toBe("choice-scarf");
-    expect(defender.pokemon.heldItem).toBe("leftovers");
+    expect(attacker.pokemon.heldItem).toBe(ITEMS.choiceScarf);
+    expect(defender.pokemon.heldItem).toBe(ITEMS.leftovers);
   });
 });
 
@@ -621,20 +582,16 @@ describe("Doom Desire", () => {
     //   future attack targeting the opponent's side
     // Source: Bulbapedia — "Doom Desire deals damage 2 turns after it is used
     //   (3 end-of-turn ticks later). It is Steel-type with 120 base power in Gen 4."
-    const attacker = createActivePokemon({ types: ["steel"], nickname: "Jirachi" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("doom-desire", {
-      type: "steel",
-      category: "special",
-      power: 120,
-    });
+    const attacker = createActivePokemon({ types: [TYPES.steel], nickname: "Jirachi" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = DOOM_DESIRE;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.futureAttack).not.toBeNull();
-    expect(result.futureAttack!.moveId).toBe("doom-desire");
+    expect(result.futureAttack!.moveId).toBe(MOVES.doomDesire);
     expect(result.futureAttack!.turnsLeft).toBe(3);
     expect(result.messages).toContain("Jirachi chose Doom Desire as its destiny!");
   });
@@ -642,13 +599,9 @@ describe("Doom Desire", () => {
   it("given Doom Desire is used by side 0, then sourceSide is 0", () => {
     // Source: Showdown Gen 4 — sourceSide tracks which side used the future attack
     //   for damage calculation at hit time
-    const attacker = createActivePokemon({ types: ["steel"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("doom-desire", {
-      type: "steel",
-      category: "special",
-      power: 120,
-    });
+    const attacker = createActivePokemon({ types: [TYPES.steel] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = DOOM_DESIRE;
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
 
@@ -662,18 +615,14 @@ describe("Doom Desire", () => {
     //   is already set on the target's side
     // Source: Bulbapedia — "Doom Desire fails if a future attack is already pending
     //   for the target's position"
-    const attacker = createActivePokemon({ types: ["steel"], nickname: "Jirachi" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove("doom-desire", {
-      type: "steel",
-      category: "special",
-      power: 120,
-    });
+    const attacker = createActivePokemon({ types: [TYPES.steel], nickname: "Jirachi" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = DOOM_DESIRE;
     const rng = createMockRng(0);
     const state = createMinimalBattleState(attacker, defender);
     // Set an existing future attack on the target (side 1)
     state.sides[1].futureAttack = {
-      moveId: "future-sight",
+      moveId: MOVES.futureSight,
       turnsLeft: 2,
       damage: 100,
       sourceSide: 0,

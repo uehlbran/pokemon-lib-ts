@@ -1,4 +1,4 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_VOLATILE_IDS, type PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +6,7 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createEngine(overrides?: {
   seed?: number;
@@ -21,7 +22,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -38,7 +39,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -203,19 +204,16 @@ describe("BattleEngine — per-turn event history (#84)", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    expect(engine.state.turnHistory).toHaveLength(1);
     const turn1History = engine.state.turnHistory[0];
-    expect(turn1History).toBeDefined();
     const turn1Events = turn1History?.events ?? [];
-
-    // Capture how many total events existed after turn 1
-    const eventsAfterTurn1 = events.length;
 
     // Act — run turn 2
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    expect(engine.state.turnHistory).toHaveLength(2);
     const turn2History = engine.state.turnHistory[1];
-    expect(turn2History).toBeDefined();
     const turn2Events = turn2History?.events ?? [];
 
     // Assert — turn 1 events should NOT include turn 2 events
@@ -241,7 +239,7 @@ describe("BattleEngine — per-turn event history (#84)", () => {
     );
 
     // Turn 2's history should contain turn 2's turn-start event
-    expect(turn2TurnStartEvents.length).toBeGreaterThanOrEqual(1);
+    expect(turn2TurnStartEvents).toHaveLength(1);
     // Turn 2's history should NOT contain turn 1's turn-start event
     expect(turn1TurnStartInTurn2).toHaveLength(0);
 
@@ -253,9 +251,6 @@ describe("BattleEngine — per-turn event history (#84)", () => {
         (e as { turnNumber: number }).turnNumber === 2,
     );
     expect(turn2StartInTurn1).toHaveLength(0);
-
-    // Suppress unused variable warning
-    void eventsAfterTurn1;
   });
 
   it("given turn 1, when turn history entry is created, then its events count matches only turn 1 events not all 50", () => {
@@ -273,8 +268,8 @@ describe("BattleEngine — per-turn event history (#84)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert
+    expect(engine.state.turnHistory).toHaveLength(1);
     const turn1History = engine.state.turnHistory[0];
-    expect(turn1History).toBeDefined();
 
     // The events in turn 1 history should have the turn-start event for turn 1
     const turn1StartEvents = (turn1History?.events ?? []).filter(
@@ -307,7 +302,7 @@ describe("BattleEngine — turn history submitted actions (#868)", () => {
       throw new Error("No active pokemon on side 0");
     }
 
-    active.volatileStatuses.set("recharge", { turnsLeft: 1 });
+    active.volatileStatuses.set(CORE_VOLATILE_IDS.recharge, { turnsLeft: 1 });
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });

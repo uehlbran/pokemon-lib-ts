@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen6 -- Gen6Ruleset + complete Gen 6 data
 
 export { createGen6DataManager } from "./data/index.js";
+export * from "./data/reference-ids.js";
 export {
   applyGen6Ability,
   FRIEND_GUARD_DAMAGE_MULTIPLIER,

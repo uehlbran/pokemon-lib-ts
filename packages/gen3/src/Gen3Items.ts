@@ -8,6 +8,16 @@ const NO_ACTIVATION: ItemResult = {
   messages: [],
 };
 
+const GEN3_PINCH_BERRIES: Readonly<
+  Record<string, { stat: BattleStat; displayName: string; messageStat: string }>
+> = {
+  "liechi-berry": { stat: "attack", displayName: "Liechi Berry", messageStat: "Attack" },
+  "ganlon-berry": { stat: "defense", displayName: "Ganlon Berry", messageStat: "Defense" },
+  "salac-berry": { stat: "speed", displayName: "Salac Berry", messageStat: "Speed" },
+  "petaya-berry": { stat: "spAttack", displayName: "Petaya Berry", messageStat: "Sp. Atk" },
+  "apicot-berry": { stat: "spDefense", displayName: "Apicot Berry", messageStat: "Sp. Def" },
+};
+
 /**
  * Type-boosting items: map from item ID to the move type it boosts.
  * Each grants a 1.1x (10%) damage increase for moves of the matching type.
@@ -278,8 +288,10 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
   const pokemon = context.pokemon;
   const currentHp = pokemon.pokemon.currentHp;
+  const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
   const damage = context.damage ?? 0;
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+  const hpAfterDamage = currentHp - damage;
 
   switch (item) {
     // Focus Band: 10% chance to survive with 1 HP when damage would KO
@@ -303,8 +315,6 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Sitrus Berry: Also activates when HP drops to <= 50% after damage
     // Source: pret/pokeemerald — berry check after damage
     case "sitrus-berry": {
-      const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
-      const hpAfterDamage = currentHp - damage;
       if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp / 2)) {
         return {
           activated: true,
@@ -321,8 +331,6 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Oran Berry: Also activates when HP drops to <= 50% after damage
     // Source: pret/pokeemerald — berry check after damage
     case "oran-berry": {
-      const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
-      const hpAfterDamage = currentHp - damage;
       if (hpAfterDamage > 0 && hpAfterDamage <= Math.floor(maxHp / 2)) {
         return {
           activated: true,
@@ -335,6 +343,20 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       }
       return NO_ACTIVATION;
     }
+
+    // Pinch berries: raise a stat by one stage when HP drops to 25% or less.
+    // Source: Gen 3 item data (battle description) -- "Raises [stat] when at 1/4 max HP or less."
+    case "liechi-berry":
+    case "ganlon-berry":
+    case "salac-berry":
+    case "petaya-berry":
+    case "apicot-berry":
+      return activatePinchBerry(item, pokemonName, hpAfterDamage, maxHp);
+
+    // Lansat Berry: grants Focus Energy when HP drops to 25% or less.
+    // Source: packages/gen3/data/items.json -- "Holder gains the Focus Energy effect when at 1/4 max HP or less. Single use."
+    case "lansat-berry":
+      return activateLansatBerry(pokemon, pokemonName, hpAfterDamage, maxHp);
 
     default:
       return NO_ACTIVATION;
@@ -426,6 +448,8 @@ function checkEffectForFlinch(effect: NonNullable<MoveData["effect"]>): boolean 
  */
 function handleStatBoostBetweenTurns(item: string, context: ItemContext): ItemResult {
   const pokemon = context.pokemon;
+  const currentHp = pokemon.pokemon.currentHp;
+  const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
 
   switch (item) {
@@ -461,7 +485,62 @@ function handleStatBoostBetweenTurns(item: string, context: ItemContext): ItemRe
       return NO_ACTIVATION;
     }
 
+    // Pinch berries also activate off residual damage between turns once the holder is at or below 25%.
+    // Source: Gen 3 item descriptions in item data -- "when at 1/4 max HP or less."
+    case "liechi-berry":
+    case "ganlon-berry":
+    case "salac-berry":
+    case "petaya-berry":
+    case "apicot-berry":
+      return activatePinchBerry(item, pokemonName, currentHp, maxHp);
+
+    // Lansat Berry grants the Gen 3 Focus Energy volatile, which is +1 crit stage in this ruleset.
+    // Source: packages/gen3/data/items.json; pret/pokeemerald CalcCritChanceStage for Focus Energy stage bonus.
+    case "lansat-berry":
+      return activateLansatBerry(pokemon, pokemonName, currentHp, maxHp);
+
     default:
       return NO_ACTIVATION;
   }
+}
+
+function activatePinchBerry(
+  item: keyof typeof GEN3_PINCH_BERRIES,
+  pokemonName: string,
+  currentHp: number,
+  maxHp: number,
+): ItemResult {
+  const berry = GEN3_PINCH_BERRIES[item];
+  if (!berry) {
+    return NO_ACTIVATION;
+  }
+  if (currentHp <= 0 || currentHp > Math.floor(maxHp / 4)) {
+    return NO_ACTIVATION;
+  }
+  return {
+    activated: true,
+    effects: [
+      { type: "stat-boost", target: "self", value: berry.stat },
+      { type: "consume", target: "self", value: item },
+    ],
+    messages: [`${pokemonName}'s ${berry.displayName} raised its ${berry.messageStat}!`],
+  };
+}
+
+function activateLansatBerry(
+  pokemon: ItemContext["pokemon"],
+  pokemonName: string,
+  currentHp: number,
+  maxHp: number,
+): ItemResult {
+  if (currentHp <= 0 || currentHp > Math.floor(maxHp / 4)) {
+    return NO_ACTIVATION;
+  }
+
+  pokemon.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
+  return {
+    activated: true,
+    effects: [{ type: "consume", target: "self", value: "lansat-berry" }],
+    messages: [`${pokemonName}'s Lansat Berry raised its critical-hit ratio!`],
+  };
 }

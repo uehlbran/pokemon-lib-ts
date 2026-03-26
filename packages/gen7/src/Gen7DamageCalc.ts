@@ -141,7 +141,7 @@ const GEM_ITEMS: Readonly<Record<string, string>> = {
  *
  * Source: Showdown data/items.ts -- gem onBasePower: chainModify([5325, 4096]) in Gen 6+
  */
-const GEN7_GEM_MODIFIER = 5325; // 1.3x in 4096-based math
+export const GEN7_GEM_MODIFIER = 5325; // 1.3x in 4096-based math
 
 // ---- Pinch Ability Types ----
 

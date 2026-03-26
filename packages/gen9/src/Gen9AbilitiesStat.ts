@@ -4,6 +4,13 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
+import { CORE_TERRAIN_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  GEN9_ORICHALCUM_HADRON_MULTIPLIER,
+  GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
+  GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
+} from "./constants/mechanics.js";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 9 stat-boosting abilities: Protosynthesis, Quark Drive.
@@ -94,7 +101,9 @@ export function getHighestBaseStat(pokemon: ActivePokemon): BoostableStat {
  *   "return this.chainModify([5325, 4096])"
  */
 export function getBoostMultiplier(stat: BoostableStat): number {
-  return stat === "speed" ? 1.5 : 5325 / 4096;
+  return stat === "speed"
+    ? GEN9_STAT_ABILITY_SPEED_MULTIPLIER
+    : GEN9_STAT_ABILITY_STANDARD_MULTIPLIER;
 }
 
 /**
@@ -124,18 +133,18 @@ export function shouldProtosynthesisActivate(ctx: AbilityContext): {
   consumeBoosterEnergy: boolean;
 } {
   // Already active
-  if (ctx.pokemon.volatileStatuses.has("protosynthesis")) {
+  if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.protosynthesis)) {
     return { activate: false, consumeBoosterEnergy: false };
   }
 
   // Check Sun weather
   const weather = ctx.state.weather?.type;
-  if (weather === "sun" || weather === "harsh-sun") {
+  if (weather === CORE_WEATHER_IDS.sun || weather === CORE_WEATHER_IDS.harshSun) {
     return { activate: true, consumeBoosterEnergy: false };
   }
 
   // Check Booster Energy
-  if (ctx.pokemon.pokemon.heldItem === "booster-energy") {
+  if (ctx.pokemon.pokemon.heldItem === GEN9_ITEM_IDS.boosterEnergy) {
     return { activate: true, consumeBoosterEnergy: true };
   }
 
@@ -161,7 +170,7 @@ export function handleProtosynthesis(ctx: AbilityContext): AbilityResult {
       {
         effectType: "volatile-inflict",
         target: "self",
-        volatile: "protosynthesis",
+        volatile: CORE_VOLATILE_IDS.protosynthesis,
         data: { boostedStat, fromBoosterEnergy: consumeBoosterEnergy },
       },
     ];
@@ -194,17 +203,17 @@ export function shouldQuarkDriveActivate(ctx: AbilityContext): {
   consumeBoosterEnergy: boolean;
 } {
   // Already active
-  if (ctx.pokemon.volatileStatuses.has("quarkdrive")) {
+  if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.quarkDrive)) {
     return { activate: false, consumeBoosterEnergy: false };
   }
 
   // Check Electric Terrain
-  if (ctx.state.terrain?.type === "electric") {
+  if (ctx.state.terrain?.type === CORE_TERRAIN_IDS.electric) {
     return { activate: true, consumeBoosterEnergy: false };
   }
 
   // Check Booster Energy
-  if (ctx.pokemon.pokemon.heldItem === "booster-energy") {
+  if (ctx.pokemon.pokemon.heldItem === GEN9_ITEM_IDS.boosterEnergy) {
     return { activate: true, consumeBoosterEnergy: true };
   }
 
@@ -230,7 +239,7 @@ export function handleQuarkDrive(ctx: AbilityContext): AbilityResult {
       {
         effectType: "volatile-inflict",
         target: "self",
-        volatile: "quarkdrive",
+        volatile: CORE_VOLATILE_IDS.quarkDrive,
         data: { boostedStat, fromBoosterEnergy: consumeBoosterEnergy },
       },
     ];
@@ -260,8 +269,8 @@ export function handleQuarkDrive(ctx: AbilityContext): AbilityResult {
  * @returns 5461/4096 (~1.333x) if in Sun, 1 otherwise
  */
 export function getOrichalcumPulseMultiplier(weatherType: string | undefined): number {
-  if (weatherType === "sun" || weatherType === "harsh-sun") {
-    return 5461 / 4096;
+  if (weatherType === CORE_WEATHER_IDS.sun || weatherType === CORE_WEATHER_IDS.harshSun) {
+    return GEN9_ORICHALCUM_HADRON_MULTIPLIER;
   }
   return 1;
 }
@@ -279,8 +288,8 @@ export function getOrichalcumPulseMultiplier(weatherType: string | undefined): n
  * @returns 5461/4096 (~1.333x) if on Electric Terrain, 1 otherwise
  */
 export function getHadronEngineMultiplier(terrainType: string | undefined): number {
-  if (terrainType === "electric") {
-    return 5461 / 4096;
+  if (terrainType === CORE_TERRAIN_IDS.electric) {
+    return GEN9_ORICHALCUM_HADRON_MULTIPLIER;
   }
   return 1;
 }
@@ -296,9 +305,9 @@ export function handleGen9StatAbility(ctx: AbilityContext): AbilityResult {
   const abilityId = ctx.pokemon.ability;
 
   switch (abilityId) {
-    case "protosynthesis":
+    case GEN9_ABILITY_IDS.protosynthesis:
       return handleProtosynthesis(ctx);
-    case "quark-drive":
+    case GEN9_ABILITY_IDS.quarkDrive:
       return handleQuarkDrive(ctx);
     default:
       return INACTIVE;

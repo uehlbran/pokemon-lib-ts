@@ -1,5 +1,17 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { PokemonInstance, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -10,83 +22,81 @@ import {
   getDynamaxMaxHp,
   getUndynamaxedHp,
 } from "../src/Gen8Dynamax.js";
+import { createGen8DataManager, GEN8_MOVE_IDS, GEN8_SPECIES_IDS } from "../src/index.js";
 
 // --- Test Helpers ---
 
-function createMockPokemon(overrides: Partial<PokemonInstance> = {}): PokemonInstance {
-  return {
-    uid: "test-pokemon-1",
-    speciesId: 25, // Pikachu
-    nickname: null,
-    level: 50,
-    experience: 0,
-    nature: "adamant",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 200,
-    moves: [],
-    ability: "static",
-    abilitySlot: "normal1",
-    heldItem: null,
-    status: null,
-    friendship: 70,
-    gender: "male",
+const dataManager = createGen8DataManager();
+const DEFAULT_TEST_UID = "test-pokemon-1";
+const DEFAULT_SPECIES = dataManager.getSpecies(GEN8_SPECIES_IDS.pikachu);
+const DEFAULT_NATURE_ID = dataManager.getNature(CORE_NATURE_IDS.adamant).id;
+const FLAMETHROWER_MOVE = dataManager.getMove(GEN8_MOVE_IDS.flamethrower);
+const TOXIC_MOVE = dataManager.getMove(GEN8_MOVE_IDS.toxic);
+
+function createGen8PokemonInstance(
+  overrides: {
+    uid?: string;
+    speciesId?: number;
+    nickname?: string | null;
+    level?: number;
+    currentHp?: number;
+    heldItem?: string | null;
+    ability?: string;
+    status?: PokemonInstance["status"];
+    friendship?: number;
+    gender?: PokemonInstance["gender"];
+    calculatedStats?: StatBlock;
+    dynamaxLevel?: number;
+  } = {},
+): PokemonInstance {
+  const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(8), {
+    nature: DEFAULT_NATURE_ID,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: overrides.gender ?? CORE_GENDERS.male,
+    heldItem: overrides.heldItem ?? null,
+    friendship: createFriendship(overrides.friendship ?? species.baseFriendship),
+    moves: [GEN8_MOVE_IDS.tackle],
     isShiny: false,
     metLocation: "test",
-    metLevel: 1,
-    originalTrainer: "Ash",
-    originalTrainerId: 12345,
-    pokeball: "poke-ball",
-    calculatedStats: { hp: 300, attack: 100, defense: 80, spAttack: 90, spDefense: 70, speed: 110 },
-    dynamaxLevel: 10,
-    ...overrides,
-  } as PokemonInstance;
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    dynamaxLevel: overrides.dynamaxLevel ?? 10,
+  });
+
+  pokemon.uid = overrides.uid ?? DEFAULT_TEST_UID;
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? 200;
+  pokemon.ability = overrides.ability ?? pokemon.ability;
+  pokemon.status = overrides.status ?? null;
+  pokemon.calculatedStats = overrides.calculatedStats ?? {
+    hp: 300,
+    attack: 100,
+    defense: 80,
+    spAttack: 90,
+    spDefense: 70,
+    speed: 110,
+  };
+
+  return pokemon;
 }
 
-function createMockActive(
-  pokemonOverrides: Partial<PokemonInstance> = {},
+function createGen8OnFieldPokemon(
+  pokemonOverrides: Parameters<typeof createGen8PokemonInstance>[0] = {},
   activeOverrides: Partial<ActivePokemon> = {},
 ): ActivePokemon {
+  const pokemon = createGen8PokemonInstance(pokemonOverrides);
+  const species = dataManager.getSpecies(pokemon.speciesId);
   return {
-    pokemon: createMockPokemon(pokemonOverrides),
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: ["electric"],
-    ability: "static",
-    suppressedAbility: null,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
+    ...createOnFieldPokemon(pokemon, 0, [...species.types]),
     ...activeOverrides,
   } as ActivePokemon;
 }
 
-function createMockSide(overrides: Partial<BattleSide> = {}): BattleSide {
+function createBattleSide(overrides: Partial<BattleSide> = {}): BattleSide {
   return {
     index: 0,
     trainer: null,
@@ -104,14 +114,14 @@ function createMockSide(overrides: Partial<BattleSide> = {}): BattleSide {
   } as BattleSide;
 }
 
-function createMockState(
+function createBattleState(
   side0Active: ActivePokemon | null = null,
   side1Active: ActivePokemon | null = null,
 ): BattleState {
   return {
     sides: [
-      createMockSide({ active: side0Active ? [side0Active] : [] }),
-      createMockSide({ index: 1, active: side1Active ? [side1Active] : [] }),
+      createBattleSide({ active: side0Active ? [side0Active] : [] }),
+      createBattleSide({ index: 1, active: side1Active ? [side1Active] : [] }),
     ],
     weather: null,
     terrain: null,
@@ -131,9 +141,17 @@ describe("Gen8Dynamax", () => {
 
     it("given DYNAMAX_IMMUNE_SPECIES, when checking contents, then includes zacian, zamazenta, eternatus", () => {
       // Source: Bulbapedia "Dynamax" -- these three species cannot Dynamax
-      expect(DYNAMAX_IMMUNE_SPECIES).toContain("zacian");
-      expect(DYNAMAX_IMMUNE_SPECIES).toContain("zamazenta");
-      expect(DYNAMAX_IMMUNE_SPECIES).toContain("eternatus");
+      const zacian = dataManager.getSpecies(GEN8_SPECIES_IDS.zacian).displayName.toLowerCase();
+      const zamazenta = dataManager
+        .getSpecies(GEN8_SPECIES_IDS.zamazenta)
+        .displayName.toLowerCase();
+      const eternatus = dataManager
+        .getSpecies(GEN8_SPECIES_IDS.eternatus)
+        .displayName.toLowerCase();
+
+      expect(DYNAMAX_IMMUNE_SPECIES).toContain(zacian);
+      expect(DYNAMAX_IMMUNE_SPECIES).toContain(zamazenta);
+      expect(DYNAMAX_IMMUNE_SPECIES).toContain(eternatus);
       expect(DYNAMAX_IMMUNE_SPECIES.length).toBe(3);
     });
   });
@@ -196,7 +214,7 @@ describe("Gen8Dynamax", () => {
     });
 
     it("given currentHp=600, maxHp=600, baseMaxHp=300, when reverting at full HP, then returns 300", () => {
-      // Inline derivation: round(600 * 300 / 600) = round(300) = 300
+      // Source: Showdown data/conditions.ts lines 801-802 -- round(600 * 300 / 600) = 300
       const result = getUndynamaxedHp(600, 600, 300);
       expect(result).toBe(300);
     });
@@ -208,7 +226,7 @@ describe("Gen8Dynamax", () => {
     });
 
     it("given currentHp=301, maxHp=600, baseMaxHp=300, when reverting with odd ratio, then rounds correctly", () => {
-      // Inline derivation: round(301 * 300 / 600) = round(150.5) = 151 (round rounds up at .5)
+      // Source: Showdown data/conditions.ts lines 801-802 -- round(301 * 300 / 600) = 151
       const result = getUndynamaxedHp(301, 600, 300);
       expect(result).toBe(151);
     });
@@ -223,9 +241,9 @@ describe("Gen8Dynamax", () => {
     it("given pokemon not dynamaxed and side has not used gimmick, when checking canUse, then returns true", () => {
       // Source: Showdown data/conditions.ts -- basic Dynamax eligibility
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive();
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon();
+      const side = createBattleSide();
+      const state = createBattleState();
 
       expect(dynamax.canUse(pokemon, side, state)).toBe(true);
     });
@@ -233,9 +251,9 @@ describe("Gen8Dynamax", () => {
     it("given pokemon already isDynamaxed, when checking canUse, then returns false", () => {
       // Source: Showdown -- cannot Dynamax if already Dynamaxed
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({}, { isDynamaxed: true });
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon({}, { isDynamaxed: true });
+      const side = createBattleSide();
+      const state = createBattleState();
 
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
@@ -243,39 +261,39 @@ describe("Gen8Dynamax", () => {
     it("given side.gimmickUsed is true, when checking canUse, then returns false", () => {
       // Source: Showdown -- one gimmick per side per battle
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive();
-      const side = createMockSide({ gimmickUsed: true });
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon();
+      const side = createBattleSide({ gimmickUsed: true });
+      const state = createBattleState();
 
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
-    it("given Zacian (speciesId 888), when checking canUse, then returns false", () => {
-      // Source: Bulbapedia "Dynamax" -- Zacian (#888) cannot Dynamax
+    it("given Zacian, when checking canUse, then returns false", () => {
+      // Source: Bulbapedia "Dynamax" -- Zacian cannot Dynamax
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ speciesId: 888 });
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon({ speciesId: GEN8_SPECIES_IDS.zacian });
+      const side = createBattleSide();
+      const state = createBattleState();
 
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
-    it("given Zamazenta (speciesId 889), when checking canUse, then returns false", () => {
-      // Source: Bulbapedia "Dynamax" -- Zamazenta (#889) cannot Dynamax
+    it("given Zamazenta, when checking canUse, then returns false", () => {
+      // Source: Bulbapedia "Dynamax" -- Zamazenta cannot Dynamax
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ speciesId: 889 });
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon({ speciesId: GEN8_SPECIES_IDS.zamazenta });
+      const side = createBattleSide();
+      const state = createBattleState();
 
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
-    it("given Eternatus (speciesId 890), when checking canUse, then returns false", () => {
-      // Source: Bulbapedia "Dynamax" -- Eternatus (#890) cannot Dynamax
+    it("given Eternatus, when checking canUse, then returns false", () => {
+      // Source: Bulbapedia "Dynamax" -- Eternatus cannot Dynamax
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ speciesId: 890 });
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon({ speciesId: GEN8_SPECIES_IDS.eternatus });
+      const side = createBattleSide();
+      const state = createBattleState();
 
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
@@ -285,9 +303,9 @@ describe("Gen8Dynamax", () => {
     it("given a normal pokemon with dynamaxLevel=10, when activating, then sets isDynamaxed=true and dynamaxTurnsLeft=3", () => {
       // Source: Showdown data/conditions.ts -- Dynamax state on activation
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive();
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon();
+      const side = createBattleSide();
+      const state = createBattleState();
 
       dynamax.activate(pokemon, side, state);
 
@@ -299,9 +317,9 @@ describe("Gen8Dynamax", () => {
       // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0
       // floor(300 * 2.0) = 600
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ currentHp: 300, dynamaxLevel: 10 });
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon({ currentHp: 300, dynamaxLevel: 10 });
+      const side = createBattleSide();
+      const state = createBattleState();
 
       dynamax.activate(pokemon, side, state);
 
@@ -313,9 +331,9 @@ describe("Gen8Dynamax", () => {
       // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 0: ratio = 1.5
       // maxHp: floor(300 * 1.5) = 450, currentHp: floor(200 * 1.5) = 300
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ currentHp: 200, dynamaxLevel: 0 });
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon({ currentHp: 200, dynamaxLevel: 0 });
+      const side = createBattleSide();
+      const state = createBattleState();
 
       dynamax.activate(pokemon, side, state);
 
@@ -326,9 +344,9 @@ describe("Gen8Dynamax", () => {
     it("given activation, when checking side state, then side.gimmickUsed is true", () => {
       // Source: Showdown -- gimmickUsed set on activation
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive();
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon();
+      const side = createBattleSide();
+      const state = createBattleState();
 
       dynamax.activate(pokemon, side, state);
 
@@ -338,9 +356,9 @@ describe("Gen8Dynamax", () => {
     it("given activation, when checking events, then returns DynamaxEvent with correct data", () => {
       // Source: BattleEvent interface -- dynamax event
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive();
-      const side = createMockSide();
-      const state = createMockState();
+      const pokemon = createGen8OnFieldPokemon();
+      const side = createBattleSide();
+      const state = createBattleState();
 
       const events = dynamax.activate(pokemon, side, state);
 
@@ -348,7 +366,7 @@ describe("Gen8Dynamax", () => {
       expect(events[0]).toEqual({
         type: "dynamax",
         side: 0,
-        pokemon: "test-pokemon-1",
+        pokemon: DEFAULT_TEST_UID,
       });
     });
   });
@@ -357,9 +375,9 @@ describe("Gen8Dynamax", () => {
     it("given dynamaxed pokemon, when reverting, then sets isDynamaxed=false and dynamaxTurnsLeft=0", () => {
       // Source: Showdown data/conditions.ts -- Dynamax end
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ dynamaxLevel: 10 });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const pokemon = createGen8OnFieldPokemon({ dynamaxLevel: 10 });
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       // First activate
       dynamax.activate(pokemon, side, state);
@@ -376,9 +394,9 @@ describe("Gen8Dynamax", () => {
       // Activate: maxHp 300 -> 600, currentHp 300 -> 600
       // Revert: currentHp 600 * (300/600) = 300
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ currentHp: 300, dynamaxLevel: 10 });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const pokemon = createGen8OnFieldPokemon({ currentHp: 300, dynamaxLevel: 10 });
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(600);
@@ -395,9 +413,9 @@ describe("Gen8Dynamax", () => {
       // Take 300 damage -> currentHp = 300 out of 600
       // Revert: round(300 * 300 / 600) = round(150) = 150
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ currentHp: 300, dynamaxLevel: 10 });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const pokemon = createGen8OnFieldPokemon({ currentHp: 300, dynamaxLevel: 10 });
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       // Simulate damage
@@ -410,8 +428,8 @@ describe("Gen8Dynamax", () => {
 
     it("given non-dynamaxed pokemon, when reverting, then returns empty events", () => {
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive();
-      const state = createMockState(pokemon, null);
+      const pokemon = createGen8OnFieldPokemon();
+      const state = createBattleState(pokemon, null);
 
       const events = dynamax.revert(pokemon, state);
       expect(events).toHaveLength(0);
@@ -420,9 +438,9 @@ describe("Gen8Dynamax", () => {
     it("given revert, when checking events, then returns DynamaxEndEvent", () => {
       // Source: BattleEvent interface -- dynamax-end event
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ dynamaxLevel: 10 });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const pokemon = createGen8OnFieldPokemon({ dynamaxLevel: 10 });
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
@@ -436,9 +454,9 @@ describe("Gen8Dynamax", () => {
     it("given dynamaxed pokemon on side 0, when reverting, then emits event with side: 0", () => {
       // Source: BattleState.sides[n].active maps ActivePokemon to side index
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ dynamaxLevel: 10 });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const pokemon = createGen8OnFieldPokemon({ dynamaxLevel: 10 });
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
@@ -447,7 +465,7 @@ describe("Gen8Dynamax", () => {
       expect(events[0]).toEqual({
         type: "dynamax-end",
         side: 0,
-        pokemon: "test-pokemon-1",
+        pokemon: DEFAULT_TEST_UID,
       });
     });
 
@@ -455,9 +473,9 @@ describe("Gen8Dynamax", () => {
       // Bug M1: Previously hardcoded side: 0, which was wrong for opponent-side pokemon
       // Source: BattleState.sides[n].active maps ActivePokemon to side index
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ uid: "opponent-pokemon-1", dynamaxLevel: 10 }, {});
-      const side = createMockSide({ index: 1, active: [pokemon] });
-      const state = createMockState(null, pokemon);
+      const pokemon = createGen8OnFieldPokemon({ uid: "opponent-pokemon-1", dynamaxLevel: 10 }, {});
+      const side = createBattleSide({ index: 1, active: [pokemon] });
+      const state = createBattleState(null, pokemon);
 
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
@@ -475,9 +493,9 @@ describe("Gen8Dynamax", () => {
       // throw an error to surface the corrupted state immediately.
       // Source: Showdown -- BattleState always has the Dynamaxed pokemon in an active slot
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({ uid: "orphan-pokemon", dynamaxLevel: 10 });
-      const side = createMockSide();
-      const state = createMockState(); // No active pokemon in either side
+      const pokemon = createGen8OnFieldPokemon({ uid: "orphan-pokemon", dynamaxLevel: 10 });
+      const side = createBattleSide();
+      const state = createBattleState(); // No active pokemon in either side
 
       dynamax.activate(pokemon, side, state);
       expect(() => dynamax.revert(pokemon, state)).toThrow(
@@ -492,7 +510,7 @@ describe("Gen8Dynamax", () => {
       // Inline: activate: maxHp = floor(100 * 2.0) = 200, currentHp = floor(100 * 2.0) = 200
       // revert: baseMaxHp = stored 100 (not round(200/2.0) = 100), restoredHp = round(200*100/200) = 100
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({
+      const pokemon = createGen8OnFieldPokemon({
         currentHp: 100,
         dynamaxLevel: 10,
         calculatedStats: {
@@ -504,8 +522,8 @@ describe("Gen8Dynamax", () => {
           speed: 110,
         },
       });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(200);
@@ -523,7 +541,7 @@ describe("Gen8Dynamax", () => {
       // Old buggy revert: baseMaxHp = round(253 / 1.85) = round(136.756...) = 137 (happens to be correct here)
       // New revert: baseMaxHp = stored 137 (always exact)
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({
+      const pokemon = createGen8OnFieldPokemon({
         currentHp: 137,
         dynamaxLevel: 7,
         calculatedStats: {
@@ -535,8 +553,8 @@ describe("Gen8Dynamax", () => {
           speed: 110,
         },
       });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(253); // floor(137 * 1.85)
@@ -553,7 +571,7 @@ describe("Gen8Dynamax", () => {
       // But floor(currentHp * baseMaxHp / maxHp) = round(232 * 141 / 232) = round(141) = 141
       // With stored baseMaxHp we always get exactly 141.
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({
+      const pokemon = createGen8OnFieldPokemon({
         currentHp: 141,
         dynamaxLevel: 3,
         calculatedStats: {
@@ -565,8 +583,8 @@ describe("Gen8Dynamax", () => {
           speed: 110,
         },
       });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(232); // floor(141 * 1.65)
@@ -584,7 +602,7 @@ describe("Gen8Dynamax", () => {
       // Take 100 damage -> currentHp = 211
       // Revert: baseMaxHp = stored 201, restoredHp = round(211 * 201 / 311) = round(136.37...) = 136
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({
+      const pokemon = createGen8OnFieldPokemon({
         currentHp: 201,
         dynamaxLevel: 1,
         calculatedStats: {
@@ -596,8 +614,8 @@ describe("Gen8Dynamax", () => {
           speed: 110,
         },
       });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(311); // floor(201 * 1.55)
@@ -614,7 +632,7 @@ describe("Gen8Dynamax", () => {
     it("given revert clears preDynamaxMaxHp field, when checking after revert, then field is undefined", () => {
       // Ensures the stored value is cleaned up after revert
       const dynamax = new Gen8Dynamax();
-      const pokemon = createMockActive({
+      const pokemon = createGen8OnFieldPokemon({
         currentHp: 100,
         dynamaxLevel: 10,
         calculatedStats: {
@@ -626,8 +644,8 @@ describe("Gen8Dynamax", () => {
           speed: 110,
         },
       });
-      const side = createMockSide({ active: [pokemon] });
-      const state = createMockState(pokemon, null);
+      const side = createBattleSide({ active: [pokemon] });
+      const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
       expect(pokemon.preDynamaxMaxHp).toBe(100);
@@ -640,51 +658,17 @@ describe("Gen8Dynamax", () => {
   describe("Gen8Dynamax.modifyMove", () => {
     const dynamax = new Gen8Dynamax();
 
-    const baseMove = {
-      id: "flamethrower",
-      displayName: "Flamethrower",
-      type: "fire" as const,
-      category: "special" as const,
-      power: 90,
-      accuracy: 100,
-      pp: 15,
-      priority: 0,
-      target: "adjacent-foe" as const,
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: true,
-        mirror: true,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-      effect: null,
-      description: "test",
-      generation: 1 as const,
-    };
-
     it("given non-dynamaxed pokemon, when modifying move, then returns move unchanged", () => {
-      const pokemon = createMockActive();
-      const result = dynamax.modifyMove(baseMove, pokemon);
-      expect(result).toBe(baseMove); // Same reference
+      const pokemon = createGen8OnFieldPokemon();
+      const result = dynamax.modifyMove(FLAMETHROWER_MOVE, pokemon);
+      expect(result).toBe(FLAMETHROWER_MOVE); // Same reference
     });
 
     it("given dynamaxed pokemon with damage move, when modifying, then converts to Max Move with scaled power", () => {
       // Source: Showdown sim/battle-actions.ts -- damage moves become Max Moves
       // Fire + BP 90 -> Max Flare with BP 125 (standard table: 85-90 -> 125)
-      const pokemon = createMockActive({}, { isDynamaxed: true });
-      const result = dynamax.modifyMove(baseMove, pokemon);
+      const pokemon = createGen8OnFieldPokemon({}, { isDynamaxed: true });
+      const result = dynamax.modifyMove(FLAMETHROWER_MOVE, pokemon);
 
       expect(result.displayName).toBe("Max Flare");
       expect(result.power).toBe(125);
@@ -693,14 +677,8 @@ describe("Gen8Dynamax", () => {
 
     it("given dynamaxed pokemon with status move, when modifying, then converts to Max Guard", () => {
       // Source: Showdown sim/battle-actions.ts -- status moves become Max Guard
-      const statusMove = {
-        ...baseMove,
-        id: "toxic",
-        displayName: "Toxic",
-        category: "status" as const,
-        power: null,
-      };
-      const pokemon = createMockActive({}, { isDynamaxed: true });
+      const pokemon = createGen8OnFieldPokemon({}, { isDynamaxed: true });
+      const statusMove = TOXIC_MOVE;
       const result = dynamax.modifyMove(statusMove, pokemon);
 
       expect(result.displayName).toBe("Max Guard");

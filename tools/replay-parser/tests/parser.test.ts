@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CORE_MOVE_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN1_MOVE_IDS } from "@pokemon-lib-ts/gen1";
 import { describe, expect, it } from "vitest";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -111,12 +113,12 @@ describe("parseHp", () => {
 // normalizeMoveName
 // ---------------------------------------------------------------------------
 describe("normalizeMoveName", () => {
-  it("given 'Thunder Wave', when normalized, then returns 'thunder-wave'", () => {
+  it(`given 'Thunder Wave', when normalized, then returns '${GEN1_MOVE_IDS.thunderWave}'`, () => {
     // Arrange / Act
     const result = normalizeMoveName("Thunder Wave");
 
     // Assert
-    expect(result).toBe("thunder-wave");
+    expect(result).toBe(GEN1_MOVE_IDS.thunderWave);
   });
 
   it("given 'SolarBeam', when normalized, then converts CamelCase to kebab-case", () => {
@@ -124,23 +126,23 @@ describe("normalizeMoveName", () => {
     const result = normalizeMoveName("SolarBeam");
 
     // Assert
-    expect(result).toBe("solar-beam");
+    expect(result).toBe(CORE_MOVE_IDS.solarBeam);
   });
 
-  it("given 'Hyper Beam', when normalized, then returns 'hyper-beam'", () => {
+  it(`given 'Hyper Beam', when normalized, then returns '${GEN1_MOVE_IDS.hyperBeam}'`, () => {
     // Arrange / Act
     const result = normalizeMoveName("Hyper Beam");
 
     // Assert
-    expect(result).toBe("hyper-beam");
+    expect(result).toBe(GEN1_MOVE_IDS.hyperBeam);
   });
 
-  it("given 'Swords Dance', when normalized, then returns 'swords-dance'", () => {
+  it(`given 'Swords Dance', when normalized, then returns '${CORE_MOVE_IDS.swordsDance}'`, () => {
     // Arrange / Act
     const result = normalizeMoveName("Swords Dance");
 
     // Assert
-    expect(result).toBe("swords-dance");
+    expect(result).toBe(CORE_MOVE_IDS.swordsDance);
   });
 });
 
@@ -177,7 +179,7 @@ describe("parseLine", () => {
     const ev = result as Extract<ShowdownEvent, { type: "move" }>;
     expect(ev.userIdent).toEqual({ side: 0, position: "a", nickname: "Jolteon" });
     expect(ev.moveName).toBe("Thunder Wave");
-    expect(ev.moveId).toBe("thunder-wave");
+    expect(ev.moveId).toBe(GEN1_MOVE_IDS.thunderWave);
     expect(ev.targetIdent).toEqual({ side: 1, position: "a", nickname: "Rhydon" });
   });
 
@@ -267,7 +269,7 @@ describe("parseLine", () => {
     expect(result?.type).toBe("status");
     const ev = result as Extract<ShowdownEvent, { type: "status" }>;
     expect(ev.statusId).toBe("par");
-    expect(ev.statusName).toBe("paralysis");
+    expect(ev.statusName).toBe(CORE_STATUS_IDS.paralysis);
   });
 
   it("given faint line, when parsed, then returns FaintEvent", () => {
@@ -338,26 +340,26 @@ describe("parseLine", () => {
     expect(ev.amount).toBe(1);
   });
 
-  it("given |raw| line, when parsed, then returns null (skipped)", () => {
+  it("given parser-skipped metadata lines, when parsed, then each returns null and no event shape leaks through", () => {
     // Arrange
-    const line = "|raw|some html content";
+    const skippedLines = [
+      "|raw|some html content",
+      "|j|☆SomePlayer",
+      "|start",
+      "|tier|[Gen 1] OU",
+      "|gen|1",
+      "|player|p1|PlayerOne|1",
+    ];
 
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
-  it("given |j| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|j|☆SomePlayer";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
+    // Act / Assert
+    expect(skippedLines.map((line) => parseLine(line))).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   it("given unknown line type, when parsed, then returns UnknownEvent", () => {
@@ -475,7 +477,7 @@ describe("parseLine", () => {
     // Assert
     expect(result?.type).toBe("start");
     const ev = result as Extract<ShowdownEvent, { type: "start" }>;
-    expect(ev.effect).toBe("confusion");
+    expect(ev.effect).toBe(CORE_VOLATILE_IDS.confusion);
   });
 
   it("given -end line, when parsed, then returns EndEvent", () => {
@@ -488,18 +490,7 @@ describe("parseLine", () => {
     // Assert
     expect(result?.type).toBe("end");
     const ev = result as Extract<ShowdownEvent, { type: "end" }>;
-    expect(ev.effect).toBe("confusion");
-  });
-
-  it("given |start| (battle start, no ident) line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|start";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
+    expect(ev.effect).toBe(CORE_VOLATILE_IDS.confusion);
   });
 
   it("given damage line with [from] annotation, when parsed, then from field is set", () => {
@@ -540,45 +531,15 @@ describe("parseLine", () => {
     const ev = result as Extract<ShowdownEvent, { type: "switch" }>;
     expect(ev.species).toBe("Starmie");
   });
-
-  it("given |tier| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|tier|[Gen 1] OU";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
-  it("given |gen| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|gen|1";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
-
-  it("given |player| line, when parsed, then returns null (skipped)", () => {
-    // Arrange
-    const line = "|player|p1|PlayerOne|1";
-
-    // Act
-    const result = parseLine(line);
-
-    // Assert
-    expect(result).toBeNull();
-  });
 });
 
 // ---------------------------------------------------------------------------
 // parseReplay
 // ---------------------------------------------------------------------------
 describe("parseReplay", () => {
+  // The `minimalLog` fixture contains one pre-battle switch bucket plus turns 1 and 2.
+  const expectedMinimalTurnCount = 3;
+
   const minimalLog = [
     "|gen|1",
     "|tier|[Gen 1] OU",
@@ -615,7 +576,8 @@ describe("parseReplay", () => {
 
     // Assert
     // Turn 0 holds pre-battle switch events; turns 1 and 2 are battle turns
-    expect(result.turns.length).toBe(3);
+    expect(result.turns.map((turn) => turn.turnNumber)).toEqual([0, 1, 2]);
+    expect(result.turns.length).toBe(expectedMinimalTurnCount);
     const turn1 = result.turns.find((t) => t.turnNumber === 1);
     const turn2 = result.turns.find((t) => t.turnNumber === 2);
     expect(turn1).toBeDefined();
@@ -629,6 +591,9 @@ describe("parseReplay", () => {
     const result = parseReplay(minimalLog);
 
     // Assert
+    // Source: the switch lines in `minimalLog` explicitly declare `L50` for both lead Pokemon.
+    expect(result.teams[0]).toHaveLength(1);
+    expect(result.teams[1]).toHaveLength(1);
     expect(result.teams[0].length).toBeGreaterThan(0);
     expect(result.teams[0][0].species).toBe("Charizard");
     expect(result.teams[0][0].level).toBe(50);
@@ -642,9 +607,9 @@ describe("parseReplay", () => {
 
     // Assert
     const charizard = result.teams[0].find((p) => p.species === "Charizard");
-    expect(charizard?.knownMoves).toContain("flamethrower");
+    expect(charizard?.knownMoves).toContain(CORE_MOVE_IDS.flamethrower);
     const rhydon = result.teams[1].find((p) => p.species === "Rhydon");
-    expect(rhydon?.knownMoves).toContain("horn-drill");
+    expect(rhydon?.knownMoves).toContain(GEN1_MOVE_IDS.hornDrill);
   });
 
   it("given log with win event, then winner is set", () => {
@@ -672,6 +637,7 @@ describe("parseReplay", () => {
 
     // Assert
     expect(result.winner).toBeNull();
+    expect(result.turns.map((turn) => turn.turnNumber)).toEqual([1]);
   });
 
   it("given log without win or tie, then winner is null", () => {
@@ -690,6 +656,7 @@ describe("parseReplay", () => {
 
     // Assert
     expect(result.winner).toBeNull();
+    expect(result.turns.map((turn) => turn.turnNumber)).toEqual([1]);
   });
 
   it("given log with multiple switches of same pokemon, then no duplicate team entries", () => {

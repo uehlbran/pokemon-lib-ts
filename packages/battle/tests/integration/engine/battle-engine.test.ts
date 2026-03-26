@@ -1,4 +1,12 @@
-import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_GENDERS,
+  CORE_HAZARD_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  type DataManager,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -7,6 +15,13 @@ import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state"
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+
+const { stickyWeb } = CORE_HAZARD_IDS;
+const { confusion, struggle, tackle } = CORE_MOVE_IDS;
+const { burn, poison } = CORE_STATUS_IDS;
+const { substitute } = CORE_VOLATILE_IDS;
+const { male } = CORE_GENDERS;
 
 class TrappedSwitchRuleset extends MockRuleset {
   override canSwitch(): boolean {
@@ -29,7 +44,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -46,7 +61,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -80,7 +95,7 @@ function createVoluntarySelfSwitchScenario(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -101,7 +116,7 @@ function createVoluntarySelfSwitchScenario(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -139,14 +154,11 @@ describe("BattleEngine", () => {
 
       // Assert
       const startEvent = events.find((e) => e.type === "battle-start");
-      expect(startEvent).toBeDefined();
-      expect(startEvent).toEqual(
-        expect.objectContaining({
-          type: "battle-start",
-          format: "singles",
-          generation: 1,
-        }),
-      );
+      expect(startEvent).toEqual({
+        type: "battle-start",
+        format: "singles",
+        generation: 1,
+      });
     });
 
     it("given a new battle, when start is called, then switch-in events are emitted for both sides", () => {
@@ -158,9 +170,38 @@ describe("BattleEngine", () => {
 
       // Assert
       const switchIns = events.filter((e) => e.type === "switch-in");
-      expect(switchIns).toHaveLength(2);
-      expect(switchIns[0]?.type).toBe("switch-in");
-      expect(switchIns[1]?.type).toBe("switch-in");
+      expect(switchIns).toEqual([
+        {
+          type: "switch-in",
+          side: 0,
+          slot: 0,
+          pokemon: {
+            speciesId: 6,
+            nickname: "Charizard",
+            level: 50,
+            currentHp: 153,
+            maxHp: 153,
+            status: null,
+            gender: male,
+            isShiny: false,
+          },
+        },
+        {
+          type: "switch-in",
+          side: 1,
+          slot: 0,
+          pokemon: {
+            speciesId: 9,
+            nickname: "Blastoise",
+            level: 50,
+            currentHp: 154,
+            maxHp: 154,
+            status: null,
+            gender: male,
+            isShiny: false,
+          },
+        },
+      ]);
     });
 
     it("given a new battle, when start is called, then active pokemon are set for both sides", () => {
@@ -171,8 +212,9 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Assert
-      expect(engine.state.sides[0].active[0]).not.toBeNull();
-      expect(engine.state.sides[1].active[0]).not.toBeNull();
+      // Source: createTestEngine() defaults the active pair to Charizard (#6) and Blastoise (#9).
+      expect(engine.state.sides[0].active[0]?.pokemon.speciesId).toBe(6);
+      expect(engine.state.sides[1].active[0]?.pokemon.speciesId).toBe(9);
     });
 
     it("given a battle already started, when start is called again, then it throws an error", () => {
@@ -222,7 +264,26 @@ describe("BattleEngine", () => {
 
       // Assert
       const damageEvents = events.filter((e) => e.type === "damage");
-      expect(damageEvents.length).toBeGreaterThan(0);
+      expect(damageEvents).toEqual([
+        {
+          type: "damage",
+          side: 1,
+          pokemon: "Blastoise",
+          amount: 10,
+          currentHp: 144,
+          maxHp: 154,
+          source: tackle,
+        },
+        {
+          type: "damage",
+          side: 0,
+          pokemon: "Charizard",
+          amount: 10,
+          currentHp: 143,
+          maxHp: 153,
+          source: tackle,
+        },
+      ]);
     });
 
     it("given both sides submit moves, when turn resolves, then event pokemon fields use display names instead of uids", () => {
@@ -310,7 +371,7 @@ describe("BattleEngine", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -324,7 +385,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -355,7 +416,20 @@ describe("BattleEngine", () => {
 
       // Assert
       const moveStarts = events.filter((e) => e.type === "move-start");
-      expect(moveStarts).toHaveLength(2);
+      expect(moveStarts).toEqual([
+        {
+          type: "move-start",
+          side: 0,
+          pokemon: "Charizard",
+          move: tackle,
+        },
+        {
+          type: "move-start",
+          side: 1,
+          pokemon: "Blastoise",
+          move: tackle,
+        },
+      ]);
     });
 
     it("given both sides submit moves, when turn resolves, then turn-start event is emitted", () => {
@@ -369,10 +443,10 @@ describe("BattleEngine", () => {
 
       // Assert
       const turnStart = events.find((e) => e.type === "turn-start");
-      expect(turnStart).toBeDefined();
-      if (turnStart?.type === "turn-start") {
-        expect(turnStart.turnNumber).toBe(1);
-      }
+      expect(turnStart).toEqual({
+        type: "turn-start",
+        turnNumber: 1,
+      });
     });
 
     it("given battle not in action-select, when action is submitted, then it throws an error", () => {
@@ -398,6 +472,7 @@ describe("BattleEngine", () => {
       // Assert
       const active0 = engine.state.sides[0].active[0] as ActivePokemon;
       const active1 = engine.state.sides[1].active[0] as ActivePokemon;
+      // Derived: each active starts at Tackle's canonical max PP and spends exactly one PP on the resolved turn.
       expect(active0.pokemon.moves[0]?.currentPP).toBe(34);
       expect(active1.pokemon.moves[0]?.currentPP).toBe(34);
     });
@@ -430,7 +505,7 @@ describe("BattleEngine", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -444,7 +519,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -467,9 +542,24 @@ describe("BattleEngine", () => {
       // Assert
       const switchOuts = events.filter((e) => e.type === "switch-out");
       const switchIns = events.filter((e) => e.type === "switch-in");
-      expect(switchOuts.length).toBeGreaterThanOrEqual(1);
+      expect(switchOuts).toEqual([
+        {
+          type: "switch-out",
+          side: 0,
+          pokemon: {
+            speciesId: 6,
+            nickname: "Charizard",
+            level: 50,
+            currentHp: 153,
+            maxHp: 153,
+            status: null,
+            gender: male,
+            isShiny: false,
+          },
+        },
+      ]);
       // 2 switch-ins from start + 1 from the switch action
-      expect(switchIns.length).toBeGreaterThanOrEqual(3);
+      expect(switchIns).toHaveLength(3);
 
       const active = engine.state.sides[0].active[0] as ActivePokemon;
       expect(active.pokemon.uid).toBe("pikachu-1");
@@ -481,7 +571,7 @@ describe("BattleEngine", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -495,7 +585,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -521,13 +611,30 @@ describe("BattleEngine", () => {
       const turnSwitchOuts = turnEvents.filter((e) => e.type === "switch-out");
       const turnMoveStarts = turnEvents.filter((e) => e.type === "move-start");
 
-      expect(turnSwitchOuts.length).toBeGreaterThan(0);
-      expect(turnMoveStarts.length).toBeGreaterThan(0);
-
-      // The switch-out must come before the move-start in the full event log
-      const switchOutIndex = events.findIndex((e) => e.type === "switch-out");
-      const lastMoveStartIndex = events.findLastIndex((e) => e.type === "move-start");
-      expect(switchOutIndex).toBeLessThan(lastMoveStartIndex);
+      expect(turnSwitchOuts).toEqual([
+        {
+          type: "switch-out",
+          side: 0,
+          pokemon: {
+            speciesId: 6,
+            nickname: "Charizard",
+            level: 50,
+            currentHp: 153,
+            maxHp: 153,
+            status: null,
+            gender: male,
+            isShiny: false,
+          },
+        },
+      ]);
+      expect(turnMoveStarts).toEqual([
+        {
+          type: "move-start",
+          side: 1,
+          pokemon: "Blastoise",
+          move: tackle,
+        },
+      ]);
     });
 
     it("given a move effect that requests a voluntary self-switch, when the turn resolves, then the engine enters switch-prompt and allows the replacement", () => {
@@ -556,8 +663,8 @@ describe("BattleEngine", () => {
       attacker.statStages.attack = 2;
       attacker.statStages.speed = 1;
       attacker.substituteHp = 50;
-      attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
-      attacker.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      attacker.volatileStatuses.set(confusion, { turnsLeft: 2 });
+      attacker.volatileStatuses.set(substitute, { turnsLeft: -1 });
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -575,16 +682,16 @@ describe("BattleEngine", () => {
       // hits the substitute for 10 damage before the switch prompt, so the passed substitute has 40 HP left.
       expect(replacement.substituteHp).toBe(40);
       // Source: the mock ruleset decrements confusion during turn processing before the switch prompt,
-      // so attacker.volatileStatuses.get("confusion") goes from { turnsLeft: 2 } to { turnsLeft: 1 }
+      // so attacker.volatileStatuses.get(confusion) goes from { turnsLeft: 2 } to { turnsLeft: 1 }
       // before engine.submitSwitch sends the replacement in.
-      expect(replacement.volatileStatuses.get("confusion")).toEqual({ turnsLeft: 1 });
-      expect(replacement.volatileStatuses.get("substitute")).toEqual({ turnsLeft: -1 });
+      expect(replacement.volatileStatuses.get(confusion)).toEqual({ turnsLeft: 1 });
+      expect(replacement.volatileStatuses.get(substitute)).toEqual({ turnsLeft: -1 });
     });
 
     it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
       const ruleset = new MockRuleset();
       let speedSeenByStickyWeb: number | null = null;
-      ruleset.getAvailableHazards = () => ["sticky-web"] as any;
+      ruleset.getAvailableHazards = () => [stickyWeb] as any;
       ruleset.applyEntryHazards = (
         pokemon: ActivePokemon,
         _side: BattleSide,
@@ -603,7 +710,7 @@ describe("BattleEngine", () => {
       ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
       engine.start();
 
-      engine.state.sides[0].hazards.push({ type: "sticky-web" as any, layers: 1 });
+      engine.state.sides[0].hazards.push({ type: stickyWeb as any, layers: 1 });
 
       const attacker = engine.state.sides[0].active[0]!;
       attacker.statStages.speed = 1;
@@ -625,7 +732,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -652,7 +759,7 @@ describe("BattleEngine", () => {
 
       const attacker = engine.state.sides[0].active[0]!;
       attacker.statStages.attack = 2;
-      attacker.volatileStatuses.set("confusion", { turnsLeft: 2 });
+      attacker.volatileStatuses.set(confusion, { turnsLeft: 2 });
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -667,7 +774,7 @@ describe("BattleEngine", () => {
       // Source: the Baton Pass user fainted before the voluntary switch resolved, so no stat stages are preserved.
       expect(replacement.statStages.attack).toBe(0);
       // Source: volatiles are only transferred for a live Baton Pass replacement, not after the passer faints.
-      expect(replacement.volatileStatuses.has("confusion")).toBe(false);
+      expect(replacement.volatileStatuses.has(confusion)).toBe(false);
       // Source: the live self-switch branch emits switch-out, but a faint replacement does not reuse that event path.
       expect(
         events.filter((event) => event.type === "switch-out" && event.side === 0),
@@ -686,7 +793,7 @@ describe("BattleEngine", () => {
           createTestPokemon(6, 50, {
             uid: "charizard-1",
             nickname: "Charizard",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(tackle)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -702,7 +809,7 @@ describe("BattleEngine", () => {
           createTestPokemon(9, 50, {
             uid: "blastoise-1",
             nickname: "Blastoise",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(tackle)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -754,7 +861,7 @@ describe("BattleEngine", () => {
           createTestPokemon(6, 50, {
             uid: "charizard-1",
             nickname: "Charizard",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(tackle)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -770,7 +877,7 @@ describe("BattleEngine", () => {
           createTestPokemon(9, 50, {
             uid: "blastoise-1",
             nickname: "Blastoise",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(tackle)],
             calculatedStats: {
               hp: 200,
               attack: 100,
@@ -820,7 +927,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -846,7 +953,13 @@ describe("BattleEngine", () => {
 
       // Assert
       const faintEvents = events.filter((e) => e.type === "faint");
-      expect(faintEvents.length).toBeGreaterThanOrEqual(1);
+      expect(faintEvents).toEqual([
+        {
+          type: "faint",
+          side: 1,
+          pokemon: "Blastoise",
+        },
+      ]);
     });
 
     it("given all pokemon on one side faint, when turn resolves, then battle ends", () => {
@@ -855,7 +968,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -883,7 +996,10 @@ describe("BattleEngine", () => {
       expect(engine.isEnded()).toBe(true);
       expect(engine.getWinner()).toBe(0); // Side 0 wins
       const endEvent = events.find((e) => e.type === "battle-end");
-      expect(endEvent).toBeDefined();
+      expect(endEvent).toEqual({
+        type: "battle-end",
+        winner: 0,
+      });
     });
 
     it("given a pokemon faints with a switch available, when switch-in is submitted, then battle continues", () => {
@@ -892,7 +1008,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -906,7 +1022,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -947,7 +1063,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -961,7 +1077,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -990,7 +1106,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -1004,7 +1120,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -1018,7 +1134,7 @@ describe("BattleEngine", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-2",
           nickname: "Charizard2",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 180,
             attack: 100,
@@ -1048,7 +1164,7 @@ describe("BattleEngine", () => {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -1062,7 +1178,7 @@ describe("BattleEngine", () => {
         createTestPokemon(25, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -1087,14 +1203,14 @@ describe("BattleEngine", () => {
     });
   });
 
-  describe("struggle", () => {
+  describe(struggle, () => {
     it("given a pokemon with no PP, when struggle is used, then damage is dealt and recoil applied", () => {
       // Arrange
       const team1 = [
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 0, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(tackle, { currentPP: 0 })],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -1111,7 +1227,7 @@ describe("BattleEngine", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "struggle", side: 0 });
+      engine.submitAction(0, { type: struggle, side: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — should have damage events (struggle damage + recoil + opponent's move damage)
@@ -1128,7 +1244,7 @@ describe("BattleEngine", () => {
 
       // Inflict burn on side 0's active pokemon
       const active = engine.state.sides[0].active[0] as ActivePokemon;
-      active.pokemon.status = "burn";
+      active.pokemon.status = burn;
 
       // Act — run a turn to trigger end-of-turn
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -1136,9 +1252,19 @@ describe("BattleEngine", () => {
 
       // Assert
       const burnDamage = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "burn",
+        (e) => e.type === "damage" && "source" in e && e.source === burn,
       );
-      expect(burnDamage.length).toBeGreaterThanOrEqual(1);
+      expect(burnDamage).toEqual([
+        {
+          type: "damage",
+          side: 0,
+          pokemon: "Charizard",
+          amount: 9,
+          currentHp: 134,
+          maxHp: 153,
+          source: burn,
+        },
+      ]);
     });
 
     it("given a poisoned pokemon, when end of turn processes, then poison damage is applied", () => {
@@ -1148,7 +1274,7 @@ describe("BattleEngine", () => {
 
       // Inflict poison on side 1's active pokemon
       const active = engine.state.sides[1].active[0] as ActivePokemon;
-      active.pokemon.status = "poison";
+      active.pokemon.status = poison;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -1156,9 +1282,19 @@ describe("BattleEngine", () => {
 
       // Assert
       const poisonDamage = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "poison",
+        (e) => e.type === "damage" && "source" in e && e.source === poison,
       );
-      expect(poisonDamage.length).toBeGreaterThanOrEqual(1);
+      expect(poisonDamage).toEqual([
+        {
+          type: "damage",
+          side: 1,
+          pokemon: "Blastoise",
+          amount: 19,
+          currentHp: 125,
+          maxHp: 154,
+          source: poison,
+        },
+      ]);
     });
   });
 
@@ -1175,6 +1311,7 @@ describe("BattleEngine", () => {
       }
 
       // Assert
+      // Derived: the loop submits exactly three fully resolved turns.
       expect(engine.getState().turnNumber).toBe(3);
     });
 

@@ -1,5 +1,12 @@
 import type { AbilityContext, AbilityResult, BattleState } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, ScreenType, TerrainType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_SCREEN_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS } from "./data/reference-ids";
 
 /**
  * Gen 9 switch-in, switch-out, contact, and passive ability handlers.
@@ -64,14 +71,14 @@ export const TRACE_UNCOPYABLE_ABILITIES = new Set([
   "intrepid-sword",
   "dauntless-shield",
   // Gen 9 additions
-  "protosynthesis",
-  "quark-drive",
-  "orichalcum-pulse",
-  "hadron-engine",
-  "embody-aspect-teal",
-  "embody-aspect-hearthflame",
-  "embody-aspect-wellspring",
-  "embody-aspect-cornerstone",
+  GEN9_ABILITY_IDS.protosynthesis,
+  GEN9_ABILITY_IDS.quarkDrive,
+  GEN9_ABILITY_IDS.orichalcumPulse,
+  GEN9_ABILITY_IDS.hadronEngine,
+  GEN9_ABILITY_IDS.embodyAspectTeal,
+  GEN9_ABILITY_IDS.embodyAspectHearthflame,
+  GEN9_ABILITY_IDS.embodyAspectWellspring,
+  GEN9_ABILITY_IDS.embodyAspectCornerstone,
 ]);
 
 /**
@@ -94,15 +101,15 @@ export const UNSUPPRESSABLE_ABILITIES = new Set([
   "ice-face",
   "neutralizing-gas",
   // Gen 9 additions
-  "protosynthesis",
-  "quark-drive",
-  "orichalcum-pulse",
-  "hadron-engine",
-  "embody-aspect-teal",
-  "embody-aspect-hearthflame",
-  "embody-aspect-wellspring",
-  "embody-aspect-cornerstone",
-  "good-as-gold",
+  GEN9_ABILITY_IDS.protosynthesis,
+  GEN9_ABILITY_IDS.quarkDrive,
+  GEN9_ABILITY_IDS.orichalcumPulse,
+  GEN9_ABILITY_IDS.hadronEngine,
+  GEN9_ABILITY_IDS.embodyAspectTeal,
+  GEN9_ABILITY_IDS.embodyAspectHearthflame,
+  GEN9_ABILITY_IDS.embodyAspectWellspring,
+  GEN9_ABILITY_IDS.embodyAspectCornerstone,
+  GEN9_ABILITY_IDS.goodAsGold,
 ]);
 
 /**
@@ -119,10 +126,10 @@ export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turbob
  * Source: Showdown data/items.ts -- damprock/heatrock/smoothrock/icyrock
  */
 const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: string; turns: number }>> = {
-  "damp-rock": { weather: "rain", turns: 8 },
-  "heat-rock": { weather: "sun", turns: 8 },
-  "smooth-rock": { weather: "sand", turns: 8 },
-  "icy-rock": { weather: "snow", turns: 8 },
+  [CORE_ITEM_IDS.dampRock]: { weather: CORE_WEATHER_IDS.rain, turns: 8 },
+  [CORE_ITEM_IDS.heatRock]: { weather: CORE_WEATHER_IDS.sun, turns: 8 },
+  [CORE_ITEM_IDS.smoothRock]: { weather: CORE_WEATHER_IDS.sand, turns: 8 },
+  [CORE_ITEM_IDS.icyRock]: { weather: CORE_WEATHER_IDS.snow, turns: 8 },
 };
 
 const BASE_WEATHER_TURNS = 5;
@@ -141,9 +148,9 @@ const EXTENDED_TERRAIN_TURNS = 8;
  * Source: Showdown data/abilities.ts -- Screen Cleaner onStart
  */
 export const SCREEN_CLEANER_SCREENS: readonly ScreenType[] = [
-  "reflect",
-  "light-screen",
-  "aurora-veil",
+  CORE_SCREEN_IDS.reflect,
+  CORE_SCREEN_IDS.lightScreen,
+  CORE_SCREEN_IDS.auroraVeil,
 ];
 
 /**
@@ -152,10 +159,10 @@ export const SCREEN_CLEANER_SCREENS: readonly ScreenType[] = [
  * Source: Showdown data/abilities.ts -- Electric Surge, Grassy Surge, etc.
  */
 const SURGE_ABILITIES: Readonly<Record<string, TerrainType>> = {
-  "electric-surge": "electric",
-  "grassy-surge": "grassy",
-  "psychic-surge": "psychic",
-  "misty-surge": "misty",
+  [GEN9_ABILITY_IDS.electricSurge]: CORE_TERRAIN_IDS.electric,
+  [GEN9_ABILITY_IDS.grassySurge]: CORE_TERRAIN_IDS.grassy,
+  [GEN9_ABILITY_IDS.psychicSurge]: CORE_TERRAIN_IDS.psychic,
+  [GEN9_ABILITY_IDS.mistySurge]: CORE_TERRAIN_IDS.misty,
 };
 
 // ---------------------------------------------------------------------------

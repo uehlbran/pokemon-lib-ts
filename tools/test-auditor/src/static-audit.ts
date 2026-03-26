@@ -1,26 +1,24 @@
 import { ALL_CHECKS } from "./checks/index.ts";
 import type { AuditReport, AuditSummary, Finding, PackageAudit, Severity } from "./types.ts";
-import { ALL_PACKAGES, discoverTestFiles, loadFile, resolvePackageTestDir } from "./utils.ts";
+import { discoverAuditTargets, discoverTestFiles, loadFile } from "./utils.ts";
 
 function runChecksOnFile(ctx: ReturnType<typeof loadFile>): Finding[] {
   return ALL_CHECKS.flatMap((check) => check.run(ctx));
 }
 
-function auditPackage(packageName: string): PackageAudit {
-  const testDir = resolvePackageTestDir(packageName);
+function auditFiles(targetName: string, files: string[]): PackageAudit {
   const findings: Finding[] = [];
 
-  if (!testDir) {
-    return { packageName, findings };
-  }
-
-  const files = discoverTestFiles(testDir);
   for (const filePath of files) {
     const ctx = loadFile(filePath);
     findings.push(...runChecksOnFile(ctx));
   }
 
-  return { packageName, findings };
+  return { packageName: targetName, findings };
+}
+
+function auditTarget(targetName: string, testDir: string): PackageAudit {
+  return auditFiles(targetName, discoverTestFiles(testDir));
 }
 
 function buildSummary(packages: PackageAudit[], totalFiles: number): AuditSummary {
@@ -86,20 +84,50 @@ function main(): void {
   const args = process.argv.slice(2);
   const isAll = args.includes("--all");
   const isJson = args.includes("--json");
+  const failOnFindings = args.includes("--fail-on-findings");
   const pkgIdx = args.indexOf("--package");
   const singlePkg = pkgIdx !== -1 ? (args[pkgIdx + 1] ?? null) : null;
+  const filesIdx = args.indexOf("--files");
+  const requestedFiles =
+    filesIdx !== -1
+      ? args
+          .slice(filesIdx + 1)
+          .filter((arg) => !arg.startsWith("--"))
+          .map((arg) => arg.trim())
+          .filter(Boolean)
+      : [];
 
-  const packagesToAudit = isAll ? ALL_PACKAGES : singlePkg ? [singlePkg] : ALL_PACKAGES;
-
-  let totalFiles = 0;
+  const targets = discoverAuditTargets();
   const audited: PackageAudit[] = [];
+  let totalFiles = 0;
 
-  for (const pkg of packagesToAudit) {
-    const testDir = resolvePackageTestDir(pkg);
-    if (testDir) {
-      totalFiles += discoverTestFiles(testDir).length;
+  if (requestedFiles.length > 0) {
+    const filesByPackage = new Map<string, string[]>();
+    for (const filePath of requestedFiles) {
+      const match = /(?:^|\/)(?:packages|tools)\/([^/]+)\//.exec(filePath);
+      const packageName = match?.[1] ?? "unknown";
+      const bucket = filesByPackage.get(packageName) ?? [];
+      bucket.push(filePath);
+      filesByPackage.set(packageName, bucket);
+      totalFiles++;
     }
-    audited.push(auditPackage(pkg));
+
+    for (const [packageName, files] of [...filesByPackage.entries()].sort(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
+      audited.push(auditFiles(packageName, files));
+    }
+  } else {
+    const packagesToAudit = isAll
+      ? targets
+      : singlePkg
+        ? targets.filter((t) => t.name === singlePkg)
+        : targets;
+
+    for (const target of packagesToAudit) {
+      totalFiles += discoverTestFiles(target.testDir).length;
+      audited.push(auditTarget(target.name, target.testDir));
+    }
   }
 
   const summary = buildSummary(audited, totalFiles);
@@ -113,6 +141,10 @@ function main(): void {
     console.log(JSON.stringify(report, null, 2));
   } else {
     printHuman(report);
+  }
+
+  if (failOnFindings && summary.totalFindings > 0) {
+    process.exitCode = 1;
   }
 }
 

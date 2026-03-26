@@ -1,4 +1,5 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_STATUS_IDS, createMoveSlot } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +7,8 @@ import type { BattleEvent, HealEvent, StatChangeEvent, StatusCureEvent } from ".
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const DEFAULT_MOVE = createMockDataManager().getMove(CORE_MOVE_IDS.tackle);
 
 /**
  * Creates a test engine with configurable teams and ruleset.
@@ -25,7 +28,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -42,7 +45,7 @@ function createTestEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -138,7 +141,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       // Source: Bulbapedia "Antidote" — cures poison/badly-poisoned
       ruleset.setNextBagItemResult({
         activated: true,
-        statusCured: "poison",
+        statusCured: CORE_STATUS_IDS.poison,
         messages: ["Charizard's poison was cured!"],
       });
 
@@ -146,7 +149,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(CORE_MOVE_IDS.tackle, DEFAULT_MOVE.pp)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -156,7 +159,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
             speed: 120,
           },
           currentHp: 200,
-          status: "poison",
+          status: CORE_STATUS_IDS.poison,
         }),
       ];
 
@@ -170,7 +173,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       // Assert
       const cureEvent = events.find((e) => e.type === "status-cure") as StatusCureEvent | undefined;
       expect(cureEvent).toBeDefined();
-      expect(cureEvent!.status).toBe("poison");
+      expect(cureEvent!.status).toBe(CORE_STATUS_IDS.poison);
 
       // Verify the pokemon's status was actually cleared
       const active = engine.state.sides[0].active[0];
@@ -245,12 +248,12 @@ describe("BattleEngine - ItemAction bag item usage", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-active",
           nickname: "ActiveMon",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(CORE_MOVE_IDS.tackle, DEFAULT_MOVE.pp)],
         }),
         createTestPokemon(25, 50, {
           uid: "pikachu-fainted",
           nickname: "FaintedMon",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(CORE_MOVE_IDS.tackle, DEFAULT_MOVE.pp)],
         }),
       ];
 
@@ -295,12 +298,12 @@ describe("BattleEngine - ItemAction bag item usage", () => {
         createTestPokemon(6, 50, {
           uid: "active-mon",
           nickname: "ActiveMon",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(CORE_MOVE_IDS.tackle, DEFAULT_MOVE.pp)],
         }),
         createTestPokemon(25, 50, {
           uid: "fainted-mon",
           nickname: "FaintedMon",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(CORE_MOVE_IDS.tackle, DEFAULT_MOVE.pp)],
         }),
       ];
 
@@ -443,7 +446,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       ruleset.setNextBagItemResult({
         activated: true,
         healAmount: 50,
-        statusCured: "poison",
+        statusCured: CORE_STATUS_IDS.poison,
         messages: ["Charizard recovered 50 HP!", "Charizard's poison was cured!"],
       });
 
@@ -456,7 +459,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       const active = engine.state.sides[0].active[0];
       const maxHp = active!.pokemon.calculatedStats!.hp; // 153
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
-      active!.pokemon.status = "poison";
+      active!.pokemon.status = CORE_STATUS_IDS.poison;
 
       // Act
       engine.submitAction(0, { type: "item", side: 0, itemId: "full-restore" });
@@ -469,7 +472,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       const cureEvent = events.find((e) => e.type === "status-cure") as StatusCureEvent | undefined;
       expect(cureEvent).toBeDefined();
-      expect(cureEvent!.status).toBe("poison");
+      expect(cureEvent!.status).toBe(CORE_STATUS_IDS.poison);
 
       // Verify state was mutated — after heal, HP = 103 + 50 = 153 (= maxHp, capped).
       // Then the configured damage leaves the pokemon at maxHp - configuredDamage.

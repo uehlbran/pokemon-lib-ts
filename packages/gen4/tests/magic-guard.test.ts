@@ -4,8 +4,26 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { executeGen4MoveEffect } from "../src/Gen4MoveEffects";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
@@ -34,6 +52,16 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const HAZARDS = CORE_HAZARD_IDS;
+const ITEMS = CORE_ITEM_IDS;
+const MOVES = GEN4_MOVE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const BRAVE_BIRD = DATA_MANAGER.getMove(MOVES.braveBird);
+
 function createMockRng() {
   return {
     next: () => 0,
@@ -46,14 +74,14 @@ function createMockRng() {
   };
 }
 
-function createActivePokemon(opts: {
+function createOnFieldPokemon(opts: {
   level?: number;
   hp?: number;
   currentHp?: number;
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "badly-poisoned" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PokemonInstance["status"];
 }): ActivePokemon {
   const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
@@ -68,27 +96,27 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: GEN4_NATURE_IDS.hardy,
+    ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    evs: createEvs(),
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    ability: opts.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -105,8 +133,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [TYPES.normal],
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -127,49 +155,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
-  id?: string;
-  type?: PokemonType;
-  power?: number;
-  category?: "physical" | "special" | "status";
-  effect?: MoveData["effect"];
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type ?? "normal",
-    category: opts.category ?? "physical",
-    power: opts.power ?? 80,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: opts.effect ?? null,
-    description: "",
-    generation: 4,
-  } as MoveData;
-}
-
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -186,13 +172,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 4,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -211,33 +197,41 @@ function makeBattleState(): BattleState {
 // ---------------------------------------------------------------------------
 
 describe("Magic Guard", () => {
-  const ruleset = new Gen4Ruleset();
+  const ruleset = new Gen4Ruleset(DATA_MANAGER);
 
   describe("status damage prevention", () => {
     it("given Pokemon with Magic Guard and burn status, when applyStatusDamage called, then 0 damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents burn chip
-      const pokemon = createActivePokemon({ ability: "magic-guard", hp: 200, status: "burn" });
-      const state = makeBattleState();
-      const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+      const pokemon = createOnFieldPokemon({
+        ability: ABILITIES.magicGuard,
+        hp: 200,
+        status: STATUSES.burn,
+      });
+      const state = createBattleState();
+      const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
       expect(damage).toBe(0);
     });
 
     it("given Pokemon with Magic Guard and poison status, when applyStatusDamage called, then 0 damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents poison chip
-      const pokemon = createActivePokemon({ ability: "magic-guard", hp: 200, status: "poison" });
-      const state = makeBattleState();
-      const damage = ruleset.applyStatusDamage(pokemon, "poison", state);
+      const pokemon = createOnFieldPokemon({
+        ability: ABILITIES.magicGuard,
+        hp: 200,
+        status: STATUSES.poison,
+      });
+      const state = createBattleState();
+      const damage = ruleset.applyStatusDamage(pokemon, STATUSES.poison, state);
       expect(damage).toBe(0);
     });
 
     it("given Pokemon without Magic Guard and burn status, when applyStatusDamage called, then 1/8 max HP damage (Gen 4 burn rate)", () => {
       // Source: pret/pokeplatinum — burn damage = maxHP / 8
       // Triangulation: different HP value from above
-      const pokemon = createActivePokemon({ hp: 160, status: "burn" });
-      const state = makeBattleState();
-      const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+      const pokemon = createOnFieldPokemon({ hp: 160, status: STATUSES.burn });
+      const state = createBattleState();
+      const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
       // floor(160 / 8) = 20
       expect(damage).toBe(20);
     });
@@ -247,7 +241,7 @@ describe("Magic Guard", () => {
     it("given Pokemon with Magic Guard and leech seed, when calculateLeechSeedDrain called, then 0 damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents Leech Seed drain
-      const pokemon = createActivePokemon({ ability: "magic-guard", hp: 200 });
+      const pokemon = createOnFieldPokemon({ ability: ABILITIES.magicGuard, hp: 200 });
       const damage = ruleset.calculateLeechSeedDrain(pokemon);
       expect(damage).toBe(0);
     });
@@ -255,7 +249,7 @@ describe("Magic Guard", () => {
     it("given Pokemon without Magic Guard, when calculateLeechSeedDrain called, then 1/8 max HP drain", () => {
       // Source: BaseRuleset — Leech Seed drains 1/8 max HP
       // Triangulation: second test with different HP
-      const pokemon = createActivePokemon({ hp: 240 });
+      const pokemon = createOnFieldPokemon({ hp: 240 });
       const damage = ruleset.calculateLeechSeedDrain(pokemon);
       // floor(240 / 8) = 30
       expect(damage).toBe(30);
@@ -266,11 +260,11 @@ describe("Magic Guard", () => {
     it("given Pokemon with Magic Guard, when entry hazards applied (Stealth Rock + Spikes), then 0 total damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents entry hazard damage
-      const pokemon = createActivePokemon({ ability: "magic-guard", types: ["fire"] });
-      const side = makeSide(0);
+      const pokemon = createOnFieldPokemon({ ability: ABILITIES.magicGuard, types: [TYPES.fire] });
+      const side = createBattleSide(0);
       side.hazards = [
-        { type: "stealth-rock", layers: 1 },
-        { type: "spikes", layers: 3 },
+        { type: HAZARDS.stealthRock, layers: 1 },
+        { type: HAZARDS.spikes, layers: 3 },
       ];
 
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -281,9 +275,9 @@ describe("Magic Guard", () => {
     it("given Pokemon without Magic Guard and Fire type, when Stealth Rock applied, then 1/4 max HP damage (2x weak to Rock)", () => {
       // Source: Bulbapedia — Stealth Rock: Fire type takes 1/4 max HP (2x SE)
       // Triangulation: a specific type weakness case
-      const pokemon = createActivePokemon({ types: ["fire"], hp: 200 });
-      const side = makeSide(0);
-      side.hazards = [{ type: "stealth-rock", layers: 1 }];
+      const pokemon = createOnFieldPokemon({ types: [TYPES.fire], hp: 200 });
+      const side = createBattleSide(0);
+      side.hazards = [{ type: HAZARDS.stealthRock, layers: 1 }];
 
       const result = ruleset.applyEntryHazards(pokemon, side);
       // floor(200 * 2 / 8) = 50
@@ -295,15 +289,10 @@ describe("Magic Guard", () => {
     it("given attacker with Magic Guard using a recoil move, when executeGen4MoveEffect called, then 0 recoil damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents move recoil
-      const attacker = createActivePokemon({ ability: "magic-guard" });
-      const defender = createActivePokemon({});
-      const move = createMove({
-        id: "brave-bird",
-        type: "flying",
-        power: 120,
-        effect: { type: "recoil", amount: 1 / 3 },
-      });
-      const state = makeBattleState();
+      const attacker = createOnFieldPokemon({ ability: ABILITIES.magicGuard });
+      const defender = createOnFieldPokemon({});
+      const move = BRAVE_BIRD;
+      const state = createBattleState();
       state.sides[0].active = [attacker];
       state.sides[1].active = [defender];
 
@@ -323,15 +312,10 @@ describe("Magic Guard", () => {
     it("given attacker without Magic Guard using a recoil move, when executeGen4MoveEffect called, then recoil damage is applied", () => {
       // Source: Showdown Gen 4 — normal recoil is 1/3 of damage dealt
       // Triangulation: attacker without Magic Guard takes recoil
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({});
-      const move = createMove({
-        id: "brave-bird",
-        type: "flying",
-        power: 120,
-        effect: { type: "recoil", amount: 1 / 3 },
-      });
-      const state = makeBattleState();
+      const attacker = createOnFieldPokemon({});
+      const defender = createOnFieldPokemon({});
+      const move = BRAVE_BIRD;
+      const state = createBattleState();
       state.sides[0].active = [attacker];
       state.sides[1].active = [defender];
 
@@ -354,7 +338,7 @@ describe("Magic Guard", () => {
     it("given Pokemon with Magic Guard while trapped, when calculateBindDamage called, then 0 damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents bind/wrap/clamp damage
-      const pokemon = createActivePokemon({ ability: "magic-guard", hp: 200 });
+      const pokemon = createOnFieldPokemon({ ability: ABILITIES.magicGuard, hp: 200 });
       const damage = ruleset.calculateBindDamage(pokemon);
       expect(damage).toBe(0);
     });
@@ -362,7 +346,7 @@ describe("Magic Guard", () => {
     it("given Pokemon without Magic Guard while trapped, when calculateBindDamage called, then 1/16 max HP (Gen 4 rate)", () => {
       // Source: Bulbapedia — Binding move damage is 1/16 in Gen 2-4
       // Triangulation: different HP value
-      const pokemon = createActivePokemon({ hp: 320 });
+      const pokemon = createOnFieldPokemon({ hp: 320 });
       const damage = ruleset.calculateBindDamage(pokemon);
       // floor(320 / 16) = 20
       expect(damage).toBe(20);
@@ -373,7 +357,7 @@ describe("Magic Guard", () => {
     it("given Pokemon with Magic Guard and Curse volatile, when calculateCurseDamage called, then 0 damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents Curse damage
-      const pokemon = createActivePokemon({ ability: "magic-guard", hp: 200 });
+      const pokemon = createOnFieldPokemon({ ability: ABILITIES.magicGuard, hp: 200 });
       const damage = ruleset.calculateCurseDamage(pokemon);
       expect(damage).toBe(0);
     });
@@ -381,7 +365,7 @@ describe("Magic Guard", () => {
     it("given Pokemon without Magic Guard and Curse volatile, when calculateCurseDamage called, then 1/4 max HP damage", () => {
       // Source: BaseRuleset — Curse (Ghost) drains 1/4 max HP per turn
       // Triangulation: different HP
-      const pokemon = createActivePokemon({ hp: 160 });
+      const pokemon = createOnFieldPokemon({ hp: 160 });
       const damage = ruleset.calculateCurseDamage(pokemon);
       // floor(160 / 4) = 40
       expect(damage).toBe(40);
@@ -392,7 +376,7 @@ describe("Magic Guard", () => {
     it("given Pokemon with Magic Guard and Nightmare, when calculateNightmareDamage called, then 0 damage", () => {
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents Nightmare damage
-      const pokemon = createActivePokemon({ ability: "magic-guard", hp: 200 });
+      const pokemon = createOnFieldPokemon({ ability: ABILITIES.magicGuard, hp: 200 });
       const damage = ruleset.calculateNightmareDamage(pokemon);
       expect(damage).toBe(0);
     });
@@ -400,7 +384,7 @@ describe("Magic Guard", () => {
     it("given Pokemon without Magic Guard and Nightmare, when calculateNightmareDamage called, then 1/4 max HP damage", () => {
       // Source: BaseRuleset — Nightmare drains 1/4 max HP per turn while asleep
       // Triangulation: different HP
-      const pokemon = createActivePokemon({ hp: 240 });
+      const pokemon = createOnFieldPokemon({ hp: 240 });
       const damage = ruleset.calculateNightmareDamage(pokemon);
       // floor(240 / 4) = 60
       expect(damage).toBe(60);
@@ -409,24 +393,32 @@ describe("Magic Guard", () => {
 });
 
 describe("Heatproof", () => {
-  const ruleset = new Gen4Ruleset();
+  const ruleset = new Gen4Ruleset(DATA_MANAGER);
 
   it("given Pokemon with Heatproof and burn, when applyStatusDamage called, then 1/16 max HP damage not 1/8", () => {
     // Source: Bulbapedia — Heatproof: "Also halves the damage the holder takes from a burn."
     // Source: Showdown Gen 4 — Heatproof halves burn damage
     // 200 HP: normal burn = floor(200/8) = 25; Heatproof burn = floor(200/16) = 12
-    const pokemon = createActivePokemon({ ability: "heatproof", hp: 200, status: "burn" });
-    const state = makeBattleState();
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const pokemon = createOnFieldPokemon({
+      ability: ABILITIES.heatproof,
+      hp: 200,
+      status: STATUSES.burn,
+    });
+    const state = createBattleState();
+    const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
     expect(damage).toBe(12);
   });
 
   it("given Pokemon with Heatproof and burn (different HP), when applyStatusDamage called, then floor(maxHp/16)", () => {
     // Source: Bulbapedia — Heatproof: burn damage = floor(maxHp / 16)
     // Triangulation: 300 HP → floor(300/16) = 18
-    const pokemon = createActivePokemon({ ability: "heatproof", hp: 300, status: "burn" });
-    const state = makeBattleState();
-    const damage = ruleset.applyStatusDamage(pokemon, "burn", state);
+    const pokemon = createOnFieldPokemon({
+      ability: ABILITIES.heatproof,
+      hp: 300,
+      status: STATUSES.burn,
+    });
+    const state = createBattleState();
+    const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
     expect(damage).toBe(18);
   });
 });

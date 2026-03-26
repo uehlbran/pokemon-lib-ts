@@ -1,11 +1,12 @@
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { RandomAI } from "../../../src/ai/RandomAI";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 describe("RandomAI switching", () => {
   it("given a RandomAI controlling both sides, when a pokemon faints and reserve is available, then AI picks a valid switch", () => {
@@ -15,10 +16,10 @@ describe("RandomAI switching", () => {
     const dataManager = createMockDataManager();
 
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -31,10 +32,10 @@ describe("RandomAI switching", () => {
       }),
     ];
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -45,10 +46,10 @@ describe("RandomAI switching", () => {
         },
         currentHp: 200,
       }),
-      createTestPokemon(25, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.pikachu, 50, {
         uid: "pikachu-2",
         nickname: "Pikachu",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 120,
           attack: 80,

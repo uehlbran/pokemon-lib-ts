@@ -1,7 +1,53 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
+  CORE_TYPE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  GEN5_ABILITY_IDS,
+  GEN5_ITEM_IDS,
+  GEN5_MOVE_IDS,
+  GEN5_NATURE_IDS,
+  GEN5_SPECIES_IDS,
+} from "../src";
+import { createGen5DataManager } from "../src/data/index.ts";
 import { handleGen5StatAbility, isPranksterEligible } from "../src/Gen5AbilitiesStat";
+
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS };
+const itemIds = GEN5_ITEM_IDS;
+const moveIds = GEN5_MOVE_IDS;
+const speciesIds = GEN5_SPECIES_IDS;
+const typeIds = CORE_TYPE_IDS;
+const natureIds = GEN5_NATURE_IDS;
+const _moveCategories = CORE_MOVE_CATEGORIES;
+const abilitySlots = CORE_ABILITY_SLOTS;
+const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const genders = CORE_GENDERS;
+const dataManager = createGen5DataManager();
+const defaultSpecies = dataManager.getSpecies(speciesIds.bulbasaur);
+const thunderWave = dataManager.getMove(moveIds.thunderWave);
+const growl = dataManager.getMove(moveIds.growl);
+const tackle = dataManager.getMove(moveIds.tackle);
+const flamethrower = dataManager.getMove(moveIds.flamethrower);
+const crunch = dataManager.getMove(moveIds.crunch);
+const darkPulse = dataManager.getMove(moveIds.darkPulse);
+const closeCombat = dataManager.getMove(moveIds.closeCombat);
+const defaultFriendship = createFriendship(0);
+const INVALID_GEN5_STAT_ABILITY_ID = "__invalid-gen5-stat-ability__";
 
 /**
  * Gen 5 stat-modifying and priority ability tests.
@@ -16,7 +62,7 @@ import { handleGen5StatAbility, isPranksterEligible } from "../src/Gen5Abilities
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+function createAbilityPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -25,41 +71,41 @@ function makePokemonInstance(overrides: {
   maxHp?: number;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: "test-pokemon",
-    speciesId: overrides.speciesId ?? 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
+  const speciesId = overrides.speciesId ?? speciesIds.bulbasaur;
+  const species = dataManager.getSpecies(speciesId);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(7), {
+    nature: natureIds.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
     moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
     heldItem: overrides.heldItem ?? null,
-    status: null,
-    friendship: 0,
-    gender: "male" as const,
+    abilitySlot: abilitySlots.normal1,
+    friendship: defaultFriendship,
+    gender: genders.male,
     isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+    pokeball: itemIds.pokeBall,
+  });
+  pokemon.uid = "test-pokemon";
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.moves = [createMoveSlot(tackle.id, tackle.pp)];
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
@@ -69,7 +115,7 @@ function makeActivePokemon(overrides: {
   statStages?: Partial<Record<string, number>>;
 }) {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createAbilityPokemonInstance({
       ability: overrides.ability,
       nickname: overrides.nickname,
       currentHp: overrides.currentHp,
@@ -86,8 +132,8 @@ function makeActivePokemon(overrides: {
       evasion: overrides.statStages?.evasion ?? 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
+    types: overrides.types ?? [...defaultSpecies.types],
+    ability: overrides.ability ?? abilityIds.none,
     suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -110,7 +156,7 @@ function makeActivePokemon(overrides: {
   };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -127,13 +173,13 @@ function makeSide(index: 0 | 1): BattleSide {
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   return {
     phase: "turn-end",
     generation: 5,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -155,33 +201,20 @@ function makeBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMove(
-  type: PokemonType,
-  category: "physical" | "special" | "status" = "physical",
-): MoveData {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type,
-    category,
-    power: category === "status" ? 0 : 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "single",
-    generation: 5,
-    flags: { contact: category !== "status" },
-    effectChance: null,
-    secondaryEffects: [],
-  } as unknown as MoveData;
+    ...baseMove,
+    flags: overrides.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
+    effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
+    ...overrides,
+  };
 }
 
-function makeContext(opts: {
+function createAbilityContext(opts: {
   ability: string;
   trigger: string;
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
   move?: MoveData;
   turnsOnField?: number;
   nickname?: string;
@@ -189,8 +222,8 @@ function makeContext(opts: {
   rngPick?: <T>(arr: readonly T[]) => T;
   statChange?: { stat: string; stages: number; source: "self" | "opponent" };
 }): AbilityContext {
-  const state = makeBattleState();
-  const pokemon = makeActivePokemon({
+  const state = createBattleState();
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname ?? "TestMon",
@@ -225,10 +258,10 @@ describe("handleGen5StatAbility -- Prankster", () => {
   it("given Prankster and a status move, when on-priority-check fires, then activates with priority boost message", () => {
     // Source: Showdown data/abilities.ts -- Prankster onModifyPriority:
     //   if (move?.category === 'Status') return priority + 1
-    const ctx = makeContext({
-      ability: "prankster",
-      trigger: "on-priority-check",
-      move: makeMove("normal", "status"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.prankster,
+      trigger: triggerIds.onPriorityCheck,
+      move: thunderWave,
       nickname: "Sableye",
     });
     const result = handleGen5StatAbility(ctx);
@@ -240,10 +273,10 @@ describe("handleGen5StatAbility -- Prankster", () => {
 
   it("given Prankster and a physical move, when on-priority-check fires, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Prankster only checks Status category
-    const ctx = makeContext({
-      ability: "prankster",
-      trigger: "on-priority-check",
-      move: makeMove("normal", "physical"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.prankster,
+      trigger: triggerIds.onPriorityCheck,
+      move: tackle,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -253,10 +286,10 @@ describe("handleGen5StatAbility -- Prankster", () => {
 
   it("given Prankster and a special move, when on-priority-check fires, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Prankster ignores special moves
-    const ctx = makeContext({
-      ability: "prankster",
-      trigger: "on-priority-check",
-      move: makeMove("fire", "special"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.prankster,
+      trigger: triggerIds.onPriorityCheck,
+      move: flamethrower,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -265,9 +298,9 @@ describe("handleGen5StatAbility -- Prankster", () => {
 
   it("given Prankster but no move in context, when on-priority-check fires, then does not activate", () => {
     // Edge case: trigger without move data
-    const ctx = makeContext({
-      ability: "prankster",
-      trigger: "on-priority-check",
+    const ctx = createAbilityContext({
+      ability: abilityIds.prankster,
+      trigger: triggerIds.onPriorityCheck,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -278,12 +311,12 @@ describe("handleGen5StatAbility -- Prankster", () => {
 describe("isPranksterEligible", () => {
   it("given status category, when checked, then returns true", () => {
     // Source: Showdown data/abilities.ts -- move.category === 'Status'
-    expect(isPranksterEligible("status")).toBe(true);
+    expect(isPranksterEligible(thunderWave.category)).toBe(true);
   });
 
   it("given physical category, when checked, then returns false", () => {
     // Source: Showdown data/abilities.ts -- only Status qualifies
-    expect(isPranksterEligible("physical")).toBe(false);
+    expect(isPranksterEligible(tackle.category)).toBe(false);
   });
 });
 
@@ -296,10 +329,10 @@ describe("handleGen5StatAbility -- Moxie", () => {
     // Source: Showdown data/abilities.ts -- Moxie onSourceAfterFaint:
     //   this.boost({atk: length}, source) where length is faint count (1 in singles)
     // Source: Bulbapedia -- Moxie: "+1 Attack on KO"
-    const opponent = makeActivePokemon({ currentHp: 0, maxHp: 200 });
-    const ctx = makeContext({
-      ability: "moxie",
-      trigger: "on-after-move-used",
+    const opponent = createOnFieldPokemon({ currentHp: 0, maxHp: 200 });
+    const ctx = createAbilityContext({
+      ability: abilityIds.moxie,
+      trigger: triggerIds.onAfterMoveUsed,
       opponent,
       nickname: "Krookodile",
     });
@@ -319,10 +352,10 @@ describe("handleGen5StatAbility -- Moxie", () => {
 
   it("given Moxie and opponent still alive, when on-after-move-used fires, then does not activate", () => {
     // Source: Showdown -- Moxie only triggers when target faints
-    const opponent = makeActivePokemon({ currentHp: 100, maxHp: 200 });
-    const ctx = makeContext({
-      ability: "moxie",
-      trigger: "on-after-move-used",
+    const opponent = createOnFieldPokemon({ currentHp: 100, maxHp: 200 });
+    const ctx = createAbilityContext({
+      ability: abilityIds.moxie,
+      trigger: triggerIds.onAfterMoveUsed,
       opponent,
     });
     const result = handleGen5StatAbility(ctx);
@@ -333,9 +366,9 @@ describe("handleGen5StatAbility -- Moxie", () => {
 
   it("given Moxie but no opponent in context, when on-after-move-used fires, then does not activate", () => {
     // Edge case: no opponent reference
-    const ctx = makeContext({
-      ability: "moxie",
-      trigger: "on-after-move-used",
+    const ctx = createAbilityContext({
+      ability: abilityIds.moxie,
+      trigger: triggerIds.onAfterMoveUsed,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -352,10 +385,10 @@ describe("handleGen5StatAbility -- Defiant", () => {
     // Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost:
     //   this.boost({atk: 2}, target, target, null, false, true)
     // Source: Bulbapedia -- Defiant: "+2 Attack when any stat lowered by opponent"
-    const opponent = makeActivePokemon({ ability: "intimidate" });
-    const ctx = makeContext({
-      ability: "defiant",
-      trigger: "on-stat-change",
+    const opponent = createOnFieldPokemon({ ability: abilityIds.intimidate });
+    const ctx = createAbilityContext({
+      ability: abilityIds.defiant,
+      trigger: triggerIds.onStatChange,
       opponent,
       nickname: "Bisharp",
       // Must supply statChange with a drop caused by opponent
@@ -379,9 +412,9 @@ describe("handleGen5StatAbility -- Defiant", () => {
   it("given Defiant and self-inflicted stat drop, when on-stat-change fires, then does not activate", () => {
     // Source: Showdown -- Defiant checks: if (!source || target.isAlly(source)) return;
     // Self-inflicted drops (e.g., Close Combat own stat drop) should not trigger Defiant.
-    const ctx = makeContext({
-      ability: "defiant",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.defiant,
+      trigger: triggerIds.onStatChange,
       statChange: { stat: "defense", stages: -1, source: "self" },
     });
     const result = handleGen5StatAbility(ctx);
@@ -392,10 +425,10 @@ describe("handleGen5StatAbility -- Defiant", () => {
 
   it("given Defiant and opponent-caused stat boost (not a drop), when on-stat-change fires, then does not activate", () => {
     // Source: Showdown -- Defiant only fires on negative boosts, not positive
-    const opponent = makeActivePokemon({ ability: "moody" });
-    const ctx = makeContext({
-      ability: "defiant",
-      trigger: "on-stat-change",
+    const opponent = createOnFieldPokemon({ ability: abilityIds.moody });
+    const ctx = createAbilityContext({
+      ability: abilityIds.defiant,
+      trigger: triggerIds.onStatChange,
       opponent,
       statChange: { stat: "attack", stages: 2, source: "opponent" },
     });
@@ -403,66 +436,6 @@ describe("handleGen5StatAbility -- Defiant", () => {
 
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Competitive (on-stat-change)
-// ---------------------------------------------------------------------------
-
-describe("handleGen5StatAbility -- Competitive", () => {
-  it("given Competitive and opponent-caused stat drop, when on-stat-change fires, then raises SpAtk by 2 stages", () => {
-    // Source: Showdown data/abilities.ts -- Competitive onAfterEachBoost:
-    //   this.boost({spa: 2}, target, target, null, false, true)
-    // Source: Bulbapedia -- Competitive: "+2 SpAtk when any stat lowered by opponent"
-    const opponent = makeActivePokemon({ ability: "intimidate" });
-    const ctx = makeContext({
-      ability: "competitive",
-      trigger: "on-stat-change",
-      opponent,
-      nickname: "Milotic",
-      // Must supply statChange with a drop caused by opponent
-      statChange: { stat: "spAttack", stages: -2, source: "opponent" },
-    });
-    const result = handleGen5StatAbility(ctx);
-
-    expect(result.activated).toBe(true);
-    expect(result.effects).toHaveLength(1);
-    expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "spAttack",
-      stages: 2,
-    });
-    expect(result.messages[0]).toContain("Competitive");
-    expect(result.messages[0]).toContain("sharply raised");
-    expect(result.messages[0]).toContain("Milotic");
-  });
-
-  it("given Competitive and self-inflicted stat drop, when on-stat-change fires, then does not activate", () => {
-    // Source: Showdown -- Competitive uses same guard as Defiant; self drops excluded
-    const ctx = makeContext({
-      ability: "competitive",
-      trigger: "on-stat-change",
-      statChange: { stat: "spAttack", stages: -2, source: "self" },
-    });
-    const result = handleGen5StatAbility(ctx);
-
-    expect(result.activated).toBe(false);
-  });
-
-  it("given Competitive and opponent-caused boost (not a drop), when on-stat-change fires, then does not activate", () => {
-    // Source: Showdown -- Competitive only triggers on drops, not boosts
-    const opponent = makeActivePokemon({ ability: "moody" });
-    const ctx = makeContext({
-      ability: "competitive",
-      trigger: "on-stat-change",
-      opponent,
-      statChange: { stat: "spAttack", stages: 1, source: "opponent" },
-    });
-    const result = handleGen5StatAbility(ctx);
-
-    expect(result.activated).toBe(false);
   });
 });
 
@@ -475,9 +448,9 @@ describe("handleGen5StatAbility -- Contrary", () => {
     // Source: Showdown data/abilities.ts -- Contrary onChangeBoost:
     //   for (i in boost) { boost[i]! *= -1; }
     // The handler signals activation; the engine reads this and inverts the stat changes.
-    const ctx = makeContext({
-      ability: "contrary",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.contrary,
+      trigger: triggerIds.onStatChange,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -489,10 +462,10 @@ describe("handleGen5StatAbility -- Contrary", () => {
   it("given Contrary, when on-stat-change fires with move context, then still activates", () => {
     // Source: Showdown -- Contrary always activates regardless of move/source
     // (no Z-Power check in Gen 5 since Z-moves don't exist)
-    const ctx = makeContext({
-      ability: "contrary",
-      trigger: "on-stat-change",
-      move: makeMove("normal", "status"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.contrary,
+      trigger: triggerIds.onStatChange,
+      move: growl,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -509,9 +482,9 @@ describe("handleGen5StatAbility -- Simple", () => {
     // Source: Showdown data/abilities.ts -- Simple onChangeBoost:
     //   for (i in boost) { boost[i]! *= 2; }
     // The handler signals activation; the engine reads this and doubles all pending changes.
-    const ctx = makeContext({
-      ability: "simple",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.simple,
+      trigger: triggerIds.onStatChange,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -521,9 +494,9 @@ describe("handleGen5StatAbility -- Simple", () => {
 
   it("given Simple, when on-stat-change fires a second time, then still activates (no one-time limit)", () => {
     // Source: Showdown -- Simple has no activation counter; applies to every stat change
-    const ctx = makeContext({
-      ability: "simple",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.simple,
+      trigger: triggerIds.onStatChange,
     });
     const result1 = handleGen5StatAbility(ctx);
     const result2 = handleGen5StatAbility(ctx);
@@ -542,10 +515,10 @@ describe("handleGen5StatAbility -- Justified", () => {
     // Source: Showdown data/abilities.ts -- Justified onDamagingHit:
     //   if (move.type === 'Dark') { this.boost({atk: 1}); }
     // Source: Bulbapedia -- Justified: "+1 Attack when hit by Dark-type move"
-    const ctx = makeContext({
-      ability: "justified",
-      trigger: "on-damage-taken",
-      move: makeMove("dark", "physical"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.justified,
+      trigger: triggerIds.onDamageTaken,
+      move: crunch,
       nickname: "Lucario",
     });
     const result = handleGen5StatAbility(ctx);
@@ -565,10 +538,10 @@ describe("handleGen5StatAbility -- Justified", () => {
   it("given Justified and hit by Dark-type special move, when on-damage-taken fires, then still raises Attack by 1", () => {
     // Source: Showdown -- Justified checks move.type only, not category
     // Dark Pulse (special) should still trigger Justified
-    const ctx = makeContext({
-      ability: "justified",
-      trigger: "on-damage-taken",
-      move: makeMove("dark", "special"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.justified,
+      trigger: triggerIds.onDamageTaken,
+      move: darkPulse,
       nickname: "Cobalion",
     });
     const result = handleGen5StatAbility(ctx);
@@ -584,10 +557,16 @@ describe("handleGen5StatAbility -- Justified", () => {
 
   it("given Justified and hit by non-Dark move, when on-damage-taken fires, then does not activate", () => {
     // Source: Showdown -- Justified only checks for Dark type
-    const ctx = makeContext({
-      ability: "justified",
-      trigger: "on-damage-taken",
-      move: makeMove("fire", "physical"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.justified,
+      trigger: triggerIds.onDamageTaken,
+      move: createSyntheticMoveFrom(flamethrower, {
+        // Synthetic probe: Justified only branches on Dark typing, so this forces
+        // a non-canonical Fire physical hit without rebuilding a move payload.
+        category: tackle.category,
+        power: tackle.power,
+        flags: tackle.flags,
+      }),
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -597,9 +576,9 @@ describe("handleGen5StatAbility -- Justified", () => {
 
   it("given Justified but no move in context, when on-damage-taken fires, then does not activate", () => {
     // Edge case: damage without move data
-    const ctx = makeContext({
-      ability: "justified",
-      trigger: "on-damage-taken",
+    const ctx = createAbilityContext({
+      ability: abilityIds.justified,
+      trigger: triggerIds.onDamageTaken,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -617,10 +596,10 @@ describe("handleGen5StatAbility -- Weak Armor", () => {
     //   this.boost({def: -1, spe: 1}, target, target)
     // Note: base data (Gen 7+) has spe: 2, but Gen 5 uses spe: 1
     // Source: Bulbapedia -- Weak Armor (Gen V-VI): "-1 Defense, +1 Speed"
-    const ctx = makeContext({
-      ability: "weak-armor",
-      trigger: "on-damage-taken",
-      move: makeMove("normal", "physical"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.weakArmor,
+      trigger: triggerIds.onDamageTaken,
+      move: tackle,
       nickname: "Vanilluxe",
     });
     const result = handleGen5StatAbility(ctx);
@@ -645,10 +624,10 @@ describe("handleGen5StatAbility -- Weak Armor", () => {
 
   it("given Weak Armor and hit by special move, when on-damage-taken fires, then does not activate", () => {
     // Source: Showdown -- Weak Armor checks move.category === 'Physical'
-    const ctx = makeContext({
-      ability: "weak-armor",
-      trigger: "on-damage-taken",
-      move: makeMove("fire", "special"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.weakArmor,
+      trigger: triggerIds.onDamageTaken,
+      move: flamethrower,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -658,10 +637,10 @@ describe("handleGen5StatAbility -- Weak Armor", () => {
 
   it("given Weak Armor and hit by status move, when on-damage-taken fires, then does not activate", () => {
     // Source: Showdown -- Weak Armor checks move.category === 'Physical'
-    const ctx = makeContext({
-      ability: "weak-armor",
-      trigger: "on-damage-taken",
-      move: makeMove("normal", "status"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.weakArmor,
+      trigger: triggerIds.onDamageTaken,
+      move: thunderWave,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -678,9 +657,9 @@ describe("handleGen5StatAbility -- Speed Boost", () => {
     // Source: Showdown data/abilities.ts -- Speed Boost onResidual:
     //   if (pokemon.activeTurns) { this.boost({spe: 1}); }
     // Source: Bulbapedia -- Speed Boost: "+1 Speed at end of each turn"
-    const ctx = makeContext({
-      ability: "speed-boost",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.speedBoost,
+      trigger: triggerIds.onTurnEnd,
       turnsOnField: 1,
       nickname: "Blaziken",
     });
@@ -701,9 +680,9 @@ describe("handleGen5StatAbility -- Speed Boost", () => {
   it("given Speed Boost and turnsOnField=0, when on-turn-end fires, then does not activate (first turn)", () => {
     // Source: Showdown -- Speed Boost checks pokemon.activeTurns; 0 means no boost
     // The Pokemon just switched in this turn, no boost yet
-    const ctx = makeContext({
-      ability: "speed-boost",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.speedBoost,
+      trigger: triggerIds.onTurnEnd,
       turnsOnField: 0,
     });
     const result = handleGen5StatAbility(ctx);
@@ -714,9 +693,9 @@ describe("handleGen5StatAbility -- Speed Boost", () => {
 
   it("given Speed Boost and turnsOnField=3, when on-turn-end fires, then still raises Speed by 1", () => {
     // Source: Showdown -- Speed Boost triggers every turn after the first
-    const ctx = makeContext({
-      ability: "speed-boost",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.speedBoost,
+      trigger: triggerIds.onTurnEnd,
       turnsOnField: 3,
     });
     const result = handleGen5StatAbility(ctx);
@@ -741,9 +720,9 @@ describe("handleGen5StatAbility -- Moody", () => {
     //   picks a random stat below +6 to raise by 2, then a different stat above -6 to lower by 1
     // Source: Bulbapedia -- Moody: "+2 random stat, -1 different random stat per turn"
     // With rng.pick returning first element: attack is raised, defense is lowered
-    const ctx = makeContext({
-      ability: "moody",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
       nickname: "Glalie",
     });
     const result = handleGen5StatAbility(ctx);
@@ -772,9 +751,9 @@ describe("handleGen5StatAbility -- Moody", () => {
     // Source: Bulbapedia -- Moody Gen V-VII: "All seven stats are eligible"
     // Force rng.pick to return the last element (evasion) to verify it's in the pool
     let pickCount = 0;
-    const ctx = makeContext({
-      ability: "moody",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
       rngPick: <T>(arr: readonly T[]) => {
         pickCount++;
         // First pick (raise): return last element (evasion)
@@ -795,9 +774,9 @@ describe("handleGen5StatAbility -- Moody", () => {
   it("given Moody with attack at +6, when on-turn-end fires, then attack is excluded from raise pool", () => {
     // Source: Showdown -- Moody filters stats already at +6 from the raise pool:
     //   if (pokemon.boosts[statPlus] < 6) stats.push(statPlus)
-    const ctx = makeContext({
-      ability: "moody",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
       statStages: { attack: 6 },
     });
     const result = handleGen5StatAbility(ctx);
@@ -810,9 +789,9 @@ describe("handleGen5StatAbility -- Moody", () => {
 
   it("given Moody with all stats at +6, when on-turn-end fires, then no stat is raised but one is still lowered", () => {
     // Source: Showdown -- if no stat can be raised, randomStat is undefined, only lower fires
-    const ctx = makeContext({
-      ability: "moody",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
       statStages: {
         attack: 6,
         defense: 6,
@@ -842,9 +821,9 @@ describe("handleGen5StatAbility -- Steadfast", () => {
     // Source: Showdown data/abilities.ts -- Steadfast onFlinch:
     //   this.boost({spe: 1});
     // Source: Bulbapedia -- Steadfast: "+1 Speed when flinched"
-    const ctx = makeContext({
-      ability: "steadfast",
-      trigger: "on-flinch",
+    const ctx = createAbilityContext({
+      ability: abilityIds.steadfast,
+      trigger: triggerIds.onFlinch,
       nickname: "Lucario",
     });
     const result = handleGen5StatAbility(ctx);
@@ -863,9 +842,9 @@ describe("handleGen5StatAbility -- Steadfast", () => {
 
   it("given non-Steadfast ability, when on-flinch fires, then does not activate", () => {
     // Source: Showdown -- only Steadfast has an on-flinch handler
-    const ctx = makeContext({
-      ability: "blaze",
-      trigger: "on-flinch",
+    const ctx = createAbilityContext({
+      ability: abilityIds.blaze,
+      trigger: triggerIds.onFlinch,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -884,9 +863,9 @@ describe("handleGen5StatAbility -- Unnerve", () => {
     // Source: Showdown data/abilities.ts -- Unnerve onFoeTryEatItem:
     //   `if (this.effectState.target.hasAbility('unnerve')) return null;`
     // Source: Bulbapedia -- Unnerve: "Prevents opposing Pokemon from eating Berries"
-    const ctx = makeContext({
-      ability: "unnerve",
-      trigger: "on-item-use",
+    const ctx = createAbilityContext({
+      ability: abilityIds.unnerve,
+      trigger: triggerIds.onItemUse,
       nickname: "Axew",
     });
     const result = handleGen5StatAbility(ctx);
@@ -900,9 +879,9 @@ describe("handleGen5StatAbility -- Unnerve", () => {
 
   it("given non-Unnerve ability, when on-item-use fires, then does not activate", () => {
     // Source: Showdown -- only Unnerve has this item-consumption prevention
-    const ctx = makeContext({
-      ability: "blaze",
-      trigger: "on-item-use",
+    const ctx = createAbilityContext({
+      ability: abilityIds.blaze,
+      trigger: triggerIds.onItemUse,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -912,9 +891,9 @@ describe("handleGen5StatAbility -- Unnerve", () => {
   it("given Unnerve, when passive-immunity check fires (wrong trigger), then does not activate", () => {
     // Regression: Unnerve was previously incorrectly wired to passive-immunity.
     // Verify it no longer activates on that trigger.
-    const ctx = makeContext({
-      ability: "unnerve",
-      trigger: "passive-immunity",
+    const ctx = createAbilityContext({
+      ability: abilityIds.unnerve,
+      trigger: triggerIds.passiveImmunity,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -929,9 +908,9 @@ describe("handleGen5StatAbility -- Unnerve", () => {
 describe("handleGen5StatAbility -- unknown trigger", () => {
   it("given any ability with an unhandled trigger, when dispatch runs, then returns inactive", () => {
     // Triggers that this module doesn't handle should return INACTIVE
-    const ctx = makeContext({
-      ability: "speed-boost",
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      ability: abilityIds.speedBoost,
+      trigger: triggerIds.onSwitchIn,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -942,11 +921,28 @@ describe("handleGen5StatAbility -- unknown trigger", () => {
 });
 
 describe("handleGen5StatAbility -- unknown ability for handled trigger", () => {
+  it("given a generation-invalid stat ability id, when on-stat-change fires, then dispatch stays inactive", () => {
+    // Regression: Gen 5 previously handled a foreign-generation stat-boost ability here.
+    // Any unsupported stat ability id must remain inactive instead of silently reintroducing it.
+    const ctx = createAbilityContext({
+      ability: INVALID_GEN5_STAT_ABILITY_ID,
+      trigger: triggerIds.onStatChange,
+      statChange: { stat: "spAttack", stages: -2, source: "opponent" },
+    });
+    const result = handleGen5StatAbility(ctx);
+
+    expect(result).toEqual({
+      activated: false,
+      effects: [],
+      messages: [],
+    });
+  });
+
   it("given an unhandled ability with on-turn-end trigger, when dispatch runs, then returns inactive", () => {
     // Abilities not in this module's scope should return INACTIVE
-    const ctx = makeContext({
-      ability: "blaze",
-      trigger: "on-turn-end",
+    const ctx = createAbilityContext({
+      ability: abilityIds.blaze,
+      trigger: triggerIds.onTurnEnd,
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -966,11 +962,14 @@ describe("handleGen5StatAbility -- Prankster Gen 5 Dark-type interaction", () =>
     // Source: Showdown data/abilities.ts -- Gen 7+ base data adds pranksterBoosted check
     //   but the Gen 5 mod doesn't override this, and our implementation for Gen 5 simply
     //   doesn't check the target's type at all.
-    const opponent = makeActivePokemon({ types: ["dark"], ability: "inner-focus" });
-    const ctx = makeContext({
-      ability: "prankster",
-      trigger: "on-priority-check",
-      move: makeMove("normal", "status"),
+    const opponent = createOnFieldPokemon({
+      types: [typeIds.dark],
+      ability: abilityIds.innerFocus,
+    });
+    const ctx = createAbilityContext({
+      ability: abilityIds.prankster,
+      trigger: triggerIds.onPriorityCheck,
+      move: thunderWave,
       opponent,
     });
     const result = handleGen5StatAbility(ctx);
@@ -981,11 +980,14 @@ describe("handleGen5StatAbility -- Prankster Gen 5 Dark-type interaction", () =>
 
   it("given Prankster and Dark/Steel opponent, when on-priority-check fires with status move, then still activates", () => {
     // Source: Bulbapedia -- dual Dark-type also not blocked in Gen 5
-    const opponent = makeActivePokemon({ types: ["dark", "steel"], ability: "inner-focus" });
-    const ctx = makeContext({
-      ability: "prankster",
-      trigger: "on-priority-check",
-      move: makeMove("normal", "status"),
+    const opponent = createOnFieldPokemon({
+      types: [typeIds.dark, typeIds.steel],
+      ability: abilityIds.innerFocus,
+    });
+    const ctx = createAbilityContext({
+      ability: abilityIds.prankster,
+      trigger: triggerIds.onPriorityCheck,
+      move: thunderWave,
       opponent,
     });
     const result = handleGen5StatAbility(ctx);
@@ -1004,18 +1006,21 @@ describe("handleGen5StatAbility -- Weak Armor Gen 5 Speed boost amount", () => {
     //   this.boost({def: -1, spe: 1}, target, target)
     //   Gen 7+ base data uses spe: 2
     // Source: Bulbapedia -- Weak Armor Gen V-VI: "+1 Speed, -1 Defense"
-    const ctx = makeContext({
-      ability: "weak-armor",
-      trigger: "on-damage-taken",
-      move: makeMove("fighting", "physical"),
+    const ctx = createAbilityContext({
+      ability: abilityIds.weakArmor,
+      trigger: triggerIds.onDamageTaken,
+      move: closeCombat,
     });
     const result = handleGen5StatAbility(ctx);
 
     const speedEffect = result.effects.find(
       (e) => e.effectType === "stat-change" && (e as { stat: string }).stat === "speed",
     );
-    expect(speedEffect).toBeDefined();
-    // Source: Showdown data/mods/gen6/abilities.ts -- Weak Armor (Gen 5-6): this.boost({def: -1, spe: 1}) raises Speed by +1 stage
-    expect((speedEffect as { stages: number }).stages).toBe(1);
+    expect(speedEffect).toEqual({
+      effectType: "stat-change",
+      target: "self",
+      stat: "speed",
+      stages: 1,
+    });
   });
 });

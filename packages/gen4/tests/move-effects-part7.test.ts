@@ -6,8 +6,19 @@ import type {
   PokemonType,
   StatBlock,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createFriendship,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen4Ruleset } from "../src";
+import { GEN4_MOVE_IDS, GEN4_NATURE_IDS, GEN4_SPECIES_IDS, Gen4Ruleset } from "../src";
 import { createGen4DataManager } from "../src/data";
 
 /**
@@ -36,6 +47,21 @@ function createMockRng(intReturnValue: number, chanceResult = false) {
   };
 }
 
+const dataManager = createGen4DataManager();
+const ruleset = new Gen4Ruleset(dataManager);
+const ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = CORE_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const DEFAULT_FRIENDSHIP = createFriendship(0);
+
+function createMoveSlot(moveId: string) {
+  const move = dataManager.getMove(moveId);
+  return { moveId: move.id, currentPP: move.pp, maxPP: move.pp };
+}
+
 function createActivePokemon(opts: {
   types: PokemonType[];
   status?: string | null;
@@ -61,27 +87,27 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
     experience: 0,
-    nature: "hardy",
+    nature: GEN4_NATURE_IDS.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    ability: opts.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: DEFAULT_FRIENDSHIP,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -100,7 +126,7 @@ function createActivePokemon(opts: {
     },
     volatileStatuses: new Map(),
     types: opts.types,
-    ability: opts.ability ?? "",
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: opts.lastMoveUsed ?? null,
     lastDamageTaken: opts.lastDamageTaken ?? 0,
     lastDamageType: null,
@@ -118,32 +144,6 @@ function createActivePokemon(opts: {
     teraType: null,
     stellarBoostedTypes: [],
   } as ActivePokemon;
-}
-
-function _createMove(id: string, overrides?: Partial<MoveData>): MoveData {
-  return {
-    id,
-    name: id,
-    type: "normal",
-    category: "physical",
-    power: 80,
-    accuracy: 100,
-    pp: 10,
-    maxPp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
-    ...overrides,
-  } as MoveData;
 }
 
 function createMinimalBattleState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
@@ -203,9 +203,6 @@ function createContext(
 // Tests
 // ---------------------------------------------------------------------------
 
-const dataManager = createGen4DataManager();
-const ruleset = new Gen4Ruleset(dataManager);
-
 // ─── Counter ──────────────────────────────────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Counter", () => {
@@ -213,12 +210,12 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
     // Source: Showdown Gen 4 — Counter returns 2x physical damage received
     // 50 * 2 = 100
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       lastDamageTaken: 50,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("counter");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.counter);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -227,19 +224,19 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
     expect(result.customDamage).not.toBeNull();
     expect(result.customDamage!.amount).toBe(100);
     expect(result.customDamage!.target).toBe("defender");
-    expect(result.customDamage!.source).toBe("counter");
+    expect(result.customDamage!.source).toBe(MOVES.counter);
   });
 
   it("given attacker took 75 physical damage last turn, when Counter is used, then returns customDamage.amount = 150", () => {
     // Source: Showdown Gen 4 — Counter returns 2x physical damage received
     // 75 * 2 = 150 (triangulation with different input)
     const attacker = createActivePokemon({
-      types: ["fighting"],
+      types: [TYPES.fighting],
       lastDamageTaken: 75,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("counter");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.counter);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -252,12 +249,12 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
   it("given attacker took 60 special damage last turn, when Counter is used, then fails with message", () => {
     // Source: Showdown Gen 4 — Counter only responds to physical damage
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       lastDamageTaken: 60,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("counter");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.counter);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -270,12 +267,12 @@ describe("Gen 4 executeMoveEffect — Counter", () => {
   it("given attacker took no damage, when Counter is used, then fails with message", () => {
     // Source: Showdown Gen 4 — Counter fails if no damage was taken
     const attacker = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       lastDamageTaken: 0,
       lastDamageCategory: null,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("counter");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.counter);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -293,12 +290,12 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
     // Source: Showdown Gen 4 — Mirror Coat returns 2x special damage received
     // 60 * 2 = 120
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       lastDamageTaken: 60,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("mirror-coat");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.mirrorCoat);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -307,19 +304,19 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
     expect(result.customDamage).not.toBeNull();
     expect(result.customDamage!.amount).toBe(120);
     expect(result.customDamage!.target).toBe("defender");
-    expect(result.customDamage!.source).toBe("mirror-coat");
+    expect(result.customDamage!.source).toBe(MOVES.mirrorCoat);
   });
 
   it("given attacker took 40 special damage last turn, when Mirror Coat is used, then returns customDamage.amount = 80", () => {
     // Source: Showdown Gen 4 — Mirror Coat returns 2x special damage received
     // 40 * 2 = 80 (triangulation with different input)
     const attacker = createActivePokemon({
-      types: ["water"],
+      types: [TYPES.water],
       lastDamageTaken: 40,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
-    const defender = createActivePokemon({ types: ["fire"] });
-    const move = dataManager.getMove("mirror-coat");
+    const defender = createActivePokemon({ types: [TYPES.fire] });
+    const move = dataManager.getMove(MOVES.mirrorCoat);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -332,12 +329,12 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
   it("given attacker took 50 physical damage last turn, when Mirror Coat is used, then fails", () => {
     // Source: Showdown Gen 4 — Mirror Coat only responds to special damage
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       lastDamageTaken: 50,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("mirror-coat");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.mirrorCoat);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -350,12 +347,12 @@ describe("Gen 4 executeMoveEffect — Mirror Coat", () => {
   it("given attacker took no damage, when Mirror Coat is used, then fails", () => {
     // Source: Showdown Gen 4 — Mirror Coat fails if no damage was taken
     const attacker = createActivePokemon({
-      types: ["psychic"],
+      types: [TYPES.psychic],
       lastDamageTaken: 0,
       lastDamageCategory: null,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("mirror-coat");
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.mirrorCoat);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -372,22 +369,22 @@ describe("Gen 4 executeMoveEffect — Destiny Bond", () => {
   it("given Pokemon uses Destiny Bond, then selfVolatileInflicted is destiny-bond", () => {
     // Source: Bulbapedia — "Destiny Bond sets the destiny-bond volatile on the user"
     // Source: Showdown Gen 4 — sets destiny-bond volatile status
-    const attacker = createActivePokemon({ types: ["ghost"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("destiny-bond");
+    const attacker = createActivePokemon({ types: [TYPES.ghost] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.destinyBond);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.selfVolatileInflicted).toBe("destiny-bond");
+    expect(result.selfVolatileInflicted).toBe(VOLATILES.destinyBond);
   });
 
   it("given Pokemon with nickname uses Destiny Bond, then message references the nickname", () => {
     // Source: Showdown Gen 4 — "[Pokemon] is trying to take its foe down with it!"
-    const attacker = createActivePokemon({ types: ["ghost"], nickname: "Gengar" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("destiny-bond");
+    const attacker = createActivePokemon({ types: [TYPES.ghost], nickname: "Gengar" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.destinyBond);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -403,30 +400,30 @@ describe("Gen 4 executeMoveEffect — Taunt", () => {
   it("given Pokemon uses Taunt when rng returns 3, then volatileData.turnsLeft is 3", () => {
     // Source: Showdown Gen 4 mod — Taunt duration is random(3, 6) exclusive = 3–5 turns
     // Source: Bulbapedia — "Taunt lasts for 3–5 turns in Generation IV"
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("taunt");
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.taunt);
     const rng = createMockRng(3); // rng.int(3,5) returns 3
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("taunt");
+    expect(result.volatileInflicted).toBe(VOLATILES.taunt);
     expect(result.volatileData?.turnsLeft).toBe(3);
   });
 
   it("given Pokemon uses Taunt when rng returns 5, then volatileData.turnsLeft is 5", () => {
     // Source: Showdown Gen 4 mod — Taunt duration is random(3, 6) exclusive = 3–5 turns
     // Triangulation: different rng value proves the duration is not hardcoded to 3
-    const attacker = createActivePokemon({ types: ["dark"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("taunt");
+    const attacker = createActivePokemon({ types: [TYPES.dark] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.taunt);
     const rng = createMockRng(5); // rng.int(3,5) returns 5
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("taunt");
+    expect(result.volatileInflicted).toBe(VOLATILES.taunt);
     expect(result.volatileData?.turnsLeft).toBe(5);
   });
 });
@@ -437,55 +434,55 @@ describe("Gen 4 executeMoveEffect — Disable", () => {
   it("given target has lastMoveUsed = tackle, when Disable is used, then volatileInflicted is disable with data.moveId = tackle", () => {
     // Source: Showdown Gen 4 — Disable targets the last used move for 4-7 turns
     // (this.random(4, 8) exclusive upper = 4-7 inclusive)
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({
-      types: ["normal"],
-      lastMoveUsed: "tackle",
+      types: [TYPES.normal],
+      lastMoveUsed: MOVES.tackle,
     });
     // Defender must have the last-used move in its moveset for Disable to succeed
-    defender.pokemon.moves = [{ moveId: "tackle", currentPP: 35, maxPP: 35 }];
-    const move = dataManager.getMove("disable");
+    defender.pokemon.moves = [createMoveSlot(MOVES.tackle)];
+    const move = dataManager.getMove(MOVES.disable);
     const rng = createMockRng(5); // rng.int(4,7) returns 5
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("disable");
+    expect(result.volatileInflicted).toBe(VOLATILES.disable);
     expect(result.volatileData).toEqual({
       turnsLeft: 5,
-      data: { moveId: "tackle" },
+      data: { moveId: MOVES.tackle },
     });
   });
 
   it("given target has lastMoveUsed = flamethrower, when Disable is used with rng returning 6, then data.moveId = flamethrower and turnsLeft = 6", () => {
     // Source: Showdown Gen 4 — Disable lasts 4-7 turns, records the move ID
     // Triangulation: different move + different rng value
-    const attacker = createActivePokemon({ types: ["psychic"] });
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
     const defender = createActivePokemon({
-      types: ["fire"],
-      lastMoveUsed: "flamethrower",
+      types: [TYPES.fire],
+      lastMoveUsed: MOVES.flamethrower,
     });
     // Defender must have the last-used move in its moveset for Disable to succeed
-    defender.pokemon.moves = [{ moveId: "flamethrower", currentPP: 15, maxPP: 15 }];
-    const move = dataManager.getMove("disable");
+    defender.pokemon.moves = [createMoveSlot(MOVES.flamethrower)];
+    const move = dataManager.getMove(MOVES.disable);
     const rng = createMockRng(6); // rng.int(4,7) returns 6
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.volatileInflicted).toBe("disable");
+    expect(result.volatileInflicted).toBe(VOLATILES.disable);
     expect(result.volatileData!.turnsLeft).toBe(6);
-    expect(result.volatileData!.data!.moveId).toBe("flamethrower");
+    expect(result.volatileData!.data!.moveId).toBe(MOVES.flamethrower);
   });
 
   it("given target has no lastMoveUsed, when Disable is used, then fails with message", () => {
     // Source: Showdown Gen 4 — Disable fails if the target hasn't used a move
-    const attacker = createActivePokemon({ types: ["normal"] });
+    const attacker = createActivePokemon({ types: [TYPES.normal] });
     const defender = createActivePokemon({
-      types: ["normal"],
+      types: [TYPES.normal],
       lastMoveUsed: null,
     });
-    const move = dataManager.getMove("disable");
+    const move = dataManager.getMove(MOVES.disable);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -502,24 +499,24 @@ describe("Gen 4 executeMoveEffect — Future Sight", () => {
   it("given Pokemon uses Future Sight, then futureAttack.moveId = future-sight and turnsLeft = 3", () => {
     // Source: Bulbapedia — "Future Sight hits 2 turns after being used (3 EoT ticks)"
     // Source: Showdown Gen 4 — Future Sight schedules attack for 3 end-of-turn decrements
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("future-sight");
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.futureSight);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.futureAttack).not.toBeNull();
-    expect(result.futureAttack!.moveId).toBe("future-sight");
+    expect(result.futureAttack!.moveId).toBe(MOVES.futureSight);
     expect(result.futureAttack!.turnsLeft).toBe(3);
   });
 
   it("given Pokemon on side 0 uses Future Sight, then sourceSide = 0", () => {
     // Source: Showdown Gen 4 — Future Sight tracks which side used the move
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["fighting"] });
-    const move = dataManager.getMove("future-sight");
+    const attacker = createActivePokemon({ types: [TYPES.psychic] });
+    const defender = createActivePokemon({ types: [TYPES.fighting] });
+    const move = dataManager.getMove(MOVES.futureSight);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 
@@ -530,9 +527,9 @@ describe("Gen 4 executeMoveEffect — Future Sight", () => {
 
   it("given Pokemon uses Future Sight, then message says foresaw an attack", () => {
     // Source: Showdown Gen 4 — "[Pokemon] foresaw an attack!"
-    const attacker = createActivePokemon({ types: ["psychic"], nickname: "Alakazam" });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("future-sight");
+    const attacker = createActivePokemon({ types: [TYPES.psychic], nickname: "Alakazam" });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = dataManager.getMove(MOVES.futureSight);
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
 

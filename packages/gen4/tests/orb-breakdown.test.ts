@@ -1,13 +1,29 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
-  PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Damage Calc — Orb and Light Ball breakdown.itemMultiplier tests.
@@ -48,12 +64,11 @@ function createActivePokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "paralysis" | "sleep" | "freeze" | null;
+  status?: PrimaryStatus | null;
   speciesId?: number;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -61,126 +76,47 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? 1,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
+    level: opts.level ?? 50,
+    nature: GEN4_NATURE_IDS.hardy,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+    types: opts.types ?? [CORE_TYPE_IDS.normal],
+  });
 }
 
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "",
-    generation: 4,
-  } as MoveData;
+const gen4DataManager = createGen4DataManager();
+
+function getGen4Move(moveId: string): MoveData {
+  return gen4DataManager.getMove(moveId);
 }
 
 function createNeutralTypeChart(): TypeChart {
   const types: PokemonType[] = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
+    CORE_TYPE_IDS.normal,
+    CORE_TYPE_IDS.fire,
+    CORE_TYPE_IDS.water,
+    CORE_TYPE_IDS.electric,
+    CORE_TYPE_IDS.grass,
+    CORE_TYPE_IDS.ice,
+    CORE_TYPE_IDS.fighting,
+    CORE_TYPE_IDS.poison,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.flying,
+    CORE_TYPE_IDS.psychic,
+    CORE_TYPE_IDS.bug,
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ghost,
+    CORE_TYPE_IDS.dragon,
+    CORE_TYPE_IDS.dark,
+    CORE_TYPE_IDS.steel,
   ];
   const chart = {} as Record<string, Record<string, number>>;
   for (const atk of types) {
@@ -224,12 +160,12 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
     // Source: Bulbapedia -- Adamant Orb boosts Dialga's Dragon/Steel moves by 20%
     // 4915/4096 = ~1.19995... (the exact Gen 4 fraction for 1.2x)
     const attacker = createActivePokemon({
-      types: ["steel", "dragon"],
-      heldItem: "adamant-orb",
-      speciesId: 483, // Dialga
+      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.dragon],
+      heldItem: GEN4_ITEM_IDS.adamantOrb,
+      speciesId: GEN4_SPECIES_IDS.dialga,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "dragon", power: 80 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen4Move(GEN4_MOVE_IDS.dragonClaw);
     const ctx = createDamageContext({ attacker, defender, move });
 
     const result = calculateGen4Damage(ctx, typeChart);
@@ -242,12 +178,12 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
     // Source: Showdown data/items.ts -- Lustrous Orb onBasePower: basePower * 0x1333 / 0x1000
     // Source: Bulbapedia -- Lustrous Orb boosts Palkia's Water/Dragon moves by 20%
     const attacker = createActivePokemon({
-      types: ["water", "dragon"],
-      heldItem: "lustrous-orb",
-      speciesId: 484, // Palkia
+      types: [CORE_TYPE_IDS.water, CORE_TYPE_IDS.dragon],
+      heldItem: GEN4_ITEM_IDS.lustrousOrb,
+      speciesId: GEN4_SPECIES_IDS.palkia,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "water", power: 80, category: "special" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen4Move(GEN4_MOVE_IDS.surf);
     const ctx = createDamageContext({ attacker, defender, move });
 
     const result = calculateGen4Damage(ctx, typeChart);
@@ -260,12 +196,12 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
     // Source: Showdown Gen 4 mod -- Griseous Orb onBasePower: Ghost/Dragon for Giratina
     // Source: Bulbapedia -- Griseous Orb boosts Giratina's Ghost/Dragon moves by 20%
     const attacker = createActivePokemon({
-      types: ["ghost", "dragon"],
-      heldItem: "griseous-orb",
-      speciesId: 487, // Giratina
+      types: [CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.dragon],
+      heldItem: GEN4_ITEM_IDS.griseousOrb,
+      speciesId: GEN4_SPECIES_IDS.giratina,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "ghost", power: 80, category: "special" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen4Move(GEN4_MOVE_IDS.shadowBall);
     const ctx = createDamageContext({ attacker, defender, move });
 
     const result = calculateGen4Damage(ctx, typeChart);
@@ -278,12 +214,12 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
     // Source: Showdown Gen 4 mod -- Light Ball onBasePower: Pikachu => chainModify(2)
     // Source: Bulbapedia -- Light Ball: doubles base power for Pikachu in Gen 4
     const attacker = createActivePokemon({
-      types: ["electric"],
-      heldItem: "light-ball",
-      speciesId: 25, // Pikachu
+      types: [CORE_TYPE_IDS.electric],
+      heldItem: GEN4_ITEM_IDS.lightBall,
+      speciesId: GEN4_SPECIES_IDS.pikachu,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "electric", power: 40, category: "physical" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen4Move(GEN4_MOVE_IDS.thunderbolt);
     const ctx = createDamageContext({ attacker, defender, move });
 
     const result = calculateGen4Damage(ctx, typeChart);
@@ -296,12 +232,12 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
     // Source: Bulbapedia -- Adamant Orb only boosts Dragon and Steel moves
     // Fire is neither Dragon nor Steel, so no boost should apply
     const attacker = createActivePokemon({
-      types: ["steel", "dragon"],
-      heldItem: "adamant-orb",
-      speciesId: 483, // Dialga
+      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.dragon],
+      heldItem: GEN4_ITEM_IDS.adamantOrb,
+      speciesId: GEN4_SPECIES_IDS.dialga,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "fire", power: 80, category: "special" });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen4Move(GEN4_MOVE_IDS.flamethrower);
     const ctx = createDamageContext({ attacker, defender, move });
 
     const result = calculateGen4Damage(ctx, typeChart);
@@ -314,13 +250,13 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
     // Source: Showdown -- Klutz suppresses held item effects
     // Source: Bulbapedia -- Klutz: "The Pokemon can't use any held items"
     const attacker = createActivePokemon({
-      types: ["steel", "dragon"],
-      heldItem: "adamant-orb",
-      speciesId: 483, // Dialga
-      ability: "klutz",
+      types: [CORE_TYPE_IDS.steel, CORE_TYPE_IDS.dragon],
+      heldItem: GEN4_ITEM_IDS.adamantOrb,
+      speciesId: GEN4_SPECIES_IDS.dialga,
+      ability: GEN4_ABILITY_IDS.klutz,
     });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = createMove({ type: "dragon", power: 80 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = getGen4Move(GEN4_MOVE_IDS.dragonClaw);
     const ctx = createDamageContext({ attacker, defender, move });
 
     const result = calculateGen4Damage(ctx, typeChart);

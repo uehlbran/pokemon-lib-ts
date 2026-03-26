@@ -1,3 +1,5 @@
+import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS, createMoveSlot } from "@pokemon-lib-ts/core";
+import { GEN5_ITEM_IDS } from "@pokemon-lib-ts/gen5";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -9,7 +11,7 @@ class ForceSwitchItemRuleset extends MockRuleset {
   private activated = false;
 
   constructor(
-    private readonly mode: "red-card" | "eject-button",
+    private readonly mode: typeof GEN5_ITEM_IDS.redCard | typeof GEN5_ITEM_IDS.ejectButton,
     private readonly holderUid: string,
   ) {
     super();
@@ -21,7 +23,7 @@ class ForceSwitchItemRuleset extends MockRuleset {
 
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
     if (
-      trigger !== "on-contact" ||
+      trigger !== CORE_ITEM_TRIGGER_IDS.onContact ||
       this.activated ||
       context.pokemon.pokemon.uid !== this.holderUid
     ) {
@@ -29,12 +31,12 @@ class ForceSwitchItemRuleset extends MockRuleset {
     }
 
     this.activated = true;
-    if (this.mode === "red-card") {
+    if (this.mode === GEN5_ITEM_IDS.redCard) {
       return {
         activated: true,
         effects: [
           { type: "none", target: "opponent", value: "force-switch" },
-          { type: "consume", target: "self", value: "red-card" },
+          { type: "consume", target: "self", value: GEN5_ITEM_IDS.redCard },
         ],
         messages: ["Blastoise held up its Red Card against the attacker!"],
       };
@@ -44,14 +46,18 @@ class ForceSwitchItemRuleset extends MockRuleset {
       activated: true,
       effects: [
         { type: "none", target: "self", value: "force-switch" },
-        { type: "consume", target: "self", value: "eject-button" },
+        { type: "consume", target: "self", value: GEN5_ITEM_IDS.ejectButton },
       ],
       messages: ["Blastoise's Eject Button activated!"],
     };
   }
 }
 
-function createForceSwitchItemEngine(mode: "red-card" | "eject-button") {
+const DEFAULT_MOVE = createMockDataManager().getMove(CORE_MOVE_IDS.tackle);
+
+function createForceSwitchItemEngine(
+  mode: typeof GEN5_ITEM_IDS.redCard | typeof GEN5_ITEM_IDS.ejectButton,
+) {
   const ruleset = new ForceSwitchItemRuleset(mode, "blastoise-1");
   const config: BattleConfig = {
     generation: 5,
@@ -61,8 +67,9 @@ function createForceSwitchItemEngine(mode: "red-card" | "eject-button") {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
           calculatedStats: {
+            // Source: createTestPokemon species #6 Charizard at level 50 in this test fixture path has 153 HP.
             hp: 153,
             attack: 100,
             defense: 100,
@@ -75,7 +82,7 @@ function createForceSwitchItemEngine(mode: "red-card" | "eject-button") {
         createTestPokemon(25, 50, {
           uid: "pikachu-side0-bench",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -91,7 +98,7 @@ function createForceSwitchItemEngine(mode: "red-card" | "eject-button") {
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
           calculatedStats: {
             hp: 154,
             attack: 100,
@@ -105,7 +112,7 @@ function createForceSwitchItemEngine(mode: "red-card" | "eject-button") {
         createTestPokemon(25, 50, {
           uid: "pikachu-bench",
           nickname: "Pikachu",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
           calculatedStats: {
             hp: 120,
             attack: 80,
@@ -128,7 +135,7 @@ function createForceSwitchItemEngine(mode: "red-card" | "eject-button") {
 
 describe("Held-item force switch handling", () => {
   it("given Red Card activates on the defender, when the attacker made contact, then the attacker is switched out immediately", () => {
-    const engine = createForceSwitchItemEngine("red-card");
+    const engine = createForceSwitchItemEngine(GEN5_ITEM_IDS.redCard);
 
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -138,13 +145,15 @@ describe("Held-item force switch handling", () => {
   });
 
   it("given Eject Button activates before the holder acts, when the holder is switched out, then its queued move is skipped", () => {
-    const engine = createForceSwitchItemEngine("eject-button");
+    const engine = createForceSwitchItemEngine(GEN5_ITEM_IDS.ejectButton);
 
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("pikachu-bench");
+    // Source: the Charizard fixture above is initialized with 153 HP and should remain untouched
+    // because Eject Button forces the holder out before its queued move resolves.
     expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBe(153);
   });
 });

@@ -1,14 +1,48 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
-import { Gen4Ruleset } from "../src/Gen4Ruleset";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+  Gen4Ruleset,
+} from "../src";
 import {
   applyGen4WeatherEffects,
   HAIL_IMMUNE_TYPES,
   isGen4WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
 } from "../src/Gen4Weather";
+
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const CORE_ABILITIES = CORE_ABILITY_IDS;
+const ABILITIES = GEN4_ABILITY_IDS;
+const MOVES = GEN4_MOVE_IDS;
+const ITEMS = GEN4_ITEM_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const NATURES = GEN4_NATURE_IDS;
+const dataManager = createGen4DataManager();
+const defaultSpecies = dataManager.getSpecies(SPECIES.bulbasaur);
+const defaultNature = dataManager.getNature(NATURES.hardy).id;
+
+type WeatherOverride = {
+  type: WeatherType;
+  turnsLeft: number;
+  source: string;
+};
 
 /**
  * Gen 4 Weather Tests
@@ -27,7 +61,7 @@ import {
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   maxHp?: number;
   speciesId?: number;
   nickname?: string | null;
@@ -36,27 +70,27 @@ function makePokemonInstance(overrides: {
   const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
-    speciesId: overrides.speciesId ?? 1,
+    speciesId: overrides.speciesId ?? defaultSpecies.id,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: maxHp,
     moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
+    ability: overrides.ability ?? CORE_ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: {
       hp: maxHp,
       attack: 100,
@@ -68,15 +102,15 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
-  types: PokemonType[];
+function createSyntheticActivePokemon(overrides: {
+  types: readonly PokemonType[];
   maxHp?: number;
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       maxHp: overrides.maxHp,
       speciesId: overrides.speciesId,
       nickname: overrides.nickname,
@@ -113,7 +147,7 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(index: 0 | 1, active: (ActivePokemon | null)[]): BattleSide {
+function createSyntheticBattleSide(index: 0 | 1, active: (ActivePokemon | null)[]): BattleSide {
   return {
     index,
     trainer: null,
@@ -130,14 +164,8 @@ function makeSide(index: 0 | 1, active: (ActivePokemon | null)[]): BattleSide {
   };
 }
 
-type WeatherOverride = {
-  type: "sand" | "hail" | "rain" | "sun";
-  turnsLeft: number;
-  source: string;
-} | null;
-
-function makeBattleState(
-  weather: WeatherOverride,
+function createSyntheticBattleState(
+  weather: WeatherOverride | null,
   side0Active: (ActivePokemon | null)[],
   side1Active: (ActivePokemon | null)[],
 ): BattleState {
@@ -146,8 +174,8 @@ function makeBattleState(
     generation: 4,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0, side0Active), makeSide(1, side1Active)],
-    weather: weather as never,
+    sides: [createSyntheticBattleSide(0, side0Active), createSyntheticBattleSide(1, side1Active)],
+    weather,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
     magicRoom: { active: false, turnsLeft: 0 },
@@ -175,15 +203,12 @@ function makeBattleState(
 describe("Gen4Weather constants", () => {
   it("SANDSTORM_IMMUNE_TYPES contains rock, ground, and steel", () => {
     // Source: Showdown Gen 4 mod — sandstorm immunity list
-    expect(SANDSTORM_IMMUNE_TYPES).toContain("rock");
-    expect(SANDSTORM_IMMUNE_TYPES).toContain("ground");
-    expect(SANDSTORM_IMMUNE_TYPES).toContain("steel");
+    expect(SANDSTORM_IMMUNE_TYPES).toEqual([TYPES.rock, TYPES.ground, TYPES.steel]);
   });
 
   it("HAIL_IMMUNE_TYPES contains ice only", () => {
     // Source: Showdown Gen 4 mod — hail immunity list (ice only)
-    expect(HAIL_IMMUNE_TYPES).toContain("ice");
-    expect(HAIL_IMMUNE_TYPES).toHaveLength(1);
+    expect(HAIL_IMMUNE_TYPES).toEqual([TYPES.ice]);
   });
 });
 
@@ -194,44 +219,44 @@ describe("Gen4Weather constants", () => {
 describe("isGen4WeatherImmune — sandstorm type immunity", () => {
   it("given a Rock-type Pokemon, when checking sandstorm immunity, then returns true", () => {
     // Source: Showdown Gen 4 mod — Rock type immune to sandstorm chip
-    expect(isGen4WeatherImmune(["rock"], "sand")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.rock], WEATHER.sand)).toBe(true);
   });
 
   it("given a Ground-type Pokemon, when checking sandstorm immunity, then returns true", () => {
     // Source: Showdown Gen 4 mod — Ground type immune to sandstorm chip
-    expect(isGen4WeatherImmune(["ground"], "sand")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.ground], WEATHER.sand)).toBe(true);
   });
 
   it("given a Steel-type Pokemon, when checking sandstorm immunity, then returns true", () => {
     // Source: Showdown Gen 4 mod — Steel type immune to sandstorm chip
-    expect(isGen4WeatherImmune(["steel"], "sand")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.steel], WEATHER.sand)).toBe(true);
   });
 
   it("given a Fire-type Pokemon, when checking sandstorm immunity, then returns false", () => {
     // Source: Showdown Gen 4 mod — Fire type takes sandstorm chip
-    expect(isGen4WeatherImmune(["fire"], "sand")).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.fire], WEATHER.sand)).toBe(false);
   });
 
   it("given a dual Rock/Fire-type, when checking sandstorm immunity, then returns true (Rock grants immunity)", () => {
     // Source: Showdown Gen 4 mod — any immune type grants full immunity
-    expect(isGen4WeatherImmune(["rock", "fire"], "sand")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.rock, TYPES.fire], WEATHER.sand)).toBe(true);
   });
 });
 
 describe("isGen4WeatherImmune — hail type immunity", () => {
   it("given an Ice-type Pokemon, when checking hail immunity, then returns true", () => {
     // Source: Showdown Gen 4 mod — Ice type immune to hail chip
-    expect(isGen4WeatherImmune(["ice"], "hail")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.ice], WEATHER.hail)).toBe(true);
   });
 
   it("given a Water-type Pokemon, when checking hail immunity, then returns false", () => {
     // Source: Showdown Gen 4 mod — Water type takes hail chip
-    expect(isGen4WeatherImmune(["water"], "hail")).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.water], WEATHER.hail)).toBe(false);
   });
 
   it("given a dual Ice/Water-type, when checking hail immunity, then returns true (Ice grants immunity)", () => {
     // Source: Showdown Gen 4 mod — any immune type grants full immunity
-    expect(isGen4WeatherImmune(["ice", "water"], "hail")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.ice, TYPES.water], WEATHER.hail)).toBe(true);
   });
 });
 
@@ -243,37 +268,37 @@ describe("isGen4WeatherImmune — Magic Guard ability (Gen 4 NEW)", () => {
   it("given a non-immune type with Magic Guard in sandstorm, when checking immunity, then returns true", () => {
     // Source: Bulbapedia — Magic Guard: immune to all indirect damage including sandstorm
     // Source: Showdown Gen 4 mod — Magic Guard check before weather chip loop
-    expect(isGen4WeatherImmune(["normal"], "sand", "magic-guard")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.normal], WEATHER.sand, ABILITIES.magicGuard)).toBe(true);
   });
 
   it("given a non-immune type with Magic Guard in hail, when checking immunity, then returns true", () => {
     // Source: Bulbapedia — Magic Guard: immune to all indirect damage including hail
-    expect(isGen4WeatherImmune(["fire"], "hail", "magic-guard")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.fire], WEATHER.hail, ABILITIES.magicGuard)).toBe(true);
   });
 
   it("given a Rock-type with Magic Guard in sandstorm, when checking immunity, then returns true (doubly immune)", () => {
     // Source: Showdown Gen 4 mod — Magic Guard short-circuits before type check anyway
-    expect(isGen4WeatherImmune(["rock"], "sand", "magic-guard")).toBe(true);
+    expect(isGen4WeatherImmune([TYPES.rock], WEATHER.sand, ABILITIES.magicGuard)).toBe(true);
   });
 
   it("given a non-immune type without Magic Guard in sandstorm, when checking immunity, then returns false", () => {
     // Verify Magic Guard absent means normal immunity rules apply
-    expect(isGen4WeatherImmune(["normal"], "sand", "levitate")).toBe(false);
-    expect(isGen4WeatherImmune(["normal"], "sand")).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.normal], WEATHER.sand, CORE_ABILITIES.levitate)).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.normal], WEATHER.sand)).toBe(false);
   });
 });
 
 describe("isGen4WeatherImmune — rain/sun (no chip damage)", () => {
   it("given any type in rain, when checking immunity, then returns false (no chip damage)", () => {
     // Source: Showdown Gen 4 mod — rain has no chip damage
-    expect(isGen4WeatherImmune(["normal"], "rain")).toBe(false);
-    expect(isGen4WeatherImmune(["water"], "rain")).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.normal], WEATHER.rain)).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.water], WEATHER.rain)).toBe(false);
   });
 
   it("given any type in sun, when checking immunity, then returns false (no chip damage)", () => {
     // Source: Showdown Gen 4 mod — sun has no chip damage
-    expect(isGen4WeatherImmune(["fire"], "sun")).toBe(false);
-    expect(isGen4WeatherImmune(["normal"], "sun")).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.fire], WEATHER.sun)).toBe(false);
+    expect(isGen4WeatherImmune([TYPES.normal], WEATHER.sun)).toBe(false);
   });
 });
 
@@ -284,9 +309,9 @@ describe("isGen4WeatherImmune — rain/sun (no chip damage)", () => {
 describe("applyGen4WeatherEffects — sandstorm", () => {
   it("given sandstorm, when a Rock-type Pokemon's turn ends, then no damage is taken", () => {
     // Source: Showdown Gen 4 mod — Rock type immune to sandstorm chip
-    const rockMon = makeActivePokemon({ types: ["rock"], maxHp: 160 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const rockMon = createSyntheticActivePokemon({ types: [TYPES.rock], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [rockMon],
       [],
     );
@@ -298,9 +323,9 @@ describe("applyGen4WeatherEffects — sandstorm", () => {
 
   it("given sandstorm, when a Ground-type Pokemon's turn ends, then no damage is taken", () => {
     // Source: Showdown Gen 4 mod — Ground type immune to sandstorm chip
-    const groundMon = makeActivePokemon({ types: ["ground"], maxHp: 160 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const groundMon = createSyntheticActivePokemon({ types: [TYPES.ground], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [groundMon],
       [],
     );
@@ -310,9 +335,9 @@ describe("applyGen4WeatherEffects — sandstorm", () => {
 
   it("given sandstorm, when a Steel-type Pokemon's turn ends, then no damage is taken", () => {
     // Source: Showdown Gen 4 mod — Steel type immune to sandstorm chip
-    const steelMon = makeActivePokemon({ types: ["steel"], maxHp: 160 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const steelMon = createSyntheticActivePokemon({ types: [TYPES.steel], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [steelMon],
       [],
     );
@@ -323,9 +348,9 @@ describe("applyGen4WeatherEffects — sandstorm", () => {
   it("given sandstorm, when a Fire-type Pokemon with 160 maxHP ends its turn, then takes 10 HP (1/16 maxHP)", () => {
     // Source: Showdown Gen 4 mod — sandstorm chip = floor(maxHP / 16)
     // Derivation: floor(160 / 16) = 10
-    const fireMon = makeActivePokemon({ types: ["fire"], maxHp: 160 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const fireMon = createSyntheticActivePokemon({ types: [TYPES.fire], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [fireMon],
       [],
     );
@@ -339,9 +364,9 @@ describe("applyGen4WeatherEffects — sandstorm", () => {
   it("given sandstorm, when a Normal-type Pokemon with 200 maxHP ends its turn, then takes 12 HP (floor(200/16))", () => {
     // Source: Showdown Gen 4 mod — sandstorm chip = floor(maxHP / 16)
     // Derivation: floor(200 / 16) = floor(12.5) = 12
-    const normalMon = makeActivePokemon({ types: ["normal"], maxHp: 200 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const normalMon = createSyntheticActivePokemon({ types: [TYPES.normal], maxHp: 200 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [normalMon],
       [],
     );
@@ -354,16 +379,16 @@ describe("applyGen4WeatherEffects — sandstorm", () => {
 
   it("given sandstorm, when result message is checked for a non-immune Pokemon, then message says 'buffeted by the sandstorm'", () => {
     // Source: Showdown Gen 4 mod — sandstorm message text
-    const fireMon = makeActivePokemon({ types: ["fire"], maxHp: 160 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const fireMon = createSyntheticActivePokemon({ types: [TYPES.fire], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [fireMon],
       [],
     );
 
     const results = applyGen4WeatherEffects(state);
 
-    expect(results[0]?.message).toContain("sandstorm");
+    expect(results[0]?.message).toContain(MOVES.sandstorm);
   });
 });
 
@@ -374,8 +399,12 @@ describe("applyGen4WeatherEffects — sandstorm", () => {
 describe("applyGen4WeatherEffects — hail", () => {
   it("given hail, when an Ice-type Pokemon's turn ends, then no damage is taken", () => {
     // Source: Showdown Gen 4 mod — Ice type immune to hail chip
-    const iceMon = makeActivePokemon({ types: ["ice"], maxHp: 160 });
-    const state = makeBattleState({ type: "hail", turnsLeft: 5, source: "hail" }, [iceMon], []);
+    const iceMon = createSyntheticActivePokemon({ types: [TYPES.ice], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
+      [iceMon],
+      [],
+    );
 
     expect(applyGen4WeatherEffects(state)).toHaveLength(0);
   });
@@ -383,8 +412,12 @@ describe("applyGen4WeatherEffects — hail", () => {
   it("given hail, when a Fire-type Pokemon with 160 maxHP ends its turn, then takes 10 HP (1/16 maxHP)", () => {
     // Source: Showdown Gen 4 mod — hail chip = floor(maxHP / 16)
     // Derivation: floor(160 / 16) = 10
-    const fireMon = makeActivePokemon({ types: ["fire"], maxHp: 160 });
-    const state = makeBattleState({ type: "hail", turnsLeft: 5, source: "hail" }, [fireMon], []);
+    const fireMon = createSyntheticActivePokemon({ types: [TYPES.fire], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
+      [fireMon],
+      [],
+    );
 
     const results = applyGen4WeatherEffects(state);
 
@@ -395,8 +428,12 @@ describe("applyGen4WeatherEffects — hail", () => {
   it("given hail, when a Water-type Pokemon with 200 maxHP ends its turn, then takes 12 HP (floor(200/16))", () => {
     // Source: Showdown Gen 4 mod — hail chip = floor(maxHP / 16)
     // Derivation: floor(200 / 16) = 12
-    const waterMon = makeActivePokemon({ types: ["water"], maxHp: 200 });
-    const state = makeBattleState({ type: "hail", turnsLeft: 5, source: "hail" }, [waterMon], []);
+    const waterMon = createSyntheticActivePokemon({ types: [TYPES.water], maxHp: 200 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
+      [waterMon],
+      [],
+    );
 
     const results = applyGen4WeatherEffects(state);
 
@@ -406,12 +443,16 @@ describe("applyGen4WeatherEffects — hail", () => {
 
   it("given hail, when result message is checked for a non-immune Pokemon, then message says 'pelted by hail'", () => {
     // Source: Showdown Gen 4 mod — hail message text
-    const fireMon = makeActivePokemon({ types: ["fire"], maxHp: 160 });
-    const state = makeBattleState({ type: "hail", turnsLeft: 5, source: "hail" }, [fireMon], []);
+    const fireMon = createSyntheticActivePokemon({ types: [TYPES.fire], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
+      [fireMon],
+      [],
+    );
 
     const results = applyGen4WeatherEffects(state);
 
-    expect(results[0]?.message).toContain("hail");
+    expect(results[0]?.message).toContain(MOVES.hail);
   });
 });
 
@@ -423,13 +464,13 @@ describe("applyGen4WeatherEffects — Magic Guard immunity (Gen 4 NEW)", () => {
   it("given sandstorm and a Normal-type Pokemon with Magic Guard, when weather effects applied, then takes no damage", () => {
     // Source: Bulbapedia — Magic Guard: immune to all indirect damage including sandstorm
     // Derivation: without Magic Guard, floor(160/16) = 10 damage; with Magic Guard, 0 damage
-    const magicGuardMon = makeActivePokemon({
-      types: ["normal"],
+    const magicGuardMon = createSyntheticActivePokemon({
+      types: [TYPES.normal],
       maxHp: 160,
-      ability: "magic-guard",
+      ability: ABILITIES.magicGuard,
     });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [magicGuardMon],
       [],
     );
@@ -442,13 +483,13 @@ describe("applyGen4WeatherEffects — Magic Guard immunity (Gen 4 NEW)", () => {
   it("given hail and a Fire-type Pokemon with Magic Guard, when weather effects applied, then takes no damage", () => {
     // Source: Bulbapedia — Magic Guard: immune to all indirect damage including hail
     // Derivation: without Magic Guard, floor(160/16) = 10 damage; with Magic Guard, 0 damage
-    const magicGuardMon = makeActivePokemon({
-      types: ["fire"],
+    const magicGuardMon = createSyntheticActivePokemon({
+      types: [TYPES.fire],
       maxHp: 160,
-      ability: "magic-guard",
+      ability: ABILITIES.magicGuard,
     });
-    const state = makeBattleState(
-      { type: "hail", turnsLeft: 5, source: "hail" },
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
       [magicGuardMon],
       [],
     );
@@ -466,9 +507,9 @@ describe("applyGen4WeatherEffects — Magic Guard immunity (Gen 4 NEW)", () => {
 describe("applyGen4WeatherEffects — rain", () => {
   it("given rain, when weather effects are applied, then no chip damage is dealt", () => {
     // Source: Showdown Gen 4 mod — rain has no chip damage
-    const normalMon = makeActivePokemon({ types: ["normal"], maxHp: 200 });
-    const state = makeBattleState(
-      { type: "rain", turnsLeft: 5, source: "rain-dance" },
+    const normalMon = createSyntheticActivePokemon({ types: [TYPES.normal], maxHp: 200 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.rain, turnsLeft: 5, source: MOVES.rainDance },
       [normalMon],
       [],
     );
@@ -480,9 +521,9 @@ describe("applyGen4WeatherEffects — rain", () => {
 describe("applyGen4WeatherEffects — sun", () => {
   it("given sun, when weather effects are applied, then no chip damage is dealt", () => {
     // Source: Showdown Gen 4 mod — sun has no chip damage
-    const normalMon = makeActivePokemon({ types: ["normal"], maxHp: 200 });
-    const state = makeBattleState(
-      { type: "sun", turnsLeft: 5, source: "sunny-day" },
+    const normalMon = createSyntheticActivePokemon({ types: [TYPES.normal], maxHp: 200 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay },
       [normalMon],
       [],
     );
@@ -498,7 +539,11 @@ describe("applyGen4WeatherEffects — sun", () => {
 describe("applyGen4WeatherEffects — null active slots", () => {
   it("given sandstorm with a null active slot, when weather effects are applied, then skips null slot", () => {
     // Source: Showdown Gen 4 mod — fainted/absent Pokemon are skipped in weather ticks
-    const state = makeBattleState({ type: "sand", turnsLeft: 5, source: "sandstorm" }, [null], []);
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
+      [null],
+      [],
+    );
 
     expect(applyGen4WeatherEffects(state)).toHaveLength(0);
   });
@@ -507,8 +552,8 @@ describe("applyGen4WeatherEffects — null active slots", () => {
 describe("applyGen4WeatherEffects — no weather", () => {
   it("given no active weather, when weather effects are applied, then returns empty array", () => {
     // Source: Showdown Gen 4 mod — weather effects skipped when no weather is active
-    const normalMon = makeActivePokemon({ types: ["normal"], maxHp: 200 });
-    const state = makeBattleState(null, [normalMon], []);
+    const normalMon = createSyntheticActivePokemon({ types: [TYPES.normal], maxHp: 200 });
+    const state = createSyntheticBattleState(null, [normalMon], []);
 
     expect(applyGen4WeatherEffects(state)).toHaveLength(0);
   });
@@ -527,7 +572,7 @@ describe("applyGen4WeatherEffects — calculatedStats null-fallback (issue #436)
     //
     // Source: Showdown Gen 4 mod — weather chip uses max HP; fallback to currentHp is defensive
     // Derivation: currentHp=160, floor(160/16)=10 damage expected
-    const normalMon = makeActivePokemon({ types: ["normal"], maxHp: 160 });
+    const normalMon = createSyntheticActivePokemon({ types: [TYPES.normal], maxHp: 160 });
     // Override the pokemon to have no calculatedStats (null-fallback path)
     const pokemonWithNullStats = {
       ...normalMon,
@@ -538,8 +583,8 @@ describe("applyGen4WeatherEffects — calculatedStats null-fallback (issue #436)
       },
     } as ActivePokemon;
 
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [pokemonWithNullStats],
       [],
     );
@@ -555,7 +600,7 @@ describe("applyGen4WeatherEffects — calculatedStats null-fallback (issue #436)
     // Exercises Gen4Weather.ts:96 null-fallback branch for hail
     // Source: Showdown Gen 4 mod — hail chip uses max HP; fallback to currentHp
     // Derivation: currentHp=320, floor(320/16)=20 damage expected
-    const waterMon = makeActivePokemon({ types: ["water"], maxHp: 320 });
+    const waterMon = createSyntheticActivePokemon({ types: [TYPES.water], maxHp: 320 });
     const pokemonWithNullStats = {
       ...waterMon,
       pokemon: {
@@ -565,8 +610,8 @@ describe("applyGen4WeatherEffects — calculatedStats null-fallback (issue #436)
       },
     } as ActivePokemon;
 
-    const state = makeBattleState(
-      { type: "hail", turnsLeft: 5, source: "hail" },
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
       [pokemonWithNullStats],
       [],
     );
@@ -588,9 +633,9 @@ describe("Gen4Ruleset.applyWeatherEffects integration", () => {
     // Source: Showdown Gen 4 mod — sandstorm chip = floor(maxHP / 16)
     // Derivation: floor(160 / 16) = 10
     const ruleset = new Gen4Ruleset(createGen4DataManager());
-    const fireMon = makeActivePokemon({ types: ["fire"], maxHp: 160 });
-    const state = makeBattleState(
-      { type: "sand", turnsLeft: 5, source: "sandstorm" },
+    const fireMon = createSyntheticActivePokemon({ types: [TYPES.fire], maxHp: 160 });
+    const state = createSyntheticBattleState(
+      { type: WEATHER.sand, turnsLeft: 5, source: MOVES.sandstorm },
       [fireMon],
       [],
     );
@@ -605,13 +650,13 @@ describe("Gen4Ruleset.applyWeatherEffects integration", () => {
     // Source: Bulbapedia — Magic Guard immune to indirect damage
     // Derivation: without Magic Guard: floor(160/16) = 10 damage; with Magic Guard: no damage
     const ruleset = new Gen4Ruleset(createGen4DataManager());
-    const magicGuardMon = makeActivePokemon({
-      types: ["normal"],
+    const magicGuardMon = createSyntheticActivePokemon({
+      types: [TYPES.normal],
       maxHp: 160,
-      ability: "magic-guard",
+      ability: ABILITIES.magicGuard,
     });
-    const state = makeBattleState(
-      { type: "hail", turnsLeft: 5, source: "hail" },
+    const state = createSyntheticBattleState(
+      { type: WEATHER.hail, turnsLeft: 5, source: MOVES.hail },
       [magicGuardMon],
       [],
     );

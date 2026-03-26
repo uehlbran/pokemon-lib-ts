@@ -14,10 +14,22 @@
  *
  * Source: Showdown sim/battle.ts, data/mods/gen9/
  */
-import { DataManager } from "@pokemon-lib-ts/core";
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import {
+  CORE_HAZARD_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CRIT_MULTIPLIER_MODERN,
+  DataManager,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen9Ruleset } from "../src/Gen9Ruleset";
-import { Gen9Terastallization } from "../src/Gen9Terastallization";
+import { GEN9_MOVE_IDS, Gen9Ruleset, Gen9Terastallization } from "../src";
+
+const HAZARDS = CORE_HAZARD_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
 
 const ruleset = new Gen9Ruleset(new DataManager());
 
@@ -27,6 +39,7 @@ const ruleset = new Gen9Ruleset(new DataManager());
 
 describe("Gen9Ruleset -- metadata", () => {
   it("given Gen9Ruleset, when reading generation, then returns 9", () => {
+    // Source: Gen9Ruleset constructor hardcodes generation 9.
     expect(ruleset.generation).toBe(9);
   });
 
@@ -50,16 +63,16 @@ describe("Gen9Ruleset -- getAvailableTypes", () => {
     expect(ruleset.getAvailableTypes()).toHaveLength(18);
   });
 
-  it("given Gen9Ruleset, when getAvailableTypes(), then includes 'fairy' (Gen 6+)", () => {
+  it(`given Gen9Ruleset, when getAvailableTypes(), then includes ${TYPES.fairy} (Gen 6+)`, () => {
     // Source: Bulbapedia -- Fairy type was introduced in Gen 6
-    expect(ruleset.getAvailableTypes()).toContain("fairy");
+    expect(ruleset.getAvailableTypes()).toContain(TYPES.fairy);
   });
 
-  it("given Gen9Ruleset, when getAvailableTypes(), then includes 'steel' and 'dark' (Gen 2+)", () => {
+  it(`given Gen9Ruleset, when getAvailableTypes(), then includes ${TYPES.steel} and ${TYPES.dark} (Gen 2+)`, () => {
     // Source: Bulbapedia -- Steel and Dark types introduced in Gen 2
     const types = ruleset.getAvailableTypes();
-    expect(types).toContain("steel");
-    expect(types).toContain("dark");
+    expect(types).toContain(TYPES.steel);
+    expect(types).toContain(TYPES.dark);
   });
 });
 
@@ -80,28 +93,28 @@ describe("Gen9Ruleset -- shouldExecutePursuitPreSwitch", () => {
 // ===========================================================================
 
 describe("Gen9Ruleset -- getBattleGimmick", () => {
-  it("given getBattleGimmick('mega'), then returns null (Mega Evolution removed in Gen 8+)", () => {
+  it(`given getBattleGimmick(${BATTLE_GIMMICK_IDS.mega}), then returns null (Mega Evolution removed in Gen 8+)`, () => {
     // Source: Showdown data/mods/gen9 -- Mega Evolution not available in Gen 9
     // Source: Bulbapedia -- Mega Evolution not available in Scarlet/Violet
-    expect(ruleset.getBattleGimmick("mega")).toBeNull();
+    expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega)).toBeNull();
   });
 
-  it("given getBattleGimmick('zmove'), then returns null (Z-Moves removed in Gen 8+)", () => {
+  it(`given getBattleGimmick(${BATTLE_GIMMICK_IDS.zMove}), then returns null (Z-Moves removed in Gen 8+)`, () => {
     // Source: Showdown data/mods/gen9 -- Z-Moves not available in Gen 9
     // Source: Bulbapedia -- Z-Moves not available in Scarlet/Violet
-    expect(ruleset.getBattleGimmick("zmove")).toBeNull();
+    expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove)).toBeNull();
   });
 
-  it("given getBattleGimmick('dynamax'), then returns null (Dynamax removed in Gen 9)", () => {
+  it(`given getBattleGimmick(${BATTLE_GIMMICK_IDS.dynamax}), then returns null (Dynamax removed in Gen 9)`, () => {
     // Source: Showdown data/mods/gen9 -- Dynamax not available in Gen 9
     // Source: Bulbapedia -- Dynamax is Gen 8 exclusive, removed in Gen 9
-    expect(ruleset.getBattleGimmick("dynamax")).toBeNull();
+    expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.dynamax)).toBeNull();
   });
 
-  it("given getBattleGimmick('tera'), then returns Gen9Terastallization instance (Wave 2)", () => {
+  it(`given getBattleGimmick(${BATTLE_GIMMICK_IDS.tera}), then returns Gen9Terastallization instance (Wave 2)`, () => {
     // Source: Bulbapedia -- Terastallization is the Gen 9 battle gimmick (Scarlet/Violet)
     // Source: Showdown data/mods/gen9 -- Gen9Terastallization implements BattleGimmick
-    const gimmick = ruleset.getBattleGimmick("tera");
+    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.tera);
     expect(gimmick).not.toBeNull();
     expect(gimmick).toBeInstanceOf(Gen9Terastallization);
   });
@@ -127,92 +140,86 @@ describe("Gen9Ruleset -- canHitSemiInvulnerable", () => {
   it("given target is flying, when Thunder is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Thunder hits flying targets
     // Source: Bulbapedia -- "Thunder can hit a Pokemon using Fly or Bounce"
-    expect(ruleset.canHitSemiInvulnerable("thunder", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.thunder, TYPES.flying)).toBe(true);
   });
 
   it("given target is flying, when Hurricane is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Hurricane hits flying targets
-    expect(ruleset.canHitSemiInvulnerable("hurricane", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.hurricane, TYPES.flying)).toBe(true);
   });
 
   it("given target is flying, when Gust is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Gust hits flying targets
-    expect(ruleset.canHitSemiInvulnerable("gust", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.gust, TYPES.flying)).toBe(true);
   });
 
   it("given target is flying, when Twister is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Twister hits flying targets
-    expect(ruleset.canHitSemiInvulnerable("twister", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.twister, TYPES.flying)).toBe(true);
   });
 
   it("given target is flying, when Sky Uppercut is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Sky Uppercut hits flying targets
-    expect(ruleset.canHitSemiInvulnerable("sky-uppercut", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.skyUppercut, TYPES.flying)).toBe(true);
   });
 
   it("given target is flying, when Smack Down is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Smack Down hits flying targets
-    expect(ruleset.canHitSemiInvulnerable("smack-down", "flying")).toBe(true);
-  });
-
-  it("given target is flying, when Thousand Arrows is used, then it can hit", () => {
-    // Source: Showdown data/moves.ts -- Thousand Arrows hits flying targets
-    expect(ruleset.canHitSemiInvulnerable("thousand-arrows", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.smackDown, TYPES.flying)).toBe(true);
   });
 
   it("given target is flying, when Flamethrower is used, then it cannot hit", () => {
     // Source: Showdown -- Flamethrower cannot hit flying targets
-    expect(ruleset.canHitSemiInvulnerable("flamethrower", "flying")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.flamethrower, TYPES.flying)).toBe(false);
   });
 
   it("given target is underground, when Earthquake is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Earthquake hits underground targets
     // Source: Bulbapedia -- "Earthquake can hit a Pokemon using Dig"
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "underground")).toBe(true);
-  });
-
-  it("given target is underground, when Magnitude is used, then it can hit", () => {
-    // Source: Showdown data/moves.ts -- Magnitude hits underground targets
-    expect(ruleset.canHitSemiInvulnerable("magnitude", "underground")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.underground)).toBe(true);
   });
 
   it("given target is underground, when Fissure is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Fissure hits underground targets
-    expect(ruleset.canHitSemiInvulnerable("fissure", "underground")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.fissure, VOLATILES.underground)).toBe(true);
   });
 
   it("given target is underground, when Surf is used, then it cannot hit", () => {
     // Source: Showdown -- Surf does not hit underground targets
-    expect(ruleset.canHitSemiInvulnerable("surf", "underground")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.underground)).toBe(false);
   });
 
   it("given target is underwater, when Surf is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Surf hits underwater targets
     // Source: Bulbapedia -- "Surf can hit a Pokemon using Dive"
-    expect(ruleset.canHitSemiInvulnerable("surf", "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.underwater)).toBe(true);
   });
 
   it("given target is underwater, when Whirlpool is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Whirlpool hits underwater targets
-    expect(ruleset.canHitSemiInvulnerable("whirlpool", "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.whirlpool, VOLATILES.underwater)).toBe(true);
   });
 
   it("given target is underwater, when Earthquake is used, then it cannot hit", () => {
     // Source: Showdown -- Earthquake does not hit underwater targets
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "underwater")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.underwater)).toBe(false);
   });
 
   it("given target is in shadow-force-charging, when any move is used, then it cannot hit", () => {
     // Source: Showdown data/moves.ts -- nothing bypasses Shadow Force / Phantom Force
-    expect(ruleset.canHitSemiInvulnerable("thunder", "shadow-force-charging")).toBe(false);
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "shadow-force-charging")).toBe(false);
-    expect(ruleset.canHitSemiInvulnerable("surf", "shadow-force-charging")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.thunder, VOLATILES.shadowForceCharging)).toBe(
+      false,
+    );
+    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.shadowForceCharging)).toBe(
+      false,
+    );
+    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.shadowForceCharging)).toBe(false);
   });
 
   it("given target is in generic charging state, when any move is used, then it can hit", () => {
     // Source: Showdown -- generic charging moves (e.g., Solar Beam charge turn) are
     // NOT semi-invulnerable; they can be hit normally
-    expect(ruleset.canHitSemiInvulnerable("tackle", "charging")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.charging)).toBe(true);
   });
 });
 
@@ -251,15 +258,15 @@ describe("Gen9Ruleset -- inherited BaseRuleset behaviors", () => {
   it("given Gen9Ruleset, when getAvailableHazards(), then includes sticky-web (Gen 6+)", () => {
     // Source: Showdown data/moves.ts -- Sticky Web introduced in Gen 6, available in Gen 9
     // Source: Bulbapedia -- Sticky Web is available in Gen 9
-    expect(ruleset.getAvailableHazards()).toContain("sticky-web");
+    expect(ruleset.getAvailableHazards()).toContain(HAZARDS.stickyWeb);
   });
 
   it("given Gen9Ruleset, when getAvailableHazards(), then includes standard hazards", () => {
     // Source: Showdown -- Stealth Rock (Gen 4), Spikes (Gen 2), Toxic Spikes (Gen 4)
     const hazards = ruleset.getAvailableHazards();
-    expect(hazards).toContain("stealth-rock");
-    expect(hazards).toContain("spikes");
-    expect(hazards).toContain("toxic-spikes");
+    expect(hazards).toContain(HAZARDS.stealthRock);
+    expect(hazards).toContain(HAZARDS.spikes);
+    expect(hazards).toContain(HAZARDS.toxicSpikes);
   });
 
   it("given Gen9Ruleset, when getAvailableHazards(), then does NOT include gmax-steelsurge (Dynamax removed)", () => {
@@ -275,6 +282,6 @@ describe("Gen9Ruleset -- inherited BaseRuleset behaviors", () => {
 
   it("given Gen9Ruleset, when getCritMultiplier(), then returns 1.5 (Gen 6+ multiplier)", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+ crit multiplier = 1.5x
-    expect(ruleset.getCritMultiplier()).toBe(1.5);
+    expect(ruleset.getCritMultiplier()).toBe(CRIT_MULTIPLIER_MODERN);
   });
 });

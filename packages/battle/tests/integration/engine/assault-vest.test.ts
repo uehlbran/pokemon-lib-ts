@@ -1,4 +1,6 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { GEN6_ITEM_IDS, GEN6_SPECIES_IDS } from "@pokemon-lib-ts/gen6";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +8,10 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const ITEMS = GEN6_ITEM_IDS;
+const MOVES = CORE_MOVE_IDS;
+const SPECIES = GEN6_SPECIES_IDS;
 
 /**
  * Tests for Issue #623: Assault Vest blocks status moves.
@@ -24,14 +30,21 @@ function createEngine(overrides?: {
   const ruleset = overrides?.ruleset ?? new MockRuleset();
   const dataManager = overrides?.dataManager ?? createMockDataManager();
   const events: BattleEvent[] = [];
+  const tackle = dataManager.getMove(MOVES.tackle);
+  const swordsDance = dataManager.getMove(MOVES.swordsDance);
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(SPECIES.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "swords-dance", currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: tackle.id, currentPP: tackle.pp, maxPP: tackle.pp, ppUps: 0 },
+        {
+          moveId: swordsDance.id,
+          currentPP: swordsDance.pp ?? 0,
+          maxPP: swordsDance.pp ?? 0,
+          ppUps: 0,
+        },
       ],
       calculatedStats: {
         hp: 200,
@@ -46,10 +59,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(SPECIES.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: tackle.id, currentPP: tackle.pp, maxPP: tackle.pp, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -92,18 +105,18 @@ describe("Assault Vest -- getAvailableMoves (#623)", () => {
       // Set Assault Vest on the active Pokemon
       const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
-      active!.pokemon.heldItem = "assault-vest";
+      active!.pokemon.heldItem = ITEMS.assaultVest;
 
       const moves = engine.getAvailableMoves(0);
 
       // tackle (physical) should be enabled
-      const tackle = moves.find((m) => m.moveId === "tackle");
-      expect(tackle?.disabled).toBe(false);
+      const tackleChoice = moves.find((m) => m.moveId === MOVES.tackle);
+      expect(tackleChoice?.disabled).toBe(false);
 
       // swords-dance (status) should be disabled by Assault Vest
-      const swordsDance = moves.find((m) => m.moveId === "swords-dance");
-      expect(swordsDance?.disabled).toBe(true);
-      expect(swordsDance?.disabledReason).toBe("Blocked by Assault Vest");
+      const swordsDanceChoice = moves.find((m) => m.moveId === MOVES.swordsDance);
+      expect(swordsDanceChoice?.disabled).toBe(true);
+      expect(swordsDanceChoice?.disabledReason).toBe("Blocked by Assault Vest");
     },
   );
 
@@ -122,8 +135,8 @@ describe("Assault Vest -- getAvailableMoves (#623)", () => {
       const moves = engine.getAvailableMoves(0);
 
       // swords-dance should be available when not holding Assault Vest
-      const swordsDance = moves.find((m) => m.moveId === "swords-dance");
-      expect(swordsDance?.disabled).toBe(false);
+      const swordsDanceChoice = moves.find((m) => m.moveId === MOVES.swordsDance);
+      expect(swordsDanceChoice?.disabled).toBe(false);
     },
   );
 });
@@ -144,7 +157,7 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       // Set Assault Vest on the active Pokemon
       const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
-      active!.pokemon.heldItem = "assault-vest";
+      active!.pokemon.heldItem = ITEMS.assaultVest;
 
       events.length = 0;
 
@@ -157,9 +170,9 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
         (e) => e.type === "message" && e.text.includes("Assault Vest"),
       );
       expect(blockMessages.length).toBe(1);
-      expect((blockMessages[0] as { type: "message"; text: string }).text).toBe(
-        "Charizard can't use Swords Dance because of its Assault Vest!",
-      );
+      const swordsDance = engine.dataManager.getMove(MOVES.swordsDance);
+      const assaultVestMessage = `${active!.pokemon.nickname ?? "Pokemon"} can't use ${swordsDance.displayName} because of its Assault Vest!`;
+      expect((blockMessages[0] as { type: "message"; text: string }).text).toBe(assaultVestMessage);
     },
   );
 
@@ -178,7 +191,7 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       // Set Assault Vest on the active Pokemon
       const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
-      active!.pokemon.heldItem = "assault-vest";
+      active!.pokemon.heldItem = ITEMS.assaultVest;
 
       events.length = 0;
 

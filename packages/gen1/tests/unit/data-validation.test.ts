@@ -1,5 +1,13 @@
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen1DataManager, GEN1_TYPE_CHART, Gen1Ruleset } from "../../src";
+import {
+  createGen1DataManager,
+  GEN1_MOVE_IDS,
+  GEN1_SPECIES_IDS,
+  GEN1_TYPE_CHART,
+  Gen1Ruleset,
+} from "../../src";
 
 /**
  * Comprehensive data validation tests for Gen 1.
@@ -10,24 +18,50 @@ import { createGen1DataManager, GEN1_TYPE_CHART, Gen1Ruleset } from "../../src";
  */
 
 const GEN1_VALID_TYPES = new Set([
-  "normal",
-  "fire",
-  "water",
-  "electric",
-  "grass",
-  "ice",
-  "fighting",
-  "poison",
-  "ground",
-  "flying",
-  "psychic",
-  "bug",
-  "rock",
-  "ghost",
-  "dragon",
+  CORE_TYPE_IDS.normal,
+  CORE_TYPE_IDS.fire,
+  CORE_TYPE_IDS.water,
+  CORE_TYPE_IDS.electric,
+  CORE_TYPE_IDS.grass,
+  CORE_TYPE_IDS.ice,
+  CORE_TYPE_IDS.fighting,
+  CORE_TYPE_IDS.poison,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.flying,
+  CORE_TYPE_IDS.psychic,
+  CORE_TYPE_IDS.bug,
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ghost,
+  CORE_TYPE_IDS.dragon,
 ]);
 
-const GEN1_EXCLUDED_TYPES = ["dark", "steel", "fairy"];
+const GEN1_EXCLUDED_TYPES = [CORE_TYPE_IDS.dark, CORE_TYPE_IDS.steel, CORE_TYPE_IDS.fairy];
+// Source: National Dex before Gen 2 additions contains exactly 151 species.
+const GEN1_POKEMON_COUNT = 151;
+// Source: Red/Blue/Yellow Charizard base Special is 109 before the Special split.
+const CHARIZARD_GEN1_SPECIAL = 109;
+// Source: Gen 1 move list contains 165 moves, including Sharpen after the data fix.
+const GEN1_MOVE_COUNT = 165;
+const GEN1_TYPE_COUNT = GEN1_VALID_TYPES.size;
+const GEN1_PHYSICAL_TYPES = new Set([
+  CORE_TYPE_IDS.normal,
+  CORE_TYPE_IDS.fighting,
+  CORE_TYPE_IDS.flying,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.bug,
+  CORE_TYPE_IDS.ghost,
+  CORE_TYPE_IDS.poison,
+]);
+const GEN1_SPECIAL_TYPES = new Set([
+  CORE_TYPE_IDS.fire,
+  CORE_TYPE_IDS.water,
+  CORE_TYPE_IDS.grass,
+  CORE_TYPE_IDS.electric,
+  CORE_TYPE_IDS.ice,
+  CORE_TYPE_IDS.psychic,
+  CORE_TYPE_IDS.dragon,
+]);
 
 describe("Gen 1 Pokemon Data Validation", () => {
   // --- Species Count ---
@@ -40,7 +74,7 @@ describe("Gen 1 Pokemon Data Validation", () => {
     const allSpecies = dm.getAllSpecies();
 
     // Assert
-    expect(allSpecies.length).toBe(151);
+    expect(allSpecies).toHaveLength(GEN1_POKEMON_COUNT);
   });
 
   // --- Unified Special Stat ---
@@ -67,11 +101,11 @@ describe("Gen 1 Pokemon Data Validation", () => {
     const dm = createGen1DataManager();
 
     // Act
-    const charizard = dm.getSpecies(6);
+    const charizard = dm.getSpecies(GEN1_SPECIES_IDS.charizard);
 
     // Assert: Charizard's Gen 1 Special stat is 109 (not 85 from later gen split)
-    expect(charizard.baseStats.spAttack).toBe(109);
-    expect(charizard.baseStats.spDefense).toBe(109);
+    expect(charizard.baseStats.spAttack).toBe(CHARIZARD_GEN1_SPECIAL);
+    expect(charizard.baseStats.spDefense).toBe(CHARIZARD_GEN1_SPECIAL);
   });
 
   // --- No Abilities ---
@@ -139,9 +173,7 @@ describe("Gen 1 Moves Data Validation", () => {
     const allMoves = dm.getAllMoves();
 
     // Assert: Gen 1 has 165 moves (Sharpen was missing and added in bug fix #105)
-    expect(allMoves.length).toBeGreaterThanOrEqual(160);
-    expect(allMoves.length).toBeLessThanOrEqual(166);
-    expect(allMoves.length).toBe(165);
+    expect(allMoves).toHaveLength(GEN1_MOVE_COUNT);
   });
 
   // --- No Excluded Type Moves ---
@@ -152,7 +184,7 @@ describe("Gen 1 Moves Data Validation", () => {
     const allMoves = dm.getAllMoves();
 
     // Act
-    const darkMoves = allMoves.filter((m) => m.type === "dark");
+    const darkMoves = allMoves.filter((m) => m.type === CORE_TYPE_IDS.dark);
 
     // Assert: Dark type didn't exist until Gen 2
     expect(darkMoves).toEqual([]);
@@ -164,7 +196,7 @@ describe("Gen 1 Moves Data Validation", () => {
     const allMoves = dm.getAllMoves();
 
     // Act
-    const steelMoves = allMoves.filter((m) => m.type === "steel");
+    const steelMoves = allMoves.filter((m) => m.type === CORE_TYPE_IDS.steel);
 
     // Assert: Steel type didn't exist until Gen 2
     expect(steelMoves).toEqual([]);
@@ -176,7 +208,7 @@ describe("Gen 1 Moves Data Validation", () => {
     const allMoves = dm.getAllMoves();
 
     // Act
-    const fairyMoves = allMoves.filter((m) => m.type === "fairy");
+    const fairyMoves = allMoves.filter((m) => m.type === CORE_TYPE_IDS.fairy);
 
     // Assert: Fairy type didn't exist until Gen 6
     expect(fairyMoves).toEqual([]);
@@ -205,36 +237,16 @@ describe("Gen 1 Moves Data Validation", () => {
     // Arrange
     const dm = createGen1DataManager();
     const allMoves = dm.getAllMoves();
-    const physicalTypes = new Set([
-      "normal",
-      "fighting",
-      "flying",
-      "ground",
-      "rock",
-      "bug",
-      "ghost",
-      "poison",
-    ]);
-    const specialTypes = new Set([
-      "fire",
-      "water",
-      "grass",
-      "electric",
-      "ice",
-      "psychic",
-      "dragon",
-    ]);
-
     // Act / Assert
     const mismatches: string[] = [];
     for (const move of allMoves) {
       if (move.category === "status") continue;
-      if (physicalTypes.has(move.type) && move.category !== "physical") {
+      if (GEN1_PHYSICAL_TYPES.has(move.type) && move.category !== "physical") {
         mismatches.push(
           `${move.displayName} (${move.id}): type=${move.type} should be physical, got ${move.category}`,
         );
       }
-      if (specialTypes.has(move.type) && move.category !== "special") {
+      if (GEN1_SPECIAL_TYPES.has(move.type) && move.category !== "special") {
         mismatches.push(
           `${move.displayName} (${move.id}): type=${move.type} should be special, got ${move.category}`,
         );
@@ -253,18 +265,16 @@ describe("Gen 1 Type Chart Validation", () => {
     const chart = dm.getTypeChart();
     const attackingTypes = Object.keys(chart);
 
-    // Act / Assert: 15 attacking types
-    expect(attackingTypes.length).toBe(15);
+    // Act / Assert: Gen 1 has exactly the 15 pre-Dark/Steel/Fairy types.
+    expect(attackingTypes).toHaveLength(GEN1_TYPE_COUNT);
+    expect(new Set(attackingTypes)).toEqual(GEN1_VALID_TYPES);
 
     // Each attacking type should have entries for all 15 defending types
     const chartRecord = chart as Record<string, Record<string, number>>;
     for (const attackType of attackingTypes) {
       const defenseEntries = Object.keys(chartRecord[attackType] ?? {});
-      expect(defenseEntries.length).toBe(15);
-      // Every defending type should be in the set
-      for (const defType of defenseEntries) {
-        expect(GEN1_VALID_TYPES.has(defType)).toBe(true);
-      }
+      expect(defenseEntries).toHaveLength(GEN1_TYPE_COUNT);
+      expect(new Set(defenseEntries)).toEqual(GEN1_VALID_TYPES);
     }
   });
 
@@ -275,7 +285,7 @@ describe("Gen 1 Type Chart Validation", () => {
     const chartRecord = GEN1_TYPE_CHART as Record<string, Record<string, number>>;
 
     // Act
-    const ghostVsPsychic = chartRecord.ghost?.psychic;
+    const ghostVsPsychic = chartRecord[CORE_TYPE_IDS.ghost]?.[CORE_TYPE_IDS.psychic];
 
     // Assert: In Gen 1, Ghost incorrectly did nothing to Psychic (should have been super effective)
     expect(ghostVsPsychic).toBe(0);
@@ -289,9 +299,9 @@ describe("Gen 1 Type Chart Validation", () => {
     const types = Object.keys(chart);
 
     // Assert
-    expect(types).not.toContain("dark");
-    expect(types).not.toContain("steel");
-    expect(types).not.toContain("fairy");
+    expect(types).not.toContain(CORE_TYPE_IDS.dark);
+    expect(types).not.toContain(CORE_TYPE_IDS.steel);
+    expect(types).not.toContain(CORE_TYPE_IDS.fairy);
   });
 
   // --- Poison vs Bug (Gen 1 Difference) ---
@@ -301,7 +311,7 @@ describe("Gen 1 Type Chart Validation", () => {
     const chartRecord = GEN1_TYPE_CHART as Record<string, Record<string, number>>;
 
     // Act
-    const poisonVsBug = chartRecord.poison?.bug;
+    const poisonVsBug = chartRecord[CORE_TYPE_IDS.poison]?.[CORE_TYPE_IDS.bug];
 
     // Assert: In Gen 1 (and only Gen 1), Poison was super effective against Bug
     expect(poisonVsBug).toBe(2);
@@ -380,11 +390,9 @@ describe("Gen 1 Cross-Reference Validation", () => {
     // Assert: Porygon references "sharpen" which is missing from moves.json — this is a known data gap
     // If there are missing moves, the list should only contain the known gap(s)
     if (missingMoves.length > 0) {
-      // Document known gaps so new ones are caught
-      for (const missing of missingMoves) {
-        expect(missing).toContain("sharpen");
-      }
-      expect(missingMoves.length).toBeLessThanOrEqual(1);
+      expect(missingMoves).toEqual([
+        `Porygon (#${GEN1_SPECIES_IDS.porygon}) level-up: "${GEN1_MOVE_IDS.sharpen}" at level 0`,
+      ]);
     }
   });
 
@@ -545,11 +553,13 @@ describe("Gen 1 Ruleset Feature Flags", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
 
-    // Act
-    const result = ruleset.getBattleGimmick("mega");
-
     // Assert: Battle gimmicks (Mega, Z-Moves, etc.) didn't exist in Gen 1
-    expect(result).toBeNull();
+    expect([
+      ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega),
+      ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove),
+      ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.dynamax),
+      ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.tera),
+    ]).toEqual([null, null, null, null]);
   });
 
   it("given Gen1Ruleset, when checking getAvailableHazards, then returns empty array", () => {
@@ -571,10 +581,10 @@ describe("Gen 1 Ruleset Feature Flags", () => {
     const types = ruleset.getAvailableTypes();
 
     // Assert
-    expect(types.length).toBe(15);
-    expect(types).not.toContain("dark");
-    expect(types).not.toContain("steel");
-    expect(types).not.toContain("fairy");
+    expect(types).toHaveLength(GEN1_TYPE_COUNT);
+    expect(types).not.toContain(CORE_TYPE_IDS.dark);
+    expect(types).not.toContain(CORE_TYPE_IDS.steel);
+    expect(types).not.toContain(CORE_TYPE_IDS.fairy);
   });
 
   it("given Gen1Ruleset, when checking generation, then is 1", () => {

@@ -1,5 +1,5 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -8,6 +8,7 @@ import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // Concrete TestRuleset for testing BaseRuleset.rollFleeSuccess directly
 class FormulaTestRuleset extends BaseRuleset {
@@ -21,6 +22,17 @@ class FormulaTestRuleset extends BaseRuleset {
   }
   calculateDamage() {
     return { damage: 0, effectiveness: 1, isCrit: false, randomFactor: 1 };
+  }
+}
+
+class DeterministicFleeRuleset extends MockRuleset {
+  override rollFleeSuccess(
+    _playerSpeed: number,
+    _wildSpeed: number,
+    _attempts: number,
+    rng: SeededRandom,
+  ): boolean {
+    return rng.chance(0.5);
   }
 }
 
@@ -40,7 +52,7 @@ function createWildBattleEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -57,7 +69,7 @@ function createWildBattleEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -142,7 +154,7 @@ describe("RunAction flee mechanic", () => {
       const messageEvent = events.find(
         (e) => e.type === "message" && (e as { text: string }).text === "Got away safely!",
       );
-      expect(messageEvent).toBeDefined();
+      expect(messageEvent).toEqual({ type: "message", text: "Got away safely!" });
     });
 
     it("given a wild battle and flee succeeds, when RunAction is submitted, then engine state is ended", () => {
@@ -326,43 +338,30 @@ describe("RunAction flee mechanic", () => {
   });
 
   describe("determinism", () => {
-    it("given the same seed and same actions, when flee is rolled twice, then results are identical", () => {
-      // Arrange -- first run (use real flee formula, not mock)
-      // We can't easily use the real formula with MockRuleset, so we just verify that
-      // the mock returns the same result with the same seed, which tests the engine's
-      // deterministic PRNG consumption.
-      const {
-        engine: engine1,
-        ruleset: ruleset1,
-        events: events1,
-      } = createWildBattleEngine({
-        seed: 99999,
-      });
-      ruleset1.setFleeSuccess(true);
-      engine1.start();
-      events1.length = 0;
-      engine1.submitAction(0, { type: "run", side: 0 });
-      engine1.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+    it("given the same seed and same actions, when flee is rolled twice, then the full event trace is identical", () => {
+      const runScenario = () => {
+        const { engine, events } = createWildBattleEngine({
+          seed: 99999,
+          ruleset: new DeterministicFleeRuleset(),
+        });
+        engine.start();
+        events.length = 0;
 
-      // Arrange -- second run with same seed
-      const {
-        engine: engine2,
-        ruleset: ruleset2,
-        events: events2,
-      } = createWildBattleEngine({
-        seed: 99999,
-      });
-      ruleset2.setFleeSuccess(true);
-      engine2.start();
-      events2.length = 0;
-      engine2.submitAction(0, { type: "run", side: 0 });
-      engine2.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+        engine.submitAction(0, { type: "run", side: 0 });
+        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      // Assert
-      // Source: SeededRandom (Mulberry32) -- same seed = same sequence = same result
-      const fleeEvent1 = events1.find((e) => e.type === "flee-attempt") as FleeAttemptEvent;
-      const fleeEvent2 = events2.find((e) => e.type === "flee-attempt") as FleeAttemptEvent;
-      expect(fleeEvent1.success).toBe(fleeEvent2.success);
+        return {
+          events: events.map((event) => ({ ...event })),
+          ended: engine.isEnded(),
+          winner: engine.getWinner(),
+          fleeAttempts: engine.state.fleeAttempts,
+        };
+      };
+
+      const firstRun = runScenario();
+      const secondRun = runScenario();
+
+      expect(firstRun).toEqual(secondRun);
     });
   });
 
@@ -393,7 +392,7 @@ describe("RunAction flee mechanic", () => {
       expect(ruleset.rollFleeSuccess(90, 100, 6, rng)).toBe(true);
     });
 
-    it("given playerSpeed < wildSpeed and low attempts, when rollFleeSuccess is called, then result depends on RNG", () => {
+    it("given playerSpeed < wildSpeed and low attempts, when rollFleeSuccess is called, then seeded RNG produces a stable mix of outcomes", () => {
       // Arrange
       // Source: Bulbapedia -- Escape: flee succeeds if rng(0,255) < F
       // With playerSpeed=50, wildSpeed=100, attempts=1:
@@ -401,22 +400,25 @@ describe("RunAction flee mechanic", () => {
       // So ~94/256 = ~36.7% chance of success
       const ruleset = new FormulaTestRuleset();
 
-      // Run multiple attempts with different seeds to verify it's not constant
-      let successes = 0;
-      let failures = 0;
-      for (let seed = 0; seed < 100; seed++) {
-        const rng = new SeededRandom(seed);
-        if (ruleset.rollFleeSuccess(50, 100, 1, rng)) {
-          successes++;
-        } else {
-          failures++;
-        }
-      }
+      const outcomes = Array.from({ length: 12 }, (_, seed) =>
+        ruleset.rollFleeSuccess(50, 100, 1, new SeededRandom(seed)),
+      );
 
-      // With F=94/256 ~= 36.7%, we expect both successes and failures out of 100 trials
-      // Source: statistical expectation of Bernoulli trials
-      expect(successes).toBeGreaterThan(0);
-      expect(failures).toBeGreaterThan(0);
+      // Source: SeededRandom is deterministic, so these seed-specific outcomes are stable.
+      expect(outcomes).toEqual([
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+      ]);
     });
   });
 });

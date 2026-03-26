@@ -1,13 +1,62 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen7ZMove, getSpeciesZBaseMove, getZMoveName, getZMovePower } from "../src/Gen7ZMove";
+import {
+  createGen7DataManager,
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+  Gen7ZMove,
+  getSpeciesZBaseMove,
+  getSpeciesZMoves,
+  getZMoveName,
+  getZMovePower,
+} from "../src";
+
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
+const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
+const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
+const TYPE_IDS = CORE_TYPE_IDS;
+const DATA_MANAGER = createGen7DataManager();
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN7_SPECIES_IDS.pikachu);
+const SPECIES_Z_MOVES = getSpeciesZMoves();
+const TEST_TRAINER = Object.freeze({
+  id: "ash",
+  displayName: "Ash",
+  trainerClass: "Trainer",
+});
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeMove(overrides?: {
+function createCanonicalMove(
+  moveId: (typeof MOVE_IDS)[keyof typeof MOVE_IDS],
+  overrides?: Partial<MoveData>,
+): MoveData {
+  const move = DATA_MANAGER.getMove(moveId);
+  return {
+    ...move,
+    ...overrides,
+    flags: overrides?.flags ? { ...move.flags, ...overrides.flags } : { ...move.flags },
+    effect: overrides && "effect" in overrides ? overrides.effect : move.effect,
+  } as MoveData;
+}
+
+function createSyntheticZPowerMove(overrides?: {
   id?: string;
   type?: PokemonType;
   category?: "physical" | "special" | "status";
@@ -15,82 +64,56 @@ function makeMove(overrides?: {
   effect?: MoveData["effect"];
   zMoveEffect?: string;
 }): MoveData {
+  const move = DATA_MANAGER.getMove(MOVE_IDS.tackle);
   return {
-    id: overrides?.id ?? "tackle",
-    displayName: overrides?.id ?? "Tackle",
-    type: overrides?.type ?? "normal",
+    ...move,
+    id: overrides?.id ?? "synthetic-z-power-probe",
+    displayName: overrides?.id ?? "Synthetic Z Power Probe",
+    type: overrides?.type ?? TYPE_IDS.normal,
     category: overrides?.category ?? "physical",
     power: overrides?.power ?? 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
     effect: overrides?.effect ?? null,
-    description: "",
-    generation: 7,
-    critRatio: 0,
+    flags: { ...move.flags },
     zMoveEffect: overrides?.zMoveEffect,
   } as MoveData;
 }
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   heldItem?: string | null;
-  moves?: Array<{ moveId: string; type?: PokemonType }>;
+  moves?: Array<{ moveId: string }>;
   types?: PokemonType[];
   ability?: string;
   transformed?: boolean;
   isMega?: boolean;
 }): ActivePokemon {
-  const moveSlots = (overrides.moves ?? [{ moveId: "tackle" }]).map((m) => ({
-    moveId: m.moveId,
-    currentPP: 10,
-    maxPP: 15,
-    ppUps: 0,
-  }));
+  const moveSlots = (overrides.moves ?? [{ moveId: MOVE_IDS.tackle }]).map((m) =>
+    createMoveSlot(m.moveId, DATA_MANAGER.getMove(m.moveId).pp),
+  );
 
   return {
     pokemon: {
       uid: "test-pokemon",
-      speciesId: 25,
+      speciesId: DEFAULT_SPECIES.id,
       nickname: null,
       level: 50,
       experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      nature: GEN7_NATURE_IDS.hardy,
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: 100,
       moves: moveSlots,
-      ability: overrides.ability ?? "static",
-      abilitySlot: "normal1" as const,
+      ability: overrides.ability ?? ABILITY_IDS.static,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: 100,
@@ -111,8 +134,8 @@ function makeActive(overrides: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? ["electric"],
-    ability: overrides.ability ?? "static",
+    types: overrides.types ?? [...DEFAULT_SPECIES.types],
+    ability: overrides.ability ?? ABILITY_IDS.static,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -135,11 +158,11 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(index: 0 | 1 = 0): BattleSide {
+function createBattleSide(index: 0 | 1 = 0): BattleSide {
   return {
     index,
     gimmickUsed: false,
-    trainer: { id: "ash", displayName: "Ash", trainerClass: "Trainer" },
+    trainer: TEST_TRAINER,
     team: [],
     active: [],
     screens: {},
@@ -150,7 +173,7 @@ function makeSide(index: 0 | 1 = 0): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -172,38 +195,38 @@ function makeState(): BattleState {
 describe("Z-Move Power Table", () => {
   it("given a 50 BP move, when calculating Z-Move power, then returns 100", () => {
     // Source: Showdown sim/dex-moves.ts:576 -- basePower < 60 -> 100
-    const move = makeMove({ power: 50 });
+    const move = createSyntheticZPowerMove({ power: 50 });
     expect(getZMovePower(move)).toBe(100);
   });
 
   it("given a 55 BP move, when calculating Z-Move power, then returns 100", () => {
     // Source: Showdown sim/dex-moves.ts:576 -- basePower < 60 -> 100
-    const move = makeMove({ power: 55 });
+    const move = createSyntheticZPowerMove({ power: 55 });
     expect(getZMovePower(move)).toBe(100);
   });
 
   it("given a 60 BP move, when calculating Z-Move power, then returns 120", () => {
     // Source: Showdown sim/dex-moves.ts:574 -- basePower >= 60 -> 120
-    const move = makeMove({ power: 60 });
+    const move = createSyntheticZPowerMove({ power: 60 });
     expect(getZMovePower(move)).toBe(120);
   });
 
   it("given a 65 BP move, when calculating Z-Move power, then returns 120", () => {
     // Source: Showdown sim/dex-moves.ts:574 -- basePower >= 60 -> 120
-    const move = makeMove({ power: 65 });
+    const move = createSyntheticZPowerMove({ power: 65 });
     expect(getZMovePower(move)).toBe(120);
   });
 
   it("given a 70 BP move, when calculating Z-Move power, then returns 140", () => {
     // Source: Showdown sim/dex-moves.ts:572 -- basePower >= 70 -> 140
-    const move = makeMove({ power: 70 });
+    const move = createSyntheticZPowerMove({ power: 70 });
     expect(getZMovePower(move)).toBe(140);
   });
 
   it("given an 80 BP move (Dragon Claw), when calculating Z-Move power, then returns 160", () => {
     // Source: Showdown sim/dex-moves.ts:570 -- basePower >= 80 -> 160
     // Source: Bulbapedia "Dragon Claw" -- 80 BP
-    const move = makeMove({ id: "dragon-claw", type: "dragon", power: 80 });
+    const move = createCanonicalMove(MOVE_IDS.dragonClaw);
     expect(getZMovePower(move)).toBe(160);
   });
 
@@ -211,69 +234,69 @@ describe("Z-Move Power Table", () => {
     // Source: Showdown sim/dex-moves.ts:568 -- basePower >= 90 -> 175
     // Source: Bulbapedia "Thunderbolt" -- 90 BP
     // Source: specs/battle/08-gen7.md -- "Thunderbolt (90 power) -> Gigavolt Havoc (175 power)"
-    const move = makeMove({ id: "thunderbolt", type: "electric", power: 90 });
+    const move = createCanonicalMove(MOVE_IDS.thunderbolt);
     expect(getZMovePower(move)).toBe(175);
   });
 
   it("given a 100 BP move, when calculating Z-Move power, then returns 180", () => {
     // Source: Showdown sim/dex-moves.ts:566 -- basePower >= 100 -> 180
-    const move = makeMove({ power: 100 });
+    const move = createSyntheticZPowerMove({ power: 100 });
     expect(getZMovePower(move)).toBe(180);
   });
 
   it("given a 110 BP move, when calculating Z-Move power, then returns 185", () => {
     // Source: Showdown sim/dex-moves.ts:564 -- basePower >= 110 -> 185
-    const move = makeMove({ power: 110 });
+    const move = createSyntheticZPowerMove({ power: 110 });
     expect(getZMovePower(move)).toBe(185);
   });
 
   it("given a 120 BP move (Close Combat), when calculating Z-Move power, then returns 190", () => {
     // Source: Showdown sim/dex-moves.ts:562 -- basePower >= 120 -> 190
     // Source: specs/battle/08-gen7.md -- "Close Combat (120 power) -> All-Out Pummeling (190 power, NOT 180)"
-    const move = makeMove({ id: "close-combat", type: "fighting", power: 120 });
+    const move = createCanonicalMove(MOVE_IDS.closeCombat);
     expect(getZMovePower(move)).toBe(190);
   });
 
   it("given a 130 BP move, when calculating Z-Move power, then returns 195", () => {
     // Source: Showdown sim/dex-moves.ts:560 -- basePower >= 130 -> 195
-    const move = makeMove({ power: 130 });
+    const move = createSyntheticZPowerMove({ power: 130 });
     expect(getZMovePower(move)).toBe(195);
   });
 
   it("given a 131 BP move, when calculating Z-Move power, then returns 195", () => {
     // Source: Showdown sim/dex-moves.ts:560 -- basePower >= 130 -> 195
-    const move = makeMove({ power: 131 });
+    const move = createSyntheticZPowerMove({ power: 131 });
     expect(getZMovePower(move)).toBe(195);
   });
 
   it("given a 140 BP move, when calculating Z-Move power, then returns 200", () => {
     // Source: Showdown sim/dex-moves.ts:558 -- basePower >= 140 -> 200
-    const move = makeMove({ power: 140 });
+    const move = createSyntheticZPowerMove({ power: 140 });
     expect(getZMovePower(move)).toBe(200);
   });
 
   it("given a 180 BP move (V-Create), when calculating Z-Move power, then returns 200", () => {
     // Source: Showdown sim/dex-moves.ts:558 -- basePower >= 140 -> 200
     // Source: specs/battle/08-gen7.md -- "V-Create (180 power) -> Z-V-Create (200 power)"
-    const move = makeMove({ id: "v-create", type: "fire", power: 180 });
+    const move = createCanonicalMove(MOVE_IDS.vCreate);
     expect(getZMovePower(move)).toBe(200);
   });
 
   it("given a 0 BP move (no base power), when calculating Z-Move power, then returns 100", () => {
     // Source: Showdown sim/dex-moves.ts:556 -- `if (!basePower)` -> 100
-    const move = makeMove({ power: 0 });
+    const move = createSyntheticZPowerMove({ power: 0 });
     expect(getZMovePower(move)).toBe(100);
   });
 
   it("given a null BP move, when calculating Z-Move power, then returns 100", () => {
     // Source: Showdown sim/dex-moves.ts:556 -- `if (!basePower)` -> 100
-    const move = makeMove({ power: null });
+    const move = createSyntheticZPowerMove({ power: null });
     expect(getZMovePower(move)).toBe(100);
   });
 
   it("given a status move, when calculating Z-Move power, then returns 0", () => {
     // Source: Showdown sim/dex-moves.ts:551 -- status moves skipped entirely
-    const move = makeMove({ category: "status", power: null });
+    const move = createCanonicalMove(MOVE_IDS.protect);
     expect(getZMovePower(move)).toBe(0);
   });
 });
@@ -287,21 +310,15 @@ describe("Multi-Hit Z-Move Power", () => {
     // Source: Showdown sim/dex-moves.ts:554 -- multi-hit: basePower *= 3
     // Source: specs/battle/08-gen7.md -- "Bullet Seed 25 BP x 3 = 75 -> 140 Z-power"
     // 25 * 3 = 75, 75 >= 70 -> 140
-    const move = makeMove({
-      id: "bullet-seed",
-      type: "grass",
-      power: 25,
-      effect: { type: "multi-hit", min: 2, max: 5 },
-    });
+    const move = createCanonicalMove(MOVE_IDS.bulletSeed);
     expect(getZMovePower(move)).toBe(140);
   });
 
   it("given a 20 BP multi-hit move, when calculating Z-Move power, then uses 60 BP -> 120", () => {
     // Source: Showdown sim/dex-moves.ts:554 -- multi-hit: basePower *= 3
     // 20 * 3 = 60, 60 >= 60 -> 120
-    const move = makeMove({
-      id: "fury-attack",
-      type: "normal",
+    const move = createSyntheticZPowerMove({
+      id: "synthetic-z-multi-hit-20",
       power: 20,
       effect: { type: "multi-hit", min: 2, max: 5 },
     });
@@ -311,9 +328,8 @@ describe("Multi-Hit Z-Move Power", () => {
   it("given a 15 BP multi-hit move, when calculating Z-Move power, then uses 45 BP -> 100", () => {
     // Source: Showdown sim/dex-moves.ts:554 -- multi-hit: basePower *= 3
     // 15 * 3 = 45, 45 < 60 -> 100
-    const move = makeMove({
-      id: "fury-swipes",
-      type: "normal",
+    const move = createSyntheticZPowerMove({
+      id: "synthetic-z-multi-hit-15",
       power: 15,
       effect: { type: "multi-hit", min: 2, max: 5 },
     });
@@ -328,27 +344,27 @@ describe("Multi-Hit Z-Move Power", () => {
 describe("Z-Move Names", () => {
   it("given electric type, when getting Z-Move name, then returns gigavolt-havoc", () => {
     // Source: Showdown sim/battle-actions.ts:40 -- Electric: "Gigavolt Havoc"
-    expect(getZMoveName("electric")).toBe("gigavolt-havoc");
+    expect(getZMoveName(TYPE_IDS.electric)).toBe("gigavolt-havoc");
   });
 
   it("given fire type, when getting Z-Move name, then returns inferno-overdrive", () => {
     // Source: Showdown sim/battle-actions.ts:42 -- Fire: "Inferno Overdrive"
-    expect(getZMoveName("fire")).toBe("inferno-overdrive");
+    expect(getZMoveName(TYPE_IDS.fire)).toBe("inferno-overdrive");
   });
 
   it("given dragon type, when getting Z-Move name, then returns devastating-drake", () => {
     // Source: Showdown sim/battle-actions.ts:39 -- Dragon: "Devastating Drake"
-    expect(getZMoveName("dragon")).toBe("devastating-drake");
+    expect(getZMoveName(TYPE_IDS.dragon)).toBe("devastating-drake");
   });
 
   it("given fighting type, when getting Z-Move name, then returns all-out-pummeling", () => {
     // Source: Showdown sim/battle-actions.ts:33 -- Fighting: "All-Out Pummeling"
-    expect(getZMoveName("fighting")).toBe("all-out-pummeling");
+    expect(getZMoveName(TYPE_IDS.fighting)).toBe("all-out-pummeling");
   });
 
   it("given fairy type, when getting Z-Move name, then returns twinkle-tackle", () => {
     // Source: Showdown sim/battle-actions.ts:49 -- Fairy: "Twinkle Tackle"
-    expect(getZMoveName("fairy")).toBe("twinkle-tackle");
+    expect(getZMoveName(TYPE_IDS.fairy)).toBe("twinkle-tackle");
   });
 });
 
@@ -359,20 +375,20 @@ describe("Z-Move Names", () => {
 describe("Species-Specific Z-Move Data", () => {
   it("given Pikanium Z, when getting base move, then returns volt-tackle", () => {
     // Source: Showdown data/items.ts -- pikaniumz: zMoveFrom: "Volt Tackle"
-    expect(getSpeciesZBaseMove("pikanium-z")).toBe("volt-tackle");
+    expect(getSpeciesZBaseMove(ITEM_IDS.pikaniumZ)).toBe(MOVE_IDS.voltTackle);
   });
 
   it("given Decidium Z, when getting base move, then returns spirit-shackle", () => {
     // Source: Showdown data/items.ts -- decidiumz: zMoveFrom: "Spirit Shackle"
-    expect(getSpeciesZBaseMove("decidium-z")).toBe("spirit-shackle");
+    expect(getSpeciesZBaseMove(ITEM_IDS.decidiumZ)).toBe(MOVE_IDS.spiritShackle);
   });
 
   it("given a non-species Z-Crystal, when getting base move, then returns null", () => {
-    expect(getSpeciesZBaseMove("electrium-z")).toBe(null);
+    expect(getSpeciesZBaseMove(ITEM_IDS.electriumZ)).toBe(null);
   });
 
   it("given a non-Z-Crystal item, when getting base move, then returns null", () => {
-    expect(getSpeciesZBaseMove("leftovers")).toBe(null);
+    expect(getSpeciesZBaseMove(ITEM_IDS.leftovers)).toBe(null);
   });
 });
 
@@ -384,12 +400,12 @@ describe("Gen7ZMove.canUse", () => {
   it("given a Pokemon holding a type-specific Z-Crystal, when checking canUse, then returns true", () => {
     // Source: Showdown sim/battle-actions.ts:1450-1456 -- canZMove checks
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(true);
   });
@@ -397,12 +413,12 @@ describe("Gen7ZMove.canUse", () => {
   it("given a Pokemon holding no item, when checking canUse, then returns false", () => {
     // Source: Showdown sim/battle-actions.ts:1405 -- item check
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
+    const pokemon = createOnFieldPokemon({
       heldItem: null,
-      moves: [{ moveId: "thunderbolt" }],
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(false);
   });
@@ -410,12 +426,12 @@ describe("Gen7ZMove.canUse", () => {
   it("given a Pokemon holding a non-Z-Crystal item, when checking canUse, then returns false", () => {
     // Source: Showdown sim/battle-actions.ts:1456 -- `if (!item.zMove) return;`
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "leftovers",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.leftovers,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(false);
   });
@@ -423,12 +439,12 @@ describe("Gen7ZMove.canUse", () => {
   it("given a species Z-Crystal with the required signature move, when checking canUse, then returns true", () => {
     // Source: Showdown data/items.ts -- pikaniumz: zMoveFrom: "Volt Tackle"
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "pikanium-z",
-      moves: [{ moveId: "volt-tackle" }, { moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pikaniumZ,
+      moves: [{ moveId: MOVE_IDS.voltTackle }, { moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(true);
   });
@@ -437,12 +453,12 @@ describe("Gen7ZMove.canUse", () => {
     // Source: Showdown data/items.ts -- pikaniumz: zMoveFrom: "Volt Tackle"
     // Pokemon has Thunderbolt but NOT Volt Tackle
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "pikanium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pikaniumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(false);
   });
@@ -450,12 +466,12 @@ describe("Gen7ZMove.canUse", () => {
   it("given the side has already used a Z-Move, when checking canUse, then returns false", () => {
     // Source: Showdown sim/battle-actions.ts:1404,1451 -- zMoveUsed check
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     // First use should succeed
     expect(zMove.canUse(pokemon, side, state)).toBe(true);
@@ -470,14 +486,14 @@ describe("Gen7ZMove.canUse", () => {
   it("given a transformed Mega Pokemon, when checking canUse, then returns false", () => {
     // Source: Showdown sim/battle-actions.ts:1452-1454 -- transformed mega block
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
       transformed: true,
       isMega: true,
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(false);
   });
@@ -491,12 +507,12 @@ describe("Gen7ZMove.activate", () => {
   it("given a valid Z-Move activation with type Z-Crystal, when activating, then marks side as used", () => {
     // Source: Showdown sim/side.ts:170 -- zMoveUsed set to true
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.hasUsedZMove(0)).toBe(false);
     zMove.activate(pokemon, side, state);
@@ -506,12 +522,12 @@ describe("Gen7ZMove.activate", () => {
   it("given a valid Z-Move activation, when activating, then emits a ZMoveEvent", () => {
     // Source: Showdown sim/battle.ts:2626-2631 -- Z-Move activation emits event
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     const events = zMove.activate(pokemon, side, state);
 
@@ -520,40 +536,40 @@ describe("Gen7ZMove.activate", () => {
     const zmEvent = events[0] as { type: "z-move"; side: 0 | 1; pokemon: string; move: string };
     expect(zmEvent.side).toBe(0);
     expect(zmEvent.pokemon).toBe("test-pokemon");
-    expect(zmEvent.move).toBe("gigavolt-havoc");
+    expect(zmEvent.move).toBe(getZMoveName(TYPE_IDS.electric));
   });
 
   it("given a species Z-Crystal activation, when activating, then emits event with species Z-Move name", () => {
     // Source: Showdown data/items.ts -- pikaniumz: zMove: "Catastropika"
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "pikanium-z",
-      moves: [{ moveId: "volt-tackle" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pikaniumZ,
+      moves: [{ moveId: MOVE_IDS.voltTackle }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     const events = zMove.activate(pokemon, side, state);
     const zmEvent = events[0] as { type: "z-move"; move: string };
-    expect(zmEvent.move).toBe("catastropika");
+    expect(zmEvent.move).toBe(SPECIES_Z_MOVES[ITEM_IDS.pikaniumZ]);
   });
 
   it("given side 0 uses Z-Move, when side 1 checks canUse, then returns true (independent tracking)", () => {
     // Source: Showdown sim/side.ts -- zMoveUsed is per-side
     const zMove = new Gen7ZMove();
 
-    const pokemon0 = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon0 = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side0 = makeSide(0);
+    const side0 = createBattleSide(0);
 
-    const pokemon1 = makeActive({
-      heldItem: "firium-z",
-      moves: [{ moveId: "flamethrower" }],
+    const pokemon1 = createOnFieldPokemon({
+      heldItem: ITEM_IDS.firiumZ,
+      moves: [{ moveId: MOVE_IDS.flamethrower }],
     });
-    const side1 = makeSide(1);
-    const state = makeState();
+    const side1 = createBattleSide(1);
+    const state = createBattleState();
 
     zMove.activate(pokemon0, side0, state);
 
@@ -565,12 +581,12 @@ describe("Gen7ZMove.activate", () => {
     // Source: Showdown sim/side.ts:170 -- zMoveUsed is separate from megaUsed
     // Gen 7 allows both Mega + Z-Move in same battle (different Pokemon)
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     zMove.activate(pokemon, side, state);
 
@@ -589,15 +605,15 @@ describe("Gen7ZMove.modifyMove (damaging)", () => {
     // Source: Showdown sim/battle-actions.ts:1441-1447 -- getActiveZMove
     // Source: specs/battle/08-gen7.md -- "Thunderbolt (90 power) -> Gigavolt Havoc (175 power)"
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
 
-    const thunderbolt = makeMove({ id: "thunderbolt", type: "electric", power: 90 });
+    const thunderbolt = createCanonicalMove(MOVE_IDS.thunderbolt);
     const result = zMove.modifyMove(thunderbolt, pokemon);
 
-    expect(result.id).toBe("gigavolt-havoc");
+    expect(result.id).toBe(getZMoveName(TYPE_IDS.electric));
     expect(result.power).toBe(175);
     expect(result.accuracy).toBe(null); // Z-Moves never miss
     expect(result.zMovePower).toBe(175);
@@ -606,52 +622,43 @@ describe("Gen7ZMove.modifyMove (damaging)", () => {
   it("given a 120 BP Fighting move with Fightinium Z, when modifying, then returns All-Out Pummeling with 190 BP", () => {
     // Source: specs/battle/08-gen7.md -- "Close Combat (120 power) -> All-Out Pummeling (190 power)"
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "fightinium-z",
-      moves: [{ moveId: "close-combat" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.fightiniumZ,
+      moves: [{ moveId: MOVE_IDS.closeCombat }],
     });
 
-    const closeCombat = makeMove({
-      id: "close-combat",
-      type: "fighting",
-      power: 120,
-    });
+    const closeCombat = createCanonicalMove(MOVE_IDS.closeCombat);
     const result = zMove.modifyMove(closeCombat, pokemon);
 
-    expect(result.id).toBe("all-out-pummeling");
+    expect(result.id).toBe(getZMoveName(TYPE_IDS.fighting));
     expect(result.power).toBe(190);
   });
 
   it("given a move that doesn't match the Z-Crystal type, when modifying, then returns unchanged move", () => {
     // Source: Showdown sim/battle-actions.ts:1415 -- type check: `move.type === item.zMoveType`
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "flamethrower" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.flamethrower }],
     });
 
-    const flamethrower = makeMove({ id: "flamethrower", type: "fire", power: 90 });
+    const flamethrower = createCanonicalMove(MOVE_IDS.flamethrower);
     const result = zMove.modifyMove(flamethrower, pokemon);
 
     // Should return unchanged because Fire doesn't match Electrium Z (Electric)
-    expect(result.id).toBe("flamethrower");
+    expect(result.id).toBe(MOVE_IDS.flamethrower);
     expect(result.power).toBe(90);
   });
 
   it("given a damaging move converted to Z-Move, when checking category, then preserves original category", () => {
     // Source: Showdown sim/battle-actions.ts:1443 -- `zMove.category = move.category;`
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
 
-    const thunderbolt = makeMove({
-      id: "thunderbolt",
-      type: "electric",
-      power: 90,
-      category: "special",
-    });
+    const thunderbolt = createCanonicalMove(MOVE_IDS.thunderbolt);
     const result = zMove.modifyMove(thunderbolt, pokemon);
 
     expect(result.category).toBe("special");
@@ -660,17 +667,12 @@ describe("Gen7ZMove.modifyMove (damaging)", () => {
   it("given a physical move converted to Z-Move, when checking category, then preserves physical", () => {
     // Source: Showdown sim/battle-actions.ts:1443 -- category preserved
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "wild-charge" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.wildCharge }],
     });
 
-    const wildCharge = makeMove({
-      id: "wild-charge",
-      type: "electric",
-      power: 90,
-      category: "physical",
-    });
+    const wildCharge = createCanonicalMove(MOVE_IDS.wildCharge);
     const result = zMove.modifyMove(wildCharge, pokemon);
 
     expect(result.category).toBe("physical");
@@ -686,20 +688,15 @@ describe("Gen7ZMove.modifyMove (species-specific)", () => {
     // Source: Showdown data/moves.ts -- catastropika: basePower 210
     // Source: Showdown data/items.ts -- pikaniumz: zMoveFrom: "Volt Tackle", zMove: "Catastropika"
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "pikanium-z",
-      moves: [{ moveId: "volt-tackle" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pikaniumZ,
+      moves: [{ moveId: MOVE_IDS.voltTackle }],
     });
 
-    const voltTackle = makeMove({
-      id: "volt-tackle",
-      type: "electric",
-      power: 120,
-      category: "physical",
-    });
+    const voltTackle = createCanonicalMove(MOVE_IDS.voltTackle);
     const result = zMove.modifyMove(voltTackle, pokemon);
 
-    expect(result.id).toBe("catastropika");
+    expect(result.id).toBe(SPECIES_Z_MOVES[ITEM_IDS.pikaniumZ]);
     expect(result.power).toBe(210);
     expect(result.accuracy).toBe(null);
   });
@@ -707,40 +704,31 @@ describe("Gen7ZMove.modifyMove (species-specific)", () => {
   it("given Snorlax with Snorlium Z and Giga Impact, when modifying, then returns Pulverizing Pancake with 210 BP", () => {
     // Source: Showdown data/moves.ts -- pulverizingpancake: basePower 210
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "snorlium-z",
-      moves: [{ moveId: "giga-impact" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.snorliumZ,
+      moves: [{ moveId: MOVE_IDS.gigaImpact }],
     });
 
-    const gigaImpact = makeMove({
-      id: "giga-impact",
-      type: "normal",
-      power: 150,
-      category: "physical",
-    });
+    const gigaImpact = createCanonicalMove(MOVE_IDS.gigaImpact);
     const result = zMove.modifyMove(gigaImpact, pokemon);
 
-    expect(result.id).toBe("pulverizing-pancake");
+    expect(result.id).toBe(SPECIES_Z_MOVES[ITEM_IDS.snorliumZ]);
     expect(result.power).toBe(210);
   });
 
   it("given species Z-Crystal but wrong move, when modifying, then returns unchanged move", () => {
     // Source: Showdown sim/battle-actions.ts:1413 -- only transforms if move.name === item.zMoveFrom
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "pikanium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pikaniumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
 
     // Thunderbolt is NOT Volt Tackle, so Pikanium Z doesn't trigger
-    const thunderbolt = makeMove({
-      id: "thunderbolt",
-      type: "electric",
-      power: 90,
-    });
+    const thunderbolt = createCanonicalMove(MOVE_IDS.thunderbolt);
     const result = zMove.modifyMove(thunderbolt, pokemon);
 
-    expect(result.id).toBe("thunderbolt");
+    expect(result.id).toBe(MOVE_IDS.thunderbolt);
     expect(result.power).toBe(90);
   });
 });
@@ -753,12 +741,12 @@ describe("One Z-Move Per Battle", () => {
   it("given first Z-Move attempt, when checking canUse, then returns true", () => {
     // Source: Showdown sim/battle-actions.ts:1404 -- zMoveUsed check
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     expect(zMove.canUse(pokemon, side, state)).toBe(true);
   });
@@ -767,16 +755,16 @@ describe("One Z-Move Per Battle", () => {
     // Source: Showdown sim/battle-actions.ts:1404,1451 -- zMoveUsed check per side
     const zMove = new Gen7ZMove();
 
-    const pokemon1 = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon1 = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const pokemon2 = makeActive({
-      heldItem: "firium-z",
-      moves: [{ moveId: "flamethrower" }],
+    const pokemon2 = createOnFieldPokemon({
+      heldItem: ITEM_IDS.firiumZ,
+      moves: [{ moveId: MOVE_IDS.flamethrower }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     // First Pokemon uses Z-Move
     zMove.activate(pokemon1, side, state);
@@ -787,12 +775,12 @@ describe("One Z-Move Per Battle", () => {
 
   it("given Z-Move used, when reset() is called, then canUse returns true again", () => {
     const zMove = new Gen7ZMove();
-    const pokemon = makeActive({
-      heldItem: "electrium-z",
-      moves: [{ moveId: "thunderbolt" }],
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.electriumZ,
+      moves: [{ moveId: MOVE_IDS.thunderbolt }],
     });
-    const side = makeSide(0);
-    const state = makeState();
+    const side = createBattleSide(0);
+    const state = createBattleState();
 
     zMove.activate(pokemon, side, state);
     expect(zMove.canUse(pokemon, side, state)).toBe(false);
@@ -807,12 +795,12 @@ describe("One Z-Move Per Battle", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("Gen7ZMove class properties", () => {
-  it("has name 'Z-Move'", () => {
+  it("reports the Z-Move class name", () => {
     const zMove = new Gen7ZMove();
     expect(zMove.name).toBe("Z-Move");
   });
 
-  it("has generations [7]", () => {
+  it("exposes generation 7 as its supported generation", () => {
     const zMove = new Gen7ZMove();
     expect(zMove.generations).toEqual([7]);
   });

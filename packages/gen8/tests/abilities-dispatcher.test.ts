@@ -20,8 +20,31 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen8";
 import { describe, expect, it } from "vitest";
 import {
   handleGen8ContactAbility,
@@ -31,113 +54,110 @@ import {
 import { Gen8Ruleset } from "../src/Gen8Ruleset";
 
 // ---------------------------------------------------------------------------
-// Helper factories (mirrors abilities-switch.test.ts pattern)
+// Helper factories
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+let nextTestUid = 0;
+function createTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
+const DEFAULT_SYNTHETIC_STATS = {
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
+} as const;
+
+const dataManager = createGen8DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
+const moveIds = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
+const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const typeIds = CORE_TYPE_IDS;
+const volatileIds = CORE_VOLATILE_IDS;
+const natureIds = { ...CORE_NATURE_IDS, ...GEN8_NATURE_IDS } as const;
+const speciesIds = GEN8_SPECIES_IDS;
+const defaultSpecies = dataManager.getSpecies(speciesIds.corviknight);
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
+const defaultMove = dataManager.getMove(moveIds.tackle);
+
+function createTestRng() {
+  return new SeededRandom(7);
+}
+
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  status?: string | null;
+  primaryStatus?: PrimaryStatus | null;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: `test-${Math.random()}`,
-    speciesId: overrides.speciesId ?? 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, 50, createTestRng(), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    friendship: species.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+    pokeball: GEN8_ITEM_IDS.pokeBall,
+    moves: [defaultMove.id],
+  });
+  pokemon.uid = createTestUid();
+  pokemon.nickname = overrides.nickname ?? pokemon.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.ability = overrides.ability ?? CORE_ABILITY_IDS.none;
+  pokemon.abilitySlot = CORE_ABILITY_SLOTS.normal1;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.primaryStatus ?? null;
+  pokemon.calculatedStats = {
+    hp: maxHp,
+    ...DEFAULT_SYNTHETIC_STATS,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
   currentHp?: number;
   maxHp?: number;
   speciesId?: number;
-  status?: string | null;
+  primaryStatus?: PrimaryStatus | null;
   heldItem?: string | null;
 }): ActivePokemon {
+  const pokemon = createSyntheticPokemonInstance({
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    speciesId: overrides.speciesId,
+    primaryStatus: overrides.primaryStatus,
+    heldItem: overrides.heldItem,
+  });
+  const species = dataManager.getSpecies(pokemon.speciesId);
+  const active = createBattleOnFieldPokemon(pokemon, 0, overrides.types ?? species.types);
   return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      speciesId: overrides.speciesId,
-      status: overrides.status,
-      heldItem: overrides.heldItem,
-    }),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
-    suppressedAbility: null,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    forcedMove: null,
-  } as ActivePokemon;
+    ...active,
+    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
+  };
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {
   return {
     index,
     trainer: null,
     team: [],
-    active: [],
+    active,
     hazards: [],
     screens: [],
     tailwind: { active: false, turnsLeft: 0 },
@@ -149,13 +169,13 @@ function makeSide(index: 0 | 1): BattleSide {
   } as BattleSide;
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(overrides?: { sides?: [BattleSide, BattleSide] }): BattleState {
   return {
     phase: "turn-end",
     generation: 8,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: overrides?.sides ?? [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -163,33 +183,31 @@ function makeBattleState(): BattleState {
     wonderRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },
     turnHistory: [],
-    rng: {
-      next: () => 0,
-      int: () => 1,
-      chance: () => false,
-      pick: <T>(arr: readonly T[]) => arr[0] as T,
-      shuffle: <T>(arr: T[]) => arr,
-      getState: () => 0,
-      setState: () => {},
-    },
+    rng: createTestRng(),
     ended: false,
     winner: null,
   } as unknown as BattleState;
 }
 
-function makeContext(opts: {
+function createCanonicalMove(moveId: (typeof moveIds)[keyof typeof moveIds]): MoveData {
+  return dataManager.getMove(moveId) as MoveData;
+}
+
+function createAbilityContext(opts: {
   ability: string;
-  trigger: string;
+  trigger: (typeof triggerIds)[keyof typeof triggerIds];
   types?: PokemonType[];
-  opponent?: ReturnType<typeof makeActivePokemon>;
+  opponent?: ActivePokemon;
   nickname?: string | null;
   speciesId?: number;
   currentHp?: number;
   maxHp?: number;
   statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  move?: MoveData;
+  state?: BattleState;
 }): AbilityContext {
-  const state = makeBattleState();
-  const pokemon = makeActivePokemon({
+  const state = opts.state ?? createBattleState();
+  const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
     nickname: opts.nickname,
@@ -202,9 +220,10 @@ function makeContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    rng: state.rng as any,
-    trigger: opts.trigger as any,
+    rng: state.rng,
+    trigger: opts.trigger,
     statChange: opts.statChange as any,
+    move: opts.move,
   };
 }
 
@@ -215,16 +234,22 @@ function makeContext(opts: {
 describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
   // Source: Gen8Abilities.ts -- returns NO_ACTIVATION when trigger !== "on-switch-in"
   it("given handleGen8SwitchInAbility with wrong trigger (on-contact), when called, then returns not activated", () => {
-    const ctx = makeContext({ ability: "intimidate", trigger: "on-contact" });
-    const result = handleGen8SwitchInAbility("intimidate", "on-contact", ctx);
+    const ctx = createAbilityContext({
+      ability: abilityIds.intimidate,
+      trigger: triggerIds.onContact,
+    });
+    const result = handleGen8SwitchInAbility(abilityIds.intimidate, triggerIds.onContact, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
     expect(result.messages).toEqual([]);
   });
 
   it("given handleGen8SwitchInAbility with wrong trigger (on-turn-end), when called, then returns not activated", () => {
-    const ctx = makeContext({ ability: "drizzle", trigger: "on-turn-end" });
-    const result = handleGen8SwitchInAbility("drizzle", "on-turn-end", ctx);
+    const ctx = createAbilityContext({
+      ability: abilityIds.drizzle,
+      trigger: triggerIds.onTurnEnd,
+    });
+    const result = handleGen8SwitchInAbility(abilityIds.drizzle, triggerIds.onTurnEnd, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
   });
@@ -232,27 +257,39 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
   // Source: Gen8Abilities.ts -- delegates to handleGen8SwitchAbility when trigger === "on-switch-in"
   it("given handleGen8SwitchInAbility with correct trigger (on-switch-in) and screen-cleaner ability, when called, then delegates and activates", () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner removes screens on switch-in
-    const state = makeBattleState();
-    state.sides[0].screens = [{ type: "reflect", turnsLeft: 5 }] as any;
-    state.sides[1].screens = [{ type: "light-screen", turnsLeft: 3 }] as any;
-    const pokemon = makeActivePokemon({ ability: "screen-cleaner" });
+    const state = createBattleState();
+    state.sides[0].screens = [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 }] as any;
+    state.sides[1].screens = [{ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 3 }] as any;
+    const pokemon = createOnFieldPokemon({ ability: abilityIds.screenCleaner });
     const ctx: AbilityContext = {
       pokemon,
       state,
-      rng: state.rng as any,
-      trigger: "on-switch-in",
+      rng: state.rng,
+      trigger: triggerIds.onSwitchIn,
     };
-    const result = handleGen8SwitchInAbility("screen-cleaner", "on-switch-in", ctx);
+    const result = handleGen8SwitchInAbility(abilityIds.screenCleaner, triggerIds.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([{ effectType: "none", target: "field" }]);
+    expect(result.messages).toEqual([
+      `${String(defaultSpecies.id)}'s Screen Cleaner removed all screens!`,
+    ]);
   });
 
   it("given handleGen8SwitchInAbility with correct trigger (on-switch-in) and intrepid-sword ability, when called, then delegates and activates", () => {
     // Source: Showdown data/abilities.ts -- Intrepid Sword raises Attack on switch-in
     // Source: Bulbapedia -- "Intrepid Sword raises the user's Attack by one stage upon entering battle"
-    const ctx = makeContext({ ability: "intrepid-sword", trigger: "on-switch-in" });
-    const result = handleGen8SwitchInAbility("intrepid-sword", "on-switch-in", ctx);
+    const ctx = createAbilityContext({
+      ability: abilityIds.intrepidSword,
+      trigger: triggerIds.onSwitchIn,
+    });
+    const result = handleGen8SwitchInAbility(abilityIds.intrepidSword, triggerIds.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects.length).toBeGreaterThan(0);
+    expect(result.effects).toEqual([
+      { effectType: "stat-change", target: "self", stat: "attack", stages: 1 },
+    ]);
+    expect(result.messages).toEqual([
+      `${String(defaultSpecies.id)}'s Intrepid Sword raised its Attack!`,
+    ]);
   });
 });
 
@@ -263,16 +300,22 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
 describe("Gen 8 Abilities Dispatcher -- handleGen8ContactAbility", () => {
   // Source: Gen8Abilities.ts -- returns NO_ACTIVATION when trigger !== "on-contact"
   it("given handleGen8ContactAbility with wrong trigger (on-switch-in), when called, then returns not activated", () => {
-    const ctx = makeContext({ ability: "static", trigger: "on-switch-in" });
-    const result = handleGen8ContactAbility("static", "on-switch-in", ctx);
+    const ctx = createAbilityContext({
+      ability: abilityIds.static,
+      trigger: triggerIds.onSwitchIn,
+    });
+    const result = handleGen8ContactAbility(abilityIds.static, triggerIds.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
     expect(result.messages).toEqual([]);
   });
 
   it("given handleGen8ContactAbility with wrong trigger (on-stat-change), when called, then returns not activated", () => {
-    const ctx = makeContext({ ability: "flame-body", trigger: "on-stat-change" });
-    const result = handleGen8ContactAbility("flame-body", "on-stat-change", ctx);
+    const ctx = createAbilityContext({
+      ability: abilityIds.flameBody,
+      trigger: triggerIds.onStatChange,
+    });
+    const result = handleGen8ContactAbility(abilityIds.flameBody, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
   });
@@ -281,13 +324,13 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8ContactAbility", () => {
   it("given handleGen8ContactAbility with correct trigger (on-contact) and wandering-spirit ability, when called, then delegates", () => {
     // Source: Showdown data/abilities.ts -- Wandering Spirit swaps abilities on contact
     // Source: Bulbapedia -- "Wandering Spirit swaps abilities when hit by a contact move"
-    const attacker = makeActivePokemon({ ability: "tough-claws" });
-    const ctx = makeContext({
-      ability: "wandering-spirit",
-      trigger: "on-contact",
+    const attacker = createOnFieldPokemon({ ability: abilityIds.toughClaws });
+    const ctx = createAbilityContext({
+      ability: abilityIds.wanderingSpirit,
+      trigger: triggerIds.onContact,
       opponent: attacker,
     });
-    const result = handleGen8ContactAbility("wandering-spirit", "on-contact", ctx);
+    const result = handleGen8ContactAbility(abilityIds.wanderingSpirit, triggerIds.onContact, ctx);
     // Wandering Spirit activates when opponent is provided and ability is swappable
     expect(result.activated).toBe(true);
   });
@@ -295,13 +338,13 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8ContactAbility", () => {
   it("given handleGen8ContactAbility with correct trigger (on-contact) and perish-body ability, when called, then delegates", () => {
     // Source: Showdown data/abilities.ts -- Perish Body triggers Perish Song on contact
     // Source: Bulbapedia -- "Perish Body gives both the user and the attacker a perish count of 3"
-    const attacker = makeActivePokemon({ ability: "mold-breaker" });
-    const ctx = makeContext({
-      ability: "perish-body",
-      trigger: "on-contact",
+    const attacker = createOnFieldPokemon({ ability: abilityIds.moldBreaker });
+    const ctx = createAbilityContext({
+      ability: abilityIds.perishBody,
+      trigger: triggerIds.onContact,
       opponent: attacker,
     });
-    const result = handleGen8ContactAbility("perish-body", "on-contact", ctx);
+    const result = handleGen8ContactAbility(abilityIds.perishBody, triggerIds.onContact, ctx);
     expect(result.activated).toBe(true);
   });
 });
@@ -315,13 +358,13 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
   it("given handleGen8FieldAbility with on-switch-out trigger and regenerator at 100/300 HP, when called, then heals 1/3 max HP and activates", () => {
     // Source: Showdown data/abilities.ts -- Regenerator heals 1/3 max HP on switch-out
     // With currentHp=100 and maxHp=300, heal = floor(300/3)=100, new HP = min(200, 300)=200
-    const ctx = makeContext({
-      ability: "regenerator",
-      trigger: "on-switch-out",
+    const ctx = createAbilityContext({
+      ability: abilityIds.regenerator,
+      trigger: triggerIds.onSwitchOut,
       currentHp: 100,
       maxHp: 300,
     });
-    const result = handleGen8FieldAbility("regenerator", "on-switch-out", ctx);
+    const result = handleGen8FieldAbility(abilityIds.regenerator, triggerIds.onSwitchOut, ctx);
     expect(result.activated).toBe(true);
     // Heal effect should provide 100 HP (floor(300/3) = 100)
     // Source: Gen8AbilitiesSwitch.ts -- effectType:"heal", target:"self", value: healAmount
@@ -334,18 +377,13 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
     // Source: Showdown data/abilities.ts -- Libero changes type on before-move
     // Source: Bulbapedia -- "Libero changes the Pokemon's type to the type of the move it is about to use"
     const ctx: AbilityContext = {
-      pokemon: makeActivePokemon({ ability: "libero", types: ["fire"] }),
-      state: makeBattleState(),
-      rng: makeBattleState().rng as any,
-      trigger: "on-before-move",
-      move: {
-        id: "thunderbolt",
-        type: "electric",
-        category: "special",
-        power: 90,
-      } as any,
+      pokemon: createOnFieldPokemon({ ability: abilityIds.libero, types: [typeIds.fire] }),
+      state: createBattleState(),
+      rng: createBattleState().rng,
+      trigger: triggerIds.onBeforeMove,
+      move: createCanonicalMove(moveIds.thunderbolt),
     };
-    const result = handleGen8FieldAbility("libero", "on-before-move", ctx);
+    const result = handleGen8FieldAbility(abilityIds.libero, triggerIds.onBeforeMove, ctx);
     expect(result.activated).toBe(true);
   });
 
@@ -355,12 +393,12 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
   // Source: Bulbapedia "Mirror Armor" -- "Bounces back stat-lowering effects"
 
   it("given handleGen8FieldAbility with on-stat-change trigger and mirror-armor ability with opponent stat drop, when called, then reflects the drop", () => {
-    const ctx = makeContext({
-      ability: "mirror-armor",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.mirrorArmor,
+      trigger: triggerIds.onStatChange,
       statChange: { stat: "attack", stages: -1, source: "opponent" },
     });
-    const result = handleGen8FieldAbility("mirror-armor", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.mirrorArmor, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { effectType: "stat-change", target: "opponent", stat: "attack", stages: -1 },
@@ -369,13 +407,13 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
   });
 
   it("given handleGen8FieldAbility with on-stat-change trigger and mirror-armor ability with opponent defense drop, when called, then reflects the drop", () => {
-    const ctx = makeContext({
-      ability: "mirror-armor",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.mirrorArmor,
+      trigger: triggerIds.onStatChange,
       nickname: "Corviknight",
       statChange: { stat: "defense", stages: -2, source: "opponent" },
     });
-    const result = handleGen8FieldAbility("mirror-armor", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.mirrorArmor, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       { effectType: "stat-change", target: "opponent", stat: "defense", stages: -2 },
@@ -386,45 +424,45 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
 
   it("given handleGen8FieldAbility with on-stat-change and mirror-armor but self-caused drop, when called, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor only reflects opponent-caused drops
-    const ctx = makeContext({
-      ability: "mirror-armor",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.mirrorArmor,
+      trigger: triggerIds.onStatChange,
       statChange: { stat: "attack", stages: -1, source: "self" },
     });
-    const result = handleGen8FieldAbility("mirror-armor", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.mirrorArmor, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given handleGen8FieldAbility with on-stat-change and mirror-armor but positive stages (boost), when called, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor only reflects drops (negative stages)
-    const ctx = makeContext({
-      ability: "mirror-armor",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.mirrorArmor,
+      trigger: triggerIds.onStatChange,
       statChange: { stat: "attack", stages: 1, source: "opponent" },
     });
-    const result = handleGen8FieldAbility("mirror-armor", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.mirrorArmor, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given handleGen8FieldAbility with on-stat-change and mirror-armor but hp stat, when called, then does not activate", () => {
     // Source: Gen8Abilities.ts -- HP cannot be stage-changed; Mirror Armor only reflects non-HP stats
-    const ctx = makeContext({
-      ability: "mirror-armor",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.mirrorArmor,
+      trigger: triggerIds.onStatChange,
       statChange: { stat: "hp", stages: -1, source: "opponent" },
     });
-    const result = handleGen8FieldAbility("mirror-armor", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.mirrorArmor, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given handleGen8FieldAbility with on-stat-change and mirror-armor but no statChange property, when called, then does not activate", () => {
     // Source: Gen8Abilities.ts -- returns NO_ACTIVATION if ctx.statChange is absent
-    const ctx = makeContext({
-      ability: "mirror-armor",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.mirrorArmor,
+      trigger: triggerIds.onStatChange,
     });
     // No statChange on the context
-    const result = handleGen8FieldAbility("mirror-armor", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.mirrorArmor, triggerIds.onStatChange, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -432,12 +470,12 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
     // Source: Gen8Abilities.ts -- non-mirror-armor on-stat-change goes through the switch handler
     // Defiant is not implemented in the switch handler but the dispatcher must still return
     // a well-formed AbilityResult (not throw). This tests the routing path itself.
-    const ctx = makeContext({
-      ability: "defiant",
-      trigger: "on-stat-change",
+    const ctx = createAbilityContext({
+      ability: abilityIds.defiant,
+      trigger: triggerIds.onStatChange,
       statChange: { stat: "attack", stages: -1, source: "opponent" },
     });
-    const result = handleGen8FieldAbility("defiant", "on-stat-change", ctx);
+    const result = handleGen8FieldAbility(abilityIds.defiant, triggerIds.onStatChange, ctx);
     // The routing must produce a valid AbilityResult regardless of whether defiant activates
     expect(typeof result.activated).toBe("boolean");
     expect(Array.isArray(result.effects)).toBe(true);
@@ -449,7 +487,7 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
 // Gen8Ruleset.recalculatesFutureAttackDamage
 // ===========================================================================
 
-const ruleset = new Gen8Ruleset(new DataManager());
+const ruleset = new Gen8Ruleset(dataManager);
 
 describe("Gen8Ruleset -- recalculatesFutureAttackDamage", () => {
   // Source: Bulbapedia -- "From Generation V onwards, damage is calculated when
@@ -477,40 +515,42 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   //   and Thousand Arrows can hit a Pokemon during Fly."
 
   it("given flying volatile and gust move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("gust", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.gust, volatileIds.flying)).toBe(true);
   });
 
   it("given flying volatile and twister move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("twister", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.twister, volatileIds.flying)).toBe(true);
   });
 
   it("given flying volatile and thunder move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("thunder", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.thunder, volatileIds.flying)).toBe(true);
   });
 
   it("given flying volatile and sky-uppercut move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("sky-uppercut", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(CORE_MOVE_IDS.skyUppercut, volatileIds.flying)).toBe(
+      true,
+    );
   });
 
   it("given flying volatile and hurricane move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("hurricane", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.hurricane, volatileIds.flying)).toBe(true);
   });
 
   it("given flying volatile and smack-down move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("smack-down", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.smackDown, volatileIds.flying)).toBe(true);
   });
 
   it("given flying volatile and thousand-arrows move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("thousand-arrows", "flying")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.thousandArrows, volatileIds.flying)).toBe(true);
   });
 
   it("given flying volatile and tackle move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable("tackle", "flying")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.flying)).toBe(false);
   });
 
   it("given flying volatile and earthquake move, when canHitSemiInvulnerable, then returns false", () => {
     // Source: Showdown -- earthquake does not hit flying targets
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "flying")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.flying)).toBe(false);
   });
 
   // --- Underground volatile ---
@@ -518,24 +558,20 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   // Source: Bulbapedia -- "Earthquake, Magnitude, and Fissure can hit a Pokemon during Dig."
 
   it("given underground volatile and earthquake move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "underground")).toBe(true);
-  });
-
-  it("given underground volatile and magnitude move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("magnitude", "underground")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.underground)).toBe(true);
   });
 
   it("given underground volatile and fissure move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("fissure", "underground")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.fissure, volatileIds.underground)).toBe(true);
   });
 
   it("given underground volatile and tackle move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable("tackle", "underground")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.underground)).toBe(false);
   });
 
   it("given underground volatile and surf move, when canHitSemiInvulnerable, then returns false", () => {
     // Source: Showdown -- Surf does not hit underground targets (only underwater)
-    expect(ruleset.canHitSemiInvulnerable("surf", "underground")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.surf, volatileIds.underground)).toBe(false);
   });
 
   // --- Underwater volatile ---
@@ -543,20 +579,20 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   // Source: Bulbapedia -- "Surf and Whirlpool can hit a Pokemon during Dive."
 
   it("given underwater volatile and surf move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("surf", "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.surf, volatileIds.underwater)).toBe(true);
   });
 
   it("given underwater volatile and whirlpool move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("whirlpool", "underwater")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.whirlpool, volatileIds.underwater)).toBe(true);
   });
 
   it("given underwater volatile and tackle move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable("tackle", "underwater")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.underwater)).toBe(false);
   });
 
   it("given underwater volatile and earthquake move, when canHitSemiInvulnerable, then returns false", () => {
     // Source: Showdown -- Earthquake does not hit underwater targets
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "underwater")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.underwater)).toBe(false);
   });
 
   // --- Shadow Force charging volatile ---
@@ -564,11 +600,15 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   // Source: Bulbapedia -- "No move can hit a Pokemon during the charging turn of Shadow Force"
 
   it("given shadow-force-charging volatile and any move (tackle), when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable("tackle", "shadow-force-charging")).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.shadowForceCharging)).toBe(
+      false,
+    );
   });
 
   it("given shadow-force-charging volatile and any move (earthquake), when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "shadow-force-charging")).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.shadowForceCharging),
+    ).toBe(false);
   });
 
   // --- Charging volatile (generic, NOT semi-invulnerable) ---
@@ -576,11 +616,11 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   // Source: Bulbapedia -- SolarBeam charge turn does not grant semi-invulnerability
 
   it("given charging volatile and tackle move, when canHitSemiInvulnerable, then returns true (charging is not semi-invulnerable)", () => {
-    expect(ruleset.canHitSemiInvulnerable("tackle", "charging")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.charging)).toBe(true);
   });
 
   it("given charging volatile and any move (thunderbolt), when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable("thunderbolt", "charging")).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.thunderbolt, volatileIds.charging)).toBe(true);
   });
 
   // --- Default / unknown volatile ---
@@ -588,10 +628,14 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
 
   it("given unknown volatile (confusion) and any move, when canHitSemiInvulnerable, then returns false", () => {
     // confusion is not a semi-invulnerable state
-    expect(ruleset.canHitSemiInvulnerable("tackle", "confusion" as any)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.confusion as any)).toBe(
+      false,
+    );
   });
 
   it("given unknown volatile (substitute) and any move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable("earthquake", "substitute" as any)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.substitute as any)).toBe(
+      false,
+    );
   });
 });

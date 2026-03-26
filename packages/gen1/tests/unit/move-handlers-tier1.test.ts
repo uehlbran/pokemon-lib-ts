@@ -5,10 +5,24 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
+import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createPokemonInstance,
+  createStatExp,
+  NEUTRAL_NATURES,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen1DataManager } from "../../src/data";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 /**
@@ -21,94 +35,54 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 // --- Test Helpers ---
 
 const ruleset = new Gen1Ruleset();
+const DATA_MANAGER = createGen1DataManager();
+const PIKACHU = DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.pikachu);
+const ABRA = DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.abra);
+const RATTATA = DATA_MANAGER.getSpecies(GEN1_SPECIES_IDS.rattata);
+const TACKLE = DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle);
+const SPLASH = DATA_MANAGER.getMove(GEN1_MOVE_IDS.splash);
+const SUPER_FANG = DATA_MANAGER.getMove(GEN1_MOVE_IDS.superFang);
+const PSYWAVE = DATA_MANAGER.getMove(GEN1_MOVE_IDS.psywave);
+const TELEPORT = DATA_MANAGER.getMove(GEN1_MOVE_IDS.teleport);
+const DEFAULT_NATURE = NEUTRAL_NATURES[0]!;
+const DEFAULT_CALCULATED_STATS = {
+  hp: 100,
+  attack: 80,
+  defense: 60,
+  spAttack: 80,
+  spDefense: 60,
+  speed: 120,
+} as const;
+const NORMAL_MONOTYPE = [CORE_TYPE_IDS.normal] as PokemonType[];
 
-const DEFAULT_MOVE_FLAGS: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
+function createSyntheticOnFieldPokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+  const pokemon = createPokemonInstance(PIKACHU, 50, new SeededRandom(1), {
+    nature: DEFAULT_NATURE,
+    ivs: createDvs(),
+    evs: createStatExp(),
+    friendship: createFriendship(70),
+    gender: CORE_GENDERS.male,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: null,
+    moves: [],
+    isShiny: false,
+    metLocation: "pallet-town",
+    originalTrainer: "Red",
+    originalTrainerId: 12345,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
+  pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)];
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.currentHp = 100;
+  pokemon.calculatedStats = { ...DEFAULT_CALCULATED_STATS };
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: DEFAULT_MOVE_FLAGS,
-    effect: null,
-    description: "A test move.",
-    generation: 1,
-    ...overrides,
-  };
-}
-
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
-  return {
-    pokemon: {
-      uid: "test-uid",
-      speciesId: 25,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-      currentHp: 100,
-      status: null,
-      friendship: 70,
-      heldItem: null,
-      ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "pallet-town",
-      metLevel: 5,
-      originalTrainer: "Red",
-      originalTrainerId: 12345,
-      pokeball: "poke-ball",
-      calculatedStats: {
-        hp: 100,
-        attack: 80,
-        defense: 60,
-        spAttack: 80,
-        spDefense: 60,
-        speed: 120,
-      },
-    } as PokemonInstance,
+    pokemon,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: [...PIKACHU.types],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -128,7 +102,7 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
   };
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   const rng = new SeededRandom(42);
   return {
     phase: "turn-resolve",
@@ -179,14 +153,14 @@ function makeBattleState(): BattleState {
   } as BattleState;
 }
 
-function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
+function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
   const rng = new SeededRandom(42);
   return {
-    attacker: makeActivePokemon(),
-    defender: makeActivePokemon({ types: ["normal"] }),
-    move: makeMove(),
+    attacker: createSyntheticOnFieldPokemon(),
+    defender: createSyntheticOnFieldPokemon({ types: [...NORMAL_MONOTYPE] }),
+    move: TACKLE,
     damage: 0,
-    state: makeBattleState(),
+    state: createBattleState(),
     rng,
     ...overrides,
   };
@@ -197,20 +171,11 @@ function makeMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Move
 // ============================================================================
 
 describe("Gen 1 Splash handler", () => {
-  const splashMove = makeMove({
-    id: "splash",
-    displayName: "Splash",
-    type: "normal" as PokemonType,
-    category: "status",
-    power: null,
-    accuracy: null,
-    target: "self",
-    effect: { type: "custom" as const, handler: "splash" },
-  });
+  const splashMove = SPLASH;
 
   it('given splash is used, when executeMoveEffect called, then messages includes "But nothing happened!"', () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: splashMove, damage: 0 });
+    const context = createMoveEffectContext({ move: splashMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -219,7 +184,7 @@ describe("Gen 1 Splash handler", () => {
 
   it("given splash is used, when executeMoveEffect called, then no status is inflicted", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: splashMove, damage: 0 });
+    const context = createMoveEffectContext({ move: splashMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -228,7 +193,7 @@ describe("Gen 1 Splash handler", () => {
 
   it("given splash is used, when executeMoveEffect called, then no stat changes are applied", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: splashMove, damage: 0 });
+    const context = createMoveEffectContext({ move: splashMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -237,16 +202,16 @@ describe("Gen 1 Splash handler", () => {
 
   it("given splash is used, when executeMoveEffect called, then no custom damage is set", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: splashMove, damage: 0 });
+    const context = createMoveEffectContext({ move: splashMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.customDamage).toBeFalsy();
+    expect(result.customDamage).toBeUndefined();
   });
 
   it("given splash is used, when executeMoveEffect called, then no heal amount is set", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: splashMove, damage: 0 });
+    const context = createMoveEffectContext({ move: splashMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -259,43 +224,36 @@ describe("Gen 1 Splash handler", () => {
 // ============================================================================
 
 describe("Gen 1 Super Fang handler", () => {
-  const superFangMove = makeMove({
-    id: "super-fang",
-    displayName: "Super Fang",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: null,
-    accuracy: 90,
-    effect: { type: "custom" as const, handler: "super-fang" },
-  });
+  const superFangMove = SUPER_FANG;
 
   it("given defender has 200 HP, when super-fang is used, then customDamage.amount = 100", () => {
     // Arrange
-    const defender = makeActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 200,
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: superFangMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: superFangMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.customDamage).toBeDefined();
-    expect(result.customDamage?.amount).toBe(100);
-    expect(result.customDamage?.target).toBe("defender");
-    expect(result.customDamage?.source).toBe("super-fang");
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 100,
+      source: SUPER_FANG.id,
+    });
   });
 
   it("given defender has 1 HP, when super-fang is used, then customDamage.amount = 1 (min 1)", () => {
     // Arrange
-    const defender = makeActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 1,
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: superFangMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: superFangMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -304,13 +262,13 @@ describe("Gen 1 Super Fang handler", () => {
 
   it("given defender has 201 HP, when super-fang is used, then customDamage.amount = 100 (floors half)", () => {
     // Arrange
-    const defender = makeActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       pokemon: {
-        ...makeActivePokemon().pokemon,
+        ...createSyntheticOnFieldPokemon().pokemon,
         currentHp: 201,
       } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: superFangMove, defender, damage: 0 });
+    const context = createMoveEffectContext({ move: superFangMove, defender, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -319,7 +277,7 @@ describe("Gen 1 Super Fang handler", () => {
 
   it("given defender has 100 HP, when super-fang is used, then no status or stat changes", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: superFangMove, damage: 0 });
+    const context = createMoveEffectContext({ move: superFangMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -333,40 +291,33 @@ describe("Gen 1 Super Fang handler", () => {
 // ============================================================================
 
 describe("Gen 1 Psywave handler", () => {
-  const psywaveMove = makeMove({
-    id: "psywave",
-    displayName: "Psywave",
-    type: "psychic" as PokemonType,
-    category: "special",
-    power: null,
-    accuracy: 80,
-    effect: { type: "custom" as const, handler: "psywave" },
-  });
+  const psywaveMove = PSYWAVE;
 
-  it("given psywave at level 50, when executeMoveEffect called, then customDamage.amount is in [1, 74]", () => {
-    // Arrange — level 50: max = floor(50 * 1.5) = 75, effective range [1, 74] per pret/pokered PsywaveEffect
-    const attacker = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, level: 50 } as PokemonInstance,
+  it("given psywave at level 50, when executeMoveEffect called with a seeded rng, then customDamage.amount matches the deterministic cart-derived roll", () => {
+    // Arrange — level 50: max = floor(50 * 1.5) = 75. Seed 42 deterministically produces 45 here.
+    const attacker = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, level: 50 } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: psywaveMove, attacker, damage: 0 });
+    const rng = new SeededRandom(42);
+    const context = createMoveEffectContext({ move: psywaveMove, attacker, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.customDamage).toBeDefined();
-    expect(result.customDamage?.amount).toBeGreaterThanOrEqual(1);
-    expect(result.customDamage?.amount).toBeLessThanOrEqual(74);
-    expect(result.customDamage?.target).toBe("defender");
-    expect(result.customDamage?.source).toBe("psywave");
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 45,
+      source: PSYWAVE.id,
+    });
   });
 
   it("given psywave at level 1, when executeMoveEffect called, then customDamage.amount = 1 (min 1)", () => {
     // Arrange — level 1: max = floor(1 * 1.5) = 1, so only result is 1
-    const attacker = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, level: 1 } as PokemonInstance,
+    const attacker = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, level: 1 } as PokemonInstance,
     });
     // Use a seeded RNG to get a deterministic result
     const rng = new SeededRandom(42);
-    const context = makeMoveEffectContext({ move: psywaveMove, attacker, damage: 0, rng });
+    const context = createMoveEffectContext({ move: psywaveMove, attacker, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert: at level 1, max = floor(1.5) = 1, so the only possible value is 1
@@ -375,20 +326,24 @@ describe("Gen 1 Psywave handler", () => {
 
   it("given psywave at level 100, when executeMoveEffect called, then customDamage.amount is in [1, 149]", () => {
     // Arrange — level 100: max = floor(100 * 1.5) = 150, effective range [1, 149] per pret/pokered PsywaveEffect
-    const attacker = makeActivePokemon({
-      pokemon: { ...makeActivePokemon().pokemon, level: 100 } as PokemonInstance,
+    const attacker = createSyntheticOnFieldPokemon({
+      pokemon: { ...createSyntheticOnFieldPokemon().pokemon, level: 100 } as PokemonInstance,
     });
-    const context = makeMoveEffectContext({ move: psywaveMove, attacker, damage: 0 });
+    const rng = new SeededRandom(42);
+    const context = createMoveEffectContext({ move: psywaveMove, attacker, damage: 0, rng });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.customDamage?.amount).toBeGreaterThanOrEqual(1);
-    expect(result.customDamage?.amount).toBeLessThanOrEqual(149);
+    expect(result.customDamage).toEqual({
+      target: "defender",
+      amount: 90,
+      source: PSYWAVE.id,
+    });
   });
 
   it("given psywave is used, when executeMoveEffect called, then no status or stat changes", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: psywaveMove, damage: 0 });
+    const context = createMoveEffectContext({ move: psywaveMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -402,23 +357,14 @@ describe("Gen 1 Psywave handler", () => {
 // ============================================================================
 
 describe("Gen 1 Teleport handler", () => {
-  const teleportMove = makeMove({
-    id: "teleport",
-    displayName: "Teleport",
-    type: "psychic" as PokemonType,
-    category: "status",
-    power: null,
-    accuracy: null,
-    target: "self",
-    effect: { type: "custom" as const, handler: "teleport" },
-  });
+  const teleportMove = TELEPORT;
 
   it('given teleport is used in a trainer battle, when executeMoveEffect called, then messages includes "But it failed!"', () => {
     // Arrange
-    const attacker = makeActivePokemon();
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon();
+    const state = createBattleState();
     state.sides[0].active[0] = attacker;
-    const context = makeMoveEffectContext({ move: teleportMove, damage: 0, attacker, state });
+    const context = createMoveEffectContext({ move: teleportMove, damage: 0, attacker, state });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -428,11 +374,11 @@ describe("Gen 1 Teleport handler", () => {
 
   it("given teleport is used by the player in a wild battle, when executeMoveEffect called, then it requests a successful escape", () => {
     // Arrange
-    const attacker = makeActivePokemon();
-    const state = makeBattleState();
+    const attacker = createSyntheticOnFieldPokemon();
+    const state = createBattleState();
     state.isWildBattle = true;
     state.sides[0].active[0] = attacker;
-    const context = makeMoveEffectContext({ move: teleportMove, damage: 0, attacker, state });
+    const context = createMoveEffectContext({ move: teleportMove, damage: 0, attacker, state });
 
     // Act
     const result = ruleset.executeMoveEffect(context);
@@ -444,7 +390,7 @@ describe("Gen 1 Teleport handler", () => {
 
   it("given teleport is used, when executeMoveEffect called, then no status is inflicted", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: teleportMove, damage: 0 });
+    const context = createMoveEffectContext({ move: teleportMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -453,16 +399,16 @@ describe("Gen 1 Teleport handler", () => {
 
   it("given teleport is used, when executeMoveEffect called, then no custom damage is set", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: teleportMove, damage: 0 });
+    const context = createMoveEffectContext({ move: teleportMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.customDamage).toBeFalsy();
+    expect(result.customDamage).toBeUndefined();
   });
 
   it("given teleport is used, when executeMoveEffect called, then no stat changes are applied", () => {
     // Arrange
-    const context = makeMoveEffectContext({ move: teleportMove, damage: 0 });
+    const context = createMoveEffectContext({ move: teleportMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
@@ -471,7 +417,7 @@ describe("Gen 1 Teleport handler", () => {
 
   it("given teleport is used by the player in a wild battle, when BattleEngine resolves the move, then the battle ends as a successful escape", () => {
     // Arrange
-    const dataManager = createGen1DataManager();
+    const dataManager = DATA_MANAGER;
     const engineRuleset = new Gen1Ruleset();
     const config: BattleConfig = {
       generation: 1,
@@ -479,18 +425,22 @@ describe("Gen 1 Teleport handler", () => {
       teams: [
         [
           {
-            ...makeActivePokemon().pokemon,
-            speciesId: 63,
+            ...createSyntheticOnFieldPokemon().pokemon,
+            speciesId: ABRA.id,
             uid: "abra-player",
-            moves: [{ moveId: "teleport", currentPP: 20, maxPP: 20, ppUps: 0 }],
+            nature: DEFAULT_NATURE,
+            ability: "",
+            moves: [{ moveId: TELEPORT.id, currentPP: TELEPORT.pp, maxPP: TELEPORT.pp, ppUps: 0 }],
           } as PokemonInstance,
         ],
         [
           {
-            ...makeActivePokemon().pokemon,
-            speciesId: 19,
+            ...createSyntheticOnFieldPokemon().pokemon,
+            speciesId: RATTATA.id,
             uid: "rattata-wild",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            nature: DEFAULT_NATURE,
+            ability: "",
+            moves: [{ moveId: TACKLE.id, currentPP: TACKLE.pp, maxPP: TACKLE.pp, ppUps: 0 }],
           } as PokemonInstance,
         ],
       ],
@@ -510,13 +460,15 @@ describe("Gen 1 Teleport handler", () => {
     expect(engine.getPhase()).toBe("battle-end");
     expect(() => engine.serialize()).not.toThrow();
     const events = engine.getEventLog();
+    const fleeAttemptEvents = events.filter(
+      (event) => event.type === "flee-attempt" && event.side === 0,
+    );
+    const safeEscapeMessages = events.filter(
+      (event) => event.type === "message" && "text" in event && event.text === "Got away safely!",
+    );
     // Source: pret/pokered src/engine/battle/effect_commands.asm — successful wild Teleport
     // uses the standard "Got away safely!" escape text.
-    expect(events.some((event) => event.type === "flee-attempt" && event.side === 0)).toBe(true);
-    expect(
-      events.some(
-        (event) => event.type === "message" && "text" in event && event.text === "Got away safely!",
-      ),
-    ).toBe(true);
+    expect(fleeAttemptEvents).toHaveLength(1);
+    expect(safeEscapeMessages).toHaveLength(1);
   });
 });

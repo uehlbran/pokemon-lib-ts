@@ -1,7 +1,24 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveEffect, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import type { Gender, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  createMoveSlot,
+  DataManager,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
@@ -26,6 +43,24 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const GEN4_DATA = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS };
+const ITEMS = GEN4_ITEM_IDS;
+const MOVES = GEN4_MOVE_IDS;
+const NATURES = GEN4_NATURE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+
+const TACKLE = GEN4_DATA.getMove(MOVES.tackle);
+const EMBER = GEN4_DATA.getMove(MOVES.ember);
+const FLAME_WHEEL = GEN4_DATA.getMove(MOVES.flameWheel);
+const FLAMETHROWER = GEN4_DATA.getMove(MOVES.flamethrower);
+const WATER_PULSE = GEN4_DATA.getMove(MOVES.waterPulse);
+const SURF = GEN4_DATA.getMove(MOVES.surf);
+const BRICK_BREAK = GEN4_DATA.getMove(MOVES.brickBreak);
+const BULBASAUR = GEN4_DATA.getSpecies(SPECIES.bulbasaur);
+
 function createMockRng(intReturnValue: number) {
   return {
     next: () => 0,
@@ -49,8 +84,8 @@ function createActivePokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
-  status?: "burn" | "poison" | "paralysis" | "sleep" | "freeze" | null;
-  gender?: "male" | "female" | "genderless";
+  status?: PokemonInstance["status"];
+  gender?: Gender;
   speciesId?: number;
   volatiles?: Map<string, { turnsLeft: number }>;
 }): ActivePokemon {
@@ -67,27 +102,27 @@ function createActivePokemon(opts: {
 
   const pokemon = {
     uid: "test",
-    speciesId: opts.speciesId ?? 1,
-    nickname: null,
+    speciesId: opts.speciesId ?? BULBASAUR.id,
+    nickname: BULBASAUR.displayName,
     level,
     experience: 0,
-    nature: "hardy",
+    nature: NATURES.hardy,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
+    ability: opts.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: opts.gender ?? ("male" as const),
+    gender: opts.gender ?? CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -104,8 +139,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: opts.volatiles ?? new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [TYPES.normal],
+    ability: opts.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -124,48 +159,6 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createMove(opts: {
-  type: PokemonType;
-  power: number;
-  category?: "physical" | "special" | "status";
-  id?: string;
-  effect?: MoveEffect | null;
-}): MoveData {
-  return {
-    id: opts.id ?? "test-move",
-    displayName: "Test Move",
-    type: opts.type,
-    category: opts.category ?? "physical",
-    power: opts.power,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: opts.effect ?? null,
-    description: "",
-    generation: 4,
-  } as MoveData;
-}
-
 function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
   return {
     weather: weather ?? null,
@@ -182,13 +175,13 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
     // Source: Bulbapedia — Solar Power: "During harsh sunlight, the Pokemon's Special Attack
     //   stat is boosted by 50%."
     // Source: Showdown data/abilities.ts — Solar Power onModifySpAPriority
-    const attacker = createActivePokemon({ ability: "solar-power", spAttack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.solarPower, spAttack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 100 });
     const defender = createActivePokemon({ defense: 100, spDefense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "special" });
+    const move = EMBER;
 
     const rng = createMockRng(100); // max roll
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const withSolarPower = calculateGen4Damage(
       { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
@@ -204,22 +197,22 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
     // Derivation (Solar Power, max roll):
     //   levelFactor = floor(2*50/5)+2 = 22
     //   atk = floor(100*150/100) = 150 (Solar Power 1.5x SpAtk)
-    //   baseDamage = floor(floor(22*80*150/100)/50) = floor(2640/50) = 52
-    //   weather(sun, fire) = floor(52*1.5) = 78; +2 = 80
-    //   random = floor(80*100/100) = 80; no STAB; effectiveness=1 → 80
+    //   baseDamage = floor(floor(22*40*150/100)/50) = floor(1320/50) = 26
+    //   weather(sun, fire) = floor(26*1.5) = 39; +2 = 41
+    //   random = floor(41*100/100) = 41; no STAB; effectiveness=1 → 41
     // (Weather applied before +2 per Showdown Gen 4 scripts.ts)
-    expect(withSolarPower.damage).toBe(80);
-    // Without Solar Power: atk=100, baseDamage=floor(1760/50)=35
-    //   weather = floor(35*1.5)=52; +2=54; random=54; no STAB; eff=1 → 54
-    expect(withoutSolarPower.damage).toBe(54);
+    expect(withSolarPower.damage).toBe(41);
+    // Without Solar Power: atk=100, baseDamage=floor(880/50)=17
+    //   weather = floor(17*1.5)=25; +2=27; random=27; no STAB; eff=1 → 27
+    expect(withoutSolarPower.damage).toBe(27);
   });
 
   it("given Solar Power attacker using a special move without sun, when damage is calculated, then no SpAtk boost is applied", () => {
     // Source: Bulbapedia — Solar Power: only activates in harsh sunlight
-    const attacker = createActivePokemon({ ability: "solar-power", spAttack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.solarPower, spAttack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 100 });
     const defender = createActivePokemon({ defense: 100, spDefense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "special" });
+    const move = FLAMETHROWER;
 
     const rng = createMockRng(100);
     const state = createMockState(); // no weather
@@ -239,13 +232,13 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
 
   it("given Solar Power attacker using a physical move in sun, when damage is calculated, then no boost is applied (SpAtk only)", () => {
     // Source: Bulbapedia — Solar Power: boosts Special Attack, not Attack
-    const attacker = createActivePokemon({ ability: "solar-power", attack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.solarPower, attack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "physical" });
+    const move = FLAME_WHEEL;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const withSolarPower = calculateGen4Damage(
       { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
@@ -262,13 +255,13 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
 
   it("given Solar Power attacker in rain, when using a special move, then no SpAtk boost is applied", () => {
     // Source: Bulbapedia — Solar Power: only harsh sunlight, not other weather
-    const attacker = createActivePokemon({ ability: "solar-power", spAttack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.solarPower, spAttack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 100 });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "water", power: 80, category: "special" });
+    const move = SURF;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "rain", turnsLeft: 5, source: "rain-dance" });
+    const state = createMockState({ type: WEATHER.rain, turnsLeft: 5, source: MOVES.rainDance });
 
     const withSolarPower = calculateGen4Damage(
       { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
@@ -287,13 +280,13 @@ describe("Gen4 Solar Power — 1.5x SpAtk in Harsh Sunlight", () => {
     // Source: Bulbapedia — Solar Power boosts SpAtk by 1.5x in harsh sunlight for any special move
     // Source: Showdown data/abilities.ts — Solar Power onModifySpAPriority
     // Uses different stats/power than first test to triangulate the formula
-    const attacker = createActivePokemon({ ability: "solar-power", spAttack: 120 });
+    const attacker = createActivePokemon({ ability: ABILITIES.solarPower, spAttack: 120 });
     const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 120 });
     const defender = createActivePokemon({ defense: 100, spDefense: 100 });
-    const move = createMove({ type: "water", power: 60, category: "special" });
+    const move = WATER_PULSE;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const withSolarPower = calculateGen4Damage(
       { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
@@ -329,13 +322,13 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     // Source: Bulbapedia — Flower Gift: "During harsh sunlight, the Attack and Special Defense
     //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
     // Source: Showdown data/abilities.ts — Flower Gift onAllyModifyAtkPriority
-    const attacker = createActivePokemon({ ability: "flower-gift", attack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.flowerGift, attack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const withFlowerGift = calculateGen4Damage(
       { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
@@ -350,13 +343,13 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     // Source: Gen4 damage formula with Flower Gift 1.5x Atk modifier
     // Derivation (Flower Gift attacker, max roll):
     //   levelFactor = 22; atk = floor(100*150/100) = 150 (Flower Gift)
-    //   baseDamage = floor(floor(22*80*150/100)/50) = floor(2640/50) = 52
-    //   no weather mod for Normal; +2 = 54; random = 54
-    //   STAB (Normal attacker, Normal move) = floor(54*1.5) = 81; eff=1 → 81
-    expect(withFlowerGift.damage).toBe(81);
-    // Without Flower Gift: atk=100, baseDamage=35; +2=37; random=37
-    //   STAB = floor(37*1.5) = 55; eff=1 → 55
-    expect(withoutFlowerGift.damage).toBe(55);
+    //   baseDamage = floor(floor(22*35*150/100)/50) = floor(1155/50) = 23
+    //   no weather mod for Normal; +2 = 25; random = 25
+    //   STAB (Normal attacker, Normal move) = floor(25*1.5) = 37; eff=1 → 37
+    expect(withFlowerGift.damage).toBe(37);
+    // Without Flower Gift: atk=100, baseDamage=floor(770/50)=15; +2=17; random=17
+    //   STAB = floor(17*1.5) = 25; eff=1 → 25
+    expect(withoutFlowerGift.damage).toBe(25);
   });
 
   it("given Flower Gift defender taking a special move in sun, when damage is calculated, then SpDef is boosted by 1.5x (less damage taken)", () => {
@@ -364,14 +357,14 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     // Source: Showdown data/abilities.ts — Flower Gift onAllyModifySpDPriority
     const attacker = createActivePokemon({ spAttack: 100 });
     const flowerGiftDefender = createActivePokemon({
-      ability: "flower-gift",
+      ability: ABILITIES.flowerGift,
       spDefense: 100,
     });
     const normalDefender = createActivePokemon({ ability: "", spDefense: 100 });
-    const move = createMove({ type: "water", power: 80, category: "special" });
+    const move = WATER_PULSE;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const againstFlowerGift = calculateGen4Damage(
       {
@@ -393,28 +386,31 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     // Source: Gen4 damage formula with Flower Gift 1.5x SpDef on defender
     // Derivation (vs Flower Gift defender, max roll):
     //   atk=100; def=floor(100*150/100)=150 (Flower Gift SpDef boost)
-    //   baseDamage = floor(floor(22*80*100/150)/50) = floor(floor(1173.33)/50) = floor(1173/50) = 23
-    //   weather(sun, water) = floor(23*0.5) = 11; +2 = 13; random = 13
-    //   no STAB; eff=1 → 13
+    //   baseDamage = floor(floor(22*60*100/150)/50) = floor(floor(880)/50) = 17
+    //   weather(sun, water) = floor(17*0.5) = 8; +2 = 10; random = 10
+    //   no STAB; eff=1 → 10
     // (Weather applied before +2 per Showdown Gen 4 scripts.ts)
-    expect(againstFlowerGift.damage).toBe(13);
-    // Without Flower Gift: def=100, baseDamage=floor(1760/50)=35
-    //   weather = floor(35*0.5)=17; +2=19; random=19; no STAB; eff=1 → 19
-    expect(againstNormal.damage).toBe(19);
+    expect(againstFlowerGift.damage).toBe(10);
+    // Without Flower Gift: def=100, baseDamage=floor(1320/50)=26
+    //   weather = floor(26*0.5)=13; +2=15; random=15; no STAB; eff=1 → 15
+    expect(againstNormal.damage).toBe(15);
   });
 
   it("given Flower Gift defender in sun attacked by Mold Breaker attacker, when damage is calculated, then SpDef boost is ignored", () => {
     // Source: Showdown data/abilities.ts — Mold Breaker ignores Flower Gift SpDef boost
     // Triangulation: second case for the Mold Breaker bypass path added in Gen4DamageCalc
-    const moldBreakerAttacker = createActivePokemon({ ability: "mold-breaker", spAttack: 100 });
+    const moldBreakerAttacker = createActivePokemon({
+      ability: ABILITIES.moldBreaker,
+      spAttack: 100,
+    });
     const flowerGiftDefender = createActivePokemon({
-      ability: "flower-gift",
+      ability: ABILITIES.flowerGift,
       spDefense: 100,
     });
-    const move = createMove({ type: "water", power: 80, category: "special" });
+    const move = WATER_PULSE;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const result = calculateGen4Damage(
       {
@@ -431,19 +427,19 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
     // Mold Breaker ignores Flower Gift: SpDef stays at 100 (no 1.5x boost)
     // Derivation (Mold Breaker bypasses Flower Gift, max roll):
     //   atk=100; def=100 (Flower Gift bypassed by Mold Breaker)
-    //   baseDamage = floor(floor(22*80*100/100)/50) = floor(1760/50) = 35
-    //   weather(sun, water) = floor(35*0.5) = 17; +2 = 19; random = 19
-    //   no STAB; eff=1 → 19 (same as no-ability case in previous test)
+    //   baseDamage = floor(floor(22*60*100/100)/50) = floor(1320/50) = 26
+    //   weather(sun, water) = floor(26*0.5) = 13; +2 = 15; random = 15
+    //   no STAB; eff=1 → 15 (same as no-ability case in previous test)
     // (Weather applied before +2 per Showdown Gen 4 scripts.ts)
-    expect(result.damage).toBe(19);
+    expect(result.damage).toBe(15);
   });
 
   it("given Flower Gift attacker without sun, when using a physical move, then no Attack boost is applied", () => {
     // Source: Bulbapedia — Flower Gift: only activates in harsh sunlight
-    const attacker = createActivePokemon({ ability: "flower-gift", attack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.flowerGift, attack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
 
     const rng = createMockRng(100);
     const state = createMockState(); // no weather
@@ -463,13 +459,13 @@ describe("Gen4 Flower Gift — 1.5x Atk and 1.5x SpDef in Harsh Sunlight", () =>
 
   it("given Flower Gift attacker using a special move in sun, when damage is calculated, then no SpAtk boost (Atk only)", () => {
     // Source: Bulbapedia — Flower Gift: boosts Attack, not Special Attack
-    const attacker = createActivePokemon({ ability: "flower-gift", spAttack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.flowerGift, spAttack: 100 });
     const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 100 });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "special" });
+    const move = FLAMETHROWER;
 
     const rng = createMockRng(100);
-    const state = createMockState({ type: "sun", turnsLeft: 5, source: "sunny-day" });
+    const state = createMockState({ type: WEATHER.sun, turnsLeft: 5, source: MOVES.sunnyDay });
 
     const withFlowerGift = calculateGen4Damage(
       { attacker, defender, move, isCrit: false, state, rng } as DamageContext,
@@ -494,12 +490,12 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
     // Source: Bulbapedia — Scrappy: "Allows the Pokemon's Normal- and Fighting-type moves
     //   to hit Ghost-type Pokemon."
     // Source: Showdown data/abilities.ts — Scrappy onModifyMovePriority
-    const attacker = createActivePokemon({ ability: "scrappy", attack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.scrappy, attack: 100 });
     const ghostDefender = createActivePokemon({
-      types: ["ghost"],
+      types: [TYPES.ghost],
       defense: 100,
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -511,10 +507,10 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
 
     // Source: Gen4 damage formula with Scrappy overriding Ghost immunity for Normal moves
     // Derivation (Scrappy Normal vs Ghost, max roll):
-    //   atk=100, def=100; baseDamage = floor(floor(22*80*100/100)/50) = 35
-    //   no weather; +2=37; random=37; STAB(Normal attacker, Normal move) = floor(37*1.5)=55
-    //   Scrappy: Normal vs Ghost immunity → neutral(1x); baseDamage = floor(55*1)=55
-    expect(result.damage).toBe(55);
+    //   atk=100, def=100; baseDamage = floor(floor(22*35*100/100)/50) = 15
+    //   no weather; +2=17; random=17; STAB(Normal attacker, Normal move) = floor(17*1.5)=25
+    //   Scrappy: Normal vs Ghost immunity → neutral(1x); baseDamage = floor(25*1)=25
+    expect(result.damage).toBe(25);
     expect(result.effectiveness).toBe(1); // neutral, not immune
   });
 
@@ -522,12 +518,12 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
     // Source: Bulbapedia — Scrappy: removes Ghost immunity for Normal and Fighting
     // Source: Showdown Gen 4 — Scrappy allows Fighting to hit Ghost
     // Derivation: Fighting vs Ghost/Dark — Ghost immunity overridden, Fighting vs Dark = 2x
-    const attacker = createActivePokemon({ ability: "scrappy", attack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.scrappy, attack: 100 });
     const ghostDarkDefender = createActivePokemon({
-      types: ["ghost", "dark"],
+      types: [TYPES.ghost, TYPES.dark],
       defense: 100,
     });
-    const move = createMove({ type: "fighting", power: 80, category: "physical" });
+    const move = BRICK_BREAK;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -539,9 +535,9 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
 
     // Source: Gen4 damage formula with Scrappy overriding Ghost immunity for Fighting moves
     // Derivation (Scrappy Fighting vs Ghost/Dark, max roll):
-    //   baseDamage = 35; +2=37; random=37; no STAB (Normal attacker, Fighting move)
-    //   Scrappy: Ghost immunity removed; Fighting vs Dark = 2x → floor(37*2)=74
-    expect(result.damage).toBe(74);
+    //   baseDamage = floor(floor(22*75*100/100)/50) = 33; +2=35; random=35; no STAB
+    //   Scrappy: Ghost immunity removed; Fighting vs Dark = 2x → floor(35*2)=70
+    expect(result.damage).toBe(70);
     expect(result.effectiveness).toBe(2);
   });
 
@@ -549,10 +545,10 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
     // Source: Bulbapedia — without Scrappy, Normal is immune to Ghost
     const attacker = createActivePokemon({ ability: "", attack: 100 });
     const ghostDefender = createActivePokemon({
-      types: ["ghost"],
+      types: [TYPES.ghost],
       defense: 100,
     });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -568,12 +564,12 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
 
   it("given Scrappy attacker using a Fire move against Ghost, when damage is calculated, then Ghost type chart applies normally (Scrappy only affects Normal/Fighting)", () => {
     // Source: Bulbapedia — Scrappy: only Normal and Fighting type moves are affected
-    const attacker = createActivePokemon({ ability: "scrappy", attack: 100 });
+    const attacker = createActivePokemon({ ability: ABILITIES.scrappy, attack: 100 });
     const ghostDefender = createActivePokemon({
-      types: ["ghost"],
+      types: [TYPES.ghost],
       defense: 100,
     });
-    const move = createMove({ type: "fire", power: 80, category: "physical" });
+    const move = FLAME_WHEEL;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -584,8 +580,8 @@ describe("Gen4 Scrappy — Normal/Fighting moves hit Ghost-types", () => {
     );
 
     // Source: Gen4 damage formula — Fire vs Ghost is neutral (1x), Scrappy irrelevant
-    // Derivation: baseDamage=35; +2=37; random=37; no STAB; Fire vs Ghost=1x → 37
-    expect(result.damage).toBe(37);
+    // Derivation: baseDamage=floor(floor(22*60*100/100)/50)=26; +2=28; random=28; no STAB; Fire vs Ghost=1x → 28
+    expect(result.damage).toBe(28);
     expect(result.effectiveness).toBe(1);
   });
 });
@@ -600,17 +596,17 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
     // Source: Showdown data/abilities.ts — Normalize onModifyMove
     // A Fire-type Pokemon with Normalize loses STAB on a Fire move (it's now Normal)
     const fireAttacker = createActivePokemon({
-      ability: "normalize",
+      ability: ABILITIES.normalize,
       attack: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
     const fireAttackerNoAbility = createActivePokemon({
       ability: "",
       attack: 100,
-      types: ["fire"],
+      types: [TYPES.fire],
     });
-    const defender = createActivePokemon({ defense: 100, types: ["normal"] });
-    const fireMove = createMove({ type: "fire", power: 80, category: "physical" });
+    const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
+    const fireMove = FLAME_WHEEL;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -641,30 +637,30 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
 
     // Source: Gen4 damage formula — Normalize converts Fire move to Normal type
     // Derivation (with Normalize): move=Normal, attacker=Fire → no STAB
-    //   baseDamage=35; +2=37; random=37; no STAB; Normal vs Normal=1x → 37
-    expect(withNormalize.damage).toBe(37);
+    //   baseDamage=26; +2=28; random=28; no STAB; Normal vs Normal=1x → 28
+    expect(withNormalize.damage).toBe(28);
     // Without Normalize: Fire STAB applies (1.5x), Fire vs Normal=1x
-    //   baseDamage=35; +2=37; random=37; STAB=floor(37*1.5)=55; eff=1 → 55
-    expect(withoutNormalize.damage).toBe(55);
+    //   baseDamage=26; +2=28; random=28; STAB=floor(28*1.5)=42; eff=1 → 42
+    expect(withoutNormalize.damage).toBe(42);
   });
 
   it("given Normalize attacker that is Normal-type using any move, when damage is calculated, then STAB applies (move becomes Normal = matching type)", () => {
     // Source: Bulbapedia — Normalize: all moves become Normal; Normal-type Pokemon get STAB
     // Derivation: Normal-type attacker with Normalize → move becomes Normal → STAB applies
     const normalAttacker = createActivePokemon({
-      ability: "normalize",
+      ability: ABILITIES.normalize,
       attack: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
     const normalAttackerNoAbility = createActivePokemon({
       ability: "",
       attack: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const defender = createActivePokemon({ defense: 100, types: ["water"] });
+    const defender = createActivePokemon({ defense: 100, types: [TYPES.water] });
     // Use a Fire move — without Normalize, no STAB (attacker is Normal, move is Fire)
     // With Normalize, the Fire move becomes Normal → Normal-type attacker gets STAB
-    const fireMove = createMove({ type: "fire", power: 80, category: "physical" });
+    const fireMove = FLAME_WHEEL;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -695,27 +691,23 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
 
     // Source: Gen4 damage formula — Normalize gives Normal STAB, changes effectiveness
     // Derivation (with Normalize): move=Normal, attacker=Normal → STAB(1.5x)
-    //   baseDamage=35; +2=37; random=37; STAB=floor(37*1.5)=55; Normal vs Water=1x → 55
-    expect(withNormalize.damage).toBe(55);
+    //   baseDamage=26; +2=28; random=28; STAB=floor(28*1.5)=42; Normal vs Water=1x → 42
+    expect(withNormalize.damage).toBe(42);
     // Without Normalize: Fire move, Normal attacker → no STAB; Fire vs Water=0.5x
-    //   baseDamage=35; +2=37; random=37; no STAB; floor(37*0.5)=18 → 18
-    expect(withoutNormalize.damage).toBe(18);
+    //   baseDamage=26; +2=28; random=28; no STAB; floor(28*0.5)=14 → 14
+    expect(withoutNormalize.damage).toBe(14);
   });
 
   it("given Normalize attacker using a Fighting move against Ghost, when damage is calculated, then move becomes Normal (immune to Ghost)", () => {
     // Source: Bulbapedia — Normalize: moves become Normal type; Normal is immune to Ghost
     // This is a notable downside of Normalize — Fighting moves no longer hit Ghost
     const attacker = createActivePokemon({
-      ability: "normalize",
+      ability: ABILITIES.normalize,
       attack: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const ghostDefender = createActivePokemon({ types: ["ghost"], defense: 100 });
-    const fightingMove = createMove({
-      type: "fighting",
-      power: 80,
-      category: "physical",
-    });
+    const ghostDefender = createActivePokemon({ types: [TYPES.ghost], defense: 100 });
+    const fightingMove = BRICK_BREAK;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -741,15 +733,19 @@ describe("Gen4 Normalize — all moves become Normal type", () => {
     // Source: Bulbapedia — Normalize changes the move's type to Normal
     // Rain boosts Water moves, but Normalize makes it Normal — no rain bonus
     const attacker = createActivePokemon({
-      ability: "normalize",
+      ability: ABILITIES.normalize,
       spAttack: 100,
-      types: ["normal"],
+      types: [TYPES.normal],
     });
-    const defender = createActivePokemon({ spDefense: 100, types: ["normal"] });
-    const waterMove = createMove({ type: "water", power: 80, category: "special" });
+    const defender = createActivePokemon({ spDefense: 100, types: [TYPES.normal] });
+    const waterMove = WATER_PULSE;
 
     const rng = createMockRng(100);
-    const rainState = createMockState({ type: "rain", turnsLeft: 5, source: "rain-dance" });
+    const rainState = createMockState({
+      type: WEATHER.rain,
+      turnsLeft: 5,
+      source: MOVES.rainDance,
+    });
 
     const normalizeResult = calculateGen4Damage(
       {
@@ -790,15 +786,15 @@ describe("Gen4 Slow Start — halve Attack and Speed for 5 turns", () => {
   it("given Slow Start attacker with slow-start volatile active, when using a physical move, then Attack is halved", () => {
     // Source: Bulbapedia — Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
     // Source: Showdown data/abilities.ts — Slow Start onModifyAtkPriority
-    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 5 }]]);
+    const slowStartVolatiles = new Map([[ABILITIES.slowStart, { turnsLeft: 5 }]]);
     const attacker = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       attack: 100,
       volatiles: slowStartVolatiles,
     });
     const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -816,25 +812,25 @@ describe("Gen4 Slow Start — halve Attack and Speed for 5 turns", () => {
     // Source: Gen4 damage formula with Slow Start 0.5x Attack modifier
     // Derivation (Slow Start, max roll):
     //   atk = floor(100/2) = 50 (Slow Start halves Attack)
-    //   baseDamage = floor(floor(22*80*50/100)/50) = floor(880/50) = 17
-    //   no weather; +2=19; random=19; STAB(Normal/Normal)=floor(19*1.5)=28; eff=1 → 28
-    expect(withSlowStart.damage).toBe(28);
-    // Without Slow Start: atk=100, baseDamage=35; +2=37; random=37
-    //   STAB=floor(37*1.5)=55; eff=1 → 55
-    expect(withoutSlowStart.damage).toBe(55);
+    //   baseDamage = floor(floor(22*35*50/100)/50) = floor(385/50) = 7
+    //   no weather; +2=9; random=9; STAB(Normal/Normal)=floor(9*1.5)=13; eff=1 → 13
+    expect(withSlowStart.damage).toBe(13);
+    // Without Slow Start: atk=100, baseDamage=floor(770/50)=15; +2=17; random=17
+    //   STAB=floor(17*1.5)=25; eff=1 → 25
+    expect(withoutSlowStart.damage).toBe(25);
   });
 
   it("given Slow Start attacker without slow-start volatile (expired), when using a physical move, then Attack is not halved", () => {
     // Source: Bulbapedia — Slow Start: after 5 turns, the halving stops
     // Source: Showdown Gen 4 — Slow Start checks for volatile, not just ability
     const attacker = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       attack: 100,
       // No slow-start volatile = effect has expired
     });
     const noAbilityAttacker = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -855,15 +851,15 @@ describe("Gen4 Slow Start — halve Attack and Speed for 5 turns", () => {
 
   it("given Slow Start attacker with slow-start volatile active, when using a special move, then no SpAtk penalty (only Attack is halved)", () => {
     // Source: Bulbapedia — Slow Start: halves Attack (not Special Attack)
-    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 3 }]]);
+    const slowStartVolatiles = new Map([[ABILITIES.slowStart, { turnsLeft: 3 }]]);
     const attacker = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       spAttack: 100,
       volatiles: slowStartVolatiles,
     });
     const noAbilityAttacker = createActivePokemon({ ability: "", spAttack: 100 });
     const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove({ type: "fire", power: 80, category: "special" });
+    const move = EMBER;
 
     const rng = createMockRng(100);
     const state = createMockState();
@@ -894,9 +890,9 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
     // We test this through resolveTurnOrder since getEffectiveSpeed is protected.
     const ruleset = new Gen4Ruleset(new DataManager());
 
-    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 4 }]]);
+    const slowStartVolatiles = new Map([[ABILITIES.slowStart, { turnsLeft: 4 }]]);
     const slowPokemon = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       volatiles: slowStartVolatiles,
     });
     // Override calculatedStats to have a known speed
@@ -922,12 +918,8 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
     };
 
     // We need to set up move data for resolveTurnOrder
-    slowPokemon.pokemon.moves = [
-      { moveId: "tackle", ppUsed: 0, ppUps: 0 },
-    ] as PokemonInstance["moves"];
-    fastPokemon.pokemon.moves = [
-      { moveId: "tackle", ppUsed: 0, ppUps: 0 },
-    ] as PokemonInstance["moves"];
+    slowPokemon.pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)] as PokemonInstance["moves"];
+    fastPokemon.pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)] as PokemonInstance["moves"];
 
     const state = {
       weather: null,
@@ -984,7 +976,7 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
     const ruleset = new Gen4Ruleset(new DataManager());
 
     // No slow-start volatile = effect expired
-    const fastPokemon = createActivePokemon({ ability: "slow-start" });
+    const fastPokemon = createActivePokemon({ ability: ABILITIES.slowStart });
     fastPokemon.pokemon.calculatedStats = {
       hp: 200,
       attack: 100,
@@ -1004,11 +996,9 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
       speed: 101,
     };
 
-    fastPokemon.pokemon.moves = [
-      { moveId: "tackle", ppUsed: 0, ppUps: 0 },
-    ] as PokemonInstance["moves"];
+    fastPokemon.pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)] as PokemonInstance["moves"];
     slowerPokemon.pokemon.moves = [
-      { moveId: "tackle", ppUsed: 0, ppUps: 0 },
+      createMoveSlot(TACKLE.id, TACKLE.pp),
     ] as PokemonInstance["moves"];
 
     const state = {
@@ -1074,13 +1064,13 @@ describe("Gen4 Slow Start — damage calc after volatile expiry", () => {
     // Source: Bulbapedia — Slow Start: halving only applies while the volatile is present
     // Source: Showdown Gen 4 mod — Slow Start checks for volatile, not just ability
     const pokemon = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       attack: 100,
       // No slow-start volatile = effect has expired
     });
     const noAbilityPokemon = createActivePokemon({ ability: "", attack: 100 });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
     const rng = createMockRng(100);
     const state = createMockState();
 
@@ -1096,27 +1086,27 @@ describe("Gen4 Slow Start — damage calc after volatile expiry", () => {
 
     // Source: Gen4 damage formula — Slow Start expired, no halving applied
     // Both should deal the same damage since no volatile is present
-    // Derivation: baseDamage=35; +2=37; random=37; STAB(Normal/Normal)=floor(37*1.5)=55
-    expect(afterExpiry.damage).toBe(55);
-    expect(baseline.damage).toBe(55);
+    // Derivation: baseDamage=15; +2=17; random=17; STAB(Normal/Normal)=floor(17*1.5)=25
+    expect(afterExpiry.damage).toBe(25);
+    expect(baseline.damage).toBe(25);
   });
 
   it("given Slow Start ability with volatile still active vs expired, when using a physical move, then active volatile halves damage and expired does not (triangulation)", () => {
     // Source: Bulbapedia — Slow Start: halves Attack while volatile is present
     // Triangulation: compare active volatile vs expired to confirm the volatile is the gate
-    const slowStartVolatiles = new Map([["slow-start", { turnsLeft: 3 }]]);
+    const slowStartVolatiles = new Map([[ABILITIES.slowStart, { turnsLeft: 3 }]]);
     const activeSlowStart = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       attack: 100,
       volatiles: slowStartVolatiles,
     });
     const expiredSlowStart = createActivePokemon({
-      ability: "slow-start",
+      ability: ABILITIES.slowStart,
       attack: 100,
       // No volatile
     });
     const defender = createActivePokemon({ defense: 100 });
-    const move = createMove({ type: "normal", power: 80, category: "physical" });
+    const move = TACKLE;
     const rng = createMockRng(100);
     const state = createMockState();
 
@@ -1131,10 +1121,10 @@ describe("Gen4 Slow Start — damage calc after volatile expiry", () => {
     );
 
     // Source: Gen4 damage formula with Slow Start active vs expired
-    // With volatile: atk=50, baseDamage=17; +2=19; random=19; STAB=floor(19*1.5)=28
-    expect(withVolatile.damage).toBe(28);
-    // Without volatile: atk=100, baseDamage=35; +2=37; random=37; STAB=floor(37*1.5)=55
-    expect(withoutVolatile.damage).toBe(55);
+    // With volatile: atk=50, baseDamage=7; +2=9; random=9; STAB=floor(9*1.5)=13
+    expect(withVolatile.damage).toBe(13);
+    // Without volatile: atk=100, baseDamage=15; +2=17; random=17; STAB=floor(17*1.5)=25
+    expect(withoutVolatile.damage).toBe(25);
   });
 });
 
@@ -1149,17 +1139,17 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     // Source: Showdown Gen 4 mod — Download trigger
     // Derivation: 80 < 120 → +1 Atk
     const opponent = createActivePokemon({ defense: 80, spDefense: 120 });
-    const pokemon = createActivePokemon({ ability: "download" });
+    const pokemon = createActivePokemon({ ability: ABILITIES.download });
 
     const ctx = {
       pokemon,
       opponent,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -1174,17 +1164,17 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     // Source: Bulbapedia — Download: raises SpAtk if foe Def >= SpDef (strict >)
     // Derivation: 120 > 80, so Def is NOT less than SpDef → +1 SpAtk
     const opponent = createActivePokemon({ defense: 120, spDefense: 80 });
-    const pokemon = createActivePokemon({ ability: "download" });
+    const pokemon = createActivePokemon({ ability: ABILITIES.download });
 
     const ctx = {
       pokemon,
       opponent,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -1200,17 +1190,17 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     // Source: Bulbapedia — Download: "If the foe's Defense is lower [...] otherwise SpAtk"
     // Derivation: 100 is not < 100, so condition is false → raises SpAtk
     const opponent = createActivePokemon({ defense: 100, spDefense: 100 });
-    const pokemon = createActivePokemon({ ability: "download" });
+    const pokemon = createActivePokemon({ ability: ABILITIES.download });
 
     const ctx = {
       pokemon,
       opponent,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({
@@ -1223,16 +1213,16 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
 
   it("given Download and no opponent, when Pokemon switches in, then does not activate", () => {
     // Source: Showdown Gen 4 — Download requires an opponent to compare stats
-    const pokemon = createActivePokemon({ ability: "download" });
+    const pokemon = createActivePokemon({ ability: ABILITIES.download });
 
     const ctx = {
       pokemon,
       state: createMockState() as any,
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
       rng: createMockRng(100) as any,
     };
 
-    const result = applyGen4Ability("on-switch-in", ctx);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
   });

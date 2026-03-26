@@ -62,6 +62,8 @@ export interface StickyWebResult {
   readonly applied: boolean;
   /** Stat change to emit (speed: -1), or null if immune */
   readonly statChange: { stat: BattleStat; stages: number } | null;
+  /** Additional ability-driven counter-changes caused by the Sticky Web drop */
+  readonly followupStatChanges: ReadonlyArray<{ stat: BattleStat; stages: number }>;
   /** Messages to emit */
   readonly messages: string[];
 }
@@ -364,7 +366,7 @@ export function applyGen6StickyWeb(
 
   // Not grounded -> immune
   if (!isGen6Grounded(switchingIn, gravityActive)) {
-    return { applied: false, statChange: null, messages: [] };
+    return { applied: false, statChange: null, followupStatChanges: [], messages: [] };
   }
 
   // Clear Body / White Smoke: prevents stat drops
@@ -375,6 +377,7 @@ export function applyGen6StickyWeb(
     return {
       applied: false,
       statChange: null,
+      followupStatChanges: [],
       messages: [
         `${pokemonName}'s ${switchingIn.ability === "clear-body" ? "Clear Body" : "White Smoke"} prevents stat loss!`,
       ],
@@ -415,6 +418,7 @@ export function applyGen6StickyWeb(
   return {
     applied: true,
     statChange: { stat: "speed", stages: -1 },
+    followupStatChanges: statChanges.slice(1),
     messages,
   };
 }
@@ -528,6 +532,7 @@ export function applyGen6EntryHazards(
     if (result.applied && result.statChange) {
       statChanges.push(result.statChange);
     }
+    statChanges.push(...result.followupStatChanges);
     messages.push(...result.messages);
   }
 

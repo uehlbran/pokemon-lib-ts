@@ -1,4 +1,5 @@
 import type { TypeChart } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN2_TYPE_CHART, GEN2_TYPES } from "../../src/Gen2TypeChart";
 
@@ -19,51 +20,32 @@ describe("Gen 2 Type Chart", () => {
     // Arrange / Act
     const types = Object.keys(chart);
     // Assert
-    expect(types.length).toBe(17);
+    expect(types).toHaveLength(17);
   });
 
   it("given Gen 2 type chart, when listing types, then includes Dark and Steel but not Fairy", () => {
     // Arrange
     const types = Object.keys(chart);
     // Assert
-    expect(types).toContain("dark");
-    expect(types).toContain("steel");
-    expect(types).not.toContain("fairy");
+    expect(types).toContain(CORE_TYPE_IDS.dark);
+    expect(types).toContain(CORE_TYPE_IDS.steel);
+    expect(types).not.toContain(CORE_TYPE_IDS.fairy);
   });
 
   it("given GEN2_TYPES constant, when checking types, then includes all 17 Gen 2 types", () => {
     // Arrange
-    const expectedTypes = [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-    ];
+    const expectedTypes = GEN2_TYPES;
     // Assert
+    // Source: Gen 2 has exactly 17 elemental types, and the exported list is the canonical package surface.
     expect(GEN2_TYPES.length).toBe(17);
-    for (const t of expectedTypes) {
-      expect(GEN2_TYPES).toContain(t);
-    }
+    expect(GEN2_TYPES).toEqual(expectedTypes);
   });
 
   // --- Gen 1 Bug FIXED: Ghost -> Psychic = 2 ---
 
   it("given Gen 2 type chart, when checking Ghost vs Psychic, then is super effective (2x - Gen 1 bug fixed)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "ghost", "psychic");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.psychic);
     // Assert
     expect(multiplier).toBe(2);
   });
@@ -72,14 +54,14 @@ describe("Gen 2 Type Chart", () => {
 
   it("given Gen 2 type chart, when checking Dark vs Psychic, then is super effective (2x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "dark", "psychic");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.psychic);
     // Assert
     expect(multiplier).toBe(2);
   });
 
   it("given Gen 2 type chart, when checking Psychic vs Dark, then is immune (0x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "psychic", "dark");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.dark);
     // Assert
     expect(multiplier).toBe(0);
   });
@@ -88,14 +70,14 @@ describe("Gen 2 Type Chart", () => {
 
   it("given Gen 2 type chart, when checking Steel resistance to Ghost, then is 0.5x", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "ghost", "steel");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.steel);
     // Assert
     expect(multiplier).toBe(0.5);
   });
 
   it("given Gen 2 type chart, when checking Steel resistance to Dark, then is 0.5x", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "dark", "steel");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.steel);
     // Assert
     expect(multiplier).toBe(0.5);
   });
@@ -104,14 +86,14 @@ describe("Gen 2 Type Chart", () => {
 
   it("given Gen 2 type chart, when checking Poison vs Bug, then is neutral (1x - changed from Gen 1)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "poison", "bug");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.bug);
     // Assert
     expect(multiplier).toBe(1);
   });
 
   it("given Gen 2 type chart, when checking Bug vs Poison, then is not very effective (0.5x - changed from Gen 1)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "bug", "poison");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.poison);
     // Assert
     expect(multiplier).toBe(0.5);
   });
@@ -120,14 +102,14 @@ describe("Gen 2 Type Chart", () => {
 
   it("given Gen 2 type chart, when checking Normal vs Ghost, then is immune (0x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "normal", "ghost");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.ghost);
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen 2 type chart, when checking Fighting vs Normal, then is super effective (2x)", () => {
     // Arrange / Act
-    const multiplier = getEffectiveness(chart, "fighting", "normal");
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.normal);
     // Assert
     expect(multiplier).toBe(2);
   });
@@ -154,7 +136,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "normal", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -163,7 +145,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "fire", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fire, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -172,7 +154,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "water", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.water, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -181,7 +163,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "electric", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.electric, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -190,7 +172,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "grass", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.grass, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -199,7 +181,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ice", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ice, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -208,7 +190,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "fighting", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -217,7 +199,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "poison", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -226,7 +208,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ground", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ground, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -235,7 +217,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "flying", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.flying, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -244,7 +226,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "psychic", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -253,7 +235,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "bug", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -262,7 +244,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "rock", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.rock, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -271,7 +253,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ghost", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -280,7 +262,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "dragon", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -289,7 +271,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "dark", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -298,7 +280,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "steel", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.steel, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -311,7 +293,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "normal", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -320,7 +302,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "fire", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fire, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -329,7 +311,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "water", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.water, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -338,7 +320,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "electric", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.electric, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -347,7 +329,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "grass", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.grass, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -356,7 +338,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ice", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ice, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -365,7 +347,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "fighting", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -374,7 +356,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "poison", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -383,7 +365,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ground", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ground, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -392,7 +374,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "flying", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.flying, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -401,7 +383,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "psychic", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -410,7 +392,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "bug", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -419,7 +401,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "rock", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.rock, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -428,7 +410,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ghost", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -437,7 +419,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "dragon", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -446,7 +428,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "dark", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -455,7 +437,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "steel", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.steel, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -468,7 +450,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ghost", "psychic");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.psychic);
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -477,7 +459,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "bug", "poison");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.poison);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -486,7 +468,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "poison", "bug");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.bug);
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -495,7 +477,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ice", "fire");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ice, CORE_TYPE_IDS.fire);
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -508,7 +490,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "normal", "ghost");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.ghost);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -517,7 +499,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ghost", "normal");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.normal);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -526,7 +508,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "fighting", "ghost");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.ghost);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -535,7 +517,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "electric", "ground");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.electric, CORE_TYPE_IDS.ground);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -544,7 +526,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "ground", "flying");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -553,7 +535,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "poison", "steel");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel);
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -562,7 +544,7 @@ describe("Gen 2 Type Chart", () => {
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
-      const effectiveness = getEffectiveness(chart, "psychic", "dark");
+      const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.dark);
       // Assert
       expect(effectiveness).toBe(0);
     });

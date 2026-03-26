@@ -15,7 +15,7 @@ describe("barrel exports", () => {
     expect(mod.getPokemonName).toBeDefined();
 
     // Assert — internal/test helpers stay off the consumer-facing root API
-    expect(Object.hasOwn(mod, "createActivePokemon")).toBe(false);
+    expect(Object.hasOwn(mod, "createOnFieldPokemon")).toBe(false);
     expect(Object.hasOwn(mod, "createDefaultStatStages")).toBe(false);
     expect(Object.hasOwn(mod, "createTestPokemon")).toBe(false);
     expect(Object.hasOwn(mod, "BASE_TYPE_BOOST_ITEMS")).toBe(false);
@@ -28,7 +28,7 @@ describe("barrel exports", () => {
     const utils = await import("../../src/utils/index");
 
     // Assert — the supported submodule keeps the internal helpers available
-    expect(Object.hasOwn(utils, "createActivePokemon")).toBe(true);
+    expect(Object.hasOwn(utils, "createOnFieldPokemon")).toBe(true);
     expect(Object.hasOwn(utils, "createDefaultStatStages")).toBe(true);
     expect(Object.hasOwn(utils, "createTestPokemon")).toBe(true);
   });

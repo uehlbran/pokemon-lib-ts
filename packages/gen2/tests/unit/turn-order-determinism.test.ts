@@ -1,6 +1,8 @@
 import type { BattleAction, BattleState } from "@pokemon-lib-ts/battle";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
+import { CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN2_ITEM_IDS, GEN2_MOVE_IDS } from "../../src";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 
 /**
@@ -9,7 +11,7 @@ import { Gen2Ruleset } from "../../src/Gen2Ruleset";
  */
 function createTurnOrderActive(
   speed: number,
-  moveId = "tackle",
+  moveId = GEN2_MOVE_IDS.tackle,
   overrides: Partial<{
     status: string | null;
     heldItem: string | null;
@@ -34,18 +36,9 @@ function createTurnOrderActive(
       },
     },
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["normal"],
+    types: [CORE_TYPE_IDS.normal],
     ability: "",
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -78,7 +71,7 @@ describe("Gen2Ruleset — resolveTurnOrder RNG determinism", () => {
     // Arrange
     const ruleset = new Gen2Ruleset();
 
-    const makeScenario = () => {
+    const createScenario = () => {
       const active0 = createTurnOrderActive(100);
       const active1 = createTurnOrderActive(100);
 
@@ -96,11 +89,11 @@ describe("Gen2Ruleset — resolveTurnOrder RNG determinism", () => {
     };
 
     // Act
-    const { state: state1, actions: actions1 } = makeScenario();
+    const { state: state1, actions: actions1 } = createScenario();
     const rng1 = new SeededRandom(42);
     const order1 = ruleset.resolveTurnOrder(actions1, state1, rng1);
 
-    const { state: state2, actions: actions2 } = makeScenario();
+    const { state: state2, actions: actions2 } = createScenario();
     const rng2 = new SeededRandom(42);
     const order2 = ruleset.resolveTurnOrder(actions2, state2, rng2);
 
@@ -113,7 +106,7 @@ describe("Gen2Ruleset — resolveTurnOrder RNG determinism", () => {
     // Arrange: 3-way speed tie is the scenario most susceptible to the .sort() bug
     const ruleset = new Gen2Ruleset();
 
-    const makeScenario = () => {
+    const createScenario = () => {
       const active0 = createTurnOrderActive(100);
       const active1 = createTurnOrderActive(100);
       const active2 = createTurnOrderActive(100);
@@ -133,11 +126,11 @@ describe("Gen2Ruleset — resolveTurnOrder RNG determinism", () => {
     };
 
     // Act
-    const { state: state1, actions: actions1 } = makeScenario();
+    const { state: state1, actions: actions1 } = createScenario();
     const rng1 = new SeededRandom(7777);
     const order1 = ruleset.resolveTurnOrder(actions1, state1, rng1);
 
-    const { state: state2, actions: actions2 } = makeScenario();
+    const { state: state2, actions: actions2 } = createScenario();
     const rng2 = new SeededRandom(7777);
     const order2 = ruleset.resolveTurnOrder(actions2, state2, rng2);
 
@@ -150,9 +143,13 @@ describe("Gen2Ruleset — resolveTurnOrder RNG determinism", () => {
     // Arrange: Quick Claw consumes rng before sorting — verify it's still deterministic
     const ruleset = new Gen2Ruleset();
 
-    const makeScenario = () => {
-      const active0 = createTurnOrderActive(100, "tackle", { heldItem: "quick-claw" });
-      const active1 = createTurnOrderActive(100, "tackle", { heldItem: "quick-claw" });
+    const createScenario = () => {
+      const active0 = createTurnOrderActive(100, GEN2_MOVE_IDS.tackle, {
+        heldItem: GEN2_ITEM_IDS.quickClaw,
+      });
+      const active1 = createTurnOrderActive(100, GEN2_MOVE_IDS.tackle, {
+        heldItem: GEN2_ITEM_IDS.quickClaw,
+      });
 
       const state = {
         sides: [{ active: [active0] }, { active: [active1] }],
@@ -168,11 +165,11 @@ describe("Gen2Ruleset — resolveTurnOrder RNG determinism", () => {
     };
 
     // Act
-    const { state: state1, actions: actions1 } = makeScenario();
+    const { state: state1, actions: actions1 } = createScenario();
     const rng1 = new SeededRandom(55555);
     const order1 = ruleset.resolveTurnOrder(actions1, state1, rng1);
 
-    const { state: state2, actions: actions2 } = makeScenario();
+    const { state: state2, actions: actions2 } = createScenario();
     const rng2 = new SeededRandom(55555);
     const order2 = ruleset.resolveTurnOrder(actions2, state2, rng2);
 

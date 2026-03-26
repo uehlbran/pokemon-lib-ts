@@ -5,8 +5,16 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
+  CORE_SCREEN_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
+import { GEN3_MOVE_IDS } from "../../src/data/reference-ids";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
@@ -69,11 +77,11 @@ function createActivePokemon(opts: {
     currentHp: 200,
     moves: [],
     ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -127,7 +135,7 @@ function createMove(
     id,
     displayName: "Test Move",
     type,
-    category: "physical",
+    category: CORE_MOVE_CATEGORIES.physical,
     power,
     accuracy: 100,
     pp: 35,
@@ -162,7 +170,10 @@ function createMove(
 function createBattleStateWithScreens(
   attacker: ActivePokemon,
   defender: ActivePokemon,
-  defenderScreens: Array<{ type: "reflect" | "light-screen"; turnsLeft: number }>,
+  defenderScreens: Array<{
+    type: typeof CORE_SCREEN_IDS.reflect | typeof CORE_SCREEN_IDS.lightScreen;
+    turnsLeft: number;
+  }>,
 ): BattleState {
   return {
     sides: [
@@ -280,9 +291,9 @@ describe("Gen 3 Screens — Damage Calc", () => {
     // Without screen:
     //   baseDamage = 35, +2 = 37, random = 37, final = 37
     // Use fighting type attacker to avoid STAB on Normal move
-    const attacker = createActivePokemon({ types: ["fighting"], attack: 100 });
-    const defender = createActivePokemon({ types: ["fighting"], defense: 100 });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], attack: 100 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], defense: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80);
     const rng = createMockRng(100); // max random roll
 
     // Without Reflect
@@ -299,7 +310,7 @@ describe("Gen 3 Screens — Damage Calc", () => {
 
     // With Reflect
     const stateWithScreen = createBattleStateWithScreens(attacker, defender, [
-      { type: "reflect", turnsLeft: 5 },
+      { type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 },
     ]);
     const ctxWithScreen: DamageContext = {
       attacker,
@@ -329,9 +340,9 @@ describe("Gen 3 Screens — Damage Calc", () => {
     //   No screen: 82 + 2 = 84, * 1.0 = 84
     //   Screen: floor(82/2)=41, 41+2=43, * 1.0 = 43
     // Use fighting type attacker to avoid STAB on Normal move
-    const attacker = createActivePokemon({ types: ["fighting"], attack: 150 });
-    const defender = createActivePokemon({ types: ["fighting"], defense: 80 });
-    const move = createMove("normal", 100);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], attack: 150 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], defense: 80 });
+    const move = createMove(CORE_TYPE_IDS.normal, 100);
     const rng = createMockRng(100);
 
     const stateNoScreen = createBattleStateWithScreens(attacker, defender, []);
@@ -341,7 +352,7 @@ describe("Gen 3 Screens — Damage Calc", () => {
     );
 
     const stateWithScreen = createBattleStateWithScreens(attacker, defender, [
-      { type: "reflect", turnsLeft: 3 },
+      { type: CORE_SCREEN_IDS.reflect, turnsLeft: 3 },
     ]);
     const resultWithScreen = calculateGen3Damage(
       { attacker, defender, move, isCrit: false, rng, state: stateWithScreen } as DamageContext,
@@ -363,13 +374,13 @@ describe("Gen 3 Screens — Damage Calc", () => {
     //   crit: 37 * 2 = 74
     //   random: 74 * 100/100 = 74
     //   No STAB (fighting using normal), neutral type = 74
-    const attacker = createActivePokemon({ types: ["fighting"], attack: 100 });
-    const defender = createActivePokemon({ types: ["fighting"], defense: 100 });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], attack: 100 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], defense: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80);
     const rng = createMockRng(100);
 
     const stateWithScreen = createBattleStateWithScreens(attacker, defender, [
-      { type: "reflect", turnsLeft: 5 },
+      { type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 },
     ]);
     const ctxCrit: DamageContext = {
       attacker,
@@ -397,9 +408,9 @@ describe("Gen 3 Screens — Damage Calc", () => {
     //   No screen: 35 + 2 = 37
     //   Screen: floor(35/2) = 17, 17 + 2 = 19
     // Use normal type attacker to avoid STAB on Fire move
-    const attacker = createActivePokemon({ types: ["normal"], spAttack: 100 });
-    const defender = createActivePokemon({ types: ["fighting"], spDefense: 100 });
-    const move = createMove("fire", 80); // Fire = special in Gen 3
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], spAttack: 100 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], spDefense: 100 });
+    const move = createMove(CORE_TYPE_IDS.fire, 80); // Fire = special in Gen 3
     const rng = createMockRng(100);
 
     const stateNoScreen = createBattleStateWithScreens(attacker, defender, []);
@@ -409,7 +420,7 @@ describe("Gen 3 Screens — Damage Calc", () => {
     );
 
     const stateWithScreen = createBattleStateWithScreens(attacker, defender, [
-      { type: "light-screen", turnsLeft: 5 },
+      { type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 5 },
     ]);
     const resultWithScreen = calculateGen3Damage(
       { attacker, defender, move, isCrit: false, rng, state: stateWithScreen } as DamageContext,
@@ -426,13 +437,13 @@ describe("Gen 3 Screens — Damage Calc", () => {
     // Source: pret/pokeemerald — Reflect only affects physical moves, Light Screen only special
     // Fire = special in Gen 3, so Reflect should have no effect.
     // Use normal type attacker to avoid STAB on Fire move
-    const attacker = createActivePokemon({ types: ["normal"], spAttack: 100 });
-    const defender = createActivePokemon({ types: ["fighting"], spDefense: 100 });
-    const move = createMove("fire", 80);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], spAttack: 100 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], spDefense: 100 });
+    const move = createMove(CORE_TYPE_IDS.fire, 80);
     const rng = createMockRng(100);
 
     const stateWithReflect = createBattleStateWithScreens(attacker, defender, [
-      { type: "reflect", turnsLeft: 5 },
+      { type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 },
     ]);
     const result = calculateGen3Damage(
       { attacker, defender, move, isCrit: false, rng, state: stateWithReflect } as DamageContext,
@@ -448,13 +459,13 @@ describe("Gen 3 Screens — Damage Calc", () => {
     // Source: pret/pokeemerald — Light Screen only affects special moves
     // Normal = physical in Gen 3, so Light Screen should have no effect.
     // Use fighting type attacker to avoid STAB on Normal move
-    const attacker = createActivePokemon({ types: ["fighting"], attack: 100 });
-    const defender = createActivePokemon({ types: ["fighting"], defense: 100 });
-    const move = createMove("normal", 80);
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], attack: 100 });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.fighting], defense: 100 });
+    const move = createMove(CORE_TYPE_IDS.normal, 80);
     const rng = createMockRng(100);
 
     const stateWithLS = createBattleStateWithScreens(attacker, defender, [
-      { type: "light-screen", turnsLeft: 5 },
+      { type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 5 },
     ]);
     const result = calculateGen3Damage(
       { attacker, defender, move, isCrit: false, rng, state: stateWithLS } as DamageContext,
@@ -468,33 +479,33 @@ describe("Gen 3 Screens — Damage Calc", () => {
 });
 
 describe("Gen 3 Screens — Move Effects", () => {
-  it("given Reflect used, when executeMoveEffect is called, then returns screenSet with screen 'reflect' and 5 turns", () => {
+  it("given the screen move is used, when executeMoveEffect is called, then returns the matching screenSet", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Reflect sets 5-turn screen
-    const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("reflect");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = dataManager.getMove(GEN3_MOVE_IDS.reflect);
     const context = createMoveEffectContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.screenSet).toEqual({
-      screen: "reflect",
+      screen: CORE_SCREEN_IDS.reflect,
       turnsLeft: 5,
       side: "attacker",
     });
   });
 
-  it("given Light Screen used, when executeMoveEffect is called, then returns screenSet with screen 'light-screen' and 5 turns", () => {
+  it("given the special screen move is used, when executeMoveEffect is called, then returns the matching screenSet", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Light Screen sets 5-turn screen
-    const attacker = createActivePokemon({ types: ["psychic"] });
-    const defender = createActivePokemon({ types: ["normal"] });
-    const move = dataManager.getMove("light-screen");
+    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic] });
+    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const move = dataManager.getMove(GEN3_MOVE_IDS.lightScreen);
     const context = createMoveEffectContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.screenSet).toEqual({
-      screen: "light-screen",
+      screen: CORE_SCREEN_IDS.lightScreen,
       turnsLeft: 5,
       side: "attacker",
     });

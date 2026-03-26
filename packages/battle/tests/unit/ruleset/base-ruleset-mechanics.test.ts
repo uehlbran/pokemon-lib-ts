@@ -15,13 +15,26 @@
  *
  * Source authority: Showdown sim/battle-actions.ts, data/conditions.ts, data/moves.ts, data/items.ts
  */
-import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type Generation,
+  type PokemonType,
+  SeededRandom,
+  type TypeChart,
+} from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
 
 // ─── Concrete test subclass ───────────────────────────────────────────────────
 class TestRuleset extends BaseRuleset {
@@ -41,26 +54,7 @@ class TestRuleset extends BaseRuleset {
   }
 
   getAvailableTypes(): readonly PokemonType[] {
-    return [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-      "fairy",
-    ];
+    return Object.values(CORE_TYPE_IDS);
   }
 
   calculateDamage(_context: DamageContext): DamageResult {
@@ -70,6 +64,44 @@ class TestRuleset extends BaseRuleset {
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 const emptyState = {} as unknown as BattleState;
+
+// Source: Showdown sim/battle-actions.ts residualOrder values from
+// data/conditions.ts, data/moves.ts, data/items.ts.
+const EXPECTED_END_OF_TURN_ORDER = [
+  CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+  CORE_END_OF_TURN_EFFECT_IDS.wish,
+  CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+  CORE_ITEM_IDS.leftovers,
+  CORE_ITEM_IDS.blackSludge,
+  CORE_VOLATILE_IDS.ingrain,
+  CORE_VOLATILE_IDS.leechSeed,
+  CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+  CORE_VOLATILE_IDS.nightmare,
+  CORE_VOLATILE_IDS.curse,
+  CORE_MOVE_IDS.bind,
+  CORE_MOVE_IDS.perishSong,
+  CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+  CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+] as const;
+
+function createChanceCapturingRng() {
+  const capture = { probability: null as number | null };
+  return {
+    getCapturedProbability: () => capture.probability,
+    rng: {
+      chance: (probability: number) => {
+        capture.probability = probability;
+        return false;
+      },
+      next: () => 0.5,
+      int: () => 0,
+    } as unknown as SeededRandom,
+  };
+}
 
 describe("BaseRuleset — rollMultiHitCount", () => {
   let ruleset: TestRuleset;
@@ -83,8 +115,8 @@ describe("BaseRuleset — rollMultiHitCount", () => {
     // Source: Showdown sim/battle-actions.ts — Gen 5+ multi-hit: randomChance(35,100) → 2 hits,
     //   randomChance(35,65) → 3 hits, randomChance(15,30) → 4 hits, else 5 hits
     // Distribution: 35% = 2 hits, 35% = 3 hits, 15% = 4 hits, 15% = 5 hits
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
     const counts = { 2: 0, 3: 0, 4: 0, 5: 0 };
 
@@ -110,8 +142,10 @@ describe("BaseRuleset — rollMultiHitCount", () => {
   it("given an attacker with skill-link ability, when rollMultiHitCount is called, then always returns 5 hits", () => {
     // Arrange
     // Source: Showdown — Skill Link always hits 5 times for multi-hit moves
-    const pokemon = createTestPokemon(6, 50, { ability: "skill-link" });
-    const active = createActivePokemon(pokemon, 0, ["normal"]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      ability: CORE_ABILITY_IDS.skillLink,
+    });
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
     const rng = new SeededRandom(42);
 
     // Act — verify 10 consecutive calls all return 5
@@ -124,8 +158,8 @@ describe("BaseRuleset — rollMultiHitCount", () => {
   it("given rollMultiHitCount, when called, then result is always in range 2-5", () => {
     // Arrange
     // Source: multi-hit move mechanics — Clamp 2 is the minimum, 5 is the maximum
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(99999);
 
     // Act & Assert
@@ -156,62 +190,43 @@ describe("BaseRuleset — rollProtectSuccess", () => {
     }
   });
 
-  it("given 1 consecutive protect, when rollProtectSuccess is called many times, then success rate is ~1/3", () => {
+  it("given 1 consecutive protect, when rollProtectSuccess is called, then it requests a 1/3 RNG chance", () => {
     // Arrange
-    // Source: Showdown data/conditions.ts — stall volatile: onStart sets counter=3 (first consecutive use = 1/3 chance)
-    //   onRestart multiplies by 3 each additional use: counter goes 3 → 9 → 27 → ...
-    // N=1 consecutive: denominator = min(729, 3^1) = 3 → 1/3 chance
-    const rng = new SeededRandom(42);
+    // Source: Showdown data/conditions.ts — first consecutive Protect uses denominator 3.
+    const { rng, getCapturedProbability } = createChanceCapturingRng();
 
     // Act
-    let successes = 0;
-    const trials = 3000;
-    for (let i = 0; i < trials; i++) {
-      if (ruleset.rollProtectSuccess(1, rng)) successes++;
-    }
+    ruleset.rollProtectSuccess(1, rng);
 
-    // Assert — ~1/3 = 33.3%, allow 25%-42%
-    expect(successes).toBeGreaterThanOrEqual(750);
-    expect(successes).toBeLessThanOrEqual(1260);
+    // Assert
+    expect(getCapturedProbability()).toBe(1 / 3);
   });
 
-  it("given 2 consecutive protects, when rollProtectSuccess is called many times, then success rate is ~1/9", () => {
+  it("given 2 consecutive protects, when rollProtectSuccess is called, then it requests a 1/9 RNG chance", () => {
     // Arrange
-    // Source: Showdown data/conditions.ts — stall volatile: N=2 → counter = 3^2 = 9 → 1/9 chance (~11.1%)
-    const rng = new SeededRandom(12345);
+    // Source: Showdown data/conditions.ts — second consecutive Protect uses denominator 9.
+    const { rng, getCapturedProbability } = createChanceCapturingRng();
 
     // Act
-    let successes = 0;
-    const trials = 9000;
-    for (let i = 0; i < trials; i++) {
-      if (ruleset.rollProtectSuccess(2, rng)) successes++;
-    }
+    ruleset.rollProtectSuccess(2, rng);
 
-    // Assert — ~1/9 = 11.1%, allow 7%-16%
-    expect(successes).toBeGreaterThanOrEqual(630);
-    expect(successes).toBeLessThanOrEqual(1440);
+    // Assert
+    expect(getCapturedProbability()).toBe(1 / 9);
   });
 
-  it("given 6 or more consecutive protects, when rollProtectSuccess is called, then denominator is capped at 729", () => {
+  it("given 6 or more consecutive protects, when rollProtectSuccess is called, then it caps the requested RNG chance at 1/729", () => {
     // Arrange
-    // Source: Showdown data/conditions.ts — stall volatile: counterMax = 729 = 3^6
-    //   Attempts beyond 6 in a row still use 1/729 chance
-    const rng = new SeededRandom(99);
+    // Source: Showdown data/conditions.ts — the denominator is capped at 729 = 3^6.
+    const protectAtCap = createChanceCapturingRng();
+    const protectBeyondCap = createChanceCapturingRng();
 
-    // Act — 6 consecutive vs 10 consecutive should yield same cap behavior
-    let successes6 = 0;
-    let successes10 = 0;
-    const trials = 72900;
-    const rng2 = new SeededRandom(99);
-    for (let i = 0; i < trials; i++) {
-      if (ruleset.rollProtectSuccess(6, rng)) successes6++;
-      if (ruleset.rollProtectSuccess(10, rng2)) successes10++;
-    }
+    // Act
+    ruleset.rollProtectSuccess(6, protectAtCap.rng);
+    ruleset.rollProtectSuccess(10, protectBeyondCap.rng);
 
-    // Assert — both should be ~1/729 = 0.137%, both around the same count
-    // Verify capped behavior: 10 consecutive uses same denominator as 6
-    expect(successes10).toBeGreaterThanOrEqual(successes6 - 30);
-    expect(successes10).toBeLessThanOrEqual(successes6 + 30);
+    // Assert
+    expect(protectAtCap.getCapturedProbability()).toBe(1 / 729);
+    expect(protectBeyondCap.getCapturedProbability()).toBe(1 / 729);
   });
 
   it("given a deterministic-always-succeed RNG, when rollProtectSuccess(1, rng) is called, then returns true", () => {
@@ -339,7 +354,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   = floor(17.6) + 2 = 17 + 2 = 19 (base damage)
     //   Random factor with seed 42: rng.int(0,15)=9, so randomFactor=94
     //   finalDamage = max(1, floor(19 * 94 / 100)) = max(1, floor(17.86)) = 17
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -349,7 +364,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -370,7 +385,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   = floor(67.2) + 2 = 67 + 2 = 69 (base damage)
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(69 * 94 / 100)) = max(1, floor(64.86)) = 64
-    const pokemon = createTestPokemon(6, 100, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 100, {
       calculatedStats: {
         hp: 300,
         attack: 200,
@@ -380,7 +395,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 130,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -399,8 +414,8 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   baseDamage = floor(floor(22 * 40 * 50) / 100 / 50) + 2 = floor(440/50) + 2 = 8 + 2 = 10
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(10 * 94 / 100)) = max(1, floor(9.4)) = 9
-    const pokemon = createTestPokemon(6, 50, {
-      status: "burn",
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      status: CORE_STATUS_IDS.burn,
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -410,7 +425,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -428,7 +443,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   baseDamage = floor(floor(22 * 40 * 400) / 100 / 50) + 2 = floor(3520/50) + 2 = 70 + 2 = 72
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(72 * 94 / 100)) = max(1, floor(67.68)) = 67
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -438,7 +453,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     active.statStages.attack = 6;
     const rng = new SeededRandom(42);
 
@@ -463,8 +478,8 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
     //   levelFactor = floor(2*50/5) + 2 = 22
     //   baseDamage = floor(floor(22 * 50 * 100) / 100) = floor(110000/100) = floor(1100) = 1100
     //   damage = floor(1100 / 50) + 2 = floor(22) + 2 = 22 + 2 = 24
-    const attacker = createActivePokemon(
-      createTestPokemon(6, 50, {
+    const attacker = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -475,10 +490,10 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       0,
-      ["fire"],
+      [CORE_TYPE_IDS.fire],
     );
-    const defender = createActivePokemon(
-      createTestPokemon(9, 50, {
+    const defender = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
         calculatedStats: {
           hp: 200,
           attack: 80,
@@ -489,7 +504,7 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       1,
-      ["water"],
+      [CORE_TYPE_IDS.water],
     );
 
     // Act
@@ -510,8 +525,8 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
     //   step1 = floor(42 * 50 * 200) = 420000
     //   step2 = floor(420000 / 100) = 4200
     //   step3 = floor(4200 / 50) + 2 = 84 + 2 = 86
-    const attacker = createActivePokemon(
-      createTestPokemon(6, 100, {
+    const attacker = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.charizard, 100, {
         calculatedStats: {
           hp: 300,
           attack: 200,
@@ -522,10 +537,10 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       0,
-      ["fire"],
+      [CORE_TYPE_IDS.fire],
     );
-    const defender = createActivePokemon(
-      createTestPokemon(9, 100, {
+    const defender = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.blastoise, 100, {
         calculatedStats: {
           hp: 300,
           attack: 100,
@@ -536,7 +551,7 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
         },
       }),
       1,
-      ["water"],
+      [CORE_TYPE_IDS.water],
     );
 
     // Act
@@ -558,7 +573,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
     // Arrange
     // Source: Showdown — Gen 4+ Struggle recoil = 1/4 max HP (floor(maxHp / 4))
     //   BaseRuleset defaults to Gen 4+ behavior
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -568,7 +583,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(active, 80); // damageDealt=80 (unused in Gen 4+)
@@ -580,7 +595,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
   it("given a pokemon with 160 max HP, when calculateStruggleRecoil is called, then recoil is floor(160/4) = 40", () => {
     // Arrange
     // Source: Showdown — Gen 4+ Struggle recoil = 1/4 max HP; formula: Math.floor(maxHp / 4)
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -590,7 +605,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(active, 30); // damageDealt ignored in Gen 4+
@@ -602,7 +617,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
   it("given calculateStruggleRecoil, when called, then it ignores the damageDealt parameter (Gen 4+ uses maxHP not damage)", () => {
     // Arrange
     // Source: Showdown — Gen 4+ uses max HP formula; damageDealt parameter only matters for Gen 2-3
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -612,7 +627,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act — same attacker, different damageDealt values
     const recoil1 = ruleset.calculateStruggleRecoil(active, 10);
@@ -635,7 +650,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
     // Arrange
     // Source: Showdown data/conditions.ts — partiallytrapped: damage = pokemon.baseMaxhp / 8 (Gen 5+ default)
     //   Gen 2-4 use 1/16 instead; BaseRuleset targets Gen 5+ default
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -645,7 +660,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const damage = ruleset.calculateBindDamage(active);
@@ -657,7 +672,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
   it("given a pokemon with 200 max HP, when calculateBindDamage is called, then returns floor(200/8) = 25", () => {
     // Arrange
     // Source: Showdown data/conditions.ts — partiallytrapped: damage = pokemon.baseMaxhp / 8
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -667,7 +682,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const damage = ruleset.calculateBindDamage(active);
@@ -688,9 +703,9 @@ describe("BaseRuleset — processPerishSong", () => {
     // Arrange
     // Source: Showdown data/moves.ts — perishsong: duration 4, onResidualOrder 24
     //   Counter counts down from 3 to 0, faint when reaching 0
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
-    active.volatileStatuses.set("perish-song", {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 3 },
     });
@@ -706,9 +721,9 @@ describe("BaseRuleset — processPerishSong", () => {
   it("given a pokemon with perish song counter at 2, when processPerishSong is called, then counter decrements to 1 and fainted is false", () => {
     // Arrange
     // Source: Bulbapedia — Perish Song counts down 3, 2, 1, 0 then faints
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
-    active.volatileStatuses.set("perish-song", {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 2 },
     });
@@ -725,9 +740,9 @@ describe("BaseRuleset — processPerishSong", () => {
     // Arrange
     // Source: Bulbapedia — Perish Song: at the end of the 3rd turn after use, the Pokemon faints
     //   Counter reaches 0 (from 1) → faint
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
-    active.volatileStatuses.set("perish-song", {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 1 },
     });
@@ -742,8 +757,8 @@ describe("BaseRuleset — processPerishSong", () => {
 
   it("given a pokemon without perish-song volatile, when processPerishSong is called, then returns safe no-op values", () => {
     // Arrange
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, ["fire"]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     // No perish-song volatile set
 
     // Act
@@ -762,142 +777,8 @@ describe("BaseRuleset — getEndOfTurnOrder ordering (regression for #555)", () 
     ruleset = new TestRuleset();
   });
 
-  it("given the base ruleset, when getEndOfTurnOrder is called, then future-attack comes before weather-damage", () => {
-    // Arrange
-    // Source: Showdown data/conditions.ts — futuremove onResidualOrder: 3 (first)
-    //   weather damage (Sandstorm/Hail) onResidualOrder: 5
-    //   future-attack MUST precede weather-damage per Showdown
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const futureIdx = order.indexOf("future-attack");
-    const weatherIdx = order.indexOf("weather-damage");
-
-    // Assert — future-attack (Showdown order 3) must come before weather-damage (order 5)
-    expect(futureIdx).toBeGreaterThanOrEqual(0); // must be present
-    expect(weatherIdx).toBeGreaterThanOrEqual(0); // must be present
-    expect(futureIdx).toBeLessThan(weatherIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then wish comes before weather-damage", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — wish onResidualOrder: 4 (before weather at 5)
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const wishIdx = order.indexOf("wish");
-    const weatherIdx = order.indexOf("weather-damage");
-
-    // Assert — wish (Showdown order 4) must come before weather-damage (order 5)
-    expect(wishIdx).toBeGreaterThanOrEqual(0);
-    expect(weatherIdx).toBeGreaterThanOrEqual(0);
-    expect(wishIdx).toBeLessThan(weatherIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then leftovers comes before leech-seed", () => {
-    // Arrange
-    // Source: Showdown data/items.ts — leftovers onResidualOrder: 5
-    //          data/moves.ts — leechseed onResidualOrder: 8
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const leftoversIdx = order.indexOf("leftovers");
-    const leechIdx = order.indexOf("leech-seed");
-
-    // Assert — leftovers (order 5) must come before leech-seed (order 8)
-    expect(leftoversIdx).toBeGreaterThanOrEqual(0);
-    expect(leechIdx).toBeGreaterThanOrEqual(0);
-    expect(leftoversIdx).toBeLessThan(leechIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then leech-seed comes before status-damage", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — leechseed onResidualOrder: 8
-    //          data/conditions.ts — brn onResidualOrder: 10; psn onResidualOrder: 9
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const leechIdx = order.indexOf("leech-seed");
-    const statusIdx = order.indexOf("status-damage");
-
-    // Assert — leech-seed (order 8) must come before status-damage (order 9/10)
-    expect(leechIdx).toBeGreaterThanOrEqual(0);
-    expect(statusIdx).toBeGreaterThanOrEqual(0);
-    expect(leechIdx).toBeLessThan(statusIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then nightmare comes before bind", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11
-    //          data/conditions.ts — partiallytrapped onResidualOrder: 13
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const nightmareIdx = order.indexOf("nightmare");
-    const bindIdx = order.indexOf("bind");
-
-    // Assert — nightmare (order 11) must come before bind (order 13)
-    expect(nightmareIdx).toBeGreaterThanOrEqual(0);
-    expect(bindIdx).toBeGreaterThanOrEqual(0);
-    expect(nightmareIdx).toBeLessThan(bindIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then curse comes before bind", () => {
-    // Arrange
-    // Source: Showdown data/moves.ts — curse onResidualOrder: 12
-    //          data/conditions.ts — partiallytrapped onResidualOrder: 13
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const curseIdx = order.indexOf("curse");
-    const bindIdx = order.indexOf("bind");
-
-    // Assert — curse (order 12) must come before bind (order 13)
-    expect(curseIdx).toBeGreaterThanOrEqual(0);
-    expect(bindIdx).toBeGreaterThanOrEqual(0);
-    expect(curseIdx).toBeLessThan(bindIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then bind comes before perish-song", () => {
-    // Arrange
-    // Source: Showdown data/conditions.ts — partiallytrapped onResidualOrder: 13
-    //          data/moves.ts — perishsong onResidualOrder: 24
-    // Both bind and perish-song exist in BaseRuleset; perish-song must come last
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-    const bindIdx = order.indexOf("bind");
-    const perishIdx = order.indexOf("perish-song");
-
-    // Assert — bind (order 13) comes before perish-song (order 24)
-    expect(bindIdx).toBeGreaterThanOrEqual(0);
-    expect(perishIdx).toBeGreaterThanOrEqual(0);
-    expect(bindIdx).toBeLessThan(perishIdx);
-  });
-
-  it("given the base ruleset, when getEndOfTurnOrder is called, then all expected Gen 6+ effects are present", () => {
-    // Arrange
-    // Source: Showdown — these are all effects in the Gen 6+ EoT order that matter for singles
-    const requiredEffects = [
-      "future-attack", // Showdown order 3
-      "wish", // Showdown order 4
-      "weather-damage", // Showdown order 5 (via weather residuals)
-      "leech-seed", // Showdown order 8
-      "status-damage", // Showdown order 9/10 (burn/poison)
-      "nightmare", // Showdown order 11
-      "curse", // Showdown order 12
-      "bind", // Showdown order 13
-      "perish-song", // Showdown order 24
-      "leftovers", // Showdown order 5 (items)
-    ];
-
-    // Act
-    const order = ruleset.getEndOfTurnOrder();
-
-    // Assert — all required effects must be present
-    for (const effect of requiredEffects) {
-      expect(order).toContain(effect);
-    }
+  it("given the base ruleset, when getEndOfTurnOrder is called, then it matches the exact Showdown-derived residual sequence", () => {
+    expect(ruleset.getEndOfTurnOrder()).toEqual(EXPECTED_END_OF_TURN_ORDER);
   });
 });
 
@@ -912,15 +793,15 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     id: 6,
     name: "charizard",
     displayName: "Charizard",
-    types: ["fire", "flying"] as const,
+    types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying] as const,
     baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-    abilities: { normal: ["blaze"], hidden: "solar-power" },
+    abilities: { normal: [CORE_ABILITY_IDS.blaze], hidden: CORE_ABILITY_IDS.solarPower },
     genderRatio: 87.5,
     catchRate: 45,
     baseExp: 240,
     expGroup: "medium-slow" as const,
     evYield: { spAttack: 3 },
-    eggGroups: ["monster", "dragon"],
+    eggGroups: ["monster", CORE_TYPE_IDS.dragon],
     learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
     evolution: null,
     dimensions: { height: 1.7, weight: 90.5 },
@@ -936,7 +817,9 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     // Source: Gen 3+ stat formula — non-HP: floor(((2*base + iv + floor(ev/4)) * L) / 100) + 5
     //   Attack: floor(((2*84 + 31 + 0) * 50) / 100) + 5 = floor(199*50/100) + 5 = floor(99.5) + 5 = 99 + 5 = 104
     //   Hardy nature: neutral (no modifier)
-    const pokemon = createTestPokemon(6, 50, { nature: "hardy" });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      nature: CORE_NATURE_IDS.hardy,
+    });
 
     // Act
     const stats = ruleset.calculateStats(pokemon, charizardSpecies);
@@ -961,7 +844,9 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     //   SpAttack (modest +10%): floor(129 * 1.1) = floor(141.9) = 141
     //   Attack (base): 104
     //   Attack (modest -10%): floor(104 * 0.9) = floor(93.6) = 93
-    const pokemon = createTestPokemon(6, 50, { nature: "modest" });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      nature: CORE_NATURE_IDS.modest,
+    });
 
     // Act
     const stats = ruleset.calculateStats(pokemon, charizardSpecies);
@@ -978,7 +863,7 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     //              = floor(((200 + 31 + 63) * 100) / 100) + 5
     //              = floor(294 * 100 / 100) + 5 = 294 + 5 = 299
     //   Timid nature (+10% Speed): floor(299 * 1.1) = floor(328.9) = 328
-    const pokemon = createTestPokemon(6, 100, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 100, {
       nature: "timid",
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 252 },
     });

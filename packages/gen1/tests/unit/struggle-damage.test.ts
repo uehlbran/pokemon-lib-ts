@@ -1,6 +1,18 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
+  CORE_TYPE_IDS,
+  createDvs,
+  createFriendship,
+  createStatExp,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen1Ruleset } from "../../src";
 
@@ -12,8 +24,15 @@ import { Gen1Ruleset } from "../../src";
  */
 
 const ruleset = new Gen1Ruleset();
+const ABILITY_IDS = CORE_ABILITY_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const GENDERS = CORE_GENDERS;
+const ITEM_IDS = CORE_ITEM_IDS;
+const MOVE_IDS = CORE_MOVE_IDS;
+const NATURE_IDS = CORE_NATURE_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
 
-function makeActivePokemon(
+function createSyntheticOnFieldPokemon(
   overrides: Partial<{
     level: number;
     attack: number;
@@ -29,23 +48,23 @@ function makeActivePokemon(
       nickname: null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "struggle", currentPP: 1, maxPP: 1, ppUps: 0 }],
+      nature: NATURE_IDS.hardy,
+      ivs: createDvs(),
+      evs: createStatExp(),
+      moves: [{ moveId: MOVE_IDS.struggle, currentPP: 1, maxPP: 1, ppUps: 0 }],
       currentHp: 100,
       status: null,
-      friendship: 70,
+      friendship: createFriendship(70),
       heldItem: null,
-      ability: "",
-      abilitySlot: "normal1" as const,
-      gender: "male" as const,
+      ability: ABILITY_IDS.none,
+      abilitySlot: ABILITY_SLOTS.normal1,
+      gender: GENDERS.male,
       isShiny: false,
       metLocation: "pallet-town",
       metLevel: 5,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: ITEM_IDS.pokeBall,
       calculatedStats: {
         hp: 100,
         attack: overrides.attack ?? 80,
@@ -67,8 +86,8 @@ function makeActivePokemon(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: overrides.types ?? (["electric"] as PokemonType[]),
-    ability: "",
+    types: overrides.types ?? [TYPE_IDS.electric],
+    ability: ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -87,7 +106,7 @@ function makeActivePokemon(
   };
 }
 
-function makeBattleState(seed = 42): BattleState {
+function createBattleState(seed = 42): BattleState {
   const rng = new SeededRandom(seed);
   return {
     phase: "turn-resolve",
@@ -136,9 +155,9 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
   describe("Given a Ghost-type defender", () => {
     it("should return 0 damage (Normal type is immune vs Ghost in Gen 1)", () => {
       // Arrange
-      const attacker = makeActivePokemon({ types: ["normal"], attack: 80 });
-      const defender = makeActivePokemon({ types: ["ghost"], defense: 60 });
-      const state = makeBattleState(99);
+      const attacker = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.normal], attack: 80 });
+      const defender = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.ghost], defense: 60 });
+      const state = createBattleState(99);
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
@@ -151,9 +170,13 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
   describe("Given a non-Ghost-type defender", () => {
     it("should return exact damage against a Normal-type defender", () => {
       // Arrange
-      const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
-      const defender = makeActivePokemon({ types: ["normal"], defense: 60 });
-      const state = makeBattleState(99);
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.normal],
+        level: 50,
+        attack: 80,
+      });
+      const defender = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.normal], defense: 60 });
+      const state = createBattleState(99);
       const seed = 99;
 
       // Act
@@ -179,10 +202,14 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
 
     it("given different battle RNG seeds, when calculating Struggle damage, then the damage roll changes", () => {
       // Arrange
-      const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
-      const defender = makeActivePokemon({ types: ["normal"], defense: 60 });
-      const lowRollState = makeBattleState(99);
-      const highRollState = makeBattleState(1);
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.normal],
+        level: 50,
+        attack: 80,
+      });
+      const defender = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.normal], defense: 60 });
+      const lowRollState = createBattleState(99);
+      const highRollState = createBattleState(1);
       const lowRollExpected = new SeededRandom(99).int(217, 255);
       const highRollExpected = new SeededRandom(1).int(217, 255);
 
@@ -202,9 +229,16 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
 
     it("should return exact damage against an Electric-type defender", () => {
       // Arrange
-      const attacker = makeActivePokemon({ types: ["fire"], level: 50, attack: 100 });
-      const defender = makeActivePokemon({ types: ["electric"], defense: 80 });
-      const state = makeBattleState(99);
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.fire],
+        level: 50,
+        attack: 100,
+      });
+      const defender = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.electric],
+        defense: 80,
+      });
+      const state = createBattleState(99);
       const seed = 99;
 
       // Act
@@ -227,9 +261,16 @@ describe("Gen1Ruleset.calculateStruggleDamage", () => {
 
     it("should return at least 1 damage even against high-defense defenders", () => {
       // Arrange — extremely high defense, very low attack
-      const attacker = makeActivePokemon({ types: ["normal"], level: 1, attack: 5 });
-      const defender = makeActivePokemon({ types: ["rock"], defense: 999 });
-      const state = makeBattleState();
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.normal],
+        level: 1,
+        attack: 5,
+      });
+      const defender = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.rock],
+        defense: 999,
+      });
+      const state = createBattleState();
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);

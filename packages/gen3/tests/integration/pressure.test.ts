@@ -1,6 +1,14 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen3DataManager } from "../../src/data";
+import { GEN3_ABILITY_IDS, GEN3_SPECIES_IDS } from "../../src/data/reference-ids";
 import { applyGen3Ability } from "../../src/Gen3Abilities";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 
@@ -18,6 +26,8 @@ import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
+const dataManager = createGen3DataManager();
+
 function createMockRng() {
   return {
     next: () => 0,
@@ -33,8 +43,10 @@ function createMockRng() {
 function createActivePokemon(opts: {
   types: PokemonType[];
   ability: string;
+  speciesId?: number;
   nickname?: string | null;
 }): ActivePokemon {
+  const species = dataManager.getSpecies(opts.speciesId ?? GEN3_SPECIES_IDS.articuno);
   const stats: StatBlock = {
     hp: 200,
     attack: 100,
@@ -45,8 +57,8 @@ function createActivePokemon(opts: {
   };
   const pokemon = {
     uid: "test",
-    speciesId: 144, // Articuno (Pressure user)
-    nickname: opts.nickname === undefined ? "Articuno" : opts.nickname,
+    speciesId: species.id,
+    nickname: opts.nickname === undefined ? species.displayName : opts.nickname,
     level: 50,
     experience: 0,
     nature: "hardy",
@@ -55,11 +67,11 @@ function createActivePokemon(opts: {
     currentHp: 200,
     moves: [],
     ability: opts.ability,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "genderless" as const,
+    gender: CORE_GENDERS.genderless,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -102,6 +114,17 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
+function createPressurePokemon(opts: { nickname?: string | null } = {}): ActivePokemon {
+  const species = dataManager.getSpecies(GEN3_SPECIES_IDS.articuno);
+
+  return createActivePokemon({
+    types: species.types as PokemonType[],
+    ability: GEN3_ABILITY_IDS.pressure,
+    speciesId: species.id,
+    nickname: opts.nickname === undefined ? species.displayName : opts.nickname,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tests: getPPCost
 // ---------------------------------------------------------------------------
@@ -113,12 +136,12 @@ describe("Gen 3 Pressure — getPPCost", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_PRESSURE: deductsExtraMove
     // Source: Bulbapedia — "Pressure causes moves targeting the Ability-bearer to use 2 PP"
     const actor = createActivePokemon({
-      types: ["normal"],
-      ability: "huge-power",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.hugePower,
     });
     const defender = createActivePokemon({
-      types: ["ice", "flying"],
-      ability: "pressure",
+      types: [CORE_TYPE_IDS.ice, CORE_TYPE_IDS.flying],
+      ability: GEN3_ABILITY_IDS.pressure,
     });
     const state = { weather: null } as BattleState;
     expect(ruleset.getPPCost(actor, defender, state)).toBe(2);
@@ -128,12 +151,12 @@ describe("Gen 3 Pressure — getPPCost", () => {
     // Source: pret/pokeemerald — default PP cost is 1 without Pressure
     // Triangulation: non-Pressure defender
     const actor = createActivePokemon({
-      types: ["normal"],
-      ability: "huge-power",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.hugePower,
     });
     const defender = createActivePokemon({
-      types: ["normal"],
-      ability: "intimidate",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.intimidate,
     });
     const state = { weather: null } as BattleState;
     expect(ruleset.getPPCost(actor, defender, state)).toBe(1);
@@ -142,8 +165,8 @@ describe("Gen 3 Pressure — getPPCost", () => {
   it("given no defender (null), when getPPCost is called, then returns 1", () => {
     // Source: pret/pokeemerald — no target means no Pressure check
     const actor = createActivePokemon({
-      types: ["normal"],
-      ability: "huge-power",
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.hugePower,
     });
     const state = { weather: null } as BattleState;
     expect(ruleset.getPPCost(actor, null, state)).toBe(1);
@@ -158,41 +181,34 @@ describe("Gen 3 Pressure — on-switch-in announcement", () => {
   it("given Pressure Pokemon switches in, when on-switch-in fires, then emits 'is exerting its Pressure!' message", () => {
     // Source: pret/pokeemerald — ABILITY_PRESSURE announces on entry
     // Source: Bulbapedia — "Pressure is announced on entry"
-    const pokemon = createActivePokemon({
-      types: ["ice", "flying"],
-      ability: "pressure",
-      nickname: "Articuno",
-    });
+    const pokemon = createPressurePokemon();
+    const articuno = dataManager.getSpecies(GEN3_SPECIES_IDS.articuno);
     const ctx = {
       pokemon,
       state: { weather: null } as AbilityContext["state"],
       rng: createMockRng(),
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
     } as AbilityContext;
 
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(0);
-    expect(result.messages[0]).toBe("Articuno is exerting its Pressure!");
+    expect(result.messages[0]).toBe(`${articuno.displayName} is exerting its Pressure!`);
   });
 
   it("given Pressure Pokemon with no nickname switches in, when on-switch-in fires, then message uses speciesId", () => {
     // Source: pret/pokeemerald — nickname fallback to species ID
-    const pokemon = createActivePokemon({
-      types: ["ice", "flying"],
-      ability: "pressure",
-      nickname: null,
-    });
+    const pokemon = createPressurePokemon({ nickname: null });
+    const articuno = dataManager.getSpecies(GEN3_SPECIES_IDS.articuno);
     const ctx = {
       pokemon,
       state: { weather: null } as AbilityContext["state"],
       rng: createMockRng(),
-      trigger: "on-switch-in",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
     } as AbilityContext;
 
-    const result = applyGen3Ability("on-switch-in", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
-    // speciesId is 144 (Articuno), so message should use "144"
-    expect(result.messages[0]).toBe("144 is exerting its Pressure!");
+    expect(result.messages[0]).toBe(`${String(articuno.id)} is exerting its Pressure!`);
   });
 });

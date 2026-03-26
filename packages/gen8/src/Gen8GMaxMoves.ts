@@ -252,6 +252,33 @@ export function getGMaxMove(speciesId: number | string): GMaxMoveData | null {
 }
 
 /**
+ * Returns the canonical G-Max move ID for a given species, or null if the species
+ * does not have a G-Max form.
+ */
+export function getGMaxMoveId(speciesId: number | string): string | null {
+  if (typeof speciesId === "number") {
+    return null;
+  }
+
+  return SPECIES_TO_GMAX[speciesId.toLowerCase()] ?? null;
+}
+
+/**
+ * Converts a canonical G-Max move ID into its display name.
+ *
+ * Example: "gmax-wildfire" -> "G-Max Wildfire"
+ */
+export function getGMaxMoveDisplayName(gmaxMoveId: string): string {
+  const suffix = gmaxMoveId.replace(/^gmax-/, "");
+  const words = suffix
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+
+  return `G-Max ${words.join(" ")}`;
+}
+
+/**
  * Returns true if the given species data has a Gigantamax form.
  *
  * Source: Game mechanic -- only certain species can Gigantamax

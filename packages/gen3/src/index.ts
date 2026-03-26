@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen3 — Gen3Ruleset + complete Gen 3 data
 
 export { createGen3DataManager } from "./data";
+export * from "./data/reference-ids";
 export {
   applyGen3Ability,
   GEN3_ABILITY_STATUS_IMMUNITIES,
@@ -23,3 +24,4 @@ export { applyGen3HeldItem, TYPE_BOOST_ITEMS } from "./Gen3Items";
 export { executeGen3MoveEffect } from "./Gen3MoveEffects";
 export { canInflictGen3Status, Gen3Ruleset } from "./Gen3Ruleset";
 export { GEN3_TYPE_CHART, GEN3_TYPES } from "./Gen3TypeChart";
+export { GEN3_WEATHER_DAMAGE_MULTIPLIERS } from "./Gen3Weather";

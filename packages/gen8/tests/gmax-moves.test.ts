@@ -1,3 +1,4 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +7,8 @@ import {
   getGMaxMoveEffect,
   isGigantamaxEligible,
 } from "../src/Gen8GMaxMoves.js";
+
+const TYPE_IDS = CORE_TYPE_IDS;
 
 describe("Gen8GMaxMoves", () => {
   describe("GMAX_MOVES table", () => {
@@ -16,10 +19,14 @@ describe("Gen8GMaxMoves", () => {
 
     it("given GMAX_MOVES, when checking all entries, then each has species, moveType, and effect", () => {
       // Source: Showdown data/moves.ts -- all G-Max entries have these fields
-      for (const [id, data] of Object.entries(GMAX_MOVES)) {
-        expect(data.species, `${id} missing species`).toBeTruthy();
-        expect(data.moveType, `${id} missing moveType`).toBeTruthy();
-        expect(data.effect, `${id} missing effect`).toBeTruthy();
+      for (const [_id, data] of Object.entries(GMAX_MOVES)) {
+        expect(data).toEqual(
+          expect.objectContaining({
+            species: expect.any(String),
+            moveType: expect.any(String),
+            effect: expect.any(Object),
+          }),
+        );
       }
     });
   });
@@ -30,7 +37,7 @@ describe("Gen8GMaxMoves", () => {
       const result = getGMaxMove("Charizard");
       expect(result).not.toBeNull();
       expect(result!.species).toBe("Charizard");
-      expect(result!.moveType).toBe("fire");
+      expect(result!.moveType).toBe(TYPE_IDS.fire);
       expect(result!.effect.type).toBe("residual");
     });
 
@@ -39,7 +46,7 @@ describe("Gen8GMaxMoves", () => {
       const result = getGMaxMove("Pikachu");
       expect(result).not.toBeNull();
       expect(result!.species).toBe("Pikachu");
-      expect(result!.moveType).toBe("electric");
+      expect(result!.moveType).toBe(TYPE_IDS.electric);
       expect(result!.effect.type).toBe("status");
     });
 
@@ -75,7 +82,7 @@ describe("Gen8GMaxMoves", () => {
       // Source: Showdown data/moves.ts -- gmaxSteelsurge sets Steel-type hazard
       const result = getGMaxMoveEffect("gmax-steelsurge");
       expect(result).not.toBeNull();
-      expect(result!.moveType).toBe("steel");
+      expect(result!.moveType).toBe(TYPE_IDS.steel);
       expect(result!.effect).toEqual({ type: "hazard", hazard: "gmax-steelsurge" });
     });
 
@@ -87,7 +94,7 @@ describe("Gen8GMaxMoves", () => {
         type: "residual",
         duration: 4,
         damage: "1/6",
-        immunity: ["fire"],
+        immunity: [TYPE_IDS.fire],
       });
     });
 
@@ -110,7 +117,12 @@ describe("Gen8GMaxMoves", () => {
       // Source: Game mechanic -- species with Gigantamax data can G-Max
       const species = {
         gigantamaxForm: {
-          gMaxMove: { type: "fire", name: "G-Max Wildfire", basePower: 160, effect: "residual" },
+          gMaxMove: {
+            type: TYPE_IDS.fire,
+            name: "G-Max Wildfire",
+            basePower: 160,
+            effect: "residual",
+          },
         },
       };
       expect(isGigantamaxEligible(species)).toBe(true);

@@ -1,14 +1,127 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonSpeciesData,
-  PokemonType,
-  TypeChart,
+import type { MoveData, PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+  createMoveSlot,
+  createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import {
+  createGen1DataManager,
+  GEN1_MOVE_IDS,
+  GEN1_NATURE_IDS,
+  GEN1_SPECIES_IDS,
+  GEN1_TYPES,
+} from "../../src";
 import { getGen1CritRate } from "../../src/Gen1CritCalc";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
+
+const DATA_MANAGER = createGen1DataManager();
+const MOVE_IDS = GEN1_MOVE_IDS;
+const NATURE_IDS = GEN1_NATURE_IDS;
+const SPECIES_IDS = GEN1_SPECIES_IDS;
+const TYPE_IDS = CORE_TYPE_IDS;
+const CHARIZARD = DATA_MANAGER.getSpecies(SPECIES_IDS.charizard);
+const SNORLAX = DATA_MANAGER.getSpecies(SPECIES_IDS.snorlax);
+const TACKLE = DATA_MANAGER.getMove(MOVE_IDS.tackle);
+const STRENGTH = DATA_MANAGER.getMove(MOVE_IDS.strength);
+const DEFAULT_HP = 200;
+const DEFAULT_SPEED = 100;
+const MAX_RANDOM_ROLL = 255;
+const NEUTRAL_STAT_STAGES = {
+  hp: 0,
+  attack: 0,
+  defense: 0,
+  spAttack: 0,
+  spDefense: 0,
+  speed: 0,
+  accuracy: 0,
+  evasion: 0,
+} as const;
+
+function createNeutralTypeChart(): TypeChart {
+  const chart = {} as Record<string, Record<string, number>>;
+  for (const attackingType of GEN1_TYPES) {
+    chart[attackingType] = {};
+    for (const defendingType of GEN1_TYPES) {
+      (chart[attackingType] as Record<string, number>)[defendingType] = 1;
+    }
+  }
+  return chart as TypeChart;
+}
+
+function createMockRng(intReturnValue: number): DamageContext["rng"] {
+  return {
+    next: () => 0,
+    int: (_min: number, _max: number) => intReturnValue,
+    chance: () => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: readonly T[]) => [...arr],
+    getState: () => 0,
+    setState: () => {},
+  } as DamageContext["rng"];
+}
+
+function createActivePokemon(
+  species: PokemonSpeciesData,
+  level: number,
+  attack: number,
+  defense: number,
+  types: readonly PokemonType[] = species.types,
+): ActivePokemon {
+  const pokemon = createPokemonInstance(species, level, new SeededRandom(7), {
+    nature: NATURE_IDS.hardy,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    isShiny: false,
+    moves: [],
+    heldItem: null,
+    friendship: species.baseFriendship,
+    metLocation: "pallet-town",
+    originalTrainer: "Red",
+    originalTrainerId: 12345,
+  });
+
+  pokemon.moves = [createMoveSlot(TACKLE.id, TACKLE.pp)];
+  pokemon.currentHp = DEFAULT_HP;
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.calculatedStats = {
+    hp: DEFAULT_HP,
+    attack,
+    defense,
+    spAttack: attack,
+    spDefense: defense,
+    speed: DEFAULT_SPEED,
+  };
+
+  return {
+    pokemon,
+    teamSlot: 0,
+    statStages: { ...NEUTRAL_STAT_STAGES },
+    volatileStatuses: new Map(),
+    types: [...types],
+    ability: CORE_ABILITY_IDS.none,
+    lastMoveUsed: null,
+    lastDamageTaken: 0,
+    lastDamageType: null,
+    turnsOnField: 0,
+    movedThisTurn: false,
+    consecutiveProtects: 0,
+    substituteHp: 0,
+    transformed: false,
+    transformedSpecies: null,
+    isMega: false,
+    isDynamaxed: false,
+    dynamaxTurnsLeft: 0,
+    isTerastallized: false,
+    teraType: null,
+    stellarBoostedTypes: [],
+  } as ActivePokemon;
+}
 
 /**
  * Gen 1 Critical Hit Tests
@@ -90,7 +203,7 @@ describe("Gen 1 Critical Hit", () => {
     // Act
     const critChance = getGen1CritRate(baseSpeed, false, false);
     // Assert: floor(1/2) / 256 = 0/256 = 0
-    expect(critChance).toBeLessThanOrEqual(1 / 256);
+    expect(critChance).toBe(0);
   });
 
   // --- Monotonicity ---
@@ -109,11 +222,11 @@ describe("Gen 1 Critical Hit", () => {
   // --- Crit Rate Bounds ---
 
   it("given any base speed, when calculating crit rate, then rate is between 0 and 1", () => {
-    // Arrange / Act / Assert
+    // Source: Gen 1 normal-move crit rate reduces to floor(baseSpeed / 2) / 256.
+    // The non-Focus-Energy, non-high-crit path doubles the threshold and then halves it again.
     for (let speed = 0; speed <= 255; speed++) {
       const rate = getGen1CritRate(speed, false, false);
-      expect(rate).toBeGreaterThanOrEqual(0);
-      expect(rate).toBeLessThanOrEqual(1);
+      expect(rate).toBe(Math.floor(speed / 2) / 256);
     }
   });
 
@@ -122,9 +235,8 @@ describe("Gen 1 Critical Hit", () => {
     const baseSpeed = 255;
     // Act
     const critChance = getGen1CritRate(baseSpeed, false, false);
-    // Assert: floor(255/2) / 256 = 127/256 ~ 0.496, but capped at 255/256
-    // The rate should be at most 1.0
-    expect(critChance).toBeLessThanOrEqual(1.0);
+    // Assert: floor(255/2)=127; normal path doubles to 254 then halves back to 127 -> 127/256
+    expect(critChance).toBeCloseTo(127 / 256, 3);
   });
 
   // --- Focus Energy Bug ---
@@ -219,174 +331,10 @@ describe("Gen 1 Critical Hit", () => {
     //
     // Ratio = 69/37 ≈ 1.86x (NOT exactly 2x because of integer floors at each step)
 
-    // Build minimal mock infrastructure matching damage-calc.test.ts patterns
-    const neutralChart: TypeChart = (() => {
-      const types: PokemonType[] = [
-        "normal",
-        "fire",
-        "water",
-        "electric",
-        "grass",
-        "ice",
-        "fighting",
-        "poison",
-        "ground",
-        "flying",
-        "psychic",
-        "bug",
-        "rock",
-        "ghost",
-        "dragon",
-      ];
-      const chart = {} as Record<string, Record<string, number>>;
-      for (const atk of types) {
-        chart[atk] = {};
-        for (const def of types) {
-          (chart[atk] as Record<string, number>)[def] = 1;
-        }
-      }
-      return chart as TypeChart;
-    })();
-
-    const species: PokemonSpeciesData = {
-      id: 1,
-      name: "test",
-      displayName: "Test",
-      types: ["normal"],
-      baseStats: { hp: 100, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
-      abilities: { normal: [""], hidden: null },
-      genderRatio: 50,
-      catchRate: 45,
-      baseExp: 64,
-      expGroup: "medium-slow",
-      evYield: {},
-      eggGroups: ["monster"],
-      learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-      evolution: null,
-      dimensions: { height: 1, weight: 10 },
-      spriteKey: "test",
-      baseFriendship: 70,
-      generation: 1,
-      isLegendary: false,
-      isMythical: false,
-    } as PokemonSpeciesData;
-
-    const makePoke = (
-      level: number,
-      atk: number,
-      def: number,
-      types: PokemonType[],
-    ): ActivePokemon =>
-      ({
-        pokemon: {
-          uid: "t",
-          speciesId: 1,
-          nickname: null,
-          level,
-          experience: 0,
-          nature: "hardy",
-          ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-          evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-          currentHp: 200,
-          moves: [],
-          ability: "",
-          abilitySlot: "normal1" as const,
-          heldItem: null,
-          status: null,
-          friendship: 0,
-          gender: "male" as const,
-          isShiny: false,
-          metLocation: "",
-          metLevel: 1,
-          originalTrainer: "",
-          originalTrainerId: 0,
-          pokeball: "pokeball",
-          calculatedStats: {
-            hp: 200,
-            attack: atk,
-            defense: def,
-            spAttack: atk,
-            spDefense: def,
-            speed: 100,
-          },
-        } as PokemonInstance,
-        teamSlot: 0,
-        statStages: {
-          hp: 0,
-          attack: 0,
-          defense: 0,
-          spAttack: 0,
-          spDefense: 0,
-          speed: 0,
-          accuracy: 0,
-          evasion: 0,
-        },
-        volatileStatuses: new Map(),
-        types,
-        ability: "",
-        lastMoveUsed: null,
-        lastDamageTaken: 0,
-        lastDamageType: null,
-        turnsOnField: 0,
-        movedThisTurn: false,
-        consecutiveProtects: 0,
-        substituteHp: 0,
-        transformed: false,
-        transformedSpecies: null,
-        isMega: false,
-        isDynamaxed: false,
-        dynamaxTurnsLeft: 0,
-        isTerastallized: false,
-        teraType: null,
-        stellarBoostedTypes: [],
-      }) as ActivePokemon;
-
-    const move: MoveData = {
-      id: "test",
-      displayName: "Test",
-      type: "normal" as PokemonType,
-      category: "physical",
-      power: 80,
-      accuracy: 100,
-      pp: 35,
-      priority: 0,
-      target: "adjacent-foe",
-      flags: {
-        contact: false,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: true,
-        mirror: true,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      },
-      effect: null,
-      description: "",
-      generation: 1,
-    } as MoveData;
-
-    const mockRng = {
-      next: () => 0,
-      int: (_min: number, _max: number) => 255,
-      chance: () => false,
-      pick: <T>(arr: readonly T[]) => arr[0] as T,
-      shuffle: <T>(arr: readonly T[]) => [...arr],
-      getState: () => 0,
-      setState: () => {},
-    };
-
-    const attacker = makePoke(50, 100, 100, ["fire"]); // fire so no STAB on normal move
-    const defender = makePoke(50, 100, 100, ["normal"]);
+    const neutralChart = createNeutralTypeChart();
+    const move: MoveData = STRENGTH;
+    const attacker = createActivePokemon(CHARIZARD, 50, 100, 100, [TYPE_IDS.fire, TYPE_IDS.flying]);
+    const defender = createActivePokemon(SNORLAX, 50, 100, 100, [TYPE_IDS.normal]);
     const state = {} as DamageContext["state"];
 
     const ctxNonCrit: DamageContext = {
@@ -394,7 +342,7 @@ describe("Gen 1 Critical Hit", () => {
       defender,
       move,
       state,
-      rng: mockRng as DamageContext["rng"],
+      rng: createMockRng(MAX_RANDOM_ROLL),
       isCrit: false,
     };
     const ctxCrit: DamageContext = {
@@ -402,13 +350,13 @@ describe("Gen 1 Critical Hit", () => {
       defender,
       move,
       state,
-      rng: mockRng as DamageContext["rng"],
+      rng: createMockRng(MAX_RANDOM_ROLL),
       isCrit: true,
     };
 
     // Act
-    const nonCritDamage = calculateGen1Damage(ctxNonCrit, neutralChart, species).damage;
-    const critDamage = calculateGen1Damage(ctxCrit, neutralChart, species).damage;
+    const nonCritDamage = calculateGen1Damage(ctxNonCrit, neutralChart, CHARIZARD).damage;
+    const critDamage = calculateGen1Damage(ctxCrit, neutralChart, CHARIZARD).damage;
 
     // Assert — exact values derived from pret/pokered damage formula
     expect(nonCritDamage).toBe(37);

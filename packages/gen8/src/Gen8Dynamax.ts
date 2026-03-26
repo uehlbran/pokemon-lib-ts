@@ -21,7 +21,12 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
 
-import { getGMaxMove, isGigantamaxEligible } from "./Gen8GMaxMoves.js";
+import {
+  getGMaxMove,
+  getGMaxMoveDisplayName,
+  getGMaxMoveId,
+  isGigantamaxEligible,
+} from "./Gen8GMaxMoves.js";
 import { getMaxMoveName, getMaxMovePower, isMaxGuard } from "./Gen8MaxMoves.js";
 
 /**
@@ -307,12 +312,13 @@ export class Gen8Dynamax implements BattleGimmick {
     const speciesData = pokemon.transformedSpecies;
     if (speciesData && isGigantamaxEligible(speciesData)) {
       const gmaxMove = getGMaxMove(speciesData.name);
-      if (gmaxMove && gmaxMove.moveType === move.type) {
+      const gmaxMoveId = getGMaxMoveId(speciesData.name);
+      if (gmaxMove && gmaxMoveId && gmaxMove.moveType === move.type) {
         const basePower = gmaxMove.basePower ?? getMaxMovePower(move.power ?? 0, move.type);
         return {
           ...move,
-          id: `gmax-${speciesData.name.toLowerCase()}`,
-          displayName: gmaxMove.species,
+          id: gmaxMoveId,
+          displayName: getGMaxMoveDisplayName(gmaxMoveId),
           power: basePower,
           accuracy: null, // Max Moves never miss
         };

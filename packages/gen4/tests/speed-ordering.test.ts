@@ -1,112 +1,147 @@
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import {
+  type AbilityData,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_STATUS_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+  type ItemData,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonSpeciesData,
+  type PrimaryStatus,
+  SeededRandom,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager } from "../src/data";
+import {
+  createGen4DataManager,
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+const dataManager = createGen4DataManager();
+const abilityIds = { ...GEN4_ABILITY_IDS } as const;
+const itemIds = { ...GEN4_ITEM_IDS } as const;
+const moveIds = { ...GEN4_MOVE_IDS } as const;
+const natureIds = GEN4_NATURE_IDS;
+const speciesIds = GEN4_SPECIES_IDS;
+const statusIds = CORE_STATUS_IDS;
+
+const defaultSpecies = dataManager.getSpecies(speciesIds.snorlax);
+const stallSpecies = dataManager.getSpecies(speciesIds.sableye);
+const tackleMove = dataManager.getMove(moveIds.tackle);
+const quickAttackMove = dataManager.getMove(moveIds.quickAttack);
+const machPunchMove = dataManager.getMove(moveIds.machPunch);
+const quickClawItem = dataManager.getItem(itemIds.quickClaw);
+const ironBallItem = dataManager.getItem(itemIds.ironBall);
+const laggingTailItem = dataManager.getItem(itemIds.laggingTail);
+const fullIncenseItem = dataManager.getItem(itemIds.fullIncense);
+const custapBerryItem = dataManager.getItem(itemIds.custapBerry);
+const stallAbility = dataManager.getAbility(abilityIds.stall);
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
+
+function createGen4Ruleset(): Gen4Ruleset {
+  return new Gen4Ruleset(dataManager);
 }
 
-/** Minimal PokemonInstance for speed ordering tests. */
-function makePokemonInstance(overrides: {
+// Turn-order tests need exact synthetic speed and HP probes; species/move/item records stay
+// canonical, but the live combat stats are intentionally overridden to hit precise thresholds.
+function createSyntheticTurnOrderStats(speed: number, maxHp = 200): StatBlock {
+  return {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed,
+  };
+}
+
+function createCanonicalMoveSlots(moveRecords: readonly MoveData[]) {
+  return moveRecords.map((move) => createMoveSlot(move.id, move.pp));
+}
+
+function createBattlePokemon(overrides: {
+  speciesRecord?: PokemonSpeciesData;
   speed?: number;
-  status?: PokemonInstance["status"];
-  heldItem?: string | null;
-  moves?: Array<{ moveId: string; pp: number; maxPp: number }>;
-  ability?: string;
+  status?: PrimaryStatus | null;
+  heldItemRecord?: ItemData | null;
+  moveRecords?: readonly MoveData[];
+  abilityRecord?: AbilityData | null;
   currentHp?: number;
   maxHp?: number;
 }): PokemonInstance {
+  const speciesRecord = overrides.speciesRecord ?? defaultSpecies;
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: `test-${overrides.speed ?? 100}`,
-    speciesId: 1,
-    nickname: null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
-    heldItem: overrides.heldItem ?? null,
-    status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+  const pokemon = createPokemonInstance(speciesRecord, 50, new SeededRandom(0), {
+    nature: defaultNature,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    moves: [tackleMove.id],
+    heldItem: overrides.heldItemRecord?.id ?? null,
+    friendship: speciesRecord.baseFriendship,
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: overrides.speed ?? 100,
-    },
-  } as PokemonInstance;
+    pokeball: itemIds.pokeBall,
+  });
+
+  pokemon.moves = createCanonicalMoveSlots(overrides.moveRecords ?? [tackleMove]);
+  pokemon.heldItem = overrides.heldItemRecord?.id ?? null;
+  pokemon.ability = overrides.abilityRecord?.id ?? pokemon.ability;
+  pokemon.status = overrides.status ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.calculatedStats = createSyntheticTurnOrderStats(overrides.speed ?? 100, maxHp);
+
+  return pokemon;
 }
 
-/** Minimal ActivePokemon for speed ordering tests. */
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
+  speciesRecord?: PokemonSpeciesData;
   speed?: number;
-  status?: PokemonInstance["status"];
-  heldItem?: string | null;
-  types?: PokemonType[];
-  moves?: Array<{ moveId: string; pp: number; maxPp: number }>;
-  ability?: string;
+  status?: PrimaryStatus | null;
+  heldItemRecord?: ItemData | null;
+  moveRecords?: readonly MoveData[];
+  abilityRecord?: AbilityData | null;
   currentHp?: number;
   maxHp?: number;
 }): ActivePokemon {
-  return {
-    pokemon: makePokemonInstance(overrides),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  const speciesRecord = overrides.speciesRecord ?? defaultSpecies;
+  const pokemon = createBattlePokemon({
+    speciesRecord,
+    speed: overrides.speed,
+    status: overrides.status,
+    heldItemRecord: overrides.heldItemRecord,
+    moveRecords: overrides.moveRecords,
+    abilityRecord: overrides.abilityRecord,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+  });
+
+  return createBattleOnFieldPokemon(pokemon, 0, [...speciesRecord.types]);
 }
 
 /**
  * Build a minimal BattleState with two sides for turn order tests.
  * Supports Tailwind per side and Trick Room field effect.
  */
-function buildTwoSideState(
+function createTwoSideBattleState(
   side0Pokemon: ActivePokemon,
   side1Pokemon: ActivePokemon,
   opts?: {
@@ -115,7 +150,11 @@ function buildTwoSideState(
     trickRoom?: boolean;
   },
 ): BattleState {
-  const makeSide = (index: 0 | 1, active: ActivePokemon, tailwindActive: boolean): BattleSide =>
+  const createBattleSide = (
+    index: 0 | 1,
+    active: ActivePokemon,
+    tailwindActive: boolean,
+  ): BattleSide =>
     ({
       index,
       trainer: null,
@@ -137,8 +176,8 @@ function buildTwoSideState(
     format: "singles",
     turnNumber: 1,
     sides: [
-      makeSide(0, side0Pokemon, opts?.side0Tailwind ?? false),
-      makeSide(1, side1Pokemon, opts?.side1Tailwind ?? false),
+      createBattleSide(0, side0Pokemon, opts?.side0Tailwind ?? false),
+      createBattleSide(1, side1Pokemon, opts?.side1Tailwind ?? false),
     ],
     weather: null,
     terrain: null,
@@ -161,10 +200,10 @@ describe("Gen4Ruleset resolveTurnOrder -- normal speed ordering", () => {
   it("given two move actions where Pokemon A (speed 100) is faster than Pokemon B (speed 80), when resolveTurnOrder is called, then Pokemon A's action comes first", () => {
     // Source: Showdown Gen 4 -- faster Pokemon moves first (same as BaseRuleset)
     // Derivation: speed 100 > speed 80, no Tailwind, no Trick Room
-    const monA = makeActivePokemon({ speed: 100 });
-    const monB = makeActivePokemon({ speed: 80 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 100 });
+    const monB = createOnFieldPokemon({ speed: 80 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -181,10 +220,10 @@ describe("Gen4Ruleset resolveTurnOrder -- normal speed ordering", () => {
   it("given two move actions where Pokemon A (speed 60) is slower than Pokemon B (speed 120), when resolveTurnOrder is called, then Pokemon B's action comes first", () => {
     // Source: Showdown Gen 4 -- faster Pokemon moves first
     // Triangulation: reverse case to ensure not a constant return
-    const monA = makeActivePokemon({ speed: 60 });
-    const monB = makeActivePokemon({ speed: 120 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 60 });
+    const monB = createOnFieldPokemon({ speed: 120 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -209,10 +248,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Tailwind", () => {
     // Source: Showdown Gen 4 mod -- Tailwind doubles Speed
     // Derivation: A effective speed = 80 * 2 = 160; B effective speed = 100
     // 160 > 100, so A goes first
-    const monA = makeActivePokemon({ speed: 80 });
-    const monB = makeActivePokemon({ speed: 100 });
-    const state = buildTwoSideState(monA, monB, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 80 });
+    const monB = createOnFieldPokemon({ speed: 100 });
+    const state = createTwoSideBattleState(monA, monB, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -231,10 +270,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Tailwind", () => {
     // Triangulation: Tailwind doesn't guarantee going first if base speed too low
     // Derivation: A effective speed = 40 * 2 = 80; B effective speed = 100
     // 80 < 100, so B goes first
-    const monA = makeActivePokemon({ speed: 40 });
-    const monB = makeActivePokemon({ speed: 100 });
-    const state = buildTwoSideState(monA, monB, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 40 });
+    const monB = createOnFieldPokemon({ speed: 100 });
+    const state = createTwoSideBattleState(monA, monB, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -251,13 +290,13 @@ describe("Gen4Ruleset resolveTurnOrder -- Tailwind", () => {
   it("given both sides have Tailwind active, when resolveTurnOrder is called, then faster base speed still goes first (both doubled)", () => {
     // Source: Showdown Gen 4 -- both sides can have Tailwind simultaneously
     // Derivation: A = 80*2 = 160; B = 100*2 = 200; B goes first
-    const monA = makeActivePokemon({ speed: 80 });
-    const monB = makeActivePokemon({ speed: 100 });
-    const state = buildTwoSideState(monA, monB, {
+    const monA = createOnFieldPokemon({ speed: 80 });
+    const monB = createOnFieldPokemon({ speed: 100 });
+    const state = createTwoSideBattleState(monA, monB, {
       side0Tailwind: true,
       side1Tailwind: true,
     });
-    const ruleset = makeRuleset();
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -281,10 +320,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Trick Room", () => {
     // Source: Showdown Gen 4 mod -- Trick Room: slower Pokemon move first
     // Source: Bulbapedia -- Trick Room reverses speed order
     // Derivation: under Trick Room, lower speed goes first: 80 < 120, so B first
-    const monA = makeActivePokemon({ speed: 120 });
-    const monB = makeActivePokemon({ speed: 80 });
-    const state = buildTwoSideState(monA, monB, { trickRoom: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 120 });
+    const monB = createOnFieldPokemon({ speed: 80 });
+    const state = createTwoSideBattleState(monA, monB, { trickRoom: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -302,10 +341,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Trick Room", () => {
     // Source: Showdown Gen 4 mod -- Trick Room: slower Pokemon move first
     // Triangulation: second case with different speeds
     // Derivation: under Trick Room, 50 < 150, so A first
-    const monA = makeActivePokemon({ speed: 50 });
-    const monB = makeActivePokemon({ speed: 150 });
-    const state = buildTwoSideState(monA, monB, { trickRoom: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 50 });
+    const monB = createOnFieldPokemon({ speed: 150 });
+    const state = createTwoSideBattleState(monA, monB, { trickRoom: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -329,13 +368,13 @@ describe("Gen4Ruleset resolveTurnOrder -- Trick Room + Tailwind interaction", ()
     // Source: Bulbapedia -- Trick Room reverses speed; Tailwind doubles speed before reversal
     // Derivation: A effective = 40 * 2 = 80 (Tailwind); B effective = 100
     // Trick Room: slower goes first; 80 < 100, so A goes first
-    const monA = makeActivePokemon({ speed: 40 });
-    const monB = makeActivePokemon({ speed: 100 });
-    const state = buildTwoSideState(monA, monB, {
+    const monA = createOnFieldPokemon({ speed: 40 });
+    const monB = createOnFieldPokemon({ speed: 100 });
+    const state = createTwoSideBattleState(monA, monB, {
       side0Tailwind: true,
       trickRoom: true,
     });
-    const ruleset = makeRuleset();
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -353,13 +392,13 @@ describe("Gen4Ruleset resolveTurnOrder -- Trick Room + Tailwind interaction", ()
     // Source: Bulbapedia -- Trick Room + Tailwind interaction
     // Derivation: A effective = 60 * 2 = 120 (Tailwind); B effective = 100
     // Trick Room: slower goes first; 100 < 120, so B goes first
-    const monA = makeActivePokemon({ speed: 60 });
-    const monB = makeActivePokemon({ speed: 100 });
-    const state = buildTwoSideState(monA, monB, {
+    const monA = createOnFieldPokemon({ speed: 60 });
+    const monB = createOnFieldPokemon({ speed: 100 });
+    const state = createTwoSideBattleState(monA, monB, {
       side0Tailwind: true,
       trickRoom: true,
     });
-    const ruleset = makeRuleset();
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -382,32 +421,18 @@ describe("Gen4Ruleset resolveTurnOrder -- Quick Claw with Tailwind", () => {
   it("given Pokemon A (speed 80, side 0 Tailwind, Quick Claw activated) and Pokemon B (speed 200), when resolveTurnOrder is called, then Pokemon A moves first (QC beats speed)", () => {
     // Source: pret/pokeplatinum -- Quick Claw 20% activation; goes before speed check
     // Quick Claw activation trumps speed within same priority bracket
-    // Use a deterministic RNG seed that activates Quick Claw (20% chance)
-    const monA = makeActivePokemon({ speed: 80, heldItem: "quick-claw" });
-    const monB = makeActivePokemon({ speed: 200 });
-    const state = buildTwoSideState(monA, monB, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 80, heldItemRecord: quickClawItem });
+    const monB = createOnFieldPokemon({ speed: 200 });
+    const state = createTwoSideBattleState(monA, monB, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
       { type: "move", side: 1, moveIndex: 0 },
     ];
 
-    // Find a seed where Quick Claw activates for side 0
-    // QC check is rng.chance(0.2) -- we need to find a seed where it triggers
-    let activatingSeed = -1;
-    for (let seed = 1; seed <= 100; seed++) {
-      const testRng = new SeededRandom(seed);
-      // Quick Claw check: first rng call is chance(0.2) for action 0
-      if (testRng.chance(0.2)) {
-        activatingSeed = seed;
-        break;
-      }
-    }
-    // Ensure we found a seed (statistically almost certain within 100 tries)
-    expect(activatingSeed).toBeGreaterThan(0);
-
-    const rng = new SeededRandom(activatingSeed);
+    // Source: SeededRandom seed 7 activates Quick Claw for the first move-action roll.
+    const rng = new SeededRandom(7);
     const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
     // Quick Claw activated for A, so A goes first despite lower speed
@@ -425,18 +450,18 @@ describe("Gen4Ruleset resolveTurnOrder -- priority overrides Tailwind", () => {
     // Source: Showdown Gen 4 -- priority bracket is independent of speed
     // Quick Attack has priority +1, Tackle has priority 0
     // Priority +1 always goes before priority 0 regardless of speed
-    const monA = makeActivePokemon({
+    const monA = createOnFieldPokemon({
       speed: 200,
-      moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
+      moveRecords: [tackleMove],
     });
-    const monB = makeActivePokemon({
+    const monB = createOnFieldPokemon({
       speed: 60,
-      moves: [{ moveId: "quick-attack", pp: 30, maxPp: 30 }],
+      moveRecords: [quickAttackMove],
     });
     // Build state with monB on side 0 (with Tailwind) and monA on side 1
     // monA's Tailwind doesn't matter here — priority trumps speed
-    const stateFlipped = buildTwoSideState(monB, monA, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const stateFlipped = createTwoSideBattleState(monB, monA, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 }, // monB using Quick Attack (+1 priority)
@@ -456,16 +481,16 @@ describe("Gen4Ruleset resolveTurnOrder -- priority overrides Tailwind", () => {
     // Both Quick Attack and Mach Punch have priority +1
     // B has Tailwind: 60 * 2 = 120; A has no Tailwind: 200
     // 200 > 120, so A goes first
-    const monA = makeActivePokemon({
+    const monA = createOnFieldPokemon({
       speed: 200,
-      moves: [{ moveId: "quick-attack", pp: 30, maxPp: 30 }],
+      moveRecords: [quickAttackMove],
     });
-    const monB = makeActivePokemon({
+    const monB = createOnFieldPokemon({
       speed: 60,
-      moves: [{ moveId: "mach-punch", pp: 30, maxPp: 30 }],
+      moveRecords: [machPunchMove],
     });
-    const state = buildTwoSideState(monB, monA, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const state = createTwoSideBattleState(monB, monA, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 }, // monB using Mach Punch (+1) speed 60*2=120
@@ -488,10 +513,10 @@ describe("Gen4Ruleset resolveTurnOrder -- priority overrides Tailwind", () => {
 describe("Gen4Ruleset resolveTurnOrder -- switches go first with Tailwind", () => {
   it("given a switch action and a move action with Tailwind active, when resolveTurnOrder is called, then switch goes first", () => {
     // Source: Showdown Gen 4 -- switches always go before moves regardless of speed or Tailwind
-    const monA = makeActivePokemon({ speed: 200 });
-    const monB = makeActivePokemon({ speed: 50 });
-    const state = buildTwoSideState(monA, monB, { side1Tailwind: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 200 });
+    const monB = createOnFieldPokemon({ speed: 50 });
+    const state = createTwoSideBattleState(monA, monB, { side1Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -516,10 +541,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Paralysis + Tailwind", () => {
     // Source: Bulbapedia -- Tailwind doubles Speed after paralysis reduction
     // Derivation: A base speed = 200; paralyzed = floor(200 * 0.25) = 50; Tailwind = 50 * 2 = 100
     // B speed = 80; 100 > 80, so A goes first
-    const monA = makeActivePokemon({ speed: 200, status: "paralysis" });
-    const monB = makeActivePokemon({ speed: 80 });
-    const state = buildTwoSideState(monA, monB, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 200, status: statusIds.paralysis });
+    const monB = createOnFieldPokemon({ speed: 80 });
+    const state = createTwoSideBattleState(monA, monB, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -541,10 +566,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Paralysis + Tailwind", () => {
     // Triangulation: case where paralysis + Tailwind still results in slower speed
     // Derivation: A base speed = 100; paralyzed = floor(100 * 0.25) = 25; Tailwind = 25 * 2 = 50
     // B speed = 80; 50 < 80, so B goes first
-    const monA = makeActivePokemon({ speed: 100, status: "paralysis" });
-    const monB = makeActivePokemon({ speed: 80 });
-    const state = buildTwoSideState(monA, monB, { side0Tailwind: true });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 100, status: statusIds.paralysis });
+    const monB = createOnFieldPokemon({ speed: 80 });
+    const state = createTwoSideBattleState(monA, monB, { side0Tailwind: true });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -572,10 +597,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Iron Ball speed halving", () => {
     // Source: Showdown data/items.ts — Iron Ball onModifySpe halves speed
     // Derivation: A effective speed = floor(100 * 0.5) = 50; B speed = 60
     // 50 < 60, so B goes first
-    const monA = makeActivePokemon({ speed: 100, heldItem: "iron-ball" });
-    const monB = makeActivePokemon({ speed: 60 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 100, heldItemRecord: ironBallItem });
+    const monB = createOnFieldPokemon({ speed: 60 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -594,10 +619,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Iron Ball speed halving", () => {
     // Triangulation: odd speed value tests floor behavior
     // Derivation: A effective speed = floor(101 * 0.5) = 50; B speed = 50
     // Equal speed: random tiebreak determines order
-    const monA = makeActivePokemon({ speed: 101, heldItem: "iron-ball" });
-    const monB = makeActivePokemon({ speed: 51 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 101, heldItemRecord: ironBallItem });
+    const monB = createOnFieldPokemon({ speed: 51 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -617,10 +642,14 @@ describe("Gen4Ruleset resolveTurnOrder -- Iron Ball speed halving", () => {
     // Source: pret/pokeplatinum — paralysis applied before Iron Ball
     // Derivation: A effective = floor(100 * 0.25) = 25 (paralysis), then floor(25 * 0.5) = 12 (Iron Ball)
     // B speed = 15; 12 < 15, so B goes first
-    const monA = makeActivePokemon({ speed: 100, heldItem: "iron-ball", status: "paralysis" });
-    const monB = makeActivePokemon({ speed: 15 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({
+      speed: 100,
+      heldItemRecord: ironBallItem,
+      status: statusIds.paralysis,
+    });
+    const monB = createOnFieldPokemon({ speed: 15 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -647,10 +676,14 @@ describe("Gen4Ruleset resolveTurnOrder -- Stall ability", () => {
     // Source: Bulbapedia — Stall: "The Pokemon moves after all other Pokemon"
     // Source: Showdown data/abilities.ts — Stall: onFractionalPriority -0.1
     // Despite having higher speed (200 > 50), Stall forces A to move last
-    const monA = makeActivePokemon({ speed: 200, ability: "stall" });
-    const monB = makeActivePokemon({ speed: 50 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({
+      speciesRecord: stallSpecies,
+      speed: 200,
+      abilityRecord: stallAbility,
+    });
+    const monB = createOnFieldPokemon({ speed: 50 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -668,10 +701,18 @@ describe("Gen4Ruleset resolveTurnOrder -- Stall ability", () => {
     // Source: Showdown data/abilities.ts — both have Stall, so the -0.1 priority
     // cancels out, and normal speed ordering resumes
     // Derivation: both Stall → speed tiebreak: 120 > 80, A goes first
-    const monA = makeActivePokemon({ speed: 120, ability: "stall" });
-    const monB = makeActivePokemon({ speed: 80, ability: "stall" });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({
+      speciesRecord: stallSpecies,
+      speed: 120,
+      abilityRecord: stallAbility,
+    });
+    const monB = createOnFieldPokemon({
+      speciesRecord: stallSpecies,
+      speed: 80,
+      abilityRecord: stallAbility,
+    });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -695,10 +736,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Lagging Tail", () => {
     // Source: Bulbapedia — Lagging Tail: "Holder always moves last"
     // Source: Showdown data/items.ts — Lagging Tail: onFractionalPriority -0.1
     // Despite having higher speed, Lagging Tail forces A to move last
-    const monA = makeActivePokemon({ speed: 200, heldItem: "lagging-tail" });
-    const monB = makeActivePokemon({ speed: 50 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 200, heldItemRecord: laggingTailItem });
+    const monB = createOnFieldPokemon({ speed: 50 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -715,10 +756,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Lagging Tail", () => {
   it("given Lagging Tail holder (speed 50) vs non-holder (speed 200), when resolveTurnOrder is called, then holder still moves second (Lagging Tail forces last)", () => {
     // Source: Bulbapedia — Lagging Tail: "Holder always moves last"
     // Triangulation: holder is already slower, but Lagging Tail still applies
-    const monA = makeActivePokemon({ speed: 50, heldItem: "lagging-tail" });
-    const monB = makeActivePokemon({ speed: 200 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 50, heldItemRecord: laggingTailItem });
+    const monB = createOnFieldPokemon({ speed: 200 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -738,10 +779,10 @@ describe("Gen4Ruleset resolveTurnOrder -- Full Incense", () => {
     // Source: Bulbapedia — Full Incense: "Holder always moves last in its priority bracket"
     // Source: Showdown data/items.ts — Full Incense: onFractionalPriority -0.1
     // Full Incense has identical behavior to Lagging Tail
-    const monA = makeActivePokemon({ speed: 200, heldItem: "full-incense" });
-    const monB = makeActivePokemon({ speed: 50 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 200, heldItemRecord: fullIncenseItem });
+    const monB = createOnFieldPokemon({ speed: 50 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -766,15 +807,15 @@ describe("Gen4Ruleset resolveTurnOrder -- Custap Berry", () => {
     //   it will move first in its priority bracket."
     // Source: Showdown data/items.ts — Custap Berry: onFractionalPriority checks HP <= 0.25
     // Derivation: 50/200 = 25% = exactly threshold, so Custap activates
-    const monA = makeActivePokemon({
+    const monA = createOnFieldPokemon({
       speed: 50,
-      heldItem: "custap-berry",
+      heldItemRecord: custapBerryItem,
       currentHp: 50,
       maxHp: 200,
     });
-    const monB = makeActivePokemon({ speed: 200 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monB = createOnFieldPokemon({ speed: 200 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -792,15 +833,15 @@ describe("Gen4Ruleset resolveTurnOrder -- Custap Berry", () => {
     // Source: Bulbapedia — Custap Berry: activates at <=25% HP
     // Source: Showdown data/items.ts — Custap Berry checks HP <= floor(maxHp * 0.25)
     // Derivation: floor(200 * 0.25) = 50; 51 > 50, so Custap does NOT activate
-    const monA = makeActivePokemon({
+    const monA = createOnFieldPokemon({
       speed: 50,
-      heldItem: "custap-berry",
+      heldItemRecord: custapBerryItem,
       currentHp: 51,
       maxHp: 200,
     });
-    const monB = makeActivePokemon({ speed: 200 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monB = createOnFieldPokemon({ speed: 200 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -819,15 +860,15 @@ describe("Gen4Ruleset resolveTurnOrder -- Custap Berry", () => {
     // Source: Bulbapedia — Custap Berry activates at <=25% HP
     // Triangulation: very low HP still activates
     // Derivation: 1/200 = 0.5% <= 25%, so Custap activates
-    const monA = makeActivePokemon({
+    const monA = createOnFieldPokemon({
       speed: 50,
-      heldItem: "custap-berry",
+      heldItemRecord: custapBerryItem,
       currentHp: 1,
       maxHp: 200,
     });
-    const monB = makeActivePokemon({ speed: 200 });
-    const state = buildTwoSideState(monA, monB);
-    const ruleset = makeRuleset();
+    const monB = createOnFieldPokemon({ speed: 200 });
+    const state = createTwoSideBattleState(monA, monB);
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -858,11 +899,11 @@ describe("Gen4Ruleset resolveTurnOrder -- Trick Room equal Speed tie-breaking (i
     // Derivation: monA speed=100 and monB speed=100. Under Trick Room, sorting by ascending speed
     // still produces a tie. The stable sort preserves original action array order (side 0 first).
     // With seeded RNG seed=42, the tie-breaking produces deterministic results.
-    const monA = makeActivePokemon({ speed: 100 });
-    const monB = makeActivePokemon({ speed: 100 });
-    const stateWithTrickRoom = buildTwoSideState(monA, monB, { trickRoom: true });
-    const stateNoTrickRoom = buildTwoSideState(monA, monB, { trickRoom: false });
-    const ruleset = makeRuleset();
+    const monA = createOnFieldPokemon({ speed: 100 });
+    const monB = createOnFieldPokemon({ speed: 100 });
+    const stateWithTrickRoom = createTwoSideBattleState(monA, monB, { trickRoom: true });
+    const stateNoTrickRoom = createTwoSideBattleState(monA, monB, { trickRoom: false });
+    const ruleset = createGen4Ruleset();
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },
@@ -886,12 +927,16 @@ describe("Gen4Ruleset resolveTurnOrder -- Trick Room equal Speed tie-breaking (i
     //
     // In the unequal case (100 vs 80), Trick Room makes 80 go first.
     // In the equal case (100 vs 100), both produce a tie; Trick Room has no directional effect.
-    const monFast = makeActivePokemon({ speed: 100 });
-    const monSlow = makeActivePokemon({ speed: 80 });
-    const monEqual = makeActivePokemon({ speed: 100 });
-    const unequalStateTrickRoom = buildTwoSideState(monFast, monSlow, { trickRoom: true });
-    const equalStateTrickRoom = buildTwoSideState(monFast, monEqual, { trickRoom: true });
-    const ruleset = makeRuleset();
+    const monFast = createOnFieldPokemon({ speed: 100 });
+    const monSlow = createOnFieldPokemon({ speed: 80 });
+    const monEqual = createOnFieldPokemon({ speed: 100 });
+    const unequalStateTrickRoom = createTwoSideBattleState(monFast, monSlow, {
+      trickRoom: true,
+    });
+    const equalStateTrickRoom = createTwoSideBattleState(monFast, monEqual, {
+      trickRoom: true,
+    });
+    const ruleset = createGen4Ruleset();
 
     const actionsUnequal: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 },

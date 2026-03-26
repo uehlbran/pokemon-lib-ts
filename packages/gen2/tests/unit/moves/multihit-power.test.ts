@@ -13,14 +13,27 @@
  */
 
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
+import { createGen2DataManager, GEN2_MOVE_IDS, Gen2Ruleset } from "../../../src";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const gen2DataManager = createGen2DataManager();
+const TACKLE_MOVE = gen2DataManager.getMove(GEN2_MOVE_IDS.tackle);
+const TRIPLE_KICK_MOVE = gen2DataManager.getMove(GEN2_MOVE_IDS.tripleKick);
+const BEAT_UP_MOVE = gen2DataManager.getMove(GEN2_MOVE_IDS.beatUp);
 
 function createMockActive(
   overrides: Partial<{
@@ -33,7 +46,7 @@ function createMockActive(
     types: string[];
     nickname: string | null;
     heldItem: string | null;
-    moves: Array<{ moveId: string; pp: number; maxPp: number; currentPP?: number }>;
+    moves: PokemonInstance["moves"];
   }> = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
@@ -46,9 +59,9 @@ function createMockActive(
       status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
       heldItem: overrides.heldItem ?? null,
       nickname: overrides.nickname ?? null,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [{ moveId: "tackle", pp: 35, maxPp: 35, currentPP: 35 }],
+      ivs: createIvs({ hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 }),
+      evs: createEvs(),
+      moves: overrides.moves ?? [createMoveSlot(CORE_MOVE_IDS.tackle, TACKLE_MOVE.pp)],
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -70,7 +83,7 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
+    types: (overrides.types as unknown as PokemonType[]) ?? [CORE_TYPE_IDS.normal],
     ability: "",
     lastMoveUsed: null,
     turnsOnField: 0,
@@ -108,9 +121,9 @@ function createMockTeamMember(
     status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
     heldItem: null,
     nickname: null,
-    ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    moves: [{ moveId: "tackle", pp: 35, maxPp: 35, currentPP: 35 }],
+    ivs: createIvs({ hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 }),
+    evs: createEvs(),
+    moves: [createMoveSlot(CORE_MOVE_IDS.tackle, TACKLE_MOVE.pp)],
     calculatedStats: {
       hp: 200,
       attack: 100,
@@ -160,19 +173,7 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
 
 describe("Gen 2 Triple Kick perHitDamageFn", () => {
   const ruleset = new Gen2Ruleset();
-
-  const tripleKickMove = {
-    id: "triple-kick",
-    name: "Triple Kick",
-    type: "fighting",
-    category: "physical",
-    power: 10,
-    accuracy: 90,
-    pp: 10,
-    priority: 0,
-    effect: null,
-    flags: { contact: true },
-  } as unknown as MoveData;
+  const tripleKickMove = TRIPLE_KICK_MOVE;
 
   it("given Triple Kick is used, when executeMoveEffect is called, then perHitDamageFn is set as a function", () => {
     // Arrange
@@ -399,19 +400,7 @@ describe("Gen 2 Triple Kick perHitDamageFn", () => {
 
 describe("Gen 2 Beat Up perHitDamageFn", () => {
   const ruleset = new Gen2Ruleset();
-
-  const beatUpMove = {
-    id: "beat-up",
-    name: "Beat Up",
-    type: "dark",
-    category: "special",
-    power: 10,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    effect: { type: "custom", handler: "beat-up" },
-    flags: {},
-  } as unknown as MoveData;
+  const beatUpMove = BEAT_UP_MOVE;
 
   it("given a team of 3 eligible Pokemon, when Beat Up is used, then perHitDamageFn is set and multiHitCount is 2", () => {
     // Arrange
@@ -573,7 +562,7 @@ describe("Gen 2 Beat Up perHitDamageFn", () => {
     const team = [
       { ...attacker.pokemon, uid: "attacker-uid" } as unknown as PokemonInstance,
       createMockTeamMember({ uid: "m2", currentHp: 0 }), // Fainted
-      createMockTeamMember({ uid: "m3", status: "burn" }), // Burned
+      createMockTeamMember({ uid: "m3", status: CORE_STATUS_IDS.burn }), // Burned
     ];
     const side0 = createMockSide(0, attacker, team);
     const defender = createMockActive({ uid: "defender-uid" });

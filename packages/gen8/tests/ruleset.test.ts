@@ -1,5 +1,6 @@
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, CORE_TYPE_IDS, DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen8Ruleset } from "../src/Gen8Ruleset";
 
@@ -7,7 +8,7 @@ import { Gen8Ruleset } from "../src/Gen8Ruleset";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRng(overrides?: {
+function createRng(overrides?: {
   next?: () => number;
   chance?: (p: number) => boolean;
 }): SeededRandom {
@@ -30,6 +31,7 @@ const ruleset = new Gen8Ruleset(new DataManager());
 
 describe("Gen8Ruleset -- metadata", () => {
   it("given Gen8Ruleset, when reading generation, then returns 8", () => {
+    // Source: Bulbapedia -- Sword and Shield are Generation VIII.
     expect(ruleset.generation).toBe(8);
   });
 
@@ -44,20 +46,21 @@ describe("Gen8Ruleset -- metadata", () => {
 
 describe("Gen8Ruleset -- getAvailableTypes", () => {
   it("given Gen8Ruleset, when getAvailableTypes(), then has exactly 18 types", () => {
-    // Source: Bulbapedia -- Gen 6+ (and Gen 8) has 18 types
+    // Source: Bulbapedia -- Gen 6+ (and Gen 8) has 18 types.
+    // Gen 8 inherits the post-Fairy 18-type chart.
     expect(ruleset.getAvailableTypes()).toHaveLength(18);
   });
 
-  it("given Gen8Ruleset, when getAvailableTypes(), then includes 'fairy' (Gen 6+)", () => {
+  it("given Gen8Ruleset, when getAvailableTypes(), then includes Fairy (Gen 6+)", () => {
     // Source: Bulbapedia -- Fairy type was introduced in Gen 6
-    expect(ruleset.getAvailableTypes()).toContain("fairy");
+    expect(ruleset.getAvailableTypes()).toContain(CORE_TYPE_IDS.fairy);
   });
 
-  it("given Gen8Ruleset, when getAvailableTypes(), then includes 'steel' and 'dark' (Gen 2+)", () => {
+  it("given Gen8Ruleset, when getAvailableTypes(), then includes Steel and Dark (Gen 2+)", () => {
     // Source: Bulbapedia -- Steel and Dark types introduced in Gen 2
     const types = ruleset.getAvailableTypes();
-    expect(types).toContain("steel");
-    expect(types).toContain("dark");
+    expect(types).toContain(CORE_TYPE_IDS.steel);
+    expect(types).toContain(CORE_TYPE_IDS.dark);
   });
 });
 
@@ -78,30 +81,30 @@ describe("Gen8Ruleset -- shouldExecutePursuitPreSwitch", () => {
 // ===========================================================================
 
 describe("Gen8Ruleset -- getBattleGimmick", () => {
-  it("given getBattleGimmick('mega'), then returns null (Mega Evolution removed in Gen 8)", () => {
+  it("given getBattleGimmick(Mega), then returns null (Mega Evolution removed in Gen 8)", () => {
     // Source: Showdown data/mods/gen8 -- Mega Evolution not available in Gen 8
     // Source: Bulbapedia -- Mega Evolution not available in Sword/Shield
-    expect(ruleset.getBattleGimmick("mega")).toBeNull();
+    expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega)).toBeNull();
   });
 
-  it("given getBattleGimmick('zmove'), then returns null (Z-Moves removed in Gen 8)", () => {
+  it("given getBattleGimmick(Z-Move), then returns null (Z-Moves removed in Gen 8)", () => {
     // Source: Showdown data/mods/gen8 -- Z-Moves not available in Gen 8
     // Source: Bulbapedia -- Z-Moves not available in Sword/Shield
-    expect(ruleset.getBattleGimmick("zmove")).toBeNull();
+    expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove)).toBeNull();
   });
 
-  it("given getBattleGimmick('dynamax'), then returns Gen8Dynamax gimmick", () => {
+  it("given getBattleGimmick(Dynamax), then returns the Gen8Dynamax gimmick", () => {
     // Source: Bulbapedia -- Dynamax is the Gen 8 battle gimmick
     // Source: Showdown data/conditions.ts -- Dynamax condition
-    const gimmick = ruleset.getBattleGimmick("dynamax");
+    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.dynamax);
     expect(gimmick).not.toBeNull();
     expect(gimmick!.name).toBe("Dynamax");
     expect(gimmick!.generations).toEqual([8]);
   });
 
-  it("given getBattleGimmick('tera'), then returns null (Tera is Gen 9 only)", () => {
+  it("given getBattleGimmick(Tera), then returns null (Tera is Gen 9 only)", () => {
     // Source: Showdown -- Terastallization is Gen 9 exclusive
-    expect(ruleset.getBattleGimmick("tera")).toBeNull();
+    expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.tera)).toBeNull();
   });
 });
 
@@ -120,13 +123,13 @@ describe("Gen8Ruleset -- confusion self-hit", () => {
   it("given SeededRandom that always returns below 1/3, when rollConfusionSelfHit, then returns true", () => {
     // Source: Showdown sim/battle-actions.ts -- confusion 33% from Gen 7 onwards
     // rng.chance(1/3) returns true when rng < 1/3
-    const rng = makeRng({ chance: () => true });
+    const rng = createRng({ chance: () => true });
     expect(ruleset.rollConfusionSelfHit(rng)).toBe(true);
   });
 
   it("given SeededRandom that always returns above 1/3, when rollConfusionSelfHit, then returns false", () => {
     // Source: Showdown sim/battle-actions.ts -- confusion 33% from Gen 7 onwards
-    const rng = makeRng({ chance: () => false });
+    const rng = createRng({ chance: () => false });
     expect(ruleset.rollConfusionSelfHit(rng)).toBe(false);
   });
 });
@@ -163,17 +166,17 @@ describe("Gen8Ruleset -- inherited BaseRuleset behaviors", () => {
     expect(ruleset.hasWeather()).toBe(true);
   });
 
-  it("given Gen8Ruleset, when getAvailableHazards(), then includes sticky-web (Gen 6+)", () => {
+  it("given Gen8Ruleset, when getAvailableHazards(), then includes Sticky Web (Gen 6+)", () => {
     // Source: Showdown data/moves.ts -- Sticky Web introduced in Gen 6, available in Gen 8
     // Source: Bulbapedia -- Sticky Web is available in Gen 8
-    expect(ruleset.getAvailableHazards()).toContain("sticky-web");
+    expect(ruleset.getAvailableHazards()).toContain(CORE_HAZARD_IDS.stickyWeb);
   });
 
   it("given Gen8Ruleset, when getAvailableHazards(), then includes standard hazards", () => {
     // Source: Showdown -- Stealth Rock (Gen 4), Spikes (Gen 2), Toxic Spikes (Gen 4)
     const hazards = ruleset.getAvailableHazards();
-    expect(hazards).toContain("stealth-rock");
-    expect(hazards).toContain("spikes");
-    expect(hazards).toContain("toxic-spikes");
+    expect(hazards).toContain(CORE_HAZARD_IDS.stealthRock);
+    expect(hazards).toContain(CORE_HAZARD_IDS.spikes);
+    expect(hazards).toContain(CORE_HAZARD_IDS.toxicSpikes);
   });
 });

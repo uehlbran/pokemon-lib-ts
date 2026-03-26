@@ -13,94 +13,76 @@ const BASE_CONFIG: BattleRunConfig = {
   maxTurns: 50,
 };
 
+function normalizeReport(report: ReturnType<typeof runBattle>) {
+  const { durationMs, ...stableFields } = report;
+  return stableFields;
+}
+
 // ---------------------------------------------------------------------------
 // Single battle — basic smoke tests
 // ---------------------------------------------------------------------------
 
 describe("runBattle — Gen 1 smoke test", () => {
   it("given a valid Gen 1 config, when running a battle, then it completes without crashing", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 1 };
 
-    // Act
     const report = runBattle(config);
 
-    // Assert
+    expect(report.seed).toBe(1);
+    expect(report.generation).toBe(1);
     expect(report.error).toBeNull();
+    expect(report.timedOut).toBe(false);
+    expect(report.events[0]?.type).toBe("battle-start");
+    expect(report.events.at(-1)?.type).toBe("battle-end");
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 
   it("given a Gen 1 config, when running a battle, then the report generation matches the config", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, generation: 1, seed: 2 };
 
-    // Act
     const report = runBattle(config);
 
-    // Assert
+    expect(report.seed).toBe(2);
     expect(report.generation).toBe(1);
+    expect(report.error).toBeNull();
+    expect(report.timedOut).toBe(false);
+    expect(report.events[0]?.type).toBe("battle-start");
+    expect(report.events.at(-1)?.type).toBe("battle-end");
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 
   it("given a config with seed 99, when running a battle, then the report seed matches", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 99 };
 
-    // Act
     const report = runBattle(config);
 
-    // Assert
+    // Source: deterministic replay-parser regression seed for this Gen 1 case.
     expect(report.seed).toBe(99);
-  });
-});
-
-describe("runBattle — battle outcome", () => {
-  it("given a completed battle, when battle ends, then winner is 0, 1, or null", () => {
-    // Arrange
-    const config: BattleRunConfig = { ...BASE_CONFIG, seed: 10 };
-
-    // Act
-    const report = runBattle(config);
-
-    // Assert — winner must be 0, 1, or null (draw/timeout)
-    expect([0, 1, null]).toContain(report.winner);
-  });
-
-  it("given a completed battle without error, when checking events, then events array is non-empty", () => {
-    // Arrange
-    const config: BattleRunConfig = { ...BASE_CONFIG, seed: 20 };
-
-    // Act
-    const report = runBattle(config);
-
-    // Assert
-    if (!report.error) {
-      expect(report.events.length).toBeGreaterThan(0);
-    }
-  });
-
-  it("given a successful battle, when checking the error field, then error is null", () => {
-    // Arrange
-    const config: BattleRunConfig = { ...BASE_CONFIG, seed: 30 };
-
-    // Act
-    const report = runBattle(config);
-
-    // Assert
+    expect(report.generation).toBe(1);
     expect(report.error).toBeNull();
+    expect(report.timedOut).toBe(false);
+    expect(report.events[0]?.type).toBe("battle-start");
+    expect(report.events.at(-1)?.type).toBe("battle-end");
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 });
 
 describe("runBattle — timeout", () => {
   it("given maxTurns: 0, when the battle is run with 0 max turns, then timedOut is true", () => {
-    // Arrange — 0 turns guarantees timeout regardless of teams or damage rolls.
-    // Using maxTurns: 0 (not 1) ensures this test is deterministic after any
-    // engine mechanics change that could KO on the first turn.
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 5, maxTurns: 0 };
 
-    // Act
     const report = runBattle(config);
 
-    // Assert
+    expect(report.error).toBeNull();
     expect(report.timedOut).toBe(true);
+    expect(report.turnCount).toBe(0);
+    expect(report.winner).toBeNull();
   });
 });
 
@@ -109,16 +91,13 @@ describe("runBattle — timeout", () => {
 // ---------------------------------------------------------------------------
 
 describe("runBattle — determinism", () => {
-  it("given the same config, when running two battles, then both produce the same winner", () => {
-    // Arrange
+  it("given the same config, when running two battles, then the stable report fields are identical", () => {
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 77 };
 
-    // Act
-    const report1 = runBattle(config);
-    const report2 = runBattle(config);
+    const report1 = normalizeReport(runBattle(config));
+    const report2 = normalizeReport(runBattle(config));
 
-    // Assert
-    expect(report1.winner).toBe(report2.winner);
+    expect(report1).toEqual(report2);
   });
 });
 
@@ -128,7 +107,6 @@ describe("runBattle — determinism", () => {
 
 describe("runBattle — Gen 2 smoke test", () => {
   it("given a valid Gen 2 config, when running a battle, then it completes without crashing", () => {
-    // Arrange
     const config: BattleRunConfig = {
       generation: 2,
       seed: 42,
@@ -136,11 +114,18 @@ describe("runBattle — Gen 2 smoke test", () => {
       maxTurns: 50,
     };
 
-    // Act
     const report = runBattle(config);
 
-    // Assert
+    // Source: deterministic replay-parser regression seed for this Gen 2 case.
+    expect(report.seed).toBe(42);
+    expect(report.generation).toBe(2);
     expect(report.error).toBeNull();
+    expect(report.timedOut).toBe(false);
+    expect(report.events[0]?.type).toBe("battle-start");
+    expect(report.events.at(-1)?.type).toBe("battle-end");
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 });
 
@@ -150,53 +135,59 @@ describe("runBattle — Gen 2 smoke test", () => {
 
 describe("runBatch — battle count", () => {
   it("given count: 5, when running a batch, then totalBattles is 5", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 100 };
+    const count = 5;
+    // Explicit batch size for this test case.
 
-    // Act
-    const batch = runBatch(config, 5);
+    const batch = runBatch(config, count);
 
-    // Assert
-    expect(batch.totalBattles).toBe(5);
+    expect(batch.config).toEqual(config);
+    expect(batch.totalBattles).toBe(count);
+    expect(batch.completed).toBe(count);
+    expect(batch.crashed).toBe(0);
   });
 
   it("given count: 3 with valid config, when running a batch, then completed equals 3", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 200, maxTurns: 100 };
+    const count = 3;
+    // Explicit batch size for this test case.
 
-    // Act
-    const batch = runBatch(config, 3);
+    const batch = runBatch(config, count);
 
-    // Assert — no crashes expected with valid config
-    expect(batch.completed).toBe(3);
+    expect(batch.config).toEqual(config);
+    expect(batch.completed).toBe(count);
+    expect(batch.totalBattles).toBe(count);
+    expect(batch.crashed).toBe(0);
   });
 });
 
 describe("runBatch — progress callback", () => {
   it("given count: 4 and an onProgress callback, when running a batch, then callback is called 4 times", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 300 };
+    const count = 4;
     const onProgress = vi.fn();
 
-    // Act
-    runBatch(config, 4, onProgress);
+    runBatch(config, count, onProgress);
 
-    // Assert
-    expect(onProgress).toHaveBeenCalledTimes(4);
+    expect(onProgress).toHaveBeenCalledTimes(count);
+    expect(onProgress.mock.calls.map(([i]) => i)).toEqual(
+      Array.from({ length: count }, (_, i) => i),
+    );
+    expect(onProgress.mock.calls.map(([, report]) => report.seed)).toEqual(
+      Array.from({ length: count }, (_, i) => config.seed + i),
+    );
   });
 
   it("given count: 3 and an onProgress callback, when running a batch, then callback receives sequential indices 0, 1, 2", () => {
-    // Arrange
     const config: BattleRunConfig = { ...BASE_CONFIG, seed: 400 };
+    const count = 3;
     const indices: number[] = [];
     const onProgress = (i: number) => {
       indices.push(i);
     };
 
-    // Act
-    runBatch(config, 3, onProgress);
+    runBatch(config, count, onProgress);
 
-    // Assert
-    expect(indices).toEqual([0, 1, 2]);
+    expect(indices).toEqual(Array.from({ length: count }, (_, i) => i));
   });
 });

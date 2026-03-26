@@ -4,10 +4,26 @@ import type {
   CritContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  type PokemonType,
+  type StatBlock,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager } from "../../src/data";
-import { Gen3Ruleset } from "../../src/Gen3Ruleset";
+import {
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_ITEM_IDS,
+  GEN3_MOVE_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+  Gen3Ruleset,
+} from "../../src";
 
 /**
  * Gen 3 Combat Abilities Tests
@@ -40,7 +56,11 @@ function createMockRng(intReturnValue: number) {
 }
 
 /** Create a minimal ActivePokemon mock. */
-function createMockPokemon(opts: {
+const DATA_MANAGER = createGen3DataManager();
+const BASE_SPECIES = DATA_MANAGER.getSpecies(GEN3_SPECIES_IDS.bulbasaur);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN3_NATURE_IDS.hardy).id;
+
+function createScenarioPokemon(opts: {
   types?: PokemonType[];
   ability?: string;
   heldItem?: string | null;
@@ -58,27 +78,27 @@ function createMockPokemon(opts: {
 
   const pokemon = {
     uid: "test-mon",
-    speciesId: opts.speciesId ?? 1,
+    speciesId: opts.speciesId ?? BASE_SPECIES.id,
     nickname: null,
     level: 50,
     experience: 0,
-    nature: "hardy",
+    nature: DEFAULT_NATURE,
     ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
-    moves: [{ moveId: "tackle", pp: 35, maxPp: 35 }],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    moves: [{ moveId: GEN3_MOVE_IDS.tackle, pp: 35, maxPp: 35 }],
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   };
 
@@ -96,8 +116,8 @@ function createMockPokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types ?? ["normal"],
-    ability: opts.ability ?? "",
+    types: opts.types ?? [...BASE_SPECIES.types],
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 1,
     movedThisTurn: false,
@@ -112,29 +132,6 @@ function createMockPokemon(opts: {
     teraType: null,
     stellarBoostedTypes: [],
   } as unknown as ActivePokemon;
-}
-
-/** Create a minimal move data object. */
-function createMove(overrides?: Partial<MoveData>): MoveData {
-  return {
-    id: "tackle",
-    name: "Tackle",
-    type: "normal",
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 35,
-    maxPp: 35,
-    priority: 0,
-    target: "single" as any,
-    flags: {} as any,
-    generation: 3,
-    critRatio: 0,
-    effectChance: null,
-    effects: [],
-    description: "",
-    ...overrides,
-  } as MoveData;
 }
 
 /** Create a minimal BattleState. */
@@ -174,8 +171,7 @@ function createMinimalBattleState(attacker: ActivePokemon, defender: ActivePokem
   } as BattleState;
 }
 
-const dataManager = createGen3DataManager();
-const ruleset = new Gen3Ruleset(dataManager);
+const ruleset = new Gen3Ruleset(DATA_MANAGER);
 
 // ===========================================================================
 // Serene Grace -- doubles secondary effect chance
@@ -195,23 +191,13 @@ describe("Gen 3 Serene Grace ability", () => {
     // Mock RNG returns 59 (0-indexed), which is < 60 (doubled) but >= 30 (original).
     // Without Serene Grace: rng.int(0, 99) returns 59, 59 < 30 = false -> no status.
     // With Serene Grace:    rng.int(0, 99) returns 59, 59 < 60 = true  -> status inflicted.
-    const attacker = createMockPokemon({ types: ["electric"], ability: "serene-grace" });
-    const defender = createMockPokemon({ types: ["normal"] });
-    const state = createMinimalBattleState(attacker, defender);
-
-    // Thunder: 30% chance to paralyze
-    const thunderMove = createMove({
-      id: "thunder",
-      name: "Thunder",
-      type: "electric",
-      category: "special",
-      power: 120,
-      effect: {
-        type: "status-chance",
-        status: "paralysis",
-        chance: 30,
-      },
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.electric],
+      ability: GEN3_ABILITY_IDS.sereneGrace,
     });
+    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createMinimalBattleState(attacker, defender);
+    const thunderMove = DATA_MANAGER.getMove(GEN3_MOVE_IDS.thunder);
 
     // rng.int(0, 99) returns 59 -> 59 < 60 (doubled) = true
     const rng = createMockRng(59);
@@ -227,7 +213,7 @@ describe("Gen 3 Serene Grace ability", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // Serene Grace doubles 30% -> 60%; rng returns 59 which is < 60 -> status inflicted
-    expect(result.statusInflicted).toBe("paralysis");
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.paralysis);
   });
 
   it("given attacker with Serene Grace, when move has 60% secondary effect chance, then chance is capped at 100%", () => {
@@ -235,23 +221,13 @@ describe("Gen 3 Serene Grace ability", () => {
     // pret/pokeemerald: Math.min(chance * 2, 100) -> 60% * 2 = 120% -> capped at 100%.
     //
     // Any rng value from 0-99 should be < 100 -> always succeeds.
-    const attacker = createMockPokemon({ types: ["normal"], ability: "serene-grace" });
-    const defender = createMockPokemon({ types: ["normal"] });
-    const state = createMinimalBattleState(attacker, defender);
-
-    // Hypothetical move with 60% flinch chance (doubled = 120% -> capped to 100%)
-    const move = createMove({
-      id: "headbutt",
-      name: "Headbutt",
-      type: "normal",
-      category: "physical",
-      power: 70,
-      effect: {
-        type: "volatile-status",
-        status: "flinch",
-        chance: 60,
-      },
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.sereneGrace,
     });
+    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createMinimalBattleState(attacker, defender);
+    const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.sacredFire);
 
     // rng.int(0, 99) returns 99 -> even the max value < 100 -> always succeeds
     const rng = createMockRng(99);
@@ -266,29 +242,20 @@ describe("Gen 3 Serene Grace ability", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    // 60% doubled = 120% -> capped at 100%; rng 99 < 100 -> inflicted
-    expect(result.volatileInflicted).toBe("flinch");
+    // 50% doubled = 100%; rng 99 < 100 -> burn inflicted
+    expect(result.statusInflicted).toBe(CORE_STATUS_IDS.burn);
   });
 
   it("given attacker without Serene Grace, when move has 30% secondary effect chance and rng is 59, then effect does not trigger", () => {
     // Source: pret/pokeemerald -- without ABILITY_SERENE_GRACE, percentChance stays at 30.
     // rng.int(0, 99) returns 59, 59 < 30 = false -> no status inflicted.
-    const attacker = createMockPokemon({ types: ["electric"], ability: "" });
-    const defender = createMockPokemon({ types: ["normal"] });
-    const state = createMinimalBattleState(attacker, defender);
-
-    const thunderMove = createMove({
-      id: "thunder",
-      name: "Thunder",
-      type: "electric",
-      category: "special",
-      power: 120,
-      effect: {
-        type: "status-chance",
-        status: "paralysis",
-        chance: 30,
-      },
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.electric],
+      ability: CORE_ABILITY_IDS.none,
     });
+    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createMinimalBattleState(attacker, defender);
+    const thunderMove = DATA_MANAGER.getMove(GEN3_MOVE_IDS.thunder);
 
     // rng.int(0, 99) returns 59 -> 59 < 30 = false -> no status
     const rng = createMockRng(59);
@@ -310,24 +277,13 @@ describe("Gen 3 Serene Grace ability", () => {
   it("given attacker with Serene Grace, when move has 10% stat change chance, then chance is doubled to 20%", () => {
     // Source: Bulbapedia -- Serene Grace doubles ALL secondary effect chances.
     // 10% -> 20%. rng.int(0, 99) returns 19 -> 19 < 20 = true.
-    const attacker = createMockPokemon({ types: ["normal"], ability: "serene-grace" });
-    const defender = createMockPokemon({ types: ["normal"] });
-    const state = createMinimalBattleState(attacker, defender);
-
-    // Move with 10% stat change chance
-    const move = createMove({
-      id: "test-move",
-      name: "Test Move",
-      type: "normal",
-      category: "physical",
-      power: 80,
-      effect: {
-        type: "stat-change",
-        target: "opponent",
-        chance: 10,
-        changes: [{ stat: "defense", stages: -1 }],
-      },
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.sereneGrace,
     });
+    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const state = createMinimalBattleState(attacker, defender);
+    const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.acid);
 
     // rng returns 19 -> 19 < 20 (doubled from 10) -> true
     // Without Serene Grace: 19 < 10 = false
@@ -344,9 +300,8 @@ describe("Gen 3 Serene Grace ability", () => {
     const result = ruleset.executeMoveEffect(context);
 
     // 10% doubled to 20%; rng 19 < 20 -> stat change applied
-    expect(result.statChanges.length).toBe(1);
-    expect(result.statChanges[0]!.stat).toBe("defense");
-    expect(result.statChanges[0]!.stages).toBe(-1);
+    expect(result.statChanges).toHaveLength(1);
+    expect(result.statChanges[0]).toEqual({ target: "defender", stat: "defense", stages: -1 });
   });
 });
 
@@ -364,10 +319,13 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
     // Source: pret/pokeemerald -- ABILITY_BATTLE_ARMOR prevents crits entirely.
     // Even with rng returning 1 (which normally guarantees a crit), Battle Armor
     // should override and return false.
-    const attacker = createMockPokemon({ types: ["normal"] });
-    const defender = createMockPokemon({ types: ["normal"], ability: "battle-armor" });
+    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.battleArmor,
+    });
 
-    const move = createMove();
+    const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash);
 
     // rng.int(1, 16) returns 1 -> would normally be a crit at stage 0 (1/16)
     const rng = createMockRng(1);
@@ -389,10 +347,13 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
   it("given defender with Shell Armor, when rollCritical is called, then returns false", () => {
     // Source: pret/pokeemerald -- ABILITY_SHELL_ARMOR has the same effect as ABILITY_BATTLE_ARMOR.
     // Both prevent critical hits entirely.
-    const attacker = createMockPokemon({ types: ["normal"] });
-    const defender = createMockPokemon({ types: ["water"], ability: "shell-armor" });
+    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.shellArmor,
+    });
 
-    const move = createMove();
+    const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash);
 
     // rng.int(1, 16) returns 1 -> would normally be a crit
     const rng = createMockRng(1);
@@ -415,10 +376,13 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
     // Source: pret/pokeemerald -- without ABILITY_BATTLE_ARMOR or ABILITY_SHELL_ARMOR,
     // the normal crit calculation applies.
     // At stage 0, denominator = 16. rng.int(1, 16) returning 1 means 1 === 1 -> crit.
-    const attacker = createMockPokemon({ types: ["normal"] });
-    const defender = createMockPokemon({ types: ["normal"], ability: "" });
+    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+    });
 
-    const move = createMove();
+    const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash);
 
     // rng.int(1, 16) returns 1 -> crit
     const rng = createMockRng(1);
@@ -441,21 +405,17 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
     // Source: pret/pokeemerald -- Battle Armor overrides ALL crit stages.
     // Even with Scope Lens + high-crit move (stage 2, denominator 4), Battle Armor
     // prevents the crit entirely.
-    const attacker = createMockPokemon({
-      types: ["normal"],
-      heldItem: "scope-lens",
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: GEN3_ITEM_IDS.scopeLens,
     });
-    const defender = createMockPokemon({ types: ["normal"], ability: "battle-armor" });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.battleArmor,
+    });
 
     // Slash has critRatio: 1, plus Scope Lens = stage 2
-    const move = createMove({
-      id: "slash",
-      name: "Slash",
-      type: "normal",
-      category: "physical",
-      power: 70,
-      critRatio: 1,
-    });
+    const move = { ...DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash), critRatio: 1 };
 
     // rng.int(1, 4) returns 1 -> would be crit at stage 2 (denominator 4)
     const rng = createMockRng(1);

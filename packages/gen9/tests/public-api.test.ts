@@ -37,7 +37,7 @@ describe("@pokemon-lib-ts/gen9 public API barrel", () => {
     expect(rootExports).toContain("handleGen9ProteanTrigger");
   });
 
-  it("does not re-export the deprecated ambiguous aliases from the root barrel", () => {
+  it("given the Gen9 root barrel, when checking deprecated ambiguous aliases, then it does not re-export them", () => {
     expect(rootExports).not.toContain("handleGen9IntrepidSword");
     expect(rootExports).not.toContain("handleGen9DauntlessShield");
     expect(rootExports).not.toContain("handleGen9ProteanTypeChange");
@@ -46,7 +46,7 @@ describe("@pokemon-lib-ts/gen9 public API barrel", () => {
     expect(rootExports).not.toContain("handleProteanGen9");
   });
 
-  it("keeps only the fixed-point Supreme Overlord helper on the root barrel", () => {
+  it("given the Gen9 root barrel, when checking Supreme Overlord helpers, then it keeps only the fixed-point helper", () => {
     expect(rootExports).toContain("getSupremeOverlordModifier");
     expect(rootExports).not.toContain("getSupremeOverlordFloatMultiplier");
     expect(rootExports).not.toContain("getSupremeOverlordMultiplier");

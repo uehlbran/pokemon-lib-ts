@@ -1,29 +1,33 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import type { FileContext } from "./types.ts";
+import type { AuditTarget, FileContext } from "./types.ts";
 
 const REPO_ROOT = join(import.meta.dirname, "../../..");
+const WORKSPACE_ROOTS = ["packages", "tools"] as const;
 
-const PACKAGE_TEST_DIRS: Record<string, string> = {
-  core: "packages/core/tests",
-  battle: "packages/battle/tests",
-  gen1: "packages/gen1/tests",
-  gen2: "packages/gen2/tests",
-  gen3: "packages/gen3/tests",
-  gen4: "packages/gen4/tests",
-  gen5: "packages/gen5/tests",
-  gen6: "packages/gen6/tests",
-  gen7: "packages/gen7/tests",
-  gen8: "packages/gen8/tests",
-  gen9: "packages/gen9/tests",
-};
+export function discoverAuditTargets(): AuditTarget[] {
+  const targets: AuditTarget[] = [];
 
-export const ALL_PACKAGES: string[] = Object.keys(PACKAGE_TEST_DIRS);
+  for (const workspaceRoot of WORKSPACE_ROOTS) {
+    const rootDir = join(REPO_ROOT, workspaceRoot);
 
-export function resolvePackageTestDir(packageName: string): string | null {
-  const rel = PACKAGE_TEST_DIRS[packageName];
-  if (!rel) return null;
-  return join(REPO_ROOT, rel);
+    try {
+      const entries = readdirSync(rootDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+
+        const testDir = join(rootDir, entry.name, "tests");
+        if (discoverTestFiles(testDir).length === 0) continue;
+
+        targets.push({ name: entry.name, testDir });
+      }
+    } catch {
+      // workspace root missing in this checkout
+    }
+  }
+
+  targets.sort((left, right) => left.name.localeCompare(right.name));
+  return targets;
 }
 
 export function discoverTestFiles(testDir: string): string[] {
@@ -33,7 +37,9 @@ export function discoverTestFiles(testDir: string): string[] {
   } catch {
     // directory doesn't exist
   }
-  return files.filter((f) => f.endsWith(".test.ts") || f.endsWith(".spec.ts"));
+  return files
+    .filter((f) => f.endsWith(".test.ts") || f.endsWith(".spec.ts"))
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function collectFiles(dir: string, out: string[]): void {

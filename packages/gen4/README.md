@@ -27,7 +27,12 @@ npm run build
 ## Usage
 
 ```typescript
-import { Gen4Ruleset, createGen4DataManager } from "@pokemon-lib-ts/gen4";
+import {
+  GEN4_MOVE_IDS,
+  GEN4_WEATHER_DAMAGE_MULTIPLIERS,
+  Gen4Ruleset,
+  createGen4DataManager,
+} from "@pokemon-lib-ts/gen4";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 
 // Load Gen 4 data
@@ -36,11 +41,12 @@ const garchomp = dm.getSpecies(445);
 console.log(garchomp.baseStats);
 // { hp: 108, attack: 130, defense: 95, spAttack: 80, spDefense: 85, speed: 102 }
 
-const earthquake = dm.getMove("earthquake");
+const earthquake = dm.getMove(GEN4_MOVE_IDS.earthquake);
 console.log(earthquake.power, earthquake.category); // 100, 'physical'
 
-const shadowBall = dm.getMove("shadow-ball");
+const shadowBall = dm.getMove(GEN4_MOVE_IDS.shadowBall);
 console.log(shadowBall.power, shadowBall.category); // 80, 'special'
+console.log(GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunFireBoost); // 1.5
 
 // Create a Gen 4 battle
 const ruleset = new Gen4Ruleset();
@@ -53,6 +59,11 @@ const engine = new BattleEngine(
 engine.on((event) => console.log(event));
 engine.start();
 ```
+
+## Test/Reference Exports
+
+- `GEN4_*_IDS` exports are generated from the committed Gen 4 `data/*.json` bundle and are the preferred source for canonical move/item/ability/species ids in tests.
+- `GEN4_WEATHER_DAMAGE_MULTIPLIERS` exposes Gen 4-owned weather damage multipliers so tests do not duplicate mechanic literals.
 
 ## Gen 4 Key Mechanics
 

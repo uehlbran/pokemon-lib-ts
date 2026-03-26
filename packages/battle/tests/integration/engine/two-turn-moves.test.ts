@@ -1,4 +1,5 @@
 import type { PokemonInstance, VolatileStatus } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -6,6 +7,7 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,8 +26,8 @@ function createEngine(overrides?: {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "thunderbolt", currentPP: 15, maxPP: 15, ppUps: 0 },
+        createMockMoveSlot(CORE_MOVE_IDS.tackle),
+        createMockMoveSlot(CORE_MOVE_IDS.thunderbolt),
       ],
       calculatedStats: {
         hp: 200,
@@ -43,7 +45,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -80,7 +82,7 @@ describe("two-turn move engine infrastructure", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.fly)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -107,8 +109,8 @@ describe("two-turn move engine infrastructure", () => {
             messages: [],
             forcedMoveSet: {
               moveIndex: 0,
-              moveId: "fly",
-              volatileStatus: "flying" as VolatileStatus,
+              moveId: CORE_MOVE_IDS.fly,
+              volatileStatus: CORE_VOLATILE_IDS.flying as VolatileStatus,
             },
           };
         }
@@ -127,14 +129,15 @@ describe("two-turn move engine infrastructure", () => {
       // Assert: forcedMove should be set on side 0's active Pokemon
       const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
-      expect(active0!.forcedMove).toEqual({ moveIndex: 0, moveId: "fly" });
+      expect(active0!.forcedMove).toEqual({ moveIndex: 0, moveId: CORE_MOVE_IDS.fly });
 
       // Assert: flying volatile should be applied
-      expect(active0!.volatileStatuses.has("flying")).toBe(true);
+      expect(active0!.volatileStatuses.has(CORE_VOLATILE_IDS.flying)).toBe(true);
 
       // Assert: volatile-start event for "flying" emitted
       const volatileStartEvents = events.filter(
-        (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === "flying",
+        (e) =>
+          e.type === "volatile-start" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.flying,
       );
       expect(volatileStartEvents.length).toBe(1);
 
@@ -154,7 +157,7 @@ describe("two-turn move engine infrastructure", () => {
         createTestPokemon(6, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.fly)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -172,8 +175,8 @@ describe("two-turn move engine infrastructure", () => {
         callCount++;
         if (
           context.attacker.pokemon.uid === "charizard-1" &&
-          context.move.id === "fly" &&
-          !context.attacker.volatileStatuses.has("flying")
+          context.move.id === CORE_MOVE_IDS.fly &&
+          !context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flying)
         ) {
           return {
             statusInflicted: null,
@@ -185,8 +188,8 @@ describe("two-turn move engine infrastructure", () => {
             messages: [],
             forcedMoveSet: {
               moveIndex: 0,
-              moveId: "fly",
-              volatileStatus: "flying" as VolatileStatus,
+              moveId: CORE_MOVE_IDS.fly,
+              volatileStatus: CORE_VOLATILE_IDS.flying as VolatileStatus,
             },
           };
         }
@@ -203,8 +206,8 @@ describe("two-turn move engine infrastructure", () => {
 
       const chargingAttacker = engine.getActive(0);
       expect(chargingAttacker).not.toBeNull();
-      expect(chargingAttacker!.forcedMove).toEqual({ moveIndex: 0, moveId: "fly" });
-      expect(chargingAttacker!.volatileStatuses.has("flying")).toBe(true);
+      expect(chargingAttacker!.forcedMove).toEqual({ moveIndex: 0, moveId: CORE_MOVE_IDS.fly });
+      expect(chargingAttacker!.volatileStatuses.has(CORE_VOLATILE_IDS.flying)).toBe(true);
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -215,10 +218,11 @@ describe("two-turn move engine infrastructure", () => {
       expect(defender).not.toBeNull();
       expect(defender!.pokemon.currentHp).toBe(defenderStartHp! - 10);
       expect(resolvedAttacker!.forcedMove).toBeNull();
-      expect(resolvedAttacker!.volatileStatuses.has("flying")).toBe(false);
+      expect(resolvedAttacker!.volatileStatuses.has(CORE_VOLATILE_IDS.flying)).toBe(false);
 
       const volatileStartEvents = events.filter(
-        (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === "flying",
+        (e) =>
+          e.type === "volatile-start" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.flying,
       );
       expect(volatileStartEvents.length).toBe(1);
       expect(callCount).toBe(2);
@@ -234,7 +238,7 @@ describe("two-turn move engine infrastructure", () => {
       // Directly set forcedMove on side 0's active Pokemon
       const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
-      active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
+      active0!.forcedMove = { moveIndex: 0, moveId: CORE_MOVE_IDS.tackle };
 
       // Act
       const moves = engine.getAvailableMoves(0);
@@ -275,7 +279,7 @@ describe("two-turn move engine infrastructure", () => {
       // Set forcedMove to move index 0 (tackle)
       const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
-      active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
+      active0!.forcedMove = { moveIndex: 0, moveId: CORE_MOVE_IDS.tackle };
 
       // Act: submit a DIFFERENT move index (1) for side 0
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
@@ -298,7 +302,7 @@ describe("two-turn move engine infrastructure", () => {
       // Set the defender (Blastoise, side 1) to "flying" semi-invulnerable state
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.volatileStatuses.set("flying", { turnsLeft: 1 });
+      defender!.volatileStatuses.set(CORE_VOLATILE_IDS.flying, { turnsLeft: 1 });
 
       // Act: Charizard uses Thunderbolt (index 1) against flying Blastoise
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
@@ -317,7 +321,7 @@ describe("two-turn move engine infrastructure", () => {
     it("does not emit move-miss when the ruleset allows hitting the semi-invulnerable state", () => {
       // Arrange: configure ruleset to allow thunderbolt to hit flying targets
       const ruleset = new MockRuleset();
-      ruleset.setCanHitSemiInvulnerable("thunderbolt", "flying");
+      ruleset.setCanHitSemiInvulnerable(CORE_MOVE_IDS.thunderbolt, CORE_VOLATILE_IDS.flying);
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -325,7 +329,7 @@ describe("two-turn move engine infrastructure", () => {
       // Set the defender to "flying" semi-invulnerable state
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.volatileStatuses.set("flying", { turnsLeft: 1 });
+      defender!.volatileStatuses.set(CORE_VOLATILE_IDS.flying, { turnsLeft: 1 });
 
       // Act: Charizard uses Thunderbolt against flying Blastoise
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
@@ -355,7 +359,7 @@ describe("two-turn move engine infrastructure", () => {
       // Set the defender to "underground" semi-invulnerable state
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.volatileStatuses.set("underground", { turnsLeft: 1 });
+      defender!.volatileStatuses.set(CORE_VOLATILE_IDS.underground, { turnsLeft: 1 });
 
       // Act: Charizard uses Tackle against underground Blastoise
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -379,8 +383,8 @@ describe("two-turn move engine infrastructure", () => {
       // Simulate: attacker has "flying" volatile and a forcedMove (second turn of Fly)
       const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
-      active0!.volatileStatuses.set("flying", { turnsLeft: 1 });
-      active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
+      active0!.volatileStatuses.set(CORE_VOLATILE_IDS.flying, { turnsLeft: 1 });
+      active0!.forcedMove = { moveIndex: 0, moveId: CORE_MOVE_IDS.tackle };
 
       // Act: turn executes, forced move fires
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -388,7 +392,7 @@ describe("two-turn move engine infrastructure", () => {
 
       // Assert: the "flying" volatile was removed from the attacker
       // Source: Showdown — semi-invulnerable volatile cleared at start of execution turn
-      expect(active0!.volatileStatuses.has("flying")).toBe(false);
+      expect(active0!.volatileStatuses.has(CORE_VOLATILE_IDS.flying)).toBe(false);
 
       // Assert: the move actually executed (damage was dealt, not a miss)
       const damageToDefender = events.filter(
@@ -404,27 +408,27 @@ describe("two-turn move engine infrastructure", () => {
 
       const active0 = engine.state.sides[0].active[0];
       expect(active0).not.toBeNull();
-      active0!.volatileStatuses.set("charging", { turnsLeft: 1 });
-      active0!.forcedMove = { moveIndex: 0, moveId: "tackle" };
+      active0!.volatileStatuses.set(CORE_VOLATILE_IDS.charging, { turnsLeft: 1 });
+      active0!.forcedMove = { moveIndex: 0, moveId: CORE_MOVE_IDS.tackle };
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert: charging volatile removed
-      expect(active0!.volatileStatuses.has("charging")).toBe(false);
+      expect(active0!.volatileStatuses.has(CORE_VOLATILE_IDS.charging)).toBe(false);
     });
   });
 
   describe("given a defender with charging volatile (not semi-invulnerable), when opponent attacks, then the move still hits", () => {
-    it("does not auto-miss because charging is not semi-invulnerable", () => {
+    it("given a defender with charging volatile, when the opponent attacks, then the move still hits", () => {
       // Arrange: charging is NOT in the semi-invulnerable list
       const { engine, events } = createEngine();
       engine.start();
 
       const defender = engine.state.sides[1].active[0];
       expect(defender).not.toBeNull();
-      defender!.volatileStatuses.set("charging", { turnsLeft: 1 });
+      defender!.volatileStatuses.set(CORE_VOLATILE_IDS.charging, { turnsLeft: 1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

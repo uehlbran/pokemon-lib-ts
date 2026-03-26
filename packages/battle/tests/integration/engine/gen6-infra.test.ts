@@ -12,8 +12,10 @@
  * Source: Showdown sim/battle-actions.ts — gimmick activation, terrain setting
  * Source: Showdown sim/field.ts — Grassy Terrain residual healing
  */
+
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import { CORE_MOVE_IDS, CORE_TERRAIN_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it, vi } from "vitest";
 import type {
   BattleConfig,
   BattleGimmick,
@@ -28,6 +30,9 @@ import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state"
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+
+const TERRAIN_IDS = CORE_TERRAIN_IDS;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +50,7 @@ function createEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -62,7 +67,7 @@ function createEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -95,7 +100,7 @@ describe("gimmick activation hook in executeMove", () => {
   it("given a ruleset that returns a gimmick from getBattleGimmick and canUse returns true, when action.mega is true, then gimmick.activate is called and events are emitted", () => {
     // Source: Showdown sim/battle-actions.ts — mega evolution triggers before move execution
     const ruleset = new MockRuleset();
-    let activateCalled = false;
+    const activateSpy = vi.fn(() => megaEvents);
     const megaEvents: BattleEvent[] = [
       {
         type: "mega-evolve",
@@ -109,14 +114,7 @@ describe("gimmick activation hook in executeMove", () => {
       name: "Mega Evolution",
       generations: [6],
       canUse: (_pokemon: ActivePokemon, _side: BattleSide, _state: BattleState) => true,
-      activate: (
-        _pokemon: ActivePokemon,
-        _side: BattleSide,
-        _state: BattleState,
-      ): BattleEvent[] => {
-        activateCalled = true;
-        return megaEvents;
-      },
+      activate: activateSpy,
     };
 
     ruleset.getBattleGimmick = () => mockGimmick;
@@ -131,7 +129,7 @@ describe("gimmick activation hook in executeMove", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert
-    expect(activateCalled).toBe(true);
+    expect(activateSpy).toHaveBeenCalledTimes(1);
     const megaEvent = events.find((e) => e.type === "mega-evolve");
     expect(megaEvent).toBeDefined();
     expect(megaEvent).toEqual({
@@ -145,16 +143,14 @@ describe("gimmick activation hook in executeMove", () => {
   it("given a ruleset gimmick where canUse returns false, when action.mega is true, then gimmick.activate is NOT called", () => {
     // Source: Showdown sim/battle-actions.ts — canMegaEvo check prevents activation
     const ruleset = new MockRuleset();
-    let activateCalled = false;
+    const canUseSpy = vi.fn(() => false);
+    const activateSpy = vi.fn(() => []);
 
     const mockGimmick: BattleGimmick = {
       name: "Mega Evolution",
       generations: [6],
-      canUse: () => false,
-      activate: (): BattleEvent[] => {
-        activateCalled = true;
-        return [];
-      },
+      canUse: canUseSpy,
+      activate: activateSpy,
     };
 
     ruleset.getBattleGimmick = () => mockGimmick;
@@ -163,14 +159,55 @@ describe("gimmick activation hook in executeMove", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
     events.length = 0;
+    const charizard = engine.getState().sides[0].active[0]?.pokemon;
+    const blastoise = engine.getState().sides[1].active[0]?.pokemon;
+    const charizardHp = charizard?.currentHp ?? 0;
+    const charizardMaxHp = charizard?.calculatedStats.hp ?? 0;
+    const blastoiseHp = blastoise?.currentHp ?? 0;
+    const blastoiseMaxHp = blastoise?.calculatedStats.hp ?? 0;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, mega: true });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — activate should not have been called
-    expect(activateCalled).toBe(false);
+    expect(canUseSpy).toHaveBeenCalledTimes(1);
+    expect(activateSpy).not.toHaveBeenCalled();
     const megaEvent = events.find((e) => e.type === "mega-evolve");
     expect(megaEvent).toBeUndefined();
+    expect(events.filter((e) => e.type === "move-start")).toEqual([
+      {
+        type: "move-start",
+        side: 0,
+        pokemon: "Charizard",
+        move: CORE_MOVE_IDS.tackle,
+      },
+      {
+        type: "move-start",
+        side: 1,
+        pokemon: "Blastoise",
+        move: CORE_MOVE_IDS.tackle,
+      },
+    ]);
+    expect(events.filter((e) => e.type === "damage")).toEqual([
+      {
+        type: "damage",
+        side: 1,
+        pokemon: "Blastoise",
+        amount: 10,
+        currentHp: blastoiseHp - 10,
+        maxHp: blastoiseMaxHp,
+        source: CORE_MOVE_IDS.tackle,
+      },
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Charizard",
+        amount: 10,
+        currentHp: charizardHp - 10,
+        maxHp: charizardMaxHp,
+        source: CORE_MOVE_IDS.tackle,
+      },
+    ]);
   });
 
   it("given a ruleset with no gimmick (returns null), when action.mega is true, then no gimmick events are emitted and move proceeds normally", () => {
@@ -182,30 +219,68 @@ describe("gimmick activation hook in executeMove", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
     events.length = 0;
+    const charizard = engine.getState().sides[0].active[0]?.pokemon;
+    const blastoise = engine.getState().sides[1].active[0]?.pokemon;
+    const charizardHp = charizard?.currentHp ?? 0;
+    const charizardMaxHp = charizard?.calculatedStats.hp ?? 0;
+    const blastoiseHp = blastoise?.currentHp ?? 0;
+    const blastoiseMaxHp = blastoise?.calculatedStats.hp ?? 0;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, mega: true });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — no mega event, but move-start still happens
+    // Assert — no mega event, but the normal move resolution still happens exactly once per side.
     const megaEvent = events.find((e) => e.type === "mega-evolve");
     expect(megaEvent).toBeUndefined();
     const moveStartEvents = events.filter((e) => e.type === "move-start");
-    expect(moveStartEvents.length).toBeGreaterThanOrEqual(1);
+    expect(moveStartEvents).toEqual([
+      {
+        type: "move-start",
+        side: 0,
+        pokemon: "Charizard",
+        move: CORE_MOVE_IDS.tackle,
+      },
+      {
+        type: "move-start",
+        side: 1,
+        pokemon: "Blastoise",
+        move: CORE_MOVE_IDS.tackle,
+      },
+    ]);
+    const damageEvents = events.filter((e) => e.type === "damage");
+    expect(damageEvents).toEqual([
+      {
+        type: "damage",
+        side: 1,
+        pokemon: "Blastoise",
+        amount: 10,
+        currentHp: blastoiseHp - 10,
+        maxHp: blastoiseMaxHp,
+        source: CORE_MOVE_IDS.tackle,
+      },
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Charizard",
+        amount: 10,
+        currentHp: charizardHp - 10,
+        maxHp: charizardMaxHp,
+        source: CORE_MOVE_IDS.tackle,
+      },
+    ]);
   });
 
   it("given action.mega is false/undefined, when move executes, then gimmick hook is skipped entirely", () => {
     // Source: only gimmick flags trigger the hook
     const ruleset = new MockRuleset();
-    let gimmickCheckCalled = false;
+    const canUseSpy = vi.fn(() => true);
+    const activateSpy = vi.fn(() => []);
 
     const mockGimmick: BattleGimmick = {
       name: "Mega Evolution",
       generations: [6],
-      canUse: () => {
-        gimmickCheckCalled = true;
-        return true;
-      },
-      activate: (): BattleEvent[] => [],
+      canUse: canUseSpy,
+      activate: activateSpy,
     };
 
     ruleset.getBattleGimmick = () => mockGimmick;
@@ -219,7 +294,8 @@ describe("gimmick activation hook in executeMove", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — canUse should not be called when no gimmick flag is set
-    expect(gimmickCheckCalled).toBe(false);
+    expect(canUseSpy).not.toHaveBeenCalled();
+    expect(activateSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -254,7 +330,7 @@ describe("grassy terrain heal end-of-turn", () => {
       createTestPokemon(6, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -271,7 +347,7 @@ describe("grassy terrain heal end-of-turn", () => {
       createTestPokemon(9, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -288,7 +364,11 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.start();
 
     // Set grassy terrain on the state
-    engine.getState().terrain = { type: "grassy", turnsLeft: 5, source: "grassy-terrain" };
+    engine.getState().terrain = {
+      type: "grassy",
+      turnsLeft: 5,
+      source: CORE_TERRAIN_IDS.grassyTerrain,
+    };
 
     // Reduce HP to simulate damage (engine may have set currentHp to calculatedStats.hp)
     const state = engine.getState();
@@ -304,7 +384,8 @@ describe("grassy terrain heal end-of-turn", () => {
 
     // Assert — heal events should be present
     const healEvents = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === "grassy-terrain",
+      (e) =>
+        e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -316,7 +397,7 @@ describe("grassy terrain heal end-of-turn", () => {
     expect(charizardHeal).toBeDefined();
     if (charizardHeal && charizardHeal.type === "heal") {
       expect(charizardHeal.amount).toBe(12);
-      expect(charizardHeal.source).toBe("grassy-terrain");
+      expect(charizardHeal.source).toBe(CORE_TERRAIN_IDS.grassyTerrain);
     }
   });
 
@@ -339,7 +420,11 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.start();
 
     // Set grassy terrain — Pokemon is at full HP (200/200)
-    engine.getState().terrain = { type: "grassy", turnsLeft: 5, source: "grassy-terrain" };
+    engine.getState().terrain = {
+      type: "grassy",
+      turnsLeft: 5,
+      source: CORE_TERRAIN_IDS.grassyTerrain,
+    };
     events.length = 0;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -350,7 +435,8 @@ describe("grassy terrain heal end-of-turn", () => {
     // Depending on turn resolution order, side 0 might be damaged.
     // To truly test no-overheal, check that no heal event has amount > max missing HP.
     const healEvents = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === "grassy-terrain",
+      (e) =>
+        e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     for (const heal of healEvents) {
       if (heal.type === "heal") {
@@ -378,7 +464,11 @@ describe("grassy terrain heal end-of-turn", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    engine.getState().terrain = { type: "grassy", turnsLeft: 5, source: "grassy-terrain" };
+    engine.getState().terrain = {
+      type: "grassy",
+      turnsLeft: 5,
+      source: CORE_TERRAIN_IDS.grassyTerrain,
+    };
     const state = engine.getState();
     const p0 = state.sides[0].active[0];
     if (p0) p0.pokemon.currentHp = 150;
@@ -389,7 +479,8 @@ describe("grassy terrain heal end-of-turn", () => {
 
     // Assert — no grassy-terrain heal event
     const grassyHeals = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === "grassy-terrain",
+      (e) =>
+        e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     expect(grassyHeals.length).toBe(0);
   });
@@ -399,11 +490,7 @@ describe("grassy terrain heal end-of-turn", () => {
     const ruleset = new MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => ["grassy-terrain-heal"];
 
-    let terrainEffectsCalled = false;
-    ruleset.applyTerrainEffects = (_state: BattleState): TerrainEffectResult[] => {
-      terrainEffectsCalled = true;
-      return [];
-    };
+    const applyTerrainEffectsSpy = vi.spyOn(ruleset, "applyTerrainEffects").mockReturnValue([]);
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -413,7 +500,7 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(terrainEffectsCalled).toBe(false);
+    expect(applyTerrainEffectsSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -427,29 +514,24 @@ describe("terrain-setting from move effect results", () => {
     // Enable terrain support in the mock
     ruleset.hasTerrain = () => true;
 
-    // Override executeMoveEffect to return terrainSet on first call only
-    let callCount = 0;
-    const originalExec = ruleset.executeMoveEffect.bind(ruleset);
-    ruleset.executeMoveEffect = (ctx: MoveEffectContext): MoveEffectResult => {
-      callCount++;
-      if (callCount === 1) {
-        return {
-          statusInflicted: null,
-          volatileInflicted: null,
-          statChanges: [],
-          recoilDamage: 0,
-          healAmount: 0,
-          switchOut: false,
-          messages: [],
-          terrainSet: {
-            terrain: "grassy",
-            turns: 5,
-            source: "grassy-terrain",
-          },
-        };
-      }
-      return originalExec(ctx);
-    };
+    // Override executeMoveEffect to return terrainSet on first call only.
+    const executeMoveEffectSpy = vi.spyOn(ruleset, "executeMoveEffect");
+    executeMoveEffectSpy.mockImplementationOnce((_ctx: MoveEffectContext): MoveEffectResult => {
+      return {
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [],
+        terrainSet: {
+          terrain: TERRAIN_IDS.grassy,
+          turns: 5,
+          source: TERRAIN_IDS.grassyTerrain,
+        },
+      };
+    });
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -459,18 +541,19 @@ describe("terrain-setting from move effect results", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — terrain should be set
+    expect(executeMoveEffectSpy).toHaveBeenCalledTimes(2);
     expect(engine.getState().terrain).toEqual({
-      type: "grassy",
+      type: TERRAIN_IDS.grassy,
       turnsLeft: 5,
-      source: "grassy-terrain",
+      source: TERRAIN_IDS.grassyTerrain,
     });
 
     const terrainEvent = events.find((e) => e.type === "terrain-set");
     expect(terrainEvent).toBeDefined();
     expect(terrainEvent).toEqual({
       type: "terrain-set",
-      terrain: "grassy",
-      source: "grassy-terrain",
+      terrain: TERRAIN_IDS.grassy,
+      source: TERRAIN_IDS.grassyTerrain,
     });
   });
 
@@ -480,43 +563,43 @@ describe("terrain-setting from move effect results", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [];
     ruleset.hasTerrain = () => true;
 
-    let callCount = 0;
-    const originalExec = ruleset.executeMoveEffect.bind(ruleset);
-    ruleset.executeMoveEffect = (ctx: MoveEffectContext): MoveEffectResult => {
-      callCount++;
-      if (callCount === 1) {
-        return {
-          statusInflicted: null,
-          volatileInflicted: null,
-          statChanges: [],
-          recoilDamage: 0,
-          healAmount: 0,
-          switchOut: false,
-          messages: [],
-          terrainSet: null, // Clear terrain
-        };
-      }
-      return originalExec(ctx);
-    };
+    const executeMoveEffectSpy = vi.spyOn(ruleset, "executeMoveEffect");
+    executeMoveEffectSpy.mockImplementationOnce((_ctx: MoveEffectContext): MoveEffectResult => {
+      return {
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [],
+        terrainSet: null, // Clear terrain
+      };
+    });
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
     // Pre-set terrain
-    engine.getState().terrain = { type: "electric", turnsLeft: 3, source: "electric-terrain" };
+    engine.getState().terrain = {
+      type: TERRAIN_IDS.electric,
+      turnsLeft: 3,
+      source: TERRAIN_IDS.electricTerrain,
+    };
     events.length = 0;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — terrain should be cleared
+    expect(executeMoveEffectSpy).toHaveBeenCalledTimes(2);
     expect(engine.getState().terrain).toBeNull();
 
     const terrainEndEvent = events.find((e) => e.type === "terrain-end");
-    expect(terrainEndEvent).toBeDefined();
-    if (terrainEndEvent && terrainEndEvent.type === "terrain-end") {
-      expect(terrainEndEvent.terrain).toBe("electric");
-    }
+    expect(terrainEndEvent).toEqual({
+      type: "terrain-end",
+      terrain: TERRAIN_IDS.electric,
+    });
   });
 
   it("given hasTerrain returns false, when move effect returns terrainSet, then terrain is not set (gen pre-6 guard)", () => {
@@ -525,28 +608,23 @@ describe("terrain-setting from move effect results", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [];
     // hasTerrain returns false by default in MockRuleset
 
-    let callCount = 0;
-    const originalExec = ruleset.executeMoveEffect.bind(ruleset);
-    ruleset.executeMoveEffect = (ctx: MoveEffectContext): MoveEffectResult => {
-      callCount++;
-      if (callCount === 1) {
-        return {
-          statusInflicted: null,
-          volatileInflicted: null,
-          statChanges: [],
-          recoilDamage: 0,
-          healAmount: 0,
-          switchOut: false,
-          messages: [],
-          terrainSet: {
-            terrain: "grassy",
-            turns: 5,
-            source: "grassy-terrain",
-          },
-        };
-      }
-      return originalExec(ctx);
-    };
+    const executeMoveEffectSpy = vi.spyOn(ruleset, "executeMoveEffect");
+    executeMoveEffectSpy.mockImplementationOnce((_ctx: MoveEffectContext): MoveEffectResult => {
+      return {
+        statusInflicted: null,
+        volatileInflicted: null,
+        statChanges: [],
+        recoilDamage: 0,
+        healAmount: 0,
+        switchOut: false,
+        messages: [],
+        terrainSet: {
+          terrain: TERRAIN_IDS.grassy,
+          turns: 5,
+          source: TERRAIN_IDS.grassyTerrain,
+        },
+      };
+    });
 
     const { engine, events } = createEngine({ ruleset });
     engine.start();
@@ -556,8 +634,22 @@ describe("terrain-setting from move effect results", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — terrain should remain null
+    expect(executeMoveEffectSpy).toHaveBeenCalledTimes(2);
+    expect(executeMoveEffectSpy.mock.results[0]?.value).toEqual({
+      statusInflicted: null,
+      volatileInflicted: null,
+      statChanges: [],
+      recoilDamage: 0,
+      healAmount: 0,
+      switchOut: false,
+      messages: [],
+      terrainSet: {
+        terrain: TERRAIN_IDS.grassy,
+        turns: 5,
+        source: TERRAIN_IDS.grassyTerrain,
+      },
+    });
     expect(engine.getState().terrain).toBeNull();
-    const terrainEvent = events.find((e) => e.type === "terrain-set");
-    expect(terrainEvent).toBeUndefined();
+    expect(events.some((e) => e.type === "terrain-set")).toBe(false);
   });
 });

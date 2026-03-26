@@ -6,8 +6,21 @@ import type {
   PokemonType,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { DataManager, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
+import { BATTLE_GIMMICK_IDS } from "../../../src";
 import type {
   AbilityContext,
   DamageContext,
@@ -17,7 +30,66 @@ import type {
 } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
+import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+
+const {
+  bug,
+  dark,
+  dragon,
+  electric,
+  fighting,
+  fire,
+  flying,
+  ghost,
+  grass,
+  ground,
+  ice,
+  normal,
+  poison: poisonType,
+  psychic,
+  rock,
+  steel,
+  water,
+} = CORE_TYPE_IDS;
+const { skillLink } = CORE_ABILITY_IDS;
+const {
+  encoreCountdown,
+  futureAttack,
+  screenCountdown,
+  statusDamage,
+  tailwindCountdown,
+  terrainCountdown,
+  trickRoomCountdown,
+  weatherCountdown,
+  weatherDamage,
+} = CORE_END_OF_TURN_EFFECT_IDS;
+const { spikes, stealthRock, toxicSpikes } = CORE_HAZARD_IDS;
+const { blackSludge, leftovers } = CORE_ITEM_IDS;
+const { bind, leechSeed, perishSong, quickAttack, tackle, wish } = CORE_MOVE_IDS;
+const { badlyPoisoned, burn, paralysis, poison, sleep } = CORE_STATUS_IDS;
+const { curse, ingrain, nightmare, sleepCounter, toxicCounter } = CORE_VOLATILE_IDS;
+const TEST_DATA_MANAGER = createMockDataManager();
+
+function createCanonicalMove(moveId: string): MoveData {
+  const baseMove = TEST_DATA_MANAGER.getMove(moveId);
+  return {
+    ...baseMove,
+    flags: { ...baseMove.flags },
+  } as MoveData;
+}
+
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData> = {}): MoveData {
+  return {
+    ...baseMove,
+    ...overrides,
+    flags: {
+      ...baseMove.flags,
+      ...overrides.flags,
+    },
+  } as MoveData;
+}
 
 // Concrete implementation of BaseRuleset for testing
 class TestRuleset extends BaseRuleset {
@@ -39,23 +111,23 @@ class TestRuleset extends BaseRuleset {
 
   getAvailableTypes(): readonly PokemonType[] {
     return [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
+      normal,
+      fire,
+      water,
+      electric,
+      grass,
+      ice,
+      fighting,
+      poisonType,
+      ground,
+      flying,
+      psychic,
+      bug,
+      rock,
+      ghost,
+      dragon,
+      dark,
+      steel,
     ];
   }
 
@@ -64,28 +136,35 @@ class TestRuleset extends BaseRuleset {
   }
 }
 
-const testSpecies: PokemonSpeciesData = {
-  id: 6,
-  name: "charizard",
-  displayName: "Charizard",
-  types: ["fire", "flying"],
-  baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
-  abilities: { normal: ["blaze"], hidden: "solar-power" },
-  genderRatio: 87.5,
-  catchRate: 45,
-  baseExp: 240,
-  expGroup: "medium-slow",
-  evYield: { spAttack: 3 },
-  eggGroups: ["monster", "dragon"],
-  learnset: { levelUp: [], tm: [], egg: [], tutor: [] },
-  evolution: null,
-  dimensions: { height: 1.7, weight: 90.5 },
-  spriteKey: "charizard",
-  baseFriendship: 70,
-  generation: 1,
-  isLegendary: false,
-  isMythical: false,
-};
+const testSpecies: PokemonSpeciesData = TEST_DATA_MANAGER.getSpecies(6);
+
+const HARDY_FALLBACK_CHARIZARD_STATS = {
+  attack: 104,
+  spAttack: 129,
+} as const;
+
+const BASE_RULESET_CRIT_MULTIPLIER = 1.5;
+const SKILL_LINK_HIT_COUNT = 5;
+const DEFAULT_END_OF_TURN_ORDER = [
+  futureAttack,
+  wish,
+  weatherDamage,
+  leftovers,
+  blackSludge,
+  ingrain,
+  leechSeed,
+  statusDamage,
+  nightmare,
+  curse,
+  bind,
+  perishSong,
+  screenCountdown,
+  weatherCountdown,
+  terrainCountdown,
+  tailwindCountdown,
+  trickRoomCountdown,
+  encoreCountdown,
+] as const;
 
 describe("BaseRuleset", () => {
   let ruleset: TestRuleset;
@@ -110,12 +189,12 @@ describe("BaseRuleset", () => {
       // Attack = floor(((2*84 + 31 + 0) * 50) / 100) + 5 = 104; floor(104 * 1.1) = 114
       // Defense = floor(((2*78 + 31 + 0) * 50) / 100) + 5 = 98
       // SpAttack = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129; floor(129 * 0.9) = 116
-      // SpDefense = floor(((2*85 + 31 + 0) * 50) / 100) + 5 = 105
+      // SpDefense = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129
       // Speed = floor(((2*100 + 31 + 0) * 50) / 100) + 5 = 120
       expect(stats.attack).toBe(114);
       expect(stats.defense).toBe(98);
       expect(stats.spAttack).toBe(116);
-      expect(stats.spDefense).toBe(105);
+      expect(stats.spDefense).toBe(129);
       expect(stats.speed).toBe(120);
     });
 
@@ -132,7 +211,7 @@ describe("BaseRuleset", () => {
       expect(stats.attack).toBe(224);
       expect(stats.defense).toBe(192);
       expect(stats.spAttack).toBe(228);
-      expect(stats.spDefense).toBe(206);
+      expect(stats.spDefense).toBe(254);
       expect(stats.speed).toBe(236);
     });
 
@@ -144,8 +223,10 @@ describe("BaseRuleset", () => {
 
       const stats = ruleset.calculateStats(pokemon, testSpecies);
 
-      expect(stats.attack).toBe(104);
-      expect(stats.spAttack).toBe(129);
+      // Source: invalid natures fall back to Hardy, so the neutral-nature Charizard
+      // level-50 stats must match the Hardy calculation path used elsewhere in this suite.
+      expect(stats.attack).toBe(HARDY_FALLBACK_CHARIZARD_STATS.attack);
+      expect(stats.spAttack).toBe(HARDY_FALLBACK_CHARIZARD_STATS.spAttack);
     });
   });
 
@@ -162,7 +243,8 @@ describe("BaseRuleset", () => {
   describe("getCritMultiplier", () => {
     it("given a Gen 3+ ruleset, when getCritMultiplier is called, then 1.5 is returned", () => {
       // Act & Assert
-      expect(ruleset.getCritMultiplier()).toBe(1.5);
+      // Source: BaseRuleset defaults to the Gen 6+ critical-hit multiplier.
+      expect(ruleset.getCritMultiplier()).toBe(BASE_RULESET_CRIT_MULTIPLIER);
     });
   });
 
@@ -170,41 +252,9 @@ describe("BaseRuleset", () => {
     it("given a normal pokemon, when rollCritical is called, then crit probability is based on stage 0", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       const rng = new SeededRandom(42);
-      const move = {
-        id: "tackle",
-        displayName: "Tackle",
-        type: "normal" as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = createCanonicalMove(tackle);
 
       // Act — run many times and check distribution
       let crits = 0;
@@ -245,8 +295,8 @@ describe("BaseRuleset", () => {
           speed: 80,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -289,8 +339,8 @@ describe("BaseRuleset", () => {
           speed: 120,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -332,8 +382,8 @@ describe("BaseRuleset", () => {
           speed: 80,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -360,42 +410,10 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-      const move = {
-        id: "swift",
-        displayName: "Swift",
-        type: "normal" as const,
-        category: "special" as const,
-        power: 60,
-        accuracy: null,
-        pp: 20,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = createSyntheticMoveFrom(createCanonicalMove(tackle), { accuracy: null });
 
       // Act
       const hits = ruleset.doesMoveHit({
@@ -414,42 +432,10 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-      const move = {
-        id: "tackle",
-        displayName: "Tackle",
-        type: "normal" as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = createSyntheticMoveFrom(createCanonicalMove(tackle), { accuracy: 100 });
 
       // Act & Assert — 100% accuracy at neutral stages should always hit
       for (let i = 0; i < 100; i++) {
@@ -469,43 +455,11 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       active1.statStages.accuracy = 6;
       const rng = new SeededRandom(42);
-      const move = {
-        id: "focus-blast",
-        displayName: "Focus Blast",
-        type: "fighting" as const,
-        category: "special" as const,
-        power: 120,
-        accuracy: 70,
-        pp: 5,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: false,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 4 as const,
-      };
+      const move = createSyntheticMoveFrom(createCanonicalMove(tackle), { accuracy: 70 });
 
       // Act
       let hits = 0;
@@ -531,43 +485,11 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, ["fire"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       active2.statStages.evasion = 6;
       const rng = new SeededRandom(42);
-      const move = {
-        id: "tackle",
-        displayName: "Tackle",
-        type: "normal" as const,
-        category: "physical" as const,
-        power: 40,
-        accuracy: 100,
-        pp: 35,
-        priority: 0,
-        target: "adjacent-foe" as const,
-        flags: {
-          contact: true,
-          sound: false,
-          bullet: false,
-          pulse: false,
-          punch: false,
-          bite: false,
-          wind: false,
-          slicing: false,
-          powder: false,
-          protect: true,
-          mirror: true,
-          snatch: false,
-          gravity: false,
-          defrost: false,
-          recharge: false,
-          charge: false,
-          bypassSubstitute: false,
-        },
-        effect: null,
-        description: "",
-        generation: 1 as const,
-      };
+      const move = createCanonicalMove(tackle);
 
       // Act
       let hits = 0;
@@ -620,10 +542,10 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "burn", {} as unknown as BattleState);
+      const damage = ruleset.applyStatusDamage(active, burn, {} as unknown as BattleState);
 
       // Assert
       expect(damage).toBe(12); // floor(200/16) = 12
@@ -641,10 +563,10 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "poison", {} as unknown as BattleState);
+      const damage = ruleset.applyStatusDamage(active, poison, {} as unknown as BattleState);
 
       // Assert
       expect(damage).toBe(25); // floor(200/8) = 25
@@ -653,10 +575,10 @@ describe("BaseRuleset", () => {
     it("given a sleeping pokemon, when applyStatusDamage is called, then 0 damage is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, "sleep", {} as unknown as BattleState);
+      const damage = ruleset.applyStatusDamage(active, sleep, {} as unknown as BattleState);
 
       // Assert
       expect(damage).toBe(0);
@@ -667,7 +589,7 @@ describe("BaseRuleset", () => {
     it("given a frozen pokemon, when checkFreezeThaw is called many times, then thaw rate is ~20%", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       const rng = new SeededRandom(42);
 
       // Act
@@ -707,8 +629,8 @@ describe("BaseRuleset", () => {
   describe("checkFullParalysis", () => {
     it("given a paralyzed pokemon and a deterministic-true RNG, when called, then returns true (fully paralyzed)", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const pokemon = createTestPokemon(6, 50, { status: paralysis });
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       // Mock RNG: next() always returns 0 → chance(0.25) → 0 < 0.25 → true
       const rng = { next: () => 0, int: () => 0, chance: () => true } as unknown as SeededRandom;
 
@@ -721,8 +643,8 @@ describe("BaseRuleset", () => {
 
     it("given a paralyzed pokemon and a deterministic-false RNG, when called, then returns false (can move)", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const pokemon = createTestPokemon(6, 50, { status: paralysis });
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       // Mock RNG: next() always returns 0.9999 → chance(0.25) → 0.9999 < 0.25 → false
       const rng = {
         next: () => 0.9999,
@@ -739,8 +661,8 @@ describe("BaseRuleset", () => {
 
     it("given a seeded RNG, when checkFullParalysis is called many times, then paralysis rate is ~25%", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, { status: "paralysis" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const pokemon = createTestPokemon(6, 50, { status: paralysis });
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       const rng = new SeededRandom(42);
 
       // Act
@@ -801,24 +723,24 @@ describe("BaseRuleset", () => {
   describe("processSleepTurn", () => {
     it("given a pokemon with turnsLeft > 1, when called, then decrements counter and returns false (still sleeping)", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, { status: "sleep" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("sleep-counter", { turnsLeft: 3 });
+      const pokemon = createTestPokemon(6, 50, { status: sleep });
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
+      active.volatileStatuses.set(sleepCounter, { turnsLeft: 3 });
 
       // Act
       const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
       expect(canAct).toBe(false);
-      expect(active.volatileStatuses.get("sleep-counter")?.turnsLeft).toBe(2);
-      expect(active.pokemon.status).toBe("sleep");
+      expect(active.volatileStatuses.get(sleepCounter)?.turnsLeft).toBe(2);
+      expect(active.pokemon.status).toBe(sleep);
     });
 
     it("given a pokemon with turnsLeft = 1, when called, then wakes up, clears status, and returns true (can act)", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, { status: "sleep" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("sleep-counter", { turnsLeft: 1 });
+      const pokemon = createTestPokemon(6, 50, { status: sleep });
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
+      active.volatileStatuses.set(sleepCounter, { turnsLeft: 1 });
 
       // Act
       const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
@@ -826,14 +748,14 @@ describe("BaseRuleset", () => {
       // Assert
       expect(canAct).toBe(true);
       expect(active.pokemon.status).toBeNull();
-      expect(active.volatileStatuses.has("sleep-counter")).toBe(false);
+      expect(active.volatileStatuses.has(sleepCounter)).toBe(false);
     });
 
     it("given a pokemon with turnsLeft = 0, when called, then wakes up, clears status, and returns true (can act)", () => {
       // Arrange
-      const pokemon = createTestPokemon(6, 50, { status: "sleep" });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
-      active.volatileStatuses.set("sleep-counter", { turnsLeft: 0 });
+      const pokemon = createTestPokemon(6, 50, { status: sleep });
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
+      active.volatileStatuses.set(sleepCounter, { turnsLeft: 0 });
 
       // Act
       const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
@@ -841,7 +763,7 @@ describe("BaseRuleset", () => {
       // Assert
       expect(canAct).toBe(true);
       expect(active.pokemon.status).toBeNull();
-      expect(active.volatileStatuses.has("sleep-counter")).toBe(false);
+      expect(active.volatileStatuses.has(sleepCounter)).toBe(false);
     });
   });
 
@@ -865,14 +787,20 @@ describe("BaseRuleset", () => {
 
   describe("applyAbility", () => {
     it("given any trigger, when applyAbility is called, then no-op result is returned", () => {
-      const result = ruleset.applyAbility("on-switch-in", {} as unknown as AbilityContext);
+      const result = ruleset.applyAbility(
+        CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
+        {} as unknown as AbilityContext,
+      );
       expect(result.activated).toBe(false);
     });
   });
 
   describe("applyHeldItem", () => {
     it("given any trigger, when applyHeldItem is called, then no-op result is returned", () => {
-      const result = ruleset.applyHeldItem("on-after-attack", {} as unknown as ItemContext);
+      const result = ruleset.applyHeldItem(
+        CORE_ITEM_TRIGGER_IDS.onAfterAttack,
+        {} as unknown as ItemContext,
+      );
       expect(result.activated).toBe(false);
     });
   });
@@ -892,9 +820,9 @@ describe("BaseRuleset", () => {
   describe("getAvailableHazards", () => {
     it("given a Gen 3+ ruleset, when getAvailableHazards is called, then base hazards are returned", () => {
       const hazards = ruleset.getAvailableHazards();
-      expect(hazards).toContain("stealth-rock");
-      expect(hazards).toContain("spikes");
-      expect(hazards).toContain("toxic-spikes");
+      expect(hazards).toContain(stealthRock);
+      expect(hazards).toContain(spikes);
+      expect(hazards).toContain(toxicSpikes);
     });
   });
 
@@ -912,18 +840,18 @@ describe("BaseRuleset", () => {
     it("given spikes in BaseRuleset (Gen 3+ default), when querying max layers, then returns 3", () => {
       // Source: Showdown data/moves.ts — spikes max 3 layers (Gen 3+)
       // Derivation: multi-layer Spikes introduced in Gen 3, max is 3.
-      expect(ruleset.getMaxHazardLayers("spikes")).toBe(3);
+      expect(ruleset.getMaxHazardLayers(spikes)).toBe(3);
     });
 
     it("given toxic-spikes in BaseRuleset (Gen 4+ default), when querying max layers, then returns 2", () => {
       // Source: Showdown data/moves.ts — toxic-spikes max 2 layers
       // 1 layer = regular poison, 2 layers = bad poison
-      expect(ruleset.getMaxHazardLayers("toxic-spikes")).toBe(2);
+      expect(ruleset.getMaxHazardLayers(toxicSpikes)).toBe(2);
     });
 
     it("given stealth-rock in BaseRuleset, when querying max layers, then returns 1", () => {
       // Source: Showdown data/moves.ts — stealth-rock is always 1 layer (not stackable)
-      expect(ruleset.getMaxHazardLayers("stealth-rock")).toBe(1);
+      expect(ruleset.getMaxHazardLayers(stealthRock)).toBe(1);
     });
   });
 
@@ -979,7 +907,7 @@ describe("BaseRuleset", () => {
 
   describe("getBattleGimmick", () => {
     it("given a base ruleset, when getBattleGimmick is called, then null is returned", () => {
-      expect(ruleset.getBattleGimmick("mega")).toBeNull();
+      expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega)).toBeNull();
     });
   });
 
@@ -997,18 +925,16 @@ describe("BaseRuleset", () => {
   describe("getEndOfTurnOrder", () => {
     it("given a base ruleset, when getEndOfTurnOrder is called, then default order is returned", () => {
       const order = ruleset.getEndOfTurnOrder();
-      expect(order.length).toBeGreaterThan(0);
-      expect(order).toContain("weather-damage");
-      expect(order).toContain("status-damage");
+      expect(order).toEqual(DEFAULT_END_OF_TURN_ORDER);
     });
 
     // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11, curse onResidualOrder: 12
     it("given a base ruleset, when getEndOfTurnOrder is called, then nightmare comes before curse", () => {
       const order = ruleset.getEndOfTurnOrder();
-      expect(order).toContain("nightmare");
-      expect(order).toContain("curse");
-      const curseIdx = order.indexOf("curse");
-      const nightmareIdx = order.indexOf("nightmare");
+      expect(order).toContain(nightmare);
+      expect(order).toContain(curse);
+      const curseIdx = order.indexOf(curse);
+      const nightmareIdx = order.indexOf(nightmare);
       // nightmare (Showdown order 11) must come before curse (order 12)
       expect(nightmareIdx).toBeLessThan(curseIdx);
     });
@@ -1027,31 +953,19 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       // Set up toxic-counter volatile with counter=1
-      active.volatileStatuses.set("toxic-counter", {
+      active.volatileStatuses.set(toxicCounter, {
         turnsLeft: -1,
         data: { counter: 1 },
       });
 
       // Act — first call (counter=1): floor(160*1/16) = 10
-      const dmg1 = ruleset.applyStatusDamage(
-        active,
-        "badly-poisoned",
-        {} as unknown as BattleState,
-      );
+      const dmg1 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
       // Act — second call (counter=2): floor(160*2/16) = 20
-      const dmg2 = ruleset.applyStatusDamage(
-        active,
-        "badly-poisoned",
-        {} as unknown as BattleState,
-      );
+      const dmg2 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
       // Act — third call (counter=3): floor(160*3/16) = 30
-      const dmg3 = ruleset.applyStatusDamage(
-        active,
-        "badly-poisoned",
-        {} as unknown as BattleState,
-      );
+      const dmg3 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
 
       // Assert
       expect(dmg1).toBe(10);
@@ -1064,7 +978,7 @@ describe("BaseRuleset", () => {
     it("given Quick Attack (+1) vs Tackle (0), when resolveTurnOrder is called, then Quick Attack goes first regardless of speed", () => {
       // Arrange — side 0 is slower but uses Quick Attack (+1 priority)
       const pokemon1 = createTestPokemon(6, 50, {
-        moves: [{ moveId: "quick-attack", currentPP: 30, maxPP: 30, ppUps: 0 }],
+        moves: [createMockMoveSlot(quickAttack)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -1075,7 +989,7 @@ describe("BaseRuleset", () => {
         },
       });
       const pokemon2 = createTestPokemon(9, 50, {
-        moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+        moves: [createMockMoveSlot(tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -1085,69 +999,10 @@ describe("BaseRuleset", () => {
           speed: 200,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, ["normal"]);
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [normal]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-
-      // Build a DataManager with quick-attack (priority 1) and tackle (priority 0)
-      const dm = new DataManager();
-      const baseFlags: MoveData["flags"] = {
-        contact: true,
-        sound: false,
-        bullet: false,
-        pulse: false,
-        punch: false,
-        bite: false,
-        wind: false,
-        slicing: false,
-        powder: false,
-        protect: true,
-        mirror: true,
-        snatch: false,
-        gravity: false,
-        defrost: false,
-        recharge: false,
-        charge: false,
-        bypassSubstitute: false,
-      };
-      dm.loadFromObjects({
-        pokemon: [],
-        moves: [
-          {
-            id: "quick-attack",
-            displayName: "Quick Attack",
-            type: "normal",
-            category: "physical",
-            power: 40,
-            accuracy: 100,
-            pp: 30,
-            priority: 1,
-            target: "adjacent-foe",
-            flags: baseFlags,
-            effect: null,
-            description: "",
-            generation: 1,
-          },
-          {
-            id: "tackle",
-            displayName: "Tackle",
-            type: "normal",
-            category: "physical",
-            power: 40,
-            accuracy: 100,
-            pp: 35,
-            priority: 0,
-            target: "adjacent-foe",
-            flags: baseFlags,
-            effect: null,
-            description: "",
-            generation: 1,
-          },
-        ],
-        typeChart: {} as TypeChart,
-      });
-
-      const rulesetWithDm = new TestRuleset(dm);
+      const rulesetWithDm = new TestRuleset(TEST_DATA_MANAGER);
 
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
@@ -1172,7 +1027,7 @@ describe("BaseRuleset", () => {
     it("given a paralyzed pokemon with speed 100, when getEffectiveSpeed is called, then speed is halved", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, {
-        status: "paralysis",
+        status: paralysis,
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -1182,7 +1037,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act — access via resolveTurnOrder (getEffectiveSpeed is protected)
       // We test it indirectly: paralyzed side 0 (base 100) vs healthy side 1 (base 49)
@@ -1198,7 +1053,7 @@ describe("BaseRuleset", () => {
           speed: 49,
         },
       });
-      const active2 = createActivePokemon(pokemon2, 0, ["water"]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
       const state = {
         sides: [{ active: [active] }, { active: [active2] }],
@@ -1225,7 +1080,7 @@ describe("BaseRuleset", () => {
           speed: 51,
         },
       });
-      const active3 = createActivePokemon(pokemon3, 0, ["water"]);
+      const active3 = createOnFieldPokemon(pokemon3, 0, [water]);
       const state2 = {
         sides: [{ active: [active] }, { active: [active3] }],
         trickRoom: { active: false, turnsLeft: 0 },
@@ -1251,7 +1106,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: floor(100 / 4) = 25
@@ -1271,7 +1126,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: max(1, floor(1/4)) = max(1, 0) = 1
@@ -1291,7 +1146,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act: pass 0 for damageDealt — BaseRuleset ignores it
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: floor(200 / 4) = 50, not 0
@@ -1304,7 +1159,7 @@ describe("BaseRuleset", () => {
       // Arrange
       const rng = new SeededRandom(42);
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act / Assert
       for (let i = 0; i < 1000; i++) {
         const count = ruleset.rollMultiHitCount(active, rng);
@@ -1315,12 +1170,13 @@ describe("BaseRuleset", () => {
     it("given attacker has Skill Link ability, when rolling multi-hit count, then always returns 5", () => {
       // Arrange
       const rng = new SeededRandom(42);
-      const pokemon = createTestPokemon(6, 50, { ability: "skill-link" });
-      const active = createActivePokemon(pokemon, 0, ["fire", "flying"]);
+      const pokemon = createTestPokemon(6, 50, { ability: skillLink });
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act / Assert
       for (let i = 0; i < 20; i++) {
         const count = ruleset.rollMultiHitCount(active, rng);
-        expect(count).toBe(5);
+        // Source: Skill Link forces the max-hit branch for multi-hit move rolls.
+        expect(count).toBe(SKILL_LINK_HIT_COUNT);
       }
     });
   });

@@ -1,12 +1,23 @@
-import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
+import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  type DataManager,
+} from "@pokemon-lib-ts/core";
+import { GEN1_MOVE_IDS } from "@pokemon-lib-ts/gen1";
+import { GEN3_MOVE_IDS } from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import type { VolatileStatusState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createEngine(overrides?: {
   seed?: number;
@@ -24,10 +35,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -41,10 +52,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -69,6 +80,19 @@ function createEngine(overrides?: {
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events, dataManager };
+}
+
+const SYNTHETIC_MISSING_MOVE_ID = "nonexistent-move";
+
+function createSyntheticMissingMoveSlot(
+  overrides: Partial<{ currentPP: number; maxPP: number; ppUps: number }> = {},
+) {
+  return {
+    moveId: SYNTHETIC_MISSING_MOVE_ID,
+    currentPP: overrides.currentPP ?? 10,
+    maxPP: overrides.maxPP ?? 15,
+    ppUps: overrides.ppUps ?? 0,
+  };
 }
 
 describe("BattleEngine — branch coverage", () => {
@@ -103,7 +127,11 @@ describe("BattleEngine — branch coverage", () => {
       });
 
       // Assert
-      expect(engine.getState().sides[0].trainer).not.toBeNull();
+      expect(engine.getState().sides[0].trainer).toEqual({
+        id: "trainer-1",
+        displayName: "Red",
+        trainerClass: "Champion",
+      });
       expect(engine.getState().sides[1].trainer).toBeNull();
     });
   });
@@ -124,44 +152,47 @@ describe("BattleEngine — branch coverage", () => {
     });
 
     it("given all team members have valid species, when engine is created, then stats are calculated", () => {
-      // Arrange — use real species IDs from mock data manager (6 = Charizard)
+      // Arrange — use the canonical mock Charizard species id from the mock data manager.
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
 
       // Act
-      const { engine } = createEngine({ team1 });
+      const { engine, ruleset, dataManager } = createEngine({ team1 });
 
-      // Assert — stats are populated from species data
+      // Assert — stats are populated from the owning species data via the ruleset.
       const pokemon = engine.state.sides[0].team[0] as PokemonInstance;
-      expect(pokemon.calculatedStats).toBeDefined();
-      expect(pokemon.calculatedStats?.hp).toBeGreaterThan(0);
+      const expectedStats = ruleset.calculateStats(
+        pokemon,
+        dataManager.getSpecies(MOCK_SPECIES_IDS.charizard),
+      );
+      expect(pokemon.calculatedStats).toEqual(expectedStats);
     });
   });
 
   describe("start with abilities", () => {
     it("given a ruleset with abilities and slower lead, when battle starts, then abilities trigger in speed order", () => {
       // Arrange — side 1 (FastMon, speed 120) should trigger first
-      // Use real species IDs (6=Charizard, 9=Blastoise) and override calculateStats
+      // Use canonical mock species ids and override calculateStats
       // to return the desired speeds without recalculating from base stats.
       const team1 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "slow-mon",
           nickname: "SlowMon",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
       const team2 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "fast-mon",
           nickname: "FastMon",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
@@ -209,17 +240,20 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Set protect on Blastoise
-      engine.state.sides[1].active[0]?.volatileStatuses.set("protect", { turnsLeft: 1 });
+      const blastoise = engine.state.sides[1].active[0];
+      const startingHp = blastoise?.pokemon.currentHp;
+      blastoise?.volatileStatuses.set(CORE_VOLATILE_IDS.protect, { turnsLeft: 1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const protectMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("protected itself"),
-      );
-      expect(protectMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Blastoise protected itself!",
+      });
+      expect(blastoise?.pokemon.currentHp).toBe(startingHp);
     });
   });
 
@@ -232,18 +266,24 @@ describe("BattleEngine — branch coverage", () => {
       // Give Blastoise a substitute
       const blastoise1 = engine.state.sides[1].active[0];
       if (!blastoise1) throw new Error("Expected active pokemon on side 1");
-      blastoise1.substituteHp = 50;
-      blastoise1.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      const startingSubstituteHp = 50;
+      // MockRuleset deals a fixed 10 damage, so the substitute should end at 40 HP.
+      const expectedSubstituteHp = startingSubstituteHp - 10;
+      const startingHp = blastoise1.pokemon.currentHp;
+      blastoise1.substituteHp = startingSubstituteHp;
+      blastoise1.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const subMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("substitute took damage"),
-      );
-      expect(subMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "The substitute took damage!",
+      });
+      expect(engine.state.sides[1].active[0]?.substituteHp).toBe(expectedSubstituteHp);
+      expect(engine.state.sides[1].active[0]?.pokemon.currentHp).toBe(startingHp);
     });
 
     it("given a substitute that breaks, when damage exceeds sub HP, then substitute is removed", () => {
@@ -254,7 +294,7 @@ describe("BattleEngine — branch coverage", () => {
       const blastoise2 = engine.state.sides[1].active[0];
       if (!blastoise2) throw new Error("Expected active pokemon on side 1");
       blastoise2.substituteHp = 5;
-      blastoise2.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      blastoise2.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -262,7 +302,10 @@ describe("BattleEngine — branch coverage", () => {
 
       // Assert
       const subEnd = events.find(
-        (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "substitute",
+        (e) =>
+          e.type === "volatile-end" &&
+          "volatile" in e &&
+          e.volatile === CORE_VOLATILE_IDS.substitute,
       );
       expect(subEnd).toBeDefined();
       expect(engine.state.sides[1].active[0]?.substituteHp).toBe(0);
@@ -288,10 +331,10 @@ describe("BattleEngine — branch coverage", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const effEvent = events.find(
-        (e) => e.type === "effectiveness" && "multiplier" in e && e.multiplier === 2,
-      );
-      expect(effEvent).toBeDefined();
+      expect(events).toContainEqual({
+        type: "effectiveness",
+        multiplier: 2,
+      });
     });
   });
 
@@ -299,11 +342,11 @@ describe("BattleEngine — branch coverage", () => {
     it("given a held item activates without being consumed, when the engine processes the item result, then item-activate is emitted", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          heldItem: "choice-band",
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+          heldItem: CORE_ITEM_IDS.choiceBand,
           currentHp: 200,
         }),
       ];
@@ -330,12 +373,12 @@ describe("BattleEngine — branch coverage", () => {
           type: "item-activate",
           side: 0,
           pokemon: "Charizard",
-          item: "choice-band",
+          item: CORE_ITEM_IDS.choiceBand,
         }),
       );
       const consumedEvent = events.find((e) => e.type === "item-consumed");
       expect(consumedEvent).toBeUndefined();
-      expect(engine.getActive(0)?.pokemon.heldItem).toBe("choice-band");
+      expect(engine.getActive(0)?.pokemon.heldItem).toBe(CORE_ITEM_IDS.choiceBand);
     });
   });
 
@@ -343,12 +386,12 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon with a disabled move, when getAvailableMoves is called, then move is marked disabled", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
-            { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-            { moveId: "scratch", currentPP: 35, maxPP: 35, ppUps: 0 },
+            createMockMoveSlot(CORE_MOVE_IDS.tackle),
+            createMockMoveSlot(GEN1_MOVE_IDS.scratch),
           ],
           calculatedStats: {
             hp: 200,
@@ -366,17 +409,17 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Disable tackle
-      engine.state.sides[0].active[0]?.volatileStatuses.set("disable", {
+      engine.state.sides[0].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.disable, {
         turnsLeft: 3,
-        data: { moveId: "tackle" },
+        data: { moveId: CORE_MOVE_IDS.tackle },
       });
 
       // Act
       const moves = engine.getAvailableMoves(0);
 
       // Assert
-      const tackle = moves.find((m) => m.moveId === "tackle");
-      const scratch = moves.find((m) => m.moveId === "scratch");
+      const tackle = moves.find((m) => m.moveId === CORE_MOVE_IDS.tackle);
+      const scratch = moves.find((m) => m.moveId === GEN1_MOVE_IDS.scratch);
       expect(tackle?.disabled).toBe(true);
       expect(tackle?.disabledReason).toBe("Move is disabled");
       expect(scratch?.disabled).toBe(false);
@@ -387,10 +430,10 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon with a move not in the data manager, when getAvailableMoves is called, then the move is skipped and a warning is emitted", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "nonexistent-move", currentPP: 10, maxPP: 15, ppUps: 0 }],
+          moves: [createSyntheticMissingMoveSlot()],
           currentHp: 200,
         }),
       ];
@@ -403,19 +446,21 @@ describe("BattleEngine — branch coverage", () => {
 
       // Assert — unknown move is excluded; engine emits a warning
       expect(moves).toHaveLength(0);
-      const warning = events.find((e) => e.type === "engine-warning");
-      expect(warning).toBeDefined();
+      expect(events).toContainEqual({
+        type: "engine-warning",
+        message: `Move "${SYNTHETIC_MISSING_MOVE_ID}" not found in data for Pokémon "6". Slot skipped.`,
+      });
     });
 
     it("given a pokemon locked into a missing forced move, when getAvailableMoves is called, then the move is skipped and a warning is emitted", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
-            { moveId: "nonexistent-move", currentPP: 10, maxPP: 15, ppUps: 0 },
-            { moveId: "scratch", currentPP: 20, maxPP: 20, ppUps: 0 },
+            createSyntheticMissingMoveSlot(),
+            createMockMoveSlot(GEN1_MOVE_IDS.scratch, { currentPP: 20, maxPP: 20 }),
           ],
           currentHp: 200,
         }),
@@ -426,7 +471,7 @@ describe("BattleEngine — branch coverage", () => {
 
       const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
-      active!.forcedMove = { moveIndex: 0, moveId: "nonexistent-move" };
+      active!.forcedMove = { moveIndex: 0, moveId: SYNTHETIC_MISSING_MOVE_ID };
 
       // Act
       const moves = engine.getAvailableMoves(0);
@@ -436,13 +481,15 @@ describe("BattleEngine — branch coverage", () => {
       expect(moves[0]).toEqual(
         expect.objectContaining({
           index: 1,
-          moveId: "scratch",
+          moveId: GEN1_MOVE_IDS.scratch,
           disabled: true,
           disabledReason: "Locked into move",
         }),
       );
-      const warning = events.find((e) => e.type === "engine-warning");
-      expect(warning).toBeDefined();
+      expect(events).toContainEqual({
+        type: "engine-warning",
+        message: `Move "${SYNTHETIC_MISSING_MOVE_ID}" not found in data for Pokémon "6". Slot skipped.`,
+      });
     });
   });
 
@@ -451,10 +498,10 @@ describe("BattleEngine — branch coverage", () => {
       // Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch depends on the target's selected move.
       // Issue #843: missing move data must be surfaced distinctly from the normal null sentinel used for switching.
       const team2 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "nonexistent-move", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createSyntheticMissingMoveSlot({ currentPP: 35, maxPP: 35 })],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -496,10 +543,10 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Put Blastoise to sleep with turns remaining
-      engine.state.sides[1].active[0]!.pokemon.status = "sleep";
+      engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.sleep;
       // Use a volatile to track sleep turns (the engine checks for this)
       (engine.state.sides[1].active[0]!.volatileStatuses as Map<string, VolatileStatusState>).set(
-        "sleep-counter",
+        CORE_VOLATILE_IDS.sleepCounter,
         {
           turnsLeft: 3,
         },
@@ -510,10 +557,14 @@ describe("BattleEngine — branch coverage", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const sleepMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("fast asleep"),
-      );
-      expect(sleepMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Blastoise is fast asleep!",
+      });
+      expect(
+        events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Blastoise"),
+      ).toBeUndefined();
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
     });
 
     it("given a sleeping pokemon with 0 turns left, when it tries to move, then it wakes up", () => {
@@ -521,9 +572,9 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.state.sides[1].active[0]!.pokemon.status = "sleep";
+      engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.sleep;
       (engine.state.sides[1].active[0]!.volatileStatuses as Map<string, VolatileStatusState>).set(
-        "sleep-counter",
+        CORE_VOLATILE_IDS.sleepCounter,
         {
           turnsLeft: 0,
         },
@@ -534,10 +585,22 @@ describe("BattleEngine — branch coverage", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const cureEvent = events.find(
-        (e) => e.type === "status-cure" && "status" in e && e.status === "sleep",
+      expect(events).toContainEqual({
+        type: "status-cure",
+        side: 1,
+        pokemon: "Blastoise",
+        status: CORE_STATUS_IDS.sleep,
+      });
+      expect(
+        events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Blastoise"),
+      ).toEqual(
+        expect.objectContaining({
+          type: "move-start",
+          side: 1,
+          pokemon: "Blastoise",
+          move: CORE_MOVE_IDS.tackle,
+        }),
       );
-      expect(cureEvent).toBeDefined();
       expect(engine.state.sides[1].active[0]?.pokemon.status).toBeNull();
     });
   });
@@ -556,7 +619,7 @@ describe("BattleEngine — branch coverage", () => {
         healAmount: 0,
         switchOut: false,
         messages: [],
-        selfStatusInflicted: "sleep" as const,
+        selfStatusInflicted: CORE_STATUS_IDS.sleep as const,
         selfVolatileData: { turnsLeft: 2 },
       });
 
@@ -569,8 +632,8 @@ describe("BattleEngine — branch coverage", () => {
 
       // Assert — attacker (Charizard, side 0) self-inflicted sleep with turnsLeft=2
       const attacker = engine.state.sides[0].active[0];
-      expect(attacker?.pokemon.status).toBe("sleep");
-      const sleepCounter = attacker?.volatileStatuses.get("sleep-counter");
+      expect(attacker?.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
+      const sleepCounter = attacker?.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
       expect(sleepCounter).toBeDefined();
       expect(sleepCounter!.turnsLeft).toBe(2);
       // The key assertion: startTime must equal the turnsLeft value at infliction time
@@ -589,17 +652,21 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      engine.state.sides[1].active[0]!.pokemon.status = "freeze";
+      engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.freeze;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const freezeMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("frozen solid"),
-      );
-      expect(freezeMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Blastoise is frozen solid!",
+      });
+      expect(
+        events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Blastoise"),
+      ).toBeUndefined();
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBe(CORE_STATUS_IDS.freeze);
     });
 
     it("given a frozen pokemon, when freeze thaw succeeds, then it can act", () => {
@@ -610,17 +677,30 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ ruleset });
       engine.start();
 
-      engine.state.sides[1].active[0]!.pokemon.status = "freeze";
+      engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.freeze;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const cureEvent = events.find(
-        (e) => e.type === "status-cure" && "status" in e && e.status === "freeze",
+      expect(events).toContainEqual({
+        type: "status-cure",
+        side: 1,
+        pokemon: "Blastoise",
+        status: CORE_STATUS_IDS.freeze,
+      });
+      expect(
+        events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Blastoise"),
+      ).toEqual(
+        expect.objectContaining({
+          type: "move-start",
+          side: 1,
+          pokemon: "Blastoise",
+          move: CORE_MOVE_IDS.tackle,
+        }),
       );
-      expect(cureEvent).toBeDefined();
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBeNull();
     });
 
     it("given a frozen pokemon using a defrost move, when RNG would never thaw, then the move still thaws the user", () => {
@@ -629,10 +709,10 @@ describe("BattleEngine — branch coverage", () => {
       (ruleset as unknown as Record<string, unknown>).checkFreezeThaw = () => false;
 
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-defrost",
           nickname: "Charizard",
-          moves: [{ moveId: "flame-wheel", currentPP: 25, maxPP: 25, ppUps: 0 }],
+          moves: [createMockMoveSlot(GEN3_MOVE_IDS.flameWheel)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -649,17 +729,29 @@ describe("BattleEngine — branch coverage", () => {
       engine.start();
 
       // Freeze side 0 (Charizard)
-      engine.state.sides[0].active[0]!.pokemon.status = "freeze";
+      engine.state.sides[0].active[0]!.pokemon.status = CORE_STATUS_IDS.freeze;
 
       // Act — Charizard uses flame-wheel (defrost move), opponent uses tackle
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — status-cure for freeze must be emitted despite RNG always failing
-      const cureEvent = events.find(
-        (e) => e.type === "status-cure" && "status" in e && e.status === "freeze",
+      expect(events).toContainEqual({
+        type: "status-cure",
+        side: 0,
+        pokemon: "Charizard",
+        status: CORE_STATUS_IDS.freeze,
+      });
+      expect(
+        events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Charizard"),
+      ).toEqual(
+        expect.objectContaining({
+          type: "move-start",
+          side: 0,
+          pokemon: "Charizard",
+          move: GEN3_MOVE_IDS.flameWheel,
+        }),
       );
-      expect(cureEvent).toBeDefined();
 
       // Charizard must no longer be frozen
       expect(engine.state.sides[0].active[0]?.pokemon.status).toBeNull();
@@ -667,35 +759,60 @@ describe("BattleEngine — branch coverage", () => {
   });
 
   describe("confusion self-hit", () => {
-    it("given a confused pokemon, when self-hit triggers, then self-damage is dealt", () => {
-      // Arrange — find a seed where confusion self-hit triggers
-      let foundSelfHit = false;
+    it("given seed 0 and a confused pokemon, when the self-hit branch resolves, then confusion damage is applied instead of the selected move", () => {
+      // Seed 0 deterministically reaches the self-hit branch in the current PRNG flow.
+      const { engine, events } = createEngine({ seed: 0 });
+      engine.start();
 
-      for (let seed = 0; seed < 200; seed++) {
-        const { engine, events } = createEngine({ seed });
-        engine.start();
+      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, {
+        turnsLeft: 5,
+      });
 
-        // Blastoise is confused with many turns
-        engine.state.sides[1].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 5 });
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-        engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
-
-        const selfHitMsg = events.find(
-          (e) => e.type === "message" && "text" in e && e.text.includes("hurt itself"),
-        );
-        if (selfHitMsg) {
-          // Also verify confusion damage was dealt
-          const confDamage = events.find(
-            (e) => e.type === "damage" && "source" in e && e.source === "confusion",
-          );
-          expect(confDamage).toBeDefined();
-          foundSelfHit = true;
-          break;
-        }
-      }
-
-      expect(foundSelfHit).toBe(true);
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "damage" ||
+            (event.type === "message" &&
+              (event.text === "Blastoise is confused!" ||
+                event.text === "It hurt itself in its confusion!")),
+        ),
+      ).toEqual([
+        {
+          type: "damage",
+          side: 1,
+          pokemon: "Blastoise",
+          amount: 10,
+          currentHp: 144,
+          maxHp: 154,
+          source: CORE_MOVE_IDS.tackle,
+        },
+        {
+          type: "message",
+          text: "Blastoise is confused!",
+        },
+        {
+          type: "message",
+          text: "It hurt itself in its confusion!",
+        },
+        {
+          type: "damage",
+          side: 1,
+          pokemon: "Blastoise",
+          amount: 19,
+          currentHp: 125,
+          maxHp: 154,
+          source: CORE_VOLATILE_IDS.confusion,
+        },
+      ]);
+      expect(
+        events.filter(
+          (event) =>
+            event.type === "move-start" && "pokemon" in event && event.pokemon === "Blastoise",
+        ),
+      ).toEqual([]);
     });
   });
 
@@ -705,17 +822,34 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.state.sides[1].active[0]?.volatileStatuses.set("confusion", { turnsLeft: 0 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, {
+        turnsLeft: 0,
+      });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const confEnd = events.find(
-        (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === "confusion",
+      expect(events).toContainEqual({
+        type: "volatile-end",
+        side: 1,
+        pokemon: "Blastoise",
+        volatile: CORE_VOLATILE_IDS.confusion,
+      });
+      expect(
+        engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.confusion),
+      ).toBe(false);
+      expect(
+        events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Blastoise"),
+      ).toEqual(
+        expect.objectContaining({
+          type: "move-start",
+          side: 1,
+          pokemon: "Blastoise",
+          move: CORE_MOVE_IDS.tackle,
+        }),
       );
-      expect(confEnd).toBeDefined();
     });
   });
 
@@ -723,10 +857,10 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon faints mid-turn to move damage, when the fainted pokemon should act next, then it skips", () => {
       // Arrange — Blastoise at 1 HP, Charizard faster
       const team2 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -775,15 +909,19 @@ describe("BattleEngine — branch coverage", () => {
       const { engine } = createEngine();
 
       // Act
-      const active = engine.getActive(0);
+      const side0Active = engine.getActive(0);
+      const side1Active = engine.getActive(1);
 
       // Assert
-      expect(active).toBeNull();
+      expect(side0Active).toBeNull();
+      expect(side1Active).toBeNull();
+      expect(engine.getState().sides[0].active).toEqual([]);
+      expect(engine.getState().sides[1].active).toEqual([]);
     });
   });
 
   describe("weather damage with weather effects", () => {
-    it("given weather with damage and a ruleset that applies weather effects, when end of turn runs, then weather damage is emitted", () => {
+    it("given weather with damage and a ruleset that applies weather effects, when end of turn runs, then the exact weather-damage event is emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
       (ruleset as unknown as Record<string, unknown>).hasWeather = () => true;
@@ -792,51 +930,61 @@ describe("BattleEngine — branch coverage", () => {
       ];
       const patchedRuleset = Object.create(ruleset) as MockRuleset;
       patchedRuleset.getEndOfTurnOrder = () => [
-        "weather-damage" as const,
-        "status-damage" as const,
+        CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+        CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
       ];
 
       const { engine, events } = createEngine({ ruleset: patchedRuleset });
       engine.start();
 
       engine.state.weather = { type: "sand", turnsLeft: 5, source: "sandstream" };
+      const startingHp = engine.state.sides[0].active[0]?.pokemon.currentHp ?? 0;
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const weatherDamage = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "weather-sand",
-      );
-      expect(weatherDamage.length).toBeGreaterThan(0);
+      expect(
+        events.filter((e) => e.type === "damage" && "source" in e && e.source === "weather-sand"),
+      ).toEqual([
+        {
+          type: "damage",
+          side: 0,
+          pokemon: "Charizard",
+          amount: 12,
+          currentHp: 131,
+          maxHp: 153,
+          source: "weather-sand",
+        },
+      ]);
+      const charizard = engine.state.sides[0].active[0];
+      // Charizard takes 10 from Blastoise's tackle, then 12 from sand at end of turn.
+      expect(charizard?.pokemon.currentHp).toBe(startingHp - 10 - 12);
     });
   });
 
   describe("speed tiebreak in turn order", () => {
-    it("given two pokemon with the same speed, when turn order is resolved, then order is decided by RNG", () => {
-      // Arrange — both at speed 100; override calculateStats to produce identical speeds
-      // Run multiple times with different seeds to get both orderings
-      const firstMovers = new Set<string>();
-      for (let seed = 0; seed < 50; seed++) {
+    it("given two pokemon with the same speed, when turn order is resolved with fixed seeds, then the PRNG decides the first mover deterministically", () => {
+      const getFirstMover = (seed: number) => {
         const t1 = [
-          createTestPokemon(6, 50, {
+          createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
             uid: "mon-a",
             nickname: "MonA",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             currentHp: 200,
           }),
         ];
         const t2 = [
-          createTestPokemon(9, 50, {
+          createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
             uid: "mon-b",
             nickname: "MonB",
-            moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+            moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
             currentHp: 200,
           }),
         ];
 
-        // Use a ruleset that gives both pokemon the same speed (100) to force a tie
+        // Use a ruleset that gives both Pokemon the same speed (100) to force a tie.
         const ruleset = new MockRuleset();
         (ruleset as unknown as Record<string, unknown>).calculateStats = () => ({
           hp: 200,
@@ -854,12 +1002,13 @@ describe("BattleEngine — branch coverage", () => {
 
         const moveStarts = events.filter((e) => e.type === "move-start");
         if (moveStarts.length > 0 && moveStarts[0]?.type === "move-start") {
-          firstMovers.add(moveStarts[0].pokemon);
+          return moveStarts[0].pokemon;
         }
-      }
+        throw new Error("Expected at least one move-start event");
+      };
 
-      // Assert — both pokemon should have gone first at least once
-      expect(firstMovers.size).toBe(2);
+      expect(getFirstMover(0)).toBe("MonB");
+      expect(getFirstMover(1)).toBe("MonA");
     });
   });
 });

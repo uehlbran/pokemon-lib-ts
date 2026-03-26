@@ -1,6 +1,7 @@
 // @pokemon-lib-ts/gen4 -- Gen4Ruleset + complete Gen 4 data
 
 export { createGen4DataManager } from "./data";
+export * from "./data/reference-ids";
 export {
   applyGen4Ability,
   GEN4_WEATHER_SUPPRESSING_ABILITIES,
@@ -32,6 +33,7 @@ export { Gen4Ruleset } from "./Gen4Ruleset";
 export { GEN4_TYPE_CHART, GEN4_TYPES } from "./Gen4TypeChart";
 export {
   applyGen4WeatherEffects,
+  GEN4_WEATHER_DAMAGE_MULTIPLIERS,
   HAIL_IMMUNE_TYPES,
   isGen4WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,

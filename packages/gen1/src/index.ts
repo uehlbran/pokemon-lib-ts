@@ -1,5 +1,6 @@
 // @pokemon-lib-ts/gen1 — Gen1Ruleset + complete Gen 1 data
 export { createGen1DataManager } from "./data";
+export * from "./data/reference-ids";
 export { getGen1CritRate, isGen1HighCritMove, rollGen1Critical } from "./Gen1CritCalc";
 export { calculateGen1Damage, isGen1PhysicalType } from "./Gen1DamageCalc";
 export type { Gen1RulesetOptions } from "./Gen1Ruleset";

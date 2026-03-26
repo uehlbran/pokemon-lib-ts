@@ -1,19 +1,60 @@
 # Testing Examples
 
-Code examples for each test type used in this project. For testing philosophy, coverage thresholds, AAA pattern, naming conventions, and determinism requirements, see root `CLAUDE.md`.
+Code examples for the test types used in this project. For testing philosophy, coverage thresholds, AAA pattern, naming conventions, determinism requirements, and TDD policy, see root `CLAUDE.md`.
+
+## Hard Rules
+
+- Tests are written first. TDD is mandatory for every behavior change.
+- Use Given/When/Then test names.
+- Use exact assertions for formulas and data validation.
+- Do not use weak formula assertions such as `toBeTruthy()`, `toBeDefined()`, or `toBeGreaterThan(0)`.
+- Do not handwrite canonical move, item, ability, species, weather, status, terrain, volatile, or gimmick identifiers in tests when an exported reference surface exists.
+- For core-owned ids, import from `@pokemon-lib-ts/core`.
+- For battle-owned ids, import from `@pokemon-lib-ts/battle`.
+- For generation-specific ids, import from the generation package's exported data-backed `GENN_*_IDS` references derived from `packages/genN/data/*.json`.
+- For shared cross-generation mechanic constants, import the owned core surface instead of duplicating literals in the test.
+- For shared cross-generation domain literals like move categories, import the owned core surface instead of duplicating handwritten strings in the test.
+- For bounded shared domain literals like genders and ability slots, import the owned core surface instead of duplicating handwritten strings in the test.
+- For real lifecycle hook names, import the owned trigger surface instead of hardcoding strings like `on-switch-in`, `on-turn-end`, `on-contact`, or `on-priority-check` in touched tests. Invalid-trigger rejection tests may still use raw non-canonical strings when they are explicitly proving rejection behavior.
+- For generation-specific mechanic constants, import the owning generation package's exported surface instead of inventing file-local literals.
+- For generation-specific entities, also verify they actually exist in the generation under test. Matching strings across generations are not enough; source them from the generation's own exports or data manager instead of reusing another generation's reference surface.
+- Keep generation semantics honest when using shared constants: for Gen 1-3, damaging move category is generation-derived from the type split, not canonical per-move Gen 4+ metadata. Do not backport later-generation category assumptions into early-generation canonical tests.
+- When an expected value can be read from the same canonical owned data source, do that instead of duplicating literals in the test.
+- Apply the same rule to fixture setup values like move slots, PP, max PP, priority, accuracy, species ids, and similar defaults whenever the owned move/species/item data already provides them.
+- Apply the same rule to branch-driving inputs like status chances, thresholds, base power, and similar scenario literals: source them from owned data when possible, and if the test truly needs a synthetic value, give it a named derived constant plus a short justification.
+- Do not stop at swapping literals for imported ids if the surrounding payload is still duplicated. If a species, move, item, weather, hazard, or end-of-turn payload already exists in owned data/constants, import or load that payload instead of rebuilding it test-locally.
+- Apply the same rule to helper and mock surfaces. Canonical records should come directly from the owning `dataManager.get*()` surface by default instead of from wrapper helpers that restate or hide canonical payloads.
+- Prefer direct `dataManager.get*()` lookup for canonical records over adding a second facade layer for the same job. If a helper only forwards to `dataManager.get*()`, remove it and keep the source explicit.
+- If a helper or mock can return either canonical data or a synthetic variant, that distinction must be explicit in the API and the call site. Do not keep ambiguous helper surfaces that silently blur those two jobs.
+- When a test needs a synthetic variant, build it from a canonical base with an explicitly synthetic helper such as `createSyntheticMoveFrom(baseMove, overrides)` rather than a generic `makeMove(...)` helper.
+- Do not introduce vague fixture-builder names like `makeMove`, `makeState`, `makeSide`, `makePokemonInstance`, or `makeActivePokemon` in touched tests. Use explicit names like `getCanonicalMove`, `createBattleState`, `createBattleSide`, `createSyntheticPokemonInstance`, and `createSyntheticOnFieldPokemon`.
+- Never mutate the object returned by `dataManager.get*()` in place. Clone first when a test needs a modified variant.
+- In generation-scoped files, use descriptive local names like `dataManager`, `moveIds`, `speciesIds`, `itemIds`, and `typeIds`. Avoid cryptic aliases like `M`, `A`, `T`, and `dm`, and do not repeat the generation in every local variable when the file already fixes that context.
+- For battle-state fixture helpers, prefer names like `createOnFieldPokemon` over vague names like `makeActive`.
+- For stat inputs, prefer validated helper surfaces such as `createIvs`, `createEvs`, `createDvs`, and `createStatExp` over raw inline object literals when those helpers exist.
+- Stat input validation should use shared generic `ValidationFailure` / `ValidationResult` naming instead of type-prefixed names like `EvValidationIssue`.
+- Validation should be explicit and reusable, but the default creation path must still reject invalid value objects rather than relying on later call sites to notice the bad state.
+- Apply the same validated-input rule to other bounded per-instance values like friendship. If the code is creating a Pokemon instance, negative friendship or values above `255` should be rejected by the normal creation path instead of leaking through as raw numbers.
+- If the code needs min/max/cap values like the IV/EV/DV/Stat Exp limits, import owned constants instead of scattering literals like `31`, `252`, `510`, `15`, or `65535` through tests.
+- If a value object or bounded domain helper exists for IVs, EVs, DVs, or Stat Exp, direct raw object construction is no longer the default path in touched code. Use the validated creator and its owned constants instead.
+- Examples: type effectiveness from the exported type chart, move metadata from the generation data bundle, item metadata from the generated per-gen references, and owned fixed-point constants from core.
+- If the cleanup introduces or changes a public package export that tests rely on, add the required changeset and update the affected package README/spec docs in the same PR.
 
 ## Unit Tests
 
 Test individual functions in isolation. Most of the test suite.
 
 ```typescript
-describe('calculateHP', () => {
-  it('should return 153 given level 50 Charizard with 31 IVs and 252 EVs', () => {
+describe("calculateHp", () => {
+  it("given a level 50 Charizard with 31 IVs and 252 EVs, when HP is calculated, then returns 153", () => {
     // Arrange
-    const base = 78, iv = 31, ev = 252, level = 50
+    const base = 78
+    const iv = 31
+    const ev = 252
+    const level = 50
 
     // Act
-    const result = calculateHP(base, iv, ev, level)
+    const result = calculateHp(base, iv, ev, level)
 
     // Assert
     expect(result).toBe(153)
@@ -23,14 +64,16 @@ describe('calculateHP', () => {
 
 ## Integration Tests
 
-Test components working together. Used for battle engine + ruleset combinations.
+Test components working together. Used for battle engine plus ruleset combinations.
 
 ```typescript
-describe('Gen 1 Battle Integration', () => {
-  it('should apply 1/256 miss bug given 100% accuracy move', () => {
-    // Arrange — set up engine with Gen1Ruleset and seeded PRNG
-    // Act — execute a 100% accuracy move with the unlucky seed
-    // Assert — move misses despite 100% accuracy
+describe("Gen 1 battle integration", () => {
+  it("given a 100% accurate move and the Gen 1 miss-bug seed, when the turn resolves, then the move misses", () => {
+    // Arrange: set up the engine with Gen1Ruleset and a seeded PRNG
+
+    // Act: execute the move
+
+    // Assert: the battle events include a miss even though the move is 100% accurate
   })
 })
 ```
@@ -40,8 +83,8 @@ describe('Gen 1 Battle Integration', () => {
 Verify imported data files have correct shapes and counts.
 
 ```typescript
-describe('Gen 1 Pokemon Data', () => {
-  it('should contain exactly 151 Pokemon', () => {
+describe("Gen 1 Pokemon data", () => {
+  it("given the Gen 1 species data, when it is loaded, then it contains exactly 151 Pokemon", () => {
     const pokemon = loadPokemonData()
     expect(pokemon).toHaveLength(151)
   })
@@ -50,30 +93,31 @@ describe('Gen 1 Pokemon Data', () => {
 
 ## Property-Based Tests
 
-Verify invariants that must always hold, regardless of inputs. Requires [fast-check](https://github.com/dubzzz/fast-check) (`npm install -D fast-check`).
+Verify invariants that must always hold, regardless of inputs. Requires [fast-check](https://github.com/dubzzz/fast-check).
 
 ```typescript
-it('should always return a positive stat value given any valid inputs', () => {
-  fc.assert(fc.property(
-    fc.integer({ min: 1, max: 255 }),  // base
-    fc.integer({ min: 0, max: 31 }),   // iv
-    fc.integer({ min: 0, max: 252 }),  // ev
-    fc.integer({ min: 1, max: 100 }),  // level
-    (base, iv, ev, level) => {
-      expect(calculateStat(base, iv, ev, level, 1.0)).toBeGreaterThan(0)
-    }
-  ))
+it("given valid type-chart inputs, when calculateTypeEffectiveness runs, then the result is one of the allowed multipliers", () => {
+  fc.assert(
+    fc.property(
+      fc.constantFrom("normal", "fire", "water", "electric"),
+      fc.constantFrom("grass", "ground", "flying", "ghost"),
+      (attackingType, defendingType) => {
+        const effectiveness = calculateTypeEffectiveness(attackingType, defendingType)
+        expect([0, 0.25, 0.5, 1, 2, 4]).toContain(effectiveness)
+      },
+    ),
+  )
 })
 ```
 
 ## Replay Tests
 
-Compare engine output against Pokemon Showdown battle logs. Used for end-to-end validation.
+Compare engine output against Pokemon Showdown battle logs. Use these for end-to-end validation and deterministic regression coverage.
 
 ## Authoritative Sources
 
 When choosing expected values for tests:
 
-1. **Pokemon Showdown** — primary source for battle mechanics
-2. **Bulbapedia** — secondary source, especially for formulas and edge cases
-3. **In-game testing** — for behaviors that Showdown and Bulbapedia disagree on
+1. **Pokemon Showdown** - primary source for battle mechanics
+2. **Bulbapedia** - secondary source, especially for formulas and edge cases
+3. **In-game testing** - for behaviors that Showdown and Bulbapedia disagree on

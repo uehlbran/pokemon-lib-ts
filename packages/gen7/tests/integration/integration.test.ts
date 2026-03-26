@@ -6,10 +6,47 @@
  */
 
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_GIMMICK_IDS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
+  type MoveData,
+  type PokemonInstance,
+  type PokemonType,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { handleGen7NewAbility, isSchoolForm } from "../../src/Gen7AbilitiesNew";
+import {
+  applyGen7TerrainEffects,
+  checkPsychicTerrainPriorityBlock,
+  createGen7DataManager,
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+  handleGen7NewAbility,
+  handleSurgeAbility,
+  isSchoolForm,
+  TERRAIN_DEFAULT_TURNS,
+  TERRAIN_EXTENDED_TURNS,
+} from "../../src";
 import {
   handleGen7StatAbility,
   isGaleWingsActive,
@@ -18,21 +55,36 @@ import {
 import { calculateGen7Damage } from "../../src/Gen7DamageCalc";
 import { Gen7MegaEvolution } from "../../src/Gen7MegaEvolution";
 import { Gen7Ruleset } from "../../src/Gen7Ruleset";
-import {
-  applyGen7TerrainEffects,
-  checkPsychicTerrainPriorityBlock,
-  handleSurgeAbility,
-  TERRAIN_DEFAULT_TURNS,
-  TERRAIN_EXTENDED_TURNS,
-} from "../../src/Gen7Terrain";
 import { GEN7_TYPE_CHART } from "../../src/Gen7TypeChart";
 import { Gen7ZMove } from "../../src/Gen7ZMove";
+
+const dataManager = createGen7DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
+const GIMMICKS = { ...CORE_GIMMICK_IDS, ...BATTLE_GIMMICK_IDS } as const;
+const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
+const _STATUS = CORE_STATUS_IDS;
+const SPECIES = GEN7_SPECIES_IDS;
+const TERRAIN = CORE_TERRAIN_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const TYPES = CORE_TYPE_IDS;
+const DEFAULT_NATURE = GEN7_NATURE_IDS.hardy;
+const AURORA_VEIL = MOVES.auroraVeil;
+const DISGUISE_BROKEN = "disguise-broken" as const;
+
+function getCanonicalMove(moveId: string): MoveData {
+  return dataManager.getMove(moveId);
+}
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -51,123 +103,107 @@ function makeActive(overrides: {
   turnsOnField?: number;
   volatileStatuses?: Map<string, unknown>;
   suppressedAbility?: string | null;
-}): ActivePokemon {
+  moveIds?: string[];
+  friendship?: number;
+  gender?: (typeof GENDERS)[keyof typeof GENDERS];
+}): PokemonInstance {
+  const species = dataManager.getSpecies(overrides.speciesId ?? SPECIES.bulbasaur);
   const hp = overrides.hp ?? 200;
   const attack = overrides.attack ?? 100;
   const defense = overrides.defense ?? 100;
   const spAttack = overrides.spAttack ?? 100;
   const spDefense = overrides.spDefense ?? 100;
   const speed = overrides.speed ?? 100;
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? 1,
-      nickname: overrides.nickname ?? null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? "none",
-      abilitySlot: "normal1" as const,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: "male" as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: "pokeball",
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatileStatuses ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "none",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: overrides.turnsOnField ?? 0,
-    movedThisTurn: overrides.movedThisTurn ?? false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: overrides.suppressedAbility ?? null,
-    forcedMove: null,
-  } as ActivePokemon;
+  const moveIds = overrides.moveIds ?? [MOVES.tackle];
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(7), {
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: ABILITY_SLOTS.normal1,
+    gender: overrides.gender ?? GENDERS.male,
+    friendship: createFriendship(overrides.friendship ?? species.baseFriendship),
+    heldItem: overrides.heldItem ?? null,
+    status: (overrides.status ?? null) as any,
+    nickname: overrides.nickname ?? null,
+    moves: moveIds,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: ITEM_IDS.pokeBall,
+  });
+  pokemon.moves = moveIds.map((moveId) => {
+    const move = getCanonicalMove(moveId);
+    return createMoveSlot(moveId, move.pp);
+  });
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = overrides.ability ?? ABILITIES.none;
+  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
+  return pokemon;
 }
 
-function makeMove(overrides: {
-  id?: string;
-  type?: PokemonType;
-  category?: "physical" | "special" | "status";
-  power?: number | null;
-  accuracy?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  priority?: number;
-}): MoveData {
+function createSyntheticOnFieldPokemon(overrides: {
+  level?: number;
+  attack?: number;
+  defense?: number;
+  spAttack?: number;
+  spDefense?: number;
+  speed?: number;
+  hp?: number;
+  currentHp?: number;
+  types?: PokemonType[];
+  ability?: string;
+  heldItem?: string | null;
+  status?: string | null;
+  speciesId?: number;
+  nickname?: string | null;
+  movedThisTurn?: boolean;
+  turnsOnField?: number;
+  volatileStatuses?: Map<string, unknown>;
+  suppressedAbility?: string | null;
+  moveIds?: string[];
+  friendship?: number;
+  gender?: (typeof GENDERS)[keyof typeof GENDERS];
+}): ActivePokemon {
+  const pokemon = createSyntheticPokemonInstance(overrides);
+  const active = createOnFieldPokemon(pokemon, 0, [...(overrides.types ?? [TYPES.normal])]);
+  active.volatileStatuses = overrides.volatileStatuses ?? new Map();
+  active.types = [...(overrides.types ?? [TYPES.normal])];
+  active.ability = overrides.ability ?? ABILITIES.none;
+  active.lastMoveUsed = null;
+  active.lastDamageTaken = 0;
+  active.lastDamageType = null;
+  active.lastDamageCategory = null;
+  active.turnsOnField = overrides.turnsOnField ?? 0;
+  active.movedThisTurn = overrides.movedThisTurn ?? false;
+  active.consecutiveProtects = 0;
+  active.substituteHp = 0;
+  active.itemKnockedOff = false;
+  active.transformed = false;
+  active.transformedSpecies = null;
+  active.isMega = false;
+  active.isDynamaxed = false;
+  active.dynamaxTurnsLeft = 0;
+  active.isTerastallized = false;
+  active.teraType = null;
+  active.stellarBoostedTypes = [];
+  active.suppressedAbility = overrides.suppressedAbility ?? null;
+  active.forcedMove = null;
+  return active as ActivePokemon;
+}
+
+function createSyntheticMoveFromCanonical(
+  moveId = MOVES.tackle,
+  overrides: Partial<MoveData> = {},
+): MoveData {
+  const baseMove = getCanonicalMove(moveId);
   return {
-    id: overrides.id ?? "tackle",
-    displayName: overrides.id ?? "Tackle",
-    type: overrides.type ?? "normal",
-    category: overrides.category ?? "physical",
-    power: overrides.power ?? 50,
-    accuracy: overrides.accuracy ?? 100,
-    pp: 35,
-    priority: overrides.priority ?? 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-      ...overrides.flags,
-    },
-    effect: overrides.effect ?? null,
-    description: "",
-    generation: 7,
-    critRatio: 0,
-    hasCrashDamage: false,
+    ...baseMove,
+    ...overrides,
+    flags: { ...baseMove.flags, ...overrides.flags },
   } as MoveData;
 }
 
-function makeState(overrides?: Partial<BattleState>): BattleState {
+function createSyntheticBattleState(overrides?: Partial<BattleState>): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -195,8 +231,8 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
     // Source: Showdown sim/side.ts -- zMoveUsed and megaUsed are tracked separately
     // Source: Bulbapedia "Z-Move" -- "Z-Moves and Mega Evolution can both be used in the same battle"
     const ruleset = new Gen7Ruleset();
-    const zMoveGimmick = ruleset.getBattleGimmick("zmove");
-    const megaGimmick = ruleset.getBattleGimmick("mega");
+    const zMoveGimmick = ruleset.getBattleGimmick(GIMMICKS.zMove);
+    const megaGimmick = ruleset.getBattleGimmick(GIMMICKS.mega);
 
     expect(zMoveGimmick).not.toBeNull();
     expect(megaGimmick).not.toBeNull();
@@ -210,36 +246,36 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
     const mega = new Gen7MegaEvolution();
 
     // Side 0 Z-Move user with Normalium Z
-    const zUser = makeActive({
-      ability: "none",
-      heldItem: "normalium-z",
-      types: ["normal"],
-      speciesId: 143, // Snorlax
+    const zUser = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.none,
+      heldItem: ITEM_IDS.normaliumZ,
+      types: [TYPES.normal],
+      speciesId: SPECIES.snorlax,
       nickname: "Snorlax",
     });
 
     // Side 1 Mega user with Charizardite X
-    const megaUser = makeActive({
-      ability: "none",
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
-      speciesId: 6, // Charizard
+    const megaUser = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.none,
+      heldItem: ITEM_IDS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
+      speciesId: SPECIES.charizard,
       nickname: "Charizard",
     });
 
-    const gigaImpact = makeMove({
-      id: "giga-impact",
-      type: "normal",
-      category: "physical",
-      power: 150,
-    });
+    const gigaImpact = createSyntheticMoveFromCanonical(MOVES.gigaImpact);
 
     // Z-Move should be available for side 0
-    const canUseZ = zMove.canUse(zUser, gigaImpact, 0, makeState());
+    const canUseZ = zMove.canUse(zUser, gigaImpact, 0, createSyntheticBattleState());
     expect(canUseZ).toBe(true);
 
     // Mega should be available for side 1
-    const canUseMega = mega.canUse(megaUser, makeMove({ id: "flare-blitz" }), 1, makeState());
+    const canUseMega = mega.canUse(
+      megaUser,
+      createSyntheticMoveFromCanonical(MOVES.flareBlitz),
+      1,
+      createSyntheticBattleState(),
+    );
     expect(canUseMega).toBe(true);
   });
 
@@ -249,27 +285,32 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
     const mega = new Gen7MegaEvolution();
 
     // Use Z-Move on side 0
-    const zUser = makeActive({
-      ability: "none",
-      heldItem: "normalium-z",
-      types: ["normal"],
+    const zUser = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.none,
+      heldItem: ITEM_IDS.normaliumZ,
+      types: [TYPES.normal],
       nickname: "Snorlax",
     });
-    const normalMove = makeMove({ id: "tackle", type: "normal", power: 50 });
-    const state = makeState();
+    const normalMove = createSyntheticMoveFromCanonical(MOVES.tackle);
+    const state = createSyntheticBattleState();
 
     zMove.activate(zUser, normalMove, 0, state);
 
     // Mega should still be available on side 0
-    const megaUser = makeActive({
-      ability: "none",
-      heldItem: "charizardite-x",
-      types: ["fire", "flying"],
-      speciesId: 6,
+    const megaUser = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.none,
+      heldItem: ITEM_IDS.charizarditeX,
+      types: [TYPES.fire, TYPES.flying],
+      speciesId: SPECIES.charizard,
       nickname: "Charizard",
     });
 
-    const canMega = mega.canUse(megaUser, makeMove({ id: "flare-blitz" }), 0, state);
+    const canMega = mega.canUse(
+      megaUser,
+      createSyntheticMoveFromCanonical(MOVES.flareBlitz),
+      0,
+      state,
+    );
     expect(canMega).toBe(true);
   });
 });
@@ -283,49 +324,111 @@ describe("Integration: Grassy Terrain + Sun simultaneous effects", () => {
     // Source: Showdown data/conditions.ts -- terrain and weather multipliers stack
     // Source: Bulbapedia -- "Grassy Terrain boosts Grass moves by 1.5x for grounded Pokemon"
     // Source: Bulbapedia -- "Harsh sunlight boosts Fire moves by 1.5x"
-    const attacker = makeActive({
-      types: ["grass", "fire"],
+    const attacker = createSyntheticOnFieldPokemon({
+      types: [TYPES.grass, TYPES.fire],
       attack: 150,
-      ability: "none",
+      ability: ABILITIES.none,
       level: 50,
     });
-    const defender = makeActive({ types: ["normal"], defense: 100, hp: 300 });
-    const grassMove = makeMove({
-      id: "energy-ball",
-      type: "grass",
-      category: "special",
-      power: 90,
-      flags: { contact: false },
+    const defender = createSyntheticOnFieldPokemon({
+      types: [TYPES.normal],
+      defense: 100,
+      hp: 300,
+    });
+    const grassMove = createSyntheticMoveFromCanonical(MOVES.energyBall);
+    const fireMove = createSyntheticMoveFromCanonical(MOVES.flamethrower);
+
+    const stateWithBoth = createSyntheticBattleState({
+      terrain: { type: TERRAIN.grassy, turnsLeft: 5, source: ABILITIES.grassySurge },
+      weather: { type: WEATHER.sun, turnsLeft: 5 },
+    });
+    const grassBaseline = createSyntheticBattleState({
+      weather: { type: WEATHER.sun, turnsLeft: 5 },
+    });
+    const fireBaseline = createSyntheticBattleState({
+      terrain: { type: TERRAIN.grassy, turnsLeft: 5, source: ABILITIES.grassySurge },
     });
 
-    // Calculate with Grassy Terrain boost (1.5x for grounded Grass moves)
-    const state = makeState({
-      terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
-      weather: { type: "sun", turnsLeft: 5 },
-    });
-
-    const result = calculateGen7Damage(
+    const resultGrass = calculateGen7Damage(
       {
         attacker,
         defender,
         move: grassMove,
-        state,
+        state: stateWithBoth,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      },
+      GEN7_TYPE_CHART,
+    );
+    const baselineGrass = calculateGen7Damage(
+      {
+        attacker,
+        defender,
+        move: grassMove,
+        state: grassBaseline,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      },
+      GEN7_TYPE_CHART,
+    );
+    const resultFire = calculateGen7Damage(
+      {
+        attacker,
+        defender,
+        move: fireMove,
+        state: stateWithBoth,
+        rng: new SeededRandom(42),
+        isCrit: false,
+      },
+      GEN7_TYPE_CHART,
+    );
+    const baselineFire = calculateGen7Damage(
+      {
+        attacker,
+        defender,
+        move: fireMove,
+        state: fireBaseline,
         rng: new SeededRandom(42),
         isCrit: false,
       },
       GEN7_TYPE_CHART,
     );
 
-    // The terrain boost is applied as part of the calculation -- result should exist
-    expect(result).toBeDefined();
-    expect(result.damage).toBeGreaterThan(0);
+    expect(resultGrass).toEqual(
+      expect.objectContaining({
+        damage: 85,
+        breakdown: expect.objectContaining({
+          baseDamage: 61,
+          weatherMultiplier: 1,
+          stabMultiplier: 1.5,
+          finalDamage: 85,
+        }),
+      }),
+    );
+    expect(baselineGrass.damage).toBe(57);
+    expect(resultFire).toEqual(
+      expect.objectContaining({
+        damage: 85,
+        breakdown: expect.objectContaining({
+          baseDamage: 61,
+          weatherMultiplier: 1.5,
+          stabMultiplier: 1.5,
+          finalDamage: 85,
+        }),
+      }),
+    );
+    expect(baselineFire.damage).toBe(57);
   });
 
   it("given Grassy Terrain active, end-of-turn heals grounded Pokemon", () => {
     // Source: Showdown data/conditions.ts -- grassyterrain.onResidual: heal(pokemon.baseMaxhp / 16)
-    const pokemon = makeActive({ hp: 200, currentHp: 100, types: ["normal"] });
-    const state = makeState({
-      terrain: { type: "grassy", turnsLeft: 3, source: "grassy-surge" },
+    const pokemon = createSyntheticOnFieldPokemon({
+      hp: 200,
+      currentHp: 100,
+      types: [TYPES.normal],
+    });
+    const state = createSyntheticBattleState({
+      terrain: { type: TERRAIN.grassy, turnsLeft: 3, source: ABILITIES.grassySurge },
     });
     state.sides[0].active = [pokemon];
 
@@ -346,48 +449,48 @@ describe("Integration: Psychic Terrain priority blocking", () => {
   it("given Psychic Terrain active, priority move is blocked against a grounded target", () => {
     // Source: Showdown data/conditions.ts -- psychicterrain.onTryHit: if grounded and priority > 0
     // Source: Bulbapedia "Psychic Terrain" -- "Grounded Pokemon are protected from priority moves"
-    const groundedTarget = makeActive({ types: ["normal"] });
-    const state = makeState({
-      terrain: { type: "psychic", turnsLeft: 5, source: "psychic-surge" },
+    const groundedTarget = createSyntheticOnFieldPokemon({ types: [TYPES.normal] });
+    const state = createSyntheticBattleState({
+      terrain: { type: TERRAIN.psychic, turnsLeft: 5, source: ABILITIES.psychicSurge },
     });
 
-    const blocked = checkPsychicTerrainPriorityBlock("psychic", 1, groundedTarget, state);
+    const blocked = checkPsychicTerrainPriorityBlock(TERRAIN.psychic, 1, groundedTarget, state);
     expect(blocked).toBe(true);
   });
 
   it("given Psychic Terrain active, priority move is NOT blocked against a Flying-type target", () => {
     // Source: Showdown -- Flying types are not grounded
     // Source: Bulbapedia "Psychic Terrain" -- only grounded Pokemon are protected
-    const flyingTarget = makeActive({ types: ["flying"] });
-    const state = makeState({
-      terrain: { type: "psychic", turnsLeft: 5, source: "psychic-surge" },
+    const flyingTarget = createSyntheticOnFieldPokemon({ types: [TYPES.flying] });
+    const state = createSyntheticBattleState({
+      terrain: { type: TERRAIN.psychic, turnsLeft: 5, source: ABILITIES.psychicSurge },
     });
 
-    const blocked = checkPsychicTerrainPriorityBlock("psychic", 1, flyingTarget, state);
+    const blocked = checkPsychicTerrainPriorityBlock(TERRAIN.psychic, 1, flyingTarget, state);
     expect(blocked).toBe(false);
   });
 
   it("given Psychic Terrain active, non-priority move still hits grounded target", () => {
     // Source: Showdown -- priority 0 or negative is not blocked
-    const groundedTarget = makeActive({ types: ["normal"] });
-    const state = makeState({
-      terrain: { type: "psychic", turnsLeft: 5, source: "psychic-surge" },
+    const groundedTarget = createSyntheticOnFieldPokemon({ types: [TYPES.normal] });
+    const state = createSyntheticBattleState({
+      terrain: { type: TERRAIN.psychic, turnsLeft: 5, source: ABILITIES.psychicSurge },
     });
 
-    const blocked = checkPsychicTerrainPriorityBlock("psychic", 0, groundedTarget, state);
+    const blocked = checkPsychicTerrainPriorityBlock(TERRAIN.psychic, 0, groundedTarget, state);
     expect(blocked).toBe(false);
   });
 
   it("given Gravity active AND Psychic Terrain, Flying-type IS now grounded and blocked", () => {
     // Source: Showdown -- Gravity grounds all Pokemon
     // Source: Bulbapedia "Gravity" -- "all Pokemon are grounded"
-    const flyingTarget = makeActive({ types: ["flying"] });
-    const state = makeState({
-      terrain: { type: "psychic", turnsLeft: 5, source: "psychic-surge" },
+    const flyingTarget = createSyntheticOnFieldPokemon({ types: [TYPES.flying] });
+    const state = createSyntheticBattleState({
+      terrain: { type: TERRAIN.psychic, turnsLeft: 5, source: ABILITIES.psychicSurge },
       gravity: { active: true, turnsLeft: 3 },
     });
 
-    const blocked = checkPsychicTerrainPriorityBlock("psychic", 1, flyingTarget, state);
+    const blocked = checkPsychicTerrainPriorityBlock(TERRAIN.psychic, 1, flyingTarget, state);
     expect(blocked).toBe(true);
   });
 });
@@ -400,25 +503,34 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
   it("given Prankster user using status move vs Dark-type, move is blocked", () => {
     // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
     // Source: Bulbapedia "Prankster" Gen 7 -- "Status moves fail against Dark-type targets"
-    const blocked = isPranksterBlockedByDarkType("prankster", "status", ["dark"]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+    ]);
     expect(blocked).toBe(true);
   });
 
   it("given Prankster user using physical move vs Dark-type, move is NOT blocked", () => {
     // Source: Showdown -- Prankster only blocks status moves
-    const blocked = isPranksterBlockedByDarkType("prankster", "physical", ["dark"]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.physical, [
+      TYPES.dark,
+    ]);
     expect(blocked).toBe(false);
   });
 
   it("given Prankster user using status move vs Dark/Fire dual type, move is blocked", () => {
     // Source: Showdown -- Dark-type check doesn't care about secondary type
-    const blocked = isPranksterBlockedByDarkType("prankster", "status", ["dark", "fire"]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+      TYPES.fire,
+    ]);
     expect(blocked).toBe(true);
   });
 
   it("given non-Prankster user using status move vs Dark-type, move is NOT blocked", () => {
     // Source: Showdown -- immunity only applies to Prankster-boosted moves
-    const blocked = isPranksterBlockedByDarkType("none", "status", ["dark"]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.none, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+    ]);
     expect(blocked).toBe(false);
   });
 
@@ -426,16 +538,19 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
     // Source: Showdown -- Prankster raises priority AND Dark targets block the move
     // Integration: priority handler + Dark immunity check work together
     const ctx: AbilityContext = {
-      pokemon: makeActive({
-        ability: "prankster",
-        types: ["fairy"],
+      pokemon: createSyntheticOnFieldPokemon({
+        ability: ABILITIES.prankster,
+        types: [TYPES.fairy],
         nickname: "Whimsicott",
       }),
-      opponent: makeActive({ types: ["dark", "fire"], nickname: "Houndoom" }),
-      state: makeState(),
+      opponent: createSyntheticOnFieldPokemon({
+        types: [TYPES.dark, TYPES.fire],
+        nickname: "Houndoom",
+      }),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-priority-check",
-      move: makeMove({ id: "thunder-wave", category: "status", type: "electric", power: null }),
+      trigger: TRIGGERS.onPriorityCheck,
+      move: createSyntheticMoveFromCanonical(MOVES.thunderWave),
     };
 
     // Priority check activates
@@ -443,7 +558,10 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
     expect(priorityResult.activated).toBe(true);
 
     // Dark-type check also blocks
-    const darkBlocked = isPranksterBlockedByDarkType("prankster", "status", ["dark", "fire"]);
+    const darkBlocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+      TYPES.fire,
+    ]);
     expect(darkBlocked).toBe(true);
   });
 });
@@ -456,56 +574,56 @@ describe("Integration: Gale Wings full HP gate (Gen 7 nerf)", () => {
   it("given Gale Wings at full HP using Flying move, priority is granted", () => {
     // Source: Showdown data/abilities.ts -- galeWings Gen 7: requires pokemon.hp === pokemon.maxhp
     // Source: Bulbapedia "Gale Wings" Gen 7 -- "only activates when at full HP"
-    const active = isGaleWingsActive("gale-wings", "flying", 200, 200);
+    const active = isGaleWingsActive(ABILITIES.galeWings, TYPES.flying, 200, 200);
     expect(active).toBe(true);
   });
 
   it("given Gale Wings at 199/200 HP using Flying move, priority is NOT granted", () => {
     // Source: Showdown -- must be at EXACTLY full HP
-    const active = isGaleWingsActive("gale-wings", "flying", 199, 200);
+    const active = isGaleWingsActive(ABILITIES.galeWings, TYPES.flying, 199, 200);
     expect(active).toBe(false);
   });
 
   it("given Gale Wings at full HP using non-Flying move, priority is NOT granted", () => {
     // Source: Showdown -- Gale Wings only applies to Flying-type moves
-    const active = isGaleWingsActive("gale-wings", "fire", 200, 200);
+    const active = isGaleWingsActive(ABILITIES.galeWings, TYPES.fire, 200, 200);
     expect(active).toBe(false);
   });
 
   it("given Gale Wings via handleGen7StatAbility, move type and HP gate both checked", () => {
     // Integration: full stat ability handler also checks HP
     const ctx: AbilityContext = {
-      pokemon: makeActive({
-        ability: "gale-wings",
+      pokemon: createSyntheticOnFieldPokemon({
+        ability: ABILITIES.galeWings,
         currentHp: 200,
         hp: 200,
-        types: ["normal", "flying"],
+        types: [TYPES.normal, TYPES.flying],
         nickname: "Talonflame",
       }),
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-priority-check",
-      move: makeMove({ id: "brave-bird", type: "flying", power: 120 }),
+      trigger: TRIGGERS.onPriorityCheck,
+      move: createSyntheticMoveFromCanonical(MOVES.braveBird),
     };
 
     const result = handleGen7StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.messages[0]).toContain("Gale Wings");
+    expect(result.messages).toEqual(["Talonflame's Gale Wings boosted the move's priority!"]);
   });
 
   it("given Gale Wings via handleGen7StatAbility at non-full HP, priority denied", () => {
     const ctx: AbilityContext = {
-      pokemon: makeActive({
-        ability: "gale-wings",
+      pokemon: createSyntheticOnFieldPokemon({
+        ability: ABILITIES.galeWings,
         currentHp: 199,
         hp: 200,
-        types: ["normal", "flying"],
+        types: [TYPES.normal, TYPES.flying],
         nickname: "Talonflame",
       }),
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-priority-check",
-      move: makeMove({ id: "brave-bird", type: "flying", power: 120 }),
+      trigger: TRIGGERS.onPriorityCheck,
+      move: createSyntheticMoveFromCanonical(MOVES.braveBird),
     };
 
     const result = handleGen7StatAbility(ctx);
@@ -522,36 +640,35 @@ describe("Integration: Aurora Veil + Hail damage reduction", () => {
     // Source: Showdown data/conditions.ts -- Aurora Veil: 0.5x damage in singles
     // Source: Bulbapedia "Aurora Veil" -- "halves damage from physical and special moves"
     // Aurora Veil damage reduction is applied in the damage calc via side screens
-    const attacker = makeActive({ attack: 150, types: ["fighting"], nickname: "Machamp" });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({
+      attack: 150,
+      types: [TYPES.fighting],
+      nickname: "Machamp",
+    });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       hp: 300,
       currentHp: 300,
-      types: ["ice"],
-      ability: "none",
+      types: [TYPES.ice],
+      ability: ABILITIES.none,
       nickname: "Alolan Ninetales",
     });
 
-    const move = makeMove({
-      id: "close-combat",
-      type: "fighting",
-      category: "physical",
-      power: 120,
-    });
+    const move = createSyntheticMoveFromCanonical(MOVES.closeCombat);
 
-    const stateWithVeil = makeState({
-      weather: { type: "hail", turnsLeft: 5 },
+    const stateWithVeil = createSyntheticBattleState({
+      weather: { type: WEATHER.hail, turnsLeft: 5 },
     });
     stateWithVeil.sides[1] = {
       index: 1,
       active: [defender],
-      screens: [{ type: "aurora-veil", turnsLeft: 5 }],
+      screens: [{ type: AURORA_VEIL, turnsLeft: 5 }],
       hazards: {},
       tailwind: { active: false, turnsLeft: 0 },
     } as any;
 
-    const stateWithoutVeil = makeState({
-      weather: { type: "hail", turnsLeft: 5 },
+    const stateWithoutVeil = createSyntheticBattleState({
+      weather: { type: WEATHER.hail, turnsLeft: 5 },
     });
     stateWithoutVeil.sides[1] = {
       index: 1,
@@ -598,58 +715,58 @@ describe("Integration: Surge ability + Terrain Extender", () => {
   it("given Electric Surge without Terrain Extender, terrain lasts 5 turns", () => {
     // Source: Showdown data/abilities.ts -- Electric Surge sets Electric Terrain
     // Source: Bulbapedia "Electric Surge" -- terrain lasts 5 turns
-    const tapu = makeActive({
-      ability: "electric-surge",
-      types: ["electric", "fairy"],
+    const tapu = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.electricSurge,
+      types: [TYPES.electric, TYPES.fairy],
       nickname: "Tapu Koko",
       heldItem: null,
     });
 
     const ctx: AbilityContext = {
       pokemon: tapu,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     };
 
     const result = handleSurgeAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(ctx.state.terrain?.type).toBe("electric");
+    expect(ctx.state.terrain?.type).toBe(TERRAIN.electric);
     expect(ctx.state.terrain?.turnsLeft).toBe(TERRAIN_DEFAULT_TURNS); // 5
   });
 
   it("given Electric Surge WITH Terrain Extender, terrain lasts 8 turns", () => {
     // Source: Showdown data/items.ts -- terrainextender: terrain duration + 3
     // Source: Bulbapedia "Terrain Extender" -- extends terrain to 8 turns
-    const tapu = makeActive({
-      ability: "electric-surge",
-      types: ["electric", "fairy"],
+    const tapu = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.electricSurge,
+      types: [TYPES.electric, TYPES.fairy],
       nickname: "Tapu Koko",
-      heldItem: "terrain-extender",
+      heldItem: ITEM_IDS.terrainExtender,
     });
 
     const ctx: AbilityContext = {
       pokemon: tapu,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     };
 
     const result = handleSurgeAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(ctx.state.terrain?.type).toBe("electric");
+    expect(ctx.state.terrain?.type).toBe(TERRAIN.electric);
     expect(ctx.state.terrain?.turnsLeft).toBe(TERRAIN_EXTENDED_TURNS); // 8
   });
 
   it("given Psychic Surge sets terrain, it replaces existing Electric Terrain", () => {
     // Source: Showdown -- only one terrain can be active at a time
-    const state = makeState({
-      terrain: { type: "electric", turnsLeft: 3, source: "electric-surge" },
+    const state = createSyntheticBattleState({
+      terrain: { type: TERRAIN.electric, turnsLeft: 3, source: ABILITIES.electricSurge },
     });
 
-    const tapu = makeActive({
-      ability: "psychic-surge",
-      types: ["psychic", "fairy"],
+    const tapu = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.psychicSurge,
+      types: [TYPES.psychic, TYPES.fairy],
       nickname: "Tapu Lele",
     });
 
@@ -657,28 +774,28 @@ describe("Integration: Surge ability + Terrain Extender", () => {
       pokemon: tapu,
       state,
       rng: new SeededRandom(42),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     };
 
     handleSurgeAbility(ctx);
-    expect(state.terrain?.type).toBe("psychic");
+    expect(state.terrain?.type).toBe(TERRAIN.psychic);
     expect(state.terrain?.turnsLeft).toBe(5);
   });
 
   it("given suppressed ability, Surge does not activate", () => {
     // Source: Showdown -- suppressed abilities do not trigger
-    const tapu = makeActive({
-      ability: "electric-surge",
-      types: ["electric", "fairy"],
+    const tapu = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.electricSurge,
+      types: [TYPES.electric, TYPES.fairy],
       nickname: "Tapu Koko",
-      suppressedAbility: "electric-surge",
+      suppressedAbility: ABILITIES.electricSurge,
     });
 
     const ctx: AbilityContext = {
       pokemon: tapu,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     };
 
     const result = handleSurgeAbility(ctx);
@@ -695,8 +812,8 @@ describe("Integration: Beast Boost chain", () => {
   it("given Beast Boost with highest Attack stat, KO triggers +1 Attack", () => {
     // Source: Showdown data/abilities.ts -- beastboost: raises highest stat on KO
     // Source: Bulbapedia "Beast Boost" -- "raises the user's highest stat by one stage"
-    const attacker = makeActive({
-      ability: "beast-boost",
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.beastBoost,
       attack: 200,
       defense: 100,
       spAttack: 100,
@@ -705,14 +822,18 @@ describe("Integration: Beast Boost chain", () => {
       nickname: "Pheromosa",
     });
 
-    const faintedOpponent = makeActive({ currentHp: 0, hp: 100, nickname: "Rattata" });
+    const faintedOpponent = createSyntheticOnFieldPokemon({
+      currentHp: 0,
+      hp: 100,
+      nickname: "Rattata",
+    });
 
     const ctx: AbilityContext = {
       pokemon: attacker,
       opponent: faintedOpponent,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-after-move-used",
+      trigger: TRIGGERS.onAfterMoveUsed,
     };
 
     const result = handleGen7StatAbility(ctx);
@@ -731,8 +852,8 @@ describe("Integration: Beast Boost chain", () => {
 
   it("given Beast Boost with highest Speed stat, KO triggers +1 Speed", () => {
     // Source: Showdown data/abilities.ts -- beastboost checks all 5 battle stats
-    const attacker = makeActive({
-      ability: "beast-boost",
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.beastBoost,
       attack: 100,
       defense: 100,
       spAttack: 100,
@@ -741,14 +862,14 @@ describe("Integration: Beast Boost chain", () => {
       nickname: "Kartana",
     });
 
-    const faintedOpponent = makeActive({ currentHp: 0, hp: 100 });
+    const faintedOpponent = createSyntheticOnFieldPokemon({ currentHp: 0, hp: 100 });
 
     const ctx: AbilityContext = {
       pokemon: attacker,
       opponent: faintedOpponent,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-after-move-used",
+      trigger: TRIGGERS.onAfterMoveUsed,
     };
 
     const result = handleGen7StatAbility(ctx);
@@ -758,20 +879,24 @@ describe("Integration: Beast Boost chain", () => {
 
   it("given Beast Boost, opponent not fainted (HP > 0), no activation", () => {
     // Source: Showdown -- beastboost only triggers on KO
-    const attacker = makeActive({
-      ability: "beast-boost",
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.beastBoost,
       attack: 200,
       nickname: "Pheromosa",
     });
 
-    const aliveOpponent = makeActive({ currentHp: 50, hp: 100, nickname: "Rattata" });
+    const aliveOpponent = createSyntheticOnFieldPokemon({
+      currentHp: 50,
+      hp: 100,
+      nickname: "Rattata",
+    });
 
     const ctx: AbilityContext = {
       pokemon: attacker,
       opponent: aliveOpponent,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-after-move-used",
+      trigger: TRIGGERS.onAfterMoveUsed,
     };
 
     const result = handleGen7StatAbility(ctx);
@@ -787,58 +912,59 @@ describe("Integration: Disguise break (Gen 7 -- no chip damage)", () => {
   it("given Mimikyu with Disguise intact (no disguise-broken volatile), damage is blocked", () => {
     // Source: Showdown data/abilities.ts -- disguise Gen 7: damage set to 0 (no 1/8 chip)
     // Source: Bulbapedia "Disguise" -- "In Gen 7, Disguise completely blocks the damage with no recoil"
-    const mimikyu = makeActive({
-      ability: "disguise",
-      types: ["ghost", "fairy"],
+    const mimikyu = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       hp: 200,
       currentHp: 200,
       nickname: "Mimikyu",
-      speciesId: 778,
+      speciesId: SPECIES.mimikyu,
     });
     // No "disguise-broken" volatile means Disguise is still intact
 
     const ctx: AbilityContext = {
       pokemon: mimikyu,
-      opponent: makeActive({}),
-      state: makeState(),
+      opponent: createSyntheticOnFieldPokemon({}),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       damage: 150,
-      move: makeMove({ id: "shadow-ball", type: "ghost", category: "special", power: 80 }),
+      move: createSyntheticMoveFromCanonical(MOVES.shadowBall),
     };
 
     const result = handleGen7NewAbility(ctx);
     expect(result.activated).toBe(true);
-    // Disguise absorbs the hit and sets disguise-broken volatile
-    expect(result.messages.length).toBeGreaterThan(0);
-    expect(result.messages[0]).toContain("Disguise");
-    // Should inflict "disguise-broken" volatile on self
-    expect(result.effects.some((e: any) => e.volatile === "disguise-broken")).toBe(true);
+    expect(result.messages).toEqual(["Mimikyu's Disguise was busted!"]);
+    expect(result.effects).toEqual([
+      { effectType: "volatile-inflict", target: "self", volatile: DISGUISE_BROKEN },
+      { effectType: "damage-reduction", target: "self" },
+    ]);
   });
 
   it("given Mimikyu with Disguise already broken (has disguise-broken volatile), damage goes through", () => {
     // Source: Showdown -- disguise only activates once per battle; "disguise-broken" volatile persists
+    // Stopgap: core exposes the Gen 7 volatile type but not a reference-id constant for it yet.
     const brokenVolatiles = new Map<string, unknown>();
-    brokenVolatiles.set("disguise-broken", true);
+    brokenVolatiles.set(DISGUISE_BROKEN, true);
 
-    const mimikyu = makeActive({
-      ability: "disguise",
-      types: ["ghost", "fairy"],
+    const mimikyu = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.disguise,
+      types: [TYPES.ghost, TYPES.fairy],
       hp: 200,
       currentHp: 200,
       nickname: "Mimikyu",
-      speciesId: 778,
+      speciesId: SPECIES.mimikyu,
       volatileStatuses: brokenVolatiles,
     });
 
     const ctx: AbilityContext = {
       pokemon: mimikyu,
-      opponent: makeActive({}),
-      state: makeState(),
+      opponent: createSyntheticOnFieldPokemon({}),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-damage-taken",
+      trigger: TRIGGERS.onDamageTaken,
       damage: 150,
-      move: makeMove({ id: "shadow-ball", type: "ghost", category: "special", power: 80 }),
+      move: createSyntheticMoveFromCanonical(MOVES.shadowBall),
     };
 
     const result = handleGen7NewAbility(ctx);
@@ -855,13 +981,13 @@ describe("Integration: Schooling form change", () => {
     // Source: Showdown data/abilities.ts -- schooling: level >= 20 && hp >= ceil(maxHp * 0.25)
     // Source: Bulbapedia "Schooling" -- "level 20+, HP above 25%"
     // isSchoolForm(abilityId, currentHp, maxHp, level)
-    const result = isSchoolForm("schooling", 100, 200, 20);
+    const result = isSchoolForm(ABILITIES.schooling, 100, 200, 20);
     expect(result).toBe(true);
   });
 
   it("given Wishiwashi below level 20, Solo form always", () => {
     // Source: Showdown -- schooling: level >= 20 required
-    const result = isSchoolForm("schooling", 200, 200, 19);
+    const result = isSchoolForm(ABILITIES.schooling, 200, 200, 19);
     expect(result).toBe(false);
   });
 
@@ -869,39 +995,38 @@ describe("Integration: Schooling form change", () => {
     // Source: Showdown data/abilities.ts -- schooling: hp >= Math.ceil(maxHp * 0.25)
     // For maxHp=200: threshold = ceil(200 * 0.25) = ceil(50) = 50
     // At exactly 50 HP: 50 >= 50 is true -> School form
-    const result = isSchoolForm("schooling", 50, 200, 20);
+    const result = isSchoolForm(ABILITIES.schooling, 50, 200, 20);
     expect(result).toBe(true);
   });
 
   it("given Wishiwashi at 1 HP below threshold, reverts to Solo form", () => {
     // Source: Showdown -- below the ceil threshold means Solo form
     // For maxHp=200: threshold = 50. At 49 HP: 49 < 50 -> Solo form
-    const result = isSchoolForm("schooling", 49, 200, 20);
+    const result = isSchoolForm(ABILITIES.schooling, 49, 200, 20);
     expect(result).toBe(false);
   });
 
   it("given Schooling triggers on switch-in, handleGen7NewAbility returns form change", () => {
     // Source: Showdown -- Schooling triggers on switch-in to check form
-    const wishiwashi = makeActive({
-      ability: "schooling",
-      types: ["water"],
+    const wishiwashi = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.schooling,
+      types: [TYPES.water],
       hp: 200,
       currentHp: 200,
       level: 20,
       nickname: "Wishiwashi",
-      speciesId: 746,
+      speciesId: SPECIES.wishiwashi,
     });
 
     const ctx: AbilityContext = {
       pokemon: wishiwashi,
-      state: makeState(),
+      state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     };
 
     const result = handleGen7NewAbility(ctx);
     expect(result.activated).toBe(true);
-    // Source: Showdown -- Schooling message contains "school"
-    expect(result.messages[0]).toContain("school");
+    expect(result.messages).toEqual(["Wishiwashi formed a school!"]);
   });
 });

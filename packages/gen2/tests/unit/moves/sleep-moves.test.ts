@@ -1,8 +1,14 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
+import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS, Gen2Ruleset } from "../../../src";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,8 +19,8 @@ function createMockActive(
     level: number;
     currentHp: number;
     maxHp: number;
-    status: string | null;
-    types: string[];
+    status: PrimaryStatus | null;
+    types: PokemonType[];
     nickname: string | null;
     moves: Array<{ moveId: string; pp: number; maxPp: number; currentPP: number }>;
   }> = {},
@@ -22,19 +28,19 @@ function createMockActive(
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
-      speciesId: 1,
+      speciesId: GEN2_SPECIES_IDS.bulbasaur,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
-      status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
+      status: overrides.status ?? null,
       heldItem: null,
       nickname: overrides.nickname ?? null,
       ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
       moves: overrides.moves ?? [
-        { moveId: "sleep-talk", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "thunderbolt", pp: 15, maxPp: 15, currentPP: 15 },
-        { moveId: "ice-beam", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "surf", pp: 15, maxPp: 15, currentPP: 15 },
+        { moveId: GEN2_MOVE_IDS.sleepTalk, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.thunderbolt, pp: 15, maxPp: 15, currentPP: 15 },
+        { moveId: GEN2_MOVE_IDS.iceBeam, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.surf, pp: 15, maxPp: 15, currentPP: 15 },
       ],
       calculatedStats: {
         hp: maxHp,
@@ -57,8 +63,8 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? ["normal"],
-    ability: "",
+    types: overrides.types ?? [CORE_TYPE_IDS.normal],
+    ability: CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     turnsOnField: 0,
     movedThisTurn: false,
@@ -106,6 +112,12 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
   } as unknown as BattleState;
 }
 
+const dataManager = createGen2DataManager();
+
+function getGen2Move(moveId: string): MoveData {
+  return dataManager.getMove(moveId);
+}
+
 // ---------------------------------------------------------------------------
 // Sleep Talk Tests
 // ---------------------------------------------------------------------------
@@ -113,29 +125,18 @@ function createMockState(side0: BattleSide, side1: BattleSide): BattleState {
 describe("Gen 2 Sleep Talk", () => {
   const ruleset = new Gen2Ruleset();
 
-  const sleepTalkMove = {
-    id: "sleep-talk",
-    name: "Sleep Talk",
-    type: "normal",
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 10,
-    priority: 0,
-    effect: { type: "custom", handler: "sleep-talk" },
-    flags: {},
-  } as unknown as MoveData;
+  const sleepTalkMove = getGen2Move(GEN2_MOVE_IDS.sleepTalk);
 
   it("given user is asleep with usable moves, when Sleep Talk is used, then selects a random move via recursiveMove", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SleepTalkEffect
     // Sleep Talk selects one of the user's other moves at random.
     const attacker = createMockActive({
-      status: "sleep",
+      status: CORE_STATUS_IDS.sleep,
       moves: [
-        { moveId: "sleep-talk", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "thunderbolt", pp: 15, maxPp: 15, currentPP: 15 },
-        { moveId: "ice-beam", pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.sleepTalk, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.thunderbolt, pp: 15, maxPp: 15, currentPP: 15 },
+        { moveId: GEN2_MOVE_IDS.iceBeam, pp: 10, maxPp: 10, currentPP: 10 },
       ],
     });
     const defender = createMockActive();
@@ -152,9 +153,8 @@ describe("Gen 2 Sleep Talk", () => {
     });
 
     // Assert
-    // recursiveMove should be one of the usable moves (thunderbolt or ice-beam)
-    expect(result.recursiveMove).toBeDefined();
-    expect(["thunderbolt", "ice-beam"]).toContain(result.recursiveMove);
+    // recursiveMove should be the deterministic seed-42 selection from the usable move pool.
+    expect(result.recursiveMove).toBe(GEN2_MOVE_IDS.iceBeam);
     expect(result.messages).toContain("The Pokemon used Sleep Talk!");
   });
 
@@ -163,11 +163,11 @@ describe("Gen 2 Sleep Talk", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SleepTalkEffect
     // With a different RNG seed, a different move should be selected.
     const attacker = createMockActive({
-      status: "sleep",
+      status: CORE_STATUS_IDS.sleep,
       moves: [
-        { moveId: "sleep-talk", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "thunderbolt", pp: 15, maxPp: 15, currentPP: 15 },
-        { moveId: "ice-beam", pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.sleepTalk, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.thunderbolt, pp: 15, maxPp: 15, currentPP: 15 },
+        { moveId: GEN2_MOVE_IDS.iceBeam, pp: 10, maxPp: 10, currentPP: 10 },
       ],
     });
     const defender = createMockActive();
@@ -191,8 +191,8 @@ describe("Gen 2 Sleep Talk", () => {
 
     // Assert — with 50 trials and 2 choices, both should appear
     expect(results.size).toBe(2);
-    expect(results.has("thunderbolt")).toBe(true);
-    expect(results.has("ice-beam")).toBe(true);
+    expect(results.has(GEN2_MOVE_IDS.thunderbolt)).toBe(true);
+    expect(results.has(GEN2_MOVE_IDS.iceBeam)).toBe(true);
   });
 
   it("given user is NOT asleep, when Sleep Talk is used, then it fails", () => {
@@ -223,12 +223,12 @@ describe("Gen 2 Sleep Talk", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SleepTalkEffect
     // Sleep Talk cannot call itself, Bide, or two-turn charge moves.
     const attacker = createMockActive({
-      status: "sleep",
+      status: CORE_STATUS_IDS.sleep,
       moves: [
-        { moveId: "sleep-talk", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "bide", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "fly", pp: 15, maxPp: 15, currentPP: 15 },
-        { moveId: "dig", pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.sleepTalk, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.bide, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.fly, pp: 15, maxPp: 15, currentPP: 15 },
+        { moveId: GEN2_MOVE_IDS.dig, pp: 10, maxPp: 10, currentPP: 10 },
       ],
     });
     const defender = createMockActive();
@@ -255,11 +255,11 @@ describe("Gen 2 Sleep Talk", () => {
     // Sleep Talk skips moves with 0 PP (even though the recursive move doesn't deduct PP).
     // Note: this is actually how pokecrystal works — moves with 0 PP are excluded.
     const attacker = createMockActive({
-      status: "sleep",
+      status: CORE_STATUS_IDS.sleep,
       moves: [
-        { moveId: "sleep-talk", pp: 10, maxPp: 10, currentPP: 10 },
-        { moveId: "thunderbolt", pp: 0, maxPp: 15, currentPP: 0 },
-        { moveId: "ice-beam", pp: 0, maxPp: 10, currentPP: 0 },
+        { moveId: GEN2_MOVE_IDS.sleepTalk, pp: 10, maxPp: 10, currentPP: 10 },
+        { moveId: GEN2_MOVE_IDS.thunderbolt, pp: 0, maxPp: 15, currentPP: 0 },
+        { moveId: GEN2_MOVE_IDS.iceBeam, pp: 0, maxPp: 10, currentPP: 0 },
       ],
     });
     const defender = createMockActive();
@@ -288,24 +288,13 @@ describe("Gen 2 Sleep Talk", () => {
 describe("Gen 2 Snore", () => {
   const ruleset = new Gen2Ruleset();
 
-  const snoreMove = {
-    id: "snore",
-    name: "Snore",
-    type: "normal",
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 15,
-    priority: 0,
-    effect: null,
-    flags: { sound: true },
-  } as unknown as MoveData;
+  const snoreMove = getGen2Move(GEN2_MOVE_IDS.snore);
 
   it("given user is asleep, when Snore is used, then move does not fail", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SnoreEffect
     // Snore succeeds when the user is asleep.
-    const attacker = createMockActive({ status: "sleep" });
+    const attacker = createMockActive({ status: CORE_STATUS_IDS.sleep });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
@@ -349,13 +338,13 @@ describe("Gen 2 Snore", () => {
     // Arrange
     // Source: pret/pokecrystal engine/battle/effect_commands.asm SnoreEffect
     // Snore has a 30% chance to flinch. We use seeds that produce a flinch outcome.
-    const attacker = createMockActive({ status: "sleep" });
+    const attacker = createMockActive({ status: CORE_STATUS_IDS.sleep });
     const defender = createMockActive();
     const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+    const FLINCH = CORE_VOLATILE_IDS.flinch;
 
     // Act — try many seeds to find one that triggers flinch
-    let flinchFound = false;
-    let noFlinchFound = false;
+    const outcomes = new Set<typeof FLINCH | "no-flinch">();
     for (let seed = 0; seed < 200; seed++) {
       const result = ruleset.executeMoveEffect({
         attacker,
@@ -365,17 +354,17 @@ describe("Gen 2 Snore", () => {
         state,
         rng: new SeededRandom(seed),
       });
-      if (result.volatileInflicted === "flinch") {
-        flinchFound = true;
+      if (result.volatileInflicted === FLINCH) {
+        outcomes.add(FLINCH);
       } else {
-        noFlinchFound = true;
+        outcomes.add("no-flinch");
       }
-      if (flinchFound && noFlinchFound) break;
+      if (outcomes.has(FLINCH) && outcomes.has("no-flinch")) break;
     }
 
     // Assert — both outcomes should occur with enough trials (30% chance)
     // Source: Snore has 30% flinch chance per pret/pokecrystal
-    expect(flinchFound).toBe(true);
-    expect(noFlinchFound).toBe(true);
+    expect(outcomes.has(FLINCH)).toBe(true);
+    expect(outcomes.has("no-flinch")).toBe(true);
   });
 });

@@ -9796,6 +9796,7 @@
       "bypassSubstitute": false
     },
     "effect": null,
+    "hasCrashDamage": true,
     "description": "If this attack is not successful, the user loses half of its maximum HP, rounded down, as crash damage. Pokemon with the Magic Guard Ability are unaffected by crash damage.",
     "generation": 1
   },
@@ -11115,6 +11116,7 @@
       "bypassSubstitute": false
     },
     "effect": null,
+    "hasCrashDamage": true,
     "description": "If this attack is not successful, the user loses half of its maximum HP, rounded down, as crash damage. Pokemon with the Magic Guard Ability are unaffected by crash damage.",
     "generation": 1
   },
@@ -21104,6 +21106,72 @@
     },
     "description": "If this attack was successful and the user has not fainted, it steals the target's held item if the user is not holding one. The target's item is not stolen if it is a Mail, or if the target is a Kyogre holding a Blue Orb, a Groudon holding a Red Orb, a Giratina holding a Griseous Orb, an Arceus holding a Plate, a Genesect holding a Drive, or a Pokemon that can Mega Evolve holding the Mega Stone for its species. Items lost to this move cannot be regained with Recycle or the Harvest Ability.",
     "generation": 2
+  },
+  {
+    "id": "thousand-arrows",
+    "displayName": "Thousand Arrows",
+    "type": "ground",
+    "category": "physical",
+    "power": 90,
+    "accuracy": 100,
+    "pp": 10,
+    "priority": 0,
+    "target": "all-adjacent-foes",
+    "flags": {
+      "contact": false,
+      "sound": false,
+      "bullet": false,
+      "pulse": false,
+      "punch": false,
+      "bite": false,
+      "wind": false,
+      "slicing": false,
+      "powder": false,
+      "protect": true,
+      "mirror": true,
+      "snatch": false,
+      "gravity": false,
+      "defrost": false,
+      "recharge": false,
+      "charge": false,
+      "bypassSubstitute": false
+    },
+    "effect": null,
+    "description": "This move can hit airborne Pokemon, which includes Flying-type Pokemon, Pokemon with the Levitate Ability, Pokemon holding an Air Balloon, and Pokemon under the effect of Magnet Rise or Telekinesis. If the target is a Flying type and is not already grounded, this move deals neutral damage regardless of its other type(s). This move can hit a target using Bounce, Fly, or Sky Drop. If this move hits a target under the effect of Bounce, Fly, Magnet Rise, or Telekinesis, the effect ends. If the target is a Flying type that has not used Roost this turn or a Pokemon with the Levitate Ability, it loses its immunity to Ground-type attacks and the Arena Trap Ability as long as it remains active. During the effect, Magnet Rise fails for the target and Telekinesis fails against the target.",
+    "generation": 6
+  },
+  {
+    "id": "thousand-waves",
+    "displayName": "Thousand Waves",
+    "type": "ground",
+    "category": "physical",
+    "power": 90,
+    "accuracy": 100,
+    "pp": 10,
+    "priority": 0,
+    "target": "all-adjacent-foes",
+    "flags": {
+      "contact": false,
+      "sound": false,
+      "bullet": false,
+      "pulse": false,
+      "punch": false,
+      "bite": false,
+      "wind": false,
+      "slicing": false,
+      "powder": false,
+      "protect": true,
+      "mirror": true,
+      "snatch": false,
+      "gravity": false,
+      "defrost": false,
+      "recharge": false,
+      "charge": false,
+      "bypassSubstitute": false
+    },
+    "effect": null,
+    "description": "Prevents the target from switching out. The target can still switch out if it is holding Shed Shell or uses Baton Pass, Parting Shot, U-turn, or Volt Switch. If the target leaves the field using Baton Pass, the replacement will remain trapped. The effect ends if the user leaves the field.",
+    "generation": 6
   },
   {
     "id": "thrash",

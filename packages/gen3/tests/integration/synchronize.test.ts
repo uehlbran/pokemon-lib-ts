@@ -1,7 +1,29 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType, PrimaryStatus, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  createEvs,
+  createIvs,
+} from "@pokemon-lib-ts/core";
+import {
+  applyGen3Ability,
+  createGen3DataManager,
+  GEN3_ABILITY_IDS,
+  GEN3_NATURE_IDS,
+  GEN3_SPECIES_IDS,
+} from "@pokemon-lib-ts/gen3";
 import { describe, expect, it } from "vitest";
-import { applyGen3Ability } from "../../src/Gen3Abilities";
+
+const dataManager = createGen3DataManager();
+const ESPEON = dataManager.getSpecies(GEN3_SPECIES_IDS.espeon);
+const AZUMARILL = dataManager.getSpecies(GEN3_SPECIES_IDS.azumarill);
+const MIGHTYENA = dataManager.getSpecies(GEN3_SPECIES_IDS.mightyena);
+const HARDY_NATURE_ID = dataManager.getNature(GEN3_NATURE_IDS.hardy).id;
 
 /**
  * Gen 3 Synchronize ability tests.
@@ -14,28 +36,14 @@ import { applyGen3Ability } from "../../src/Gen3Abilities";
  * Source: Bulbapedia — "Synchronize passes burn, paralysis, and poison to the opponent"
  */
 
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
-
-function createMockRng() {
-  return {
-    next: () => 0,
-    int: (_min: number, _max: number) => 100,
-    chance: () => false,
-    pick: <T>(arr: readonly T[]) => arr[0] as T,
-    shuffle: <T>(arr: readonly T[]) => [...arr],
-    getState: () => 0,
-    setState: () => {},
-  };
-}
-
-function createActivePokemon(opts: {
-  types: PokemonType[];
-  ability: string;
+function createOnFieldPokemon(opts: {
+  speciesId?: number;
+  types?: PokemonType[];
+  ability?: string;
   nickname?: string | null;
   status?: PrimaryStatus | null;
 }): ActivePokemon {
+  const species = dataManager.getSpecies(opts.speciesId ?? ESPEON.id);
   const stats: StatBlock = {
     hp: 200,
     attack: 100,
@@ -44,29 +52,30 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
+
   const pokemon = {
     uid: "test",
-    speciesId: 196, // Espeon
-    nickname: opts.nickname === undefined ? "Espeon" : opts.nickname,
+    speciesId: species.id,
+    nickname: opts.nickname === undefined ? species.displayName : opts.nickname,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: HARDY_NATURE_ID,
+    ivs: createIvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
+    evs: createEvs({ hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 }),
     currentHp: 200,
     moves: [],
-    ability: opts.ability,
-    abilitySlot: "normal1" as const,
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -83,8 +92,8 @@ function createActivePokemon(opts: {
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: opts.types,
-    ability: opts.ability,
+    types: opts.types ?? [...species.types],
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -103,25 +112,27 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createSynchronizeContext(opts: {
+function createStatusContext(opts: {
   pokemonStatus: PrimaryStatus | null;
   pokemonNickname?: string;
   opponentStatus?: PrimaryStatus | null;
   opponentNickname?: string;
   hasOpponent?: boolean;
 }): AbilityContext {
-  const pokemon = createActivePokemon({
-    types: ["psychic"],
-    ability: "synchronize",
-    nickname: opts.pokemonNickname ?? "Espeon",
+  const pokemon = createOnFieldPokemon({
+    speciesId: ESPEON.id,
+    types: [...ESPEON.types],
+    ability: GEN3_ABILITY_IDS.synchronize,
+    nickname: opts.pokemonNickname ?? ESPEON.displayName,
     status: opts.pokemonStatus,
   });
   const opponent =
     opts.hasOpponent !== false
-      ? createActivePokemon({
-          types: ["normal"],
-          ability: "intimidate",
-          nickname: opts.opponentNickname ?? "Mightyena",
+      ? createOnFieldPokemon({
+          speciesId: MIGHTYENA.id,
+          types: [...MIGHTYENA.types],
+          ability: GEN3_ABILITY_IDS.intimidate,
+          nickname: opts.opponentNickname ?? MIGHTYENA.displayName,
           status: opts.opponentStatus ?? null,
         })
       : undefined;
@@ -131,89 +142,95 @@ function createSynchronizeContext(opts: {
     opponent,
     state: { weather: null } as AbilityContext["state"],
     rng: createMockRng(),
-    trigger: "on-status-inflicted",
+    trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
   } as AbilityContext;
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+function createMockRng() {
+  return {
+    next: () => 0,
+    int: (_min: number, _max: number) => 100,
+    chance: () => false,
+    pick: <T>(arr: readonly T[]) => arr[0] as T,
+    shuffle: <T>(arr: readonly T[]) => [...arr],
+    getState: () => 0,
+    setState: () => {},
+  };
+}
 
 describe("Gen 3 Synchronize", () => {
   it("given Synchronize Pokemon paralyzed, when on-status-inflicted fires, then opponent also gets paralysis", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    // Source: Bulbapedia — "Synchronize passes paralysis to the opponent"
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "paralysis",
-      pokemonNickname: "Espeon",
-      opponentNickname: "Mightyena",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.paralysis,
+      pokemonNickname: ESPEON.displayName,
+      opponentNickname: MIGHTYENA.displayName,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     expect(result.effects[0]!.effectType).toBe("status-inflict");
     if (result.effects[0]!.effectType === "status-inflict") {
-      expect(result.effects[0]!.status).toBe("paralysis");
+      expect(result.effects[0]!.status).toBe(CORE_STATUS_IDS.paralysis);
       expect(result.effects[0]!.target).toBe("opponent");
     }
-    expect(result.messages[0]).toBe("Espeon's Synchronize shared its paralysis with Mightyena!");
+    expect(result.messages[0]).toBe(
+      `${ESPEON.displayName}'s Synchronize shared its paralysis with ${MIGHTYENA.displayName}!`,
+    );
   });
 
   it("given Synchronize Pokemon burned, when on-status-inflicted fires, then opponent also gets burn", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    // Triangulation: second independent test with different status
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "burn",
-      pokemonNickname: "Espeon",
-      opponentNickname: "Machamp",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.burn,
+      pokemonNickname: ESPEON.displayName,
+      opponentNickname: MIGHTYENA.displayName,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     if (result.effects[0]!.effectType === "status-inflict") {
-      expect(result.effects[0]!.status).toBe("burn");
+      expect(result.effects[0]!.status).toBe(CORE_STATUS_IDS.burn);
     }
-    expect(result.messages[0]).toBe("Espeon's Synchronize shared its burn with Machamp!");
+    expect(result.messages[0]).toBe(
+      `${ESPEON.displayName}'s Synchronize shared its burn with ${MIGHTYENA.displayName}!`,
+    );
   });
 
   it("given Synchronize Pokemon poisoned, when on-status-inflicted fires, then opponent also gets poison", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "poison",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.poison,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     if (result.effects[0]!.effectType === "status-inflict") {
-      expect(result.effects[0]!.status).toBe("poison");
+      expect(result.effects[0]!.status).toBe(CORE_STATUS_IDS.poison);
     }
   });
 
   it("given Synchronize Pokemon badly-poisoned, when on-status-inflicted fires, then opponent gets regular poison (Gen 3 downgrade)", () => {
     // In Gen 3, Synchronize converts badly-poisoned (Toxic) to regular poison before mirroring.
-    // Source: pret/pokeemerald src/battle_util.c lines 2976-2977, 2992-2993 —
-    //   "if (synchronizeMoveEffect == MOVE_EFFECT_TOXIC) synchronizeMoveEffect = MOVE_EFFECT_POISON"
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "badly-poisoned",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.badlyPoisoned,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(true);
     if (result.effects[0]!.effectType === "status-inflict") {
-      // Downgraded to regular poison — opponent does NOT get badly-poisoned in Gen 3
-      expect(result.effects[0]!.status).toBe("poison");
+      expect(result.effects[0]!.status).toBe(CORE_STATUS_IDS.poison);
     }
   });
 
   it("given Synchronize Pokemon put to sleep, when on-status-inflicted fires, then Synchronize does NOT trigger", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    // Source: Bulbapedia — "Synchronize does not pass on sleep or freeze"
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "sleep",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.sleep,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -221,11 +238,10 @@ describe("Gen 3 Synchronize", () => {
 
   it("given Synchronize Pokemon frozen, when on-status-inflicted fires, then Synchronize does NOT trigger", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    // Source: Bulbapedia — "Synchronize does not pass on sleep or freeze"
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "freeze",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.freeze,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
@@ -233,62 +249,61 @@ describe("Gen 3 Synchronize", () => {
 
   it("given Synchronize Pokemon paralyzed but opponent already has status, when on-status-inflicted fires, then no effect", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SYNCHRONIZE
-    // Cannot apply status if opponent already has one
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "paralysis",
-      opponentStatus: "burn",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.paralysis,
+      opponentStatus: CORE_STATUS_IDS.burn,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });
 
   it("given Synchronize Pokemon paralyzed but no opponent present, when on-status-inflicted fires, then no effect", () => {
-    // Edge case: no opponent on field
-    const ctx = createSynchronizeContext({
-      pokemonStatus: "paralysis",
+    const ctx = createStatusContext({
+      pokemonStatus: CORE_STATUS_IDS.paralysis,
       hasOpponent: false,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });
 
   it("given Synchronize Pokemon with no status, when on-status-inflicted fires, then no effect", () => {
-    // Edge case: status was cleared between infliction and trigger (shouldn't happen but defensive)
-    const ctx = createSynchronizeContext({
+    const ctx = createStatusContext({
       pokemonStatus: null,
     });
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
 
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });
 
   it("given non-Synchronize Pokemon, when on-status-inflicted fires, then no effect", () => {
-    // Non-Synchronize abilities should not trigger
-    const pokemon = createActivePokemon({
-      types: ["normal"],
-      ability: "huge-power",
-      nickname: "Azumarill",
-      status: "paralysis",
+    // Non-Synchronize abilities should not trigger.
+    const pokemon = createOnFieldPokemon({
+      speciesId: AZUMARILL.id,
+      types: [...AZUMARILL.types],
+      ability: GEN3_ABILITY_IDS.hugePower,
+      nickname: AZUMARILL.displayName,
+      status: CORE_STATUS_IDS.paralysis,
     });
-    const opponent = createActivePokemon({
-      types: ["normal"],
-      ability: "intimidate",
-      nickname: "Mightyena",
+    const opponent = createOnFieldPokemon({
+      speciesId: MIGHTYENA.id,
+      types: [...MIGHTYENA.types],
+      ability: GEN3_ABILITY_IDS.intimidate,
+      nickname: MIGHTYENA.displayName,
     });
     const ctx = {
       pokemon,
       opponent,
       state: { weather: null } as AbilityContext["state"],
       rng: createMockRng(),
-      trigger: "on-status-inflicted",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
     } as AbilityContext;
 
-    const result = applyGen3Ability("on-status-inflicted", ctx);
+    const result = applyGen3Ability(CORE_ABILITY_TRIGGER_IDS.onStatusInflicted, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects.length).toBe(0);
   });

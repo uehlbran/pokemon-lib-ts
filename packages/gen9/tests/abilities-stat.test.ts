@@ -1,7 +1,32 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_MECHANIC_MULTIPLIERS,
+  CORE_NATURE_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createPokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen9DataManager,
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_ORICHALCUM_HADRON_MULTIPLIER,
+  GEN9_SPECIES_IDS,
+  GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
+  GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
   getBoostMultiplier,
   getHadronEngineMultiplier,
   getHighestBaseStat,
@@ -11,7 +36,22 @@ import {
   handleQuarkDrive,
   shouldProtosynthesisActivate,
   shouldQuarkDriveActivate,
-} from "../src/Gen9AbilitiesStat";
+} from "../src";
+
+const ABILITIES = GEN9_ABILITY_IDS;
+const CORE_ABILITIES = CORE_ABILITY_IDS;
+const ITEMS = GEN9_ITEM_IDS;
+const SPECIES = GEN9_SPECIES_IDS;
+const TERRAINS = CORE_TERRAIN_IDS;
+const _TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const WEATHERS = CORE_WEATHER_IDS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const dataManager = createGen9DataManager();
+const defaultSpecies = dataManager.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_NATURE = dataManager.getNature(
+  (CORE_NATURE_IDS.hardy ?? GEN9_NATURE_IDS.hardy) as typeof GEN9_NATURE_IDS.hardy,
+).id;
 
 /**
  * Gen 9 stat-boosting ability tests: Protosynthesis, Quark Drive,
@@ -26,7 +66,12 @@ import {
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makePokemonInstance(overrides: {
+let nextTestUid = 0;
+function createTestUid() {
+  return `test-${nextTestUid++}`;
+}
+
+function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
   nickname?: string | null;
   ability?: string;
@@ -44,41 +89,40 @@ function makePokemonInstance(overrides: {
   };
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    uid: `test-${Math.random()}`,
-    speciesId: overrides.speciesId ?? 1,
-    nickname: overrides.nickname ?? null,
-    level: 50,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: overrides.currentHp ?? maxHp,
-    moves: [],
-    ability: overrides.ability ?? "",
-    abilitySlot: "normal1" as const,
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
+  const pokemon = createPokemonInstance(species, 50, makeRng(), {
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
-    status: (overrides.status as PokemonInstance["status"]) ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(species.baseFriendship),
+    moves: [],
     isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
+    metLocation: "test",
+    originalTrainer: "Test",
     originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: overrides.calculatedStats ?? {
-      hp: maxHp,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
-  } as PokemonInstance;
+    pokeball: ITEMS.pokeBall,
+  });
+  pokemon.uid = createTestUid();
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.ability = overrides.ability ?? CORE_ABILITIES.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = (overrides.status ?? null) as PokemonInstance["status"];
+  pokemon.calculatedStats = overrides.calculatedStats ?? {
+    hp: maxHp,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return pokemon;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   types?: PokemonType[];
   nickname?: string | null;
@@ -98,53 +142,27 @@ function makeActivePokemon(overrides: {
     speed: number;
   };
 }) {
-  return {
-    pokemon: makePokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      speciesId: overrides.speciesId,
-      status: overrides.status,
-      heldItem: overrides.heldItem,
-      calculatedStats: overrides.calculatedStats,
-    }),
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? ["normal"],
-    ability: overrides.ability ?? "",
-    suppressedAbility: null,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: overrides.substituteHp ?? 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
-  };
+  const pokemon = createSyntheticPokemonInstance({
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    speciesId: overrides.speciesId,
+    status: overrides.status,
+    heldItem: overrides.heldItem,
+    calculatedStats: overrides.calculatedStats,
+  });
+  const species = dataManager.getSpecies(pokemon.speciesId);
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, [
+    ...(overrides.types ?? species.types),
+  ]);
+  activePokemon.ability = pokemon.ability;
+  activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
+  activePokemon.substituteHp = overrides.substituteHp ?? 0;
+  return activePokemon;
 }
 
-function makeSide(index: 0 | 1): BattleSide {
+function createBattleSide(index: 0 | 1): BattleSide {
   return {
     index,
     trainer: null,
@@ -174,7 +192,7 @@ function makeRng(overrides?: Partial<SeededRandom>): SeededRandom {
   };
 }
 
-function makeBattleState(overrides?: {
+function createBattleState(overrides?: {
   weather?: BattleState["weather"];
   terrain?: BattleState["terrain"];
 }): BattleState {
@@ -183,7 +201,7 @@ function makeBattleState(overrides?: {
     generation: 9,
     format: "singles",
     turnNumber: 1,
-    sides: [makeSide(0), makeSide(1)],
+    sides: [createBattleSide(0), createBattleSide(1)],
     weather: overrides?.weather ?? null,
     terrain: overrides?.terrain ?? null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -195,17 +213,17 @@ function makeBattleState(overrides?: {
   } as BattleState;
 }
 
-function makeAbilityContext(overrides: {
-  pokemon: ReturnType<typeof makeActivePokemon>;
-  opponent?: ReturnType<typeof makeActivePokemon>;
-  trigger: string;
+function createAbilityContext(overrides: {
+  pokemon: ReturnType<typeof createOnFieldPokemon>;
+  opponent?: ReturnType<typeof createOnFieldPokemon>;
+  trigger: (typeof TRIGGERS)[keyof typeof TRIGGERS];
   weather?: BattleState["weather"];
   terrain?: BattleState["terrain"];
 }): AbilityContext {
   return {
     pokemon: overrides.pokemon as any,
     opponent: overrides.opponent as any,
-    state: makeBattleState({
+    state: createBattleState({
       weather: overrides.weather,
       terrain: overrides.terrain,
     }),
@@ -221,7 +239,7 @@ function makeAbilityContext(overrides: {
 describe("getHighestBaseStat", () => {
   it("given a Pokemon with highest Attack, when finding highest stat, then returns attack", () => {
     // Source: Showdown data/abilities.ts:3440-3455 -- iterates stats in order
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 150,
@@ -236,7 +254,7 @@ describe("getHighestBaseStat", () => {
 
   it("given a Pokemon with highest Speed, when finding highest stat, then returns speed", () => {
     // Source: Showdown data/abilities.ts:3440-3455
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 80,
@@ -251,7 +269,7 @@ describe("getHighestBaseStat", () => {
 
   it("given a Pokemon with highest SpAttack, when finding highest stat, then returns spAttack", () => {
     // Source: Showdown data/abilities.ts:3440-3455
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 80,
@@ -266,7 +284,7 @@ describe("getHighestBaseStat", () => {
 
   it("given a Pokemon with tied Attack and Defense, when finding highest stat, then returns attack (first in order)", () => {
     // Source: Showdown data/abilities.ts:3440-3455 -- ties broken by iteration order: atk > def > spa > spd > spe
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 120,
@@ -281,7 +299,7 @@ describe("getHighestBaseStat", () => {
 
   it("given a Pokemon with all equal stats, when finding highest stat, then returns attack (first in order)", () => {
     // Source: Showdown data/abilities.ts:3440-3455 -- first in iteration wins ties
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -295,7 +313,7 @@ describe("getHighestBaseStat", () => {
   });
 
   it("given a Pokemon with highest Defense, when finding highest stat, then returns defense", () => {
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 80,
@@ -309,7 +327,7 @@ describe("getHighestBaseStat", () => {
   });
 
   it("given a Pokemon with highest SpDefense, when finding highest stat, then returns spDefense", () => {
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       calculatedStats: {
         hp: 200,
         attack: 80,
@@ -331,28 +349,28 @@ describe("getBoostMultiplier", () => {
   it("given Speed stat, when getting boost multiplier, then returns 1.5 (50%)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
     // "if (bestStat === 'spe') return this.chainModify(1.5)"
-    expect(getBoostMultiplier("speed")).toBe(1.5);
+    expect(getBoostMultiplier("speed")).toBe(GEN9_STAT_ABILITY_SPEED_MULTIPLIER);
   });
 
   it("given Attack stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
     // "return this.chainModify([5325, 4096])"
-    expect(getBoostMultiplier("attack")).toBeCloseTo(5325 / 4096, 10);
+    expect(getBoostMultiplier("attack")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
   });
 
   it("given Defense stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("defense")).toBeCloseTo(5325 / 4096, 10);
+    expect(getBoostMultiplier("defense")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
   });
 
   it("given SpAttack stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("spAttack")).toBeCloseTo(5325 / 4096, 10);
+    expect(getBoostMultiplier("spAttack")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
   });
 
   it("given SpDefense stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("spDefense")).toBeCloseTo(5325 / 4096, 10);
+    expect(getBoostMultiplier("spDefense")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
   });
 });
 
@@ -363,10 +381,10 @@ describe("getBoostMultiplier", () => {
 describe("shouldProtosynthesisActivate", () => {
   it("given Sun weather, when checking activation, then activates without consuming Booster Energy", () => {
     // Source: Showdown data/abilities.ts:3427-3440 -- sun activates
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = shouldProtosynthesisActivate(ctx);
     expect(result.activate).toBe(true);
@@ -375,10 +393,10 @@ describe("shouldProtosynthesisActivate", () => {
 
   it("given Harsh Sun weather, when checking activation, then activates without consuming Booster Energy", () => {
     // Source: Showdown data/abilities.ts:3427-3440 -- desolate land (harsh-sun) also activates
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
-      weather: { type: "harsh-sun", turnsLeft: 999, source: "desolate-land" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.harshSun, turnsLeft: 999, source: ABILITIES.desolateLand },
     });
     const result = shouldProtosynthesisActivate(ctx);
     expect(result.activate).toBe(true);
@@ -387,9 +405,12 @@ describe("shouldProtosynthesisActivate", () => {
 
   it("given no Sun but holding Booster Energy, when checking activation, then activates and consumes Booster Energy", () => {
     // Source: Showdown data/abilities.ts:3427-3440 -- Booster Energy item check
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis", heldItem: "booster-energy" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protosynthesis,
+        heldItem: ITEMS.boosterEnergy,
+      }),
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = shouldProtosynthesisActivate(ctx);
     expect(result.activate).toBe(true);
@@ -398,9 +419,9 @@ describe("shouldProtosynthesisActivate", () => {
 
   it("given no Sun and no Booster Energy, when checking activation, then does not activate", () => {
     // Source: Showdown data/abilities.ts:3427-3440
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = shouldProtosynthesisActivate(ctx);
     expect(result.activate).toBe(false);
@@ -409,10 +430,10 @@ describe("shouldProtosynthesisActivate", () => {
 
   it("given Rain weather and no Booster Energy, when checking activation, then does not activate", () => {
     // Source: Showdown data/abilities.ts:3427-3440 -- only sun/harsh-sun triggers
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
-      weather: { type: "rain", turnsLeft: 5, source: "drizzle" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.rain, turnsLeft: 5, source: CORE_ABILITIES.drizzle },
     });
     const result = shouldProtosynthesisActivate(ctx);
     expect(result.activate).toBe(false);
@@ -420,14 +441,14 @@ describe("shouldProtosynthesisActivate", () => {
 
   it("given already active protosynthesis volatile, when checking activation, then does not activate again", () => {
     // Source: Showdown data/abilities.ts:3427-3440 -- doesn't stack
-    const volatiles = new Map([["protosynthesis", { turnsLeft: -1 }]]);
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "protosynthesis",
+    const volatiles = new Map([[VOLATILES.protosynthesis, { turnsLeft: -1 }]]);
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protosynthesis,
         volatiles: volatiles as any,
       }),
-      trigger: "on-switch-in",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = shouldProtosynthesisActivate(ctx);
     expect(result.activate).toBe(false);
@@ -441,9 +462,9 @@ describe("shouldProtosynthesisActivate", () => {
 describe("handleProtosynthesis", () => {
   it("given on-switch-in in Sun with highest Attack, when handling, then sets volatile with attack boost", () => {
     // Source: Showdown data/abilities.ts:3427-3493
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "protosynthesis",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protosynthesis,
         calculatedStats: {
           hp: 200,
           attack: 150,
@@ -453,8 +474,8 @@ describe("handleProtosynthesis", () => {
           speed: 100,
         },
       }),
-      trigger: "on-switch-in",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = handleProtosynthesis(ctx);
     expect(result.activated).toBe(true);
@@ -463,7 +484,7 @@ describe("handleProtosynthesis", () => {
       expect.objectContaining({
         effectType: "volatile-inflict",
         target: "self",
-        volatile: "protosynthesis",
+        volatile: VOLATILES.protosynthesis,
         data: { boostedStat: "attack", fromBoosterEnergy: false },
       }),
     );
@@ -471,10 +492,10 @@ describe("handleProtosynthesis", () => {
 
   it("given on-switch-in with Booster Energy and highest Speed, when handling, then consumes energy and boosts speed", () => {
     // Source: Showdown data/abilities.ts:3427-3493
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "protosynthesis",
-        heldItem: "booster-energy",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protosynthesis,
+        heldItem: ITEMS.boosterEnergy,
         calculatedStats: {
           hp: 200,
           attack: 80,
@@ -484,7 +505,7 @@ describe("handleProtosynthesis", () => {
           speed: 130,
         },
       }),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = handleProtosynthesis(ctx);
     expect(result.activated).toBe(true);
@@ -498,38 +519,38 @@ describe("handleProtosynthesis", () => {
 
   it("given on-weather-change to Sun, when handling, then activates protosynthesis", () => {
     // Source: Showdown data/abilities.ts -- also triggers on weather change
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-weather-change",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onWeatherChange,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = handleProtosynthesis(ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given on-before-move trigger, when handling, then does not activate (wrong trigger)", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-before-move",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onBeforeMove,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = handleProtosynthesis(ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given no Sun and no Booster Energy, when handling, then does not activate", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = handleProtosynthesis(ctx);
     expect(result.activated).toBe(false);
   });
 
   it("given a nickname, when handling, then message uses nickname", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "protosynthesis",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protosynthesis,
         nickname: "SunnyBoy",
         calculatedStats: {
           hp: 200,
@@ -540,8 +561,8 @@ describe("handleProtosynthesis", () => {
           speed: 80,
         },
       }),
-      trigger: "on-switch-in",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = handleProtosynthesis(ctx);
     expect(result.messages.some((m) => m.includes("SunnyBoy"))).toBe(true);
@@ -555,10 +576,10 @@ describe("handleProtosynthesis", () => {
 describe("shouldQuarkDriveActivate", () => {
   it("given Electric Terrain, when checking activation, then activates without consuming Booster Energy", () => {
     // Source: Showdown data/abilities.ts:3564-3580
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-switch-in",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive }),
+      trigger: TRIGGERS.onSwitchIn,
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
     });
     const result = shouldQuarkDriveActivate(ctx);
     expect(result.activate).toBe(true);
@@ -567,9 +588,12 @@ describe("shouldQuarkDriveActivate", () => {
 
   it("given no Electric Terrain but holding Booster Energy, when checking activation, then activates and consumes", () => {
     // Source: Showdown data/abilities.ts:3564-3580
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive", heldItem: "booster-energy" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.quarkDrive,
+        heldItem: ITEMS.boosterEnergy,
+      }),
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = shouldQuarkDriveActivate(ctx);
     expect(result.activate).toBe(true);
@@ -578,19 +602,19 @@ describe("shouldQuarkDriveActivate", () => {
 
   it("given Grassy Terrain (not Electric), when checking activation, then does not activate", () => {
     // Source: Showdown data/abilities.ts:3564-3580 -- only electric terrain triggers
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-switch-in",
-      terrain: { type: "grassy", turnsLeft: 5, source: "grassy-surge" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive }),
+      trigger: TRIGGERS.onSwitchIn,
+      terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: ABILITIES.grassySurge },
     });
     const result = shouldQuarkDriveActivate(ctx);
     expect(result.activate).toBe(false);
   });
 
   it("given no terrain and no Booster Energy, when checking activation, then does not activate", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive }),
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = shouldQuarkDriveActivate(ctx);
     expect(result.activate).toBe(false);
@@ -598,14 +622,14 @@ describe("shouldQuarkDriveActivate", () => {
 
   it("given already active quarkdrive volatile, when checking activation, then does not activate again", () => {
     // Source: Showdown data/abilities.ts:3564-3580 -- doesn't stack
-    const volatiles = new Map([["quarkdrive", { turnsLeft: -1 }]]);
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "quark-drive",
+    const volatiles = new Map([[VOLATILES.quarkDrive, { turnsLeft: -1 }]]);
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.quarkDrive,
         volatiles: volatiles as any,
       }),
-      trigger: "on-switch-in",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+      trigger: TRIGGERS.onSwitchIn,
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
     });
     const result = shouldQuarkDriveActivate(ctx);
     expect(result.activate).toBe(false);
@@ -619,9 +643,9 @@ describe("shouldQuarkDriveActivate", () => {
 describe("handleQuarkDrive", () => {
   it("given on-switch-in on Electric Terrain with highest SpAttack, when handling, then sets volatile with spAttack boost", () => {
     // Source: Showdown data/abilities.ts:3564-3629
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "quark-drive",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.quarkDrive,
         calculatedStats: {
           hp: 200,
           attack: 80,
@@ -631,8 +655,8 @@ describe("handleQuarkDrive", () => {
           speed: 100,
         },
       }),
-      trigger: "on-switch-in",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+      trigger: TRIGGERS.onSwitchIn,
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
     });
     const result = handleQuarkDrive(ctx);
     expect(result.activated).toBe(true);
@@ -640,7 +664,7 @@ describe("handleQuarkDrive", () => {
       expect.objectContaining({
         effectType: "volatile-inflict",
         target: "self",
-        volatile: "quarkdrive",
+        volatile: VOLATILES.quarkDrive,
         data: { boostedStat: "spAttack", fromBoosterEnergy: false },
       }),
     );
@@ -648,20 +672,20 @@ describe("handleQuarkDrive", () => {
 
   it("given on-terrain-change to Electric Terrain, when handling, then activates quark drive", () => {
     // Source: Showdown data/abilities.ts:3564-3629
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-terrain-change",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive }),
+      trigger: TRIGGERS.onTerrainChange,
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
     });
     const result = handleQuarkDrive(ctx);
     expect(result.activated).toBe(true);
   });
 
   it("given on-switch-in with Booster Energy and highest Speed, when handling, then consumes energy and boosts speed", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({
-        ability: "quark-drive",
-        heldItem: "booster-energy",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.quarkDrive,
+        heldItem: ITEMS.boosterEnergy,
         calculatedStats: {
           hp: 200,
           attack: 80,
@@ -671,7 +695,7 @@ describe("handleQuarkDrive", () => {
           speed: 130,
         },
       }),
-      trigger: "on-switch-in",
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = handleQuarkDrive(ctx);
     expect(result.activated).toBe(true);
@@ -684,10 +708,10 @@ describe("handleQuarkDrive", () => {
   });
 
   it("given wrong trigger (on-contact), when handling, then does not activate", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-contact",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive }),
+      trigger: TRIGGERS.onContact,
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
     });
     const result = handleQuarkDrive(ctx);
     expect(result.activated).toBe(false);
@@ -700,31 +724,33 @@ describe("handleQuarkDrive", () => {
 
 describe("handleGen9StatAbility", () => {
   it("given protosynthesis ability in Sun, when dispatching, then activates protosynthesis", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "protosynthesis" }),
-      trigger: "on-switch-in",
-      weather: { type: "sun", turnsLeft: 5, source: "drought" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.protosynthesis }),
+      trigger: TRIGGERS.onSwitchIn,
+      weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = handleGen9StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: "protosynthesis" }));
+    expect(result.effects[0]).toEqual(
+      expect.objectContaining({ volatile: VOLATILES.protosynthesis }),
+    );
   });
 
   it("given quark-drive ability on Electric Terrain, when dispatching, then activates quark drive", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "quark-drive" }),
-      trigger: "on-switch-in",
-      terrain: { type: "electric", turnsLeft: 5, source: "electric-surge" },
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive }),
+      trigger: TRIGGERS.onSwitchIn,
+      terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
     });
     const result = handleGen9StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: "quarkdrive" }));
+    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: VOLATILES.quarkDrive }));
   });
 
   it("given unrelated ability, when dispatching, then returns inactive", () => {
-    const ctx = makeAbilityContext({
-      pokemon: makeActivePokemon({ ability: "intimidate" }),
-      trigger: "on-switch-in",
+    const ctx = createAbilityContext({
+      pokemon: createOnFieldPokemon({ ability: CORE_ABILITIES.intimidate }),
+      trigger: TRIGGERS.onSwitchIn,
     });
     const result = handleGen9StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -739,24 +765,30 @@ describe("getOrichalcumPulseMultiplier", () => {
   it("given Sun weather, when getting multiplier, then returns 5461/4096 (~1.333)", () => {
     // Source: Showdown data/abilities.ts:3028-3033
     // "return this.chainModify([5461, 4096])"
-    expect(getOrichalcumPulseMultiplier("sun")).toBeCloseTo(5461 / 4096, 10);
+    expect(getOrichalcumPulseMultiplier(WEATHERS.sun)).toBeCloseTo(
+      GEN9_ORICHALCUM_HADRON_MULTIPLIER,
+      10,
+    );
   });
 
   it("given Harsh Sun weather, when getting multiplier, then returns 5461/4096 (~1.333)", () => {
     // Source: Showdown data/abilities.ts:3028-3033
-    expect(getOrichalcumPulseMultiplier("harsh-sun")).toBeCloseTo(5461 / 4096, 10);
+    expect(getOrichalcumPulseMultiplier(WEATHERS.harshSun)).toBeCloseTo(
+      GEN9_ORICHALCUM_HADRON_MULTIPLIER,
+      10,
+    );
   });
 
   it("given Rain weather, when getting multiplier, then returns 1 (no boost)", () => {
-    expect(getOrichalcumPulseMultiplier("rain")).toBe(1);
+    expect(getOrichalcumPulseMultiplier(WEATHERS.rain)).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 
   it("given no weather, when getting multiplier, then returns 1 (no boost)", () => {
-    expect(getOrichalcumPulseMultiplier(undefined)).toBe(1);
+    expect(getOrichalcumPulseMultiplier(undefined)).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 
   it("given Sand weather, when getting multiplier, then returns 1 (no boost)", () => {
-    expect(getOrichalcumPulseMultiplier("sand")).toBe(1);
+    expect(getOrichalcumPulseMultiplier(WEATHERS.sand)).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 });
 
@@ -768,18 +800,21 @@ describe("getHadronEngineMultiplier", () => {
   it("given Electric Terrain, when getting multiplier, then returns 5461/4096 (~1.333)", () => {
     // Source: Showdown data/abilities.ts:1733-1740
     // "return this.chainModify([5461, 4096])"
-    expect(getHadronEngineMultiplier("electric")).toBeCloseTo(5461 / 4096, 10);
+    expect(getHadronEngineMultiplier(TERRAINS.electric)).toBeCloseTo(
+      GEN9_ORICHALCUM_HADRON_MULTIPLIER,
+      10,
+    );
   });
 
   it("given Grassy Terrain, when getting multiplier, then returns 1 (no boost)", () => {
-    expect(getHadronEngineMultiplier("grassy")).toBe(1);
+    expect(getHadronEngineMultiplier(TERRAINS.grassy)).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 
   it("given no terrain, when getting multiplier, then returns 1 (no boost)", () => {
-    expect(getHadronEngineMultiplier(undefined)).toBe(1);
+    expect(getHadronEngineMultiplier(undefined)).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 
   it("given Psychic Terrain, when getting multiplier, then returns 1 (no boost)", () => {
-    expect(getHadronEngineMultiplier("psychic")).toBe(1);
+    expect(getHadronEngineMultiplier(TERRAINS.psychic)).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
 });
