@@ -1,11 +1,12 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, type PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,13 +21,10 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [
-        { moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 },
-        { moveId: "fly", currentPP: 15, maxPP: 15, ppUps: 0 },
-      ],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle), createMockMoveSlot(CORE_MOVE_IDS.fly)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -40,10 +38,10 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
