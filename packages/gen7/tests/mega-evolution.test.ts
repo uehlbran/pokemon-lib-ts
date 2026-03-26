@@ -1,14 +1,18 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  MEGA_STONE_DATA as CORE_MEGA_STONE_DATA,
-  CORE_ITEM_IDS,
-  CORE_TYPE_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_GIMMICK_IDS,
+  CORE_ITEM_IDS,
+  MEGA_STONE_DATA as CORE_MEGA_STONE_DATA,
+  CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
   type NatureId,
 } from "@pokemon-lib-ts/core";
-import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import { describe, expect, it } from "vitest";
 import {
   createGen7DataManager,
@@ -38,12 +42,17 @@ const LUCARIONITE = ITEMS.lucarionite;
 const AGGRONITE = ITEMS.aggronite;
 const LEFTOVERS = ITEMS.leftovers;
 const SITRUS_BERRY = ITEMS.sitrusBerry;
+const VENUSAUR_MEGA_FORM = CORE_MEGA_STONE_DATA[VENUSAURITE].form;
+const CHARIZARD_MEGA_X_FORM = CORE_MEGA_STONE_DATA[CHARIZARDITE_X].form;
+const CHARIZARD_MEGA_Y_FORM = CORE_MEGA_STONE_DATA[CHARIZARDITE_Y].form;
+const BLASTOISE_MEGA_FORM = CORE_MEGA_STONE_DATA[BLASTOISINITE].form;
+const LUCARIO_MEGA_FORM = CORE_MEGA_STONE_DATA[LUCARIONITE].form;
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   uid?: string;
   speciesId?: number;
   heldItem?: string | null;
@@ -68,16 +77,16 @@ function makeActivePokemon(overrides: {
       level: 50,
       experience: 0,
       nature: DEFAULT_NATURE,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: 200,
       moves: [],
       ability: overrides.ability ?? ABILITIES.blaze,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -128,7 +137,9 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeSide(overrides: { gimmickUsed?: boolean; index?: 0 | 1 } = {}): BattleSide {
+function createSyntheticBattleSide(
+  overrides: { gimmickUsed?: boolean; index?: 0 | 1 } = {},
+): BattleSide {
   return {
     index: overrides.index ?? 0,
     trainer: null,
@@ -145,7 +156,7 @@ function makeSide(overrides: { gimmickUsed?: boolean; index?: 0 | 1 } = {}): Bat
   } as BattleSide;
 }
 
-function makeState(): BattleState {
+function createSyntheticBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -179,7 +190,7 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
     // Source: Bulbapedia "Venusaurite" -- Grass/Poison, Thick Fat, 123 Defense
     const data = MEGA_STONE_DATA[VENUSAURITE];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-venusaur");
+    expect(data.form).toBe(VENUSAUR_MEGA_FORM);
     expect(data.types).toEqual([TYPES.grass, TYPES.poison]);
     expect(data.ability).toBe(ABILITIES.thickFat);
     expect(data.baseStats.defense).toBe(123);
@@ -189,7 +200,7 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
     // Source: Bulbapedia "Charizardite X" -- Fire/Dragon type, Tough Claws ability, 130 Attack
     const data = MEGA_STONE_DATA[CHARIZARDITE_X];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-charizard-x");
+    expect(data.form).toBe(CHARIZARD_MEGA_X_FORM);
     expect(data.types).toEqual([TYPES.fire, TYPES.dragon]);
     expect(data.ability).toBe(ABILITIES.toughClaws);
     expect(data.baseStats.attack).toBe(130);
@@ -199,7 +210,7 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
     // Source: Bulbapedia "Charizardite Y" -- Fire/Flying type, Drought ability, 159 Sp. Attack
     const data = MEGA_STONE_DATA[CHARIZARDITE_Y];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-charizard-y");
+    expect(data.form).toBe(CHARIZARD_MEGA_Y_FORM);
     expect(data.types).toEqual([TYPES.fire, TYPES.flying]);
     expect(data.ability).toBe(ABILITIES.drought);
     expect(data.baseStats.spAttack).toBe(159);
@@ -209,7 +220,7 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
     // Source: Bulbapedia "Blastoisinite" -- Water, Mega Launcher ability, 135 Sp. Attack
     const data = MEGA_STONE_DATA[BLASTOISINITE];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-blastoise");
+    expect(data.form).toBe(BLASTOISE_MEGA_FORM);
     expect(data.types).toEqual([TYPES.water]);
     expect(data.ability).toBe(ABILITIES.megaLauncher);
     expect(data.baseStats.spAttack).toBe(135);
@@ -219,7 +230,7 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
     // Source: Bulbapedia "Lucarionite" -- Fighting/Steel, Adaptability ability, 145 Attack
     const data = MEGA_STONE_DATA[LUCARIONITE];
     expect(data).toBeDefined();
-    expect(data.form).toBe("mega-lucario");
+    expect(data.form).toBe(LUCARIO_MEGA_FORM);
     expect(data.types).toEqual([TYPES.fighting, TYPES.steel]);
     expect(data.ability).toBe(ABILITIES.adaptability);
     expect(data.baseStats.attack).toBe(145);
@@ -235,7 +246,7 @@ describe("getMegaEvolutionData -- Gen 7", () => {
     // Source: Showdown data/items.ts -- charizardite-x is a Mega Stone
     const result = getMegaEvolutionData(CHARIZARDITE_X);
     expect(result).not.toBeNull();
-    expect(result!.form).toBe("mega-charizard-x");
+    expect(result!.form).toBe(CHARIZARD_MEGA_X_FORM);
   });
 
   it("given null, when calling getMegaEvolutionData, then returns null", () => {
@@ -267,9 +278,9 @@ describe("Gen7MegaEvolution -- canUse()", () => {
     // Source: Bulbapedia "Mega Evolution" -- can activate if holding correct Mega Stone
     // Source: Showdown sim/battle.ts -- canMegaEvo check: holding mega stone + mega not used
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X, isMega: false });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(true);
   });
@@ -277,14 +288,17 @@ describe("Gen7MegaEvolution -- canUse()", () => {
   it("given a Charizard holding charizardite-x but mega already used on this side, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" -- only one Mega Evolution per trainer per battle
     const gimmick = new Gen7MegaEvolution();
-    const firstPokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X, isMega: false });
-    const secondPokemon = makeActivePokemon({
+    const firstPokemon = createSyntheticPokemonInstance({
+      heldItem: CHARIZARDITE_X,
+      isMega: false,
+    });
+    const secondPokemon = createSyntheticPokemonInstance({
       uid: "second",
       heldItem: CHARIZARDITE_Y,
       isMega: false,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     // First Pokemon uses mega
     gimmick.activate(firstPokemon, side, state);
@@ -296,9 +310,9 @@ describe("Gen7MegaEvolution -- canUse()", () => {
   it("given a Pokemon that has already mega evolved, when calling canUse, then returns false", () => {
     // Source: Showdown sim/battle.ts -- pokemon.isMega blocks re-activation
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X, isMega: true });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X, isMega: true });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -306,9 +320,9 @@ describe("Gen7MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding a non-mega-stone item, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" -- requires a Mega Stone to activate
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: LEFTOVERS, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: LEFTOVERS, isMega: false });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -316,9 +330,9 @@ describe("Gen7MegaEvolution -- canUse()", () => {
   it("given a Pokemon holding no item, when calling canUse, then returns false", () => {
     // Source: Bulbapedia "Mega Evolution" -- requires holding a Mega Stone
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: null, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: null, isMega: false });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -328,10 +342,10 @@ describe("Gen7MegaEvolution -- canUse()", () => {
     // Venusaurite belongs to Venusaur (species #003); Charizard is species #006.
     // Source: Showdown sim/battle.ts -- formeChange only permitted when species matches stone
     const gimmick = new Gen7MegaEvolution();
-    // makeActivePokemon defaults speciesId: SPECIES.charizard; venusaurite.baseSpeciesId = SPECIES.venusaur
-    const pokemon = makeActivePokemon({ heldItem: VENUSAURITE, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    // createSyntheticPokemonInstance defaults speciesId: SPECIES.charizard; venusaurite.baseSpeciesId = SPECIES.venusaur
+    const pokemon = createSyntheticPokemonInstance({ heldItem: VENUSAURITE, isMega: false });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(gimmick.canUse(pokemon, side, state)).toBe(false);
   });
@@ -341,9 +355,9 @@ describe("Gen7MegaEvolution -- canUse()", () => {
     // In Gen 7, side.gimmickUsed being true (from Z-Move) does NOT block Mega Evolution.
     // This is THE key difference from Gen 6.
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X, isMega: false });
-    const side = makeSide({ gimmickUsed: true }); // Z-Move may have set this
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X, isMega: false });
+    const side = createSyntheticBattleSide({ gimmickUsed: true }); // Z-Move may have set this
+    const state = createSyntheticBattleState();
 
     // Gen 7 mega does NOT check side.gimmickUsed -- it uses internal tracking
     expect(gimmick.canUse(pokemon, side, state)).toBe(true);
@@ -359,21 +373,21 @@ describe("Gen7MegaEvolution -- activate()", () => {
     // Source: Bulbapedia "Charizardite X" -- evolves into Mega Charizard X
     // Source: Showdown sim/battle.ts -- mega-evolve event emitted with form key
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticPokemonInstance({
       uid: "charizard-1",
       heldItem: CHARIZARDITE_X,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false, index: 0 });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false, index: 0 });
+    const state = createSyntheticBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("mega-evolve");
     if (events[0].type === "mega-evolve") {
-      expect(events[0].form).toBe("mega-charizard-x");
+      expect(events[0].form).toBe(CHARIZARD_MEGA_X_FORM);
       expect(events[0].side).toBe(0);
       expect(events[0].pokemon).toBe("charizard-1");
     }
@@ -382,13 +396,13 @@ describe("Gen7MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then types change to Fire/Dragon", () => {
     // Source: Bulbapedia "Charizardite X" -- Mega Charizard X is Fire/Dragon type
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticPokemonInstance({
       heldItem: CHARIZARDITE_X,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -398,13 +412,13 @@ describe("Gen7MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then ability changes to Tough Claws", () => {
     // Source: Bulbapedia "Charizardite X" -- Mega Charizard X has Tough Claws
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticPokemonInstance({
       heldItem: CHARIZARDITE_X,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -423,7 +437,7 @@ describe("Gen7MegaEvolution -- activate()", () => {
     //   spdef: floor((floor((170+31+0)*50/100)+5)*1.0) = floor(100+5) = 105
     //   spe:   floor((floor((200+31+0)*50/100)+5)*1.0) = floor(115+5) = 120
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticPokemonInstance({
       heldItem: CHARIZARDITE_X,
       calculatedStats: {
         hp: 200,
@@ -434,8 +448,8 @@ describe("Gen7MegaEvolution -- activate()", () => {
         speed: 100,
       },
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -452,9 +466,9 @@ describe("Gen7MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then pokemon.isMega is set to true", () => {
     // Source: Showdown sim/battle.ts -- pokemon.isMega = true after activation
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X, isMega: false });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X, isMega: false });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(pokemon.isMega).toBe(false);
     gimmick.activate(pokemon, side, state);
@@ -467,9 +481,9 @@ describe("Gen7MegaEvolution -- activate()", () => {
     // also need to be usable in the same battle.
     // This is THE key behavioral difference from Gen 6's activate().
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     expect(side.gimmickUsed).toBe(false);
     gimmick.activate(pokemon, side, state);
@@ -480,9 +494,9 @@ describe("Gen7MegaEvolution -- activate()", () => {
   it("given Charizard holding charizardite-x, when activate is called, then internal mega tracking marks the side as used", () => {
     // Source: Showdown sim/side.ts:170 -- megaUsed per-side tracking
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X });
-    const side = makeSide({ gimmickUsed: false, index: 0 });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X });
+    const side = createSyntheticBattleSide({ gimmickUsed: false, index: 0 });
+    const state = createSyntheticBattleState();
 
     expect(gimmick.hasUsedMega(0)).toBe(false);
     gimmick.activate(pokemon, side, state);
@@ -494,14 +508,14 @@ describe("Gen7MegaEvolution -- activate()", () => {
   it("given Aggron holding aggronite, when activate is called, then types change to pure Steel", () => {
     // Source: Bulbapedia "Aggronite" -- Mega Aggron loses Rock type, becomes pure Steel
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticPokemonInstance({
       speciesId: SPECIES.aggron,
       heldItem: AGGRONITE,
       types: [TYPES.steel, TYPES.rock],
       ability: ABILITIES.sturdy,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     gimmick.activate(pokemon, side, state);
 
@@ -511,9 +525,9 @@ describe("Gen7MegaEvolution -- activate()", () => {
   it("given a Pokemon holding no item, when activate is called, then returns empty events array", () => {
     // Source: defensive -- activate with no mega stone data returns []
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: null });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: null });
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
@@ -527,19 +541,19 @@ describe("Gen7MegaEvolution -- activate()", () => {
     // Source: pret/pokeemerald CALC_STAT -- L50, 31 IVs, 0 EVs, Hardy (1.0):
     //   spatk: floor((floor((318+31+0)*50/100)+5)*1.0) = floor(174+5) = 179
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticPokemonInstance({
       heldItem: CHARIZARDITE_Y,
       types: [TYPES.fire, TYPES.flying],
       ability: ABILITIES.blaze,
     });
-    const side = makeSide({ gimmickUsed: false });
-    const state = makeState();
+    const side = createSyntheticBattleSide({ gimmickUsed: false });
+    const state = createSyntheticBattleState();
 
     const events = gimmick.activate(pokemon, side, state);
 
     expect(events).toHaveLength(1);
     if (events[0].type === "mega-evolve") {
-      expect(events[0].form).toBe("mega-charizard-y");
+      expect(events[0].form).toBe(CHARIZARD_MEGA_Y_FORM);
     }
     expect(pokemon.types).toEqual([TYPES.fire, TYPES.flying]);
     expect(pokemon.ability).toBe(ABILITIES.drought);
@@ -580,9 +594,9 @@ describe("Gen7MegaEvolution -- reset()", () => {
   it("given a used mega gimmick, when reset is called, then internal tracking is cleared", () => {
     // Source: Showdown sim behavior -- new battle resets all gimmick tracking
     const gimmick = new Gen7MegaEvolution();
-    const pokemon = makeActivePokemon({ heldItem: CHARIZARDITE_X });
-    const side = makeSide({ index: 0 });
-    const state = makeState();
+    const pokemon = createSyntheticPokemonInstance({ heldItem: CHARIZARDITE_X });
+    const side = createSyntheticBattleSide({ index: 0 });
+    const state = createSyntheticBattleState();
 
     gimmick.activate(pokemon, side, state);
     expect(gimmick.hasUsedMega(0)).toBe(true);
@@ -643,9 +657,9 @@ describe("Gen7MegaEvolution.activate() -- defensive guards", () => {
   it("given a Pokemon already mega-evolved, when calling activate() directly, then returns empty events and does not double-mutate", () => {
     // Source: CodeRabbit review PR #699 -- activate() should guard against callers that skip canUse()
     const mega = new Gen7MegaEvolution();
-    const side = makeSide();
-    const state = makeState();
-    const charizard = makeActivePokemon({
+    const side = createSyntheticBattleSide();
+    const state = createSyntheticBattleState();
+    const charizard = createSyntheticPokemonInstance({
       speciesId: SPECIES.charizard,
       heldItem: CHARIZARDITE_X,
       isMega: true, // already mega evolved
@@ -660,11 +674,14 @@ describe("Gen7MegaEvolution.activate() -- defensive guards", () => {
   it("given mega already used on a side, when calling activate() directly for another Pokemon, then returns empty events", () => {
     // Source: CodeRabbit review PR #699 -- activate() guards prevent reuse on same side
     const mega = new Gen7MegaEvolution();
-    const side = makeSide();
-    const state = makeState();
+    const side = createSyntheticBattleSide();
+    const state = createSyntheticBattleState();
 
-    const charizard = makeActivePokemon({ speciesId: SPECIES.charizard, heldItem: CHARIZARDITE_X });
-    const lucario = makeActivePokemon({
+    const charizard = createSyntheticPokemonInstance({
+      speciesId: SPECIES.charizard,
+      heldItem: CHARIZARDITE_X,
+    });
+    const lucario = createSyntheticPokemonInstance({
       speciesId: SPECIES.lucario,
       heldItem: LUCARIONITE,
       types: [TYPES.fighting, TYPES.steel],
@@ -683,11 +700,11 @@ describe("Gen7MegaEvolution.activate() -- defensive guards", () => {
   it("given wrong species for held Mega Stone, when calling activate() directly, then returns empty events", () => {
     // Source: CodeRabbit review PR #699 -- wrong-species guard prevents form change
     const mega = new Gen7MegaEvolution();
-    const side = makeSide();
-    const state = makeState();
+    const side = createSyntheticBattleSide();
+    const state = createSyntheticBattleState();
 
     // Venusaur holds Charizardite X (wrong stone for species)
-    const venusaur = makeActivePokemon({
+    const venusaur = createSyntheticPokemonInstance({
       speciesId: SPECIES.venusaur, // Venusaur
       heldItem: CHARIZARDITE_X, // Charizard's stone
       types: [TYPES.grass, TYPES.poison],
