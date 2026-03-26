@@ -12,6 +12,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
@@ -44,6 +45,7 @@ const VOLATILES = CORE_VOLATILE_IDS;
 const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const CORE_ABILITIES = CORE_ABILITY_IDS;
 const CORE_ITEMS = CORE_ITEM_IDS;
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 const ABILITIES = GEN7_ABILITY_IDS;
 const ITEMS = GEN7_ITEM_IDS;
 const MOVES = GEN7_MOVE_IDS;
@@ -628,7 +630,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
@@ -646,7 +648,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "defense")).toBe(
@@ -662,7 +664,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "speed")).toBe(
@@ -678,7 +680,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "spAttack")).toBe(
@@ -694,7 +696,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
     expect(
@@ -710,7 +712,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -725,7 +727,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
     expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
@@ -741,7 +743,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(false);
   });
@@ -754,7 +756,7 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
       maxHp: 200,
     });
 
-    const result = applyGen7HeldItem("stat-boost-between-turns", ctx);
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(false);
   });

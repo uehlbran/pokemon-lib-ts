@@ -23,7 +23,7 @@ const WEATHER_IDS = CORE_WEATHER_IDS;
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   types?: string[];
@@ -55,7 +55,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
+function createBattleSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   return {
     index,
     active: [active],
@@ -72,7 +72,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeState(
+function createBattleState(
   weatherType: string | null,
   turnsLeft: number,
   sides: [BattleSide, BattleSide],
@@ -233,8 +233,8 @@ describe("Gen7 applyGen7WeatherEffects", () => {
     // Source: Showdown data/conditions.ts -- sandstorm damage = floor(maxHP/16)
     // Source: Bulbapedia -- Sandstorm: "1/16 of their maximum HP"
     // maxHp=200 -> floor(200/16) = 12
-    const mon = makeActivePokemon({ types: [TYPE_IDS.fire], maxHp: 200, nickname: "Flareon" });
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), makeSide(makeActivePokemon({}), 1)]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 200, nickname: "Flareon" });
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), createBattleSide(createOnFieldPokemon({}), 1)]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(2);
     // First result is the Fire-type
@@ -244,58 +244,58 @@ describe("Gen7 applyGen7WeatherEffects", () => {
 
   it("given sandstorm with a Rock-type, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Rock types are immune to sandstorm damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.rock], maxHp: 200, nickname: "Golem" });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.rock], nickname: "Onix" }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.rock], maxHp: 200, nickname: "Golem" });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.rock], nickname: "Onix" }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given sandstorm with Ground-type, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Ground types are immune to sandstorm damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.ground], maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.ground] }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.ground], maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.ground] }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given sandstorm with Steel-type, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Steel types are immune to sandstorm damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.steel], maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.steel] }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.steel], maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.steel] }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given sandstorm with Magic Guard, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard, maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard, maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given sandstorm with Overcoat, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat, maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat, maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given sandstorm with Safety Goggles, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Safety Goggles blocks weather damage
-    const mon = makeActivePokemon({
+    const mon = createOnFieldPokemon({
       types: [TYPE_IDS.normal],
       maxHp: 200,
       heldItem: ITEM_IDS.safetyGoggles,
     });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.normal], heldItem: ITEM_IDS.safetyGoggles }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal], heldItem: ITEM_IDS.safetyGoggles }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
@@ -304,9 +304,9 @@ describe("Gen7 applyGen7WeatherEffects", () => {
     // Source: Showdown -- hail damage = floor(maxHP/16)
     // Source: Bulbapedia -- Hail: "1/16 of their maximum HP"
     // maxHp=160 -> floor(160/16) = 10
-    const mon = makeActivePokemon({ types: [TYPE_IDS.fire], maxHp: 160, nickname: "Arcanine" });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.ice], nickname: "Glaceon" }), 1);
-    const state = makeState(WEATHER_IDS.hail, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 160, nickname: "Arcanine" });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.ice], nickname: "Glaceon" }), 1);
+    const state = createBattleState(WEATHER_IDS.hail, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     // Only Arcanine takes damage (Glaceon is Ice-type, immune)
     expect(results).toHaveLength(1);
@@ -316,36 +316,36 @@ describe("Gen7 applyGen7WeatherEffects", () => {
 
   it("given hail with an Ice-type, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Ice types are immune to hail damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.ice], maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.ice] }), 1);
-    const state = makeState(WEATHER_IDS.hail, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.ice], maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.ice] }), 1);
+    const state = createBattleState(WEATHER_IDS.hail, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given rain, when applying weather, then no chip damage to anyone", () => {
     // Source: Bulbapedia -- Rain has no chip damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.fire], maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.water] }), 1);
-    const state = makeState(WEATHER_IDS.rain, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.water] }), 1);
+    const state = createBattleState(WEATHER_IDS.rain, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given sun, when applying weather, then no chip damage to anyone", () => {
     // Source: Bulbapedia -- Sun has no chip damage
-    const mon = makeActivePokemon({ types: [TYPE_IDS.grass], maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.fire] }), 1);
-    const state = makeState(WEATHER_IDS.sun, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.grass], maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.fire] }), 1);
+    const state = createBattleState(WEATHER_IDS.sun, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
 
   it("given no weather, when applying weather, then returns empty array", () => {
     // No weather set
-    const mon = makeActivePokemon({ types: [TYPE_IDS.normal], maxHp: 200 });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.normal] }), 1);
-    const state = makeState(null, 0, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.normal], maxHp: 200 });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal] }), 1);
+    const state = createBattleState(null, 0, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
   });
@@ -353,9 +353,9 @@ describe("Gen7 applyGen7WeatherEffects", () => {
   it("given sandstorm with different max HP, when applying weather, then damage is floor(maxHp/16)", () => {
     // Source: Showdown -- floor division, min 1
     // maxHp=100 -> floor(100/16) = 6
-    const mon = makeActivePokemon({ types: [TYPE_IDS.fire], maxHp: 100, nickname: "Litleo" });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.steel] }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 100, nickname: "Litleo" });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.steel] }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(1);
     expect(results[0]!.damage).toBe(6);
@@ -364,9 +364,9 @@ describe("Gen7 applyGen7WeatherEffects", () => {
   it("given sandstorm with very low max HP, when applying weather, then minimum damage is 1", () => {
     // Source: Showdown -- Math.max(1, floor(maxHp/16))
     // maxHp=10 -> floor(10/16) = 0 -> clamped to 1
-    const mon = makeActivePokemon({ types: [TYPE_IDS.fire], maxHp: 10, nickname: "Tiny" });
-    const side2 = makeSide(makeActivePokemon({ types: [TYPE_IDS.rock] }), 1);
-    const state = makeState(WEATHER_IDS.sand, 5, [makeSide(mon), side2]);
+    const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 10, nickname: "Tiny" });
+    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.rock] }), 1);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(1);
     expect(results[0]!.damage).toBe(1);

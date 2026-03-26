@@ -7,6 +7,8 @@ import type {
 import type { MoveData, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
@@ -67,11 +69,11 @@ function createOnFieldPokemon(overrides: {
         },
       ],
       ability: overrides.ability ?? DEFAULT_ABILITY,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
       friendship: 0,
-      gender: "male" as const,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
