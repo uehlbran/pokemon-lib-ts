@@ -186,7 +186,7 @@ export function applyGen5HeldItem(trigger: string, context: ItemContext): ItemRe
   if (
     result.activated &&
     context.pokemon.ability === GEN5_ABILITY_IDS.unburden &&
-    result.effects.some((e) => e.type === "consume") &&
+    result.effects.some((e) => e.type === ITEM_EFFECT.consume) &&
     !context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
   ) {
     context.pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });

@@ -29,6 +29,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import {
   ALL_NATURES,
+  CORE_STAT_IDS,
   calculateStat,
   getNatureModifier,
   type MegaEvolutionData,
@@ -171,35 +172,35 @@ export class Gen7MegaEvolution implements BattleGimmick {
         ivs.attack,
         evs.attack,
         level,
-        getNatureModifier(natureData, "attack"),
+        getNatureModifier(natureData, CORE_STAT_IDS.attack),
       );
       cs.defense = calculateStat(
         megaData.baseStats.defense,
         ivs.defense,
         evs.defense,
         level,
-        getNatureModifier(natureData, "defense"),
+        getNatureModifier(natureData, CORE_STAT_IDS.defense),
       );
       cs.spAttack = calculateStat(
         megaData.baseStats.spAttack,
         ivs.spAttack,
         evs.spAttack,
         level,
-        getNatureModifier(natureData, "spAttack"),
+        getNatureModifier(natureData, CORE_STAT_IDS.spAttack),
       );
       cs.spDefense = calculateStat(
         megaData.baseStats.spDefense,
         ivs.spDefense,
         evs.spDefense,
         level,
-        getNatureModifier(natureData, "spDefense"),
+        getNatureModifier(natureData, CORE_STAT_IDS.spDefense),
       );
       cs.speed = calculateStat(
         megaData.baseStats.speed,
         ivs.speed,
         evs.speed,
         level,
-        getNatureModifier(natureData, "speed"),
+        getNatureModifier(natureData, CORE_STAT_IDS.speed),
       );
     }
 

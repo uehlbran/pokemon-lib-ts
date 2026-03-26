@@ -1322,7 +1322,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "attack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.attack,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.liechiBerry },
           ],
           messages: [`${pokemonName}'s Liechi Berry raised its Attack!`],
@@ -1337,7 +1341,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "defense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.defense,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.ganlonBerry },
           ],
           messages: [`${pokemonName}'s Ganlon Berry raised its Defense!`],
@@ -1352,7 +1360,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "speed" },
+            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: CORE_STAT_IDS.speed },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.salacBerry },
           ],
           messages: [`${pokemonName}'s Salac Berry raised its Speed!`],
@@ -1367,7 +1375,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spAttack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spAttack,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.petayaBerry },
           ],
           messages: [`${pokemonName}'s Petaya Berry raised its Sp. Atk!`],
@@ -1382,7 +1394,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spDefense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spDefense,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.apicotBerry },
           ],
           messages: [`${pokemonName}'s Apicot Berry raised its Sp. Def!`],
@@ -1420,7 +1436,13 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       const threshold = getPinchBerryThreshold(pokemon, 0.25);
       if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
         // Pick a random stat from atk/def/spa/spd/spe
-        const stats = ["attack", "defense", "spAttack", "spDefense", "speed"] as const;
+        const stats = [
+          CORE_STAT_IDS.attack,
+          CORE_STAT_IDS.defense,
+          CORE_STAT_IDS.spAttack,
+          CORE_STAT_IDS.spDefense,
+          CORE_STAT_IDS.speed,
+        ] as const;
         const chosenStat = context.rng.pick(stats);
         return {
           activated: true,
@@ -1549,7 +1571,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spAttack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spAttack,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.absorbBulb },
           ],
           messages: [`${pokemonName}'s Absorb Bulb raised its Sp. Atk!`],
@@ -1565,7 +1591,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "attack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.attack,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.cellBattery },
           ],
           messages: [`${pokemonName}'s Cell Battery raised its Attack!`],
@@ -1591,13 +1621,13 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
               {
                 type: ITEM_EFFECT.statBoost,
                 target: EFFECT_TARGET.self,
-                value: "attack",
+                value: CORE_STAT_IDS.attack,
                 stages: 2,
               },
               {
                 type: ITEM_EFFECT.statBoost,
                 target: EFFECT_TARGET.self,
-                value: "spAttack",
+                value: CORE_STAT_IDS.spAttack,
                 stages: 2,
               },
               {
@@ -1620,7 +1650,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "defense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.defense,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.keeBerry },
           ],
           messages: [`${pokemonName}'s Kee Berry raised its Defense!`],
@@ -1636,7 +1670,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spDefense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spDefense,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.marangaBerry },
           ],
           messages: [`${pokemonName}'s Maranga Berry raised its Sp. Def!`],
@@ -1652,7 +1690,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spDefense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spDefense,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.luminousMoss },
           ],
           messages: [`${pokemonName}'s Luminous Moss raised its Sp. Def!`],
@@ -1668,7 +1710,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "attack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.attack,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.snowball },
           ],
           messages: [`${pokemonName}'s Snowball raised its Attack!`],
@@ -1851,7 +1897,11 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spAttack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spAttack,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.throatSpray },
           ],
           messages: [`${pokemonName}'s Throat Spray raised its Sp. Atk!`],

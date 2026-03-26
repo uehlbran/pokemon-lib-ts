@@ -16,6 +16,7 @@ import {
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_MOVE_TARGET_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -24,7 +25,12 @@ import {
   getStatStageMultiplier,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_VALUES } from "../constants/effect-protocol";
+import {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
+} from "../constants/effect-protocol";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
@@ -87,7 +93,7 @@ const STRUGGLE_MOVE_DATA: MoveData = {
   accuracy: 100,
   pp: 1,
   priority: 0,
-  target: "adjacent-foe",
+  target: CORE_MOVE_TARGET_IDS.adjacentFoe,
   flags: {
     contact: true,
     sound: false,
@@ -1836,11 +1842,11 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Bulbapedia — "Pressure causes any Pokémon targeting the ability-bearer [...] to use
     //   2 PP for their move instead of 1." Self-targeting moves don't target the ability-bearer.
     const defenderForPP =
-      moveData.target === "self" ||
-      moveData.target === "user-field" ||
-      moveData.target === "user-and-allies" ||
-      moveData.target === "foe-field" ||
-      moveData.target === "entire-field"
+      moveData.target === CORE_MOVE_TARGET_IDS.self ||
+      moveData.target === CORE_MOVE_TARGET_IDS.userField ||
+      moveData.target === CORE_MOVE_TARGET_IDS.userAndAllies ||
+      moveData.target === CORE_MOVE_TARGET_IDS.foeField ||
+      moveData.target === CORE_MOVE_TARGET_IDS.entireField
         ? null
         : this.getOpponentActive(action.side);
     const ppCost = this.ruleset.getPPCost(actor, defenderForPP, this.state);
@@ -5177,7 +5183,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "consume": {
+        case BATTLE_ITEM_EFFECT_TYPES.consume: {
           // Track consumed berry for Harvest ability (Gen 5+).
           // Source: Showdown data/abilities.ts -- harvest onResidual reads pokemon.lastItem
           // Berry IDs always end with "-berry" per Showdown convention.
@@ -5244,9 +5250,12 @@ export class BattleEngine implements BattleEventEmitter {
           // Typed variant: chip damage with explicit target (Life Orb, Black Sludge, Sticky Barb, Rocky Helmet, Jaboca/Rowap Berry)
           // Source: Showdown data/items.ts -- various item onResidual / onDamagingHit
           const chipAmount = effect.value;
-          const damagedPokemon = effect.target === "opponent" && opponent ? opponent : pokemon;
+          const damagedPokemon =
+            effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent ? opponent : pokemon;
           const damagedSide: 0 | 1 =
-            effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+            effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent
+              ? ((1 - side) as 0 | 1)
+              : side;
           const maxHpChip =
             damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
           damagedPokemon.pokemon.currentHp = Math.max(
@@ -5290,9 +5299,12 @@ export class BattleEngine implements BattleEventEmitter {
           const amount = effect.value as number;
           // Respect effect.target: 'opponent' means damage the attacker (e.g., Rocky Helmet, Jaboca Berry)
           // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks damage the source
-          const damagedPokemon = effect.target === "opponent" && opponent ? opponent : pokemon;
+          const damagedPokemon =
+            effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent ? opponent : pokemon;
           const damagedSide: 0 | 1 =
-            effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+            effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent
+              ? ((1 - side) as 0 | 1)
+              : side;
           const maxHp =
             damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
           damagedPokemon.pokemon.currentHp = Math.max(0, damagedPokemon.pokemon.currentHp - amount);
@@ -5310,7 +5322,9 @@ export class BattleEngine implements BattleEventEmitter {
         case "none":
           if (effect.value === BATTLE_ITEM_EFFECT_VALUES.forceSwitch) {
             const switchSide =
-              effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
+              effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent
+                ? ((1 - side) as 0 | 1)
+                : side;
             this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });
           }
           break;
@@ -5325,7 +5339,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (
       result.activated &&
       heldItemId &&
-      !result.effects.some((effect) => effect.type === "consume")
+      !result.effects.some((effect) => effect.type === BATTLE_ITEM_EFFECT_TYPES.consume)
     ) {
       // Non-consuming activations surface as item-activate; consumed items already emit item-consumed.
       this.emit({
@@ -5489,7 +5503,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "volatile-inflict": {
+        case BATTLE_ABILITY_EFFECT_TYPES.volatileInflict: {
           // Source: Showdown — abilities that inflict volatile statuses (e.g., Cute Charm, Slow Start)
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
           const targetSide =

@@ -55,6 +55,7 @@ import {
   CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -363,7 +364,7 @@ function getAttackStat(
   isCrit: boolean,
   defender?: ActivePokemon,
 ): number {
-  const statKey = isPhysical ? "attack" : "spAttack";
+  const statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   const stats = attacker.pokemon.calculatedStats;
   let rawStat = stats ? stats[statKey] : 100;
 
@@ -462,7 +463,7 @@ function getAttackStat(
   }
 
   // Apply stat stages (with Simple/Unaware adjustments)
-  const statKey2 = isPhysical ? "attack" : "spAttack";
+  const statKey2 = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   const stage = getEffectiveStatStage(attacker, statKey2, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
@@ -492,7 +493,7 @@ function getDefenseStat(
   attacker?: ActivePokemon,
   ignoreDefenseStages?: boolean,
 ): number {
-  const statKey = isPhysical ? "defense" : "spDefense";
+  const statKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
   const stats = defender.pokemon.calculatedStats;
   let baseStat = stats ? stats[statKey] : 100;
 
@@ -571,8 +572,8 @@ function getDefenseStat(
   }
 
   // Stat stages
-  const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
+  const defStatKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, CORE_STAT_IDS.defense);
 
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }

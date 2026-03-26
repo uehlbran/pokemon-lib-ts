@@ -28,6 +28,7 @@ import {
 import {
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_MOVE_TARGET_IDS,
   CORE_SCREEN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -417,8 +418,9 @@ export function isBlockedByMatBlock(
   if (!moveHasProtectFlag) return false;
   // Mat Block allows self-targeting moves and Status moves through
   // Source: Showdown -- if (move && (move.target === 'self' || move.category === 'Status')) return;
-  if (moveTarget === BATTLE_EFFECT_TARGETS.self || moveCategory === CORE_MOVE_CATEGORIES.status)
+  if (moveTarget === CORE_MOVE_TARGET_IDS.self || moveCategory === CORE_MOVE_CATEGORIES.status) {
     return false;
+  }
   return true;
 }
 
@@ -442,13 +444,14 @@ export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string
   // Source: Bulbapedia -- Crafty Shield does not protect against entry hazard moves
   // Source: Showdown data/moves.ts -- hazards (stealth-rock, spikes, toxic-spikes, sticky-web) use target: foeSide
   if (
-    moveTarget === BATTLE_EFFECT_TARGETS.self ||
-    moveTarget === "all" ||
-    moveTarget === "entire-field" ||
-    moveTarget === "foe-field" ||
-    moveTarget === "user-field"
-  )
+    moveTarget === CORE_MOVE_TARGET_IDS.self ||
+    moveTarget === CORE_MOVE_TARGET_IDS.all ||
+    moveTarget === CORE_MOVE_TARGET_IDS.entireField ||
+    moveTarget === CORE_MOVE_TARGET_IDS.foeField ||
+    moveTarget === CORE_MOVE_TARGET_IDS.userField
+  ) {
     return false;
+  }
   return true;
 }
 

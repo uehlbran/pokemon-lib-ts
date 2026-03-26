@@ -39,6 +39,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_MOVE_TARGET_IDS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -343,8 +344,9 @@ export function isBlockedByMatBlock(
   moveTarget: string,
 ): boolean {
   if (!moveHasProtectFlag) return false;
-  if (moveTarget === BATTLE_EFFECT_TARGETS.self || moveCategory === CORE_MOVE_CATEGORIES.status)
+  if (moveTarget === CORE_MOVE_TARGET_IDS.self || moveCategory === CORE_MOVE_CATEGORIES.status) {
     return false;
+  }
   return true;
 }
 
@@ -360,13 +362,14 @@ export function isBlockedByMatBlock(
 export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string): boolean {
   if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
   if (
-    moveTarget === BATTLE_EFFECT_TARGETS.self ||
-    moveTarget === "all" ||
-    moveTarget === "entire-field" ||
-    moveTarget === "foe-field" ||
-    moveTarget === "user-field"
-  )
+    moveTarget === CORE_MOVE_TARGET_IDS.self ||
+    moveTarget === CORE_MOVE_TARGET_IDS.all ||
+    moveTarget === CORE_MOVE_TARGET_IDS.entireField ||
+    moveTarget === CORE_MOVE_TARGET_IDS.foeField ||
+    moveTarget === CORE_MOVE_TARGET_IDS.userField
+  ) {
     return false;
+  }
   return true;
 }
 

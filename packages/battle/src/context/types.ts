@@ -1,6 +1,7 @@
 import type {
   AbilityTrigger,
   BattleStat,
+  CORE_STAT_IDS,
   EntryHazardType,
   Generation,
   MoveCategory,
@@ -532,7 +533,7 @@ export interface AbilityContext {
   readonly statChange?: {
     readonly stat: BattleStat;
     readonly stages: number;
-    readonly source: "self" | "opponent";
+    readonly source: AbilitySourceTarget;
   };
   /** Whether the current hit is a critical hit (used by Sniper gating). */
   readonly isCrit?: boolean;
@@ -547,6 +548,10 @@ export interface AbilityContext {
 type AbilityTarget = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
 type AbilityTargetWithAlly = AbilityTarget | typeof BATTLE_EFFECT_TARGETS.ally;
 type AbilityTargetWithField = AbilityTarget | typeof BATTLE_EFFECT_TARGETS.field;
+type AbilitySourceTarget =
+  | typeof BATTLE_EFFECT_TARGETS.self
+  | typeof BATTLE_EFFECT_TARGETS.opponent;
+type StageableBattleStat = Exclude<BattleStat, typeof CORE_STAT_IDS.hp>;
 
 /** Discriminated union of ability effect categories. */
 export type AbilityEffectType =
@@ -557,14 +562,7 @@ export type AbilityEffect =
   | {
       readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statChange;
       readonly target: AbilityTarget;
-      readonly stat:
-        | "attack"
-        | "defense"
-        | "spAttack"
-        | "spDefense"
-        | "speed"
-        | "accuracy"
-        | "evasion";
+      readonly stat: StageableBattleStat;
       readonly stages: number;
     }
   | {

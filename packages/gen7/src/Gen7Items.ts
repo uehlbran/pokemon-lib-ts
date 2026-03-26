@@ -1002,7 +1002,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "spAttack",
+              value: CORE_STAT_IDS.spAttack,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1025,7 +1025,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "spDefense",
+              value: CORE_STAT_IDS.spDefense,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1205,7 +1205,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "spAttack",
+              value: CORE_STAT_IDS.spAttack,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1316,7 +1316,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "spDefense",
+              value: CORE_STAT_IDS.spDefense,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1340,7 +1340,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "spDefense",
+              value: CORE_STAT_IDS.spDefense,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,

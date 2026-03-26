@@ -7,6 +7,7 @@
  * Source: Bulbapedia "Max Move" -- secondary effects per type
  */
 
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { BattleStat, PokemonType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
 import {
   CORE_STAT_IDS,
@@ -24,7 +25,7 @@ export const GEN8_MAX_MOVE_EFFECT_TYPES = {
 
 export const GEN8_MAX_MOVE_EFFECT_TARGETS = {
   userSide: "user-side",
-  opponent: "opponent",
+  opponent: BATTLE_EFFECT_TARGETS.opponent,
   opponentSide: "opponent-side",
 } as const;
 

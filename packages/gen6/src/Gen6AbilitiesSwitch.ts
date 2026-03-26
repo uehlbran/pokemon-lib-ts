@@ -269,7 +269,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       if (!foeStats) return NO_EFFECT;
 
       const raisesAtk = foeStats.defense < foeStats.spDefense;
-      const stat = raisesAtk ? ("attack" as const) : ("spAttack" as const);
+      const stat = raisesAtk ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       return {
         activated: true,
@@ -1132,7 +1132,7 @@ function handleOnStatChange(ctx: AbilityContext): AbilityResult {
       // Big Pecks only blocks Defense drops.
       // Source: Showdown data/abilities.ts — Big Pecks onTryBoost:
       //   if (boost.def && boost.def < 0) { delete boost.def; ... }
-      if (ctx.statChange?.stat !== "defense" || (ctx.statChange?.stages ?? 0) >= 0) {
+      if (ctx.statChange?.stat !== CORE_STAT_IDS.defense || (ctx.statChange?.stages ?? 0) >= 0) {
         return NO_EFFECT;
       }
       return {

@@ -239,6 +239,16 @@ export const CORE_MOVE_EFFECT_TARGETS = {
   entireField: "entire-field",
 } as const;
 
+export const CORE_MOVE_TARGET_IDS = {
+  adjacentFoe: "adjacent-foe",
+  self: "self",
+  all: "all",
+  entireField: "entire-field",
+  userField: "user-field",
+  userAndAllies: "user-and-allies",
+  foeField: "foe-field",
+} as const;
+
 export const CORE_MOVE_EFFECT_TYPES = {
   custom: "custom",
   damage: "damage",

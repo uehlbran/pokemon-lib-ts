@@ -1,3 +1,4 @@
+import { CORE_STAT_IDS } from "../constants/reference-ids";
 import type { StatBlock } from "../entities/stats";
 import type { ValidationFailure, ValidationResult } from "../entities/validation";
 
@@ -14,12 +15,12 @@ export type StatExpOverrides = Partial<StatBlock>;
 type StatField = keyof StatBlock;
 
 const STAT_FIELDS: readonly StatField[] = [
-  "hp",
-  "attack",
-  "defense",
-  "spAttack",
-  "spDefense",
-  "speed",
+  CORE_STAT_IDS.hp,
+  CORE_STAT_IDS.attack,
+  CORE_STAT_IDS.defense,
+  CORE_STAT_IDS.spAttack,
+  CORE_STAT_IDS.spDefense,
+  CORE_STAT_IDS.speed,
 ] as const;
 
 export const MIN_IV = 0;
@@ -180,12 +181,12 @@ export function createEvs(overrides: EvOverrides = {}): Evs {
 }
 
 export function validateDvs(
-  candidate: DvOverrides & Partial<Record<"hp", unknown>>,
+  candidate: DvOverrides & Partial<Record<typeof CORE_STAT_IDS.hp, unknown>>,
 ): ValidationResult {
   const failures: ValidationFailure[] = [];
-  if ("hp" in candidate && candidate.hp !== undefined) {
+  if (CORE_STAT_IDS.hp in candidate && candidate.hp !== undefined) {
     failures.push({
-      field: "hp",
+      field: CORE_STAT_IDS.hp,
       value: candidate.hp,
       message: "hp DV is derived from the other DVs and cannot be provided directly",
     });
@@ -196,7 +197,13 @@ export function validateDvs(
     min: MIN_DV,
     max: MAX_DV,
     label: "DV",
-    statFields: ["attack", "defense", "spAttack", "spDefense", "speed"],
+    statFields: [
+      CORE_STAT_IDS.attack,
+      CORE_STAT_IDS.defense,
+      CORE_STAT_IDS.spAttack,
+      CORE_STAT_IDS.spDefense,
+      CORE_STAT_IDS.speed,
+    ],
   });
   failures.push(...blockResult.failures);
 

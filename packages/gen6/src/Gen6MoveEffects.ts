@@ -21,6 +21,7 @@ import type { MoveData, SeededRandom, VolatileStatus } from "@pokemon-lib-ts/cor
 import {
   CORE_ABILITY_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_TARGET_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -477,7 +478,9 @@ export function isBlockedByMatBlock(
   if (!moveHasProtectFlag) return false;
   // Mat Block allows self-targeting moves and Status moves through
   // Source: Showdown -- if (move && (move.target === 'self' || move.category === 'Status')) return;
-  if (moveTarget === "self" || moveCategory === CORE_MOVE_CATEGORIES.status) return false;
+  if (moveTarget === CORE_MOVE_TARGET_IDS.self || moveCategory === CORE_MOVE_CATEGORIES.status) {
+    return false;
+  }
   return true;
 }
 
@@ -497,7 +500,13 @@ export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string
   if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
   // Does not block self-targeting or field-wide moves
   // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
-  if (moveTarget === "self" || moveTarget === "all" || moveTarget === "entire-field") return false;
+  if (
+    moveTarget === CORE_MOVE_TARGET_IDS.self ||
+    moveTarget === CORE_MOVE_TARGET_IDS.all ||
+    moveTarget === CORE_MOVE_TARGET_IDS.entireField
+  ) {
+    return false;
+  }
   return true;
 }
 

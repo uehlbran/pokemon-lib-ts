@@ -443,7 +443,7 @@ function handleBeastBoost(ctx: AbilityContext): AbilityResult {
   const stats = ctx.pokemon.pokemon.calculatedStats;
   if (!stats) return INACTIVE;
 
-  let bestStat: BeastBoostStat = "attack";
+  let bestStat: BeastBoostStat = CORE_STAT_IDS.attack;
   let bestValue = stats.attack;
 
   for (const stat of BEAST_BOOST_STATS) {
@@ -503,7 +503,11 @@ function handleStatChange(abilityId: string, ctx: AbilityContext): AbilityResult
  * Source: Showdown data/abilities.ts -- Defiant onAfterEachBoost
  */
 function handleDefiant(ctx: AbilityContext): AbilityResult {
-  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
+  if (
+    !ctx.statChange ||
+    ctx.statChange.stages >= 0 ||
+    ctx.statChange.source !== BATTLE_EFFECT_TARGETS.opponent
+  ) {
     return INACTIVE;
   }
 
@@ -527,7 +531,11 @@ function handleDefiant(ctx: AbilityContext): AbilityResult {
  * Source: Showdown data/abilities.ts -- Competitive onAfterEachBoost
  */
 function handleCompetitive(ctx: AbilityContext): AbilityResult {
-  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
+  if (
+    !ctx.statChange ||
+    ctx.statChange.stages >= 0 ||
+    ctx.statChange.source !== BATTLE_EFFECT_TARGETS.opponent
+  ) {
     return INACTIVE;
   }
 
@@ -1000,19 +1008,19 @@ export function isPranksterEligible(category: MoveCategory): boolean {
 /** Format a stat ID as a human-readable name for messages. */
 function formatStatName(stat: string): string {
   switch (stat) {
-    case "attack":
+    case CORE_STAT_IDS.attack:
       return "Attack";
-    case "defense":
+    case CORE_STAT_IDS.defense:
       return "Defense";
-    case "spAttack":
+    case CORE_STAT_IDS.spAttack:
       return "Special Attack";
-    case "spDefense":
+    case CORE_STAT_IDS.spDefense:
       return "Special Defense";
-    case "speed":
+    case CORE_STAT_IDS.speed:
       return "Speed";
-    case "accuracy":
+    case CORE_STAT_IDS.accuracy:
       return "Accuracy";
-    case "evasion":
+    case CORE_STAT_IDS.evasion:
       return "Evasion";
     default:
       return stat;

@@ -378,7 +378,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const foeStats = ctx.opponent.pokemon.calculatedStats;
       if (!foeStats) return NO_EFFECT;
       const raisesAtk = foeStats.defense < foeStats.spDefense;
-      const stat = raisesAtk ? ("attack" as const) : ("spAttack" as const);
+      const stat = raisesAtk ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       return {
         activated: true,
