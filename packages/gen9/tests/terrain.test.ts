@@ -16,14 +16,20 @@
  */
 
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonType, TerrainType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
   NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -54,10 +60,10 @@ const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   hp?: number;
   currentHp?: number;
-  types?: PokemonType[];
+  types?: readonly [PokemonType] | readonly [PokemonType, PokemonType];
   ability?: string;
   heldItem?: string | null;
   nickname?: string | null;
@@ -72,16 +78,16 @@ function makeActive(overrides: {
       level: 50,
       experience: 0,
       nature: DEFAULT_NATURE,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? ABILITIES.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
-      friendship: 0,
-      gender: "male" as any,
+      friendship: createFriendship(0),
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -91,17 +97,9 @@ function makeActive(overrides: {
       calculatedStats: { hp, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 100 },
     },
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [TYPES.normal],
+    types: [...(overrides.types ?? [TYPES.normal])],
     ability: overrides.ability ?? ABILITIES.none,
     lastMoveUsed: null,
     lastDamageTaken: 0,
@@ -125,7 +123,7 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeState(overrides?: {
+function createBattleState(overrides?: {
   terrain?: { type: TerrainType; turnsLeft: number; source: string } | null;
   gravity?: { active: boolean; turnsLeft: number };
   sides?: Array<{
@@ -157,8 +155,8 @@ describe("Electric Terrain", () => {
     it("given Electric Terrain, when inflicting sleep on a grounded Pokemon, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- electricterrain.onSetStatus:
       //   if (status.id === 'slp') { ... return false; }
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.sleep, target, state);
@@ -168,8 +166,8 @@ describe("Electric Terrain", () => {
 
     it("given Electric Terrain, when inflicting paralysis on a grounded Pokemon, then allows it", () => {
       // Source: Showdown data/conditions.ts -- electricterrain only blocks sleep
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.paralysis, target, state);
@@ -178,8 +176,8 @@ describe("Electric Terrain", () => {
 
     it("given Electric Terrain, when inflicting burn on a grounded Pokemon, then allows it", () => {
       // Source: Showdown data/conditions.ts -- electricterrain only blocks sleep
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.burn, target, state);
@@ -188,8 +186,8 @@ describe("Electric Terrain", () => {
 
     it("given Electric Terrain, when inflicting sleep on a Flying-type (not grounded), then allows it", () => {
       // Source: Showdown sim/pokemon.ts -- flying types are not grounded
-      const target = makeActive({ types: [TYPES.flying] });
-      const state = makeState({
+      const target = createOnFieldPokemon({ types: [TYPES.flying] });
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.sleep, target, state);
@@ -198,8 +196,8 @@ describe("Electric Terrain", () => {
 
     it("given Electric Terrain, when inflicting sleep on a Levitate Pokemon (not grounded), then allows it", () => {
       // Source: Showdown sim/pokemon.ts -- Levitate makes Pokemon not grounded
-      const target = makeActive({ ability: ABILITIES.levitate });
-      const state = makeState({
+      const target = createOnFieldPokemon({ ability: ABILITIES.levitate });
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.sleep, target, state);
@@ -216,8 +214,8 @@ describe("Misty Terrain", () => {
   describe("status immunity", () => {
     it("given Misty Terrain, when inflicting poison on a grounded Pokemon, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus: return false
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.poison, target, state);
@@ -227,8 +225,8 @@ describe("Misty Terrain", () => {
 
     it("given Misty Terrain, when inflicting burn on a grounded Pokemon, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- mistyterrain blocks all status
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.burn, target, state);
@@ -237,8 +235,8 @@ describe("Misty Terrain", () => {
 
     it("given Misty Terrain, when inflicting sleep on a grounded Pokemon, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- mistyterrain blocks all status
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.sleep, target, state);
@@ -247,8 +245,8 @@ describe("Misty Terrain", () => {
 
     it("given Misty Terrain, when inflicting freeze on a grounded Pokemon, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- mistyterrain blocks all status
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.freeze, target, state);
@@ -257,8 +255,8 @@ describe("Misty Terrain", () => {
 
     it("given Misty Terrain, when inflicting badly-poisoned on a grounded Pokemon, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- mistyterrain blocks all status
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.badlyPoisoned, target, state);
@@ -267,8 +265,8 @@ describe("Misty Terrain", () => {
 
     it("given Misty Terrain, when inflicting poison on a Flying-type (not grounded), then allows it", () => {
       // Source: Showdown sim/pokemon.ts -- flying types are not grounded
-      const target = makeActive({ types: [TYPES.flying] });
-      const state = makeState({
+      const target = createOnFieldPokemon({ types: [TYPES.flying] });
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       const result = checkGen9TerrainStatusImmunity(STATUSES.poison, target, state);
@@ -280,8 +278,8 @@ describe("Misty Terrain", () => {
     it("given Misty Terrain, when checking confusion immunity on grounded Pokemon, then returns true", () => {
       // Source: Showdown data/conditions.ts -- mistyterrain.onTryAddVolatile:
       //   if (status.id === 'confusion') { return null; }
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkMistyTerrainConfusionImmunity(target, state)).toBe(true);
@@ -289,22 +287,22 @@ describe("Misty Terrain", () => {
 
     it("given Misty Terrain, when checking confusion immunity on Flying-type (not grounded), then returns false", () => {
       // Source: Showdown sim/pokemon.ts -- flying types are not grounded
-      const target = makeActive({ types: [TYPES.flying] });
-      const state = makeState({
+      const target = createOnFieldPokemon({ types: [TYPES.flying] });
+      const state = createBattleState({
         terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkMistyTerrainConfusionImmunity(target, state)).toBe(false);
     });
 
     it("given no terrain, when checking confusion immunity, then returns false", () => {
-      const target = makeActive({});
-      const state = makeState({});
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({});
       expect(checkMistyTerrainConfusionImmunity(target, state)).toBe(false);
     });
 
     it("given Electric Terrain, when checking confusion immunity, then returns false (only Misty blocks confusion)", () => {
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkMistyTerrainConfusionImmunity(target, state)).toBe(false);
@@ -318,14 +316,14 @@ describe("Misty Terrain", () => {
 
 describe("No Terrain", () => {
   it("given no terrain, when checking status immunity, then returns not immune", () => {
-    const target = makeActive({});
-    const state = makeState({});
+    const target = createOnFieldPokemon({});
+    const state = createBattleState({});
     const result = checkGen9TerrainStatusImmunity(STATUSES.sleep, target, state);
     expect(result.immune).toBe(false);
   });
 
   it("given no terrain, when applying terrain effects, then returns empty", () => {
-    const state = makeState({});
+    const state = createBattleState({});
     const results = applyGen9TerrainEffects(state);
     expect(results).toHaveLength(0);
   });
@@ -340,8 +338,8 @@ describe("Psychic Terrain", () => {
     it("given Psychic Terrain, when priority move targets grounded defender, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- psychicterrain.onTryHit:
       //   if (target.isGrounded() && move.priority > 0) { return false; }
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.psychic, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkPsychicTerrainPriorityBlock(TERRAINS.psychic, 1, target, state)).toBe(true);
@@ -349,8 +347,8 @@ describe("Psychic Terrain", () => {
 
     it("given Psychic Terrain, when priority +2 move targets grounded defender, then blocks it", () => {
       // Source: Showdown data/conditions.ts -- blocks all priority > 0
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.psychic, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkPsychicTerrainPriorityBlock(TERRAINS.psychic, 2, target, state)).toBe(true);
@@ -358,8 +356,8 @@ describe("Psychic Terrain", () => {
 
     it("given Psychic Terrain, when priority 0 move targets grounded defender, then allows it", () => {
       // Source: Showdown data/conditions.ts -- only blocks priority > 0
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.psychic, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkPsychicTerrainPriorityBlock(TERRAINS.psychic, 0, target, state)).toBe(false);
@@ -367,8 +365,8 @@ describe("Psychic Terrain", () => {
 
     it("given Psychic Terrain, when negative priority move targets grounded defender, then allows it", () => {
       // Source: Showdown data/conditions.ts -- only blocks priority > 0, not negative
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.psychic, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkPsychicTerrainPriorityBlock(TERRAINS.psychic, -1, target, state)).toBe(false);
@@ -376,23 +374,23 @@ describe("Psychic Terrain", () => {
 
     it("given Psychic Terrain, when priority move targets Flying-type (not grounded), then allows it", () => {
       // Source: Showdown data/conditions.ts -- only blocks if target is grounded
-      const target = makeActive({ types: [TYPES.flying] });
-      const state = makeState({
+      const target = createOnFieldPokemon({ types: [TYPES.flying] });
+      const state = createBattleState({
         terrain: { type: TERRAINS.psychic, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkPsychicTerrainPriorityBlock(TERRAINS.psychic, 1, target, state)).toBe(false);
     });
 
     it("given no Psychic Terrain, when priority move targets grounded defender, then allows it", () => {
-      const target = makeActive({});
-      const state = makeState({});
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({});
       expect(checkPsychicTerrainPriorityBlock(null, 1, target, state)).toBe(false);
     });
 
     it("given Electric Terrain, when priority move targets grounded defender, then allows it", () => {
       // Only Psychic Terrain blocks priority, not Electric
-      const target = makeActive({});
-      const state = makeState({
+      const target = createOnFieldPokemon({});
+      const state = createBattleState({
         terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       });
       expect(checkPsychicTerrainPriorityBlock(TERRAINS.electric, 1, target, state)).toBe(false);
@@ -409,8 +407,8 @@ describe("Grassy Terrain", () => {
     it("given Grassy Terrain and grounded Pokemon at 150/200 HP, when applying terrain effects, then heals 12 (floor(200/16))", () => {
       // Source: Showdown data/conditions.ts -- grassyterrain.onResidual: heal(baseMaxhp / 16)
       // 200 / 16 = 12.5, floor = 12
-      const mon = makeActive({ hp: 200, currentHp: 150 });
-      const state = makeState({
+      const mon = createOnFieldPokemon({ hp: 200, currentHp: 150 });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [mon] },
@@ -426,8 +424,8 @@ describe("Grassy Terrain", () => {
     it("given Grassy Terrain and grounded Pokemon at 240/320 HP, when applying terrain effects, then heals 20 (floor(320/16))", () => {
       // Source: Showdown data/conditions.ts -- grassyterrain: heal = floor(maxhp/16)
       // 320 / 16 = 20
-      const mon = makeActive({ hp: 320, currentHp: 240 });
-      const state = makeState({
+      const mon = createOnFieldPokemon({ hp: 320, currentHp: 240 });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [mon] },
@@ -441,8 +439,8 @@ describe("Grassy Terrain", () => {
 
     it("given Grassy Terrain and grounded Pokemon at full HP, when applying terrain effects, then no healing", () => {
       // Pokemon at full HP should not receive healing events
-      const mon = makeActive({ hp: 200, currentHp: 200 });
-      const state = makeState({
+      const mon = createOnFieldPokemon({ hp: 200, currentHp: 200 });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [mon] },
@@ -455,8 +453,8 @@ describe("Grassy Terrain", () => {
 
     it("given Grassy Terrain and Flying-type Pokemon (not grounded), when applying terrain effects, then no healing", () => {
       // Source: Bulbapedia -- Grassy Terrain only heals grounded Pokemon
-      const flyingMon = makeActive({ types: [TYPES.flying], hp: 200, currentHp: 100 });
-      const state = makeState({
+      const flyingMon = createOnFieldPokemon({ types: [TYPES.flying], hp: 200, currentHp: 100 });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [flyingMon] },
@@ -469,8 +467,12 @@ describe("Grassy Terrain", () => {
 
     it("given Grassy Terrain and Levitate Pokemon (not grounded), when applying terrain effects, then no healing", () => {
       // Source: Showdown sim/pokemon.ts -- Levitate makes Pokemon not grounded
-      const levitateMon = makeActive({ ability: ABILITIES.levitate, hp: 200, currentHp: 100 });
-      const state = makeState({
+      const levitateMon = createOnFieldPokemon({
+        ability: ABILITIES.levitate,
+        hp: 200,
+        currentHp: 100,
+      });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [levitateMon] },
@@ -482,8 +484,8 @@ describe("Grassy Terrain", () => {
     });
 
     it("given Grassy Terrain and fainted Pokemon, when applying terrain effects, then no healing", () => {
-      const fainted = makeActive({ hp: 200, currentHp: 0 });
-      const state = makeState({
+      const fainted = createOnFieldPokemon({ hp: 200, currentHp: 0 });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [fainted] },
@@ -497,8 +499,8 @@ describe("Grassy Terrain", () => {
     it("given Grassy Terrain and low-max-HP Pokemon at 14/15, when applying terrain effects, then heals at least 1", () => {
       // Min 1 heal: Math.max(1, floor(15/16)) = Math.max(1, 0) = 1
       // Source: Showdown data/conditions.ts -- grassyterrain.onResidual: heal(baseMaxhp / 16), min 1
-      const mon = makeActive({ hp: 15, currentHp: 14 });
-      const state = makeState({
+      const mon = createOnFieldPokemon({ hp: 15, currentHp: 14 });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [mon] },
@@ -512,8 +514,8 @@ describe("Grassy Terrain", () => {
 
     it("given Grassy Terrain, when heal result is returned, then message says 'healed by Grassy Terrain'", () => {
       // Source: Showdown sim/battle.ts -- standard grassy terrain heal message
-      const mon = makeActive({ hp: 200, currentHp: 100, nickname: "Bulbasaur" });
-      const state = makeState({
+      const mon = createOnFieldPokemon({ hp: 200, currentHp: 100, nickname: "Bulbasaur" });
+      const state = createBattleState({
         terrain: { type: TERRAINS.grassy, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
         sides: [
           { index: 0, active: [mon] },
@@ -532,8 +534,8 @@ describe("Grassy Terrain", () => {
 
 describe("Non-Grassy Terrain EoT", () => {
   it("given Electric Terrain, when applying terrain effects, then returns empty (no EoT heal)", () => {
-    const mon = makeActive({ hp: 200, currentHp: 100 });
-    const state = makeState({
+    const mon = createOnFieldPokemon({ hp: 200, currentHp: 100 });
+    const state = createBattleState({
       terrain: { type: TERRAINS.electric, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       sides: [
         { index: 0, active: [mon] },
@@ -545,8 +547,8 @@ describe("Non-Grassy Terrain EoT", () => {
   });
 
   it("given Psychic Terrain, when applying terrain effects, then returns empty", () => {
-    const mon = makeActive({ hp: 200, currentHp: 100 });
-    const state = makeState({
+    const mon = createOnFieldPokemon({ hp: 200, currentHp: 100 });
+    const state = createBattleState({
       terrain: { type: TERRAINS.psychic, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       sides: [
         { index: 0, active: [mon] },
@@ -558,8 +560,8 @@ describe("Non-Grassy Terrain EoT", () => {
   });
 
   it("given Misty Terrain, when applying terrain effects, then returns empty", () => {
-    const mon = makeActive({ hp: 200, currentHp: 100 });
-    const state = makeState({
+    const mon = createOnFieldPokemon({ hp: 200, currentHp: 100 });
+    const state = createBattleState({
       terrain: { type: TERRAINS.misty, turnsLeft: 5, source: TERRAIN_TEST_SOURCE },
       sides: [
         { index: 0, active: [mon] },
@@ -578,75 +580,79 @@ describe("Non-Grassy Terrain EoT", () => {
 describe("isGen9Grounded", () => {
   it("given a normal Pokemon without levitation, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- non-flying, non-Levitate = grounded
-    const mon = makeActive({});
+    const mon = createOnFieldPokemon({});
     expect(isGen9Grounded(mon, false)).toBe(true);
   });
 
   it("given a Flying-type Pokemon, when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- flying types are not grounded
-    const mon = makeActive({ types: [TYPES.flying] });
+    const mon = createOnFieldPokemon({ types: [TYPES.flying] });
     expect(isGen9Grounded(mon, false)).toBe(false);
   });
 
   it("given a dual-type Normal/Flying Pokemon, when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- any type being Flying means not grounded
-    const mon = makeActive({ types: [TYPES.normal, TYPES.flying] });
+    const mon = createOnFieldPokemon({ types: [TYPES.normal, TYPES.flying] });
     expect(isGen9Grounded(mon, false)).toBe(false);
   });
 
   it("given a Pokemon with Levitate ability, when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- Levitate grants non-grounded
-    const mon = makeActive({ ability: ABILITIES.levitate });
+    const mon = createOnFieldPokemon({ ability: ABILITIES.levitate });
     expect(isGen9Grounded(mon, false)).toBe(false);
   });
 
   it("given a Pokemon with Air Balloon (alive), when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- Air Balloon grants non-grounded while HP > 0
-    const mon = makeActive({ heldItem: ITEMS.airBalloon, hp: 200, currentHp: 100 });
+    const mon = createOnFieldPokemon({ heldItem: ITEMS.airBalloon, hp: 200, currentHp: 100 });
     expect(isGen9Grounded(mon, false)).toBe(false);
   });
 
   it("given a Pokemon with Air Balloon at 0 HP, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- Air Balloon inactive when fainted
-    const mon = makeActive({ heldItem: ITEMS.airBalloon, hp: 200, currentHp: 0 });
+    const mon = createOnFieldPokemon({ heldItem: ITEMS.airBalloon, hp: 200, currentHp: 0 });
     expect(isGen9Grounded(mon, false)).toBe(true);
   });
 
   it("given a Flying-type with Gravity active, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- Gravity forces all Pokemon to be grounded
-    const mon = makeActive({ types: [TYPES.flying] });
+    const mon = createOnFieldPokemon({ types: [TYPES.flying] });
     expect(isGen9Grounded(mon, true)).toBe(true);
   });
 
   it("given a Levitate Pokemon with Gravity active, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- Gravity overrides Levitate
-    const mon = makeActive({ ability: ABILITIES.levitate });
+    const mon = createOnFieldPokemon({ ability: ABILITIES.levitate });
     expect(isGen9Grounded(mon, true)).toBe(true);
   });
 
   it("given a Pokemon with Iron Ball, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- Iron Ball forces grounding
-    const mon = makeActive({ types: [TYPES.flying], heldItem: ITEMS.ironBall });
+    const mon = createOnFieldPokemon({ types: [TYPES.flying], heldItem: ITEMS.ironBall });
     expect(isGen9Grounded(mon, false)).toBe(true);
   });
 
   it("given a Pokemon with Iron Ball and Klutz ability, when checking grounded, then returns false (Iron Ball suppressed)", () => {
     // Source: Showdown sim/pokemon.ts -- Klutz suppresses held item effects
-    const mon = makeActive({ types: [TYPES.flying], heldItem: ITEMS.ironBall, ability: ABILITIES.klutz });
+    const mon = createOnFieldPokemon({
+      types: [TYPES.flying],
+      heldItem: ITEMS.ironBall,
+      ability: ABILITIES.klutz,
+    });
     expect(isGen9Grounded(mon, false)).toBe(false);
   });
 
   it("given a Pokemon with Magnet Rise volatile, when checking grounded, then returns false", () => {
     // Source: Showdown sim/pokemon.ts -- Magnet Rise grants non-grounded
     const volatiles = new Map([[VOLATILES.magnetRise, { turnsLeft: 5 }]]);
-    const mon = makeActive({ volatiles });
+    const mon = createOnFieldPokemon({ volatiles });
     expect(isGen9Grounded(mon, false)).toBe(false);
   });
 
   it("given a Pokemon with Ingrain volatile, when checking grounded, then returns true", () => {
     // Source: Showdown sim/pokemon.ts -- Ingrain forces grounding
     const volatiles = new Map([[VOLATILES.ingrain, { turnsLeft: 0 }]]);
-    const mon = makeActive({ types: [TYPES.flying], volatiles });
+    const mon = createOnFieldPokemon({ types: [TYPES.flying], volatiles });
     expect(isGen9Grounded(mon, false)).toBe(true);
   });
 });
