@@ -36,6 +36,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   calculateExpGainClassic,
   DataManager,
   gen1to4MultiHitRoll,
@@ -868,10 +869,7 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Natural Cure: cure status condition on switch-out
-    if (
-      pokemon.ability === GEN3_ABILITY_IDS.naturalCure &&
-      pokemon.pokemon.status !== null
-    ) {
+    if (pokemon.ability === GEN3_ABILITY_IDS.naturalCure && pokemon.pokemon.status !== null) {
       pokemon.pokemon.status = null;
     }
     // Delegate to BaseRuleset for standard volatile clearing
