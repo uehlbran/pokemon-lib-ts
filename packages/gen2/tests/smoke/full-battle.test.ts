@@ -2,11 +2,18 @@ import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import {
-  ALL_NATURES,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_NATURE_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createStatExp,
   getTypeEffectiveness,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -85,7 +92,12 @@ describe("Gen 2 Full Battle Integration", () => {
       GEN2_MOVE_IDS.recover,
       GEN2_MOVE_IDS.shadowBall,
     ],
-    magikarp: [GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle],
+    magikarp: [
+      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.tackle,
+    ],
     gengar: [
       GEN2_MOVE_IDS.shadowBall,
       GEN2_MOVE_IDS.crunch,
@@ -155,20 +167,13 @@ describe("Gen 2 Full Battle Integration", () => {
     hyperBeam: dataManager.getMove(GEN2_MOVE_IDS.hyperBeam).displayName,
   } as const;
 
-  const GEN2_ITEM_NAMES = {
-    leftovers: dataManager.getItem(GEN2_ITEM_IDS.leftovers).displayName,
-    berry: dataManager.getItem(GEN2_ITEM_IDS.berry).displayName,
-  } as const;
-
   const GEN2_WEATHER_IDS = {
-    sand: "sand" as const,
+    sand: CORE_WEATHER_IDS.sand,
     rain: CORE_WEATHER_IDS.rain,
   } as const;
 
   const GEN2_DEFAULT_MET_LOCATION = "unknown" as const;
   const GEN2_DEFAULT_ORIGINAL_TRAINER = "Test Trainer" as const;
-  const GEN2_DEFAULT_ABILITY_SLOT = "normal1" as const;
-  const GEN2_DEFAULT_GENDER = "male" as const;
   const GEN2_BATTLE_FORMAT = "singles" as const;
   const GEN2_WEATHER_SAND_DAMAGE_SOURCE = "weather-sand" as const;
 
@@ -187,31 +192,27 @@ describe("Gen 2 Full Battle Integration", () => {
     nickname?: string,
     overrides?: Partial<PokemonInstance>,
   ): PokemonInstance {
+    const species = dataManager.getSpecies(speciesId);
     return {
       uid: `gen2-${speciesId}-${level}-${++uidCounter}`,
       speciesId,
       nickname: nickname ?? null,
       level,
       experience: 0,
-      nature: ALL_NATURES[0].id,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      nature: CORE_NATURE_IDS.hardy,
+      ivs: createDvs(),
+      evs: createStatExp(),
       currentHp: 200,
       moves: moveIds.map((id) => {
         const moveData = dataManager.getMove(id);
-        return {
-          moveId: id,
-          currentPP: moveData.pp,
-          maxPP: moveData.pp,
-          ppUps: 0,
-        };
+        return createMoveSlot(moveData.id, moveData.pp);
       }),
       ability: "",
-      abilitySlot: GEN2_DEFAULT_ABILITY_SLOT,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: null,
       status: null,
-      friendship: 70,
-      gender: GEN2_DEFAULT_GENDER,
+      friendship: createFriendship(species.baseFriendship),
+      gender: species.genderRatio === null ? CORE_GENDERS.genderless : CORE_GENDERS.male,
       isShiny: false,
       metLocation: GEN2_DEFAULT_MET_LOCATION,
       metLevel: level,
@@ -239,9 +240,7 @@ describe("Gen 2 Full Battle Integration", () => {
     return new BattleEngine(config, ruleset, dataManager);
   }
 
-  function collectEffectivenessProbe(
-    events: ReturnType<BattleEngine["getEventLog"]>,
-  ): {
+  function collectEffectivenessProbe(events: ReturnType<BattleEngine["getEventLog"]>): {
     effectivenessEvents: ReturnType<BattleEngine["getEventLog"]>;
     damageEvents: ReturnType<BattleEngine["getEventLog"]>;
   } {
@@ -309,7 +308,12 @@ describe("Gen 2 Full Battle Integration", () => {
         [...GEN2_LOADOUTS.typhlosion],
         GEN2_SPECIES_NAMES.typhlosion,
       ),
-      createGen2Pokemon(GEN2_SPECIES_IDS.feraligatr, 50, [...GEN2_LOADOUTS.feraligatr], GEN2_SPECIES_NAMES.feraligatr),
+      createGen2Pokemon(
+        GEN2_SPECIES_IDS.feraligatr,
+        50,
+        [...GEN2_LOADOUTS.feraligatr],
+        GEN2_SPECIES_NAMES.feraligatr,
+      ),
       createGen2Pokemon(
         GEN2_SPECIES_IDS.meganium,
         50,
@@ -322,9 +326,24 @@ describe("Gen 2 Full Battle Integration", () => {
   /** Team 2: Umbreon, Steelix, Tyranitar (Gen 2 Pokemon) */
   function createTeam2(): PokemonInstance[] {
     return [
-      createGen2Pokemon(GEN2_SPECIES_IDS.umbreon, 50, [...GEN2_LOADOUTS.umbreon], GEN2_SPECIES_NAMES.umbreon),
-      createGen2Pokemon(GEN2_SPECIES_IDS.steelix, 50, [...GEN2_LOADOUTS.steelix], GEN2_SPECIES_NAMES.steelix),
-      createGen2Pokemon(GEN2_SPECIES_IDS.tyranitar, 50, [...GEN2_LOADOUTS.tyranitar], GEN2_SPECIES_NAMES.tyranitar),
+      createGen2Pokemon(
+        GEN2_SPECIES_IDS.umbreon,
+        50,
+        [...GEN2_LOADOUTS.umbreon],
+        GEN2_SPECIES_NAMES.umbreon,
+      ),
+      createGen2Pokemon(
+        GEN2_SPECIES_IDS.steelix,
+        50,
+        [...GEN2_LOADOUTS.steelix],
+        GEN2_SPECIES_NAMES.steelix,
+      ),
+      createGen2Pokemon(
+        GEN2_SPECIES_IDS.tyranitar,
+        50,
+        [...GEN2_LOADOUTS.tyranitar],
+        GEN2_SPECIES_NAMES.tyranitar,
+      ),
     ];
   }
 
@@ -503,7 +522,12 @@ describe("Gen 2 Full Battle Integration", () => {
       [...GEN2_LOADOUTS.mewtwo],
       GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak = createGen2Pokemon(GEN2_SPECIES_IDS.magikarp, 5, [...GEN2_LOADOUTS.magikarp], GEN2_SPECIES_NAMES.magikarp);
+    const weak = createGen2Pokemon(
+      GEN2_SPECIES_IDS.magikarp,
+      5,
+      [...GEN2_LOADOUTS.magikarp],
+      GEN2_SPECIES_NAMES.magikarp,
+    );
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -525,7 +549,12 @@ describe("Gen 2 Full Battle Integration", () => {
       [...GEN2_LOADOUTS.mewtwo],
       GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak = createGen2Pokemon(GEN2_SPECIES_IDS.magikarp, 5, [...GEN2_LOADOUTS.magikarp], GEN2_SPECIES_NAMES.magikarp);
+    const weak = createGen2Pokemon(
+      GEN2_SPECIES_IDS.magikarp,
+      5,
+      [...GEN2_LOADOUTS.magikarp],
+      GEN2_SPECIES_NAMES.magikarp,
+    );
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -772,7 +801,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(dark, [psychic], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.alakazam, source: GEN2_MOVE_IDS.crunch }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.alakazam,
+        source: GEN2_MOVE_IDS.crunch,
+      }),
     );
   });
 
@@ -806,7 +838,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(psychic, [dark], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.umbreon, source: GEN2_MOVE_IDS.psychic }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.umbreon,
+        source: GEN2_MOVE_IDS.psychic,
+      }),
     );
   });
 
@@ -816,7 +851,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const ghostAttacker = createGen2Pokemon(
       GEN2_SPECIES_IDS.gengar,
       50,
-      [GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.hypnosis, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.shadowBall,
+        GEN2_MOVE_IDS.crunch,
+        GEN2_MOVE_IDS.hypnosis,
+        GEN2_MOVE_IDS.tackle,
+      ],
       GEN2_SPECIES_NAMES.gengar,
     );
     const psychicDefender = createGen2Pokemon(
@@ -840,7 +880,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(ghost, [psychic], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.alakazam, source: GEN2_MOVE_IDS.shadowBall }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.alakazam,
+        source: GEN2_MOVE_IDS.shadowBall,
+      }),
     );
   });
 
@@ -849,13 +892,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const fireAttacker = createGen2Pokemon(
       GEN2_SPECIES_IDS.typhlosion,
       50,
-      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.flamethrower,
+        GEN2_MOVE_IDS.thunderPunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.typhlosion,
     );
     const steelDefender = createGen2Pokemon(
       GEN2_SPECIES_IDS.steelix,
       50,
-      [GEN2_MOVE_IDS.ironTail, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.rockThrow],
+      [
+        GEN2_MOVE_IDS.ironTail,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.bodySlam,
+        GEN2_MOVE_IDS.rockThrow,
+      ],
       GEN2_SPECIES_NAMES.steelix,
     );
     const engine = createBattle([fireAttacker], [steelDefender], 100);
@@ -873,7 +926,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(fire, [steel], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.steelix, source: GEN2_MOVE_IDS.flamethrower }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.steelix,
+        source: GEN2_MOVE_IDS.flamethrower,
+      }),
     );
   });
 
@@ -882,13 +938,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const normalAttacker = createGen2Pokemon(
       GEN2_SPECIES_IDS.snorlax,
       50,
-      [GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.hyperBeam, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.earthquake],
+      [
+        GEN2_MOVE_IDS.bodySlam,
+        GEN2_MOVE_IDS.hyperBeam,
+        GEN2_MOVE_IDS.rest,
+        GEN2_MOVE_IDS.earthquake,
+      ],
       GEN2_SPECIES_NAMES.snorlax,
     );
     const steelDefender = createGen2Pokemon(
       GEN2_SPECIES_IDS.steelix,
       50,
-      [GEN2_MOVE_IDS.ironTail, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.rockThrow],
+      [
+        GEN2_MOVE_IDS.ironTail,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.bodySlam,
+        GEN2_MOVE_IDS.rockThrow,
+      ],
       GEN2_SPECIES_NAMES.steelix,
     );
     const engine = createBattle([normalAttacker], [steelDefender], 100);
@@ -906,7 +972,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(normal, [steel], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.steelix, source: GEN2_MOVE_IDS.bodySlam }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.steelix,
+        source: GEN2_MOVE_IDS.bodySlam,
+      }),
     );
   });
 
@@ -917,13 +986,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const fireType = createGen2Pokemon(
       GEN2_SPECIES_IDS.typhlosion,
       50,
-      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.flamethrower,
+        GEN2_MOVE_IDS.thunderPunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.typhlosion,
     );
     const rockType = createGen2Pokemon(
       GEN2_SPECIES_IDS.tyranitar,
       50,
-      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.rockSlide, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.crunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.rockSlide,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.tyranitar,
     );
     const engine = createBattle([fireType], [rockType], 42);
@@ -939,7 +1018,6 @@ describe("Gen 2 Full Battle Integration", () => {
     };
 
     // Act: Submit moves to trigger a turn (which processes end-of-turn weather damage)
-    const initialHp = engine.getActive(0)?.pokemon.currentHp ?? 200;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
@@ -967,7 +1045,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const poke1 = createGen2Pokemon(
       GEN2_SPECIES_IDS.typhlosion,
       50,
-      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.flamethrower,
+        GEN2_MOVE_IDS.thunderPunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.typhlosion,
     );
     const poke2 = createGen2Pokemon(
@@ -1006,7 +1089,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const pokemon = createGen2Pokemon(
       GEN2_SPECIES_IDS.snorlax,
       50,
-      [GEN2_MOVE_IDS.bodySlam, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.hyperBeam],
+      [
+        GEN2_MOVE_IDS.bodySlam,
+        GEN2_MOVE_IDS.rest,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.hyperBeam,
+      ],
       GEN2_SPECIES_NAMES.snorlax,
       { heldItem: GEN2_ITEM_IDS.leftovers },
     );
@@ -1021,7 +1109,7 @@ describe("Gen 2 Full Battle Integration", () => {
     active.pokemon.currentHp = Math.floor(maxHp * 0.5);
 
     // Act
-    const result = ruleset.applyHeldItem("end-of-turn", {
+    const result = ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon: active,
       state: engine.getState(),
       rng: new SeededRandom(42),
@@ -1055,7 +1143,7 @@ describe("Gen 2 Full Battle Integration", () => {
     active.pokemon.currentHp = 1;
 
     // Act
-    const result = ruleset.applyHeldItem("end-of-turn", {
+    const result = ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon: active,
       state: engine.getState(),
       rng: new SeededRandom(42),
@@ -1069,7 +1157,9 @@ describe("Gen 2 Full Battle Integration", () => {
       dataManager.getItem(GEN2_ITEM_IDS.berry).description.match(/Restores (\d+) HP/)?.[1] ?? 0,
     );
     expect(healEffect).toEqual(expect.objectContaining({ type: "heal", value: berryHealAmount }));
-    expect(consumeEffect).toEqual(expect.objectContaining({ type: "consume", value: GEN2_ITEM_IDS.berry }));
+    expect(consumeEffect).toEqual(
+      expect.objectContaining({ type: "consume", value: GEN2_ITEM_IDS.berry }),
+    );
   });
 
   // --- Entry Hazards Tests ---
@@ -1079,7 +1169,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const pokemon = createGen2Pokemon(
       GEN2_SPECIES_IDS.typhlosion,
       50,
-      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.flamethrower,
+        GEN2_MOVE_IDS.thunderPunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.typhlosion,
     );
     const engine = createBattle([pokemon], [pokemon], 42);
@@ -1108,7 +1203,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const pokemon = createGen2Pokemon(
       GEN2_SPECIES_IDS.crobat,
       50,
-      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.confuseRay, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.crunch,
+        GEN2_MOVE_IDS.confuseRay,
+        GEN2_MOVE_IDS.shadowBall,
+        GEN2_MOVE_IDS.tackle,
+      ],
       GEN2_SPECIES_NAMES.crobat,
     );
     const engine = createBattle([pokemon], [pokemon], 42);
@@ -1134,10 +1234,20 @@ describe("Gen 2 Full Battle Integration", () => {
     const strong = createGen2Pokemon(
       GEN2_SPECIES_IDS.mewtwo,
       100,
-      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.shadowBall],
+      [
+        GEN2_MOVE_IDS.psychic,
+        GEN2_MOVE_IDS.confusion,
+        GEN2_MOVE_IDS.recover,
+        GEN2_MOVE_IDS.shadowBall,
+      ],
       GEN2_SPECIES_NAMES.mewtwo,
     );
-    const weak = createGen2Pokemon(GEN2_SPECIES_IDS.magikarp, 5, [GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle], GEN2_SPECIES_NAMES.magikarp);
+    const weak = createGen2Pokemon(
+      GEN2_SPECIES_IDS.magikarp,
+      5,
+      [GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle, GEN2_MOVE_IDS.tackle],
+      GEN2_SPECIES_NAMES.magikarp,
+    );
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -1161,7 +1271,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const fireDefender = createGen2Pokemon(
       GEN2_SPECIES_IDS.typhlosion,
       50,
-      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.flamethrower,
+        GEN2_MOVE_IDS.thunderPunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.typhlosion,
     );
     const engine = createBattle([waterAttacker], [fireDefender], 100);
@@ -1179,7 +1294,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(water, [fire], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.typhlosion, source: GEN2_MOVE_IDS.surf }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.typhlosion,
+        source: GEN2_MOVE_IDS.surf,
+      }),
     );
   });
 
@@ -1188,7 +1306,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const fireAttacker = createGen2Pokemon(
       GEN2_SPECIES_IDS.typhlosion,
       50,
-      [GEN2_MOVE_IDS.flamethrower, GEN2_MOVE_IDS.thunderPunch, GEN2_MOVE_IDS.earthquake, GEN2_MOVE_IDS.fireBlast],
+      [
+        GEN2_MOVE_IDS.flamethrower,
+        GEN2_MOVE_IDS.thunderPunch,
+        GEN2_MOVE_IDS.earthquake,
+        GEN2_MOVE_IDS.fireBlast,
+      ],
       GEN2_SPECIES_NAMES.typhlosion,
     );
     const waterDefender = createGen2Pokemon(
@@ -1212,7 +1335,10 @@ describe("Gen 2 Full Battle Integration", () => {
       multiplier: getTypeEffectiveness(fire, [water], dataManager.getTypeChart()),
     });
     expect(damageEvents).toContainEqual(
-      expect.objectContaining({ pokemon: GEN2_SPECIES_NAMES.feraligatr, source: GEN2_MOVE_IDS.flamethrower }),
+      expect.objectContaining({
+        pokemon: GEN2_SPECIES_NAMES.feraligatr,
+        source: GEN2_MOVE_IDS.flamethrower,
+      }),
     );
   });
 });
