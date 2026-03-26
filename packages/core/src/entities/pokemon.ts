@@ -109,7 +109,7 @@ export interface PokemonInstance {
   dynamaxLevel?: number;
 
   /**
-   * Mega form types after Mega Evolution, persisted so createActivePokemon can restore
+   * Mega form types after Mega Evolution, persisted so createOnFieldPokemon can restore
    * the correct types when a mega-evolved Pokemon is switched back in.
    * Set by Gen6MegaEvolution.activate(). Absent on non-mega Pokemon.
    * Source: Gen 6 game mechanic — Mega Evolution persists for the entire battle.
@@ -117,7 +117,7 @@ export interface PokemonInstance {
   megaTypes?: PokemonType[];
 
   /**
-   * Mega form ability after Mega Evolution, persisted so createActivePokemon can restore
+   * Mega form ability after Mega Evolution, persisted so createOnFieldPokemon can restore
    * the correct ability when a mega-evolved Pokemon is switched back in.
    * Set by Gen6MegaEvolution.activate(). Absent on non-mega Pokemon.
    * Source: Gen 6 game mechanic — Mega Evolution persists for the entire battle.
@@ -126,14 +126,14 @@ export interface PokemonInstance {
 
   /**
    * Whether this Pokemon has Terastallized during this battle. Persisted so
-   * createActivePokemon can restore isTerastallized/teraType when a Tera'd Pokemon
+   * createOnFieldPokemon can restore isTerastallized/teraType when a Tera'd Pokemon
    * is switched back in. Set by Gen9Terastallization.activate().
    * Source: Gen 9 game mechanic — Terastallization persists for the entire battle.
    */
   terastallized?: boolean;
 
   /**
-   * Defensive types after Terastallization, persisted so createActivePokemon can
+   * Defensive types after Terastallization, persisted so createOnFieldPokemon can
    * restore the correct defensive typing when a Tera'd Pokemon is switched back in.
    * For non-Stellar Tera: single-element array of the Tera type.
    * For Stellar Tera: original types (Stellar retains original defensive types).

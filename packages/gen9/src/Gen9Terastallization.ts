@@ -101,12 +101,12 @@ export class Gen9Terastallization implements BattleGimmick {
     // If Stellar, types remain unchanged (original defensive types)
 
     // Persist Tera state on the underlying PokemonInstance so that when this Pokemon
-    // is switched out and back in, createActivePokemon() can restore the Tera form.
+    // is switched out and back in, createOnFieldPokemon() can restore the Tera form.
     // Source: Gen 9 game mechanic -- Terastallization is permanent for the rest of the battle.
     pokemon.pokemon.terastallized = true;
     // teraOriginalTypes: pre-Tera species types, used by getOriginalTypes() for STAB calc.
     pokemon.pokemon.teraOriginalTypes = originalTypes;
-    // teraTypes: resolved DEFENSIVE types for switch-in type restoration via createActivePokemon.
+    // teraTypes: resolved DEFENSIVE types for switch-in type restoration via createOnFieldPokemon.
     //   Non-Stellar: [teraType] (single Tera type is the defensive type)
     //   Stellar: originalTypes (Stellar retains original defensive types)
     // Source: Showdown sim/pokemon.ts -- Stellar retains original defensive types; non-Stellar is single Tera type
