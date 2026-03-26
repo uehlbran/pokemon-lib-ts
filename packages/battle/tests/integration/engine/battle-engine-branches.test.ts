@@ -16,7 +16,7 @@ import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import type { VolatileStatusState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
@@ -36,7 +36,7 @@ function createEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -53,7 +53,7 @@ function createEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
       moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -153,9 +153,9 @@ describe("BattleEngine — branch coverage", () => {
     });
 
     it("given all team members have valid species, when engine is created, then stats are calculated", () => {
-      // Arrange — use real species IDs from mock data manager (6 = Charizard)
+      // Arrange — use the canonical mock Charizard species id from the mock data manager.
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -164,28 +164,25 @@ describe("BattleEngine — branch coverage", () => {
       ];
 
       // Act
-      const { engine } = createEngine({ team1 });
+      const { engine, ruleset, dataManager } = createEngine({ team1 });
 
-      // Assert — stats are populated from species data
+      // Assert — stats are populated from the owning species data via the ruleset.
       const pokemon = engine.state.sides[0].team[0] as PokemonInstance;
-      expect(pokemon.calculatedStats).toEqual({
-        hp: 153,
-        attack: 104,
-        defense: 98,
-        spAttack: 129,
-        spDefense: 105,
-        speed: 120,
-      });
+      const expectedStats = ruleset.calculateStats(
+        pokemon,
+        dataManager.getSpecies(MOCK_SPECIES_IDS.charizard),
+      );
+      expect(pokemon.calculatedStats).toEqual(expectedStats);
     });
   });
 
   describe("start with abilities", () => {
     it("given a ruleset with abilities and slower lead, when battle starts, then abilities trigger in speed order", () => {
       // Arrange — side 1 (FastMon, speed 120) should trigger first
-      // Use real species IDs (6=Charizard, 9=Blastoise) and override calculateStats
+      // Use canonical mock species ids and override calculateStats
       // to return the desired speeds without recalculating from base stats.
       const team1 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "slow-mon",
           nickname: "SlowMon",
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -193,7 +190,7 @@ describe("BattleEngine — branch coverage", () => {
         }),
       ];
       const team2 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "fast-mon",
           nickname: "FastMon",
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -343,7 +340,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a held item activates without being consumed, when the engine processes the item result, then item-activate is emitted", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -387,7 +384,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon with a disabled move, when getAvailableMoves is called, then move is marked disabled", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
@@ -431,7 +428,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon with a move not in the data manager, when getAvailableMoves is called, then the move is skipped and a warning is emitted", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [createSyntheticMissingMoveSlot()],
@@ -456,7 +453,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon locked into a missing forced move, when getAvailableMoves is called, then the move is skipped and a warning is emitted", () => {
       // Arrange
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
@@ -499,7 +496,7 @@ describe("BattleEngine — branch coverage", () => {
       // Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch depends on the target's selected move.
       // Issue #843: missing move data must be surfaced distinctly from the normal null sentinel used for switching.
       const team2 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
           moves: [createSyntheticMissingMoveSlot({ currentPP: 35, maxPP: 35 })],
@@ -710,7 +707,7 @@ describe("BattleEngine — branch coverage", () => {
       (ruleset as unknown as Record<string, unknown>).checkFreezeThaw = () => false;
 
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-defrost",
           nickname: "Charizard",
           moves: [createMockMoveSlot(GEN3_MOVE_IDS.flameWheel)],
@@ -852,7 +849,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given a pokemon faints mid-turn to move damage, when the fainted pokemon should act next, then it skips", () => {
       // Arrange — Blastoise at 1 HP, Charizard faster
       const team2 = [
-        createTestPokemon(9, 50, {
+        createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -963,7 +960,7 @@ describe("BattleEngine — branch coverage", () => {
     it("given two pokemon with the same speed, when turn order is resolved with fixed seeds, then the PRNG decides the first mover deterministically", () => {
       const getFirstMover = (seed: number) => {
         const t1 = [
-          createTestPokemon(6, 50, {
+          createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
             uid: "mon-a",
             nickname: "MonA",
             moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -971,7 +968,7 @@ describe("BattleEngine — branch coverage", () => {
           }),
         ];
         const t2 = [
-          createTestPokemon(9, 50, {
+          createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
             uid: "mon-b",
             nickname: "MonB",
             moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],

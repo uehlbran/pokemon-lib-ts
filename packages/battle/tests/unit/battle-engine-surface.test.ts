@@ -1,4 +1,5 @@
 import { CORE_MOVE_IDS, type DataManager, type PokemonInstance, type PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
@@ -45,7 +46,7 @@ function createTestEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -62,7 +63,7 @@ function createTestEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
       moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
@@ -115,7 +116,7 @@ describe("BattleEngine surface", () => {
 
     it("given caller-owned team members, when engine is created, then constructor state stays engine-owned and does not mutate the caller objects", () => {
       const team1 = [
-        createTestPokemon(25, 5, {
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 5, {
           currentHp: 1,
           calculatedStats: {
             hp: 1,
@@ -154,7 +155,7 @@ describe("BattleEngine surface", () => {
 
       originalPokemon.currentHp = 7;
       originalPokemon.moves[0]!.currentPP = 1;
-      originalPokemon.evs.hp = 200;
+      originalPokemon.evs = { ...originalPokemon.evs, hp: 200 };
 
       // Source: createTestPokemon recalculates current HP from the cloned engine-owned stats.
       expect(enginePokemon.currentHp).toBe(enginePokemon.calculatedStats.hp);
@@ -171,7 +172,7 @@ describe("BattleEngine surface", () => {
       const config: BattleConfig = {
         generation: 1,
         format: "singles",
-        teams: [[createTestPokemon(6, 50)], [createTestPokemon(9, 50)]],
+        teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)], [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)]],
         seed: 12345,
       };
 
@@ -185,7 +186,7 @@ describe("BattleEngine surface", () => {
       const config: BattleConfig = {
         generation: 1,
         format: "doubles",
-        teams: [[createTestPokemon(6, 50)], [createTestPokemon(9, 50)]],
+        teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)], [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)]],
         seed: 12345,
       };
 
@@ -233,7 +234,7 @@ describe("BattleEngine surface", () => {
 
     it("given an active pokemon with 0 PP, when getAvailableMoves is called, then move is marked disabled", () => {
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle, { currentPP: 0 })],
@@ -261,7 +262,7 @@ describe("BattleEngine surface", () => {
   describe("getAvailableSwitches", () => {
     it("given a team with alive benched pokemon, when getAvailableSwitches is called, then valid slots are returned", () => {
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           currentHp: 200,
@@ -274,7 +275,7 @@ describe("BattleEngine surface", () => {
             speed: 120,
           },
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
           currentHp: 100,
@@ -307,13 +308,13 @@ describe("BattleEngine surface", () => {
 
     it("given the active pokemon has fainted but a healthy bench remains, when getAvailableSwitches is called, then trap checks are skipped for replacement flow", () => {
       const team1 = [
-        createTestPokemon(6, 50, {
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
           currentHp: 0,
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
-        createTestPokemon(25, 50, {
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
           uid: "pikachu-1",
           nickname: "Pikachu",
           currentHp: 150,

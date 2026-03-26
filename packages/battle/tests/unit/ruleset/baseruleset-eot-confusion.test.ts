@@ -7,11 +7,12 @@ import {
   CORE_VOLATILE_IDS,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
 
 const {
   bug,
@@ -244,7 +245,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
   // like normal damage: damage = tr(damage * randomFactor / 100) where randomFactor in [85,100]
   it("given two different RNG seeds, when calculateConfusionDamage is called, then results differ due to random factor", () => {
     // Arrange
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 153,
         attack: 100,
@@ -254,7 +255,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [fire, flying]);
+    const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
     const state = {} as BattleState;
 
     const rng1 = new SeededRandom(42);
@@ -283,7 +284,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
   // So confusion damage should be in range [16, 19] for this setup.
   it("given a L50 pokemon with 100 atk/def, when calculateConfusionDamage is called many times, then damage is bounded by 85-100% of base", () => {
     // Arrange
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 153,
         attack: 100,
@@ -293,7 +294,7 @@ describe("BaseRuleset calculateConfusionDamage (#557)", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [fire, flying]);
+    const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
     const state = {} as BattleState;
 
     // Inline derivation of expected values:

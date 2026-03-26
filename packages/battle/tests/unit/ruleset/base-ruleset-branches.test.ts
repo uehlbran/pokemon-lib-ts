@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
 
 const DATA_MANAGER = createGen1DataManager();
 
@@ -60,7 +60,7 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
       // Act
       const damage = ruleset.applyStatusDamage(
@@ -85,7 +85,7 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
       // Act
       const damage = ruleset.applyStatusDamage(active, CORE_STATUS_IDS.burn, {} as unknown as BattleState);
@@ -118,8 +118,8 @@ describe("BaseRuleset — additional branches", () => {
           speed: 120,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -163,8 +163,8 @@ describe("BaseRuleset — additional branches", () => {
           speed: 120,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -208,8 +208,8 @@ describe("BaseRuleset — additional branches", () => {
           speed: 100,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [CORE_TYPE_IDS.fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [CORE_TYPE_IDS.water]);
 
       const state = {
         sides: [{ active: [active1] }, { active: [active2] }],
@@ -239,7 +239,7 @@ describe("BaseRuleset — additional branches", () => {
     it("given a pokemon with focus-energy, when rollCritical is called, then higher crit stage is used", () => {
       // Arrange
       const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
-      const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
       active.volatileStatuses.set(CORE_VOLATILE_IDS.focusEnergy, { turnsLeft: -1 });
 
       const rng = new SeededRandom(42);

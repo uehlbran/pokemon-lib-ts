@@ -20,6 +20,7 @@ import {
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -28,11 +29,12 @@ import {
   type PokemonType,
   type TypeChart,
 } from "@pokemon-lib-ts/core";
+import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
 
 // ─── Concrete test subclass ───────────────────────────────────────────────────
 class TestRuleset extends BaseRuleset {
@@ -113,8 +115,8 @@ describe("BaseRuleset — rollMultiHitCount", () => {
     // Source: Showdown sim/battle-actions.ts — Gen 5+ multi-hit: randomChance(35,100) → 2 hits,
     //   randomChance(35,65) → 3 hits, randomChance(15,30) → 4 hits, else 5 hits
     // Distribution: 35% = 2 hits, 35% = 3 hits, 15% = 4 hits, 15% = 5 hits
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
     const counts = { 2: 0, 3: 0, 4: 0, 5: 0 };
 
@@ -140,8 +142,8 @@ describe("BaseRuleset — rollMultiHitCount", () => {
   it("given an attacker with skill-link ability, when rollMultiHitCount is called, then always returns 5 hits", () => {
     // Arrange
     // Source: Showdown — Skill Link always hits 5 times for multi-hit moves
-    const pokemon = createTestPokemon(6, 50, { ability: CORE_ABILITY_IDS.skillLink });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { ability: CORE_ABILITY_IDS.skillLink });
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
     const rng = new SeededRandom(42);
 
     // Act — verify 10 consecutive calls all return 5
@@ -154,8 +156,8 @@ describe("BaseRuleset — rollMultiHitCount", () => {
   it("given rollMultiHitCount, when called, then result is always in range 2-5", () => {
     // Arrange
     // Source: multi-hit move mechanics — Clamp 2 is the minimum, 5 is the maximum
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(99999);
 
     // Act & Assert
@@ -350,7 +352,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   = floor(17.6) + 2 = 17 + 2 = 19 (base damage)
     //   Random factor with seed 42: rng.int(0,15)=9, so randomFactor=94
     //   finalDamage = max(1, floor(19 * 94 / 100)) = max(1, floor(17.86)) = 17
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -360,7 +362,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -381,7 +383,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   = floor(67.2) + 2 = 67 + 2 = 69 (base damage)
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(69 * 94 / 100)) = max(1, floor(64.86)) = 64
-    const pokemon = createTestPokemon(6, 100, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 100, {
       calculatedStats: {
         hp: 300,
         attack: 200,
@@ -391,7 +393,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 130,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -410,7 +412,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   baseDamage = floor(floor(22 * 40 * 50) / 100 / 50) + 2 = floor(440/50) + 2 = 8 + 2 = 10
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(10 * 94 / 100)) = max(1, floor(9.4)) = 9
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       status: CORE_STATUS_IDS.burn,
       calculatedStats: {
         hp: 200,
@@ -421,7 +423,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     const rng = new SeededRandom(42);
 
     // Act
@@ -439,7 +441,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
     //   baseDamage = floor(floor(22 * 40 * 400) / 100 / 50) + 2 = floor(3520/50) + 2 = 70 + 2 = 72
     //   Random factor with seed 42: rng.int(0,15)=9, randomFactor=94
     //   finalDamage = max(1, floor(72 * 94 / 100)) = max(1, floor(67.68)) = 67
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -449,7 +451,7 @@ describe("BaseRuleset — calculateConfusionDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     active.statStages.attack = 6;
     const rng = new SeededRandom(42);
 
@@ -474,8 +476,8 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
     //   levelFactor = floor(2*50/5) + 2 = 22
     //   baseDamage = floor(floor(22 * 50 * 100) / 100) = floor(110000/100) = floor(1100) = 1100
     //   damage = floor(1100 / 50) + 2 = floor(22) + 2 = 22 + 2 = 24
-    const attacker = createActivePokemon(
-      createTestPokemon(6, 50, {
+    const attacker = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -488,8 +490,8 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
       0,
       [CORE_TYPE_IDS.fire],
     );
-    const defender = createActivePokemon(
-      createTestPokemon(9, 50, {
+    const defender = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
         calculatedStats: {
           hp: 200,
           attack: 80,
@@ -521,8 +523,8 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
     //   step1 = floor(42 * 50 * 200) = 420000
     //   step2 = floor(420000 / 100) = 4200
     //   step3 = floor(4200 / 50) + 2 = 84 + 2 = 86
-    const attacker = createActivePokemon(
-      createTestPokemon(6, 100, {
+    const attacker = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.charizard, 100, {
         calculatedStats: {
           hp: 300,
           attack: 200,
@@ -535,8 +537,8 @@ describe("BaseRuleset — calculateStruggleDamage", () => {
       0,
       [CORE_TYPE_IDS.fire],
     );
-    const defender = createActivePokemon(
-      createTestPokemon(9, 100, {
+    const defender = createOnFieldPokemon(
+      createTestPokemon(GEN1_SPECIES_IDS.blastoise, 100, {
         calculatedStats: {
           hp: 300,
           attack: 100,
@@ -569,7 +571,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
     // Arrange
     // Source: Showdown — Gen 4+ Struggle recoil = 1/4 max HP (floor(maxHp / 4))
     //   BaseRuleset defaults to Gen 4+ behavior
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -579,7 +581,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(active, 80); // damageDealt=80 (unused in Gen 4+)
@@ -591,7 +593,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
   it("given a pokemon with 160 max HP, when calculateStruggleRecoil is called, then recoil is floor(160/4) = 40", () => {
     // Arrange
     // Source: Showdown — Gen 4+ Struggle recoil = 1/4 max HP; formula: Math.floor(maxHp / 4)
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -601,7 +603,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const recoil = ruleset.calculateStruggleRecoil(active, 30); // damageDealt ignored in Gen 4+
@@ -613,7 +615,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
   it("given calculateStruggleRecoil, when called, then it ignores the damageDealt parameter (Gen 4+ uses maxHP not damage)", () => {
     // Arrange
     // Source: Showdown — Gen 4+ uses max HP formula; damageDealt parameter only matters for Gen 2-3
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -623,7 +625,7 @@ describe("BaseRuleset — calculateStruggleRecoil", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act — same attacker, different damageDealt values
     const recoil1 = ruleset.calculateStruggleRecoil(active, 10);
@@ -646,7 +648,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
     // Arrange
     // Source: Showdown data/conditions.ts — partiallytrapped: damage = pokemon.baseMaxhp / 8 (Gen 5+ default)
     //   Gen 2-4 use 1/16 instead; BaseRuleset targets Gen 5+ default
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 160,
         attack: 100,
@@ -656,7 +658,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const damage = ruleset.calculateBindDamage(active);
@@ -668,7 +670,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
   it("given a pokemon with 200 max HP, when calculateBindDamage is called, then returns floor(200/8) = 25", () => {
     // Arrange
     // Source: Showdown data/conditions.ts — partiallytrapped: damage = pokemon.baseMaxhp / 8
-    const pokemon = createTestPokemon(6, 50, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -678,7 +680,7 @@ describe("BaseRuleset — calculateBindDamage", () => {
         speed: 100,
       },
     });
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
     // Act
     const damage = ruleset.calculateBindDamage(active);
@@ -699,8 +701,8 @@ describe("BaseRuleset — processPerishSong", () => {
     // Arrange
     // Source: Showdown data/moves.ts — perishsong: duration 4, onResidualOrder 24
     //   Counter counts down from 3 to 0, faint when reaching 0
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 3 },
@@ -717,8 +719,8 @@ describe("BaseRuleset — processPerishSong", () => {
   it("given a pokemon with perish song counter at 2, when processPerishSong is called, then counter decrements to 1 and fainted is false", () => {
     // Arrange
     // Source: Bulbapedia — Perish Song counts down 3, 2, 1, 0 then faints
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 2 },
@@ -736,8 +738,8 @@ describe("BaseRuleset — processPerishSong", () => {
     // Arrange
     // Source: Bulbapedia — Perish Song: at the end of the 3rd turn after use, the Pokemon faints
     //   Counter reaches 0 (from 1) → faint
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     active.volatileStatuses.set(CORE_MOVE_IDS.perishSong, {
       turnsLeft: -1,
       data: { counter: 1 },
@@ -753,8 +755,8 @@ describe("BaseRuleset — processPerishSong", () => {
 
   it("given a pokemon without perish-song volatile, when processPerishSong is called, then returns safe no-op values", () => {
     // Arrange
-    const pokemon = createTestPokemon(6, 50);
-    const active = createActivePokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50);
+    const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
     // No perish-song volatile set
 
     // Act
@@ -813,7 +815,7 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     // Source: Gen 3+ stat formula — non-HP: floor(((2*base + iv + floor(ev/4)) * L) / 100) + 5
     //   Attack: floor(((2*84 + 31 + 0) * 50) / 100) + 5 = floor(199*50/100) + 5 = floor(99.5) + 5 = 99 + 5 = 104
     //   Hardy nature: neutral (no modifier)
-    const pokemon = createTestPokemon(6, 50, { nature: "hardy" });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { nature: CORE_NATURE_IDS.hardy });
 
     // Act
     const stats = ruleset.calculateStats(pokemon, charizardSpecies);
@@ -838,7 +840,7 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     //   SpAttack (modest +10%): floor(129 * 1.1) = floor(141.9) = 141
     //   Attack (base): 104
     //   Attack (modest -10%): floor(104 * 0.9) = floor(93.6) = 93
-    const pokemon = createTestPokemon(6, 50, { nature: "modest" });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { nature: CORE_NATURE_IDS.modest });
 
     // Act
     const stats = ruleset.calculateStats(pokemon, charizardSpecies);
@@ -855,7 +857,7 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     //              = floor(((200 + 31 + 63) * 100) / 100) + 5
     //              = floor(294 * 100 / 100) + 5 = 294 + 5 = 299
     //   Timid nature (+10% Speed): floor(299 * 1.1) = floor(328.9) = 328
-    const pokemon = createTestPokemon(6, 100, {
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 100, {
       nature: "timid",
       evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 252 },
     });

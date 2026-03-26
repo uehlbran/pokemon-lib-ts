@@ -419,7 +419,7 @@ describe("#289 — HP DV derived from other DVs", () => {
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: null,
       status: null,
-      friendship: DEFAULT_FRIENDSHIP,
+      friendship: createFriendship(species.baseFriendship),
       gender: CORE_GENDERS.genderless,
       isShiny: false,
       metLocation: "cerulean-cave",
