@@ -9,20 +9,22 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  NEUTRAL_NATURES,
   getStatStageMultiplier,
+  NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  calculateGen1Damage,
   createGen1DataManager,
   GEN1_ITEM_IDS,
   GEN1_MOVE_IDS,
   GEN1_NATURE_IDS,
   GEN1_SPECIES_IDS,
-  calculateGen1Damage,
 } from "../../src";
 
 /**
@@ -122,11 +124,11 @@ function createActivePokemon(opts: {
     currentHp: 200,
     moves: [],
     ability: ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,

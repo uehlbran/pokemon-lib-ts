@@ -2,6 +2,9 @@ import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   NEUTRAL_NATURES,
   SeededRandom,
@@ -68,17 +71,17 @@ describe("Gen 1 Full Battle Integration", () => {
         };
       }),
       ability: "",
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: null,
       status: null,
       friendship: 70,
-      gender: "male" as const,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "pallet-town",
       metLevel: level,
       originalTrainer: "Red",
       originalTrainerId: 12345,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
     };
 
     return {
@@ -178,18 +181,78 @@ describe("Gen 1 Full Battle Integration", () => {
   /** Create the standard team 1: Charizard, Blastoise, Venusaur */
   function createTeam1(): PokemonInstance[] {
     return [
-      createGen1Pokemon(GEN1_SPECIES_IDS.charizard, 50, [GEN1_MOVE_IDS.flamethrower, GEN1_MOVE_IDS.slash, GEN1_MOVE_IDS.ember, GEN1_MOVE_IDS.scratch], "Charizard"),
-      createGen1Pokemon(GEN1_SPECIES_IDS.blastoise, 50, [GEN1_MOVE_IDS.hydroPump, GEN1_MOVE_IDS.waterGun, GEN1_MOVE_IDS.bubble, GEN1_MOVE_IDS.withdraw], "Blastoise"),
-      createGen1Pokemon(GEN1_SPECIES_IDS.venusaur, 50, [GEN1_MOVE_IDS.razorLeaf, GEN1_MOVE_IDS.vineWhip, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.growl], "Venusaur"),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.charizard,
+        50,
+        [
+          GEN1_MOVE_IDS.flamethrower,
+          GEN1_MOVE_IDS.slash,
+          GEN1_MOVE_IDS.ember,
+          GEN1_MOVE_IDS.scratch,
+        ],
+        "Charizard",
+      ),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.blastoise,
+        50,
+        [
+          GEN1_MOVE_IDS.hydroPump,
+          GEN1_MOVE_IDS.waterGun,
+          GEN1_MOVE_IDS.bubble,
+          GEN1_MOVE_IDS.withdraw,
+        ],
+        "Blastoise",
+      ),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.venusaur,
+        50,
+        [
+          GEN1_MOVE_IDS.razorLeaf,
+          GEN1_MOVE_IDS.vineWhip,
+          GEN1_MOVE_IDS.tackle,
+          GEN1_MOVE_IDS.growl,
+        ],
+        "Venusaur",
+      ),
     ];
   }
 
   /** Create the standard team 2: Alakazam, Gengar, Snorlax */
   function createTeam2(): PokemonInstance[] {
     return [
-      createGen1Pokemon(GEN1_SPECIES_IDS.alakazam, 50, [GEN1_MOVE_IDS.psychic, GEN1_MOVE_IDS.confusion, GEN1_MOVE_IDS.recover, GEN1_MOVE_IDS.reflect], "Alakazam"),
-      createGen1Pokemon(GEN1_SPECIES_IDS.gengar, 50, [GEN1_MOVE_IDS.nightShade, GEN1_MOVE_IDS.lick, GEN1_MOVE_IDS.confuseRay, GEN1_MOVE_IDS.hypnosis], "Gengar"),
-      createGen1Pokemon(GEN1_SPECIES_IDS.snorlax, 50, [GEN1_MOVE_IDS.bodySlam, GEN1_MOVE_IDS.headbutt, GEN1_MOVE_IDS.rest, GEN1_MOVE_IDS.hyperBeam], "Snorlax"),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.alakazam,
+        50,
+        [
+          GEN1_MOVE_IDS.psychic,
+          GEN1_MOVE_IDS.confusion,
+          GEN1_MOVE_IDS.recover,
+          GEN1_MOVE_IDS.reflect,
+        ],
+        "Alakazam",
+      ),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.gengar,
+        50,
+        [
+          GEN1_MOVE_IDS.nightShade,
+          GEN1_MOVE_IDS.lick,
+          GEN1_MOVE_IDS.confuseRay,
+          GEN1_MOVE_IDS.hypnosis,
+        ],
+        "Gengar",
+      ),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.snorlax,
+        50,
+        [
+          GEN1_MOVE_IDS.bodySlam,
+          GEN1_MOVE_IDS.headbutt,
+          GEN1_MOVE_IDS.rest,
+          GEN1_MOVE_IDS.hyperBeam,
+        ],
+        "Snorlax",
+      ),
     ];
   }
 
@@ -394,7 +457,12 @@ describe("Gen 1 Full Battle Integration", () => {
     const strongAttacker = createGen1Pokemon(
       GEN1_SPECIES_IDS.mewtwo,
       100,
-      [GEN1_MOVE_IDS.psychic, GEN1_MOVE_IDS.confusion, GEN1_MOVE_IDS.recover, GEN1_MOVE_IDS.barrier],
+      [
+        GEN1_MOVE_IDS.psychic,
+        GEN1_MOVE_IDS.confusion,
+        GEN1_MOVE_IDS.recover,
+        GEN1_MOVE_IDS.barrier,
+      ],
       "Mewtwo",
     );
     const weakDefender = createGen1Pokemon(
@@ -425,7 +493,12 @@ describe("Gen 1 Full Battle Integration", () => {
     const strongAttacker = createGen1Pokemon(
       GEN1_SPECIES_IDS.mewtwo,
       100,
-      [GEN1_MOVE_IDS.psychic, GEN1_MOVE_IDS.confusion, GEN1_MOVE_IDS.recover, GEN1_MOVE_IDS.barrier],
+      [
+        GEN1_MOVE_IDS.psychic,
+        GEN1_MOVE_IDS.confusion,
+        GEN1_MOVE_IDS.recover,
+        GEN1_MOVE_IDS.barrier,
+      ],
       "Mewtwo",
     );
     const weakDefender = createGen1Pokemon(
@@ -489,10 +562,30 @@ describe("Gen 1 Full Battle Integration", () => {
   it("given a Gen 1 battle, when moves execute, then move-start events are emitted", () => {
     // Arrange
     const team1 = [
-      createGen1Pokemon(GEN1_SPECIES_IDS.charizard, 50, [GEN1_MOVE_IDS.flamethrower, GEN1_MOVE_IDS.scratch, GEN1_MOVE_IDS.ember, GEN1_MOVE_IDS.slash], "Charizard"),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.charizard,
+        50,
+        [
+          GEN1_MOVE_IDS.flamethrower,
+          GEN1_MOVE_IDS.scratch,
+          GEN1_MOVE_IDS.ember,
+          GEN1_MOVE_IDS.slash,
+        ],
+        "Charizard",
+      ),
     ];
     const team2 = [
-      createGen1Pokemon(GEN1_SPECIES_IDS.blastoise, 50, [GEN1_MOVE_IDS.waterGun, GEN1_MOVE_IDS.bubble, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.withdraw], "Blastoise"),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.blastoise,
+        50,
+        [
+          GEN1_MOVE_IDS.waterGun,
+          GEN1_MOVE_IDS.bubble,
+          GEN1_MOVE_IDS.tackle,
+          GEN1_MOVE_IDS.withdraw,
+        ],
+        "Blastoise",
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
 
@@ -513,10 +606,20 @@ describe("Gen 1 Full Battle Integration", () => {
     const strong = createGen1Pokemon(
       GEN1_SPECIES_IDS.mewtwo,
       100,
-      [GEN1_MOVE_IDS.psychic, GEN1_MOVE_IDS.confusion, GEN1_MOVE_IDS.recover, GEN1_MOVE_IDS.barrier],
+      [
+        GEN1_MOVE_IDS.psychic,
+        GEN1_MOVE_IDS.confusion,
+        GEN1_MOVE_IDS.recover,
+        GEN1_MOVE_IDS.barrier,
+      ],
       "Mewtwo",
     );
-    const weak = createGen1Pokemon(GEN1_SPECIES_IDS.magikarp, 5, [GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle], "Magikarp");
+    const weak = createGen1Pokemon(
+      GEN1_SPECIES_IDS.magikarp,
+      5,
+      [GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle],
+      "Magikarp",
+    );
     const engine = createBattle([strong], [weak], 42);
 
     // Act
@@ -656,11 +759,26 @@ describe("Gen 1 Full Battle Integration", () => {
     const strong = createGen1Pokemon(
       GEN1_SPECIES_IDS.mewtwo,
       100,
-      [GEN1_MOVE_IDS.psychic, GEN1_MOVE_IDS.confusion, GEN1_MOVE_IDS.recover, GEN1_MOVE_IDS.barrier],
+      [
+        GEN1_MOVE_IDS.psychic,
+        GEN1_MOVE_IDS.confusion,
+        GEN1_MOVE_IDS.recover,
+        GEN1_MOVE_IDS.barrier,
+      ],
       "Mewtwo",
     );
-    const weak1 = createGen1Pokemon(GEN1_SPECIES_IDS.magikarp, 5, [GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle], "Magikarp1");
-    const weak2 = createGen1Pokemon(GEN1_SPECIES_IDS.magikarp, 5, [GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle], "Magikarp2");
+    const weak1 = createGen1Pokemon(
+      GEN1_SPECIES_IDS.magikarp,
+      5,
+      [GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle],
+      "Magikarp1",
+    );
+    const weak2 = createGen1Pokemon(
+      GEN1_SPECIES_IDS.magikarp,
+      5,
+      [GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.tackle],
+      "Magikarp2",
+    );
     const engine = createBattle([strong], [weak1, weak2], 42);
 
     // Act
@@ -680,10 +798,30 @@ describe("Gen 1 Full Battle Integration", () => {
   it("given a battle, when getAvailableMoves is called, then returns valid move data", () => {
     // Arrange
     const team1 = [
-      createGen1Pokemon(GEN1_SPECIES_IDS.charizard, 50, [GEN1_MOVE_IDS.flamethrower, GEN1_MOVE_IDS.scratch, GEN1_MOVE_IDS.ember, GEN1_MOVE_IDS.slash], "Charizard"),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.charizard,
+        50,
+        [
+          GEN1_MOVE_IDS.flamethrower,
+          GEN1_MOVE_IDS.scratch,
+          GEN1_MOVE_IDS.ember,
+          GEN1_MOVE_IDS.slash,
+        ],
+        "Charizard",
+      ),
     ];
     const team2 = [
-      createGen1Pokemon(GEN1_SPECIES_IDS.blastoise, 50, [GEN1_MOVE_IDS.waterGun, GEN1_MOVE_IDS.bubble, GEN1_MOVE_IDS.tackle, GEN1_MOVE_IDS.withdraw], "Blastoise"),
+      createGen1Pokemon(
+        GEN1_SPECIES_IDS.blastoise,
+        50,
+        [
+          GEN1_MOVE_IDS.waterGun,
+          GEN1_MOVE_IDS.bubble,
+          GEN1_MOVE_IDS.tackle,
+          GEN1_MOVE_IDS.withdraw,
+        ],
+        "Blastoise",
+      ),
     ];
     const engine = createBattle(team1, team2, 42);
     engine.start();

@@ -1,16 +1,13 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonSpeciesData,
-  PokemonType,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -78,8 +75,8 @@ function createActivePokemon(
 ): ActivePokemon {
   const pokemon = createPokemonInstance(species, level, new SeededRandom(7), {
     nature: NATURE_IDS.hardy,
-    abilitySlot: "normal1",
-    gender: "male",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     moves: [],
     heldItem: null,
@@ -336,10 +333,7 @@ describe("Gen 1 Critical Hit", () => {
 
     const neutralChart = createNeutralTypeChart();
     const move: MoveData = STRENGTH;
-    const attacker = createActivePokemon(CHARIZARD, 50, 100, 100, [
-      TYPE_IDS.fire,
-      TYPE_IDS.flying,
-    ]);
+    const attacker = createActivePokemon(CHARIZARD, 50, 100, 100, [TYPE_IDS.fire, TYPE_IDS.flying]);
     const defender = createActivePokemon(SNORLAX, 50, 100, 100, [TYPE_IDS.normal]);
     const state = {} as DamageContext["state"];
 
