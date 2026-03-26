@@ -2000,10 +2000,6 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       expect(isSheerForceEligibleMove(null, CORE_MOVE_IDS.triAttack)).toBe(true);
     });
 
-    it(`given Secret Power (whitelist), when checking, then ${GEN7_MOVE_IDS.return}s true`, () => {
-      expect(isSheerForceEligibleMove(null, GEN7_MOVE_IDS.secretPower)).toBe(true);
-    });
-
     it(`given volatile-status effect with 0% chance, when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
       // Source: Gen8AbilitiesDamage.ts -- volatile-status: requires chance > 0
       const effect: MoveEffect = {

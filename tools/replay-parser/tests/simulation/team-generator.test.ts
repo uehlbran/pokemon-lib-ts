@@ -1,4 +1,4 @@
-import type { DataManager } from "@pokemon-lib-ts/core";
+import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_SLOTS, NEUTRAL_NATURES, SeededRandom } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
@@ -11,6 +11,15 @@ import { generateRandomTeam } from "../../src/simulation/team-generator.js";
 
 const gen1Dm: DataManager = createGen1DataManager();
 const gen2Dm: DataManager = createGen2DataManager();
+
+function deriveHpDvFromOtherDvs(pokemon: { ivs: PokemonInstance["ivs"] }): number {
+  return (
+    ((pokemon.ivs.attack & 1) << 3) |
+    ((pokemon.ivs.defense & 1) << 2) |
+    ((pokemon.ivs.speed & 1) << 1) |
+    (pokemon.ivs.spAttack & 1)
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Team size
@@ -229,19 +238,25 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
     }
   });
 
-  it("given generation 1, when generating a team, then all IVs are at most 15 (DVs, not IVs)", () => {
+  it("given generation 1, when generating a team, then all DVs follow the Gen 1 derived-HP and unified-Special rules", () => {
     // Arrange
     const rng = new SeededRandom(42);
 
     // Act
     const team = generateRandomTeam(1, gen1Dm, rng);
 
-    // Assert — Gen 1 uses 0-15 DVs, and the seeded generator should stay deterministic.
-    expect(team.map((pokemon) => pokemon.ivs)).toEqual([
-      { hp: 4, attack: 5, defense: 10, spAttack: 3, spDefense: 2, speed: 11 },
-      { hp: 12, attack: 7, defense: 2, spAttack: 13, spDefense: 8, speed: 13 },
-      { hp: 3, attack: 6, defense: 8, spAttack: 15, spDefense: 7, speed: 13 },
-    ]);
+    // Assert — Gen 1 uses 0-15 DVs, derives HP DV from the low bits of
+    // Attack/Defense/Speed/Special, and uses one Special DV for both spAttack and spDefense.
+    for (const pokemon of team) {
+      expect(pokemon.ivs.hp).toBeLessThanOrEqual(15);
+      expect(pokemon.ivs.attack).toBeLessThanOrEqual(15);
+      expect(pokemon.ivs.defense).toBeLessThanOrEqual(15);
+      expect(pokemon.ivs.spAttack).toBeLessThanOrEqual(15);
+      expect(pokemon.ivs.spDefense).toBeLessThanOrEqual(15);
+      expect(pokemon.ivs.speed).toBeLessThanOrEqual(15);
+      expect(pokemon.ivs.hp).toBe(deriveHpDvFromOtherDvs(pokemon));
+      expect(pokemon.ivs.spDefense).toBe(pokemon.ivs.spAttack);
+    }
   });
 
   it("given generation 1, when generating a team, then all Pokemon have no held item", () => {
@@ -272,14 +287,15 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
 });
 
 describe("generateRandomTeam — Gen 2 mechanics", () => {
-  it("given generation 2, when generating a team, then all IVs are at most 15 (Gen 2 still uses DVs)", () => {
+  it("given generation 2, when generating a team, then all DVs follow the Gen 2 derived-HP and unified-Special rules", () => {
     // Arrange
     const rng = new SeededRandom(42);
 
     // Act
     const team = generateRandomTeam(2, gen2Dm, rng);
 
-    // Assert — Gen 2 also uses DVs (0-15)
+    // Assert — Gen 2 also uses 0-15 DVs, derives HP DV from the low bits of
+    // Attack/Defense/Speed/Special, and uses one Special DV for both spAttack and spDefense.
     for (const pokemon of team) {
       const { hp, attack, defense, spAttack, spDefense, speed } = pokemon.ivs;
       expect(hp).toBeLessThanOrEqual(15);
@@ -288,6 +304,8 @@ describe("generateRandomTeam — Gen 2 mechanics", () => {
       expect(spAttack).toBeLessThanOrEqual(15);
       expect(spDefense).toBeLessThanOrEqual(15);
       expect(speed).toBeLessThanOrEqual(15);
+      expect(hp).toBe(deriveHpDvFromOtherDvs(pokemon));
+      expect(spDefense).toBe(spAttack);
     }
   });
 
