@@ -18,15 +18,23 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import { createOnFieldPokemon as createBattleOnFieldPokemon, createTestPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, MoveTarget, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  createOnFieldPokemon as createBattleOnFieldPokemon,
+  createTestPokemon,
+} from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -49,6 +57,7 @@ const SPECIES = GEN9_SPECIES_IDS;
 const TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -137,16 +146,22 @@ function createSyntheticPokemonInstance(overrides?: Partial<PokemonInstance>): P
     level: 50,
     experience: 0,
     nature: GEN9_NATURE_IDS.adamant,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: 200,
-    moves: [{ moveId: MOVES.tackle, currentPp: DATA_MANAGER.getMove(MOVES.tackle).pp, maxPp: DATA_MANAGER.getMove(MOVES.tackle).pp }],
+    moves: [
+      {
+        moveId: MOVES.tackle,
+        currentPp: DATA_MANAGER.getMove(MOVES.tackle).pp,
+        maxPp: DATA_MANAGER.getMove(MOVES.tackle).pp,
+      },
+    ],
     ability: ABILITIES.static,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 70,
-    gender: "male" as any,
+    gender: CORE_GENDERS.male as any,
     isShiny: false,
     metLocation: "pallet-town",
     metLevel: 5,
@@ -240,8 +255,16 @@ describe("Bug #750: Shed Tail substitute transfer to incoming Pokemon", () => {
   it("given a Pokemon uses Shed Tail, when the replacement switches in, then it receives the substitute", () => {
     // Source: Showdown data/moves.ts:16795 -- selfSwitch: 'shedtail' passes substitute
     const ruleset = new Gen9Ruleset();
-    const attacker = createSyntheticOnFieldPokemon({ maxHp: 200, currentHp: 200, nickname: "Cyclizar" });
-    const replacement = createSyntheticOnFieldPokemon({ maxHp: 150, currentHp: 150, nickname: "Skeledirge" });
+    const attacker = createSyntheticOnFieldPokemon({
+      maxHp: 200,
+      currentHp: 200,
+      nickname: "Cyclizar",
+    });
+    const replacement = createSyntheticOnFieldPokemon({
+      maxHp: 150,
+      currentHp: 150,
+      nickname: "Skeledirge",
+    });
     const replacementInstance = createSyntheticPokemonInstance({
       nickname: "Skeledirge",
       calculatedStats: {
@@ -603,7 +626,7 @@ describe("Bug #726: Lansat Berry grants crit stages via focus-energy volatile", 
     });
 
     const ruleset = new Gen9Ruleset();
-    const result = ruleset.applyHeldItem("end-of-turn", {
+    const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, {
       pokemon,
       state: createBattleState(),
       rng: new SeededRandom(42),
@@ -625,7 +648,7 @@ describe("Bug #726: Lansat Berry grants crit stages via focus-energy volatile", 
     });
 
     const ruleset = new Gen9Ruleset();
-    const result = ruleset.applyHeldItem("end-of-turn", {
+    const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, {
       pokemon,
       state: createBattleState(),
       rng: new SeededRandom(42),
@@ -704,7 +727,11 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const defender = createSyntheticOnFieldPokemon({ types: [TYPES.normal] }); // grounded
     const move = getCanonicalMove(MOVES.quickAttack);
     const state = createBattleState({
-      terrain: { type: TERRAINS.psychic as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.psychicSurge },
+      terrain: {
+        type: TERRAINS.psychic as any,
+        turnsLeft: 5,
+        source: GEN9_ABILITY_IDS.psychicSurge,
+      },
     });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
@@ -719,7 +746,11 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const defender = createSyntheticOnFieldPokemon({ types: [TYPES.flying] }); // NOT grounded
     const move = getCanonicalMove(MOVES.quickAttack);
     const state = createBattleState({
-      terrain: { type: TERRAINS.psychic as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.psychicSurge },
+      terrain: {
+        type: TERRAINS.psychic as any,
+        turnsLeft: 5,
+        source: GEN9_ABILITY_IDS.psychicSurge,
+      },
     });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
@@ -734,7 +765,11 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const defender = createSyntheticOnFieldPokemon({ types: [TYPES.normal] });
     const move = getCanonicalMove(MOVES.tackle);
     const state = createBattleState({
-      terrain: { type: TERRAINS.psychic as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.psychicSurge },
+      terrain: {
+        type: TERRAINS.psychic as any,
+        turnsLeft: 5,
+        source: GEN9_ABILITY_IDS.psychicSurge,
+      },
     });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
