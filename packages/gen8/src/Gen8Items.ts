@@ -5,7 +5,12 @@ import {
   BATTLE_ITEM_EFFECT_VALUES,
 } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
-import { CORE_VOLATILE_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import {
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  getTypeEffectiveness,
+} from "@pokemon-lib-ts/core";
 import { GEN8_TYPE_CHART } from "./Gen8TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -20,6 +25,16 @@ const NO_ACTIVATION: ItemResult = {
 };
 
 const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
+const BLACK_SLUDGE_EFFECT_TYPES = {
+  heal: "heal",
+  damage: "damage",
+} as const;
+
+const CONSUMABLE_ITEM_STAT_IDS = {
+  none: "none",
+  speed: CORE_STAT_IDS.speed,
+  spAttack: CORE_STAT_IDS.spAttack,
+} as const;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Type-Boost Items (carried from Gen 6-7, 1.2x = 4915/4096)
@@ -306,14 +321,20 @@ export function getLeftoversHeal(maxHp: number): number {
  *   Non-poison: damage target.baseMaxhp / 8
  */
 export function getBlackSludgeEffect(pokemon: { types: readonly PokemonType[]; maxHp: number }): {
-  type: "heal" | "damage";
+  type: (typeof BLACK_SLUDGE_EFFECT_TYPES)["heal"] | (typeof BLACK_SLUDGE_EFFECT_TYPES)["damage"];
   amount: number;
 } {
-  const isPoison = pokemon.types.includes("poison");
+  const isPoison = pokemon.types.includes(CORE_TYPE_IDS.poison);
   if (isPoison) {
-    return { type: "heal", amount: Math.max(1, Math.floor(pokemon.maxHp / 16)) };
+    return {
+      type: BLACK_SLUDGE_EFFECT_TYPES.heal,
+      amount: Math.max(1, Math.floor(pokemon.maxHp / 16)),
+    };
   }
-  return { type: "damage", amount: Math.max(1, Math.floor(pokemon.maxHp / 8)) };
+  return {
+    type: BLACK_SLUDGE_EFFECT_TYPES.damage,
+    amount: Math.max(1, Math.floor(pokemon.maxHp / 8)),
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -515,22 +536,22 @@ export function getConsumableItemEffect(
     case "eject-pack":
       if (context.statChange !== undefined && context.statChange < 0) {
         // Eject Pack forces switch (no stat boost), consumed
-        return { stat: "none", stages: 0, consumed: true };
+        return { stat: CONSUMABLE_ITEM_STAT_IDS.none, stages: 0, consumed: true };
       }
       return null;
     case "blunder-policy":
       if (context.moveMissed) {
-        return { stat: "speed", stages: 2, consumed: true };
+        return { stat: CONSUMABLE_ITEM_STAT_IDS.speed, stages: 2, consumed: true };
       }
       return null;
     case "throat-spray":
       if (context.moveFlags?.sound) {
-        return { stat: "spAttack", stages: 1, consumed: true };
+        return { stat: CONSUMABLE_ITEM_STAT_IDS.spAttack, stages: 1, consumed: true };
       }
       return null;
     case "room-service":
       if (context.trickRoomActive) {
-        return { stat: "speed", stages: -1, consumed: true };
+        return { stat: CONSUMABLE_ITEM_STAT_IDS.speed, stages: -1, consumed: true };
       }
       return null;
     default:
