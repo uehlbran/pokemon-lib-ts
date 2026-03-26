@@ -35,13 +35,18 @@ import {
   type MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
 import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   type SeededRandom,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -109,7 +114,7 @@ function handleKingsShield(
 
   return {
     ...base,
-    selfVolatileInflicted: "kings-shield",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.kingsShield,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -141,7 +146,7 @@ function handleSpikyShield(
 
   return {
     ...base,
-    selfVolatileInflicted: "spiky-shield",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.spikyShield,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -178,7 +183,7 @@ function handleMatBlock(
 
   return {
     ...base,
-    selfVolatileInflicted: "mat-block",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.matBlock,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected the team with Mat Block!"],
   };
@@ -197,7 +202,7 @@ function handleCraftyShield(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
-    selfVolatileInflicted: "crafty-shield",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.craftyShield,
     selfVolatileData: { turnsLeft: 1 },
     messages: [`${ctx.attacker.pokemon.nickname ?? "The Pokemon"} used Crafty Shield!`],
   };
@@ -228,7 +233,7 @@ function handleBanefulBunker(
 
   return {
     ...base,
-    selfVolatileInflicted: "baneful-bunker",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.banefulBunker,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -263,7 +268,7 @@ function handleObstruct(
 
   return {
     ...base,
-    selfVolatileInflicted: "obstruct" as VolatileStatus,
+    selfVolatileInflicted: CORE_VOLATILE_IDS.obstruct as VolatileStatus,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -729,7 +734,7 @@ export function handleTarShot(targetHasTarShot: boolean): MoveEffectResult {
   if (!targetHasTarShot) {
     return {
       ...result,
-      volatileInflicted: "tar-shot",
+      volatileInflicted: CORE_VOLATILE_IDS.tarShot,
       volatileData: { turnsLeft: -1 }, // Permanent until switch
       messages: ["The target became weaker to fire!"],
     };
@@ -750,7 +755,7 @@ export function handleTarShot(targetHasTarShot: boolean): MoveEffectResult {
  * @returns true if the target has tar-shot volatile
  */
 export function isTarShotActive(targetVolatiles: ReadonlyMap<string, unknown>): boolean {
-  return targetVolatiles.has("tar-shot");
+  return targetVolatiles.has(CORE_VOLATILE_IDS.tarShot);
 }
 
 // ---------------------------------------------------------------------------
@@ -777,10 +782,10 @@ export function handleJawLock(): MoveEffectResult {
   return {
     ...base,
     // Set trapped volatile on the defender
-    volatileInflicted: "jaw-lock" as VolatileStatus,
+    volatileInflicted: CORE_VOLATILE_IDS.jawLock as VolatileStatus,
     volatileData: { turnsLeft: -1 }, // Permanent until either switches
     // Set trapped volatile on the attacker (self)
-    selfVolatileInflicted: "jaw-lock" as VolatileStatus,
+    selfVolatileInflicted: CORE_VOLATILE_IDS.jawLock as VolatileStatus,
     selfVolatileData: { turnsLeft: -1 },
     messages: ["Neither Pokemon can switch out!"],
   };
@@ -868,13 +873,13 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
 
   // Big Root: increases drain healing by 30%
   // Source: Showdown data/items.ts -- bigroot: ~1.3x
-  if (ctx.attacker.pokemon.heldItem === "big-root") {
+  if (ctx.attacker.pokemon.heldItem === GEN8_ITEM_IDS.bigRoot) {
     healAmount = Math.floor(healAmount * 1.3);
   }
 
   // Liquid Ooze: attacker takes damage instead of healing
   // Source: Showdown data/abilities.ts -- liquidooze: return -heal
-  if (ctx.defender.ability === "liquid-ooze") {
+  if (ctx.defender.ability === GEN8_ABILITY_IDS.liquidOoze) {
     if (healAmount <= 0) return createBaseResult();
     const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
     return {
@@ -917,11 +922,11 @@ export function isGen8GrassPowderBlocked(
   heldItem: string | null,
 ): boolean {
   // Grass types are immune to powder moves
-  if (targetTypes.includes("grass")) return true;
+  if (targetTypes.includes(CORE_TYPE_IDS.grass)) return true;
   // Overcoat blocks powder moves
-  if (abilityId === "overcoat") return true;
+  if (abilityId === CORE_ABILITY_IDS.overcoat) return true;
   // Safety Goggles blocks powder moves
-  if (heldItem === "safety-goggles") return true;
+  if (heldItem === CORE_ITEM_IDS.safetyGoggles) return true;
   return false;
 }
 
@@ -937,15 +942,15 @@ export function isGen8GrassPowderBlocked(
  * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
  */
 const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
-  fly: "flying",
-  bounce: "flying",
-  dig: "underground",
-  dive: "underwater",
-  "phantom-force": "shadow-force-charging",
-  "shadow-force": "shadow-force-charging",
-  "solar-beam": "charging",
-  "solar-blade": "charging",
-  "sky-attack": "charging",
+  [CORE_MOVE_IDS.fly]: CORE_VOLATILE_IDS.flying,
+  [GEN8_MOVE_IDS.bounce]: CORE_VOLATILE_IDS.flying,
+  [GEN8_MOVE_IDS.dig]: CORE_VOLATILE_IDS.underground,
+  [GEN8_MOVE_IDS.dive]: CORE_VOLATILE_IDS.underwater,
+  [GEN8_MOVE_IDS.phantomForce]: CORE_VOLATILE_IDS.shadowForceCharging,
+  [GEN8_MOVE_IDS.shadowForce]: CORE_VOLATILE_IDS.shadowForceCharging,
+  [CORE_MOVE_IDS.solarBeam]: CORE_VOLATILE_IDS.charging,
+  [GEN8_MOVE_IDS.solarBlade]: CORE_VOLATILE_IDS.charging,
+  [GEN8_MOVE_IDS.skyAttack]: CORE_VOLATILE_IDS.charging,
 };
 
 /**
@@ -954,15 +959,15 @@ const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
  * Source: Showdown -- this.add('-prepare', attacker, move.name);
  */
 const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
-  fly: "{pokemon} flew up high!",
-  bounce: "{pokemon} sprang up!",
-  dig: "{pokemon} dug underground!",
-  dive: "{pokemon} dived underwater!",
-  "phantom-force": "{pokemon} vanished!",
-  "shadow-force": "{pokemon} vanished!",
-  "solar-beam": "{pokemon} is absorbing sunlight!",
-  "solar-blade": "{pokemon} is absorbing sunlight!",
-  "sky-attack": "{pokemon} is glowing!",
+  [CORE_MOVE_IDS.fly]: "{pokemon} flew up high!",
+  [GEN8_MOVE_IDS.bounce]: "{pokemon} sprang up!",
+  [GEN8_MOVE_IDS.dig]: "{pokemon} dug underground!",
+  [GEN8_MOVE_IDS.dive]: "{pokemon} dived underwater!",
+  [GEN8_MOVE_IDS.phantomForce]: "{pokemon} vanished!",
+  [GEN8_MOVE_IDS.shadowForce]: "{pokemon} vanished!",
+  [CORE_MOVE_IDS.solarBeam]: "{pokemon} is absorbing sunlight!",
+  [GEN8_MOVE_IDS.solarBlade]: "{pokemon} is absorbing sunlight!",
+  [GEN8_MOVE_IDS.skyAttack]: "{pokemon} is glowing!",
 };
 
 /**
@@ -985,15 +990,15 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
   // SolarBeam / SolarBlade in sun: skip charge
   // Source: Showdown -- solarbeam/solarblade fire immediately in sun
   if (
-    (move.id === "solar-beam" || move.id === "solar-blade") &&
-    ctx.state.weather?.type === "sun"
+    (move.id === CORE_MOVE_IDS.solarBeam || move.id === GEN8_MOVE_IDS.solarBlade) &&
+    ctx.state.weather?.type === CORE_WEATHER_IDS.sun
   ) {
     return createBaseResult();
   }
 
   // Power Herb: skip charge, consume item
   // Source: Showdown data/items.ts -- powerherb: skip charge turn, consume
-  if (attacker.pokemon.heldItem === "power-herb") {
+  if (attacker.pokemon.heldItem === GEN8_ITEM_IDS.powerHerb) {
     attacker.pokemon.heldItem = null;
     const base = createBaseResult();
     return {
@@ -1045,29 +1050,29 @@ export function executeGen8MoveEffect(
 ): MoveEffectResult | null {
   switch (ctx.move.id) {
     // --- Protect variants ---
-    case "obstruct":
+    case GEN8_MOVE_IDS.obstruct:
       return handleObstruct(ctx, rng, rollProtectSuccess);
-    case "baneful-bunker":
+    case GEN8_MOVE_IDS.banefulBunker:
       return handleBanefulBunker(ctx, rng, rollProtectSuccess);
-    case "kings-shield":
+    case GEN8_MOVE_IDS.kingsShield:
       return handleKingsShield(ctx, rng, rollProtectSuccess);
-    case "spiky-shield":
+    case GEN8_MOVE_IDS.spikyShield:
       return handleSpikyShield(ctx, rng, rollProtectSuccess);
-    case "mat-block":
+    case GEN8_MOVE_IDS.matBlock:
       return handleMatBlock(ctx, rng, rollProtectSuccess);
-    case "crafty-shield":
+    case GEN8_MOVE_IDS.craftyShield:
       return handleCraftyShield(ctx);
 
     // --- New Gen 8 moves (handled inline) ---
-    case "no-retreat": {
+    case GEN8_MOVE_IDS.noRetreat: {
       const hasNoRetreat = ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.noRetreat);
       return handleNoRetreat(hasNoRetreat);
     }
-    case "tar-shot": {
-      const hasTarShot = ctx.defender.volatileStatuses.has("tar-shot");
+    case GEN8_MOVE_IDS.tarShot: {
+      const hasTarShot = ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.tarShot);
       return handleTarShot(hasTarShot);
     }
-    case "jaw-lock":
+    case GEN8_MOVE_IDS.jawLock:
       return handleJawLock();
 
     case "clangorous-soul": {

@@ -28,7 +28,15 @@ import type {
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
 import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_HAZARD_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "./data/reference-ids.js";
 import { isGen8Grounded } from "./Gen8DamageCalc.js";
 
 // ---------------------------------------------------------------------------
@@ -71,6 +79,12 @@ export interface StickyWebResult {
   readonly messages: string[];
 }
 
+const ABILITY_IDS = GEN8_ABILITY_IDS;
+const ITEM_IDS = {
+  ...CORE_ITEM_IDS,
+  heavyDutyBoots: GEN8_ITEM_IDS.heavyDutyBoots,
+} as const;
+
 // ---------------------------------------------------------------------------
 // Heavy-Duty Boots Check
 // ---------------------------------------------------------------------------
@@ -85,7 +99,7 @@ export interface StickyWebResult {
  * Source: Bulbapedia -- Heavy-Duty Boots page
  */
 export function hasHeavyDutyBoots(pokemon: ActivePokemon): boolean {
-  return pokemon.pokemon.heldItem === "heavy-duty-boots";
+  return pokemon.pokemon.heldItem === ITEM_IDS.heavyDutyBoots;
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +260,7 @@ export function applyGen8ToxicSpikes(
 
   // Poison-type absorbs (removes) Toxic Spikes
   // Source: Showdown -- toxicspikes: grounded Poison-type removes them
-  if (switchingIn.types.includes("poison")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.poison)) {
     return {
       absorbed: true,
       status: null,
@@ -256,7 +270,7 @@ export function applyGen8ToxicSpikes(
 
   // Steel-type immune to poison
   // Source: Bulbapedia -- Steel types cannot be poisoned
-  if (switchingIn.types.includes("steel")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.steel)) {
     return { absorbed: false, status: null, message: null };
   }
 
@@ -270,14 +284,14 @@ export function applyGen8ToxicSpikes(
   if (clampedLayers >= 2) {
     return {
       absorbed: false,
-      status: "badly-poisoned",
+      status: CORE_STATUS_IDS.badlyPoisoned,
       message: `${pokemonName} was badly poisoned by the toxic spikes!`,
     };
   }
 
   return {
     absorbed: false,
-    status: "poison",
+    status: CORE_STATUS_IDS.poison,
     message: `${pokemonName} was poisoned by the toxic spikes!`,
   };
 }
@@ -320,14 +334,14 @@ export function applyGen8StickyWeb(
   // Source: Showdown data/abilities.ts -- clearbody/whitesmoke/fullmetalbody: onBoost
   // Source: Bulbapedia -- Full Metal Body prevents stat reductions (Gen 7+)
   if (
-    switchingIn.ability === "clear-body" ||
-    switchingIn.ability === "white-smoke" ||
-    switchingIn.ability === "full-metal-body"
+    switchingIn.ability === ABILITY_IDS.clearBody ||
+    switchingIn.ability === ABILITY_IDS.whiteSmoke ||
+    switchingIn.ability === ABILITY_IDS.fullMetalBody
   ) {
     const abilityNames: Record<string, string> = {
-      "clear-body": "Clear Body",
-      "white-smoke": "White Smoke",
-      "full-metal-body": "Full Metal Body",
+      [ABILITY_IDS.clearBody]: "Clear Body",
+      [ABILITY_IDS.whiteSmoke]: "White Smoke",
+      [ABILITY_IDS.fullMetalBody]: "Full Metal Body",
     };
     const abilityName = abilityNames[switchingIn.ability] ?? switchingIn.ability;
     return {
@@ -349,10 +363,10 @@ export function applyGen8StickyWeb(
   // Defiant / Competitive: triggered by opponent-caused stat drop, raise Attack or Sp. Atk by +2
   // Source: Showdown data/abilities.ts -- Defiant/Competitive onAfterEachBoost
   // Source: Bulbapedia "Defiant" -- "raises Attack by 2 when its stats are lowered by an opponent"
-  if (switchingIn.ability === "defiant") {
+  if (switchingIn.ability === ABILITY_IDS.defiant) {
     messages.push(`${pokemonName}'s Defiant sharply raised its Attack!`);
     allStatChanges.push({ stat: CORE_STAT_IDS.attack, stages: 2 });
-  } else if (switchingIn.ability === "competitive") {
+  } else if (switchingIn.ability === ABILITY_IDS.competitive) {
     messages.push(`${pokemonName}'s Competitive sharply raised its Sp. Atk!`);
     allStatChanges.push({ stat: CORE_STAT_IDS.spAttack, stages: 2 });
   }
@@ -406,12 +420,12 @@ export function applyGen8EntryHazards(
 
   // Magic Guard: immune to all DAMAGE-related hazard effects but NOT Sticky Web
   // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
-  const hasMagicGuard = switchingIn.ability === "magic-guard";
+  const hasMagicGuard = switchingIn.ability === ABILITY_IDS.magicGuard;
 
   if (!hasMagicGuard) {
     // --- Stealth Rock ---
     // No grounding check -- Stealth Rock hits everything
-    const stealthRock = side.hazards.find((h) => h.type === "stealth-rock");
+    const stealthRock = side.hazards.find((h) => h.type === CORE_HAZARD_IDS.stealthRock);
     if (stealthRock && stealthRock.layers > 0) {
       const result = applyGen8StealthRock(switchingIn, typeChart);
       if (result) {
@@ -421,7 +435,7 @@ export function applyGen8EntryHazards(
     }
 
     // --- Spikes ---
-    const spikes = side.hazards.find((h) => h.type === "spikes");
+    const spikes = side.hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     if (spikes && spikes.layers > 0) {
       const result = applyGen8SpikesHazard(switchingIn, spikes.layers, gravityActive);
       if (result) {
@@ -431,16 +445,17 @@ export function applyGen8EntryHazards(
     }
 
     // --- Toxic Spikes ---
-    const toxicSpikes = side.hazards.find((h) => h.type === "toxic-spikes");
+    const toxicSpikes = side.hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     if (toxicSpikes && toxicSpikes.layers > 0) {
       const result = applyGen8ToxicSpikes(switchingIn, toxicSpikes.layers, gravityActive);
       if (result.absorbed) {
-        hazardsToRemove.push("toxic-spikes");
+        hazardsToRemove.push(CORE_HAZARD_IDS.toxicSpikes);
       }
       // Misty Terrain blocks all status for grounded Pokemon
       // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus blocks all status
       const terrainBlocksStatus =
-        state.terrain?.type === "misty" && isGen8Grounded(switchingIn, gravityActive);
+        state.terrain?.type === CORE_TERRAIN_IDS.misty &&
+        isGen8Grounded(switchingIn, gravityActive);
       if (result.status && !terrainBlocksStatus) {
         statusInflicted = result.status;
       }
@@ -468,7 +483,7 @@ export function applyGen8EntryHazards(
   // NOT gated by Magic Guard (Sticky Web is a stat drop, not damage)
   // NOT gated by Heavy-Duty Boots (already handled above)
   // Source: Showdown data/moves.ts -- stickyweb.condition.onSwitchIn
-  const stickyWeb = side.hazards.find((h) => h.type === "sticky-web");
+  const stickyWeb = side.hazards.find((h) => h.type === CORE_HAZARD_IDS.stickyWeb);
   if (stickyWeb && stickyWeb.layers > 0) {
     const result = applyGen8StickyWeb(switchingIn, gravityActive);
     if (result.applied && result.statChanges.length > 0) {
