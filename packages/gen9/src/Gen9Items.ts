@@ -15,6 +15,7 @@ import {
   CORE_WEATHER_IDS,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
+import { GEN9_ITEM_IDS } from "./data/reference-ids";
 import { GEN9_TYPE_CHART } from "./Gen9TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -31,6 +32,7 @@ const NO_ACTIVATION: ItemResult = {
 const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
 const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
+const ITEM_IDS = GEN9_ITEM_IDS;
 const BLACK_SLUDGE_EFFECT_TYPES = {
   heal: "heal",
   damage: "damage",
@@ -56,26 +58,26 @@ const CONSUMABLE_ITEM_STAT_IDS = {
  *   chainModify([4915, 4096]) for Fairy-type moves (Gen 9 new)
  */
 const TYPE_BOOST_ITEMS: Readonly<Record<string, PokemonType>> = {
-  charcoal: "fire",
-  "mystic-water": "water",
-  "miracle-seed": "grass",
-  magnet: "electric",
-  "twisted-spoon": "psychic",
-  "spell-tag": "ghost",
-  "never-melt-ice": "ice",
-  "black-belt": "fighting",
-  "poison-barb": "poison",
-  "soft-sand": "ground",
-  "sharp-beak": "flying",
-  "hard-stone": "rock",
-  "silver-powder": "bug",
-  "dragon-fang": "dragon",
-  "black-glasses": "dark",
-  "metal-coat": "steel",
-  "silk-scarf": "normal",
+  [ITEM_IDS.charcoal]: CORE_TYPE_IDS.fire,
+  [ITEM_IDS.mysticWater]: CORE_TYPE_IDS.water,
+  [ITEM_IDS.miracleSeed]: CORE_TYPE_IDS.grass,
+  [ITEM_IDS.magnet]: CORE_TYPE_IDS.electric,
+  [ITEM_IDS.twistedSpoon]: CORE_TYPE_IDS.psychic,
+  [ITEM_IDS.spellTag]: CORE_TYPE_IDS.ghost,
+  [ITEM_IDS.neverMeltIce]: CORE_TYPE_IDS.ice,
+  [ITEM_IDS.blackBelt]: CORE_TYPE_IDS.fighting,
+  [ITEM_IDS.poisonBarb]: CORE_TYPE_IDS.poison,
+  [ITEM_IDS.softSand]: CORE_TYPE_IDS.ground,
+  [ITEM_IDS.sharpBeak]: CORE_TYPE_IDS.flying,
+  [ITEM_IDS.hardStone]: CORE_TYPE_IDS.rock,
+  [ITEM_IDS.silverPowder]: CORE_TYPE_IDS.bug,
+  [ITEM_IDS.dragonFang]: CORE_TYPE_IDS.dragon,
+  [ITEM_IDS.blackGlasses]: CORE_TYPE_IDS.dark,
+  [ITEM_IDS.metalCoat]: CORE_TYPE_IDS.steel,
+  [ITEM_IDS.silkScarf]: CORE_TYPE_IDS.normal,
   // Gen 9 new: Fairy Feather boosts Fairy-type moves
   // Source: Showdown data/items.ts -- fairyfeather: onBasePower Fairy 4915/4096
-  "fairy-feather": "fairy",
+  [ITEM_IDS.fairyFeather]: CORE_TYPE_IDS.fairy,
 };
 
 /**
@@ -86,38 +88,32 @@ const TYPE_BOOST_ITEMS: Readonly<Record<string, PokemonType>> = {
  *   chainModify([4915, 4096])
  */
 const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
-  "flame-plate": "fire",
-  "splash-plate": "water",
-  "meadow-plate": "grass",
-  "zap-plate": "electric",
-  "mind-plate": "psychic",
-  "spooky-plate": "ghost",
-  "icicle-plate": "ice",
-  "fist-plate": "fighting",
-  "toxic-plate": "poison",
-  "earth-plate": "ground",
-  "sky-plate": "flying",
-  "stone-plate": "rock",
-  "insect-plate": "bug",
-  "draco-plate": "dragon",
-  "dread-plate": "dark",
-  "iron-plate": "steel",
-  "pixie-plate": "fairy",
+  [ITEM_IDS.flamePlate]: CORE_TYPE_IDS.fire,
+  [ITEM_IDS.splashPlate]: CORE_TYPE_IDS.water,
+  [ITEM_IDS.meadowPlate]: CORE_TYPE_IDS.grass,
+  [ITEM_IDS.zapPlate]: CORE_TYPE_IDS.electric,
+  [ITEM_IDS.mindPlate]: CORE_TYPE_IDS.psychic,
+  [ITEM_IDS.spookyPlate]: CORE_TYPE_IDS.ghost,
+  [ITEM_IDS.iciclePlate]: CORE_TYPE_IDS.ice,
+  [ITEM_IDS.fistPlate]: CORE_TYPE_IDS.fighting,
+  [ITEM_IDS.toxicPlate]: CORE_TYPE_IDS.poison,
+  [ITEM_IDS.earthPlate]: CORE_TYPE_IDS.ground,
+  [ITEM_IDS.skyPlate]: CORE_TYPE_IDS.flying,
+  [ITEM_IDS.stonePlate]: CORE_TYPE_IDS.rock,
+  [ITEM_IDS.insectPlate]: CORE_TYPE_IDS.bug,
+  [ITEM_IDS.dracoPlate]: CORE_TYPE_IDS.dragon,
+  [ITEM_IDS.dreadPlate]: CORE_TYPE_IDS.dark,
+  [ITEM_IDS.ironPlate]: CORE_TYPE_IDS.steel,
+  [ITEM_IDS.pixiePlate]: CORE_TYPE_IDS.fairy,
 };
 
 /**
- * Incense items: ~1.2x (4915/4096) base power increase for moves
- * of the matching type. Same as Gen 6-8.
+ * Incense items present in the Gen 9 data bundle.
+ * The current Gen 9 item data does not include incense items.
  *
- * Source: Showdown data/items.ts -- incense items onBasePower
+ * Source: packages/gen9/data/items.json
  */
-const INCENSE_ITEMS: Readonly<Record<string, PokemonType>> = {
-  "sea-incense": "water",
-  "wave-incense": "water",
-  "rose-incense": "grass",
-  "odd-incense": "psychic",
-  "rock-incense": "rock",
-};
+const INCENSE_ITEMS: Readonly<Record<string, PokemonType>> = {};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Type-Resist Berries
@@ -132,24 +128,24 @@ const INCENSE_ITEMS: Readonly<Record<string, PokemonType>> = {
  * Source: Bulbapedia -- type-resist berries
  */
 const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
-  "roseli-berry": "fairy",
+  [ITEM_IDS.occaBerry]: CORE_TYPE_IDS.fire,
+  [ITEM_IDS.passhoBerry]: CORE_TYPE_IDS.water,
+  [ITEM_IDS.wacanBerry]: CORE_TYPE_IDS.electric,
+  [ITEM_IDS.rindoBerry]: CORE_TYPE_IDS.grass,
+  [ITEM_IDS.yacheBerry]: CORE_TYPE_IDS.ice,
+  [ITEM_IDS.chopleBerry]: CORE_TYPE_IDS.fighting,
+  [ITEM_IDS.kebiaBerry]: CORE_TYPE_IDS.poison,
+  [ITEM_IDS.shucaBerry]: CORE_TYPE_IDS.ground,
+  [ITEM_IDS.cobaBerry]: CORE_TYPE_IDS.flying,
+  [ITEM_IDS.payapaBerry]: CORE_TYPE_IDS.psychic,
+  [ITEM_IDS.tangaBerry]: CORE_TYPE_IDS.bug,
+  [ITEM_IDS.chartiBerry]: CORE_TYPE_IDS.rock,
+  [ITEM_IDS.kasibBerry]: CORE_TYPE_IDS.ghost,
+  [ITEM_IDS.habanBerry]: CORE_TYPE_IDS.dragon,
+  [ITEM_IDS.colburBerry]: CORE_TYPE_IDS.dark,
+  [ITEM_IDS.babiriBerry]: CORE_TYPE_IDS.steel,
+  [ITEM_IDS.chilanBerry]: CORE_TYPE_IDS.normal,
+  [ITEM_IDS.roseliBerry]: CORE_TYPE_IDS.fairy,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -166,9 +162,9 @@ const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
 const CHOICE_ITEMS: Readonly<
   Record<string, { stat: "atk" | "spatk" | "spe"; multiplier: number }>
 > = {
-  "choice-band": { stat: "atk", multiplier: 1.5 },
-  "choice-specs": { stat: "spatk", multiplier: 1.5 },
-  "choice-scarf": { stat: "spe", multiplier: 1.5 },
+  [ITEM_IDS.choiceBand]: { stat: "atk", multiplier: 1.5 },
+  [ITEM_IDS.choiceSpecs]: { stat: "spatk", multiplier: 1.5 },
+  [ITEM_IDS.choiceScarf]: { stat: "spe", multiplier: 1.5 },
 };
 
 /**
@@ -243,15 +239,15 @@ export function getItemDamageModifier(
 
   // Life Orb: 1.3x (5325/4096) -- applies to all damaging moves
   // Source: Showdown data/items.ts -- Life Orb onModifyDamage chainModify([5325, 4096])
-  if (item === "life-orb" && isDamagingMove) return 5325;
+  if (item === ITEM_IDS.lifeOrb && isDamagingMove) return 5325;
 
   // Choice Band: 1.5x (6144/4096) for physical moves only
   // Source: Showdown data/items.ts -- Choice Band onModifyAtk
-  if (item === "choice-band" && moveCategory === "physical") return 6144;
+  if (item === ITEM_IDS.choiceBand && moveCategory === "physical") return 6144;
 
   // Choice Specs: 1.5x (6144/4096) for special moves only
   // Source: Showdown data/items.ts -- Choice Specs onModifySpA
-  if (item === "choice-specs" && moveCategory === "special") return 6144;
+  if (item === ITEM_IDS.choiceSpecs && moveCategory === "special") return 6144;
 
   return 4096;
 }
