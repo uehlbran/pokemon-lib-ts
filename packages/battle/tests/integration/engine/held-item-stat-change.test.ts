@@ -1,3 +1,5 @@
+import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9";
 import type { BattleConfig, ItemContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, StatChangeEvent } from "../../../src/events";
@@ -5,7 +7,7 @@ import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
-function makeStats(hp: number, speed: number) {
+function createStats(hp: number, speed: number) {
   return {
     hp,
     attack: 100,
@@ -36,7 +38,10 @@ class HeldItemStatBoostRuleset extends MockRuleset {
   override applyHeldItem(trigger: string, context: ItemContext) {
     this.itemTriggers.push(trigger);
 
-    if (trigger === "on-damage-taken" && context.pokemon.pokemon.heldItem === "weakness-policy") {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onDamageTaken &&
+      context.pokemon.pokemon.heldItem === GEN9_ITEM_IDS.weaknessPolicy
+    ) {
       return {
         activated: true,
         effects: [
@@ -58,21 +63,21 @@ function createHeldItemStatBoostEngine(ruleset: HeldItemStatBoostRuleset) {
     format: "singles",
     teams: [
       [
-        createTestPokemon(6, 50, {
+        createTestPokemon(GEN9_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: makeStats(200, 120),
+          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: createStats(200, 120),
           currentHp: 200,
         }),
       ],
       [
-        createTestPokemon(9, 50, {
+        createTestPokemon(GEN9_SPECIES_IDS.blastoise, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          heldItem: "weakness-policy",
-          moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
-          calculatedStats: makeStats(200, 80),
+          heldItem: GEN9_ITEM_IDS.weaknessPolicy,
+          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: createStats(200, 80),
           currentHp: 200,
         }),
       ],
@@ -106,6 +111,6 @@ describe("BattleEngine held-item stat boosts", () => {
     const defender = engine.state.sides[1].active[0];
     expect(defender!.statStages.attack).toBe(2);
     expect(defender!.statStages.spAttack).toBe(2);
-    expect(ruleset.itemTriggers).toContain("on-damage-taken");
+    expect(ruleset.itemTriggers).toContain(CORE_ITEM_TRIGGER_IDS.onDamageTaken);
   });
 });
