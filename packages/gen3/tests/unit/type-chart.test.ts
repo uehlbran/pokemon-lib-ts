@@ -1,6 +1,9 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
 import { GEN3_TYPE_CHART, GEN3_TYPES } from "../../src/Gen3TypeChart";
+
+const TYPE_IDS = CORE_TYPE_IDS;
 
 describe("Gen 3 type chart", () => {
   it("given GEN3_TYPES, when checking count, then returns exactly 17 types", () => {
@@ -12,19 +15,19 @@ describe("Gen 3 type chart", () => {
   it("given GEN3_TYPES, when checking for Fairy type, then Fairy is not present", () => {
     // Source: Fairy type was not introduced until Gen 6 (X/Y)
     // pret/pokeemerald has no TYPE_FAIRY constant
-    expect(GEN3_TYPES).not.toContain("fairy");
+    expect(GEN3_TYPES).not.toContain(TYPE_IDS.fairy);
   });
 
   it("given GEN3_TYPES, when checking for Steel type, then Steel is present", () => {
     // Source: Steel type introduced in Gen 2, present in Gen 3
     // pret/pokeemerald src/data/battle/type_effectiveness.h — TYPE_STEEL present
-    expect(GEN3_TYPES).toContain("steel");
+    expect(GEN3_TYPES).toContain(TYPE_IDS.steel);
   });
 
   it("given GEN3_TYPES, when checking for Dark type, then Dark is present", () => {
     // Source: Dark type introduced in Gen 2, present in Gen 3
     // pret/pokeemerald src/data/battle/type_effectiveness.h — TYPE_DARK present
-    expect(GEN3_TYPES).toContain("dark");
+    expect(GEN3_TYPES).toContain(TYPE_IDS.dark);
   });
 
   it("given gen3 type chart, when Water attacks Steel, then effectiveness is 0.5x", () => {

@@ -7,13 +7,18 @@ import type {
 import type { EntryHazardType, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS, GEN5_SPECIES_IDS } from "../src";
 import {
   applyGen5EntryHazards,
   applyGen5SpikesHazard,
@@ -23,7 +28,6 @@ import {
 } from "../src/Gen5EntryHazards";
 import { handleGen5BehaviorMove } from "../src/Gen5MoveEffectsBehavior";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
-import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS, GEN5_SPECIES_IDS } from "../src";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 
 const A = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS } as const;
@@ -39,7 +43,7 @@ const V = CORE_VOLATILE_IDS;
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   types?: PokemonType[];
@@ -58,6 +62,10 @@ function makeActivePokemon(overrides: {
       speciesId: SP.bulbasaur,
       heldItem: overrides.heldItem ?? null,
       status: overrides.status ?? null,
+      ivs: createIvs(),
+      evs: createEvs(),
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: CORE_GENDERS.male as any,
     },
     ability: overrides.ability ?? A.blaze,
     types: overrides.types ?? [T.normal],
@@ -75,7 +83,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeSide(
+function createBattleSide(
   hazards: Array<{ type: EntryHazardType; layers: number }>,
   index: 0 | 1 = 0,
 ): BattleSide {
@@ -95,10 +103,10 @@ function makeSide(
   } as unknown as BattleSide;
 }
 
-function makeState(gravityActive = false): BattleState {
+function createBattleState(gravityActive = false): BattleState {
   return {
     weather: null,
-    sides: [makeSide([]), makeSide([], 1)],
+    sides: [createBattleSide([]), createBattleSide([], 1)],
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: gravityActive, turnsLeft: gravityActive ? 5 : 0 },
   } as unknown as BattleState;
@@ -111,58 +119,58 @@ function makeState(gravityActive = false): BattleState {
 describe("Gen5 isGen5Grounded", () => {
   it("given a Normal-type with no special conditions, when checking grounding, then is grounded", () => {
     // Source: Showdown sim/pokemon.ts -- default isGrounded = true for non-Flying/non-Levitate
-    const pokemon = makeActivePokemon({ types: [T.normal] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.normal] });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Flying-type, when checking grounding, then is NOT grounded", () => {
     // Source: Showdown sim/pokemon.ts -- Flying-type is not grounded
-    const pokemon = makeActivePokemon({ types: [T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.flying] });
     expect(isGen5Grounded(pokemon, false)).toBe(false);
   });
 
   it("given a Pokemon with Levitate, when checking grounding, then is NOT grounded", () => {
     // Source: Bulbapedia -- Levitate: makes the user immune to Ground-type moves
-    const pokemon = makeActivePokemon({ ability: A.levitate });
+    const pokemon = createSyntheticOnFieldPokemon({ ability: A.levitate });
     expect(isGen5Grounded(pokemon, false)).toBe(false);
   });
 
   it("given a Pokemon holding Air Balloon, when checking grounding, then is NOT grounded", () => {
     // Source: Showdown data/items.ts -- Air Balloon: grants Ground immunity
-    const pokemon = makeActivePokemon({ heldItem: I.airBalloon });
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: I.airBalloon });
     expect(isGen5Grounded(pokemon, false)).toBe(false);
   });
 
   it("given a Pokemon with Magnet Rise, when checking grounding, then is NOT grounded", () => {
     // Source: Bulbapedia -- Magnet Rise: makes the user immune to Ground-type moves
     const volatiles = new Map([[V.magnetRise, { turnsLeft: 5 }]]);
-    const pokemon = makeActivePokemon({ volatiles });
+    const pokemon = createSyntheticOnFieldPokemon({ volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(false);
   });
 
   it("given a Flying-type under Gravity, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Gravity: "All Pokemon are grounded."
-    const pokemon = makeActivePokemon({ types: [T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.flying] });
     expect(isGen5Grounded(pokemon, true)).toBe(true);
   });
 
   it("given a Levitate Pokemon under Gravity, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Gravity overrides Levitate for grounding purposes
-    const pokemon = makeActivePokemon({ ability: A.levitate });
+    const pokemon = createSyntheticOnFieldPokemon({ ability: A.levitate });
     expect(isGen5Grounded(pokemon, true)).toBe(true);
   });
 
   it("given a Pokemon holding Iron Ball, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Iron Ball: "makes the holder grounded"
     // Even if the Pokemon is Flying-type, Iron Ball grounds it
-    const pokemon = makeActivePokemon({ types: [T.flying], heldItem: I.ironBall });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.flying], heldItem: I.ironBall });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Pokemon hit by Smack Down (smackdown volatile), when checking grounding, then IS grounded", () => {
     // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
     const volatiles = new Map([[V.smackDown, { turnsLeft: -1 }]]);
-    const pokemon = makeActivePokemon({ types: [T.flying], volatiles });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.flying], volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
@@ -172,21 +180,21 @@ describe("Gen5 isGen5Grounded", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded checks 'ingrain' volatile before
     //   Flying/Levitate checks
     const volatiles = new Map([[V.ingrain, { turnsLeft: -1 }]]);
-    const pokemon = makeActivePokemon({ types: [T.flying], volatiles });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.flying], volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Levitate Pokemon with Ingrain, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Ingrain: "even if it ... has the Levitate ability"
     const volatiles = new Map([[V.ingrain, { turnsLeft: -1 }]]);
-    const pokemon = makeActivePokemon({ ability: A.levitate, volatiles });
+    const pokemon = createSyntheticOnFieldPokemon({ ability: A.levitate, volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
   it("given an Air Balloon holder with Klutz, when checking grounding, then IS grounded (item suppressed)", () => {
     // Source: Bulbapedia -- Klutz: "The held item has no effect" — suppresses Air Balloon levitation
     // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses item effect when Klutz active
-    const pokemon = makeActivePokemon({ heldItem: I.airBalloon, ability: A.klutz });
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: I.airBalloon, ability: A.klutz });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
@@ -194,14 +202,14 @@ describe("Gen5 isGen5Grounded", () => {
     // Source: Bulbapedia -- Embargo: "The target cannot use its held item" — suppresses Air Balloon
     // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses item effect under Embargo volatile
     const volatiles = new Map([[V.embargo, { turnsLeft: 5 }]]);
-    const pokemon = makeActivePokemon({ heldItem: I.airBalloon, volatiles });
+    const pokemon = createSyntheticOnFieldPokemon({ heldItem: I.airBalloon, volatiles });
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Flying-type Iron Ball holder with Klutz, when checking grounding, then is NOT grounded (item suppressed)", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: Iron Ball grounding is suppressed by Klutz
     // Klutz suppresses held-item effects, so Iron Ball cannot force grounding.
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       types: [T.flying],
       heldItem: I.ironBall,
       ability: A.klutz,
@@ -213,7 +221,11 @@ describe("Gen5 isGen5Grounded", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: Iron Ball grounding is suppressed by Embargo
     // Embargo suppresses held-item effects, so Iron Ball cannot force grounding.
     const volatiles = new Map([[V.embargo, { turnsLeft: 5 }]]);
-    const pokemon = makeActivePokemon({ types: [T.flying], heldItem: I.ironBall, volatiles });
+    const pokemon = createSyntheticOnFieldPokemon({
+      types: [T.flying],
+      heldItem: I.ironBall,
+      volatiles,
+    });
     expect(isGen5Grounded(pokemon, false)).toBe(false);
   });
 });
@@ -226,7 +238,7 @@ describe("Gen5 Spikes", () => {
   it("given 1 layer of Spikes, when a grounded Pokemon switches in, then takes floor(maxHp * 3/24) damage", () => {
     // Source: Showdown data/moves.ts -- spikes: 1 layer = damageAmounts[1] = 3/24 of maxHP
     // At 160 max HP: floor(160 * 3 / 24) = floor(480 / 24) = 20 HP
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.normal] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 160, types: [T.normal] });
     const result = applyGen5SpikesHazard(pokemon, 1, false);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(20);
@@ -235,7 +247,7 @@ describe("Gen5 Spikes", () => {
   it("given 2 layers of Spikes, when a grounded Pokemon switches in, then takes floor(maxHp * 4/24) damage", () => {
     // Source: Showdown data/moves.ts -- spikes: 2 layers = damageAmounts[2] = 4/24 of maxHP
     // At 240 max HP: floor(240 * 4 / 24) = floor(960 / 24) = 40 HP
-    const pokemon = makeActivePokemon({ maxHp: 240, types: [T.water] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 240, types: [T.water] });
     const result = applyGen5SpikesHazard(pokemon, 2, false);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(40);
@@ -244,7 +256,7 @@ describe("Gen5 Spikes", () => {
   it("given 3 layers of Spikes, when a grounded Pokemon switches in, then takes floor(maxHp * 6/24) damage", () => {
     // Source: Showdown data/moves.ts -- spikes: 3 layers = damageAmounts[3] = 6/24 = 1/4 of maxHP
     // At 200 max HP: floor(200 * 6 / 24) = floor(1200 / 24) = 50 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.normal] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.normal] });
     const result = applyGen5SpikesHazard(pokemon, 3, false);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(50);
@@ -252,21 +264,21 @@ describe("Gen5 Spikes", () => {
 
   it("given Spikes, when a Flying-type switches in, then takes no damage (returns null)", () => {
     // Source: Showdown data/moves.ts -- spikes: if (!pokemon.isGrounded()) return;
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.flying] });
     const result = applyGen5SpikesHazard(pokemon, 1, false);
     expect(result).toBeNull();
   });
 
   it("given Spikes, when a Levitate Pokemon switches in, then takes no damage (returns null)", () => {
     // Source: Showdown sim/pokemon.ts -- Levitate makes the Pokemon not grounded
-    const pokemon = makeActivePokemon({ maxHp: 200, ability: A.levitate });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, ability: A.levitate });
     const result = applyGen5SpikesHazard(pokemon, 1, false);
     expect(result).toBeNull();
   });
 
   it("given Spikes, when an Air Balloon holder switches in, then takes no damage (returns null)", () => {
     // Source: Showdown data/items.ts -- Air Balloon: grants Ground immunity (not grounded)
-    const pokemon = makeActivePokemon({ maxHp: 200, heldItem: I.airBalloon });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, heldItem: I.airBalloon });
     const result = applyGen5SpikesHazard(pokemon, 1, false);
     expect(result).toBeNull();
   });
@@ -274,7 +286,7 @@ describe("Gen5 Spikes", () => {
   it("given Spikes + Gravity, when a Flying-type switches in, then takes damage (Gravity grounds)", () => {
     // Source: Bulbapedia -- Gravity: "All Pokemon are grounded."
     // At 200 max HP with 1 layer: floor(200 * 3 / 24) = floor(600 / 24) = 25 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.flying] });
     const result = applyGen5SpikesHazard(pokemon, 1, true);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(25);
@@ -283,7 +295,7 @@ describe("Gen5 Spikes", () => {
   it("given 1 layer of Spikes on a Pokemon with 1 HP max, then minimum damage is 1", () => {
     // Source: Showdown -- Math.max(1, ...) ensures minimum 1 damage
     // This covers Shedinja or very low HP Pokemon
-    const pokemon = makeActivePokemon({ maxHp: 1, types: [T.bug] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 1, types: [T.bug] });
     const result = applyGen5SpikesHazard(pokemon, 1, false);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(1);
@@ -299,7 +311,7 @@ describe("Gen5 Stealth Rock", () => {
     // Source: Showdown data/moves.ts -- stealthrock: damage = maxhp * (2^0) / 8 = maxhp/8
     // Rock vs Normal = 1x neutral
     // At 200 max HP: floor(200 * 1 / 8) = 25 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.normal] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.normal] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(25);
@@ -309,7 +321,7 @@ describe("Gen5 Stealth Rock", () => {
     // Source: Showdown -- Rock is 2x effective vs Fire, 2x vs Flying = 4x total
     // damage = floor(maxHp * 4 / 8) = floor(maxHp / 2)
     // At 200 max HP: floor(200 * 4 / 8) = 100 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.fire, T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.fire, T.flying] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(100);
@@ -318,7 +330,7 @@ describe("Gen5 Stealth Rock", () => {
   it("given Stealth Rock, when a Fire-type switches in, then takes floor(maxHp * 2 / 8) = 25% maxHp", () => {
     // Source: Showdown -- Rock is 2x effective vs Fire
     // At 200 max HP: floor(200 * 2 / 8) = 50 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.fire] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.fire] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(50);
@@ -327,7 +339,7 @@ describe("Gen5 Stealth Rock", () => {
   it("given Stealth Rock, when a Fighting-type switches in, then takes floor(maxHp * 0.5 / 8) damage", () => {
     // Source: Showdown -- Rock is 0.5x effective vs Fighting
     // At 200 max HP: floor(200 * 0.5 / 8) = floor(100 / 8) = 12 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.fighting] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.fighting] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(12);
@@ -336,7 +348,7 @@ describe("Gen5 Stealth Rock", () => {
   it("given Stealth Rock, when a Fighting/Ground-type switches in, then takes floor(maxHp * 0.25 / 8)", () => {
     // Source: Showdown -- Rock is 0.5x vs Fighting, 0.5x vs Ground = 0.25x total
     // At 200 max HP: floor(200 * 0.25 / 8) = floor(50 / 8) = 6 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.fighting, T.ground] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.fighting, T.ground] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(6);
@@ -346,7 +358,7 @@ describe("Gen5 Stealth Rock", () => {
     // Source: Showdown data/moves.ts -- stealthrock has NO isGrounded() check
     // Rock vs Flying = 2x
     // At 200 max HP: floor(200 * 2 / 8) = 50 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.flying] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(50);
@@ -355,7 +367,7 @@ describe("Gen5 Stealth Rock", () => {
   it("given Stealth Rock, when a Steel-type switches in, then takes floor(maxHp * 0.5 / 8)", () => {
     // Source: Showdown -- Rock is 0.5x vs Steel (Gen 5 type chart)
     // At 200 max HP: floor(200 * 0.5 / 8) = floor(12.5) = 12 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.steel] });
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.steel] });
     const result = applyGen5StealthRock(pokemon, GEN5_TYPE_CHART);
     expect(result).not.toBeNull();
     expect(result!.damage).toBe(12);
@@ -369,7 +381,7 @@ describe("Gen5 Stealth Rock", () => {
 describe("Gen5 Toxic Spikes", () => {
   it("given 1 layer of Toxic Spikes, when a grounded non-Poison/Steel Pokemon switches in, then becomes poisoned", () => {
     // Source: Showdown data/moves.ts -- toxicspikes: 1 layer = regular poison
-    const pokemon = makeActivePokemon({ types: [T.normal] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.normal] });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBe(S.poison);
@@ -378,7 +390,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given 2 layers of Toxic Spikes, when a grounded non-Poison/Steel Pokemon switches in, then becomes badly poisoned", () => {
     // Source: Showdown data/moves.ts -- toxicspikes: 2 layers = badly poisoned (toxic)
-    const pokemon = makeActivePokemon({ types: [T.water] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.water] });
     const result = applyGen5ToxicSpikes(pokemon, 2, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBe(S.badlyPoisoned);
@@ -387,7 +399,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given Toxic Spikes, when a Poison-type switches in, then absorbs the hazard (removes it)", () => {
     // Source: Showdown data/moves.ts -- toxicspikes: Poison-type absorbs = removes from field
-    const pokemon = makeActivePokemon({ types: [T.poison] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.poison] });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(true);
     expect(result.status).toBeNull();
@@ -397,7 +409,7 @@ describe("Gen5 Toxic Spikes", () => {
   it("given Toxic Spikes, when a Poison/Flying-type switches in, then does NOT absorb (not grounded)", () => {
     // Source: Showdown -- toxicspikes: grounded check happens BEFORE Poison-type check
     // Flying-type is not grounded, so the Poison-type absorption never triggers
-    const pokemon = makeActivePokemon({ types: [T.poison, T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.poison, T.flying] });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBeNull();
@@ -405,7 +417,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given Toxic Spikes, when a Steel-type switches in, then is immune (no status, no absorption)", () => {
     // Source: Showdown data/moves.ts -- toxicspikes: Steel-type immune to poison status
-    const pokemon = makeActivePokemon({ types: [T.steel] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.steel] });
     const result = applyGen5ToxicSpikes(pokemon, 2, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBeNull();
@@ -413,7 +425,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given Toxic Spikes, when a Flying-type switches in, then is immune (not grounded)", () => {
     // Source: Showdown -- Flying-type is not grounded, so Toxic Spikes has no effect
-    const pokemon = makeActivePokemon({ types: [T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.flying] });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBeNull();
@@ -421,7 +433,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given Toxic Spikes, when a Pokemon with an existing status switches in, then no additional status", () => {
     // Source: Showdown -- trySetStatus fails if Pokemon already has a status
-    const pokemon = makeActivePokemon({ types: [T.normal], status: S.burn });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.normal], status: S.burn });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBeNull();
@@ -429,7 +441,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given Toxic Spikes + Gravity, when a Poison/Flying-type switches in, then absorbs (Gravity grounds)", () => {
     // Source: Bulbapedia -- Gravity grounds everything; then Poison-type absorbs Toxic Spikes
-    const pokemon = makeActivePokemon({ types: [T.poison, T.flying] });
+    const pokemon = createSyntheticOnFieldPokemon({ types: [T.poison, T.flying] });
     const result = applyGen5ToxicSpikes(pokemon, 2, true);
     expect(result.absorbed).toBe(true);
     expect(result.status).toBeNull();
@@ -437,7 +449,7 @@ describe("Gen5 Toxic Spikes", () => {
 
   it("given Toxic Spikes, when a Levitate Pokemon switches in, then is immune (not grounded)", () => {
     // Source: Showdown -- Levitate means not grounded
-    const pokemon = makeActivePokemon({ ability: A.levitate });
+    const pokemon = createSyntheticOnFieldPokemon({ ability: A.levitate });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBeNull();
@@ -452,17 +464,17 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
   it("given Magic Guard, when switching into any hazards, then takes no damage and no status", () => {
     // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
     // Source: Showdown -- Magic Guard prevents hazard damage and status
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       maxHp: 200,
       types: [T.normal],
       ability: A.magicGuard,
     });
-    const side = makeSide([
+    const side = createBattleSide([
       { type: H.stealthRock, layers: 1 },
       { type: H.spikes, layers: 3 },
       { type: H.toxicSpikes, layers: 2 },
     ]);
-    const state = makeState();
+    const state = createBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
@@ -474,12 +486,12 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
     // Stealth Rock: floor(200 * 1 / 8) = 25 HP (Rock vs Normal = 1x)
     // Spikes 3 layers: floor(200 * 6 / 24) = 50 HP
     // Total: 25 + 50 = 75 HP
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.normal] });
-    const side = makeSide([
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.normal] });
+    const side = createBattleSide([
       { type: H.stealthRock, layers: 1 },
       { type: H.spikes, layers: 3 },
     ]);
-    const state = makeState();
+    const state = createBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
     expect(result.damage).toBe(75);
     expect(result.messages).toHaveLength(2);
@@ -491,13 +503,13 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
     // Spikes 1 layer: floor(200 * 3 / 24) = 25
     // Toxic Spikes 1 layer: poison
     // Total damage: 50, status: poison
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.normal] });
-    const side = makeSide([
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.normal] });
+    const side = createBattleSide([
       { type: H.stealthRock, layers: 1 },
       { type: H.spikes, layers: 1 },
       { type: H.toxicSpikes, layers: 1 },
     ]);
-    const state = makeState();
+    const state = createBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
     expect(result.damage).toBe(50);
     expect(result.statusInflicted).toBe(S.poison);
@@ -506,9 +518,9 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
 
   it("given Toxic Spikes, when a Poison-type switches in, then hazardsToRemove includes toxic-spikes", () => {
     // Source: Showdown data/moves.ts -- toxicspikes: Poison-type absorbs = removes hazard
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.poison] });
-    const side = makeSide([{ type: H.toxicSpikes, layers: 2 }]);
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.poison] });
+    const side = createBattleSide([{ type: H.toxicSpikes, layers: 2 }]);
+    const state = createBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
@@ -517,9 +529,9 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
 
   it("given no hazards on the side, when any Pokemon switches in, then no damage and no status", () => {
     // Source: obvious -- no hazards means no effects
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.fire, T.flying] });
-    const side = makeSide([]);
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.fire, T.flying] });
+    const side = createBattleSide([]);
+    const state = createBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBeNull();
@@ -530,12 +542,12 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
     // Source: Showdown -- Flying-type is immune to Spikes (not grounded) but NOT to Stealth Rock
     // SR: Rock vs Flying = 2x -> floor(200 * 2 / 8) = 50 HP
     // Spikes: immune (not grounded)
-    const pokemon = makeActivePokemon({ maxHp: 200, types: [T.flying] });
-    const side = makeSide([
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.flying] });
+    const side = createBattleSide([
       { type: H.stealthRock, layers: 1 },
       { type: H.spikes, layers: 3 },
     ]);
-    const state = makeState();
+    const state = createBattleState();
     const result = applyGen5EntryHazards(pokemon, side, state, GEN5_TYPE_CHART);
     expect(result.damage).toBe(50);
     expect(result.messages).toHaveLength(1);
@@ -546,7 +558,7 @@ describe("Gen5 applyGen5EntryHazards (combined)", () => {
     // Source: Showdown -- Rock is 2x vs Fire, 2x vs Flying = 4x total
     // damage = floor(266 * 4 / 8) = floor(1064 / 8) = 133 HP
     // This is the classic Charizard-Stealth-Rock interaction
-    const pokemon = makeActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       maxHp: 266,
       types: [T.fire, T.flying],
       nickname: "Charizard",
@@ -570,11 +582,11 @@ describe("Gen5 Rapid Spin (via handleGen5BehaviorMove)", () => {
     attackerVolatiles?: Map<string, { turnsLeft: number }>;
     damage?: number;
   }) {
-    const attacker = makeActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       types: [T.normal],
       volatiles: overrides.attackerVolatiles,
     });
-    const defender = makeActivePokemon({ types: [T.rock] });
+    const defender = createSyntheticOnFieldPokemon({ types: [T.rock] });
     return {
       move: { id: M.rapidSpin },
       attacker,
@@ -582,7 +594,7 @@ describe("Gen5 Rapid Spin (via handleGen5BehaviorMove)", () => {
       // Default damage > 0 so Rapid Spin's onAfterHit effect fires (as it would on a
       // successful hit). Tests for the immunity path explicitly pass damage: 0.
       damage: overrides.damage ?? 10,
-      state: makeState(),
+      state: createBattleState(),
     } as unknown as MoveEffectContext;
   }
 
@@ -659,9 +671,13 @@ describe("Gen5Ruleset.applyEntryHazards", () => {
   it("given Stealth Rock on a side, when a Fire-type switches in via ruleset, then takes 25% maxHp", () => {
     // Source: Showdown -- Rock is 2x effective vs Fire -> floor(300 * 2 / 8) = 75
     const ruleset = new Gen5Ruleset();
-    const pokemon = makeActivePokemon({ maxHp: 300, types: [T.fire], nickname: "Arcanine" });
-    const side = makeSide([{ type: H.stealthRock, layers: 1 }]);
-    const state = makeState();
+    const pokemon = createSyntheticOnFieldPokemon({
+      maxHp: 300,
+      types: [T.fire],
+      nickname: "Arcanine",
+    });
+    const side = createBattleSide([{ type: H.stealthRock, layers: 1 }]);
+    const state = createBattleState();
 
     const result = ruleset.applyEntryHazards(pokemon, side, state);
     expect(result.damage).toBe(75);
@@ -676,8 +692,8 @@ describe("Gen5Ruleset.applyEntryHazards", () => {
     //   Gen 4 (Gen4Ruleset.applyEntryHazards) and is the contract established by the
     //   interface signature.
     const ruleset = new Gen5Ruleset();
-    const pokemon = makeActivePokemon({ maxHp: 200 });
-    const side = makeSide([{ type: H.stealthRock, layers: 1 }]);
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200 });
+    const side = createBattleSide([{ type: H.stealthRock, layers: 1 }]);
 
     const result = ruleset.applyEntryHazards(pokemon, side);
     expect(result.damage).toBe(0);

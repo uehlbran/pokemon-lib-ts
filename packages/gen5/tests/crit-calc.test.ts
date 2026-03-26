@@ -1,13 +1,19 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
-  CORE_TYPE_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_VOLATILE_IDS,
   CRIT_MULTIPLIER_CLASSIC,
   CRIT_RATES_GEN3_5,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
+  createGen5DataManager,
   GEN5_ABILITY_IDS,
   GEN5_ITEM_IDS,
   GEN5_MOVE_IDS,
@@ -137,90 +143,49 @@ describe("Gen5Ruleset crit methods", () => {
 // Helper factories for crit tests
 // ---------------------------------------------------------------------------
 
+const DATA_MANAGER = createGen5DataManager();
+
 function makeActiveWithAbility(
   ability: string,
   overrides?: { heldItem?: string | null },
 ): ActivePokemon {
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: GEN5_SPECIES_IDS.bulbasaur,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: GEN5_NATURE_IDS.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: 200,
-      moves: [],
-      ability,
-      abilitySlot: "normal1" as const,
-      heldItem: overrides?.heldItem ?? null,
-      status: null,
-      friendship: 0,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: GEN5_ITEM_IDS.pokeBall,
-      calculatedStats: {
-        hp: 200,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 100,
-      },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
-    types: [CORE_TYPE_IDS.normal],
-    ability,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-    } as ActivePokemon;
+  const species = DATA_MANAGER.getSpecies(GEN5_SPECIES_IDS.bulbasaur);
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(42), {
+    nature: GEN5_NATURE_IDS.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    heldItem: overrides?.heldItem ?? null,
+    friendship: species.baseFriendship,
+    pokeball: GEN5_ITEM_IDS.pokeBall,
+  });
+  pokemon.ability = ability;
+  pokemon.currentHp = 200;
+  pokemon.calculatedStats = {
+    hp: 200,
+    attack: 100,
+    defense: 100,
+    spAttack: 100,
+    spDefense: 100,
+    speed: 100,
+  };
+  return createBattleOnFieldPokemon(pokemon, 0, [...species.types]);
 }
 
 /** Stub BattleState -- unused but required by CritContext. */
 const STUB_STATE = {} as Parameters<Gen5Ruleset["rollCritical"]>[0]["state"];
 
 /** Minimal MoveData stub -- critRatio 0 means base stage. */
-const STUB_MOVE = { id: GEN5_MOVE_IDS.tackle, critRatio: 0 } as Parameters<
+const STUB_MOVE = DATA_MANAGER.getMove(GEN5_MOVE_IDS.tackle) as Parameters<
   Gen5Ruleset["rollCritical"]
 >[0]["move"];
 
 /** High-crit move: critRatio 1 means +1 stage. */
-const HIGH_CRIT_MOVE = { id: GEN5_MOVE_IDS.slash, critRatio: 1 } as Parameters<
-  Gen5Ruleset["rollCritical"]
->[0]["move"];
+const HIGH_CRIT_MOVE = {
+  ...DATA_MANAGER.getMove(GEN5_MOVE_IDS.slash),
+  critRatio: 1,
+} as Parameters<Gen5Ruleset["rollCritical"]>[0]["move"];
 
 /**
  * Helper: roll N crits and return the count of true results.

@@ -9,12 +9,16 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
+  createEvs,
+  createIvs,
   type MoveData,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen5DataManager, GEN5_MOVE_IDS, GEN5_NATURE_IDS, GEN5_SPECIES_IDS } from "../src";
@@ -84,16 +88,16 @@ function makeScenarioActive(overrides: {
       level: overrides.level ?? 50,
       experience: 0,
       nature: DATA_MANAGER.getNature(GEN5_NATURE_IDS.hardy).id,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -163,7 +167,7 @@ function makeScenarioMove(overrides: {
   } as MoveData;
 }
 
-function makeState(overrides?: { turnHistory?: any[]; sides?: any[] }): BattleState {
+function createBattleState(overrides?: { turnHistory?: any[]; sides?: any[] }): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -220,7 +224,7 @@ function makeContext(overrides: {
     defender: overrides.defender ?? makeScenarioActive({}),
     move: overrides.move ?? makeScenarioMove({}),
     damage: overrides.damage ?? 0,
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
   };
 }
@@ -234,7 +238,11 @@ describe("Explosion / Self-Destruct", () => {
     // Source: Showdown gen5/moves.ts -- Explosion no longer halves defense in Gen 5
     // Source: Bulbapedia -- "Starting in Gen V, Explosion no longer halves target's Defense"
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.explosion, type: CORE_TYPE_IDS.normal, power: 250 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.explosion,
+        type: CORE_TYPE_IDS.normal,
+        power: 250,
+      }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -249,7 +257,11 @@ describe("Explosion / Self-Destruct", () => {
   it("given Self-Destruct in Gen 5, when executed, then the user self-faints", () => {
     // Source: Showdown data/moves.ts -- selfdestruct: same as explosion
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.selfDestruct, type: CORE_TYPE_IDS.normal, power: 200 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.selfDestruct,
+        type: CORE_TYPE_IDS.normal,
+        power: 200,
+      }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -267,7 +279,12 @@ describe("Dragon Tail / Circle Throw", () => {
   it("given Dragon Tail, when it hits, then the defender is forced to switch", () => {
     // Source: Showdown data/moves.ts -- dragontail: forceSwitch: true, priority: -6
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.dragonTail, type: CORE_TYPE_IDS.dragon, power: 60, priority: -6 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.dragonTail,
+        type: CORE_TYPE_IDS.dragon,
+        power: 60,
+        priority: -6,
+      }),
       damage: 30,
     });
 
@@ -281,7 +298,12 @@ describe("Dragon Tail / Circle Throw", () => {
   it("given Circle Throw, when it hits, then the defender is forced to switch", () => {
     // Source: Showdown data/moves.ts -- circlethrow: forceSwitch: true, priority: -6
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.circleThrow, type: CORE_TYPE_IDS.fighting, power: 60, priority: -6 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.circleThrow,
+        type: CORE_TYPE_IDS.fighting,
+        power: 60,
+        priority: -6,
+      }),
       damage: 25,
     });
 
@@ -331,7 +353,11 @@ describe("Final Gambit", () => {
     const attacker = makeScenarioActive({ hp: 200, currentHp: 150 });
     const ctx = makeContext({
       attacker,
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.finalGambit, type: CORE_TYPE_IDS.fighting, power: 0 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.finalGambit,
+        type: CORE_TYPE_IDS.fighting,
+        power: 0,
+      }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -350,7 +376,11 @@ describe("Final Gambit", () => {
     const attacker = makeScenarioActive({ hp: 200, currentHp: 1 });
     const ctx = makeContext({
       attacker,
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.finalGambit, type: CORE_TYPE_IDS.fighting, power: 0 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.finalGambit,
+        type: CORE_TYPE_IDS.fighting,
+        power: 0,
+      }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -531,7 +561,11 @@ describe("Flame Charge", () => {
     // Source: Showdown data/moves.ts -- flamecharge:
     //   secondary: { chance: 100, self: { boosts: { spe: 1 } } }
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.flameCharge, type: CORE_TYPE_IDS.fire, power: 50 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.flameCharge,
+        type: CORE_TYPE_IDS.fire,
+        power: 50,
+      }),
       damage: 20,
     });
 
@@ -544,7 +578,11 @@ describe("Flame Charge", () => {
   it("given Flame Charge, when it hits, then only the attacker's Speed is boosted (no defender changes)", () => {
     // Source: Showdown -- Flame Charge only boosts user's Speed
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.flameCharge, type: CORE_TYPE_IDS.fire, power: 50 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.flameCharge,
+        type: CORE_TYPE_IDS.fire,
+        power: 50,
+      }),
       damage: 15,
     });
 
@@ -896,7 +934,7 @@ describe("didAllyFaintLastTurn", () => {
       },
     ];
 
-    const state = makeState({
+    const state = createBattleState({
       sides,
       turnHistory: [
         {
@@ -944,7 +982,7 @@ describe("didAllyFaintLastTurn", () => {
       },
     ];
 
-    const state = makeState({
+    const state = createBattleState({
       sides,
       turnHistory: [
         {
@@ -992,7 +1030,7 @@ describe("didAllyFaintLastTurn", () => {
       },
     ];
 
-    const state = makeState({
+    const state = createBattleState({
       sides,
       turnHistory: [
         {
@@ -1059,7 +1097,11 @@ describe("Low Sweep", () => {
     // Source: Showdown data/moves.ts -- lowsweep:
     //   secondary: { chance: 100, boosts: { spe: -1 } }
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.lowSweep, type: CORE_TYPE_IDS.fighting, power: 65 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.lowSweep,
+        type: CORE_TYPE_IDS.fighting,
+        power: 65,
+      }),
       damage: 30,
     });
 
@@ -1072,7 +1114,11 @@ describe("Low Sweep", () => {
   it("given Low Sweep, when executed, then no attacker stat changes occur", () => {
     // Source: Showdown -- Low Sweep only affects defender's Speed
     const ctx = makeContext({
-      move: makeScenarioMove({ id: GEN5_MOVE_IDS.lowSweep, type: CORE_TYPE_IDS.fighting, power: 65 }),
+      move: makeScenarioMove({
+        id: GEN5_MOVE_IDS.lowSweep,
+        type: CORE_TYPE_IDS.fighting,
+        power: 65,
+      }),
     });
 
     const result = handleGen5CombatMove(ctx);
@@ -1091,7 +1137,11 @@ describe("Storm Throw / Frost Breath", () => {
   it("given Storm Throw, when handled by combat move handler, then returns null (willCrit is in move data / crit calc)", () => {
     // Source: Showdown data/moves.ts -- stormthrow: willCrit: true
     // The always-crit behavior is handled by the crit calculation, not the effect handler.
-    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.stormThrow, type: CORE_TYPE_IDS.fighting, power: 60 });
+    const move = makeScenarioMove({
+      id: GEN5_MOVE_IDS.stormThrow,
+      type: CORE_TYPE_IDS.fighting,
+      power: 60,
+    });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
@@ -1102,7 +1152,11 @@ describe("Storm Throw / Frost Breath", () => {
 
   it("given Frost Breath, when handled by combat move handler, then returns null (willCrit is in move data / crit calc)", () => {
     // Source: Showdown data/moves.ts -- frostbreath: willCrit: true
-    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.frostBreath, type: CORE_TYPE_IDS.ice, power: 60 });
+    const move = makeScenarioMove({
+      id: GEN5_MOVE_IDS.frostBreath,
+      type: CORE_TYPE_IDS.ice,
+      power: 60,
+    });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
@@ -1128,7 +1182,11 @@ describe("Unrecognized moves", () => {
   });
 
   it("given Thunderbolt (no special Gen 5 combat effect), when called, then returns null", () => {
-    const move = makeScenarioMove({ id: GEN5_MOVE_IDS.thunderbolt, type: CORE_TYPE_IDS.electric, power: 90 });
+    const move = makeScenarioMove({
+      id: GEN5_MOVE_IDS.thunderbolt,
+      type: CORE_TYPE_IDS.electric,
+      power: 90,
+    });
     const ctx = makeContext({ move });
 
     const result = handleGen5CombatMove(ctx);
