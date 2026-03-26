@@ -73,12 +73,14 @@ describe("CRIT_RATES_GEN3_5", () => {
 
 describe("CRIT_MULTIPLIER_MODERN", () => {
   it("given the modern crit multiplier, when checked, then equals 1.5", () => {
+    // Source: Gen 6+ critical hits use the modern 1.5x damage modifier.
     expect(CRIT_MULTIPLIER_MODERN).toBe(1.5);
   });
 });
 
 describe("CRIT_MULTIPLIER_CLASSIC", () => {
   it("given the classic crit multiplier, when checked, then equals 2.0", () => {
+    // Source: classic critical hits use a 2.0x damage modifier in the shared constants surface.
     expect(CRIT_MULTIPLIER_CLASSIC).toBe(2.0);
   });
 });

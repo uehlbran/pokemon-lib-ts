@@ -1,4 +1,5 @@
 import type { BattleEvent } from "@pokemon-lib-ts/battle";
+import { CORE_GENDERS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   checkAllInvariants,
@@ -392,11 +393,13 @@ describe("getRegisteredInvariants", () => {
       },
       {
         name: "effectiveness-correctness",
-        description: "Effectiveness events must agree with type chart (multiplier != 1 means actually non-neutral)",
+        description:
+          "Effectiveness events must agree with type chart (multiplier != 1 means actually non-neutral)",
       },
       {
         name: "faint-at-zero",
-        description: "A Pokemon whose HP reaches 0 via a damage event must receive a faint event before the battle ends",
+        description:
+          "A Pokemon whose HP reaches 0 via a damage event must receive a faint event before the battle ends",
       },
       {
         name: "no-post-faint-action",
@@ -478,7 +481,7 @@ describe("status-type-immunity — spot check", () => {
           currentHp: 150,
           maxHp: 150,
           status: null,
-          gender: "male",
+          gender: CORE_GENDERS.male,
           isShiny: false,
         },
       },
