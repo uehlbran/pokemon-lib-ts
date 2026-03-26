@@ -1,6 +1,9 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen6DataManager } from "../src/data";
 import { GEN6_TYPE_CHART, GEN6_TYPES } from "../src/Gen6TypeChart";
+
+const TYPE_IDS = CORE_TYPE_IDS;
 
 // ---------------------------------------------------------------------------
 // GEN6_TYPES -- type list membership and count
@@ -16,22 +19,22 @@ describe("Gen 6 type list", () => {
   it("given GEN6_TYPES, when checking for Fairy type, then Fairy IS present", () => {
     // Source: Fairy type introduced in Gen 6 (X/Y)
     // Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Fairy_(type)
-    expect(GEN6_TYPES).toContain("fairy");
+    expect(GEN6_TYPES).toContain(TYPE_IDS.fairy);
   });
 
   it("given GEN6_TYPES, when checking for Steel type, then Steel is present", () => {
     // Source: references/pokemon-showdown/data/typechart.ts -- Steel type present
-    expect(GEN6_TYPES).toContain("steel");
+    expect(GEN6_TYPES).toContain(TYPE_IDS.steel);
   });
 
   it("given GEN6_TYPES, when checking for Dark type, then Dark is present", () => {
     // Source: references/pokemon-showdown/data/typechart.ts -- Dark type present
-    expect(GEN6_TYPES).toContain("dark");
+    expect(GEN6_TYPES).toContain(TYPE_IDS.dark);
   });
 
   it("given GEN6_TYPES, when checking for Normal type, then Normal is present", () => {
     // Source: references/pokemon-showdown/data/typechart.ts -- Normal type present
-    expect(GEN6_TYPES).toContain("normal");
+    expect(GEN6_TYPES).toContain(TYPE_IDS.normal);
   });
 });
 

@@ -14,10 +14,14 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
+  createEvs,
+  createIvs,
   createMoveSlot,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -50,7 +54,7 @@ const ENCORE_TURNS = 3;
 const TAUNT_TURNS = 3;
 const DISABLE_TURNS = 4;
 
-function makeActive(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -83,16 +87,16 @@ function makeActive(overrides: {
       level: overrides.level ?? 50,
       experience: 0,
       nature: NATURES.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
       ability: overrides.ability ?? NONE,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -136,11 +140,11 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(id: string): MoveData {
+function createCanonicalMove(id: string): MoveData {
   return DATA_MANAGER.getMove(id);
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -185,7 +189,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeContext(overrides: {
+function createMoveEffectContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -193,11 +197,11 @@ function makeContext(overrides: {
   state?: BattleState;
 }): MoveEffectContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove(MOVES.tackle),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? createCanonicalMove(MOVES.tackle),
     damage: overrides.damage ?? 0,
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
   };
 }
@@ -210,9 +214,12 @@ describe("Encore (Gen 5 fixed duration)", () => {
   it("given target used a move last turn, when Encore is used, then volatileInflicted is 'encore' with turnsLeft=3", () => {
     // Source: Showdown data/mods/gen5/moves.ts -- encore: condition.duration = 3
     // Source: Bulbapedia -- "Encore lasts for 3 turns in Generation V onwards"
-    const defender = makeActive({ lastMoveUsed: THUNDERBOLT.id, nickname: "Pikachu" });
-    const ctx = makeContext({
-      move: makeMove(MOVES.encore),
+    const defender = createSyntheticOnFieldPokemon({
+      lastMoveUsed: THUNDERBOLT.id,
+      nickname: "Pikachu",
+    });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.encore),
       defender,
     });
 
@@ -220,16 +227,22 @@ describe("Encore (Gen 5 fixed duration)", () => {
 
     expect(result).not.toBeNull();
     expect(result!.volatileInflicted).toBe(VOLATILES.encore);
-    expect(result!.volatileData).toEqual({ turnsLeft: ENCORE_TURNS, data: { moveId: THUNDERBOLT.id } });
+    expect(result!.volatileData).toEqual({
+      turnsLeft: ENCORE_TURNS,
+      data: { moveId: THUNDERBOLT.id },
+    });
     expect(result!.messages).toContain("Pikachu got an encore!");
   });
 
   it("given target used a different move last turn, when Encore is used, then volatileData records that specific move with turnsLeft=3", () => {
     // Source: Showdown data/mods/gen5/moves.ts -- encore: condition.duration = 3
     // Triangulation: different move ID to verify the moveId in volatileData is dynamic
-    const defender = makeActive({ lastMoveUsed: ICE_BEAM.id, nickname: "Lapras" });
-    const ctx = makeContext({
-      move: makeMove(MOVES.encore),
+    const defender = createSyntheticOnFieldPokemon({
+      lastMoveUsed: ICE_BEAM.id,
+      nickname: "Lapras",
+    });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.encore),
       defender,
     });
 
@@ -237,15 +250,18 @@ describe("Encore (Gen 5 fixed duration)", () => {
 
     expect(result).not.toBeNull();
     expect(result!.volatileInflicted).toBe(VOLATILES.encore);
-    expect(result!.volatileData).toEqual({ turnsLeft: ENCORE_TURNS, data: { moveId: ICE_BEAM.id } });
+    expect(result!.volatileData).toEqual({
+      turnsLeft: ENCORE_TURNS,
+      data: { moveId: ICE_BEAM.id },
+    });
     expect(result!.messages).toContain("Lapras got an encore!");
   });
 
   it("given target has no last move used, when Encore is used, then the move fails", () => {
     // Source: Showdown data/moves.ts -- encore: onTry checks target.lastMove
-    const defender = makeActive({ lastMoveUsed: null });
-    const ctx = makeContext({
-      move: makeMove(MOVES.encore),
+    const defender = createSyntheticOnFieldPokemon({ lastMoveUsed: null });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.encore),
       defender,
     });
 
@@ -260,9 +276,9 @@ describe("Encore (Gen 5 fixed duration)", () => {
     // Source: Showdown data/moves.ts -- encore: volatileStatus check prevents double application
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     volatiles.set(VOLATILES.encore, { turnsLeft: ENCORE_TURNS - 1, data: { moveId: TACKLE.id } });
-    const defender = makeActive({ lastMoveUsed: TACKLE.id, volatiles });
-    const ctx = makeContext({
-      move: makeMove(MOVES.encore),
+    const defender = createSyntheticOnFieldPokemon({ lastMoveUsed: TACKLE.id, volatiles });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.encore),
       defender,
     });
 
@@ -282,9 +298,9 @@ describe("Taunt (Gen 5 fixed duration)", () => {
   it("given target is not Taunted, when Taunt is used, then volatileInflicted is 'taunt' with turnsLeft=3", () => {
     // Source: Showdown data/mods/gen5/moves.ts -- taunt: condition.duration = 3
     // Source: Bulbapedia -- "Taunt lasts for 3 turns in Generation V onwards"
-    const defender = makeActive({ nickname: "Slowpoke" });
-    const ctx = makeContext({
-      move: makeMove(MOVES.taunt),
+    const defender = createSyntheticOnFieldPokemon({ nickname: "Slowpoke" });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.taunt),
       defender,
     });
 
@@ -299,9 +315,9 @@ describe("Taunt (Gen 5 fixed duration)", () => {
   it("given a different target is not Taunted, when Taunt is used, then message uses that target's name", () => {
     // Source: Showdown data/mods/gen5/moves.ts -- taunt: condition.duration = 3
     // Triangulation: different nickname to verify message is dynamic
-    const defender = makeActive({ nickname: "Blissey" });
-    const ctx = makeContext({
-      move: makeMove(MOVES.taunt),
+    const defender = createSyntheticOnFieldPokemon({ nickname: "Blissey" });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.taunt),
       defender,
     });
 
@@ -317,9 +333,9 @@ describe("Taunt (Gen 5 fixed duration)", () => {
     // Source: Showdown data/moves.ts -- taunt: volatileStatus check prevents double application
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     volatiles.set(VOLATILES.taunt, { turnsLeft: TAUNT_TURNS - 1 });
-    const defender = makeActive({ volatiles });
-    const ctx = makeContext({
-      move: makeMove(MOVES.taunt),
+    const defender = createSyntheticOnFieldPokemon({ volatiles });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.taunt),
       defender,
     });
 
@@ -339,9 +355,12 @@ describe("Disable (Gen 5 fixed duration)", () => {
   it("given target used a move last turn, when Disable is used, then volatileInflicted is 'disable' with turnsLeft=4", () => {
     // Source: Showdown data/mods/gen5/moves.ts -- disable: condition.duration = 4
     // Source: Bulbapedia -- "Disable lasts for 4 turns in Generation V onwards"
-    const defender = makeActive({ lastMoveUsed: FLAMETHROWER.id, nickname: "Charizard" });
-    const ctx = makeContext({
-      move: makeMove(MOVES.disable),
+    const defender = createSyntheticOnFieldPokemon({
+      lastMoveUsed: FLAMETHROWER.id,
+      nickname: "Charizard",
+    });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.disable),
       defender,
     });
 
@@ -349,16 +368,19 @@ describe("Disable (Gen 5 fixed duration)", () => {
 
     expect(result).not.toBeNull();
     expect(result!.volatileInflicted).toBe(VOLATILES.disable);
-    expect(result!.volatileData).toEqual({ turnsLeft: DISABLE_TURNS, data: { moveId: FLAMETHROWER.id } });
+    expect(result!.volatileData).toEqual({
+      turnsLeft: DISABLE_TURNS,
+      data: { moveId: FLAMETHROWER.id },
+    });
     expect(result!.messages).toContain("Charizard's flamethrower was disabled!");
   });
 
   it("given target used a different move last turn, when Disable is used, then volatileData records that specific move with turnsLeft=4", () => {
     // Source: Showdown data/mods/gen5/moves.ts -- disable: condition.duration = 4
     // Triangulation: different move ID to verify the moveId in volatileData is dynamic
-    const defender = makeActive({ lastMoveUsed: SURF.id, nickname: "Starmie" });
-    const ctx = makeContext({
-      move: makeMove(MOVES.disable),
+    const defender = createSyntheticOnFieldPokemon({ lastMoveUsed: SURF.id, nickname: "Starmie" });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.disable),
       defender,
     });
 
@@ -372,9 +394,9 @@ describe("Disable (Gen 5 fixed duration)", () => {
 
   it("given target has no last move used, when Disable is used, then the move fails", () => {
     // Source: Showdown data/moves.ts -- disable: onTry checks target.lastMove
-    const defender = makeActive({ lastMoveUsed: null });
-    const ctx = makeContext({
-      move: makeMove(MOVES.disable),
+    const defender = createSyntheticOnFieldPokemon({ lastMoveUsed: null });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.disable),
       defender,
     });
 
@@ -389,9 +411,9 @@ describe("Disable (Gen 5 fixed duration)", () => {
     // Source: Showdown data/moves.ts -- disable: volatileStatus check prevents double application
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     volatiles.set(VOLATILES.disable, { turnsLeft: DISABLE_TURNS - 1, data: { moveId: TACKLE.id } });
-    const defender = makeActive({ lastMoveUsed: TACKLE.id, volatiles });
-    const ctx = makeContext({
-      move: makeMove(MOVES.disable),
+    const defender = createSyntheticOnFieldPokemon({ lastMoveUsed: TACKLE.id, volatiles });
+    const ctx = createMoveEffectContext({
+      move: createCanonicalMove(MOVES.disable),
       defender,
     });
 
