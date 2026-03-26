@@ -1,21 +1,16 @@
 import type { DataManager } from "@pokemon-lib-ts/core";
-import { NEUTRAL_NATURES, SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_SLOTS, NEUTRAL_NATURES, SeededRandom } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { generateRandomTeam } from "../../src/simulation/team-generator.js";
 
 // ---------------------------------------------------------------------------
 // Shared data managers — expensive to load, create once per describe block
 // ---------------------------------------------------------------------------
 
-let gen1Dm: DataManager;
-let gen2Dm: DataManager;
-
-beforeAll(() => {
-  gen1Dm = createGen1DataManager();
-  gen2Dm = createGen2DataManager();
-});
+const gen1Dm: DataManager = createGen1DataManager();
+const gen2Dm: DataManager = createGen2DataManager();
 
 // ---------------------------------------------------------------------------
 // Team size
@@ -262,7 +257,7 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
     }
   });
 
-  it("given generation 1, when generating a team, then abilitySlot is always 'normal1'", () => {
+  it("given generation 1, when generating a team, then abilitySlot is always the primary slot", () => {
     // Arrange
     const rng = new SeededRandom(42);
 
@@ -271,7 +266,7 @@ describe("generateRandomTeam — Gen 1 mechanics", () => {
 
     // Assert
     for (const pokemon of team) {
-      expect(pokemon.abilitySlot).toBe("normal1");
+      expect(pokemon.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
     }
   });
 });
