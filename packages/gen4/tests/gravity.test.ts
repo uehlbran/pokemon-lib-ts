@@ -5,10 +5,12 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -17,10 +19,10 @@ import {
   createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_MOVE_IDS,
-  GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
   Gen4Ruleset,
 } from "../src";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Gravity Tests
@@ -79,7 +81,7 @@ function createActivePokemon(opts: {
   speciesId?: number;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: 100,
     defense: 100,
@@ -87,65 +89,30 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test-mon",
-    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
-    nickname: opts.nickname ?? null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: GEN4_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: opts.moves ?? [],
-    ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
+    level: opts.level ?? 50,
+    moveSlots: opts.moves?.map((move) => ({
+      moveId: move.moveId,
+      currentPP: move.pp,
+      maxPP: move.maxPp,
+      ppUps: 0,
+    })),
+    nickname: opts.nickname ?? null,
     pokeball: CORE_ITEM_IDS.pokeBall,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
+    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
     statStages: {
+      ...opts.statStages,
       hp: 0,
-      attack: opts.statStages?.attack ?? 0,
-      defense: opts.statStages?.defense ?? 0,
-      spAttack: opts.statStages?.spAttack ?? 0,
-      spDefense: opts.statStages?.spDefense ?? 0,
-      speed: 0,
-      accuracy: opts.statStages?.accuracy ?? 0,
-      evasion: opts.statStages?.evasion ?? 0,
-    },
-    volatileStatuses: new Map(),
+    } as Partial<ActivePokemon["statStages"]>,
+    status: opts.status ?? null,
     types: opts.types,
-    ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 const dataManager = createGen4DataManager();
@@ -228,7 +195,14 @@ describe("Gen 4 Gravity Move Effect", () => {
     const gravityMove = move;
     const rng = createMockRng(0);
     const state = createMinimalBattleState(attacker, defender);
-    const context = { attacker, defender, move: gravityMove, damage: 0, state, rng } as MoveEffectContext;
+    const context = {
+      attacker,
+      defender,
+      move: gravityMove,
+      damage: 0,
+      state,
+      rng,
+    } as MoveEffectContext;
 
     const result = ruleset.executeMoveEffect(context);
 
@@ -333,7 +307,10 @@ describe("Gen 4 Gravity — Type Immunity Suppression", () => {
     // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
     // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.ground], level: 50 });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], ability: GEN4_ABILITY_IDS.levitate });
+    const defender = createActivePokemon({
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN4_ABILITY_IDS.levitate,
+    });
     const move = getGen4Move(GEN4_MOVE_IDS.earthquake);
     move.type = CORE_TYPE_IDS.ground;
     move.power = 100;
@@ -360,7 +337,10 @@ describe("Gen 4 Gravity — Type Immunity Suppression", () => {
   it("given gravity NOT active, when Ground move targets Levitate Pokemon, then type immunity IS applied", () => {
     // Source: Showdown Gen 4 — Levitate grants Ground immunity normally
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.ground], level: 50 });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], ability: GEN4_ABILITY_IDS.levitate });
+    const defender = createActivePokemon({
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN4_ABILITY_IDS.levitate,
+    });
     const move = getGen4Move(GEN4_MOVE_IDS.earthquake);
     move.type = CORE_TYPE_IDS.ground;
     move.power = 100;
@@ -505,7 +485,10 @@ describe("Gen 4 Gravity — Arena Trap Grounding", () => {
     // Source: Showdown Gen 4 — Gravity grounds Flying Pokemon, Arena Trap traps them
     // Source: Bulbapedia — "Under Gravity, Arena Trap affects all adjacent Pokemon."
     const pokemon = createActivePokemon({ types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying] });
-    const opponent = createActivePokemon({ types: [CORE_TYPE_IDS.ground], ability: GEN4_ABILITY_IDS.arenaTrap });
+    const opponent = createActivePokemon({
+      types: [CORE_TYPE_IDS.ground],
+      ability: GEN4_ABILITY_IDS.arenaTrap,
+    });
     const state = createMinimalBattleState(pokemon, opponent, { gravityActive: true });
 
     expect(ruleset.canSwitch(pokemon, state)).toBe(false);
@@ -514,7 +497,10 @@ describe("Gen 4 Gravity — Arena Trap Grounding", () => {
   it("given gravity NOT active and opponent has Arena Trap, when Flying-type tries to switch, then CAN switch", () => {
     // Source: Showdown Gen 4 — Flying types are not grounded without gravity
     const pokemon = createActivePokemon({ types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying] });
-    const opponent = createActivePokemon({ types: [CORE_TYPE_IDS.ground], ability: GEN4_ABILITY_IDS.arenaTrap });
+    const opponent = createActivePokemon({
+      types: [CORE_TYPE_IDS.ground],
+      ability: GEN4_ABILITY_IDS.arenaTrap,
+    });
     const state = createMinimalBattleState(pokemon, opponent, { gravityActive: false });
 
     expect(ruleset.canSwitch(pokemon, state)).toBe(true);
@@ -522,8 +508,14 @@ describe("Gen 4 Gravity — Arena Trap Grounding", () => {
 
   it("given gravity active and opponent has Arena Trap, when Levitate Pokemon tries to switch, then cannot switch", () => {
     // Source: Showdown Gen 4 — Gravity grounds Levitate Pokemon, Arena Trap traps them
-    const pokemon = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], ability: GEN4_ABILITY_IDS.levitate });
-    const opponent = createActivePokemon({ types: [CORE_TYPE_IDS.ground], ability: GEN4_ABILITY_IDS.arenaTrap });
+    const pokemon = createActivePokemon({
+      types: [CORE_TYPE_IDS.psychic],
+      ability: GEN4_ABILITY_IDS.levitate,
+    });
+    const opponent = createActivePokemon({
+      types: [CORE_TYPE_IDS.ground],
+      ability: GEN4_ABILITY_IDS.arenaTrap,
+    });
     const state = createMinimalBattleState(pokemon, opponent, { gravityActive: true });
 
     expect(ruleset.canSwitch(pokemon, state)).toBe(false);

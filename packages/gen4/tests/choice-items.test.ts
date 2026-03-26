@@ -4,22 +4,18 @@ import type {
   BattleState,
   DamageContext,
 } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  StatBlock,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createMoveSlot,
   NEUTRAL_NATURES,
   SeededRandom,
-  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -33,6 +29,7 @@ import {
 } from "../src";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Choice Item Tests — Choice Band, Choice Specs, Choice Scarf
@@ -58,8 +55,6 @@ const VOLATILES = CORE_VOLATILE_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
 
 const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
-const STRENGTH = DATA_MANAGER.getMove(MOVES.strength);
-const LAVA_PLUME = DATA_MANAGER.getMove(MOVES.lavaPlume);
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -89,9 +84,8 @@ function createActivePokemon(opts: {
   speciesId?: PokemonInstance["speciesId"];
   hasFlashFire?: boolean;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -99,69 +93,27 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: opts.speed ?? 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.currentHp ?? maxHp,
-    moves: [createMoveSlot(TACKLE.id, TACKLE.pp)],
-    ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: ITEMS.pokeBall,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
   const volatileStatuses = new Map<string, { turnsLeft: number }>();
   if (opts.hasFlashFire) {
     volatileStatuses.set(VOLATILES.flashFire, { turnsLeft: -1 });
   }
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses,
-    types: opts.types ?? [TYPES.normal],
+  return createSyntheticOnFieldPokemon({
     ability: opts.ability ?? ABILITIES.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
+    currentHp: opts.currentHp ?? maxHp,
+    gender: CORE_GENDERS.male,
+    heldItem: opts.heldItem ?? null,
+    level: opts.level ?? 50,
+    moveSlots: [createMoveSlot(TACKLE.id, TACKLE.pp)],
+    nature: DEFAULT_NATURE,
+    pokeball: ITEMS.pokeBall,
+    speciesId: opts.speciesId ?? SPECIES.bulbasaur,
+    statStages: {},
+    status: opts.status ?? null,
+    types: opts.types ?? [TYPES.normal],
+    volatileStatuses,
+  });
 }
 
 function getMove(id: MoveData["id"], overrides?: Partial<MoveData>): MoveData {
@@ -501,7 +453,11 @@ describe("Gen 4 Flash Fire volatile damage boost", () => {
     // Derivation: L50 Strength, Atk=100, Def=100, rng=100, normal move, no boost
     //   Attacker types=[fighting], move type=normal → no STAB
     //   baseDmg=floor(floor(22*80*100/100)/50)+2=37
-    const attacker = createActivePokemon({ attack: 100, hasFlashFire: true, types: [TYPES.fighting] });
+    const attacker = createActivePokemon({
+      attack: 100,
+      hasFlashFire: true,
+      types: [TYPES.fighting],
+    });
     const defender = createActivePokemon({ defense: 100 });
     const move = getMove(MOVES.strength);
     const ctx = createDamageContext({ attacker, defender, move });

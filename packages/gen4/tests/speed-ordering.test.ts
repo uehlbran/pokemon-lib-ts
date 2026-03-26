@@ -1,17 +1,14 @@
-import {
-  type ActivePokemon,
-  type BattleAction,
-  type BattleSide,
-  type BattleState,
-} from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
+  type AbilityData,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_STATUS_IDS,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
-  type AbilityData,
   type ItemData,
   type MoveData,
   type PokemonInstance,
@@ -35,29 +32,29 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const dataManager = createGen4DataManager()
-const abilityIds = { ...GEN4_ABILITY_IDS } as const
-const itemIds = { ...GEN4_ITEM_IDS } as const
-const moveIds = { ...GEN4_MOVE_IDS } as const
-const natureIds = GEN4_NATURE_IDS
-const speciesIds = GEN4_SPECIES_IDS
-const statusIds = CORE_STATUS_IDS
+const dataManager = createGen4DataManager();
+const abilityIds = { ...GEN4_ABILITY_IDS } as const;
+const itemIds = { ...GEN4_ITEM_IDS } as const;
+const moveIds = { ...GEN4_MOVE_IDS } as const;
+const natureIds = GEN4_NATURE_IDS;
+const speciesIds = GEN4_SPECIES_IDS;
+const statusIds = CORE_STATUS_IDS;
 
-const defaultSpecies = dataManager.getSpecies(speciesIds.snorlax)
-const stallSpecies = dataManager.getSpecies(speciesIds.sableye)
-const tackleMove = dataManager.getMove(moveIds.tackle)
-const quickAttackMove = dataManager.getMove(moveIds.quickAttack)
-const machPunchMove = dataManager.getMove(moveIds.machPunch)
-const quickClawItem = dataManager.getItem(itemIds.quickClaw)
-const ironBallItem = dataManager.getItem(itemIds.ironBall)
-const laggingTailItem = dataManager.getItem(itemIds.laggingTail)
-const fullIncenseItem = dataManager.getItem(itemIds.fullIncense)
-const custapBerryItem = dataManager.getItem(itemIds.custapBerry)
-const stallAbility = dataManager.getAbility(abilityIds.stall)
-const defaultNature = dataManager.getNature(natureIds.hardy).id
+const defaultSpecies = dataManager.getSpecies(speciesIds.snorlax);
+const stallSpecies = dataManager.getSpecies(speciesIds.sableye);
+const tackleMove = dataManager.getMove(moveIds.tackle);
+const quickAttackMove = dataManager.getMove(moveIds.quickAttack);
+const machPunchMove = dataManager.getMove(moveIds.machPunch);
+const quickClawItem = dataManager.getItem(itemIds.quickClaw);
+const ironBallItem = dataManager.getItem(itemIds.ironBall);
+const laggingTailItem = dataManager.getItem(itemIds.laggingTail);
+const fullIncenseItem = dataManager.getItem(itemIds.fullIncense);
+const custapBerryItem = dataManager.getItem(itemIds.custapBerry);
+const stallAbility = dataManager.getAbility(abilityIds.stall);
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
 
 function createGen4Ruleset(): Gen4Ruleset {
-  return new Gen4Ruleset(dataManager)
+  return new Gen4Ruleset(dataManager);
 }
 
 // Turn-order tests need exact synthetic speed and HP probes; species/move/item records stay
@@ -87,14 +84,14 @@ function createBattlePokemon(overrides: {
   currentHp?: number;
   maxHp?: number;
 }): PokemonInstance {
-  const speciesRecord = overrides.speciesRecord ?? defaultSpecies
-  const maxHp = overrides.maxHp ?? 200
+  const speciesRecord = overrides.speciesRecord ?? defaultSpecies;
+  const maxHp = overrides.maxHp ?? 200;
   const pokemon = createPokemonInstance(speciesRecord, 50, new SeededRandom(0), {
     nature: defaultNature,
     ivs: createIvs(),
     evs: createEvs(),
-    abilitySlot: "normal1",
-    gender: "male",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     moves: [tackleMove.id],
     heldItem: overrides.heldItemRecord?.id ?? null,
@@ -103,16 +100,16 @@ function createBattlePokemon(overrides: {
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: itemIds.pokeBall,
-  })
+  });
 
-  pokemon.moves = createCanonicalMoveSlots(overrides.moveRecords ?? [tackleMove])
-  pokemon.heldItem = overrides.heldItemRecord?.id ?? null
-  pokemon.ability = overrides.abilityRecord?.id ?? pokemon.ability
-  pokemon.status = overrides.status ?? null
-  pokemon.currentHp = overrides.currentHp ?? maxHp
-  pokemon.calculatedStats = createSyntheticTurnOrderStats(overrides.speed ?? 100, maxHp)
+  pokemon.moves = createCanonicalMoveSlots(overrides.moveRecords ?? [tackleMove]);
+  pokemon.heldItem = overrides.heldItemRecord?.id ?? null;
+  pokemon.ability = overrides.abilityRecord?.id ?? pokemon.ability;
+  pokemon.status = overrides.status ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.calculatedStats = createSyntheticTurnOrderStats(overrides.speed ?? 100, maxHp);
 
-  return pokemon
+  return pokemon;
 }
 
 function createOnFieldPokemon(overrides: {

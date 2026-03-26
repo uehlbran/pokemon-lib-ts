@@ -1,13 +1,9 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  StatBlock,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -20,6 +16,7 @@ import {
   GEN4_SPECIES_IDS,
   GEN4_TYPES,
 } from "../src";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Regression tests for Metronome item — no consecutive-use cap in Gen 4.
@@ -75,9 +72,8 @@ function createActivePokemon(opts: {
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -85,64 +81,21 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? DEFAULT_SPECIES_ID,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
+    level: opts.level ?? 50,
+    nature: DEFAULT_NATURE,
     pokeball: DEFAULT_POKEBALL,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: opts.statStages?.attack ?? 0,
-      defense: opts.statStages?.defense ?? 0,
-      spAttack: opts.statStages?.spAttack ?? 0,
-      spDefense: opts.statStages?.spDefense ?? 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
+    speciesId: opts.speciesId ?? DEFAULT_SPECIES_ID,
+    statStages: opts.statStages,
+    status: opts.status ?? null,
     types: opts.types ?? [CORE_TYPE_IDS.normal],
-    ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {

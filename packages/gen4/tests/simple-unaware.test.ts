@@ -1,6 +1,13 @@
 import type { AccuracyContext, ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_TYPE_IDS, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, PrimaryStatus, StatBlock } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  getStatStageMultiplier,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
@@ -13,6 +20,7 @@ import {
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Simple & Unaware Ability Tests — Gen 4
@@ -58,9 +66,8 @@ function createActivePokemon(opts: {
   status?: PrimaryStatus | null;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -68,64 +75,22 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: opts.speed ?? 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: DEFAULT_SPECIES.id,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: ITEMS.pokeBall,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
   return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: opts.statStages?.attack ?? 0,
-      defense: opts.statStages?.defense ?? 0,
-      spAttack: opts.statStages?.spAttack ?? 0,
-      spDefense: opts.statStages?.spDefense ?? 0,
-      speed: opts.statStages?.speed ?? 0,
-      accuracy: opts.statStages?.accuracy ?? 0,
-      evasion: opts.statStages?.evasion ?? 0,
-    },
-    volatileStatuses: new Map(),
-    types: opts.types ?? [CORE_TYPE_IDS.normal],
-    ability: opts.ability ?? ABILITIES.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
+    ...createSyntheticOnFieldPokemon({
+      ability: opts.ability ?? ABILITIES.none,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      calculatedStats,
+      currentHp: opts.currentHp ?? maxHp,
+      gender: CORE_GENDERS.male,
+      heldItem: opts.heldItem ?? null,
+      level: opts.level ?? 50,
+      nature: DEFAULT_NATURE,
+      pokeball: ITEMS.pokeBall,
+      speciesId: DEFAULT_SPECIES.id,
+      statStages: opts.statStages,
+      status: opts.status ?? null,
+      types: opts.types ?? [CORE_TYPE_IDS.normal],
+    }),
     forcedMove: null,
   } as ActivePokemon;
 }

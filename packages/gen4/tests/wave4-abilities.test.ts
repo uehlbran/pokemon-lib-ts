@@ -15,22 +15,23 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
-  CORE_ABILITY_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -38,7 +39,6 @@ import {
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
-  GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
 } from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
@@ -70,6 +70,7 @@ const typeIds = CORE_TYPE_IDS;
 const volatileIds = CORE_VOLATILE_IDS;
 const weatherIds = CORE_WEATHER_IDS;
 const triggerIds = CORE_ABILITY_TRIGGER_IDS;
+const itemTriggerIds = CORE_ITEM_TRIGGER_IDS;
 const speciesIds = GEN4_SPECIES_IDS;
 const defaultSpecies = dataManager.getSpecies(speciesIds.pikachu);
 const defaultMove = dataManager.getMove(moveIds.tackle);
@@ -236,14 +237,6 @@ function createCanonicalMove(moveId: (typeof moveIds)[keyof typeof moveIds]): Mo
   return dataManager.getMove(moveId);
 }
 
-function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
-  return {
-    ...baseMove,
-    flags: { ...baseMove.flags, ...overrides.flags },
-    ...overrides,
-  } as MoveData;
-}
-
 function createAbilityContext(opts: {
   ability: string;
   types?: PokemonType[];
@@ -301,7 +294,11 @@ describe("Leaf Guard — prevent all status in sun", () => {
     // Source: Bulbapedia — Leaf Guard: "Prevents status conditions in sunny weather"
     // Source: Showdown data/abilities.ts — Leaf Guard onSetStatus
     const target = createOnFieldPokemon({ ability: abilityIds.leafGuard, types: GRASS_TYPES });
-    const state = createBattleState({ type: weatherIds.sun, turnsLeft: -1, source: abilityIds.drought });
+    const state = createBattleState({
+      type: weatherIds.sun,
+      turnsLeft: -1,
+      source: abilityIds.drought,
+    });
 
     const result = canInflictGen4Status(statusIds.paralysis, target, state);
 
@@ -311,7 +308,11 @@ describe("Leaf Guard — prevent all status in sun", () => {
   it("given Leaf Guard NOT in sun, when status infliction attempted, then status applied normally", () => {
     // Source: Bulbapedia — Leaf Guard only activates in harsh sunlight
     const target = createOnFieldPokemon({ ability: abilityIds.leafGuard, types: GRASS_TYPES });
-    const state = createBattleState({ type: weatherIds.rain, turnsLeft: 5, source: abilityIds.drizzle });
+    const state = createBattleState({
+      type: weatherIds.rain,
+      turnsLeft: 5,
+      source: abilityIds.drizzle,
+    });
 
     const result = canInflictGen4Status(statusIds.paralysis, target, state);
 
@@ -321,7 +322,11 @@ describe("Leaf Guard — prevent all status in sun", () => {
   it("given no Leaf Guard in sun, when status infliction attempted, then status applied normally", () => {
     // Triangulation: confirm Leaf Guard is ability-specific, not weather-only
     const target = createOnFieldPokemon({ ability: abilityIds.overgrow, types: GRASS_TYPES });
-    const state = createBattleState({ type: weatherIds.sun, turnsLeft: -1, source: abilityIds.drought });
+    const state = createBattleState({
+      type: weatherIds.sun,
+      turnsLeft: -1,
+      source: abilityIds.drought,
+    });
 
     const result = canInflictGen4Status(statusIds.paralysis, target, state);
 
@@ -331,7 +336,11 @@ describe("Leaf Guard — prevent all status in sun", () => {
   it("given Leaf Guard in sun, when burn attempted, then burn also blocked", () => {
     // Source: Bulbapedia — Leaf Guard blocks ALL primary status conditions in sun
     const target = createOnFieldPokemon({ ability: abilityIds.leafGuard, types: GRASS_TYPES });
-    const state = createBattleState({ type: weatherIds.sun, turnsLeft: -1, source: abilityIds.drought });
+    const state = createBattleState({
+      type: weatherIds.sun,
+      turnsLeft: -1,
+      source: abilityIds.drought,
+    });
 
     const result = canInflictGen4Status(statusIds.burn, target, state);
 
@@ -461,7 +470,7 @@ describe("Klutz — held item has no effect", () => {
     });
     const state = createBattleState();
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(itemTriggerIds.endOfTurn, {
       pokemon,
       state,
       rng: { next: () => 0, int: () => 0, chance: () => false } as any,
@@ -480,7 +489,7 @@ describe("Klutz — held item has no effect", () => {
     });
     const state = createBattleState();
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(itemTriggerIds.endOfTurn, {
       pokemon,
       state,
       rng: { next: () => 0, int: () => 0, chance: () => false } as any,
@@ -626,7 +635,8 @@ describe("Stench — Gen 4: no battle effect (flinch is Gen 5+)", () => {
 
     expect(result.activated).toBe(false);
     const flinchEffect = result.effects.find(
-      (e) => e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === volatileIds.flinch,
+      (e) =>
+        e.effectType === "volatile-inflict" && "volatile" in e && e.volatile === volatileIds.flinch,
     );
     expect(flinchEffect).toBeUndefined();
   });
@@ -739,7 +749,10 @@ describe("Forewarn — identify strongest move by base power", () => {
     // Source: Bulbapedia — Forewarn counts OHKO moves as BP 160
     const opponent = createOnFieldPokemon({
       types: GROUND_TYPES,
-      moves: [createCanonicalMoveSlot(moveIds.earthquake), createCanonicalMoveSlot(moveIds.fissure)],
+      moves: [
+        createCanonicalMoveSlot(moveIds.earthquake),
+        createCanonicalMoveSlot(moveIds.fissure),
+      ],
     });
 
     const ctx = createAbilityContext({

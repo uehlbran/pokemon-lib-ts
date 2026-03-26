@@ -1,10 +1,10 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  CORE_HAZARD_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
-  CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -20,6 +20,7 @@ import {
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
 } from "../src/data/reference-ids";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Move Effects Tests
@@ -51,15 +52,6 @@ const SLEEP = CORE_STATUS_IDS.sleep;
 const BADLY_POISONED = CORE_STATUS_IDS.badlyPoisoned;
 const FLINCH = CORE_VOLATILE_IDS.flinch;
 const TRAPPED = CORE_VOLATILE_IDS.trapped;
-const BOUND = CORE_VOLATILE_IDS.bound;
-const LEECH_SEED = CORE_VOLATILE_IDS.leechSeed;
-
-const REFLECT_SCREEN = CORE_SCREEN_IDS.reflect;
-const LIGHT_SCREEN_SCREEN = CORE_SCREEN_IDS.lightScreen;
-
-const STEALTH_ROCK = CORE_HAZARD_IDS.stealthRock;
-const TOXIC_SPIKES = CORE_HAZARD_IDS.toxicSpikes;
-const SPIKES = CORE_HAZARD_IDS.spikes;
 
 const LEFTOVERS = CORE_ITEM_IDS.leftovers;
 const CHOICE_BAND = CORE_ITEM_IDS.choiceBand;
@@ -161,7 +153,7 @@ function createActivePokemon(opts: {
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: 100,
     defense: 100,
@@ -169,65 +161,25 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test-mon",
-    speciesId: BULBASAUR,
-    nickname: opts.nickname ?? null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: HARDY,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? NO_ABILITY,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? NO_ABILITY,
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
+    level: opts.level ?? 50,
+    nickname: opts.nickname ?? null,
+    nature: HARDY,
     pokeball: POKE_BALL,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
+    speciesId: BULBASAUR,
     statStages: {
+      ...opts.statStages,
       hp: 0,
-      attack: opts.statStages?.attack ?? 0,
-      defense: opts.statStages?.defense ?? 0,
-      spAttack: opts.statStages?.spAttack ?? 0,
-      spDefense: opts.statStages?.spDefense ?? 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
+    } as Partial<ActivePokemon["statStages"]>,
+    status: opts.status ?? null,
     types: opts.types,
-    ability: opts.ability ?? NO_ABILITY,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 function createCanonicalMove(id: string, overrides?: Partial<MoveData>): MoveData {

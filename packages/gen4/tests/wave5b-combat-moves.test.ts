@@ -1,7 +1,9 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
@@ -11,13 +13,14 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
+  executeGen4MoveEffect,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
-  executeGen4MoveEffect,
 } from "../src";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Wave 5B -- Combat Move Effects Tests
@@ -81,7 +84,7 @@ function createActivePokemon(opts: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: 100,
     defense: 100,
@@ -89,72 +92,32 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: opts.nickname === "Jirachi" ? SPECIES.jirachi : SPECIES.alakazam,
-    nickname: opts.nickname ?? null,
-    level: opts.level ?? 50,
-    experience: 0,
-    nature: NATURES.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  const volatiles =
+    opts.volatiles ?? new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? ABILITIES.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: opts.moves ?? [
+    gender: CORE_GENDERS.male,
+    heldItem: opts.heldItem ?? null,
+    lastDamageCategory: opts.lastDamageCategory as ActivePokemon["lastDamageCategory"],
+    lastDamageTaken: opts.lastDamageTaken ?? 0,
+    lastMoveUsed: opts.lastMoveUsed ?? null,
+    level: opts.level ?? 50,
+    moveSlots: opts.moves ?? [
       createMoveSlot(TACKLE.id, TACKLE.pp),
       createMoveSlot(EMBER.id, EMBER.pp),
     ],
-    ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
-    heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: ITEMS.pokeBall,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  const volatiles =
-    opts.volatiles ?? new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: volatiles,
-    types: opts.types,
-    ability: opts.ability ?? ABILITIES.none,
-    lastMoveUsed: opts.lastMoveUsed ?? null,
-    lastDamageTaken: opts.lastDamageTaken ?? 0,
-    lastDamageType: null,
-    lastDamageCategory: (opts.lastDamageCategory ?? null) as any,
-    turnsOnField: 0,
     movedThisTurn: opts.movedThisTurn ?? false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+    nickname: opts.nickname ?? null,
+    nature: NATURES.hardy,
+    pokeball: ITEMS.pokeBall,
+    speciesId: opts.nickname === "Jirachi" ? SPECIES.jirachi : SPECIES.alakazam,
+    status: opts.status ?? null,
+    types: opts.types,
+    volatileStatuses: volatiles,
+  });
 }
 
 function createMinimalBattleState(

@@ -1,13 +1,18 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
-  PokemonInstance,
   PokemonType,
   PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
@@ -18,6 +23,7 @@ import {
   GEN4_SPECIES_IDS,
 } from "../src";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Damage Calc — Orb and Light Ball breakdown.itemMultiplier tests.
@@ -61,9 +67,8 @@ function createActivePokemon(opts: {
   status?: PrimaryStatus | null;
   speciesId?: number;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -71,64 +76,20 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: GEN4_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
+    level: opts.level ?? 50,
+    nature: GEN4_NATURE_IDS.hardy,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
     types: opts.types ?? [CORE_TYPE_IDS.normal],
-    ability: opts.ability ?? "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 const gen4DataManager = createGen4DataManager();

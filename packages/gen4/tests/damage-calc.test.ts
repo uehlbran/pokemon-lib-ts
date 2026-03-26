@@ -1,7 +1,6 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
-  PokemonInstance,
   PokemonType,
   PrimaryStatus,
   StatBlock,
@@ -9,18 +8,16 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MECHANIC_MULTIPLIERS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
-  CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen4Damage } from "../src/Gen4DamageCalc";
-import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
 import {
   createGen4DataManager,
   GEN4_ABILITY_IDS,
@@ -31,6 +28,9 @@ import {
   GEN4_SPECIES_IDS,
   GEN4_WEATHER_DAMAGE_MULTIPLIERS,
 } from "../src";
+import { calculateGen4Damage } from "../src/Gen4DamageCalc";
+import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
+import { createSyntheticOnFieldPokemon } from "./helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 4 Damage Formula Tests
@@ -95,9 +95,8 @@ function createActivePokemon(opts: {
   statStages?: Partial<Record<string, number>>;
   speciesId?: number;
 }): ActivePokemon {
-  const level = opts.level ?? 50;
   const maxHp = opts.hp ?? 200;
-  const stats: StatBlock = {
+  const calculatedStats: StatBlock = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -105,71 +104,26 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: 100,
   };
-
-  const pokemon = {
-    uid: "test",
-    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
-    nickname: null,
-    level,
-    experience: 0,
-    nature: GEN4_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+  return createSyntheticOnFieldPokemon({
+    ability: opts.ability ?? CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    calculatedStats,
     currentHp: opts.currentHp ?? maxHp,
-    moves: [],
-    ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    gender: CORE_GENDERS.male,
     heldItem: opts.heldItem ?? null,
-    status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
+    level: opts.level ?? 50,
+    nature: GEN4_NATURE_IDS.hardy,
     pokeball: GEN4_ITEM_IDS.pokeBall,
-    calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: opts.statStages?.attack ?? 0,
-      defense: opts.statStages?.defense ?? 0,
-      spAttack: opts.statStages?.spAttack ?? 0,
-      spDefense: opts.statStages?.spDefense ?? 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
+    speciesId: opts.speciesId ?? GEN4_SPECIES_IDS.bulbasaur,
+    statStages: opts.statStages,
+    status: opts.status ?? null,
     types: opts.types ?? [CORE_TYPE_IDS.normal],
-    ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 /** Create a move mock with the given type, power, and category. */
 const dataManager = createGen4DataManager();
 const moveCategories = CORE_MOVE_CATEGORIES;
-const screenIds = CORE_SCREEN_IDS;
-const weatherIds = CORE_WEATHER_IDS;
 const SYNTHETIC_MOVE_BASE = dataManager.getMove(GEN4_MOVE_IDS.tackle);
 
 function resolveRepresentativeGen4MoveId(opts: {
@@ -390,7 +344,12 @@ describe("Gen 4 damage calc — physical/special split", () => {
       types: [CORE_TYPE_IDS.normal],
     });
     const chart = createNeutralTypeChart();
-    const waterfall = buildMove(CORE_TYPE_IDS.water, 80, moveCategories.physical, GEN4_MOVE_IDS.waterfall);
+    const waterfall = buildMove(
+      CORE_TYPE_IDS.water,
+      80,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.waterfall,
+    );
     const surf = buildMove(CORE_TYPE_IDS.water, 95, moveCategories.special, GEN4_MOVE_IDS.surf);
 
     const waterfallResult = calculateGen4Damage(
@@ -626,7 +585,9 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(rainResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost);
+    expect(rainResult.breakdown?.weatherMultiplier).toBe(
+      GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost,
+    );
   });
 
   it("given rain weather and Fire-type special move, when calculating damage, then weatherMultiplier = 0.5 in breakdown", () => {
@@ -661,7 +622,9 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(rainResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainFirePenalty);
+    expect(rainResult.breakdown?.weatherMultiplier).toBe(
+      GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainFirePenalty,
+    );
   });
 
   it("given sun weather and Fire-type special move, when calculating damage, then weatherMultiplier = 1.5 in breakdown", () => {
@@ -696,7 +659,9 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(sunResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunFireBoost);
+    expect(sunResult.breakdown?.weatherMultiplier).toBe(
+      GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunFireBoost,
+    );
   });
 
   it("given sun weather and Water-type special move, when calculating damage, then weatherMultiplier = 0.5 in breakdown", () => {
@@ -731,7 +696,9 @@ describe("Gen 4 damage calc — weather", () => {
       chart,
     );
 
-    expect(sunResult.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunWaterPenalty);
+    expect(sunResult.breakdown?.weatherMultiplier).toBe(
+      GEN4_WEATHER_DAMAGE_MULTIPLIERS.sunWaterPenalty,
+    );
   });
 });
 
@@ -1244,7 +1211,12 @@ describe("Gen 4 damage calc — type effectiveness", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.rock],
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical, GEN4_MOVE_IDS.earthquake);
+    const groundMove = buildMove(
+      CORE_TYPE_IDS.ground,
+      100,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.earthquake,
+    );
     const chart = createTypeChart([
       [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.fire, 2],
       [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.rock, 2],
@@ -2548,7 +2520,12 @@ describe("Gen 4 damage calc — ability immunities", () => {
       types: [CORE_TYPE_IDS.electric],
       ability: CORE_ABILITY_IDS.levitate,
     });
-    const groundMove = buildMove(CORE_TYPE_IDS.ground, 100, moveCategories.physical, GEN4_MOVE_IDS.earthquake);
+    const groundMove = buildMove(
+      CORE_TYPE_IDS.ground,
+      100,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.earthquake,
+    );
     // Levitate: Ground immunity — the calc should treat effectiveness as 0
     // Ground vs Electric would normally be 1x; Levitate makes it 0
     const chart = createTypeChart([[CORE_TYPE_IDS.ground, CORE_TYPE_IDS.electric, 0]]);
@@ -2691,7 +2668,12 @@ describe("Gen 4 damage calc — Explosion / Self-Destruct", () => {
       types: [CORE_TYPE_IDS.normal],
     });
     const noHalveMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, "normal-250");
-    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, GEN4_MOVE_IDS.explosion);
+    const explosionMove = buildMove(
+      CORE_TYPE_IDS.normal,
+      250,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.explosion,
+    );
     const chart = createNeutralTypeChart();
 
     // Explosion halves defender's defense (200 → 100 effective)
@@ -2830,7 +2812,9 @@ describe("Gen 4 damage calc — breakdown completeness", () => {
     );
 
     expect(result.breakdown).not.toBeNull();
-    expect(result.breakdown?.weatherMultiplier).toBe(GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost);
+    expect(result.breakdown?.weatherMultiplier).toBe(
+      GEN4_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost,
+    );
     expect(result.breakdown?.critMultiplier).toBe(GEN4_CRIT_MULTIPLIER);
     expect(result.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     expect(result.breakdown?.typeMultiplier).toBe(2);
@@ -3086,7 +3070,12 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     // With rain weather
@@ -3140,7 +3129,12 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     // With sandstorm weather
@@ -3187,7 +3181,12 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const hailResult = calculateGen4Damage(
@@ -3219,7 +3218,12 @@ describe("Gen 4 damage calc — SolarBeam weather power reduction", () => {
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
@@ -4079,7 +4083,12 @@ describe("Gen 4 damage calc — Reflect/Light Screen (#431)", () => {
     //   No screen reduction (Brick Break bypasses); +2 = 35 → 35
     const attacker = createActivePokemon({ attack: 100, types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ defense: 100 });
-    const move = buildMove(CORE_TYPE_IDS.fighting, 75, moveCategories.physical, GEN4_MOVE_IDS.brickBreak);
+    const move = buildMove(
+      CORE_TYPE_IDS.fighting,
+      75,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.brickBreak,
+    );
     const chart = createNeutralTypeChart();
 
     const state = {
@@ -4198,7 +4207,12 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.heatproof,
     });
-    const firePhysicalMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.physical, GEN4_MOVE_IDS.firePunch);
+    const firePhysicalMove = buildMove(
+      CORE_TYPE_IDS.fire,
+      80,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.firePunch,
+    );
     const chart = createNeutralTypeChart();
 
     const noHeatproofResult = calculateGen4Damage(
@@ -4260,7 +4274,12 @@ describe("Gen 4 damage calc — Heatproof ability (issue #430)", () => {
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.heatproof,
     });
-    const fireSpecialMove = buildMove(CORE_TYPE_IDS.fire, 90, moveCategories.special, CORE_MOVE_IDS.flamethrower);
+    const fireSpecialMove = buildMove(
+      CORE_TYPE_IDS.fire,
+      90,
+      moveCategories.special,
+      CORE_MOVE_IDS.flamethrower,
+    );
     const chart = createNeutralTypeChart();
 
     const noHeatproofResult = calculateGen4Damage(
@@ -4324,7 +4343,12 @@ describe("Gen 4 damage calc — Mold Breaker bypasses Heatproof (issue #430 adde
       types: [CORE_TYPE_IDS.normal],
       ability: GEN4_ABILITY_IDS.heatproof,
     });
-    const firePhysicalMove = buildMove(CORE_TYPE_IDS.fire, 80, moveCategories.physical, GEN4_MOVE_IDS.firePunch);
+    const firePhysicalMove = buildMove(
+      CORE_TYPE_IDS.fire,
+      80,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.firePunch,
+    );
     const chart = createNeutralTypeChart();
 
     const moldBreakerResult = calculateGen4Damage(
@@ -4479,8 +4503,18 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, GEN4_MOVE_IDS.explosion);
-    const normalPhysicalMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, CORE_MOVE_IDS.hyperBeam);
+    const explosionMove = buildMove(
+      CORE_TYPE_IDS.normal,
+      250,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.explosion,
+    );
+    const normalPhysicalMove = buildMove(
+      CORE_TYPE_IDS.normal,
+      250,
+      moveCategories.physical,
+      CORE_MOVE_IDS.hyperBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const explosionResult = calculateGen4Damage(
@@ -4535,8 +4569,18 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const selfDestructMove = buildMove(CORE_TYPE_IDS.normal, 200, moveCategories.physical, GEN4_MOVE_IDS.selfDestruct);
-    const normalMove200 = buildMove(CORE_TYPE_IDS.normal, 200, moveCategories.physical, CORE_MOVE_IDS.doubleEdge);
+    const selfDestructMove = buildMove(
+      CORE_TYPE_IDS.normal,
+      200,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.selfDestruct,
+    );
+    const normalMove200 = buildMove(
+      CORE_TYPE_IDS.normal,
+      200,
+      moveCategories.physical,
+      CORE_MOVE_IDS.doubleEdge,
+    );
     const chart = createNeutralTypeChart();
 
     const selfDestructResult = calculateGen4Damage(
@@ -4590,8 +4634,18 @@ describe("Gen 4 damage calc — Explosion/Self-Destruct halves defender Defense 
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const explosionMove = buildMove(CORE_TYPE_IDS.normal, 250, moveCategories.physical, GEN4_MOVE_IDS.explosion);
-    const selfDestructMove = buildMove(CORE_TYPE_IDS.normal, 200, moveCategories.physical, GEN4_MOVE_IDS.selfDestruct);
+    const explosionMove = buildMove(
+      CORE_TYPE_IDS.normal,
+      250,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.explosion,
+    );
+    const selfDestructMove = buildMove(
+      CORE_TYPE_IDS.normal,
+      200,
+      moveCategories.physical,
+      GEN4_MOVE_IDS.selfDestruct,
+    );
     const chart = createNeutralTypeChart();
 
     const explosionResult = calculateGen4Damage(
@@ -4652,7 +4706,12 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const noWeatherResult = calculateGen4Damage(
@@ -4699,7 +4758,12 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const sandstormResult = calculateGen4Damage(
@@ -4733,7 +4797,12 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const hailResult = calculateGen4Damage(
@@ -4769,7 +4838,12 @@ describe("Gen 4 damage calc — SolarBeam power halved in weather (issue #445)",
       spDefense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const solarBeam = buildMove(CORE_TYPE_IDS.grass, 120, moveCategories.special, CORE_MOVE_IDS.solarBeam);
+    const solarBeam = buildMove(
+      CORE_TYPE_IDS.grass,
+      120,
+      moveCategories.special,
+      CORE_MOVE_IDS.solarBeam,
+    );
     const chart = createNeutralTypeChart();
 
     const sunResult = calculateGen4Damage(
