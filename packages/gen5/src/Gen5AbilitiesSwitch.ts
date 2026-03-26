@@ -4,6 +4,7 @@ import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_GENDERS,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
@@ -445,7 +446,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "paralysis",
+            status: CORE_STATUS_IDS.paralysis,
           },
         ],
         messages: [`${name}'s Static paralyzed the attacker!`],
@@ -464,7 +465,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "burn",
+            status: CORE_STATUS_IDS.burn,
           },
         ],
         messages: [`${name}'s Flame Body burned the attacker!`],
@@ -483,7 +484,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
@@ -532,7 +533,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "sleep",
+              status: CORE_STATUS_IDS.sleep,
             },
           ],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
@@ -545,7 +546,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "poison",
+              status: CORE_STATUS_IDS.poison,
             },
           ],
           messages: [`${name}'s Effect Spore poisoned the attacker!`],
@@ -558,7 +559,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "paralysis",
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: [`${name}'s Effect Spore paralyzed the attacker!`],
@@ -590,7 +591,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            volatile: "infatuation",
+            volatile: CORE_VOLATILE_IDS.infatuation,
           },
         ],
         messages: [`${name}'s Cute Charm infatuated the attacker!`],
@@ -660,7 +661,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Touch poisoned the target!`],
@@ -772,7 +773,7 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Illusion: breaks on damaging hit
       // Source: Bulbapedia — Illusion: "The disguise breaks when the Pokemon is hit by
       //   a damaging move."
-      if (!ctx.pokemon.volatileStatuses.has("illusion")) return NO_EFFECT;
+      if (!ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.illusion)) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -819,13 +820,19 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       const status = ctx.pokemon.pokemon.status;
       if (!status) return NO_EFFECT;
       // Only spreads burn, paralysis, poison (not sleep, freeze, badly-poisoned)
-      if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
+      if (
+        status !== CORE_STATUS_IDS.burn &&
+        status !== CORE_STATUS_IDS.paralysis &&
+        status !== CORE_STATUS_IDS.poison
+      ) {
+        return NO_EFFECT;
+      }
       // Toxic Spikes poison is excluded — the entry hazard code sets a "hazard-status-source"
       // volatile marker when Toxic Spikes inflicts status.
       // Source: Showdown data/abilities.ts — Synchronize: if (effect.id === 'toxicspikes') return;
-      if (ctx.pokemon.volatileStatuses.has("hazard-status-source")) {
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.hazardStatusSource)) {
         // Remove the marker volatile so it doesn't persist
-        ctx.pokemon.volatileStatuses.delete("hazard-status-source");
+        ctx.pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.hazardStatusSource);
         return NO_EFFECT;
       }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
@@ -877,14 +884,14 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
       if (moveType !== "fire") return NO_EFFECT;
       // Frozen Pokemon cannot activate Flash Fire; the Fire move thaws them instead
       // Source: Showdown — frozen Pokemon cannot activate Flash Fire
-      if (ctx.pokemon.pokemon.status === "freeze") return NO_EFFECT;
-      const hasBoost = ctx.pokemon.volatileStatuses.has("flash-fire");
+      if (ctx.pokemon.pokemon.status === CORE_STATUS_IDS.freeze) return NO_EFFECT;
+      const hasBoost = ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire);
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {
         effects.push({
           effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
           target: BATTLE_EFFECT_TARGETS.self,
-          volatile: "flash-fire",
+          volatile: CORE_VOLATILE_IDS.flashFire,
         });
       }
       const ffName = getName(ctx);

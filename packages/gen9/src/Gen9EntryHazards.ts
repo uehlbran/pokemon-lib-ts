@@ -56,7 +56,7 @@ export interface ToxicSpikesResult {
   /** Whether a Poison-type absorbed (removed) the hazard */
   readonly absorbed: boolean;
   /** Status to inflict, or null if immune */
-  readonly status: "poison" | "badly-poisoned" | null;
+  readonly status: typeof CORE_STATUS_IDS.poison | typeof CORE_STATUS_IDS.badlyPoisoned | null;
   /** Message to emit */
   readonly message: string | null;
 }

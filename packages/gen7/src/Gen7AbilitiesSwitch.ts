@@ -1,7 +1,13 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, WeatherType } from "@pokemon-lib-ts/core";
-import { CORE_GENDERS, CORE_STAT_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_GENDERS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_SPECIES_IDS } from "./data/reference-ids";
 
 /**
@@ -353,7 +359,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.self,
-            volatile: "illusion",
+            volatile: CORE_VOLATILE_IDS.illusion,
           },
         ],
         messages: [],
@@ -477,7 +483,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "paralysis",
+            status: CORE_STATUS_IDS.paralysis,
           },
         ],
         messages: [`${name}'s Static paralyzed the attacker!`],
@@ -495,7 +501,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "burn",
+            status: CORE_STATUS_IDS.burn,
           },
         ],
         messages: [`${name}'s Flame Body burned the attacker!`],
@@ -513,7 +519,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
@@ -555,7 +561,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "sleep",
+              status: CORE_STATUS_IDS.sleep,
             },
           ],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
@@ -568,7 +574,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "paralysis",
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: [`${name}'s Effect Spore paralyzed the attacker!`],
@@ -581,7 +587,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "poison",
+              status: CORE_STATUS_IDS.poison,
             },
           ],
           messages: [`${name}'s Effect Spore poisoned the attacker!`],
@@ -611,7 +617,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            volatile: "infatuation",
+            volatile: CORE_VOLATILE_IDS.infatuation,
           },
         ],
         messages: [`${name}'s Cute Charm infatuated the attacker!`],
@@ -690,7 +696,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Touch poisoned the target!`],
@@ -738,7 +744,13 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       if (!ctx.opponent) return NO_EFFECT;
       const status = ctx.pokemon.pokemon.status;
       if (!status) return NO_EFFECT;
-      if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
+      if (
+        status !== CORE_STATUS_IDS.burn &&
+        status !== CORE_STATUS_IDS.paralysis &&
+        status !== CORE_STATUS_IDS.poison
+      ) {
+        return NO_EFFECT;
+      }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
         activated: true,

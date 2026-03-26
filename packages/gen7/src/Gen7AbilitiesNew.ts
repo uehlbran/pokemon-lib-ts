@@ -4,7 +4,7 @@ import {
   BATTLE_ABILITY_EFFECT_TYPES,
   BATTLE_EFFECT_TARGETS,
 } from "@pokemon-lib-ts/battle";
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS, type PokemonType } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 7 new signature abilities.
@@ -144,7 +144,7 @@ function handleDisguise(ctx: AbilityContext): AbilityResult {
   switch (ctx.trigger) {
     case "on-damage-taken": {
       // If Disguise is already broken, no activation
-      if (ctx.pokemon.volatileStatuses.has("disguise-broken")) return NO_EFFECT;
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.disguiseBroken)) return NO_EFFECT;
 
       // Only blocks damaging moves (not status)
       if (!ctx.move) return NO_EFFECT;
@@ -158,7 +158,7 @@ function handleDisguise(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.self,
-            volatile: "disguise-broken",
+            volatile: CORE_VOLATILE_IDS.disguiseBroken,
           },
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
@@ -287,7 +287,9 @@ function handleBattleBond(ctx: AbilityContext): AbilityResult {
       if (ctx.opponent.pokemon.currentHp > 0) return NO_EFFECT;
 
       // Already transformed
-      if (ctx.pokemon.volatileStatuses.has("battle-bond-transformed")) return NO_EFFECT;
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.battleBondTransformed)) {
+        return NO_EFFECT;
+      }
 
       return {
         activated: true,
@@ -295,7 +297,7 @@ function handleBattleBond(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.self,
-            volatile: "battle-bond-transformed",
+            volatile: CORE_VOLATILE_IDS.battleBondTransformed,
           },
         ],
         messages: [`${name} became Ash-Greninja!`],
@@ -408,7 +410,9 @@ function handlePowerConstruct(ctx: AbilityContext): AbilityResult {
     case "on-damage-taken":
     case "on-turn-end": {
       // Already transformed this battle
-      if (ctx.pokemon.volatileStatuses.has("power-construct-transformed")) return NO_EFFECT;
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.powerConstructTransformed)) {
+        return NO_EFFECT;
+      }
 
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const currentHp = ctx.pokemon.pokemon.currentHp;
@@ -422,7 +426,7 @@ function handlePowerConstruct(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.self,
-            volatile: "power-construct-transformed",
+            volatile: CORE_VOLATILE_IDS.powerConstructTransformed,
           },
         ],
         messages: [`${name} transformed into its Complete Forme!`],

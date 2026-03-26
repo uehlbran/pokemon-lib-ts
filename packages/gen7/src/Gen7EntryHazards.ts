@@ -25,7 +25,13 @@ import type {
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
 import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { isGen7Grounded } from "./Gen7DamageCalc.js";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +51,7 @@ export interface ToxicSpikesResult {
   /** Whether a Poison-type absorbed (removed) the hazard */
   readonly absorbed: boolean;
   /** Status to inflict, or null if immune */
-  readonly status: "poison" | "badly-poisoned" | null;
+  readonly status: typeof CORE_STATUS_IDS.poison | typeof CORE_STATUS_IDS.badlyPoisoned | null;
   /** Message to emit */
   readonly message: string | null;
 }
@@ -186,7 +192,7 @@ export function applyGen7ToxicSpikes(
 
   // Poison-type absorbs (removes) Toxic Spikes
   // Source: Showdown -- toxicspikes: grounded Poison-type removes them
-  if (switchingIn.types.includes("poison")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.poison)) {
     return {
       absorbed: true,
       status: null,
@@ -196,7 +202,7 @@ export function applyGen7ToxicSpikes(
 
   // Steel-type immune to poison
   // Source: Bulbapedia -- Steel types cannot be poisoned
-  if (switchingIn.types.includes("steel")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.steel)) {
     return { absorbed: false, status: null, message: null };
   }
 
@@ -210,14 +216,14 @@ export function applyGen7ToxicSpikes(
   if (clampedLayers >= 2) {
     return {
       absorbed: false,
-      status: "badly-poisoned",
+      status: CORE_STATUS_IDS.badlyPoisoned,
       message: `${pokemonName} was badly poisoned by the toxic spikes!`,
     };
   }
 
   return {
     absorbed: false,
-    status: "poison",
+    status: CORE_STATUS_IDS.poison,
     message: `${pokemonName} was poisoned by the toxic spikes!`,
   };
 }
@@ -335,7 +341,7 @@ export function applyGen7EntryHazards(
 
   // Magic Guard: immune to all DAMAGE-related hazard effects but NOT Sticky Web
   // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
-  const hasMagicGuard = switchingIn.ability === "magic-guard";
+  const hasMagicGuard = switchingIn.ability === CORE_ABILITY_IDS.magicGuard;
 
   if (!hasMagicGuard) {
     // --- Stealth Rock ---
@@ -369,7 +375,8 @@ export function applyGen7EntryHazards(
       // Misty Terrain blocks all status for grounded Pokemon
       // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus blocks all status
       const terrainBlocksStatus =
-        state.terrain?.type === "misty" && isGen7Grounded(switchingIn, gravityActive);
+        state.terrain?.type === CORE_TERRAIN_IDS.misty &&
+        isGen7Grounded(switchingIn, gravityActive);
       if (result.status && !terrainBlocksStatus) {
         statusInflicted = result.status;
       }

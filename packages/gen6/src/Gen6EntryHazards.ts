@@ -37,6 +37,8 @@ import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -58,7 +60,7 @@ export interface ToxicSpikesResult {
   /** Whether a Poison-type absorbed (removed) the hazard */
   readonly absorbed: boolean;
   /** Status to inflict, or null if immune */
-  readonly status: "poison" | "badly-poisoned" | null;
+  readonly status: typeof CORE_STATUS_IDS.poison | typeof CORE_STATUS_IDS.badlyPoisoned | null;
   /** Message to emit */
   readonly message: string | null;
 }
@@ -113,7 +115,10 @@ export interface StickyWebResult {
  * Source: Showdown data/conditions.ts -- terrain conditions check target.isGrounded()
  * Source: Bulbapedia "Semi-invulnerable turn" -- Fly/Bounce elevate the user
  */
-const AIRBORNE_SEMI_INVULNERABLE = new Set(["flying", "shadow-force-charging"]);
+const AIRBORNE_SEMI_INVULNERABLE: ReadonlySet<VolatileStatus> = new Set([
+  CORE_VOLATILE_IDS.flying,
+  CORE_VOLATILE_IDS.shadowForceCharging,
+]);
 
 export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   // Gravity grounds everything (even semi-invulnerable airborne Pokemon)
@@ -125,7 +130,7 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Dig and Dive do NOT affect grounding (underground/underwater but still "on ground").
   // Source: Showdown sim/pokemon.ts -- isGrounded checks for semi-invulnerable volatiles
   for (const v of AIRBORNE_SEMI_INVULNERABLE) {
-    if (pokemon.volatileStatuses.has(v as VolatileStatus)) return false;
+    if (pokemon.volatileStatuses.has(v)) return false;
   }
 
   // Ingrain grounds the user even if Flying-type or Levitate
@@ -152,7 +157,7 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
   // Note: "smackdown" is not in the VolatileStatus union (Gen 5/6-specific volatile),
   // so we cast. The combat move handler uses the same cast pattern.
-  if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
   // Flying-type is not grounded
   if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
@@ -171,7 +176,7 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Bulbapedia -- Telekinesis: "The target is raised into the air. It has a
   //   5-turn effect and makes all moves, except one-hit KO moves, used against the
   //   target always hit... it also makes the user immune to Ground-type moves"
-  if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis as VolatileStatus)) return false;
 
   // Air Balloon grants levitation ONLY when item effects are not suppressed.
   // Source: Bulbapedia -- Air Balloon: "makes the holder immune to Ground-type moves"
@@ -304,7 +309,7 @@ export function applyGen6ToxicSpikes(
 
   // Poison-type absorbs (removes) Toxic Spikes
   // Source: Showdown -- toxicspikes: grounded Poison-type removes them
-  if (switchingIn.types.includes("poison")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.poison)) {
     return {
       absorbed: true,
       status: null,
@@ -314,7 +319,7 @@ export function applyGen6ToxicSpikes(
 
   // Steel-type immune to poison
   // Source: Bulbapedia -- Steel types cannot be poisoned
-  if (switchingIn.types.includes("steel")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.steel)) {
     return { absorbed: false, status: null, message: null };
   }
 
@@ -328,14 +333,14 @@ export function applyGen6ToxicSpikes(
   if (clampedLayers >= 2) {
     return {
       absorbed: false,
-      status: "badly-poisoned",
+      status: CORE_STATUS_IDS.badlyPoisoned,
       message: `${pokemonName} was badly poisoned by the toxic spikes!`,
     };
   }
 
   return {
     absorbed: false,
-    status: "poison",
+    status: CORE_STATUS_IDS.poison,
     message: `${pokemonName} was poisoned by the toxic spikes!`,
   };
 }
@@ -483,7 +488,7 @@ export function applyGen6EntryHazards(
   // but NOT immune to Sticky Web (which applies a stat drop, not damage).
   // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage"
   // Source: Showdown data/abilities.ts -- magicguard: onDamage prevents residual/hazard damage
-  const hasMagicGuard = switchingIn.ability === "magic-guard";
+  const hasMagicGuard = switchingIn.ability === CORE_ABILITY_IDS.magicGuard;
 
   if (!hasMagicGuard) {
     // --- Stealth Rock ---
@@ -521,7 +526,8 @@ export function applyGen6EntryHazards(
       // Note: Electric Terrain only blocks sleep, not poison, so it does not affect
       //   Toxic Spikes. We inline the check to avoid circular imports with Gen6Terrain.ts.
       const terrainBlocksStatus =
-        state.terrain?.type === "misty" && isGen6Grounded(switchingIn, gravityActive);
+        state.terrain?.type === CORE_TERRAIN_IDS.misty &&
+        isGen6Grounded(switchingIn, gravityActive);
       if (result.status && !terrainBlocksStatus) {
         statusInflicted = result.status;
       }

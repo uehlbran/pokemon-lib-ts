@@ -1,5 +1,6 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS } from "./data/reference-ids.js";
 
 /**
@@ -105,14 +106,14 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
 
   // Check if currently in Zen form via volatile status
   // Source: Showdown -- zenmode condition uses addVolatile('zenmode')
-  const isZenForm = pokemon.volatileStatuses.has("zen-mode" as never);
+  const isZenForm = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.zenMode as never);
 
   if (currentHp <= Math.floor(maxHp / 2) && !isZenForm) {
     // Transform to Zen Mode
     const effect: AbilityEffect = {
       effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
       target: BATTLE_EFFECT_TARGETS.self,
-      volatile: "zen-mode" as never,
+      volatile: CORE_VOLATILE_IDS.zenMode as never,
     };
     return {
       activated: true,
@@ -128,7 +129,7 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
     const effect: AbilityEffect = {
       effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileRemove,
       target: BATTLE_EFFECT_TARGETS.self,
-      volatile: "zen-mode" as never,
+      volatile: CORE_VOLATILE_IDS.zenMode as never,
     };
     return {
       activated: true,

@@ -389,12 +389,12 @@ export class Gen7Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts -- disguise onDamage priority 1
     if (
       defender.ability === "disguise" &&
-      !defender.volatileStatuses.has("disguise-broken") &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.disguiseBroken) &&
       move.category !== "status"
     ) {
       // Mark Disguise as broken so it cannot activate again
       // Source: Showdown data/abilities.ts -- disguise: sets disguise-broken volatile on activation
-      defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.disguiseBroken, { turnsLeft: -1 });
       return {
         damage: 0,
         survived: true,

@@ -32,6 +32,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -53,7 +54,7 @@ export interface ToxicSpikesResult {
   /** Whether a Poison-type absorbed (removed) the hazard */
   readonly absorbed: boolean;
   /** Status to inflict, or null if immune */
-  readonly status: "poison" | "badly-poisoned" | null;
+  readonly status: typeof CORE_STATUS_IDS.poison | typeof CORE_STATUS_IDS.badlyPoisoned | null;
   /** Message to emit */
   readonly message: string | null;
 }
@@ -88,7 +89,7 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   //   even if it is a Flying-type or has the Levitate ability."
   // Source: Showdown sim/pokemon.ts -- isGrounded: checks 'ingrain' volatile before
   //   Flying/Levitate checks
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
   // Compute item suppression once. Klutz ability and Embargo volatile both suppress
   // held-item effects, preventing Iron Ball from grounding and Air Balloon from levitating.
@@ -107,7 +108,7 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
   // Note: "smackdown" is not in the VolatileStatus union (Gen 5-specific volatile),
   // so we cast. The combat move handler uses the same cast pattern.
-  if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
   // Flying-type is not grounded
   if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
@@ -251,7 +252,7 @@ export function applyGen5ToxicSpikes(
 
   // Poison-type absorbs (removes) Toxic Spikes
   // Source: Showdown -- toxicspikes: grounded Poison-type removes them
-  if (switchingIn.types.includes("poison")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.poison)) {
     return {
       absorbed: true,
       status: null,
@@ -261,7 +262,7 @@ export function applyGen5ToxicSpikes(
 
   // Steel-type immune to poison
   // Source: Bulbapedia -- Steel types cannot be poisoned
-  if (switchingIn.types.includes("steel")) {
+  if (switchingIn.types.includes(CORE_TYPE_IDS.steel)) {
     return { absorbed: false, status: null, message: null };
   }
 
@@ -275,14 +276,14 @@ export function applyGen5ToxicSpikes(
   if (clampedLayers >= 2) {
     return {
       absorbed: false,
-      status: "badly-poisoned",
+      status: CORE_STATUS_IDS.badlyPoisoned,
       message: `${pokemonName} was badly poisoned by the toxic spikes!`,
     };
   }
 
   return {
     absorbed: false,
-    status: "poison",
+    status: CORE_STATUS_IDS.poison,
     message: `${pokemonName} was poisoned by the toxic spikes!`,
   };
 }
@@ -317,7 +318,7 @@ export function applyGen5EntryHazards(
   // Source: Showdown data/conditions.ts — Toxic Spikes: Poison-type always absorbs them
   //   regardless of abilities; absorption check precedes damage/status check.
   // Source: Bulbapedia -- Magic Guard: "prevents all indirect damage" (damage/status only)
-  if (switchingIn.ability === "magic-guard") {
+  if (switchingIn.ability === CORE_ABILITY_IDS.magicGuard) {
     const hazardsToRemove: EntryHazardType[] = [];
     const messages: string[] = [];
     const gravityActive = state.gravity?.active ?? false;
@@ -327,7 +328,7 @@ export function applyGen5EntryHazards(
     if (
       toxicSpikes &&
       toxicSpikes.layers > 0 &&
-      switchingIn.types.includes("poison") &&
+      switchingIn.types.includes(CORE_TYPE_IDS.poison) &&
       isGen5Grounded(switchingIn, gravityActive)
     ) {
       hazardsToRemove.push("toxic-spikes");
@@ -383,7 +384,7 @@ export function applyGen5EntryHazards(
       // Mark that this status came from an entry hazard, not from an opponent's move.
       // Synchronize should NOT trigger when the status source is Toxic Spikes.
       // Source: Showdown data/abilities.ts — Synchronize: if (effect.id === 'toxicspikes') return;
-      switchingIn.volatileStatuses.set("hazard-status-source", {
+      switchingIn.volatileStatuses.set(CORE_VOLATILE_IDS.hazardStatusSource, {
         turnsLeft: 1,
       });
     }

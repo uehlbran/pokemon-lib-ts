@@ -5,6 +5,7 @@ import {
   CORE_ITEM_IDS,
   CORE_SCREEN_IDS,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -596,7 +597,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "paralysis",
+            status: CORE_STATUS_IDS.paralysis,
           },
         ],
         messages: [`${name}'s Static paralyzed the attacker!`],
@@ -612,7 +613,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "burn",
+            status: CORE_STATUS_IDS.burn,
           },
         ],
         messages: [`${name}'s Flame Body burned the attacker!`],
@@ -628,7 +629,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
@@ -671,7 +672,12 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       if (!ctx.opponent) return NO_EFFECT;
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       const myStatus = ctx.pokemon.pokemon.status;
-      if (!myStatus || (myStatus !== "burn" && myStatus !== "poison" && myStatus !== "paralysis")) {
+      if (
+        !myStatus ||
+        (myStatus !== CORE_STATUS_IDS.burn &&
+          myStatus !== CORE_STATUS_IDS.poison &&
+          myStatus !== CORE_STATUS_IDS.paralysis)
+      ) {
         return NO_EFFECT;
       }
       return {
