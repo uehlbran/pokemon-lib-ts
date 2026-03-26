@@ -33,11 +33,15 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   calculateExpGainClassic,
   DataManager,
   gen1to4MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
+import { GEN3_ABILITY_IDS } from "./data/reference-ids";
 import {
   applyGen3Ability,
   isGen3AbilityStatusImmune,
@@ -226,7 +230,7 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Ability: Super Luck (+1 stage)
     // Source: pret/pokeemerald src/battle_util.c — Super Luck ability crit bonus
-    if (attacker.ability === "super-luck") stage += 1;
+    if (attacker.ability === CORE_ABILITY_IDS.superLuck) stage += 1;
 
     stage = Math.min(stage, table.length - 1);
     const rate = table[stage];
@@ -355,13 +359,13 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Flying-types are immune to spikes
     // Source: pret/pokeemerald — TYPE_FLYING check in hazard application
-    if (pokemon.types.includes("flying")) {
+    if (pokemon.types.includes(CORE_TYPE_IDS.flying)) {
       return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
     }
 
     // Levitate ability grants immunity to ground-affecting effects including spikes
     // Source: pret/pokeemerald — Levitate ability check in hazard application
-    if (pokemon.ability === "levitate") {
+    if (pokemon.ability === GEN3_ABILITY_IDS.levitate) {
       return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
     }
 
@@ -603,14 +607,17 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Compound Eyes: 1.3x accuracy
     // Source: pret/pokeemerald src/battle_script_commands.c:1152-1153
-    if (context.attacker.ability === "compound-eyes") {
+    if (context.attacker.ability === GEN3_ABILITY_IDS.compoundEyes) {
       calc = Math.floor((calc * 130) / 100);
     }
 
     // Sand Veil: 0.8x accuracy in sandstorm (WeatherType uses "sand" for sandstorm)
     // Source: pret/pokeemerald src/battle_script_commands.c:1154-1155
     // Uses `weather` (already suppressed by Cloud Nine / Air Lock above)
-    if (context.defender.ability === "sand-veil" && weather === "sand") {
+    if (
+      context.defender.ability === GEN3_ABILITY_IDS.sandVeil &&
+      weather === CORE_WEATHER_IDS.sand
+    ) {
       calc = Math.floor((calc * 80) / 100);
     }
 
@@ -627,7 +634,7 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Hustle: 0.8x accuracy for physical moves
     // Source: pret/pokeemerald src/battle_script_commands.c:1156-1157
-    if (context.attacker.ability === "hustle") {
+    if (context.attacker.ability === GEN3_ABILITY_IDS.hustle) {
       // Check if move type is physical (Gen 3 physical/special split is by type)
       const physicalTypes = new Set([
         "normal",
@@ -668,14 +675,20 @@ export class Gen3Ruleset extends BaseRuleset {
     // Chlorophyll: 2x Speed in sun
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_CHLOROPHYLL
     // Source: Showdown data/abilities.ts — Chlorophyll onModifySpe
-    if (active.ability === "chlorophyll" && this._currentWeather === "sun") {
+    if (
+      active.ability === GEN3_ABILITY_IDS.chlorophyll &&
+      this._currentWeather === CORE_WEATHER_IDS.sun
+    ) {
       effective = effective * 2;
     }
 
     // Swift Swim: 2x Speed in rain
     // Source: pret/pokeemerald src/battle_util.c — ABILITY_SWIFT_SWIM
     // Source: Showdown data/abilities.ts — Swift Swim onModifySpe
-    if (active.ability === "swift-swim" && this._currentWeather === "rain") {
+    if (
+      active.ability === GEN3_ABILITY_IDS.swiftSwim &&
+      this._currentWeather === CORE_WEATHER_IDS.rain
+    ) {
       effective = effective * 2;
     }
 
@@ -771,7 +784,7 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   override canSwitch(pokemon: ActivePokemon, state: BattleState): boolean {
     // "trapped" volatile (Mean Look, Spider Web, Block)
-    if (pokemon.volatileStatuses.has("trapped")) return false;
+    if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.trapped)) return false;
 
     // Find which side the pokemon is on and get the opponent
     const pokemonSide = state.sides[0].active[0] === pokemon ? 0 : 1;
@@ -783,20 +796,22 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Shadow Tag: traps non-Shadow-Tag opponents
     // Source: pret/pokeemerald — ABILITY_SHADOW_TAG traps all non-Shadow-Tag foes
-    if (oppAbility === "shadow-tag" && pokemon.ability !== "shadow-tag") return false;
+    if (oppAbility === GEN3_ABILITY_IDS.shadowTag && pokemon.ability !== GEN3_ABILITY_IDS.shadowTag)
+      return false;
 
     // Arena Trap: traps grounded (non-Flying, non-Levitate) opponents
     // NOTE: No Gravity in Gen 3 (Gen 4+), so no gravity grounding check.
     // Source: pret/pokeemerald — ABILITY_ARENA_TRAP traps non-Flying, non-Levitate foes
-    if (oppAbility === "arena-trap") {
-      const isFlying = pokemon.types.includes("flying");
-      const hasLevitate = pokemon.ability === "levitate";
+    if (oppAbility === GEN3_ABILITY_IDS.arenaTrap) {
+      const isFlying = pokemon.types.includes(CORE_TYPE_IDS.flying);
+      const hasLevitate = pokemon.ability === GEN3_ABILITY_IDS.levitate;
       if (!isFlying && !hasLevitate) return false;
     }
 
     // Magnet Pull: traps Steel-type opponents
     // Source: pret/pokeemerald — ABILITY_MAGNET_PULL traps Steel-type foes
-    if (oppAbility === "magnet-pull" && pokemon.types.includes("steel")) return false;
+    if (oppAbility === GEN3_ABILITY_IDS.magnetPull && pokemon.types.includes(CORE_TYPE_IDS.steel))
+      return false;
 
     return true;
   }
@@ -816,25 +831,25 @@ export class Gen3Ruleset extends BaseRuleset {
    *   turn it wakes up."
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // No counter found or already at 0 — wake up, CAN act (Gen 3+)
       // Source: pret/pokeemerald — Pokemon acts on wake turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
 
     // Early Bird: decrement by 2 instead of 1
     // Source: pret/pokeemerald — ABILITY_EARLY_BIRD: sleepTimer decremented twice
-    const decrement = pokemon.ability === "early-bird" ? 2 : 1;
+    const decrement = pokemon.ability === GEN3_ABILITY_IDS.earlyBird ? 2 : 1;
     sleepState.turnsLeft = Math.max(0, sleepState.turnsLeft - decrement);
 
     if (sleepState.turnsLeft <= 0) {
       // Counter just reached 0 — wake up, CAN act (Gen 3+)
       // Source: pret/pokeemerald src/battle_script_commands.c — wake and act same turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
 
@@ -853,7 +868,10 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Natural Cure: cure status condition on switch-out
-    if (pokemon.ability === "natural-cure" && pokemon.pokemon.status !== null) {
+    if (
+      pokemon.ability === GEN3_ABILITY_IDS.naturalCure &&
+      pokemon.pokemon.status !== null
+    ) {
       pokemon.pokemon.status = null;
     }
     // Delegate to BaseRuleset for standard volatile clearing
