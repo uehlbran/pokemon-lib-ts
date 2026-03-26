@@ -23,7 +23,7 @@ function getExpectedWeatherChip(maxHp: number): number {
 /**
  * Helper: create a minimal ActivePokemon mock for weather tests.
  */
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   types?: PokemonType[];
@@ -53,7 +53,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
+function createBattleSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   return {
     index,
     active: [active],
@@ -70,7 +70,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeState(
+function createBattleState(
   weatherType: WeatherType | null,
   turnsLeft: number,
   sides: [BattleSide, BattleSide],
@@ -163,10 +163,10 @@ describe("Gen5 weather immunity", () => {
 describe("Gen5 weather chip damage", () => {
   it("given sandstorm active, when non-Rock/Ground/Steel pokemon takes end-of-turn tick, then takes maxHp/16 damage", () => {
     // Source: Bulbapedia -- Sandstorm chip damage is 1/16 max HP
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
-    const state = makeState(WEATHER.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [TYPES.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1);
+    const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -182,10 +182,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given sandstorm active, when Rock-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.rock] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
-    const state = makeState(WEATHER.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [TYPES.rock] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1);
+    const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -194,10 +194,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given sandstorm active, when Steel-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.steel] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.steel] }), 1);
-    const state = makeState(WEATHER.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [TYPES.steel] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.steel] }), 1);
+    const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -206,10 +206,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given hail active, when non-Ice pokemon takes end-of-turn tick, then takes maxHp/16 damage", () => {
     // Source: Bulbapedia -- Hail chip damage is 1/16 max HP
-    const pokemon = makeActivePokemon({ maxHp: 320, types: [TYPES.fire] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
-    const state = makeState(WEATHER.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 320, types: [TYPES.fire] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.ice] }), 1);
+    const state = createBattleState(WEATHER.hail, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -225,10 +225,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given hail active, when Ice-type takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Ice types immune to hail chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.ice] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
-    const state = makeState(WEATHER.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [TYPES.ice] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.ice] }), 1);
+    const state = createBattleState(WEATHER.hail, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -237,14 +237,14 @@ describe("Gen5 weather chip damage", () => {
 
   it("given sandstorm and pokemon with Overcoat, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage in Gen 5 (NOT powder moves)
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [TYPES.normal],
       ability: ABILITIES.overcoat,
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
-    const state = makeState(WEATHER.sand, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1);
+    const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -255,14 +255,14 @@ describe("Gen5 weather chip damage", () => {
 
   it("given hail and pokemon with Magic Guard, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [TYPES.normal],
       ability: ABILITIES.magicGuard,
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
-    const state = makeState(WEATHER.hail, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.ice] }), 1);
+    const state = createBattleState(WEATHER.hail, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -273,10 +273,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given rain active, when end-of-turn tick fires, then no chip damage to anyone", () => {
     // Source: Rain has no chip damage
-    const pokemon = makeActivePokemon({ types: [TYPES.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.fire] }), 1);
-    const state = makeState(WEATHER.rain, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ types: [TYPES.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.fire] }), 1);
+    const state = createBattleState(WEATHER.rain, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -285,10 +285,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given sun active, when end-of-turn tick fires, then no chip damage to anyone", () => {
     // Source: Sun has no chip damage
-    const pokemon = makeActivePokemon({ types: [TYPES.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.grass] }), 1);
-    const state = makeState(WEATHER.sun, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ types: [TYPES.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.grass] }), 1);
+    const state = createBattleState(WEATHER.sun, 5, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -297,10 +297,10 @@ describe("Gen5 weather chip damage", () => {
 
   it("given no weather active, when end-of-turn tick fires, then no results", () => {
     // Source: No weather = no effects
-    const pokemon = makeActivePokemon({ types: [TYPES.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.fire] }), 1);
-    const state = makeState(null, 0, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ types: [TYPES.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.fire] }), 1);
+    const state = createBattleState(null, 0, [side0, side1]);
 
     const results = applyGen5WeatherEffects(state);
 
@@ -318,9 +318,9 @@ describe("Gen5 weather duration — BattleState shape", () => {
   it("given a BattleState with rain turnsLeft=5, when applyWeatherEffects called, then no chip damage (rain has none)", () => {
     // Source: Bulbapedia -- Rain does not deal chip damage; confirms the state shape is valid
     const ruleset = new Gen5Ruleset();
-    const state = makeState(WEATHER.rain, 5, [
-      makeSide(makeActivePokemon({ types: [TYPES.fire] }), 0),
-      makeSide(makeActivePokemon({ types: [TYPES.water] }), 1),
+    const state = createBattleState(WEATHER.rain, 5, [
+      createBattleSide(createOnFieldPokemon({ types: [TYPES.fire] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [TYPES.water] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     // Rain never deals chip damage — 0 results regardless of turnsLeft
@@ -330,9 +330,9 @@ describe("Gen5 weather duration — BattleState shape", () => {
   it("given a BattleState with sand turnsLeft=8 (Smooth Rock), when applyWeatherEffects called, then non-immune types take chip damage", () => {
     // Source: Bulbapedia -- Smooth Rock extends sandstorm to 8 turns; chip still applies each turn
     const ruleset = new Gen5Ruleset();
-    const state = makeState(WEATHER.sand, 8, [
-      makeSide(makeActivePokemon({ maxHp: 160, types: [TYPES.fire] }), 0),
-      makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1),
+    const state = createBattleState(WEATHER.sand, 8, [
+      createBattleSide(createOnFieldPokemon({ maxHp: 160, types: [TYPES.fire] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     expect(results).toEqual([
@@ -348,9 +348,9 @@ describe("Gen5 weather duration — BattleState shape", () => {
   it("given a BattleState with sand turnsLeft=-1 (Sandstream, indefinite), when applyWeatherEffects called, then chip damage still applies", () => {
     // Source: Showdown gen5 -- Sandstream sets indefinite weather (turnsLeft=-1 per our WeatherState shape)
     const ruleset = new Gen5Ruleset();
-    const state = makeState(WEATHER.sand, -1, [
-      makeSide(makeActivePokemon({ maxHp: 160, types: [TYPES.fire] }), 0),
-      makeSide(makeActivePokemon({ types: [TYPES.ground] }), 1),
+    const state = createBattleState(WEATHER.sand, -1, [
+      createBattleSide(createOnFieldPokemon({ maxHp: 160, types: [TYPES.fire] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [TYPES.ground] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     expect(results).toEqual([
@@ -368,10 +368,10 @@ describe("Gen5 weather integration via ruleset", () => {
   it("given Gen5Ruleset, when applyWeatherEffects called with sandstorm state, then returns chip results", () => {
     // Source: Bulbapedia -- Sandstorm chip damage
     const ruleset = new Gen5Ruleset();
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [TYPES.fire] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
-    const state = makeState(WEATHER.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [TYPES.fire] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1);
+    const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
     const results = ruleset.applyWeatherEffects(state);
 

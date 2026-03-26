@@ -2,6 +2,7 @@ import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -183,7 +184,7 @@ describe("Gen 5 master dispatchers", () => {
       ability: CORE_ABILITY_IDS.none,
       volatileStatuses: new Map(),
     } as unknown as ActivePokemon;
-    const result = applyGen5HeldItem("end-of-turn", {
+    const result = applyGen5HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon: mockPokemon,
       state: {} as BattleState,
       rng: { chance: () => false, nextInt: () => 0, next: () => 0 } as any,

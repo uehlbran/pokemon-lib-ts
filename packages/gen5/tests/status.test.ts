@@ -18,7 +18,7 @@ const VOLATILES = CORE_VOLATILE_IDS;
 /**
  * Helper: create a minimal ActivePokemon mock for status tests.
  */
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   status?: PrimaryStatus | null;
@@ -47,7 +47,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {} as unknown as BattleState;
 }
 
@@ -90,11 +90,11 @@ describe("Gen5Ruleset status conditions", () => {
       const rng = new SeededRandom(42);
       const initialTurns = ruleset.rollSleepTurns(rng);
       const sleepCounter = { turnsLeft: 1, data: { startTime: initialTurns } };
-      const pokemon = makeActivePokemon({
+      const pokemon = createOnFieldPokemon({
         status: STATUSES.sleep,
         volatileStatuses: new Map([[VOLATILES.sleepCounter, sleepCounter]]),
       });
-      const state = makeState();
+      const state = createBattleState();
 
       // Simulate switch-in: the sleep counter should reset
       ruleset.onSwitchIn(pokemon, state);
@@ -109,11 +109,11 @@ describe("Gen5Ruleset status conditions", () => {
     it("given sleeping pokemon in Gen5, when processSleepTurn fires and counter reaches 0, then can act on wake turn", () => {
       // Source: references/pokemon-showdown/data/conditions.ts -- slp.onBeforeMove: when time <= 0, calls cureStatus() then returns (no return false)
       // Gen 5+ can act on the wake turn; Gen 1-4 Showdown returns false (cannot act)
-      const pokemon = makeActivePokemon({
+      const pokemon = createOnFieldPokemon({
         status: STATUSES.sleep,
         volatileStatuses: new Map([[VOLATILES.sleepCounter, { turnsLeft: 1 }]]),
       });
-      const state = makeState();
+      const state = createBattleState();
 
       // Process: should decrement from 1 to 0 and wake up
       const canAct = ruleset.processSleepTurn(pokemon, state);
@@ -128,8 +128,8 @@ describe("Gen5Ruleset status conditions", () => {
   describe(STATUSES.burn, () => {
     it("given burned pokemon in Gen5, when applyStatusDamage is called with 200 max HP, then takes 25 damage (1/8)", () => {
       // Source: Bulbapedia -- burn damage 1/8 HP in Gen 5 (changed to 1/16 in Gen 7)
-      const pokemon = makeActivePokemon({ maxHp: 200 });
-      const state = makeState();
+      const pokemon = createOnFieldPokemon({ maxHp: 200 });
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
       // 200 / 8 = 25
       expect(damage).toBe(25);
@@ -138,8 +138,8 @@ describe("Gen5Ruleset status conditions", () => {
     it("given burned pokemon in Gen5, when applyStatusDamage is called with 100 max HP, then takes 12 damage (1/8)", () => {
       // Source: Bulbapedia -- burn damage 1/8 HP in Gen 5 (changed to 1/16 in Gen 7)
       // Triangulation case
-      const pokemon = makeActivePokemon({ maxHp: 100 });
-      const state = makeState();
+      const pokemon = createOnFieldPokemon({ maxHp: 100 });
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
       // floor(100 / 8) = 12
       expect(damage).toBe(12);
@@ -147,8 +147,8 @@ describe("Gen5Ruleset status conditions", () => {
 
     it("given burned pokemon in Gen5 with 1 max HP, when applyStatusDamage is called, then takes at least 1 damage", () => {
       // Source: All status damage has a minimum of 1
-      const pokemon = makeActivePokemon({ maxHp: 1 });
-      const state = makeState();
+      const pokemon = createOnFieldPokemon({ maxHp: 1 });
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.burn, state);
       expect(damage).toBe(1);
     });
@@ -162,7 +162,7 @@ describe("Gen5Ruleset status conditions", () => {
       const rng = new SeededRandom(42);
       let trueCount = 0;
       const iterations = 1000;
-      const pokemon = makeActivePokemon({ status: STATUSES.paralysis });
+      const pokemon = createOnFieldPokemon({ status: STATUSES.paralysis });
 
       for (let i = 0; i < iterations; i++) {
         if (ruleset.checkFullParalysis(pokemon, rng)) {
@@ -183,7 +183,7 @@ describe("Gen5Ruleset status conditions", () => {
       const rng = new SeededRandom(99999);
       let trueCount = 0;
       const iterations = 1000;
-      const pokemon = makeActivePokemon({ status: STATUSES.paralysis });
+      const pokemon = createOnFieldPokemon({ status: STATUSES.paralysis });
 
       for (let i = 0; i < iterations; i++) {
         if (ruleset.checkFullParalysis(pokemon, rng)) {
@@ -206,7 +206,7 @@ describe("Gen5Ruleset status conditions", () => {
       const rng = new SeededRandom(42);
       let thawCount = 0;
       const iterations = 1000;
-      const pokemon = makeActivePokemon({ status: STATUSES.freeze });
+      const pokemon = createOnFieldPokemon({ status: STATUSES.freeze });
 
       for (let i = 0; i < iterations; i++) {
         if (ruleset.checkFreezeThaw(pokemon, rng)) {
@@ -227,7 +227,7 @@ describe("Gen5Ruleset status conditions", () => {
       const rng = new SeededRandom(77777);
       let thawCount = 0;
       const iterations = 1000;
-      const pokemon = makeActivePokemon({ status: STATUSES.freeze });
+      const pokemon = createOnFieldPokemon({ status: STATUSES.freeze });
 
       for (let i = 0; i < iterations; i++) {
         if (ruleset.checkFreezeThaw(pokemon, rng)) {
@@ -247,8 +247,8 @@ describe("Gen5Ruleset status conditions", () => {
   describe(STATUSES.poison, () => {
     it("given poisoned pokemon in Gen5, when applyStatusDamage with 160 max HP, then takes 20 damage (1/8)", () => {
       // Source: Standard poison mechanics -- 1/8 max HP per turn (consistent Gen 3+)
-      const pokemon = makeActivePokemon({ maxHp: 160 });
-      const state = makeState();
+      const pokemon = createOnFieldPokemon({ maxHp: 160 });
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.poison, state);
       // floor(160 / 8) = 20
       expect(damage).toBe(20);
@@ -257,8 +257,8 @@ describe("Gen5Ruleset status conditions", () => {
     it("given poisoned pokemon in Gen5, when applyStatusDamage with 200 max HP, then takes 25 damage (1/8)", () => {
       // Source: Standard poison mechanics -- 1/8 max HP per turn (consistent Gen 3+)
       // Triangulation case
-      const pokemon = makeActivePokemon({ maxHp: 200 });
-      const state = makeState();
+      const pokemon = createOnFieldPokemon({ maxHp: 200 });
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.poison, state);
       // floor(200 / 8) = 25
       expect(damage).toBe(25);
@@ -270,11 +270,11 @@ describe("Gen5Ruleset status conditions", () => {
   describe(`${STATUSES.badlyPoisoned} (toxic)`, () => {
     it("given badly-poisoned (toxic) pokemon in Gen5 at toxic counter 3, when applyStatusDamage with 160 max HP, then takes 30 damage (3/16)", () => {
       // Source: Toxic increments: N/16 where N is the counter value
-      const pokemon = makeActivePokemon({
+      const pokemon = createOnFieldPokemon({
         maxHp: 160,
         volatileStatuses: new Map([[VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 3 } }]]),
       });
-      const state = makeState();
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned, state);
       // floor(160 * 3 / 16) = floor(30) = 30
       expect(damage).toBe(30);
@@ -283,11 +283,11 @@ describe("Gen5Ruleset status conditions", () => {
     it("given badly-poisoned (toxic) pokemon in Gen5 at toxic counter 1, when applyStatusDamage with 160 max HP, then takes 10 damage (1/16)", () => {
       // Source: Toxic increments: N/16 where N is the counter value (counter starts at 1)
       // Triangulation case
-      const pokemon = makeActivePokemon({
+      const pokemon = createOnFieldPokemon({
         maxHp: 160,
         volatileStatuses: new Map([[VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 1 } }]]),
       });
-      const state = makeState();
+      const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned, state);
       // floor(160 * 1 / 16) = floor(10) = 10
       expect(damage).toBe(10);
@@ -296,11 +296,11 @@ describe("Gen5Ruleset status conditions", () => {
     it("given badly-poisoned pokemon, when applyStatusDamage called, then toxic counter increments", () => {
       // Source: Toxic counter increments by 1 each turn (handled by BaseRuleset)
       const toxicState = { turnsLeft: 99, data: { counter: 2 } };
-      const pokemon = makeActivePokemon({
+      const pokemon = createOnFieldPokemon({
         maxHp: 160,
         volatileStatuses: new Map([[VOLATILES.toxicCounter, toxicState]]),
       });
-      const state = makeState();
+      const state = createBattleState();
       ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned, state);
       // Counter should have incremented from 2 to 3
       // Source: references/pokemon-showdown/sim/battle-actions.ts -- toxic counter increments each turn

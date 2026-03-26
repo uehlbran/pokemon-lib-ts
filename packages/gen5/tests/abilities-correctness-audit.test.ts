@@ -22,6 +22,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -66,7 +67,7 @@ const moveIds = GEN5_MOVE_IDS;
 const abilitySlots = CORE_ABILITY_SLOTS;
 const abilityTriggerIds = CORE_ABILITY_TRIGGER_IDS;
 const itemTriggerIds = {
-  endOfTurn: "end-of-turn",
+  endOfTurn: CORE_ITEM_TRIGGER_IDS.endOfTurn,
   onContact: abilityTriggerIds.onContact,
   onDamageTaken: abilityTriggerIds.onDamageTaken,
 } as const;

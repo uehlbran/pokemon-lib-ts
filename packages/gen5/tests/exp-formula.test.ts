@@ -1,15 +1,19 @@
 import type { ExpContext } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen5DataManager, GEN5_SPECIES_IDS } from "../src";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
+
+const dataManager = createGen5DataManager();
+const defaultSpecies = dataManager.getSpecies(GEN5_SPECIES_IDS.charizard);
 
 /**
  * Helper: make a minimal PokemonSpeciesData with baseExp.
  */
 function makeSpecies(baseExp: number): PokemonSpeciesData {
   return {
+    ...defaultSpecies,
     baseExp,
-    baseStats: { hp: 78, attack: 84, defense: 78, spAttack: 109, spDefense: 85, speed: 100 },
   } as unknown as PokemonSpeciesData;
 }
 

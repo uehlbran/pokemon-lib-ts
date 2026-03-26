@@ -2,6 +2,8 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
@@ -67,9 +69,9 @@ function createFieldTestPokemon(overrides: {
       heldItem: overrides.heldItem ?? null,
       moves: [],
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
-      friendship: 0,
-      gender: "male" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      friendship: DEFAULT_SPECIES.baseFriendship,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
