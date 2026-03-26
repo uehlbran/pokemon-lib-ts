@@ -23,7 +23,7 @@ const SPECIES = GEN8_SPECIES_IDS;
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   types?: readonly PokemonType[];
@@ -55,7 +55,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
+function createBattleSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   return {
     index,
     active: [active],
@@ -72,7 +72,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeState(
+function createBattleState(
   weatherType: WeatherType | null,
   turnsLeft: number,
   sides: [BattleSide, BattleSide],
@@ -182,10 +182,10 @@ describe("Gen 8 Weather", () => {
     it("given sandstorm and a Normal-type with 200 HP, when applying weather, then deals 12 damage (floor(200/16))", () => {
       // Source: Showdown data/conditions.ts -- sandstorm damage = Math.floor(maxHP / 16)
       // floor(200 / 16) = floor(12.5) = 12
-      const mon = makeActivePokemon({ types: [TYPES.normal], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
-      const state = makeState(WEATHER.sand, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.normal], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1);
+      const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -197,10 +197,10 @@ describe("Gen 8 Weather", () => {
     it("given sandstorm and a Water-type with 320 HP, when applying weather, then deals 20 damage (floor(320/16))", () => {
       // Source: Showdown data/conditions.ts -- sandstorm damage = Math.floor(maxHP / 16)
       // floor(320 / 16) = 20
-      const mon = makeActivePokemon({ types: [TYPES.water], maxHp: 320 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.steel] }), 1);
-      const state = makeState(WEATHER.sand, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.water], maxHp: 320 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.steel] }), 1);
+      const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -210,10 +210,10 @@ describe("Gen 8 Weather", () => {
 
     it("given sandstorm and a Rock-type, when applying weather, then deals no damage", () => {
       // Source: Bulbapedia -- Sandstorm: "Rock-, Ground-, and Steel-type Pokemon are unaffected"
-      const mon = makeActivePokemon({ types: [TYPES.rock], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.rock] }), 1);
-      const state = makeState(WEATHER.sand, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.rock], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.rock] }), 1);
+      const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -223,10 +223,10 @@ describe("Gen 8 Weather", () => {
 
     it("given sandstorm and a Ground-type, when applying weather, then deals no damage", () => {
       // Source: Bulbapedia -- Sandstorm: "Rock-, Ground-, and Steel-type Pokemon are unaffected"
-      const mon = makeActivePokemon({ types: [TYPES.ground], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.ground] }), 1);
-      const state = makeState(WEATHER.sand, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.ground], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.ground] }), 1);
+      const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -235,10 +235,10 @@ describe("Gen 8 Weather", () => {
 
     it("given sandstorm and a Steel-type, when applying weather, then deals no damage", () => {
       // Source: Bulbapedia -- Sandstorm: "Rock-, Ground-, and Steel-type Pokemon are unaffected"
-      const mon = makeActivePokemon({ types: [TYPES.steel], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.steel] }), 1);
-      const state = makeState(WEATHER.sand, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.steel], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.steel] }), 1);
+      const state = createBattleState(WEATHER.sand, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -248,10 +248,10 @@ describe("Gen 8 Weather", () => {
     it("given hail and a Normal-type with 200 HP, when applying weather, then deals 12 damage (floor(200/16))", () => {
       // Source: Showdown data/conditions.ts -- hail damage = Math.floor(maxHP / 16)
       // floor(200 / 16) = floor(12.5) = 12
-      const mon = makeActivePokemon({ types: [TYPES.normal], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
-      const state = makeState(WEATHER.hail, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.normal], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.ice] }), 1);
+      const state = createBattleState(WEATHER.hail, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -262,10 +262,10 @@ describe("Gen 8 Weather", () => {
 
     it("given hail and an Ice-type, when applying weather, then deals no damage", () => {
       // Source: Bulbapedia -- Hail: "Ice-type Pokemon are unaffected"
-      const mon = makeActivePokemon({ types: [TYPES.ice], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.ice] }), 1);
-      const state = makeState(WEATHER.hail, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.ice], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.ice] }), 1);
+      const state = createBattleState(WEATHER.hail, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -273,10 +273,10 @@ describe("Gen 8 Weather", () => {
     });
 
     it("given no weather, when applying weather effects, then returns empty array", () => {
-      const mon = makeActivePokemon({ types: [TYPES.normal], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.normal] }), 1);
-      const state = makeState(null, 0, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.normal], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.normal] }), 1);
+      const state = createBattleState(null, 0, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -285,10 +285,10 @@ describe("Gen 8 Weather", () => {
 
     it("given rain, when applying weather effects, then returns empty array (rain has no chip)", () => {
       // Source: Showdown data/conditions.ts -- rain has no chip damage
-      const mon = makeActivePokemon({ types: [TYPES.normal], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.normal] }), 1);
-      const state = makeState(WEATHER.rain, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.normal], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.normal] }), 1);
+      const state = createBattleState(WEATHER.rain, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 
@@ -297,10 +297,10 @@ describe("Gen 8 Weather", () => {
 
     it("given sun, when applying weather effects, then returns empty array (sun has no chip)", () => {
       // Source: Showdown data/conditions.ts -- sun has no chip damage
-      const mon = makeActivePokemon({ types: [TYPES.normal], maxHp: 200 });
-      const side0 = makeSide(mon, 0);
-      const side1 = makeSide(makeActivePokemon({ types: [TYPES.normal] }), 1);
-      const state = makeState(WEATHER.sun, 5, [side0, side1]);
+      const mon = createOnFieldPokemon({ types: [TYPES.normal], maxHp: 200 });
+      const side0 = createBattleSide(mon, 0);
+      const side1 = createBattleSide(createOnFieldPokemon({ types: [TYPES.normal] }), 1);
+      const state = createBattleState(WEATHER.sun, 5, [side0, side1]);
 
       const results = applyGen8WeatherEffects(state);
 

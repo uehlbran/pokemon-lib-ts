@@ -3,6 +3,9 @@ import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib
 import type { PokemonType, PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
@@ -38,6 +41,7 @@ import {
 
 const dataManager = createGen8DataManager()
 const abilityIds = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const
+const abilityTriggerIds = CORE_ABILITY_TRIGGER_IDS
 const itemIds = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const
 const natureIds = GEN8_NATURE_IDS
 const speciesIds = GEN8_SPECIES_IDS
@@ -88,8 +92,8 @@ function createOnFieldPokemon(overrides: {
     nature: defaultNature,
     ivs: createIvs(),
     evs: createEvs(),
-    abilitySlot: "normal1",
-    gender: "male",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     moves: [],
     heldItem: overrides.heldItem ?? null,
@@ -170,7 +174,7 @@ function createAbilityContext(overrides: {
     opponent: overrides.opponent ?? createOnFieldPokemon({}),
     state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
-    trigger: "on-switch-in",
+    trigger: abilityTriggerIds.onSwitchIn,
   }
 }
 

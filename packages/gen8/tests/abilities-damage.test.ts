@@ -2,6 +2,7 @@ import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_IDS,
   CORE_FIXED_POINT,
   CORE_GENDERS,
@@ -61,6 +62,7 @@ const abilityIds = {
   ...GEN8_ABILITY_IDS,
   dragonsMaw: dragonsMawAbilityId,
 } as const;
+const abilityTriggerIds = CORE_ABILITY_TRIGGER_IDS;
 const statusIds = CORE_STATUS_IDS;
 const typeIds = CORE_TYPE_IDS;
 const volatileIds = CORE_VOLATILE_IDS;
@@ -219,7 +221,7 @@ function createAbilityContext(overrides: {
         : {},
     ),
     rng: new SeededRandom(42),
-    trigger: "on-damage-calc",
+    trigger: abilityTriggerIds.onDamageCalc,
     move: overrides.move,
   };
 }

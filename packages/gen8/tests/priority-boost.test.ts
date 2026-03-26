@@ -3,6 +3,8 @@ import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
@@ -81,8 +83,8 @@ function createOnFieldPokemon(
     nature: defaultNature,
     ivs: createIvs(),
     evs: createEvs(),
-    abilitySlot: "normal1",
-    gender: "male",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     moves: [defaultTackle.id],
     heldItem: overrides.heldItem ?? null,

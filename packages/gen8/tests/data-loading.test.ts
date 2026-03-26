@@ -377,53 +377,49 @@ describe("Gen 8 DataManager -- data loading", () => {
 
   it("given representative gen8 species, when inspecting their records, then each has the expected structural fields", () => {
     const dm = createGen8DataManager();
-    expect(dm.getSpecies(SPECIES.pikachu)).toEqual(
-      expect.objectContaining({
-        id: 25,
-        name: "pikachu",
-        displayName: "Pikachu",
-        types: [TYPES.electric],
-        baseStats: expect.objectContaining({
-          hp: 35,
-          attack: 55,
-          defense: 40,
-          spAttack: 50,
-          spDefense: 50,
-          speed: 90,
-        }),
-      }),
-    );
-    expect(dm.getSpecies(SPECIES.grookey)).toEqual(
-      expect.objectContaining({
-        id: 810,
-        name: "grookey",
-        displayName: "Grookey",
-        types: [TYPES.grass],
-        baseStats: expect.objectContaining({
-          hp: 50,
-          attack: 65,
-          defense: 50,
-          spAttack: 40,
-          spDefense: 40,
-          speed: 65,
-        }),
-      }),
-    );
-    expect(dm.getSpecies(SPECIES.dragapult)).toEqual(
-      expect.objectContaining({
-        id: 887,
-        name: "dragapult",
-        displayName: "Dragapult",
-        types: [TYPES.dragon, TYPES.ghost],
-        baseStats: expect.objectContaining({
-          hp: 88,
-          attack: 120,
-          defense: 75,
-          spAttack: 100,
-          spDefense: 75,
-          speed: 142,
-        }),
-      }),
-    );
+    const pikachu = dm.getSpecies(SPECIES.pikachu);
+    // Source: National Dex species id for Pikachu is 25.
+    expect(pikachu.id).toBe(25);
+    expect(pikachu.name).toBe("pikachu");
+    expect(pikachu.displayName).toBe("Pikachu");
+    expect(pikachu.types).toEqual([TYPES.electric]);
+    expect(pikachu.baseStats).toMatchObject({
+      hp: 35,
+      attack: 55,
+      defense: 40,
+      spAttack: 50,
+      spDefense: 50,
+      speed: 90,
+    });
+
+    const grookey = dm.getSpecies(SPECIES.grookey);
+    // Source: National Dex species id for Grookey is 810.
+    expect(grookey.id).toBe(810);
+    expect(grookey.name).toBe("grookey");
+    expect(grookey.displayName).toBe("Grookey");
+    expect(grookey.types).toEqual([TYPES.grass]);
+    expect(grookey.baseStats).toMatchObject({
+      hp: 50,
+      attack: 65,
+      defense: 50,
+      spAttack: 40,
+      spDefense: 40,
+      speed: 65,
+    });
+
+    const dragapult = dm.getSpecies(SPECIES.dragapult);
+    // Source: National Dex species id for Dragapult is 887.
+    expect(dragapult.id).toBe(887);
+    expect(dragapult.name).toBe("dragapult");
+    expect(dragapult.displayName).toBe("Dragapult");
+    expect(dragapult.types).toEqual([TYPES.dragon, TYPES.ghost]);
+    expect(dragapult.baseStats).toMatchObject({
+      hp: 88,
+      attack: 120,
+      defense: 75,
+      spAttack: 100,
+      spDefense: 75,
+      speed: 142,
+    });
   });
 });
