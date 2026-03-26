@@ -2,7 +2,7 @@ import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, WeatherType } from "@pokemon-lib-ts/core";
 import { CORE_GENDERS, CORE_STAT_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
-import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS } from "./data/reference-ids";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 7 switch-in, switch-out, contact, and passive ability handlers.
@@ -364,7 +364,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Stance Change (Aegislash)
       // Switch-in always resets to Shield Forme
       // Source: Bulbapedia "Stance Change" -- Shield Forme on entry
-      if (ctx.pokemon.pokemon.speciesId !== 681) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN7_SPECIES_IDS.aegislash) return NO_EFFECT;
       return {
         activated: true,
         effects: [

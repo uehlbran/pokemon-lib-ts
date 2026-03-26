@@ -1,4 +1,12 @@
 import type { DataManager, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AbilityResult, EndOfTurnEffect, ItemResult } from "../context";
 import type { BattleEvent } from "../events";
@@ -61,12 +69,12 @@ function processOnTurnEndAbilities(
     abilityEndOfTurnFired.add(pokeKey);
 
     const opponent = host.getOpponentActive(side.index);
-    const result = host.ruleset.applyAbility("on-turn-end", {
+    const result = host.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onTurnEnd, {
       pokemon: active,
       opponent: opponent ?? undefined,
       state: host.state,
       rng: host.state.rng,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
     });
     if (result.activated) {
       host.processAbilityResult(result, active, opponent ?? active, side.index);
@@ -80,7 +88,7 @@ function processSpecificHeldItemEndOfTurn(host: BattleEndOfTurnPipelineHost, ite
     if (!active || active.pokemon.currentHp <= 0) continue;
     if (active.pokemon.heldItem !== itemId) continue;
 
-    const itemResult = host.ruleset.applyHeldItem("end-of-turn", {
+    const itemResult = host.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon: active,
       state: host.state,
       rng: host.state.rng,
@@ -138,7 +146,7 @@ function processSimpleVolatileCountdown(
 
 function processYawnCountdown(host: BattleEndOfTurnPipelineHost): void {
   forEachLivingActivePokemon(host, (active, sideIndex) => {
-    const yawnState = active.volatileStatuses.get("yawn");
+    const yawnState = active.volatileStatuses.get(CORE_VOLATILE_IDS.yawn);
     if (!yawnState) return;
 
     if (yawnState.turnsLeft > 0) {
@@ -146,9 +154,9 @@ function processYawnCountdown(host: BattleEndOfTurnPipelineHost): void {
     }
     if (yawnState.turnsLeft > 0) return;
 
-    endVolatileStatus(host, active, sideIndex, "yawn");
+    endVolatileStatus(host, active, sideIndex, CORE_VOLATILE_IDS.yawn);
     if (active.pokemon.status === null) {
-      host.applyPrimaryStatus(active, "sleep", sideIndex);
+      host.applyPrimaryStatus(active, CORE_STATUS_IDS.sleep, sideIndex);
     }
   });
 }
@@ -181,64 +189,64 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
 
   for (const effect of effectOrder) {
     switch (effect) {
-      case "weather-damage":
+      case CORE_END_OF_TURN_EFFECT_IDS.weatherDamage:
         host.processWeatherDamage();
         break;
-      case "weather-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown:
         host.processWeatherCountdown();
         break;
-      case "terrain-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown:
         host.processTerrainCountdown();
         break;
-      case "status-damage":
+      case CORE_END_OF_TURN_EFFECT_IDS.statusDamage:
         host.processStatusDamage();
         break;
-      case "screen-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.screenCountdown:
         host.processScreenCountdown();
         break;
-      case "tailwind-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown:
         host.processTailwindCountdown();
         break;
-      case "trick-room-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown:
         host.processTrickRoomCountdown();
         break;
-      case "leftovers":
+      case CORE_END_OF_TURN_EFFECT_IDS.leftovers:
         host.processHeldItemEndOfTurn();
         break;
-      case "leech-seed":
+      case CORE_END_OF_TURN_EFFECT_IDS.leechSeed:
         host.processLeechSeed();
         break;
-      case "perish-song":
+      case CORE_END_OF_TURN_EFFECT_IDS.perishSong:
         host.processPerishSong();
         break;
-      case "curse":
+      case CORE_END_OF_TURN_EFFECT_IDS.curse:
         host.processCurse();
         break;
-      case "nightmare":
+      case CORE_END_OF_TURN_EFFECT_IDS.nightmare:
         host.processNightmare();
         break;
-      case "bind":
+      case CORE_END_OF_TURN_EFFECT_IDS.bind:
         host.processBindDamage();
         break;
-      case "salt-cure":
+      case CORE_END_OF_TURN_EFFECT_IDS.saltCure:
         host.processSaltCureEoT();
         break;
-      case "defrost":
+      case CORE_END_OF_TURN_EFFECT_IDS.defrost:
         host.processDefrost();
         break;
-      case "safeguard-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown:
         host.processSafeguardCountdown();
         break;
-      case "mystery-berry":
+      case CORE_END_OF_TURN_EFFECT_IDS.mysteryBerry:
         host.processMysteryBerry();
         break;
-      case "stat-boosting-items":
+      case CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems:
         host.processStatBoostingItems();
         break;
-      case "healing-items":
+      case CORE_END_OF_TURN_EFFECT_IDS.healingItems:
         host.processHealingItems();
         break;
-      case "encore-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown:
         host.processEncoreCountdown();
         break;
       case "weather-healing":
@@ -251,7 +259,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
       case "pickup":
         processOnTurnEndAbilities(host, abilityEndOfTurnFired);
         break;
-      case "slow-start-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown:
         // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
         // No ability check: the volatile should tick down even if the ability was
         // temporarily changed (e.g., by Skill Swap). The stat-halving in damage/speed
@@ -268,17 +276,17 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           });
         });
         break;
-      case "toxic-orb-activation":
-        processSpecificHeldItemEndOfTurn(host, "toxic-orb");
+      case CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation:
+        processSpecificHeldItemEndOfTurn(host, CORE_ITEM_IDS.toxicOrb);
         break;
-      case "flame-orb-activation":
-        processSpecificHeldItemEndOfTurn(host, "flame-orb");
+      case CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation:
+        processSpecificHeldItemEndOfTurn(host, CORE_ITEM_IDS.flameOrb);
         break;
-      case "black-sludge":
+      case CORE_END_OF_TURN_EFFECT_IDS.blackSludge:
         if (!host.ruleset.hasHeldItems()) break;
-        processSpecificHeldItemEndOfTurn(host, "black-sludge");
+        processSpecificHeldItemEndOfTurn(host, CORE_ITEM_IDS.blackSludge);
         break;
-      case "aqua-ring":
+      case CORE_END_OF_TURN_EFFECT_IDS.aquaRing:
         for (const side of host.state.sides) {
           const active = side.active[0];
           if (!active || active.pokemon.currentHp <= 0) continue;
@@ -301,7 +309,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           }
         }
         break;
-      case "ingrain":
+      case CORE_END_OF_TURN_EFFECT_IDS.ingrain:
         // Source: Bulbapedia — Ingrain heals 1/16 max HP per turn
         for (const side of host.state.sides) {
           const active = side.active[0];
@@ -325,7 +333,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           }
         }
         break;
-      case "wish":
+      case CORE_END_OF_TURN_EFFECT_IDS.wish:
         for (const side of host.state.sides) {
           if (!side.wish?.active) continue;
           side.wish.turnsLeft--;
@@ -351,7 +359,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           }
         }
         break;
-      case "future-attack":
+      case CORE_END_OF_TURN_EFFECT_IDS.futureAttack:
         for (const side of host.state.sides) {
           if (!side.futureAttack) continue;
           side.futureAttack.turnsLeft--;

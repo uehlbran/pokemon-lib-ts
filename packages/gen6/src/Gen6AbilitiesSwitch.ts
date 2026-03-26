@@ -4,10 +4,12 @@ import type { AbilityTrigger, MoveData, PokemonType } from "@pokemon-lib-ts/core
 import {
   CORE_GENDERS,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import { GEN6_ABILITY_IDS, GEN6_MOVE_IDS } from "./data/reference-ids";
+import { GEN6_ABILITY_IDS, GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 6 switch-in, contact, switch-out, and passive ability handlers.
@@ -376,7 +378,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Stance Change: "Changes from Shield Forme to Blade Forme before
       //   using an attack move and from Blade Forme to Shield Forme when using King's Shield."
       // Only species 681 (Aegislash) has Stance Change
-      if (ctx.pokemon.pokemon.speciesId !== 681) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN6_SPECIES_IDS.aegislash) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -482,7 +484,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "paralysis",
+            status: CORE_STATUS_IDS.paralysis,
           },
         ],
         messages: [`${name}'s Static paralyzed the attacker!`],
@@ -501,7 +503,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "burn",
+            status: CORE_STATUS_IDS.burn,
           },
         ],
         messages: [`${name}'s Flame Body burned the attacker!`],
@@ -520,7 +522,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
@@ -555,7 +557,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Gen 6: Overcoat blocks Effect Spore
       const otherStatus = other.pokemon.status;
       if (otherStatus) return NO_EFFECT;
-      if (other.types.includes("grass")) return NO_EFFECT;
+      if (other.types.includes(CORE_TYPE_IDS.grass)) return NO_EFFECT;
       // Overcoat blocks powder/spore moves in Gen 6 (including Effect Spore)
       // Source: Showdown data/mods/gen6/abilities.ts — overcoat: blocks powder flag
       if (other.ability === GEN6_ABILITY_IDS.overcoat) return NO_EFFECT;
@@ -567,7 +569,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "sleep",
+              status: CORE_STATUS_IDS.sleep,
             },
           ],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
@@ -580,7 +582,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "paralysis",
+              status: CORE_STATUS_IDS.paralysis,
             },
           ],
           messages: [`${name}'s Effect Spore paralyzed the attacker!`],
@@ -593,7 +595,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              status: "poison",
+              status: CORE_STATUS_IDS.poison,
             },
           ],
           messages: [`${name}'s Effect Spore poisoned the attacker!`],
@@ -623,7 +625,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            volatile: "infatuation",
+            volatile: CORE_VOLATILE_IDS.infatuation,
           },
         ],
         messages: [`${name}'s Cute Charm infatuated the attacker!`],
@@ -687,7 +689,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            status: "poison",
+            status: CORE_STATUS_IDS.poison,
           },
         ],
         messages: [`${name}'s Poison Touch poisoned the target!`],
@@ -769,7 +771,11 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Rattled: +1 Speed when hit by Bug/Dark/Ghost move
       const moveType = ctx.move?.type;
       if (!moveType) return NO_EFFECT;
-      const rattledTypes: PokemonType[] = ["bug", "dark", "ghost"];
+      const rattledTypes: PokemonType[] = [
+        CORE_TYPE_IDS.bug,
+        CORE_TYPE_IDS.dark,
+        CORE_TYPE_IDS.ghost,
+      ];
       if (!rattledTypes.includes(moveType)) return NO_EFFECT;
       return {
         activated: true,
@@ -787,7 +793,7 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
 
     case "illusion": {
       // Source: Showdown data/abilities.ts — Illusion: breaks on damaging hit
-      if (!ctx.pokemon.volatileStatuses.has("illusion")) return NO_EFFECT;
+      if (!ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.illusion)) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -826,7 +832,13 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       if (!ctx.opponent) return NO_EFFECT;
       const status = ctx.pokemon.pokemon.status;
       if (!status) return NO_EFFECT;
-      if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
+      if (
+        status !== CORE_STATUS_IDS.burn &&
+        status !== CORE_STATUS_IDS.paralysis &&
+        status !== CORE_STATUS_IDS.poison
+      ) {
+        return NO_EFFECT;
+      }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
@@ -872,22 +884,22 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
     case "levitate": {
       // Source: Showdown data/abilities.ts — Levitate: immune to Ground moves
       // Gravity and Iron Ball grounding handled in Gen6Abilities.ts passive-immunity case
-      if (moveType !== "ground") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.ground) return NO_EFFECT;
       return { activated: true, effects: [], messages: [] };
     }
 
     case "flash-fire": {
       // Source: Showdown data/abilities.ts — Flash Fire: Fire immune + volatile boost
-      if (moveType !== "fire") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.fire) return NO_EFFECT;
       // Frozen Pokemon cannot activate Flash Fire; the Fire move thaws them instead
-      if (ctx.pokemon.pokemon.status === "freeze") return NO_EFFECT;
-      const hasBoost = ctx.pokemon.volatileStatuses.has("flash-fire");
+      if (ctx.pokemon.pokemon.status === CORE_STATUS_IDS.freeze) return NO_EFFECT;
+      const hasBoost = ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire);
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {
         effects.push({
           effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
           target: BATTLE_EFFECT_TARGETS.self,
-          volatile: "flash-fire",
+          volatile: CORE_VOLATILE_IDS.flashFire,
         });
       }
       const ffName = getName(ctx);
@@ -904,7 +916,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "water-absorb": {
       // Source: Showdown data/abilities.ts — Water Absorb: Water immune + heal 1/4 HP
-      if (moveType !== "water") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.water) return NO_EFFECT;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
@@ -922,7 +934,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "volt-absorb": {
       // Source: Showdown data/abilities.ts — Volt Absorb: Electric immune + heal 1/4 HP
-      if (moveType !== "electric") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.electric) return NO_EFFECT;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
@@ -940,7 +952,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "motor-drive": {
       // Source: Showdown data/abilities.ts — Motor Drive: Electric immune + Speed +1
-      if (moveType !== "electric") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.electric) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -958,7 +970,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
     case "dry-skin": {
       // Source: Showdown data/abilities.ts — Dry Skin: Water immune + heal 1/4 HP
       // (Fire weakness is in damage calc, not here)
-      if (moveType !== "water") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.water) return NO_EFFECT;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
@@ -1002,7 +1014,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "sap-sipper": {
       // Source: Showdown data/abilities.ts — Sap Sipper: Grass immune + Atk +1
-      if (moveType !== "grass") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.grass) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -1031,7 +1043,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "storm-drain": {
       // Source: Showdown data/abilities.ts — Storm Drain: Water immune + SpAtk +1
-      if (moveType !== "water") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.water) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -1048,7 +1060,7 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "lightning-rod": {
       // Source: Showdown data/abilities.ts — Lightning Rod: Electric immune + SpAtk +1
-      if (moveType !== "electric") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.electric) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -1139,7 +1151,7 @@ function handleOnStatChange(ctx: AbilityContext): AbilityResult {
       //   stats and protects them from status conditions."
       // In singles, protects the holder only if it's Grass type.
       const holderTypes = ctx.pokemon.types;
-      if (!holderTypes.includes("grass")) return NO_EFFECT;
+      if (!holderTypes.includes(CORE_TYPE_IDS.grass)) return NO_EFFECT;
       // Only block drops (negative stages) caused by the opponent
       if ((ctx.statChange?.stages ?? 0) >= 0) return NO_EFFECT;
       // Only block opponent-caused drops (not self-inflicted drops like Superpower)
@@ -1242,12 +1254,12 @@ function moveInflictsSleep(move: MoveData): boolean {
 function effectCausesSleep(effect: NonNullable<MoveData["effect"]>): boolean {
   switch (effect.type) {
     case "status-guaranteed":
-      return effect.status === "sleep";
+      return effect.status === CORE_STATUS_IDS.sleep;
     case "status-chance":
-      return effect.status === "sleep";
+      return effect.status === CORE_STATUS_IDS.sleep;
     case "volatile-status":
       // Yawn causes sleep the following turn
-      return effect.status === "yawn";
+      return effect.status === CORE_VOLATILE_IDS.yawn;
     case "multi":
       return effect.effects.some((e) => effectCausesSleep(e));
     default:

@@ -1,6 +1,12 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType, ScreenType, WeatherType } from "@pokemon-lib-ts/core";
+import type {
+  AbilityTrigger,
+  PokemonType,
+  ScreenType,
+  VolatileStatus,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_GENDERS,
   CORE_SCREEN_IDS,
@@ -10,7 +16,7 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "./data/reference-ids";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 8 switch-in, switch-out, contact, and passive ability handlers.
@@ -426,7 +432,7 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
     case GEN8_ABILITY_IDS.stanceChange: {
       // Source: Showdown data/abilities.ts -- Stance Change (Aegislash)
       // Switch-in always resets to Shield Forme
-      if (ctx.pokemon.pokemon.speciesId !== 681) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN8_SPECIES_IDS.aegislash) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -1002,7 +1008,7 @@ function handleTurnEnd(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko toggles form each turn
       // Changes between Full Belly Mode and Hangry Mode
       // Source: Bulbapedia "Hunger Switch" -- Morpeko (species 877) only
-      if (ctx.pokemon.pokemon.speciesId !== 877) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN8_SPECIES_IDS.morpeko) return NO_EFFECT;
       return {
         activated: true,
         effects: [
@@ -1034,7 +1040,7 @@ function handleTurnEnd(ctx: AbilityContext): AbilityResult {
 function handleGulpMissileOnHit(ctx: AbilityContext): AbilityResult {
   if (!ctx.opponent) return NO_EFFECT;
   // Only for Cramorant (species 845)
-  if (ctx.pokemon.pokemon.speciesId !== 845) return NO_EFFECT;
+  if (ctx.pokemon.pokemon.speciesId !== GEN8_SPECIES_IDS.cramorant) return NO_EFFECT;
 
   const name = getName(ctx);
   const otherMaxHp = ctx.opponent.pokemon.calculatedStats?.hp ?? ctx.opponent.pokemon.currentHp;
@@ -1042,8 +1048,12 @@ function handleGulpMissileOnHit(ctx: AbilityContext): AbilityResult {
 
   // Determine form from volatile status data
   // The engine should set a "gulp-missile-gulping" or "gulp-missile-gorging" volatile
-  const isGulping = ctx.pokemon.volatileStatuses.has("gulp-missile-gulping" as never);
-  const isGorging = ctx.pokemon.volatileStatuses.has("gulp-missile-gorging" as never);
+  const isGulping = ctx.pokemon.volatileStatuses.has(
+    CORE_VOLATILE_IDS.gulpMissileGulping as VolatileStatus,
+  );
+  const isGorging = ctx.pokemon.volatileStatuses.has(
+    CORE_VOLATILE_IDS.gulpMissileGorging as VolatileStatus,
+  );
 
   if (!isGulping && !isGorging) return NO_EFFECT;
 
@@ -1374,7 +1384,7 @@ export function shouldPerishBodyTrigger(
  * Source: Showdown data/abilities.ts -- Gulp Missile: species check
  */
 export function isCramorantWithGulpMissile(speciesId: number, abilityId: string): boolean {
-  return speciesId === 845 && abilityId === GEN8_ABILITY_IDS.gulpMissile;
+  return speciesId === GEN8_SPECIES_IDS.cramorant && abilityId === GEN8_ABILITY_IDS.gulpMissile;
 }
 
 /**
@@ -1437,7 +1447,7 @@ export function shouldIceFaceReform(abilityId: string, weather: string | null): 
  */
 export function shouldHungerSwitchToggle(abilityId: string, speciesId: number): boolean {
   if (abilityId !== GEN8_ABILITY_IDS.hungerSwitch) return false;
-  return speciesId === 877;
+  return speciesId === GEN8_SPECIES_IDS.morpeko;
 }
 
 /**

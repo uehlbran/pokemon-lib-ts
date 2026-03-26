@@ -34,6 +34,8 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_SPECIES_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -211,7 +213,7 @@ export class Gen3Ruleset extends BaseRuleset {
 
     // Focus Energy: +1 stage in Gen 3 (NOT +2 like Gen 6+)
     // Source: pret/pokeemerald src/battle_util.c — STATUS2_FOCUS_ENERGY: critChance += 1
-    if (attacker.volatileStatuses.has("focus-energy")) stage += 1;
+    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.focusEnergy)) stage += 1;
 
     // High crit-ratio move: from move data (e.g., Slash, Crabhammer = critRatio 1)
     // Source: pret/pokeemerald src/battle_util.c — move critRatio adds to crit stage
@@ -220,14 +222,20 @@ export class Gen3Ruleset extends BaseRuleset {
     // Held item bonuses
     // Source: pret/pokeemerald src/battle_util.c — item crit stage modifiers
     const item = attacker.pokemon.heldItem;
-    if (item === "scope-lens" || item === "razor-claw") stage += 1;
+    if (item === CORE_ITEM_IDS.scopeLens || item === CORE_ITEM_IDS.razorClaw) stage += 1;
     if (
-      (item === "leek" || item === "stick") &&
-      (attacker.pokemon.speciesId === 83 || attacker.pokemon.speciesId === 865)
+      (item === CORE_ITEM_IDS.leek || item === CORE_ITEM_IDS.stick) &&
+      (attacker.pokemon.speciesId === CORE_SPECIES_IDS.farfetchd ||
+        attacker.pokemon.speciesId === CORE_SPECIES_IDS.sirfetchd)
     ) {
       stage += 2;
     }
-    if (item === "lucky-punch" && attacker.pokemon.speciesId === 113) stage += 2;
+    if (
+      item === CORE_ITEM_IDS.luckyPunch &&
+      attacker.pokemon.speciesId === CORE_SPECIES_IDS.chansey
+    ) {
+      stage += 2;
+    }
 
     // Ability: Super Luck (+1 stage)
     // Source: pret/pokeemerald src/battle_util.c — Super Luck ability crit bonus

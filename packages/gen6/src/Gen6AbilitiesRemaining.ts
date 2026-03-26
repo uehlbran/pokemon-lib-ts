@@ -1,5 +1,8 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import type { VolatileStatus } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN6_ABILITY_IDS } from "./data/reference-ids";
 
 /**
  * Gen 6 remaining ability handlers.
@@ -70,7 +73,7 @@ export function handleGen6RemainingAbility(ctx: AbilityContext): AbilityResult {
 
 function handleTurnEnd(abilityId: string, ctx: AbilityContext): AbilityResult {
   switch (abilityId) {
-    case "zen-mode":
+    case GEN6_ABILITY_IDS.zenMode:
       return handleZenMode(ctx);
     case "harvest":
       return handleHarvest(ctx);
@@ -96,13 +99,13 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
   const currentHp = pokemon.pokemon.currentHp;
   const name = getName(ctx);
 
-  const isZenForm = pokemon.volatileStatuses.has("zen-mode" as never);
+  const isZenForm = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.zenMode as VolatileStatus);
 
   if (currentHp <= Math.floor(maxHp / 2) && !isZenForm) {
     const effect: AbilityEffect = {
       effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
       target: BATTLE_EFFECT_TARGETS.self,
-      volatile: "zen-mode" as never,
+      volatile: CORE_VOLATILE_IDS.zenMode as VolatileStatus,
     };
     return {
       activated: true,
@@ -117,7 +120,7 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
     const effect: AbilityEffect = {
       effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileRemove,
       target: BATTLE_EFFECT_TARGETS.self,
-      volatile: "zen-mode" as never,
+      volatile: CORE_VOLATILE_IDS.zenMode as VolatileStatus,
     };
     return {
       activated: true,

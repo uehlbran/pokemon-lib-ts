@@ -1,7 +1,6 @@
 import type {
   Generation,
   MoveData,
-  PokemonInstance,
   PokemonSpeciesData,
   PokemonType,
   TypeChart,
@@ -67,7 +66,7 @@ const {
 } = CORE_END_OF_TURN_EFFECT_IDS;
 const { spikes, stealthRock, toxicSpikes } = CORE_HAZARD_IDS;
 const { blackSludge, leftovers } = CORE_ITEM_IDS;
-const { bind, leechSeed, perishSong, quickAttack, tackle, wish } = CORE_MOVE_IDS;
+const { bind, leechSeed, perishSong, quickAttack, scratch, tackle, wish } = CORE_MOVE_IDS;
 const { badlyPoisoned, burn, paralysis, poison, sleep } = CORE_STATUS_IDS;
 const { curse, ingrain, nightmare, sleepCounter, toxicCounter } = CORE_VOLATILE_IDS;
 const TEST_DATA_MANAGER = createMockDataManager();
@@ -95,6 +94,10 @@ function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData
 class TestRuleset extends BaseRuleset {
   readonly generation: Generation = 3;
   readonly name = "Test Gen 3";
+
+  constructor() {
+    super(TEST_DATA_MANAGER);
+  }
 
   getTypeChart(): TypeChart {
     const types = this.getAvailableTypes();
@@ -912,13 +915,34 @@ describe("BaseRuleset", () => {
   });
 
   describe("validatePokemon", () => {
-    it("given any pokemon, when validatePokemon is called, then valid result is returned", () => {
+    it("given a valid pokemon, when validatePokemon is called, then a valid result is returned", () => {
       const result = ruleset.validatePokemon(
-        {} as unknown as PokemonInstance,
-        {} as unknown as PokemonSpeciesData,
+        createTestPokemon(6, 50, { moves: [createMockMoveSlot(scratch)] }),
+        testSpecies,
       );
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
+    });
+
+    it("given invalid bounded-domain state, when validatePokemon is called, then validation errors are returned", () => {
+      const result = ruleset.validatePokemon(
+        createTestPokemon(6, 50, {
+          friendship: 999,
+          ivs: {
+            hp: 31,
+            attack: 32,
+            defense: 31,
+            spAttack: 31,
+            spDefense: 31,
+            speed: 31,
+          },
+        }),
+        testSpecies,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("attack IV must be between 0 and 31");
+      expect(result.errors).toContain("friendship must be between 0 and 255");
     });
   });
 

@@ -20,7 +20,7 @@ import type {
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 
-import { BaseRuleset } from "@pokemon-lib-ts/battle";
+import { BATTLE_GIMMICK_IDS, BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
@@ -36,6 +36,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_VOLATILE_IDS,
@@ -355,7 +356,7 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: Bulbapedia -- Terastallization is the Gen 9 battle gimmick
    */
   getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
-    if (type === "tera") return this._tera;
+    if (type === BATTLE_GIMMICK_IDS.tera) return this._tera;
     return null;
   }
 
@@ -534,9 +535,8 @@ export class Gen9Ruleset extends BaseRuleset {
     for (const effect of baseOrder) {
       result.push(effect);
       // Insert salt-cure right after bind (both at residualOrder 13)
-      if (effect === "bind") {
-        // "salt-cure" is defined in battle's EndOfTurnEffect union (added in this wave).
-        result.push("salt-cure" as EndOfTurnEffect);
+      if (effect === CORE_END_OF_TURN_EFFECT_IDS.bind) {
+        result.push(CORE_END_OF_TURN_EFFECT_IDS.saltCure as EndOfTurnEffect);
       }
     }
 

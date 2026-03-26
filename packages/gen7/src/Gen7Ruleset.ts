@@ -35,6 +35,8 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
   CORE_VOLATILE_IDS,
   getStatStageMultiplier,
@@ -256,7 +258,7 @@ export class Gen7Ruleset extends BaseRuleset {
     if (newAbilityResult.activated) return newAbilityResult;
 
     switch (trigger) {
-      case "on-switch-in": {
+      case CORE_ABILITY_TRIGGER_IDS.onSwitchIn: {
         // Surge abilities trigger on switch-in
         // Source: Showdown data/abilities.ts -- electricsurge/grassysurge/psychicsurge/mistysurge
         if (isSurgeAbility(context.pokemon.ability)) {
@@ -268,41 +270,41 @@ export class Gen7Ruleset extends BaseRuleset {
         return noActivation;
       }
 
-      case "on-switch-out": {
+      case CORE_ABILITY_TRIGGER_IDS.onSwitchOut: {
         // Switch-out abilities: Regenerator, Natural Cure
         return handleGen7SwitchAbility(trigger, context);
       }
 
-      case "on-contact": {
+      case CORE_ABILITY_TRIGGER_IDS.onContact: {
         // Contact abilities: Rough Skin, Flame Body, Static, Mummy, Gooey, etc.
         return handleGen7SwitchAbility(trigger, context);
       }
 
-      case "on-status-inflicted": {
+      case CORE_ABILITY_TRIGGER_IDS.onStatusInflicted: {
         // Status-inflicted abilities: Synchronize
         return handleGen7SwitchAbility(trigger, context);
       }
 
-      case "on-damage-calc": {
+      case CORE_ABILITY_TRIGGER_IDS.onDamageCalc: {
         // Damage-calc abilities (attacker/defender modifiers)
         return handleGen7DamageCalcAbility(context);
       }
 
-      case "on-damage-taken": {
+      case CORE_ABILITY_TRIGGER_IDS.onDamageTaken: {
         // Damage immunity (Sturdy OHKO block) first, then stat triggers
         const immunityResult = handleGen7DamageImmunityAbility(context);
         if (immunityResult.activated) return immunityResult;
         return handleGen7StatAbility(context);
       }
 
-      case "on-priority-check":
-      case "on-after-move-used":
-      case "on-stat-change":
-      case "on-turn-end":
-      case "on-flinch":
-      case "on-item-use":
-      case "on-before-move":
-      case "passive-immunity": {
+      case CORE_ABILITY_TRIGGER_IDS.onPriorityCheck:
+      case CORE_ABILITY_TRIGGER_IDS.onAfterMoveUsed:
+      case CORE_ABILITY_TRIGGER_IDS.onStatChange:
+      case CORE_ABILITY_TRIGGER_IDS.onTurnEnd:
+      case CORE_ABILITY_TRIGGER_IDS.onFlinch:
+      case CORE_ABILITY_TRIGGER_IDS.onItemUse:
+      case CORE_ABILITY_TRIGGER_IDS.onBeforeMove:
+      case CORE_ABILITY_TRIGGER_IDS.passiveImmunity: {
         return handleGen7StatAbility(context);
       }
 
@@ -631,11 +633,11 @@ export class Gen7Ruleset extends BaseRuleset {
     moveData: MoveData,
     state: BattleState,
   ): number {
-    const result = this.applyAbility("on-priority-check", {
+    const result = this.applyAbility(CORE_ABILITY_TRIGGER_IDS.onPriorityCheck, {
       pokemon: active,
       state,
       rng: state.rng,
-      trigger: "on-priority-check",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onPriorityCheck,
       move: moveData,
     });
 
@@ -842,46 +844,46 @@ export class Gen7Ruleset extends BaseRuleset {
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return [
-      "weather-damage",
-      "future-attack",
-      "wish",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
       "weather-healing",
       "shed-skin",
-      "leech-seed",
-      "leftovers",
-      "black-sludge",
-      "aqua-ring",
-      "ingrain",
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.aquaRing,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
       "poison-heal",
-      "grassy-terrain-heal",
-      "status-damage",
-      "nightmare",
-      "curse",
+      CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
       "bad-dreams",
-      "bind",
-      "yawn-countdown",
-      "encore-countdown",
-      "taunt-countdown",
-      "disable-countdown",
-      "heal-block-countdown",
-      "embargo-countdown",
-      "magnet-rise-countdown",
-      "perish-song",
-      "screen-countdown",
-      "safeguard-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
       "magic-room-countdown",
       "wonder-room-countdown",
-      "gravity-countdown",
-      "slow-start-countdown",
-      "terrain-countdown",
-      "weather-countdown",
-      "toxic-orb-activation",
-      "flame-orb-activation",
+      CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
       "speed-boost",
       "moody",
-      "healing-items",
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
     ];
   }
 

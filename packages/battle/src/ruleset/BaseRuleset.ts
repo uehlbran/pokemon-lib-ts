@@ -16,7 +16,11 @@ import type {
 import {
   ALL_NATURES,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
+  CORE_SPECIES_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
@@ -25,6 +29,9 @@ import {
   calculateShakeChecks,
   DataManager,
   getStatStageMultiplier,
+  validateEvs,
+  validateFriendship,
+  validateIvs,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -156,11 +163,17 @@ export abstract class BaseRuleset implements GenerationRuleset {
     if (item === CORE_ITEM_IDS.scopeLens || item === CORE_ITEM_IDS.razorClaw) stage += 1;
     if (
       (item === CORE_ITEM_IDS.leek || item === CORE_ITEM_IDS.stick) &&
-      (attacker.pokemon.speciesId === 83 || attacker.pokemon.speciesId === 865)
+      (attacker.pokemon.speciesId === CORE_SPECIES_IDS.farfetchd ||
+        attacker.pokemon.speciesId === CORE_SPECIES_IDS.sirfetchd)
     ) {
       stage += 2;
     }
-    if (item === CORE_ITEM_IDS.luckyPunch && attacker.pokemon.speciesId === 113) stage += 2;
+    if (
+      item === CORE_ITEM_IDS.luckyPunch &&
+      attacker.pokemon.speciesId === CORE_SPECIES_IDS.chansey
+    ) {
+      stage += 2;
+    }
 
     // Ability: Super Luck (+1 stage)
     // Source: Showdown sim/battle-actions.ts — Super Luck ability crit bonus
@@ -306,11 +319,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     moveData: MoveData,
     state: BattleState,
   ): number {
-    const result = this.applyAbility("on-priority-check", {
+    const result = this.applyAbility(CORE_ABILITY_TRIGGER_IDS.onPriorityCheck, {
       pokemon: active,
       state,
       rng: state.rng,
-      trigger: "on-priority-check",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onPriorityCheck,
       move: moveData,
     });
     if (!result.activated) return 0;
@@ -729,8 +742,137 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return null;
   }
 
-  validatePokemon(_pokemon: PokemonInstance, _species: PokemonSpeciesData): ValidationResult {
-    return { valid: true, errors: [] };
+  private static appendValidationMessages(
+    errors: string[],
+    validation: { readonly failures: readonly { readonly message: string }[] },
+  ): void {
+    for (const failure of validation.failures) {
+      errors.push(failure.message);
+    }
+  }
+
+  private validateKnownSpecies(
+    pokemon: PokemonInstance,
+    species: PokemonSpeciesData,
+    errors: string[],
+  ): void {
+    try {
+      this.dataManager.getSpecies(species.id);
+    } catch {
+      errors.push(
+        `Species #${species.id} (${species.displayName}) is not available in Gen ${this.generation}`,
+      );
+      return;
+    }
+
+    if (typeof pokemon.speciesId === "number" && pokemon.speciesId !== species.id) {
+      errors.push(
+        `Pokemon species id ${pokemon.speciesId} does not match provided species ${species.displayName} (#${species.id})`,
+      );
+    }
+  }
+
+  private validateKnownMove(moveId: string, errors: string[]): void {
+    try {
+      this.dataManager.getMove(moveId);
+    } catch {
+      errors.push(`Move "${moveId}" is not available in Gen ${this.generation}`);
+    }
+  }
+
+  private validateKnownItem(itemId: string, errors: string[]): void {
+    try {
+      this.dataManager.getItem(itemId);
+    } catch {
+      errors.push(`Item "${itemId}" is not available in Gen ${this.generation}`);
+    }
+  }
+
+  private validateKnownAbility(abilityId: string, errors: string[]): void {
+    try {
+      this.dataManager.getAbility(abilityId);
+    } catch {
+      errors.push(`Ability "${abilityId}" is not available in Gen ${this.generation}`);
+    }
+  }
+
+  validatePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): ValidationResult {
+    const errors: string[] = [];
+
+    if (pokemon.level < 1 || pokemon.level > 100) {
+      errors.push(`Level must be between 1 and 100, got ${pokemon.level}`);
+    }
+
+    if (pokemon.moves.length < 1 || pokemon.moves.length > 4) {
+      errors.push(`Pokemon must have 1-4 moves, has ${pokemon.moves.length}`);
+    }
+
+    this.validateKnownSpecies(pokemon, species, errors);
+
+    for (const moveSlot of pokemon.moves) {
+      if (!moveSlot.moveId) {
+        errors.push("Pokemon move slot is empty");
+        continue;
+      }
+      this.validateKnownMove(moveSlot.moveId, errors);
+    }
+
+    if (pokemon.heldItem) {
+      this.validateKnownItem(pokemon.heldItem, errors);
+    }
+
+    if (!pokemon.ability) {
+      errors.push("Pokemon ability is required");
+    } else {
+      this.validateKnownAbility(pokemon.ability, errors);
+      const legalAbilities = new Set(species.abilities.normal);
+      if (species.abilities.hidden) {
+        legalAbilities.add(species.abilities.hidden);
+      }
+      if (!legalAbilities.has(pokemon.ability)) {
+        errors.push(`Ability "${pokemon.ability}" is not legal for ${species.displayName}`);
+      }
+
+      if (
+        pokemon.abilitySlot === CORE_ABILITY_SLOTS.normal2 &&
+        species.abilities.normal.length < 2
+      ) {
+        errors.push(
+          `Ability slot "${pokemon.abilitySlot}" is not supported for ${species.displayName}`,
+        );
+      } else if (pokemon.abilitySlot === CORE_ABILITY_SLOTS.hidden && !species.abilities.hidden) {
+        errors.push(
+          `Ability slot "${pokemon.abilitySlot}" is not supported for ${species.displayName}`,
+        );
+      } else {
+        const expectedAbility =
+          pokemon.abilitySlot === CORE_ABILITY_SLOTS.normal2
+            ? species.abilities.normal[1]
+            : pokemon.abilitySlot === CORE_ABILITY_SLOTS.hidden
+              ? species.abilities.hidden
+              : species.abilities.normal[0];
+        if (expectedAbility && pokemon.ability !== expectedAbility) {
+          errors.push(
+            `Ability "${pokemon.ability}" does not match slot "${pokemon.abilitySlot}" for ${species.displayName}`,
+          );
+        }
+      }
+    }
+
+    try {
+      this.dataManager.getNature(pokemon.nature);
+    } catch {
+      errors.push(`Nature "${pokemon.nature}" is not available in Gen ${this.generation}`);
+    }
+
+    BaseRuleset.appendValidationMessages(errors, validateIvs(pokemon.ivs));
+    BaseRuleset.appendValidationMessages(errors, validateEvs(pokemon.evs));
+    BaseRuleset.appendValidationMessages(errors, validateFriendship(pokemon.friendship));
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
   }
 
   getConfusionSelfHitChance(): number {
@@ -1012,24 +1154,24 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // ingrain(7), leech-seed(8), status-damage(9-10), nightmare(11),
     // curse(12), bind/partiallytrapped(13), perish-song(24), countdowns(26)
     return [
-      "future-attack",
-      "wish",
-      "weather-damage",
-      "leftovers",
-      "black-sludge",
-      "ingrain",
-      "leech-seed",
-      "status-damage",
-      "nightmare",
-      "curse",
-      "bind",
-      "perish-song",
-      "screen-countdown",
-      "weather-countdown",
-      "terrain-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
-      "encore-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
     ];
   }
 

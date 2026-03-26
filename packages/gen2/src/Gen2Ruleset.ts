@@ -41,6 +41,7 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CRIT_MULTIPLIER_CLASSIC,
@@ -50,6 +51,10 @@ import {
   gen1to6ConfusionSelfHitRoll,
   getAccuracyStageRatio,
   getGen12StatStageRatio,
+  NEUTRAL_NATURES,
+  validateDvs,
+  validateFriendship,
+  validateStatExp,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
@@ -743,9 +748,17 @@ export class Gen2Ruleset implements GenerationRuleset {
       errors.push(`Level must be between 1 and 100, got ${pokemon.level}`);
     }
 
-    // Check that species exists in Gen 2 (Dex #1-251)
-    if (species.id < 1 || species.id > 251) {
+    let speciesExistsInGeneration = true;
+    try {
+      this.dataManager.getSpecies(species.id);
+    } catch {
+      speciesExistsInGeneration = false;
       errors.push(`Species #${species.id} (${species.displayName}) is not available in Gen 2`);
+    }
+    if (typeof pokemon.speciesId === "number" && pokemon.speciesId !== species.id) {
+      errors.push(
+        `Pokemon species id ${pokemon.speciesId} does not match provided species ${species.displayName} (#${species.id})`,
+      );
     }
 
     // Check move count (1-4 moves)
@@ -753,7 +766,84 @@ export class Gen2Ruleset implements GenerationRuleset {
       errors.push(`Pokemon must have 1-4 moves, has ${pokemon.moves.length}`);
     }
 
-    // Held items ARE valid in Gen 2 (unlike Gen 1)
+    const legalMoves = new Set<string>();
+    if (speciesExistsInGeneration) {
+      for (const move of species.learnset.levelUp) legalMoves.add(move.move);
+      for (const move of species.learnset.tm) legalMoves.add(move);
+      for (const move of species.learnset.egg) legalMoves.add(move);
+      for (const move of species.learnset.tutor) legalMoves.add(move);
+      for (const move of species.learnset.event ?? []) legalMoves.add(move);
+    }
+
+    for (const moveSlot of pokemon.moves) {
+      if (!moveSlot.moveId) {
+        errors.push("Pokemon move slot is empty");
+        continue;
+      }
+
+      try {
+        this.dataManager.getMove(moveSlot.moveId);
+      } catch {
+        errors.push(`Move "${moveSlot.moveId}" is not available in Gen 2`);
+        continue;
+      }
+
+      if (speciesExistsInGeneration && !legalMoves.has(moveSlot.moveId)) {
+        errors.push(`Move "${moveSlot.moveId}" is not legal for ${species.displayName} in Gen 2`);
+      }
+    }
+
+    if (pokemon.heldItem) {
+      try {
+        this.dataManager.getItem(pokemon.heldItem);
+      } catch {
+        errors.push(`Item "${pokemon.heldItem}" is not available in Gen 2`);
+      }
+    }
+
+    if (pokemon.ability) {
+      errors.push("Abilities are not available in Gen 2");
+    }
+
+    if (!NEUTRAL_NATURES.includes(pokemon.nature)) {
+      errors.push(`Nature "${pokemon.nature}" is not supported in Gen 2`);
+    }
+
+    if (pokemon.abilitySlot !== CORE_ABILITY_SLOTS.normal1) {
+      errors.push(`Ability slot "${pokemon.abilitySlot}" is not supported in Gen 2`);
+    }
+
+    const dvValidation = validateDvs({
+      attack: pokemon.ivs.attack,
+      defense: pokemon.ivs.defense,
+      spAttack: pokemon.ivs.spAttack,
+      spDefense: pokemon.ivs.spDefense,
+      speed: pokemon.ivs.speed,
+    });
+    for (const failure of dvValidation.failures) {
+      errors.push(failure.message);
+    }
+
+    const expectedHpDv =
+      ((pokemon.ivs.attack & 1) << 3) |
+      ((pokemon.ivs.defense & 1) << 2) |
+      ((pokemon.ivs.speed & 1) << 1) |
+      (pokemon.ivs.spAttack & 1);
+    if (pokemon.ivs.hp !== expectedHpDv) {
+      errors.push(
+        `hp DV must be derived from the other DVs; expected ${expectedHpDv}, got ${pokemon.ivs.hp}`,
+      );
+    }
+
+    const statExpValidation = validateStatExp(pokemon.evs);
+    for (const failure of statExpValidation.failures) {
+      errors.push(failure.message);
+    }
+
+    const friendshipValidation = validateFriendship(pokemon.friendship);
+    for (const failure of friendshipValidation.failures) {
+      errors.push(failure.message);
+    }
 
     return {
       valid: errors.length === 0,

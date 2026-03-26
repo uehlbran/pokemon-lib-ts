@@ -167,24 +167,29 @@ export function isBlockedByGoodAsGold(abilityId: string, moveCategory: string): 
  *   embodyaspectwellspring: spd +1
  *   embodyaspectcornerstone: def +1
  */
-export const EMBODY_ASPECT_BOOSTS: Readonly<
-  Record<string, "attack" | "defense" | "spAttack" | "spDefense" | "speed">
-> = {
-  [GEN9_ABILITY_IDS.embodyAspectTeal]: "speed",
-  [GEN9_ABILITY_IDS.embodyAspectHearthflame]: "attack",
-  [GEN9_ABILITY_IDS.embodyAspectWellspring]: "spDefense",
-  [GEN9_ABILITY_IDS.embodyAspectCornerstone]: "defense",
+type EmbodyAspectStat =
+  | typeof CORE_STAT_IDS.attack
+  | typeof CORE_STAT_IDS.defense
+  | typeof CORE_STAT_IDS.spAttack
+  | typeof CORE_STAT_IDS.spDefense
+  | typeof CORE_STAT_IDS.speed;
+
+export const EMBODY_ASPECT_BOOSTS: Readonly<Record<string, EmbodyAspectStat>> = {
+  [GEN9_ABILITY_IDS.embodyAspectTeal]: CORE_STAT_IDS.speed,
+  [GEN9_ABILITY_IDS.embodyAspectHearthflame]: CORE_STAT_IDS.attack,
+  [GEN9_ABILITY_IDS.embodyAspectWellspring]: CORE_STAT_IDS.spDefense,
+  [GEN9_ABILITY_IDS.embodyAspectCornerstone]: CORE_STAT_IDS.defense,
 };
 
 /**
  * Human-readable stat display names for Embody Aspect messages.
  */
-const STAT_NAMES: Record<string, string> = {
-  attack: "Attack",
-  defense: "Defense",
-  spAttack: "Sp. Atk",
-  spDefense: "Sp. Def",
-  speed: "Speed",
+const STAT_NAMES: Record<EmbodyAspectStat, string> = {
+  [CORE_STAT_IDS.attack]: "Attack",
+  [CORE_STAT_IDS.defense]: "Defense",
+  [CORE_STAT_IDS.spAttack]: "Sp. Atk",
+  [CORE_STAT_IDS.spDefense]: "Sp. Def",
+  [CORE_STAT_IDS.speed]: "Speed",
 };
 
 /**

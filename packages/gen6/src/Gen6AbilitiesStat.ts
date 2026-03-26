@@ -1,7 +1,8 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
-import type { MoveCategory } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import type { MoveCategory, VolatileStatus } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 6 stat-modifying and priority ability handlers.
@@ -182,13 +183,15 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
       //   before using an attack move and from Blade Forme to Shield Forme when using
       //   King's Shield."
       // Only Aegislash (species 681) has Stance Change
-      if (ctx.pokemon.pokemon.speciesId !== 681) return INACTIVE;
+      if (ctx.pokemon.pokemon.speciesId !== GEN6_SPECIES_IDS.aegislash) return INACTIVE;
       if (!ctx.move) return INACTIVE;
 
       const name = getName(ctx);
-      const isBladeForm = ctx.pokemon.volatileStatuses.has("stance-change-blade" as never);
+      const isBladeForm = ctx.pokemon.volatileStatuses.has(
+        CORE_VOLATILE_IDS.stanceChangeBlade as VolatileStatus,
+      );
 
-      if (ctx.move.id === "kings-shield" && isBladeForm) {
+      if (ctx.move.id === GEN6_MOVE_IDS.kingsShield && isBladeForm) {
         // Blade -> Shield: remove blade volatile
         return {
           activated: true,
@@ -196,7 +199,7 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileRemove,
               target: BATTLE_EFFECT_TARGETS.self,
-              volatile: "stance-change-blade" as never,
+              volatile: CORE_VOLATILE_IDS.stanceChangeBlade as VolatileStatus,
             },
           ],
           messages: [`${name} changed to Shield Forme!`],
@@ -211,7 +214,7 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
             {
               effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
               target: BATTLE_EFFECT_TARGETS.self,
-              volatile: "stance-change-blade" as never,
+              volatile: CORE_VOLATILE_IDS.stanceChangeBlade as VolatileStatus,
             },
           ],
           messages: [`${name} changed to Blade Forme!`],

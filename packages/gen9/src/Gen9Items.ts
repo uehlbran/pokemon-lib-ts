@@ -10,6 +10,7 @@ import {
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
@@ -806,22 +807,22 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
 
   let result: ItemResult;
   switch (trigger) {
-    case "before-turn-order":
+    case CORE_ITEM_TRIGGER_IDS.beforeTurnOrder:
       result = handleBeforeTurnOrder(item, context);
       break;
-    case "before-move":
+    case CORE_ITEM_TRIGGER_IDS.beforeMove:
       result = handleBeforeMove(item, context);
       break;
-    case "end-of-turn":
+    case CORE_ITEM_TRIGGER_IDS.endOfTurn:
       result = handleEndOfTurn(item, context);
       break;
-    case "on-damage-taken":
+    case CORE_ITEM_TRIGGER_IDS.onDamageTaken:
       result = handleOnDamageTaken(item, context);
       break;
-    case "on-contact":
+    case CORE_ITEM_TRIGGER_IDS.onContact:
       result = handleOnContact(item, context);
       break;
-    case "on-hit":
+    case CORE_ITEM_TRIGGER_IDS.onHit:
       result = handleOnHit(item, context);
       break;
     default:

@@ -27,12 +27,16 @@ import {
 } from "@pokemon-lib-ts/battle";
 import {
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   type MoveData,
   type SeededRandom,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -98,7 +102,7 @@ export function handleAuroraVeil(ctx: MoveEffectContext): MoveEffectResult {
 
   // Aurora Veil fails if weather is not Hail
   // Source: Showdown data/moves.ts -- onTry: source.effectiveWeather() === 'hail'
-  if (!ctx.state.weather || ctx.state.weather.type !== "hail") {
+  if (!ctx.state.weather || ctx.state.weather.type !== CORE_WEATHER_IDS.hail) {
     return {
       ...base,
       messages: ["But it failed!"],
@@ -111,7 +115,7 @@ export function handleAuroraVeil(ctx: MoveEffectContext): MoveEffectResult {
   );
   if (attackerSideIndex >= 0) {
     const attackerSide = ctx.state.sides[attackerSideIndex];
-    if (attackerSide?.screens.some((s) => s.type === "aurora-veil")) {
+    if (attackerSide?.screens.some((s) => s.type === CORE_SCREEN_IDS.auroraVeil)) {
       return {
         ...base,
         messages: ["But it failed!"],
@@ -122,7 +126,7 @@ export function handleAuroraVeil(ctx: MoveEffectContext): MoveEffectResult {
   // Light Clay extends screen duration from 5 to 8 turns
   // Source: Showdown data/items.ts -- lightclay: extends screen duration
   const turns =
-    ctx.attacker.pokemon.heldItem === "light-clay"
+    ctx.attacker.pokemon.heldItem === GEN7_ITEM_IDS.lightClay
       ? AURORA_VEIL_LIGHT_CLAY_TURNS
       : AURORA_VEIL_DEFAULT_TURNS;
 
@@ -130,7 +134,11 @@ export function handleAuroraVeil(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
-    screenSet: { screen: "aurora-veil", turnsLeft: turns, side: "attacker" },
+    screenSet: {
+      screen: CORE_SCREEN_IDS.auroraVeil,
+      turnsLeft: turns,
+      side: BATTLE_EFFECT_TARGETS.attacker,
+    },
     messages: [
       `Aurora Veil made ${attackerName}'s team stronger against physical and special moves!`,
     ],
@@ -175,7 +183,7 @@ function handleKingsShield(
   // Source: Showdown -- volatileStatus: 'kingsshield', duration: 1
   return {
     ...base,
-    selfVolatileInflicted: "kings-shield",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.kingsShield,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -214,7 +222,7 @@ function handleSpikyShield(
   // Source: Showdown -- volatileStatus: 'spikyshield', duration: 1
   return {
     ...base,
-    selfVolatileInflicted: "spiky-shield",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.spikyShield,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -262,7 +270,7 @@ function handleMatBlock(
   // Source: Showdown -- sideCondition: 'matblock', duration: 1
   return {
     ...base,
-    selfVolatileInflicted: "mat-block",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.matBlock,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected the team with Mat Block!"],
   };
@@ -289,7 +297,7 @@ function handleCraftyShield(ctx: MoveEffectContext): MoveEffectResult {
   // Source: Showdown -- sideCondition: 'craftyshield', duration: 1
   return {
     ...base,
-    selfVolatileInflicted: "crafty-shield",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.craftyShield,
     selfVolatileData: { turnsLeft: 1 },
     messages: [`${ctx.attacker.pokemon.nickname ?? "The Pokemon"} used Crafty Shield!`],
   };
@@ -328,7 +336,7 @@ function handleBanefulBunker(
   // Source: Showdown -- volatileStatus: 'banefulbunker', duration: 1
   return {
     ...base,
-    selfVolatileInflicted: "baneful-bunker",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.banefulBunker,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["The Pokemon protected itself!"],
   };
@@ -500,15 +508,15 @@ export function calculateSpikyShieldDamage(attackerMaxHp: number): number {
  * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Semi-invulnerable_turn
  */
 const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
-  fly: "flying",
-  bounce: "flying",
-  dig: "underground",
-  dive: "underwater",
-  "phantom-force": "shadow-force-charging",
-  "shadow-force": "shadow-force-charging",
-  "solar-beam": "charging",
-  "solar-blade": "charging",
-  "sky-attack": "charging",
+  [CORE_MOVE_IDS.fly]: CORE_VOLATILE_IDS.flying,
+  [GEN7_MOVE_IDS.bounce]: CORE_VOLATILE_IDS.flying,
+  [GEN7_MOVE_IDS.dig]: CORE_VOLATILE_IDS.underground,
+  [GEN7_MOVE_IDS.dive]: CORE_VOLATILE_IDS.underwater,
+  [GEN7_MOVE_IDS.phantomForce]: CORE_VOLATILE_IDS.shadowForceCharging,
+  [GEN7_MOVE_IDS.shadowForce]: CORE_VOLATILE_IDS.shadowForceCharging,
+  [CORE_MOVE_IDS.solarBeam]: CORE_VOLATILE_IDS.charging,
+  [GEN7_MOVE_IDS.solarBlade]: CORE_VOLATILE_IDS.charging,
+  [GEN7_MOVE_IDS.skyAttack]: CORE_VOLATILE_IDS.charging,
 };
 
 /**
@@ -518,15 +526,15 @@ const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
  * Source: Bulbapedia -- individual move charge turn descriptions
  */
 const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
-  fly: "{pokemon} flew up high!",
-  bounce: "{pokemon} sprang up!",
-  dig: "{pokemon} dug underground!",
-  dive: "{pokemon} dived underwater!",
-  "phantom-force": "{pokemon} vanished!",
-  "shadow-force": "{pokemon} vanished!",
-  "solar-beam": "{pokemon} is absorbing sunlight!",
-  "solar-blade": "{pokemon} is absorbing sunlight!",
-  "sky-attack": "{pokemon} is glowing!",
+  [CORE_MOVE_IDS.fly]: "{pokemon} flew up high!",
+  [GEN7_MOVE_IDS.bounce]: "{pokemon} sprang up!",
+  [GEN7_MOVE_IDS.dig]: "{pokemon} dug underground!",
+  [GEN7_MOVE_IDS.dive]: "{pokemon} dived underwater!",
+  [GEN7_MOVE_IDS.phantomForce]: "{pokemon} vanished!",
+  [GEN7_MOVE_IDS.shadowForce]: "{pokemon} vanished!",
+  [CORE_MOVE_IDS.solarBeam]: "{pokemon} is absorbing sunlight!",
+  [GEN7_MOVE_IDS.solarBlade]: "{pokemon} is absorbing sunlight!",
+  [GEN7_MOVE_IDS.skyAttack]: "{pokemon} is glowing!",
 };
 
 /**
@@ -559,8 +567,8 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
   // Source: Showdown data/moves.ts -- solarbeam/solarblade: onChargeMove fires immediately in sun
   // Source: Bulbapedia -- "In harsh sunlight, Solar Beam can be used without a charging turn."
   if (
-    (move.id === "solar-beam" || move.id === "solar-blade") &&
-    ctx.state.weather?.type === "sun"
+    (move.id === CORE_MOVE_IDS.solarBeam || move.id === GEN7_MOVE_IDS.solarBlade) &&
+    ctx.state.weather?.type === CORE_WEATHER_IDS.sun
   ) {
     return createBaseResult(); // No forcedMoveSet -- engine proceeds with attack immediately
   }
@@ -568,7 +576,7 @@ function handleTwoTurnMove(ctx: MoveEffectContext): MoveEffectResult | null {
   // Power Herb: skip charge, consume the item
   // Source: Showdown data/items.ts -- powerherb: skip charge turn, consume
   // Source: Bulbapedia -- "Power Herb allows the holder to skip the charge turn"
-  if (attacker.pokemon.heldItem === "power-herb") {
+  if (attacker.pokemon.heldItem === GEN7_ITEM_IDS.powerHerb) {
     // Consume the Power Herb immediately -- it is single-use.
     // Source: Showdown data/items.ts -- powerherb: onTryMove, item is consumed then move fires
     attacker.pokemon.heldItem = null;
@@ -644,7 +652,7 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
 
   // Big Root: increases drain healing by 30%
   // Source: Showdown data/items.ts -- bigroot: this.chainModify([5324, 4096]) ~= 1.3x
-  if (ctx.attacker.pokemon.heldItem === "big-root") {
+  if (ctx.attacker.pokemon.heldItem === GEN7_ITEM_IDS.bigRoot) {
     healAmount = Math.floor(healAmount * 1.3);
   }
 
@@ -653,7 +661,7 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
   // Only deal recoil if healAmount > 0 (drain move actually drained some HP).
   // When ctx.damage is 0 (e.g., move missed/didn't connect), healAmount is 0 and
   // no recoil should occur.
-  if (ctx.defender.ability === "liquid-ooze") {
+  if (ctx.defender.ability === GEN7_ABILITY_IDS.liquidOoze) {
     if (healAmount <= 0) return createBaseResult();
     const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
     return {
@@ -690,7 +698,7 @@ export function handleDrainEffect(ctx: MoveEffectContext): MoveEffectResult | nu
  */
 export function isGen7GrassPowderBlocked(move: MoveData, targetTypes: readonly string[]): boolean {
   if (!move.flags?.powder) return false;
-  return targetTypes.includes("grass");
+  return targetTypes.includes(CORE_TYPE_IDS.grass);
 }
 
 // ---------------------------------------------------------------------------
@@ -724,17 +732,17 @@ export function executeGen7MoveEffect(
   rollProtectSuccess: (consecutiveProtects: number, rng: SeededRandom) => boolean,
 ): MoveEffectResult | null {
   switch (ctx.move.id) {
-    case "aurora-veil":
+    case GEN7_MOVE_IDS.auroraVeil:
       return handleAuroraVeil(ctx);
-    case "baneful-bunker":
+    case GEN7_MOVE_IDS.banefulBunker:
       return handleBanefulBunker(ctx, rng, rollProtectSuccess);
-    case "kings-shield":
+    case GEN7_MOVE_IDS.kingsShield:
       return handleKingsShield(ctx, rng, rollProtectSuccess);
-    case "spiky-shield":
+    case GEN7_MOVE_IDS.spikyShield:
       return handleSpikyShield(ctx, rng, rollProtectSuccess);
-    case "mat-block":
+    case GEN7_MOVE_IDS.matBlock:
       return handleMatBlock(ctx, rng, rollProtectSuccess);
-    case "crafty-shield":
+    case GEN7_MOVE_IDS.craftyShield:
       return handleCraftyShield(ctx);
     default:
       break;

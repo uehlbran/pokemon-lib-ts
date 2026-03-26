@@ -239,6 +239,41 @@ export const CORE_MOVE_EFFECT_TARGETS = {
   entireField: "entire-field",
 } as const;
 
+export const CORE_MOVE_EFFECT_TYPES = {
+  custom: "custom",
+  damage: "damage",
+  drain: "drain",
+  entryHazard: "entry-hazard",
+  fixedDamage: "fixed-damage",
+  heal: "heal",
+  levelDamage: "level-damage",
+  multi: "multi",
+  multiHit: "multi-hit",
+  ohko: "ohko",
+  protect: "protect",
+  recoil: "recoil",
+  removeHazards: "remove-hazards",
+  screen: "screen",
+  statChange: "stat-change",
+  statusChance: "status-chance",
+  statusGuaranteed: "status-guaranteed",
+  switchOut: "switch-out",
+  terrain: "terrain",
+  twoTurn: "two-turn",
+  volatileStatus: "volatile-status",
+  weather: "weather",
+} as const;
+
+export const CORE_PROTECT_EFFECT_VARIANTS = {
+  banefulBunker: "baneful-bunker",
+  burningBulwark: "burning-bulwark",
+  kingsShield: "kings-shield",
+  maxGuard: "max-guard",
+  silkTrap: "silk-trap",
+  spikyShield: "spiky-shield",
+  standard: "standard",
+} as const;
+
 export const CORE_ABILITY_SLOTS = {
   normal1: "normal1",
   normal2: "normal2",
@@ -284,6 +319,8 @@ export const CORE_ABILITY_TRIGGER_IDS = {
 } as const;
 
 export const CORE_ITEM_TRIGGER_IDS = {
+  beforeMove: "before-move",
+  beforeTurnOrder: "before-turn-order",
   endOfTurn: "end-of-turn",
   onDamageTaken: "on-damage-taken",
   onContact: "on-contact",
@@ -325,6 +362,15 @@ export const CORE_NATURE_IDS = {
   timid: "timid",
 } as const;
 
+export const CORE_SPECIES_IDS = {
+  aegislash: 681,
+  chansey: 113,
+  cramorant: 845,
+  farfetchd: 83,
+  morpeko: 877,
+  sirfetchd: 865,
+} as const;
+
 export const CORE_HAZARD_IDS = {
   gmaxSteelsurge: "gmax-steelsurge",
   spikes: "spikes",
@@ -338,7 +384,10 @@ export const CORE_GIMMICK_IDS = {
 } as const;
 
 export const CORE_END_OF_TURN_EFFECT_IDS = {
+  aquaRing: "aqua-ring",
   bind: "bind",
+  blackSludge: "black-sludge",
+  curse: "curse",
   defrost: "defrost",
   disableCountdown: "disable-countdown",
   encoreCountdown: "encore-countdown",
@@ -349,10 +398,14 @@ export const CORE_END_OF_TURN_EFFECT_IDS = {
   grassyTerrainHeal: "grassy-terrain-heal",
   healBlockCountdown: "heal-block-countdown",
   healingItems: "healing-items",
+  ingrain: "ingrain",
+  leechSeed: "leech-seed",
   leftovers: "leftovers",
   magnetRiseCountdown: "magnet-rise-countdown",
   mysteryBerry: "mystery-berry",
+  nightmare: "nightmare",
   perishSong: "perish-song",
+  saltCure: "salt-cure",
   safeguardCountdown: "safeguard-countdown",
   screenCountdown: "screen-countdown",
   slowStartCountdown: "slow-start-countdown",
@@ -448,6 +501,9 @@ export const CORE_VOLATILE_IDS = {
   embargo: "embargo",
   flashFire: "flash-fire",
   focusEnergy: "focus-energy",
+  gemUsed: "gem-used",
+  gulpMissileGorging: "gulp-missile-gorging",
+  gulpMissileGulping: "gulp-missile-gulping",
   healBlock: "heal-block",
   iceFaceBroken: "ice-face-broken",
   illusion: "illusion",
@@ -489,6 +545,7 @@ export const CORE_VOLATILE_IDS = {
   smackDown: "smackdown",
   spikyShield: "spiky-shield",
   substitute: "substitute",
+  stanceChangeBlade: "stance-change-blade",
   tarShot: "tar-shot",
   telekinesis: "telekinesis",
   uproar: "uproar",
@@ -496,6 +553,7 @@ export const CORE_VOLATILE_IDS = {
   torment: "torment",
   unburden: "unburden",
   underwater: "underwater",
+  zenMode: "zen-mode",
 } as const;
 
 export const CORE_WEATHER_IDS = {

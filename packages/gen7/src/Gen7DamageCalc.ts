@@ -53,15 +53,19 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_EFFECT_TARGETS,
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
-import { GEN7_MOVE_IDS } from "./data/reference-ids.js";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
 import { isWeatherSuppressedGen7 } from "./Gen7Weather.js";
 
 // Re-exported for backwards compatibility; canonical implementation lives in core.
@@ -396,7 +400,7 @@ function getAttackStat(
   if (
     !attackerHasKlutz &&
     !isPhysical &&
-    attackerItem === "deep-sea-tooth" &&
+    attackerItem === CORE_ITEM_IDS.deepSeaTooth &&
     attackerSpecies === CLAMPERL_SPECIES_ID
   ) {
     rawStat = rawStat * 2;
@@ -406,7 +410,7 @@ function getAttackStat(
   // Source: Showdown data/items.ts -- Light Ball Gen 4+ behavior
   if (
     !attackerHasKlutz &&
-    attackerItem === "light-ball" &&
+    attackerItem === CORE_ITEM_IDS.lightBall &&
     attackerSpecies === PIKACHU_SPECIES_ID
   ) {
     rawStat = rawStat * 2;
@@ -419,7 +423,7 @@ function getAttackStat(
   if (
     !attackerHasKlutz &&
     isPhysical &&
-    attackerItem === "thick-club" &&
+    attackerItem === CORE_ITEM_IDS.thickClub &&
     (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
@@ -427,26 +431,30 @@ function getAttackStat(
 
   // Hustle: 1.5x physical attack
   // Source: Showdown -- Hustle
-  if (isPhysical && ability === "hustle") {
+  if (isPhysical && ability === CORE_ABILITY_IDS.hustle) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
   // Guts: 1.5x physical attack when statused
   // Source: Showdown -- Guts
-  if (isPhysical && ability === "guts" && attacker.pokemon.status !== null) {
+  if (isPhysical && ability === GEN7_ABILITY_IDS.guts && attacker.pokemon.status !== null) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
   // Slow Start: halve Attack for the first 5 turns
   // Source: Showdown data/abilities.ts -- Slow Start
-  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has("slow-start")) {
+  if (
+    isPhysical &&
+    ability === CORE_ABILITY_IDS.slowStart &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
+  ) {
     rawStat = Math.floor(rawStat / 2);
   }
 
   // Defeatist: halve Attack and SpAttack when HP <= 50%
   // Source: Bulbapedia -- Defeatist
   // Source: Showdown data/abilities.ts -- Defeatist
-  if (ability === "defeatist") {
+  if (ability === CORE_ABILITY_IDS.defeatist) {
     const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
     if (attacker.pokemon.currentHp <= Math.floor(maxHp / 2)) {
       rawStat = Math.floor(rawStat / 2);
@@ -528,7 +536,7 @@ function getDefenseStat(
   if (
     isPhysical &&
     !moldBreaker &&
-    defender.ability === "marvel-scale" &&
+    defender.ability === CORE_ABILITY_IDS.marvelScale &&
     defender.pokemon.status !== null
   ) {
     baseStat = Math.floor(baseStat * 1.5);
@@ -536,20 +544,29 @@ function getDefenseStat(
 
   // Fur Coat: 2x physical Defense
   // Source: Showdown data/abilities.ts -- Fur Coat onModifyDef
-  if (isPhysical && !moldBreaker && defender.ability === "fur-coat") {
+  if (isPhysical && !moldBreaker && defender.ability === GEN7_ABILITY_IDS.furCoat) {
     baseStat = baseStat * 2;
   }
 
   // Sandstorm Rock SpDef boost: 1.5x SpDef for Rock-types in sandstorm
   // Source: Bulbapedia -- Sandstorm: "Rock-type Pokemon have their Special Defense
   //   raised by 50% during a sandstorm. (Generation IV+)"
-  if (!isPhysical && weather === "sand" && defender.types.includes("rock")) {
+  if (
+    !isPhysical &&
+    weather === CORE_WEATHER_IDS.sand &&
+    defender.types.includes(CORE_TYPE_IDS.rock)
+  ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
   // Flower Gift: 1.5x SpDef in Harsh Sunlight
   // Source: Showdown data/abilities.ts -- Flower Gift
-  if (!isPhysical && !moldBreaker && weather === "sun" && defender.ability === "flower-gift") {
+  if (
+    !isPhysical &&
+    !moldBreaker &&
+    weather === CORE_WEATHER_IDS.sun &&
+    defender.ability === GEN7_ABILITY_IDS.flowerGift
+  ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -620,10 +637,10 @@ function isRemovableItem(item: string, _defenderSpeciesId: number): boolean {
  * Source: Bulbapedia -- "-ate abilities nerfed from 1.3x to 1.2x in Gen 7"
  */
 const ATE_ABILITY_TYPES: Readonly<Record<string, PokemonType>> = {
-  aerilate: "flying",
-  pixilate: "fairy",
-  refrigerate: "ice",
-  galvanize: "electric",
+  [GEN7_ABILITY_IDS.aerilate]: CORE_TYPE_IDS.flying,
+  [GEN7_ABILITY_IDS.pixilate]: CORE_TYPE_IDS.fairy,
+  [GEN7_ABILITY_IDS.refrigerate]: CORE_TYPE_IDS.ice,
+  [GEN7_ABILITY_IDS.galvanize]: CORE_TYPE_IDS.electric,
 };
 
 /**
@@ -678,7 +695,7 @@ export function calculateGen7Damage(
 
   // -ate abilities: change Normal-type moves to the ability's type + 1.2x power (Gen 7)
   const ateType = ATE_ABILITY_TYPES[attackerAbility];
-  if (move.type === "normal" && ateType) {
+  if (move.type === CORE_TYPE_IDS.normal && ateType) {
     effectiveMoveType = ateType;
     ateBoostApplied = true;
   }
@@ -687,8 +704,8 @@ export function calculateGen7Damage(
   // Source: Showdown data/abilities.ts -- Normalize Gen 7+: includes 1.2x power boost
   // Source: Bulbapedia -- "From Generation VII onwards, Normalize also multiplies the
   //   power of the affected moves by 1.2."
-  if (attackerAbility === "normalize") {
-    effectiveMoveType = "normal";
+  if (attackerAbility === GEN7_ABILITY_IDS.normalize) {
+    effectiveMoveType = CORE_TYPE_IDS.normal;
     // Normalize always applies the 1.2x boost, including moves already Normal type.
     // Source: Showdown data/abilities.ts -- normalize: onBasePower fires whenever
     //   move.typeChangerBoosted === this.effect, set unconditionally in onModifyType.
@@ -696,7 +713,7 @@ export function calculateGen7Damage(
   }
 
   // Klutz check
-  const attackerHasKlutz = attackerAbility === "klutz";
+  const attackerHasKlutz = attackerAbility === CORE_ABILITY_IDS.klutz;
   const attackerItem = attacker.pokemon.heldItem;
 
   // ---- Pre-damage base power modifications ----
@@ -704,10 +721,10 @@ export function calculateGen7Damage(
   // SolarBeam half power in rain/sand/hail (NOT sun)
   // Source: Showdown -- SolarBeam power halved in non-sun weather
   if (
-    move.id === "solar-beam" &&
+    move.id === CORE_MOVE_IDS.solarBeam &&
     weather !== null &&
-    weather !== "sun" &&
-    weather !== "harsh-sun"
+    weather !== CORE_WEATHER_IDS.sun &&
+    weather !== CORE_WEATHER_IDS.harshSun
   ) {
     power = Math.floor(power / 2);
   }
@@ -745,17 +762,17 @@ export function calculateGen7Damage(
   //   Psychic- and Dragon-type moves used by Latios and Latias by 20%"
   if (
     !attackerHasKlutz &&
-    attackerItem === "soul-dew" &&
+    attackerItem === CORE_ITEM_IDS.soulDew &&
     (attacker.pokemon.speciesId === LATIAS_SPECIES_ID ||
       attacker.pokemon.speciesId === LATIOS_SPECIES_ID) &&
-    (effectiveMoveType === "psychic" || effectiveMoveType === "dragon")
+    (effectiveMoveType === CORE_TYPE_IDS.psychic || effectiveMoveType === CORE_TYPE_IDS.dragon)
   ) {
     power = pokeRound(power, 4915);
   }
 
   // Knock Off (Gen 6+): 1.5x base power when target holds a removable item
   // Source: Showdown data/moves.ts -- knockoff onBasePower
-  if (move.id === "knock-off" && defender.pokemon.heldItem) {
+  if (move.id === GEN7_MOVE_IDS.knockOff && defender.pokemon.heldItem) {
     if (isRemovableItem(defender.pokemon.heldItem, defender.pokemon.speciesId)) {
       power = pokeRound(power, 6144); // 1.5x
     }
@@ -774,47 +791,54 @@ export function calculateGen7Damage(
 
   // Flash Fire volatile: 1.5x power for Fire moves
   // Source: Showdown data/abilities.ts -- Flash Fire
-  if (effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+  if (
+    effectiveMoveType === CORE_TYPE_IDS.fire &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire)
+  ) {
     power = Math.floor(power * 1.5);
   }
 
   // Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin
   // Source: Showdown data/abilities.ts -- Dry Skin (priority 17)
   const moldBreaker =
-    attackerAbility === "mold-breaker" ||
-    attackerAbility === "teravolt" ||
-    attackerAbility === "turboblaze";
-  if (!moldBreaker && defenderAbility === "dry-skin" && effectiveMoveType === "fire") {
+    attackerAbility === CORE_ABILITY_IDS.moldBreaker ||
+    attackerAbility === CORE_ABILITY_IDS.teravolt ||
+    attackerAbility === CORE_ABILITY_IDS.turboblaze;
+  if (
+    !moldBreaker &&
+    defenderAbility === CORE_ABILITY_IDS.drySkin &&
+    effectiveMoveType === CORE_TYPE_IDS.fire
+  ) {
     power = Math.floor(power * 1.25);
   }
 
   // Technician: 1.5x power for moves with base power <= 60
   // Source: Showdown data/abilities.ts -- Technician (priority 30)
-  if (attackerAbility === "technician" && power <= 60) {
+  if (attackerAbility === GEN7_ABILITY_IDS.technician && power <= 60) {
     power = Math.floor(power * 1.5);
   }
 
   // Iron Fist: 1.2x power for punching moves
   // Source: Showdown data/abilities.ts -- Iron Fist
-  if (attackerAbility === "iron-fist" && move.flags.punch) {
+  if (attackerAbility === GEN7_ABILITY_IDS.ironFist && move.flags.punch) {
     power = Math.floor(power * 1.2);
   }
 
   // Tough Claws: ~1.3x (5325/4096) power for contact moves
   // Source: Showdown data/abilities.ts -- toughclaws: onBasePowerPriority 21
-  if (attackerAbility === "tough-claws" && move.flags.contact) {
+  if (attackerAbility === GEN7_ABILITY_IDS.toughClaws && move.flags.contact) {
     power = pokeRound(power, 5325);
   }
 
   // Strong Jaw: 1.5x (6144/4096) power for bite moves
   // Source: Showdown data/abilities.ts -- strongjaw: onBasePowerPriority 19
-  if (attackerAbility === "strong-jaw" && move.flags.bite) {
+  if (attackerAbility === GEN7_ABILITY_IDS.strongJaw && move.flags.bite) {
     power = pokeRound(power, 6144);
   }
 
   // Mega Launcher: 1.5x (6144/4096) power for pulse moves
   // Source: Showdown data/abilities.ts -- megalauncher: onBasePowerPriority 19
-  if (attackerAbility === "mega-launcher" && move.flags.pulse) {
+  if (attackerAbility === GEN7_ABILITY_IDS.megaLauncher && move.flags.pulse) {
     power = pokeRound(power, 6144);
   }
 
@@ -830,40 +854,47 @@ export function calculateGen7Damage(
   // Source: Showdown data/abilities.ts -- Reckless: onBasePower
   //   if (move.recoil || move.hasCrashDamage) return this.chainModify(1.2)
   // Crash damage moves (Jump Kick, High Jump Kick) also get the boost.
-  if (attackerAbility === "reckless" && (hasRecoilEffect(move.effect) || move.hasCrashDamage)) {
+  if (
+    attackerAbility === GEN7_ABILITY_IDS.reckless &&
+    (hasRecoilEffect(move.effect) || move.hasCrashDamage)
+  ) {
     power = Math.floor(power * 1.2);
   }
 
   // Sheer Force: 1.3x (5325/4096) power for moves with secondary effects
   // Source: Showdown data/abilities.ts -- sheerforce: onBasePower chainModify([5325, 4096])
-  if (attackerAbility === "sheer-force" && isSheerForceEligibleMove(move.effect, move.id)) {
+  if (
+    attackerAbility === GEN7_ABILITY_IDS.sheerForce &&
+    isSheerForceEligibleMove(move.effect, move.id)
+  ) {
     power = pokeRound(power, 5325);
   }
 
   // Venoshock: doubles power when target is poisoned or badly poisoned
   // Source: Showdown data/moves.ts -- venoshock: onBasePower chainModify(2)
   if (
-    move.id === "venoshock" &&
-    (defender.pokemon.status === "poison" || defender.pokemon.status === "badly-poisoned")
+    move.id === GEN7_MOVE_IDS.venoshock &&
+    (defender.pokemon.status === CORE_STATUS_IDS.poison ||
+      defender.pokemon.status === CORE_STATUS_IDS.badlyPoisoned)
   ) {
     power = power * 2;
   }
 
   // Hex: doubles power when target has any primary status condition
   // Source: Showdown data/moves.ts -- hex: onBasePower chainModify(2)
-  if (move.id === "hex" && defender.pokemon.status !== null) {
+  if (move.id === CORE_MOVE_IDS.hex && defender.pokemon.status !== null) {
     power = power * 2;
   }
 
   // Acrobatics: doubles power when holder has no item
   // Source: Showdown data/moves.ts -- Acrobatics basePowerCallback
-  if (move.id === "acrobatics" && !attackerItem) {
+  if (move.id === CORE_MOVE_IDS.acrobatics && !attackerItem) {
     power = power * 2;
   }
 
   // Round: doubles power when an ally used Round earlier this turn
   // Source: Showdown data/moves.ts -- round.basePowerCallback
-  if (move.id === "round") {
+  if (move.id === CORE_MOVE_IDS.round) {
     const attackerSideIndex = context.state.sides.findIndex((s) =>
       s.active.some((a) => a === attacker),
     );
@@ -874,7 +905,7 @@ export function calculateGen7Damage(
           if (
             active &&
             active !== attacker &&
-            active.lastMoveUsed === "round" &&
+            active.lastMoveUsed === CORE_MOVE_IDS.round &&
             active.movedThisTurn
           ) {
             power = power * 2;
@@ -887,7 +918,7 @@ export function calculateGen7Damage(
 
   // Rivalry: gender-dependent power modifier
   // Source: Showdown data/abilities.ts -- Rivalry
-  if (attackerAbility === "rivalry") {
+  if (attackerAbility === GEN7_ABILITY_IDS.rivalry) {
     const attackerGender = attacker.pokemon.gender;
     const defenderGender = defender.pokemon.gender;
     if (
@@ -908,23 +939,23 @@ export function calculateGen7Damage(
   // Source: Showdown data/items.ts
   if (!attackerHasKlutz && attackerItem) {
     if (
-      attackerItem === "adamant-orb" &&
+      attackerItem === CORE_ITEM_IDS.adamantOrb &&
       attacker.pokemon.speciesId === DIALGA_SPECIES_ID &&
-      (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
+      (effectiveMoveType === CORE_TYPE_IDS.dragon || effectiveMoveType === CORE_TYPE_IDS.steel)
     ) {
       power = pokeRound(power, 4915);
     }
     if (
-      attackerItem === "lustrous-orb" &&
+      attackerItem === CORE_ITEM_IDS.lustrousOrb &&
       attacker.pokemon.speciesId === PALKIA_SPECIES_ID &&
-      (effectiveMoveType === "water" || effectiveMoveType === "dragon")
+      (effectiveMoveType === CORE_TYPE_IDS.water || effectiveMoveType === CORE_TYPE_IDS.dragon)
     ) {
       power = pokeRound(power, 4915);
     }
     if (
-      attackerItem === "griseous-orb" &&
+      attackerItem === CORE_ITEM_IDS.griseousOrb &&
       attacker.pokemon.speciesId === GIRATINA_SPECIES_ID &&
-      (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
+      (effectiveMoveType === CORE_TYPE_IDS.ghost || effectiveMoveType === CORE_TYPE_IDS.dragon)
     ) {
       power = pokeRound(power, 4915);
     }
@@ -1009,8 +1040,8 @@ export function calculateGen7Damage(
   // Source: Showdown -- Thick Fat
   if (
     !moldBreaker &&
-    defenderAbility === "thick-fat" &&
-    (effectiveMoveType === "fire" || effectiveMoveType === "ice")
+    defenderAbility === GEN7_ABILITY_IDS.thickFat &&
+    (effectiveMoveType === CORE_TYPE_IDS.fire || effectiveMoveType === CORE_TYPE_IDS.ice)
   ) {
     attack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
@@ -1018,7 +1049,11 @@ export function calculateGen7Damage(
 
   // Heatproof: halves fire damage
   // Source: Showdown data/abilities.ts -- Heatproof
-  if (!moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire") {
+  if (
+    !moldBreaker &&
+    defenderAbility === GEN7_ABILITY_IDS.heatproof &&
+    effectiveMoveType === CORE_TYPE_IDS.fire
+  ) {
     power = Math.floor(power / 2);
     abilityMultiplier *= 0.5;
   }
@@ -1050,23 +1085,23 @@ export function calculateGen7Damage(
   // 3. Weather modifier
   // Source: Showdown sim/battle-actions.ts
   let weatherMod = 1;
-  if (weather === "rain" || weather === "heavy-rain") {
-    if (effectiveMoveType === "water") {
+  if (weather === CORE_WEATHER_IDS.rain || weather === CORE_WEATHER_IDS.heavyRain) {
+    if (effectiveMoveType === CORE_TYPE_IDS.water) {
       baseDamage = pokeRound(baseDamage, 6144); // 1.5x
       weatherMod = 1.5;
-    } else if (effectiveMoveType === "fire") {
-      if (weather === "heavy-rain") {
+    } else if (effectiveMoveType === CORE_TYPE_IDS.fire) {
+      if (weather === CORE_WEATHER_IDS.heavyRain) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
       }
       baseDamage = pokeRound(baseDamage, 2048); // 0.5x
       weatherMod = 0.5;
     }
-  } else if (weather === "sun" || weather === "harsh-sun") {
-    if (effectiveMoveType === "fire") {
+  } else if (weather === CORE_WEATHER_IDS.sun || weather === CORE_WEATHER_IDS.harshSun) {
+    if (effectiveMoveType === CORE_TYPE_IDS.fire) {
       baseDamage = pokeRound(baseDamage, 6144); // 1.5x
       weatherMod = 1.5;
-    } else if (effectiveMoveType === "water") {
-      if (weather === "harsh-sun") {
+    } else if (effectiveMoveType === CORE_TYPE_IDS.water) {
+      if (weather === CORE_WEATHER_IDS.harshSun) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
       }
       baseDamage = pokeRound(baseDamage, 2048); // 0.5x
@@ -1085,7 +1120,7 @@ export function calculateGen7Damage(
 
     // Sniper: additional 1.5x on top of 1.5x crit = 2.25x total
     // Source: Showdown data/abilities.ts -- Sniper onModifyDamage
-    if (attackerAbility === "sniper") {
+    if (attackerAbility === GEN7_ABILITY_IDS.sniper) {
       baseDamage = pokeRound(baseDamage, 6144);
       critMultiplier = 2.25;
     }
@@ -1102,7 +1137,7 @@ export function calculateGen7Damage(
   const stabMod = getStabModifier(
     effectiveMoveType,
     attacker.types,
-    attackerAbility === "adaptability",
+    attackerAbility === GEN7_ABILITY_IDS.adaptability,
   );
   if (stabMod > 1) {
     // 1.5x STAB = 6144/4096; 2.0x Adaptability = 8192/4096
@@ -1127,12 +1162,12 @@ export function calculateGen7Damage(
   // Scrappy: Normal and Fighting hit Ghost
   // Source: Showdown data/abilities.ts -- Scrappy
   if (
-    attackerAbility === "scrappy" &&
+    attackerAbility === GEN7_ABILITY_IDS.scrappy &&
     effectiveness === 0 &&
-    (effectiveMoveType === "normal" || effectiveMoveType === "fighting") &&
-    defender.types.includes("ghost")
+    (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
+    defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
-    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
+    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== CORE_TYPE_IDS.ghost);
     effectiveness =
       nonGhostTypes.length > 0
         ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
@@ -1164,7 +1199,7 @@ export function calculateGen7Damage(
 
   // Wonder Guard: only super-effective moves hit
   // Source: Showdown data/abilities.ts -- Wonder Guard
-  if (!moldBreaker && defenderAbility === "wonder-guard" && effectiveness < 2) {
+  if (!moldBreaker && defenderAbility === CORE_ABILITY_IDS.wonderGuard && effectiveness < 2) {
     return {
       damage: 0,
       effectiveness,
@@ -1206,9 +1241,9 @@ export function calculateGen7Damage(
   // Source: Showdown sim/battle-actions.ts
   // Gen 6+: Facade bypasses burn penalty
   // Source: Showdown sim/battle-actions.ts -- `this.battle.gen < 6 || move.id !== 'facade'`
-  const hasBurn = isPhysical && attacker.pokemon.status === "burn";
-  const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
-  const facadeBypass = move.id === "facade"; // Gen 6+: Facade bypasses burn
+  const hasBurn = isPhysical && attacker.pokemon.status === CORE_STATUS_IDS.burn;
+  const gutsActive = attackerAbility === GEN7_ABILITY_IDS.guts && attacker.pokemon.status !== null;
+  const facadeBypass = move.id === GEN7_MOVE_IDS.facade; // Gen 6+: Facade bypasses burn
   const burnApplied = hasBurn && !gutsActive && !facadeBypass;
   const burnMultiplier = burnApplied ? 0.5 : 1;
   if (burnApplied) {
@@ -1217,7 +1252,7 @@ export function calculateGen7Damage(
 
   // Tinted Lens: double damage if not very effective
   // Source: Showdown data/abilities.ts -- Tinted Lens
-  if (attackerAbility === "tinted-lens" && effectiveness < 1) {
+  if (attackerAbility === GEN7_ABILITY_IDS.tintedLens && effectiveness < 1) {
     baseDamage = baseDamage * 2;
     abilityMultiplier *= 2;
   }
@@ -1227,7 +1262,8 @@ export function calculateGen7Damage(
   // Source: Showdown data/abilities.ts -- Filter/Solid Rock: flags: { breakable: 1 }
   if (
     !moldBreaker &&
-    (defenderAbility === "filter" || defenderAbility === "solid-rock") &&
+    (defenderAbility === GEN7_ABILITY_IDS.filter ||
+      defenderAbility === GEN7_ABILITY_IDS.solidRock) &&
     effectiveness > 1
   ) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
@@ -1238,7 +1274,7 @@ export function calculateGen7Damage(
   // Unlike Filter/Solid Rock, Prism Armor is NOT bypassed by Mold Breaker.
   // Source: Showdown data/abilities.ts -- prismarmo: onSourceModifyDamage (no breakable flag)
   // Source: Bulbapedia "Prism Armor" -- "reduces damage from super-effective moves by 25%"
-  if (defenderAbility === "prism-armor" && effectiveness > 1) {
+  if (defenderAbility === GEN7_ABILITY_IDS.prismArmor && effectiveness > 1) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
   }
@@ -1250,7 +1286,10 @@ export function calculateGen7Damage(
   // Source: Showdown sim/battle-actions.ts -- screens in modifyDamage
   // Source: Bulbapedia "Aurora Veil" -- halves damage from physical and special moves
   let screenMultiplier = 1;
-  const screenBypassMoves = new Set(["brick-break", "psychic-fangs"]);
+  const screenBypassMoves: ReadonlySet<string> = new Set([
+    GEN7_MOVE_IDS.brickBreak,
+    GEN7_MOVE_IDS.psychicFangs,
+  ]);
   if (!isCrit && !screenBypassMoves.has(move.id)) {
     const sides = context.state?.sides;
     if (sides) {
@@ -1258,12 +1297,15 @@ export function calculateGen7Damage(
       const defenderSide = sides[defenderSideIndex];
       if (defenderSide?.screens) {
         const hasReflect =
-          isPhysical && defenderSide.screens.some((s: { type: string }) => s.type === "reflect");
+          isPhysical &&
+          defenderSide.screens.some((s: { type: string }) => s.type === CORE_SCREEN_IDS.reflect);
         const hasLightScreen =
           !isPhysical &&
-          defenderSide.screens.some((s: { type: string }) => s.type === "light-screen");
+          defenderSide.screens.some(
+            (s: { type: string }) => s.type === CORE_SCREEN_IDS.lightScreen,
+          );
         const hasAuroraVeil = defenderSide.screens.some(
-          (s: { type: string }) => s.type === "aurora-veil",
+          (s: { type: string }) => s.type === CORE_SCREEN_IDS.auroraVeil,
         );
         if (hasReflect || hasLightScreen || hasAuroraVeil) {
           baseDamage = Math.floor(baseDamage / 2);
@@ -1282,35 +1324,35 @@ export function calculateGen7Damage(
 
   // Life Orb: pokeRound(baseDamage, 5324) ~= 1.3x
   // Source: Showdown data/items.ts -- Life Orb onModifyDamage
-  if (!attackerHasKlutz && attackerItem === "life-orb") {
+  if (!attackerHasKlutz && attackerItem === GEN7_ITEM_IDS.lifeOrb) {
     baseDamage = pokeRound(baseDamage, 5324);
     itemMultiplier = 5324 / 4096;
   }
 
   // Expert Belt: 1.2x for super-effective moves
   // Source: Showdown data/items.ts -- Expert Belt
-  if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > 1) {
+  if (!attackerHasKlutz && attackerItem === GEN7_ITEM_IDS.expertBelt && effectiveness > 1) {
     baseDamage = pokeRound(baseDamage, 4915); // ~1.2x
     itemMultiplier = 4915 / 4096;
   }
 
   // Muscle Band: 1.1x for physical moves
   // Source: Showdown data/items.ts -- Muscle Band
-  if (!attackerHasKlutz && attackerItem === "muscle-band" && isPhysical) {
+  if (!attackerHasKlutz && attackerItem === GEN7_ITEM_IDS.muscleBand && isPhysical) {
     baseDamage = pokeRound(baseDamage, 4505); // ~1.1x
     itemMultiplier = 4505 / 4096;
   }
 
   // Wise Glasses: 1.1x for special moves
   // Source: Showdown data/items.ts -- Wise Glasses
-  if (!attackerHasKlutz && attackerItem === "wise-glasses" && !isPhysical) {
+  if (!attackerHasKlutz && attackerItem === GEN7_ITEM_IDS.wiseGlasses && !isPhysical) {
     baseDamage = pokeRound(baseDamage, 4505); // ~1.1x
     itemMultiplier = 4505 / 4096;
   }
 
   // Metronome item: consecutive use boost
   // Source: Showdown data/items.ts -- Metronome onModifyDamage
-  if (!attackerHasKlutz && attackerItem === "metronome") {
+  if (!attackerHasKlutz && attackerItem === GEN7_ITEM_IDS.metronome) {
     const metronomeState = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
     if (metronomeState?.data?.count) {
       const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
@@ -1339,7 +1381,7 @@ export function calculateGen7Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === "normal" || effectiveness > 1) {
+      if (resistType === CORE_TYPE_IDS.normal || effectiveness > 1) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound
         typeResistBerryConsumed = defenderItemForBerry;
       }
@@ -1384,7 +1426,7 @@ export function calculateGen7Damage(
     ) {
       attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
-    attacker.volatileStatuses.set("gem-used" as VolatileStatus, { turnsLeft: 1 });
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.gemUsed as VolatileStatus, { turnsLeft: 1 });
   }
 
   const breakdown: DamageBreakdown = {
