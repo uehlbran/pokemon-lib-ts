@@ -4,6 +4,7 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { CORE_TERRAIN_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import {
   GEN9_ORICHALCUM_HADRON_MULTIPLIER,
@@ -168,8 +169,8 @@ export function handleProtosynthesis(ctx: AbilityContext): AbilityResult {
 
     const effects: AbilityEffect[] = [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.protosynthesis,
         data: { boostedStat, fromBoosterEnergy: consumeBoosterEnergy },
       },
@@ -237,8 +238,8 @@ export function handleQuarkDrive(ctx: AbilityContext): AbilityResult {
 
     const effects: AbilityEffect[] = [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.quarkDrive,
         data: { boostedStat, fromBoosterEnergy: consumeBoosterEnergy },
       },

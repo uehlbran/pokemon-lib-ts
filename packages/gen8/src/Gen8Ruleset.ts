@@ -17,7 +17,11 @@ import type {
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { BaseRuleset } from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BaseRuleset,
+} from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
@@ -322,7 +326,14 @@ export class Gen8Ruleset extends BaseRuleset {
             context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
           return {
             activated: true,
-            effects: [{ effectType: "stat-change", target: "opponent", stat, stages }],
+            effects: [
+              {
+                effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+                target: BATTLE_EFFECT_TARGETS.opponent,
+                stat,
+                stages,
+              },
+            ],
             messages: [`${name}'s Mirror Armor reflected the stat drop!`],
           };
         }

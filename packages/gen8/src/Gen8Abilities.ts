@@ -1,4 +1,5 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger } from "@pokemon-lib-ts/core";
 import { handleGen8SwitchAbility, shouldMirrorArmorReflect } from "./Gen8AbilitiesSwitch.js";
 
@@ -113,7 +114,14 @@ function handleMirrorArmorStatChange(ctx: AbilityContext): AbilityResult {
   // Reflect the stat drop back to the opponent
   return {
     activated: true,
-    effects: [{ effectType: "stat-change", target: "opponent", stat, stages }],
+    effects: [
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.opponent,
+        stat,
+        stages,
+      },
+    ],
     messages: [`${name}'s Mirror Armor reflected the stat drop!`],
   };
 }
