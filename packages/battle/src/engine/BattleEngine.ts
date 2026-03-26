@@ -5175,7 +5175,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     for (const effect of result.effects) {
       switch (effect.type) {
-        case "heal": {
+        case BATTLE_ITEM_EFFECT_TYPES.heal: {
           const amount = effect.value as number;
           const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
           const oldHp = pokemon.pokemon.currentHp;
@@ -5194,7 +5194,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "status-cure": {
+        case BATTLE_ITEM_EFFECT_TYPES.statusCure: {
           const status = pokemon.pokemon.status;
           if (status) {
             pokemon.pokemon.status = null;
@@ -5227,18 +5227,18 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
-        case "survive": {
+        case BATTLE_ITEM_EFFECT_TYPES.survive: {
           pokemon.pokemon.currentHp = Math.max(1, effect.value as number);
           break;
         }
-        case "flinch": {
+        case BATTLE_ITEM_EFFECT_TYPES.flinch: {
           const flinchTarget = opponent ?? this.getOpponentActive(side);
           if (flinchTarget) {
             flinchTarget.volatileStatuses.set(CORE_VOLATILE_IDS.flinch, { turnsLeft: 1 });
           }
           break;
         }
-        case "volatile-cure": {
+        case BATTLE_ITEM_EFFECT_TYPES.volatileCure: {
           const volatile = effect.value as string;
           if (
             pokemon.volatileStatuses.has(volatile as import("@pokemon-lib-ts/core").VolatileStatus)
@@ -5255,14 +5255,14 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "status-inflict": {
+        case BATTLE_ITEM_EFFECT_TYPES.statusInflict: {
           const statusToInflict = effect.value as PrimaryStatus;
           if (!pokemon.pokemon.status) {
             this.applyPrimaryStatus(pokemon, statusToInflict, side);
           }
           break;
         }
-        case "inflict-status": {
+        case BATTLE_ITEM_EFFECT_TYPES.inflictStatus: {
           // Typed variant: status field is a PrimaryStatus (Toxic Orb, Flame Orb)
           // Source: Showdown data/items.ts -- Toxic Orb / Flame Orb onResidual
           if (!pokemon.pokemon.status) {
@@ -5270,7 +5270,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "chip-damage": {
+        case BATTLE_ITEM_EFFECT_TYPES.chipDamage: {
           // Typed variant: chip damage with explicit target (Life Orb, Black Sludge, Sticky Barb, Rocky Helmet, Jaboca/Rowap Berry)
           // Source: Showdown data/items.ts -- various item onResidual / onDamagingHit
           const chipAmount = effect.value;
@@ -5297,7 +5297,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
-        case "stat-boost": {
+        case BATTLE_ITEM_EFFECT_TYPES.statBoost: {
           // Stage boost to the specified stat for the holder.
           // Uses effect.stages if present (e.g., Weakness Policy = +2), defaulting to +1.
           // Source: Showdown -- stat pinch berries (+1), Weakness Policy (+2) onEat/onDamagingHit
@@ -5319,7 +5319,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "self-damage": {
+        case BATTLE_ITEM_EFFECT_TYPES.selfDamage: {
           const amount = effect.value as number;
           // Respect effect.target: 'opponent' means damage the attacker (e.g., Rocky Helmet, Jaboca Berry)
           // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks damage the source
@@ -5343,7 +5343,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
-        case "none":
+        case BATTLE_ITEM_EFFECT_TYPES.none:
           if (effect.value === BATTLE_ITEM_EFFECT_VALUES.forceSwitch) {
             const switchSide =
               effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent
@@ -5352,7 +5352,7 @@ export class BattleEngine implements BattleEventEmitter {
             this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });
           }
           break;
-        case "speed-boost":
+        case BATTLE_ITEM_EFFECT_TYPES.speedBoost:
           // These effect types carry no immediate engine action here.
           // 'none' is used for force-switch and other engine-deferred behaviors.
           // 'speed-boost' is applied inline in item handlers.
@@ -5394,13 +5394,13 @@ export class BattleEngine implements BattleEventEmitter {
       type: "ability-activate",
       side: pokemonSide,
       pokemon: getPokemonName(pokemon),
-      ability: pokemon.ability ?? "unknown",
+      ability: pokemon.ability ?? CORE_ABILITY_IDS.none,
     });
 
     // Process each effect
     for (const effect of result.effects) {
       switch (effect.effectType) {
-        case "stat-change": {
+        case BATTLE_ABILITY_EFFECT_TYPES.statChange: {
           // Apply stat change to the appropriate target
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
           const targetSide =
@@ -5420,7 +5420,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
-        case "weather-set": {
+        case BATTLE_ABILITY_EFFECT_TYPES.weatherSet: {
           // Set weather on the field
           if (effect.weather) {
             this.state.weather = {
@@ -5439,7 +5439,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "heal": {
+        case BATTLE_ABILITY_EFFECT_TYPES.heal: {
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
           const targetSide =
             effect.target === BATTLE_EFFECT_TARGETS.self ? pokemonSide : opponentSide;
@@ -5461,7 +5461,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "chip-damage": {
+        case BATTLE_ABILITY_EFFECT_TYPES.chipDamage: {
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
           const targetSide =
             effect.target === BATTLE_EFFECT_TARGETS.self ? pokemonSide : opponentSide;
@@ -5479,7 +5479,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
-        case "status-cure": {
+        case BATTLE_ABILITY_EFFECT_TYPES.statusCure: {
           if (effect.target === BATTLE_EFFECT_TARGETS.ally) {
             // Ally-targeting status cure (e.g., Healer ability in doubles/triples).
             // Find an ally on the same side that has a status condition.
@@ -5517,7 +5517,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "status-inflict": {
+        case BATTLE_ABILITY_EFFECT_TYPES.statusInflict: {
           // Source: Showdown — Static, Flame Body, Poison Point inflict status on contact
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
           const targetSide =
@@ -5556,7 +5556,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "ability-change": {
+        case BATTLE_ABILITY_EFFECT_TYPES.abilityChange: {
           // Ability swap effects (Trace, Skill Swap, etc.)
           // Source: Bulbapedia — various ability-swapping mechanics
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
@@ -5567,7 +5567,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           break;
         }
-        case "type-change": {
+        case BATTLE_ABILITY_EFFECT_TYPES.typeChange: {
           // Active type change (Multitype, Forecast, Color Change, etc.)
           // Source: Showdown — Multitype changes Arceus's type on switch-in based on Plate
           // Source: Bulbapedia — Multitype: "Changes Arceus's type and form to match its held Plate"
@@ -5583,7 +5583,7 @@ export class BattleEngine implements BattleEventEmitter {
           void targetSide;
           break;
         }
-        case "volatile-remove": {
+        case BATTLE_ABILITY_EFFECT_TYPES.volatileRemove: {
           // Remove a volatile status (e.g., Zen Mode reversion)
           // Source: Showdown — abilities that remove volatile statuses when conditions change
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
@@ -5600,7 +5600,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           break;
         }
-        case "item-restore": {
+        case BATTLE_ABILITY_EFFECT_TYPES.itemRestore: {
           // Restore a previously consumed item (e.g., Harvest restoring a Berry)
           // Source: Showdown data/abilities.ts — harvest onResidual: restores lastItem
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
