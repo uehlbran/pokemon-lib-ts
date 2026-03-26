@@ -1,7 +1,7 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
-import { GEN8_ABILITY_IDS } from "./data/reference-ids.js";
+import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { GEN8_ABILITY_IDS, GEN8_MOVE_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 8 damage-modifying ability handlers.
@@ -52,7 +52,7 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *   from burn/paralysis/freeze with 20% chance
  */
 const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
+  GEN8_MOVE_IDS.triAttack,
   "secret-power",
   "relic-song",
 ]);
@@ -140,7 +140,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
   switch (abilityId) {
     // ---- Attacker-side abilities (carried from Gen 7) ----
 
-    case "sheer-force": {
+    case GEN8_ABILITY_IDS.sheerForce: {
       // Sheer Force: 1.3x (5325/4096) damage for moves with secondary effects.
       // Suppresses Life Orb recoil for affected moves.
       // Source: Showdown data/abilities.ts -- sheerforce onBasePower
@@ -153,7 +153,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "analytic": {
+    case GEN8_ABILITY_IDS.analytic: {
       // Analytic: 1.3x (5325/4096) damage if the user moves last.
       // Source: Showdown data/abilities.ts -- analytic onBasePower
       if (!ctx.opponent) return NO_ACTIVATION;
@@ -165,7 +165,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "sand-force": {
+    case GEN8_ABILITY_IDS.sandForce: {
       // Sand Force: 1.3x (5325/4096) to Rock, Ground, Steel moves in sandstorm.
       // Source: Showdown data/abilities.ts -- sandforce onBasePower
       if (!ctx.move) return NO_ACTIVATION;
@@ -184,7 +184,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "technician": {
+    case GEN8_ABILITY_IDS.technician: {
       // Technician: 1.5x power for moves with base power <= 60.
       // Source: Showdown data/abilities.ts -- technician onBasePower (priority 30)
       if (!ctx.move) return NO_ACTIVATION;
@@ -196,7 +196,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "iron-fist": {
+    case GEN8_ABILITY_IDS.ironFist: {
       // Iron Fist: 1.2x (4915/4096) power for punching moves.
       // Source: Showdown data/abilities.ts -- ironfist: move.flags['punch']
       if (!ctx.move) return NO_ACTIVATION;
@@ -208,7 +208,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "reckless": {
+    case GEN8_ABILITY_IDS.reckless: {
       // Reckless: 1.2x (4915/4096) power for recoil AND crash-damage moves.
       // Source: Showdown data/abilities.ts -- reckless: move.recoil || move.hasCrashDamage
       if (!ctx.move) return NO_ACTIVATION;
@@ -220,7 +220,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "adaptability": {
+    case GEN8_ABILITY_IDS.adaptability: {
       // Adaptability: STAB becomes 2x instead of 1.5x.
       // Source: Showdown data/abilities.ts -- adaptability onModifySTAB
       if (!ctx.move) return NO_ACTIVATION;
@@ -232,11 +232,11 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "hustle": {
+    case GEN8_ABILITY_IDS.hustle: {
       // Hustle: 1.5x Attack stat for physical moves, 0.8x accuracy.
       // Source: Showdown data/abilities.ts -- hustle onModifyAtk
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -244,12 +244,12 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "huge-power":
-    case "pure-power": {
+    case GEN8_ABILITY_IDS.hugePower:
+    case GEN8_ABILITY_IDS.purePower: {
       // Huge Power / Pure Power: 2x Attack stat.
       // Source: Showdown data/abilities.ts -- hugepower / purepower onModifyAtk
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -257,11 +257,11 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "guts": {
+    case GEN8_ABILITY_IDS.guts: {
       // Guts: 1.5x Attack when the user has a primary status condition.
       // Source: Showdown data/abilities.ts -- guts onModifyAtk
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
       return {
         activated: true,
@@ -270,10 +270,10 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "blaze":
-    case "overgrow":
-    case "torrent":
-    case "swarm": {
+    case GEN8_ABILITY_IDS.blaze:
+    case GEN8_ABILITY_IDS.overgrow:
+    case GEN8_ABILITY_IDS.torrent:
+    case GEN8_ABILITY_IDS.swarm: {
       // Pinch abilities: 1.5x when HP <= floor(maxHP/3) and move type matches.
       // Source: Showdown data/abilities.ts -- blaze/overgrow/torrent/swarm
       if (!ctx.move) return NO_ACTIVATION;
@@ -289,7 +289,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "sniper": {
+    case GEN8_ABILITY_IDS.sniper: {
       // Sniper: crits deal extra damage. The damage calc applies the numeric value.
       // Source: Showdown data/abilities.ts -- sniper onModifyDamage: if crit, chainModify(1.5)
       return {
@@ -299,7 +299,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "tinted-lens": {
+    case GEN8_ABILITY_IDS.tintedLens: {
       // Tinted Lens: "Not very effective" moves deal 2x damage.
       // Source: Showdown data/abilities.ts -- tintedlens onModifyDamage
       return {
@@ -311,7 +311,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- Gen 6 carry-forward: Attacker-side ----
 
-    case "tough-claws": {
+    case GEN8_ABILITY_IDS.toughClaws: {
       // Tough Claws: 1.3x (5325/4096) power for contact moves.
       // Source: Bulbapedia "Tough Claws" -- boosts contact moves by 30%
       // Source: Showdown data/abilities.ts -- toughclaws: move.flags['contact']
@@ -324,7 +324,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "strong-jaw": {
+    case GEN8_ABILITY_IDS.strongJaw: {
       // Strong Jaw: 1.5x (6144/4096) power for bite moves.
       // Source: Bulbapedia "Strong Jaw" -- boosts bite moves by 50%
       // Source: Showdown data/abilities.ts -- strongjaw: move.flags['bite']
@@ -337,7 +337,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "mega-launcher": {
+    case GEN8_ABILITY_IDS.megaLauncher: {
       // Mega Launcher: 1.5x (6144/4096) power for pulse/aura moves.
       // Source: Bulbapedia "Mega Launcher" -- boosts pulse/aura moves by 50%
       // Source: Showdown data/abilities.ts -- megalauncher: move.flags['pulse']
@@ -352,7 +352,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- -ate abilities (Gen 7/8: 1.2x) ----
 
-    case "pixilate": {
+    case GEN8_ABILITY_IDS.pixilate: {
       // Pixilate: Normal moves become Fairy, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- pixilate: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
@@ -364,7 +364,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "aerilate": {
+    case GEN8_ABILITY_IDS.aerilate: {
       // Aerilate: Normal moves become Flying, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- aerilate: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
@@ -376,7 +376,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "refrigerate": {
+    case GEN8_ABILITY_IDS.refrigerate: {
       // Refrigerate: Normal moves become Ice, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- refrigerate: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
@@ -388,7 +388,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "galvanize": {
+    case GEN8_ABILITY_IDS.galvanize: {
       // Galvanize: Normal moves become Electric, 1.2x (4915/4096) boost.
       // Source: Showdown data/abilities.ts -- galvanize: onModifyType + onBasePower
       if (!ctx.move) return NO_ACTIVATION;
@@ -400,7 +400,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "parental-bond": {
+    case GEN8_ABILITY_IDS.parentalBond: {
       // Parental Bond: moves hit twice, second hit at 25% power in Gen 7+.
       // Source: Showdown data/abilities.ts -- parentalbond: Gen 7+ secondHit 0.25
       if (!ctx.move) return NO_ACTIVATION;
@@ -415,13 +415,13 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- NEW Gen 8 attacker-side abilities ----
 
-    case "gorilla-tactics": {
+    case GEN8_ABILITY_IDS.gorillaTactics: {
       // Gorilla Tactics: 1.5x Attack for physical moves (locks into first move used).
       // Source: Showdown data/abilities.ts -- gorillatactics: onModifyAtk, chainModify(1.5)
       // Source: Bulbapedia "Gorilla Tactics" -- "boosts Attack by 50% but locks the user
       //   into the first move it uses"
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "none", target: "self" }],
@@ -429,7 +429,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "transistor": {
+    case GEN8_ABILITY_IDS.transistor: {
       // Transistor: 1.5x (6144/4096) for Electric-type moves.
       // Source: Showdown data/abilities.ts -- transistor: onModifyAtk/onModifySpA, chainModify(1.5)
       // Source: Bulbapedia "Transistor" -- "powers up Electric-type moves by 50%"
@@ -443,7 +443,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "dragons-maw": {
+    case GEN8_ABILITY_IDS.dragonsMaw: {
       // Dragon's Maw: 1.5x (6144/4096) for Dragon-type moves.
       // Source: Showdown data/abilities.ts -- dragonsmaw: onModifyAtk/onModifySpA, chainModify(1.5)
       // Source: Bulbapedia "Dragon's Maw" -- "powers up Dragon-type moves by 50%"
@@ -456,7 +456,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "punk-rock": {
+    case GEN8_ABILITY_IDS.punkRock: {
       // Punk Rock (attacker side): 1.3x (5325/4096) for sound-based moves.
       // Source: Showdown data/abilities.ts -- punkrock: onBasePower, chainModify([5325, 4096])
       // Source: Bulbapedia "Punk Rock" -- "boosts the power of sound-based moves by 30%"
@@ -469,7 +469,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "steelworker": {
+    case GEN8_ABILITY_IDS.steelworker: {
       // Steelworker: 1.5x (6144/4096) for Steel-type moves.
       // Source: Showdown data/abilities.ts -- steelworker: onModifyAtk/onModifySpA, chainModify(1.5)
       // Source: Bulbapedia "Steelworker" -- "powers up Steel-type moves by 50%"
@@ -484,13 +484,14 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- Defender-side abilities ----
 
-    case "multiscale":
-    case "shadow-shield": {
+    case GEN8_ABILITY_IDS.multiscale:
+    case GEN8_ABILITY_IDS.shadowShield: {
       // Multiscale / Shadow Shield: 0.5x damage taken when at full HP.
       // Source: Showdown data/abilities.ts -- multiscale/shadowshield onSourceModifyDamage
       const maxHpMs = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       if (ctx.pokemon.pokemon.currentHp < maxHpMs) return NO_ACTIVATION;
-      const abilityName = abilityId === "multiscale" ? "Multiscale" : "Shadow Shield";
+      const abilityName =
+        abilityId === GEN8_ABILITY_IDS.multiscale ? "Multiscale" : "Shadow Shield";
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -498,8 +499,8 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "solid-rock":
-    case "filter": {
+    case GEN8_ABILITY_IDS.solidRock:
+    case GEN8_ABILITY_IDS.filter: {
       // Solid Rock / Filter: 0.75x super-effective damage taken.
       // Source: Showdown data/abilities.ts -- solidrock / filter onSourceModifyDamage
       return {
@@ -509,7 +510,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "prism-armor": {
+    case GEN8_ABILITY_IDS.prismArmor: {
       // Prism Armor: 0.75x super-effective damage. Cannot be ignored by Mold Breaker.
       // Source: Showdown data/abilities.ts -- prismarmor: isBreakable: false
       return {
@@ -519,7 +520,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "thick-fat": {
+    case GEN8_ABILITY_IDS.thickFat: {
       // Thick Fat: 0.5x damage from Fire and Ice type moves.
       // Source: Showdown data/abilities.ts -- thickfat onSourceModifyAtk/onSourceModifySpA
       if (!ctx.move) return NO_ACTIVATION;
@@ -533,7 +534,7 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "marvel-scale": {
+    case GEN8_ABILITY_IDS.marvelScale: {
       // Marvel Scale: 1.5x Defense when the holder has a primary status condition.
       // Source: Showdown data/abilities.ts -- marvelscale onModifyDef
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
@@ -544,11 +545,11 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       };
     }
 
-    case "fur-coat": {
+    case GEN8_ABILITY_IDS.furCoat: {
       // Fur Coat: doubles effective Defense against physical moves.
       // Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -558,12 +559,12 @@ export function handleGen8DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
     // ---- NEW Gen 8 defender-side abilities ----
 
-    case "ice-scales": {
+    case GEN8_ABILITY_IDS.iceScales: {
       // Ice Scales: 0.5x (2048/4096) incoming special damage.
       // Source: Showdown data/abilities.ts -- icescales: onSourceModifyDamage, chainModify(0.5)
       // Source: Bulbapedia "Ice Scales" -- "halves the damage taken from special moves"
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "special") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.special) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [{ effectType: "damage-reduction", target: "self" }],
@@ -588,7 +589,7 @@ export function handleGen8DamageImmunityAbility(ctx: AbilityContext): AbilityRes
   const name = ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
 
   switch (abilityId) {
-    case "sturdy": {
+    case GEN8_ABILITY_IDS.sturdy: {
       // Sturdy: Block OHKO moves entirely
       // Source: Showdown data/abilities.ts -- sturdy onTryHit
       if (ctx.move?.effect?.type === "ohko") {
@@ -622,7 +623,7 @@ export function getSheerForceMultiplier(
   effect: MoveEffect | null,
   moveId?: string,
 ): number {
-  if (abilityId !== "sheer-force") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.sheerForce) return 1;
   if (!isSheerForceEligibleMove(effect, moveId ?? "")) return 1;
   return 5325 / 4096;
 }
@@ -637,7 +638,7 @@ export function sheerForceSuppressesLifeOrb(
   effect: MoveEffect | null,
   moveId?: string,
 ): boolean {
-  if (abilityId !== "sheer-force") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.sheerForce) return false;
   return isSheerForceEligibleMove(effect, moveId ?? "");
 }
 
@@ -652,7 +653,8 @@ export function getMultiscaleMultiplier(
   currentHp: number,
   maxHp: number,
 ): number {
-  if (abilityId !== "multiscale" && abilityId !== "shadow-shield") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.multiscale && abilityId !== GEN8_ABILITY_IDS.shadowShield)
+    return 1;
   if (currentHp < maxHp) return 1;
   return 0.5;
 }
@@ -669,7 +671,7 @@ export function getSturdyDamageCap(
   currentHp: number,
   maxHp: number,
 ): number {
-  if (abilityId !== "sturdy") return damage;
+  if (abilityId !== GEN8_ABILITY_IDS.sturdy) return damage;
   if (currentHp !== maxHp) return damage;
   if (damage < currentHp) return damage;
   return maxHp - 1;
@@ -681,7 +683,7 @@ export function getSturdyDamageCap(
  * Source: Showdown data/abilities.ts -- sturdy onTryHit
  */
 export function sturdyBlocksOHKO(abilityId: string, effect: MoveEffect | null): boolean {
-  if (abilityId !== "sturdy") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.sturdy) return false;
   if (!effect) return false;
   return effect.type === "ohko";
 }
@@ -693,7 +695,7 @@ export function sturdyBlocksOHKO(abilityId: string, effect: MoveEffect | null): 
  * Source: Showdown data/abilities.ts -- toughclaws: chainModify([5325, 4096])
  */
 export function getToughClawsMultiplier(abilityId: string, isContact: boolean): number {
-  if (abilityId !== "tough-claws") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.toughClaws) return 1;
   if (!isContact) return 1;
   return 5325 / 4096;
 }
@@ -705,7 +707,7 @@ export function getToughClawsMultiplier(abilityId: string, isContact: boolean): 
  * Source: Showdown data/abilities.ts -- strongjaw: chainModify(1.5)
  */
 export function getStrongJawMultiplier(abilityId: string, isBite: boolean): number {
-  if (abilityId !== "strong-jaw") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.strongJaw) return 1;
   if (!isBite) return 1;
   return 1.5;
 }
@@ -717,7 +719,7 @@ export function getStrongJawMultiplier(abilityId: string, isBite: boolean): numb
  * Source: Showdown data/abilities.ts -- megalauncher: chainModify(1.5)
  */
 export function getMegaLauncherMultiplier(abilityId: string, isPulse: boolean): number {
-  if (abilityId !== "mega-launcher") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.megaLauncher) return 1;
   if (!isPulse) return 1;
   return 1.5;
 }
@@ -739,13 +741,13 @@ export function getAteAbilityOverride(
   if (moveType !== CORE_TYPE_IDS.normal) return null;
 
   switch (abilityId) {
-    case "pixilate":
+    case GEN8_ABILITY_IDS.pixilate:
       return { type: CORE_TYPE_IDS.fairy, multiplier: 4915 / 4096 };
-    case "aerilate":
+    case GEN8_ABILITY_IDS.aerilate:
       return { type: CORE_TYPE_IDS.flying, multiplier: 4915 / 4096 };
-    case "refrigerate":
+    case GEN8_ABILITY_IDS.refrigerate:
       return { type: CORE_TYPE_IDS.ice, multiplier: 4915 / 4096 };
-    case "galvanize":
+    case GEN8_ABILITY_IDS.galvanize:
       return { type: CORE_TYPE_IDS.electric, multiplier: 4915 / 4096 };
     default:
       return null;
@@ -764,7 +766,7 @@ export function isParentalBondEligible(
   movePower: number | null,
   moveEffectType: string | null,
 ): boolean {
-  if (abilityId !== "parental-bond") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.parentalBond) return false;
   if (!movePower || movePower <= 0) return false;
   if (moveEffectType === "multi-hit") return false;
   return true;
@@ -785,7 +787,7 @@ export const PARENTAL_BOND_SECOND_HIT_MULTIPLIER = 0.25;
  * Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
  */
 export function getFurCoatMultiplier(abilityId: string, isPhysical: boolean): number {
-  if (abilityId !== "fur-coat") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.furCoat) return 1;
   if (!isPhysical) return 1;
   return 2;
 }
@@ -802,8 +804,8 @@ export function getFurCoatMultiplier(abilityId: string, isPhysical: boolean): nu
  * Source: Bulbapedia "Gorilla Tactics" -- "boosts Attack by 50%"
  */
 export function getGorillaTacticsMultiplier(abilityId: string, category: string): number {
-  if (abilityId !== "gorilla-tactics") return 1;
-  if (category !== "physical") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.gorillaTactics) return 1;
+  if (category !== CORE_MOVE_CATEGORIES.physical) return 1;
   return 6144 / 4096;
 }
 
@@ -817,20 +819,22 @@ export function getGorillaTacticsMultiplier(abilityId: string, category: string)
  * Source: Bulbapedia "Transistor" -- "powers up Electric-type moves by 50%"
  */
 export function getTransistorMultiplier(abilityId: string, moveType: PokemonType): number {
-  if (abilityId !== "transistor") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.transistor) return 1;
   if (moveType !== CORE_TYPE_IDS.electric) return 1;
   return 6144 / 4096;
 }
 
 /**
  * Get the Dragon's Maw multiplier.
- * Returns 1.5x (6144/4096) for Dragon-type moves when ability is 'dragons-maw'.
+ * Returns 1.5x (6144/4096) for Dragon-type moves when ability is Dragon's Maw.
  *
  * Source: Showdown data/abilities.ts -- dragonsmaw: chainModify(1.5)
  * Source: Bulbapedia "Dragon's Maw" -- "powers up Dragon-type moves by 50%"
  */
 export function getDragonsMawMultiplier(abilityId: string, moveType: PokemonType): number {
-  if (abilityId !== "dragons-maw") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.dragonsMaw) {
+    return 1;
+  }
   if (moveType !== CORE_TYPE_IDS.dragon) return 1;
   return 6144 / 4096;
 }
@@ -843,7 +847,7 @@ export function getDragonsMawMultiplier(abilityId: string, moveType: PokemonType
  * Source: Bulbapedia "Punk Rock" -- "boosts the power of sound-based moves by 30%"
  */
 export function getPunkRockMultiplier(abilityId: string, isSound: boolean): number {
-  if (abilityId !== "punk-rock") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.punkRock) return 1;
   if (!isSound) return 1;
   return 5325 / 4096;
 }
@@ -856,7 +860,7 @@ export function getPunkRockMultiplier(abilityId: string, isSound: boolean): numb
  * Source: Bulbapedia "Punk Rock" -- "halves the damage taken from sound-based moves"
  */
 export function getPunkRockIncomingMultiplier(abilityId: string, isSound: boolean): number {
-  if (abilityId !== "punk-rock") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.punkRock) return 1;
   if (!isSound) return 1;
   return 0.5;
 }
@@ -869,8 +873,8 @@ export function getPunkRockIncomingMultiplier(abilityId: string, isSound: boolea
  * Source: Bulbapedia "Ice Scales" -- "halves the damage taken from special moves"
  */
 export function getIceScalesMultiplier(abilityId: string, category: string): number {
-  if (abilityId !== "ice-scales") return 1;
-  if (category !== "special") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.iceScales) return 1;
+  if (category !== CORE_MOVE_CATEGORIES.special) return 1;
   return 0.5;
 }
 
@@ -882,7 +886,7 @@ export function getIceScalesMultiplier(abilityId: string, category: string): num
  * Source: Bulbapedia "Steelworker" -- "powers up Steel-type moves by 50%"
  */
 export function getSteelworkerMultiplier(abilityId: string, moveType: PokemonType): number {
-  if (abilityId !== "steelworker") return 1;
+  if (abilityId !== GEN8_ABILITY_IDS.steelworker) return 1;
   if (moveType !== CORE_TYPE_IDS.steel) return 1;
   return 6144 / 4096;
 }

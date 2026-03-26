@@ -59,7 +59,7 @@ export const SUPREME_OVERLORD_TABLE: readonly number[] = [
  * Source: Showdown data/abilities.ts:4634-4658 -- supremeoverlord onBasePower
  */
 export function getSupremeOverlordModifier(abilityId: string, faintedCount: number): number {
-  if (abilityId !== "supreme-overlord") return 4096;
+  if (abilityId !== GEN9_ABILITY_IDS.supremeOverlord) return 4096;
   const capped = Math.min(Math.max(faintedCount, 0), 5);
   return SUPREME_OVERLORD_TABLE[capped] ?? 4096;
 }

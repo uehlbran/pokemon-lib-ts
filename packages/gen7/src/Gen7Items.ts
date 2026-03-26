@@ -1,6 +1,12 @@
 import type { ActivePokemon, ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
-import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  getTypeEffectiveness,
+} from "@pokemon-lib-ts/core";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
 import { GEN7_TYPE_CHART } from "./Gen7TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -26,24 +32,24 @@ const NO_ACTIVATION: ItemResult = {
  * Source: Bulbapedia "Z-Crystal" -- https://bulbapedia.bulbagarden.net/wiki/Z-Crystal
  */
 const TYPED_Z_CRYSTALS: Readonly<Record<string, PokemonType>> = {
-  "normalium-z": "normal",
-  "fightinium-z": "fighting",
-  "flyinium-z": "flying",
-  "poisonium-z": "poison",
-  "groundium-z": "ground",
-  "rockium-z": "rock",
-  "buginium-z": "bug",
-  "ghostium-z": "ghost",
-  "steelium-z": "steel",
-  "firium-z": "fire",
-  "waterium-z": "water",
-  "grassium-z": "grass",
-  "electrium-z": "electric",
-  "psychium-z": "psychic",
-  "icium-z": "ice",
-  "dragonium-z": "dragon",
-  "darkinium-z": "dark",
-  "fairium-z": "fairy",
+  [GEN7_ITEM_IDS.normaliumZ]: CORE_TYPE_IDS.normal,
+  [GEN7_ITEM_IDS.fightiniumZ]: CORE_TYPE_IDS.fighting,
+  [GEN7_ITEM_IDS.flyiniumZ]: CORE_TYPE_IDS.flying,
+  [GEN7_ITEM_IDS.poisoniumZ]: CORE_TYPE_IDS.poison,
+  [GEN7_ITEM_IDS.groundiumZ]: CORE_TYPE_IDS.ground,
+  [GEN7_ITEM_IDS.rockiumZ]: CORE_TYPE_IDS.rock,
+  [GEN7_ITEM_IDS.buginiumZ]: CORE_TYPE_IDS.bug,
+  [GEN7_ITEM_IDS.ghostiumZ]: CORE_TYPE_IDS.ghost,
+  [GEN7_ITEM_IDS.steeliumZ]: CORE_TYPE_IDS.steel,
+  [GEN7_ITEM_IDS.firiumZ]: CORE_TYPE_IDS.fire,
+  [GEN7_ITEM_IDS.wateriumZ]: CORE_TYPE_IDS.water,
+  [GEN7_ITEM_IDS.grassiumZ]: CORE_TYPE_IDS.grass,
+  [GEN7_ITEM_IDS.electriumZ]: CORE_TYPE_IDS.electric,
+  [GEN7_ITEM_IDS.psychiumZ]: CORE_TYPE_IDS.psychic,
+  [GEN7_ITEM_IDS.iciumZ]: CORE_TYPE_IDS.ice,
+  [GEN7_ITEM_IDS.dragoniumZ]: CORE_TYPE_IDS.dragon,
+  [GEN7_ITEM_IDS.darkiniumZ]: CORE_TYPE_IDS.dark,
+  [GEN7_ITEM_IDS.fairiumZ]: CORE_TYPE_IDS.fairy,
 };
 
 /**
@@ -129,7 +135,7 @@ export function getSpeciesZMoves(): Readonly<Record<string, string>> {
  * Source: Showdown data/items.ts -- terrainextender: onSetStatus changes terrain duration
  * Source: Bulbapedia "Terrain Extender" -- extends terrain set by holder from 5 to 8 turns
  */
-export const TERRAIN_EXTENDER_ITEM_ID = "terrain-extender";
+export const TERRAIN_EXTENDER_ITEM_ID = GEN7_ITEM_IDS.terrainExtender;
 
 /**
  * Check if a Pokemon is holding a Terrain Extender.
@@ -153,8 +159,8 @@ export function hasTerrainExtender(pokemon: ActivePokemon): boolean {
  */
 export function isMegaStone(itemId: string): boolean {
   if (!itemId) return false;
-  if (itemId === "blue-orb" || itemId === "red-orb") return true;
-  if (itemId === "eviolite") return false;
+  if (itemId === CORE_ITEM_IDS.blueOrb || itemId === CORE_ITEM_IDS.redOrb) return true;
+  if (itemId === CORE_ITEM_IDS.eviolite) return false;
   if (itemId.endsWith("ite") || itemId.endsWith("ite-x") || itemId.endsWith("ite-y")) {
     return true;
   }
@@ -171,9 +177,9 @@ export function isMegaStone(itemId: string): boolean {
  * Source: Showdown data/moves.ts -- moves with secondaries as onHit
  */
 const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
-  "secret-power",
-  "relic-song",
+  CORE_MOVE_IDS.triAttack,
+  GEN7_MOVE_IDS.secretPower,
+  GEN7_MOVE_IDS.relicSong,
 ]);
 
 /**
@@ -209,7 +215,7 @@ function sheerForceSuppressesLifeOrb(
   effect: MoveEffect | null,
   moveId: string,
 ): boolean {
-  if (abilityId !== "sheer-force") return false;
+  if (abilityId !== GEN7_ABILITY_IDS.sheerForce) return false;
   return hasSheerForceEligibleEffect(effect) || SHEER_FORCE_WHITELIST.has(moveId);
 }
 
