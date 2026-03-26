@@ -1,9 +1,16 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
   NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -116,8 +123,8 @@ function createActivePokemon(opts: {
     level: opts.level ?? 50,
     experience: 0,
     nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: opts.currentHp ?? maxHp,
     moves: opts.moves ?? [
       {
@@ -132,11 +139,11 @@ function createActivePokemon(opts: {
       },
     ],
     ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -153,14 +160,8 @@ function createActivePokemon(opts: {
     pokemon,
     teamSlot: 0,
     statStages: {
+      ...createDefaultStatStages(),
       hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
     },
     volatileStatuses: volatiles,
     types: opts.types,
@@ -186,27 +187,9 @@ function createActivePokemon(opts: {
 function createMove(id: string, overrides?: Partial<MoveData>): MoveData {
   const baseMove = gen4Data.getMove(id);
   return {
-    id,
-    name: baseMove?.displayName ?? id,
-    type: baseMove?.type ?? TYPES.normal,
-    category: baseMove?.category ?? "status",
-    power: baseMove?.power ?? 0,
-    accuracy: baseMove?.accuracy ?? 100,
-    pp: baseMove?.pp ?? 10,
-    maxPp: baseMove?.pp ?? 10,
-    priority: baseMove?.priority ?? 0,
-    target: "adjacent-foe",
-    flags: [],
-    effect: null,
-    critRatio: 0,
-    generation: 4,
-    isContact: false,
-    isSound: false,
-    isPunch: false,
-    isBite: false,
-    isBullet: false,
-    description: "",
+    ...baseMove,
     ...overrides,
+    effect: overrides?.effect ?? baseMove.effect,
   } as MoveData;
 }
 
@@ -522,7 +505,6 @@ describe("Heal Block", () => {
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(TEST_IDS.moves.recover, {
-      category: "status",
       effect: { type: "heal", amount: 0.5 } as any,
     });
     const rng = createMockRng(0);
@@ -571,7 +553,6 @@ describe("Heal Block", () => {
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(TEST_IDS.moves.recover, {
-      category: "status",
       effect: { type: "heal", amount: 0.5 } as any,
     });
     const rng = createMockRng(0);
@@ -640,7 +621,7 @@ describe("Embargo", () => {
       volatiles,
     });
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
       state: {} as any,
       rng: createMockRng(0),
@@ -660,7 +641,7 @@ describe("Embargo", () => {
       maxHp: 200,
     });
 
-    const result = applyGen4HeldItem("end-of-turn", {
+    const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
       state: {} as any,
       rng: createMockRng(0),
