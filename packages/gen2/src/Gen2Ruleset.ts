@@ -41,6 +41,8 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
   gen1to2FullParalysisCheck,
@@ -570,8 +572,8 @@ export class Gen2Ruleset implements GenerationRuleset {
   processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean {
     // Source: pret/pokecrystal engine/battle/core.asm:1524-1581 HandleDefrost
     // 25/256 (~9.8%) chance to thaw. Skip if frozen this turn (wPlayerJustGotFrozen guard).
-    if (pokemon.volatileStatuses.has("just-frozen")) {
-      pokemon.volatileStatuses.delete("just-frozen");
+    if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.justFrozen)) {
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.justFrozen);
       return false;
     }
     return rng.int(0, 255) < 25;
@@ -594,16 +596,16 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 2+: CAN act on the turn it wakes up (unlike Gen 1)
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true; // Gen 2+: can act on wake turn
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true; // Gen 2+: can act on wake turn
     }
     return false; // Still sleeping
@@ -687,7 +689,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     }
 
     // Flying types are immune to Spikes
-    if (pokemon.types.includes("flying")) {
+    if (pokemon.types.includes(CORE_TYPE_IDS.flying)) {
       return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
     }
 
@@ -798,7 +800,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // Source: Gen 2 confusion lasts 1-4 turns (same as Gen 1)
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const conf = active.volatileStatuses.get("confusion");
+    const conf = active.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
     if (!conf) return false;
     conf.turnsLeft--;
     return conf.turnsLeft > 0;
@@ -806,7 +808,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // Source: Gen 2 bind/trapping — 2-5 turns, 1/16 max HP per turn
   processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const bound = active.volatileStatuses.get("bound");
+    const bound = active.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
     if (!bound) return false;
     bound.turnsLeft--;
     return bound.turnsLeft > 0;
@@ -837,31 +839,31 @@ export class Gen2Ruleset implements GenerationRuleset {
     const isBatonPass = pokemon.lastMoveUsed === "baton-pass";
 
     if (!isBatonPass) {
-      pokemon.volatileStatuses.delete("confusion");
-      pokemon.volatileStatuses.delete("focus-energy");
-      pokemon.volatileStatuses.delete("leech-seed");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.confusion);
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.focusEnergy);
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.leechSeed);
       // Perish Song counter is cleared on normal switch (not Baton Pass)
       // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
       // Source: gen2-ground-truth.md — Perish Song counter removed when switching out normally
-      pokemon.volatileStatuses.delete("perish-song");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.perishSong);
       // Substitute and Curse are cleared on normal switch, but preserved by Baton Pass
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
-      pokemon.volatileStatuses.delete("substitute");
-      pokemon.volatileStatuses.delete("curse");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.curse);
     }
 
     // These volatiles are ALWAYS cleared on switch (even with Baton Pass)
     // Source: pret/pokecrystal — encore/disable/bound/flinch are tied to the user, not baton-passable
-    pokemon.volatileStatuses.delete("bound");
-    pokemon.volatileStatuses.delete("flinch");
-    pokemon.volatileStatuses.delete("toxic-counter");
-    pokemon.volatileStatuses.delete("encore");
-    pokemon.volatileStatuses.delete("disable");
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.bound);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.flinch);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.toxicCounter);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.encore);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.disable);
     // Attract and Nightmare are cleared on switch-out (always, not baton-passable)
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
     // Source: gen2-ground-truth.md Switching Mechanics — Attract and Nightmare reset on switch
-    pokemon.volatileStatuses.delete("infatuation");
-    pokemon.volatileStatuses.delete("nightmare");
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.infatuation);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.nightmare);
 
     // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
     // clear the "trapped" volatile from the opposing active Pokemon.
@@ -876,7 +878,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       const opposingSide = state.sides[opposingSideIndex];
       for (const opposingActive of opposingSide?.active ?? []) {
         if (opposingActive) {
-          opposingActive.volatileStatuses.delete("trapped");
+          opposingActive.volatileStatuses.delete(CORE_VOLATILE_IDS.trapped);
         }
       }
     }
@@ -980,7 +982,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 2: Mean Look / Spider Web prevent switching
-    return !pokemon.volatileStatuses.has("trapped");
+    return !pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.trapped);
   }
 
   // --- End-of-Turn Formulas ---
@@ -1069,7 +1071,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     readonly newCount: number;
     readonly fainted: boolean;
   } {
-    const perishState = pokemon.volatileStatuses.get("perish-song");
+    const perishState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.perishSong);
     if (!perishState) return { newCount: 0, fainted: false };
     const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
     if (counter <= 1) return { newCount: 0, fainted: true };
