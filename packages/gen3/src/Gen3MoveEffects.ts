@@ -30,6 +30,7 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { GEN3_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen3Status } from "./Gen3Ruleset";
 
 // ---------------------------------------------------------------------------
@@ -551,7 +552,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       result.customDamage = {
         target: "defender",
         amount: attacker.lastDamageTaken * 2,
-        source: "counter",
+        source: GEN3_MOVE_IDS.counter,
       };
       return true;
     }
@@ -569,7 +570,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       result.customDamage = {
         target: "defender",
         amount: attacker.lastDamageTaken * 2,
-        source: "mirror-coat",
+        source: GEN3_MOVE_IDS.mirrorCoat,
       };
       return true;
     }

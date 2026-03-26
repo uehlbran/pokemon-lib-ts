@@ -35,7 +35,7 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import { CORE_STAT_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
-import { GEN4_ITEM_IDS } from "./data/reference-ids";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -760,7 +760,7 @@ function handleCustomEffect(
         result.customDamage = {
           target: "defender",
           amount: -defenderDelta,
-          source: "pain-split",
+          source: GEN4_MOVE_IDS.painSplit,
         };
       } else if (defenderDelta > 0) {
         // FIXME: Direct mutation for defender healing — MoveEffectResult lacks a
@@ -875,7 +875,7 @@ function handleCustomEffect(
       }
 
       result.futureAttack = {
-        moveId: "future-sight",
+        moveId: GEN4_MOVE_IDS.futureSight,
         turnsLeft: 3,
         sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
       };
@@ -1250,7 +1250,7 @@ function handleNullEffectMoves(
       result.customDamage = {
         target: "defender",
         amount: attacker.lastDamageTaken * 2,
-        source: "counter",
+        source: GEN4_MOVE_IDS.counter,
       };
       break;
     }
@@ -1267,7 +1267,7 @@ function handleNullEffectMoves(
       result.customDamage = {
         target: "defender",
         amount: attacker.lastDamageTaken * 2,
-        source: "mirror-coat",
+        source: GEN4_MOVE_IDS.mirrorCoat,
       };
       break;
     }
@@ -1494,12 +1494,16 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   if (context.move.id === "worry-seed") {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    const failAbilities = ["insomnia", "truant", "multitype"];
-    if (failAbilities.includes(defender.ability ?? "")) {
+    const failAbilities = new Set<string>([
+      GEN4_ABILITY_IDS.insomnia,
+      GEN4_ABILITY_IDS.truant,
+      GEN4_ABILITY_IDS.multitype,
+    ]);
+    if (failAbilities.has(defender.ability ?? "")) {
       result.messages.push("But it failed!");
       return result;
     }
-    defender.ability = "insomnia";
+    defender.ability = GEN4_ABILITY_IDS.insomnia;
     // If target is asleep, Insomnia immediately wakes it
     // Source: Showdown Gen 4 mod — Worry Seed cures sleep if the new ability blocks it
     if (defender.pokemon.status === "sleep") {
@@ -1518,7 +1522,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   if (context.move.id === "gastro-acid") {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.ability === "multitype") {
+    if (defender.ability === GEN4_ABILITY_IDS.multitype) {
       result.messages.push("But it failed!");
       return result;
     }
@@ -1653,14 +1657,17 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     // Fail if target has Sticky Hold
     // Source: Showdown data/abilities.ts — Sticky Hold blocks item removal
     // Source: Bulbapedia — Sticky Hold prevents item removal by the foe
-    if (defender.ability === "sticky-hold") {
+    if (defender.ability === GEN4_ABILITY_IDS.stickyHold) {
       result.messages.push(`${defenderName}'s Sticky Hold made Trick fail!`);
       return result;
     }
 
     // Fail if either has Multitype (Arceus's plates are bound)
     // Source: Showdown Gen 4 — Trick fails if either has Multitype
-    if (attacker.ability === "multitype" || defender.ability === "multitype") {
+    if (
+      attacker.ability === GEN4_ABILITY_IDS.multitype ||
+      defender.ability === GEN4_ABILITY_IDS.multitype
+    ) {
       result.messages.push("But it failed!");
       return result;
     }
@@ -1728,7 +1735,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     }
 
     result.futureAttack = {
-      moveId: "doom-desire",
+      moveId: GEN4_MOVE_IDS.doomDesire,
       turnsLeft: 3,
       sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
     };
@@ -1805,7 +1812,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
         result.messages.push("But it failed!");
         return result;
       }
-      result.customDamage = { target: "attacker", amount: hpCost, source: "curse" };
+      result.customDamage = { target: "attacker", amount: hpCost, source: GEN4_MOVE_IDS.curse };
       result.volatileInflicted = "curse";
       result.messages.push(`${attackerName} cut its own HP and laid a curse on ${defenderName}!`);
       return result;

@@ -41,9 +41,12 @@ import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
   type BattleStat,
   CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   type PokemonType,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { GEN5_MOVE_IDS } from "./data/reference-ids";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -282,8 +285,8 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
       result.customDamage = {
         target: BATTLE_EFFECT_TARGETS.defender,
         amount: userHp,
-        source: "final-gambit",
-        type: "fighting",
+        source: GEN5_MOVE_IDS.finalGambit,
+        type: CORE_TYPE_IDS.fighting,
       };
       result.messages.push(`${attackerName} risked everything in a final gambit!`);
       return result;
@@ -429,7 +432,7 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     // -----------------------------------------------------------------
     case "smack-down": {
       const result = emptyResult();
-      result.volatileInflicted = "smackdown" as VolatileStatus;
+      result.volatileInflicted = CORE_VOLATILE_IDS.smackDown as VolatileStatus;
       result.messages.push(`${ctx.defender.pokemon.nickname ?? "The foe"} fell straight down!`);
       return result;
     }
@@ -489,7 +492,7 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
           customDamage: {
             target: BATTLE_EFFECT_TARGETS.defender,
             amount: 0,
-            source: "synchronoise-fail",
+            source: GEN5_MOVE_IDS.synchronoise,
           },
         };
       }
@@ -509,7 +512,7 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "nature-power": {
       const result = emptyResult();
       result.messages.push("Nature Power turned into Tri Attack!");
-      return { ...result, recursiveMove: "tri-attack" };
+      return { ...result, recursiveMove: GEN5_MOVE_IDS.triAttack };
     }
 
     // -----------------------------------------------------------------

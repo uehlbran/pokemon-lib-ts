@@ -42,6 +42,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_STAT_IDS,
+  CORE_TYPE_IDS,
   calculateExpGainClassic,
   gen1to2FullParalysisCheck,
   gen1to4MultiHitRoll,
@@ -51,6 +52,7 @@ import {
   type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "./data";
+import { GEN1_MOVE_IDS } from "./data/reference-ids";
 import { rollGen1Critical } from "./Gen1CritCalc";
 import { calculateGen1Damage } from "./Gen1DamageCalc";
 import type { Gen1BadgeBoosts } from "./Gen1StatCalc";
@@ -748,7 +750,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           result.customDamage = {
             target: "defender",
             amount: Math.max(1, Math.floor(defender.pokemon.currentHp / 2)),
-            source: "super-fang",
+            source: GEN1_MOVE_IDS.superFang,
           };
         } else if (effect.handler === "psywave") {
           // Source: pret/pokered engine/battle/core.asm lines 4664-4788
@@ -772,7 +774,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           result.customDamage = {
             target: "defender",
             amount,
-            source: "psywave",
+            source: GEN1_MOVE_IDS.psywave,
           };
         } else if (effect.handler === "teleport") {
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Teleport
@@ -843,12 +845,13 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Counter in Gen 1: only reflects Normal and Fighting type moves
           const lastDamage = attacker.lastDamageTaken ?? 0;
           const lastType = attacker.lastDamageType;
-          const counterableType = lastType === "normal" || lastType === "fighting";
+          const counterableType =
+            lastType === CORE_TYPE_IDS.normal || lastType === CORE_TYPE_IDS.fighting;
           if (lastDamage > 0 && counterableType) {
             result.customDamage = {
               target: "defender",
               amount: lastDamage * 2,
-              source: "counter",
+              source: GEN1_MOVE_IDS.counter,
               type: move.type,
             };
           } else {
@@ -897,7 +900,7 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.customDamage = {
               target: "attacker",
               amount: subHp,
-              source: "substitute",
+              source: GEN1_MOVE_IDS.substitute,
             };
             result.selfVolatileInflicted = "substitute";
             result.selfVolatileData = { turnsLeft: -1 };
@@ -1077,7 +1080,7 @@ export class Gen1Ruleset implements GenerationRuleset {
                 result.customDamage = {
                   target: "defender",
                   amount: accumulated * 2,
-                  source: "bide",
+                  source: GEN1_MOVE_IDS.bide,
                 };
                 result.messages.push(
                   `${attacker.pokemon.nickname ?? "The user"} unleashed energy!`,
@@ -1886,7 +1889,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     const STRUGGLE_MOVE_GEN1: MoveData = {
       id: "struggle",
       displayName: "Struggle",
-      type: "normal",
+      type: CORE_TYPE_IDS.normal,
       category: "physical",
       power: 50,
       accuracy: null,

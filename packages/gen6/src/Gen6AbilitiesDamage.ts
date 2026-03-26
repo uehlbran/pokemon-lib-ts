@@ -1,6 +1,11 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_TYPE_IDS,
+  type MoveEffect,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Gen 6 damage-modifying ability handlers.
@@ -112,10 +117,10 @@ export function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: stri
  * Source: Showdown data/abilities.ts -- Blaze/Overgrow/Torrent/Swarm onModifyAtk/onModifySpA
  */
 const PINCH_ABILITY_TYPES: Readonly<Record<string, PokemonType>> = {
-  blaze: "fire",
-  overgrow: "grass",
-  torrent: "water",
-  swarm: "bug",
+  [CORE_ABILITY_IDS.blaze]: CORE_TYPE_IDS.fire,
+  [CORE_ABILITY_IDS.overgrow]: CORE_TYPE_IDS.grass,
+  [CORE_ABILITY_IDS.torrent]: CORE_TYPE_IDS.water,
+  [CORE_ABILITY_IDS.swarm]: CORE_TYPE_IDS.bug,
 };
 
 // ---------------------------------------------------------------------------
@@ -752,15 +757,15 @@ export function getAteAbilityOverride(
   abilityId: string,
   moveType: PokemonType,
 ): { type: PokemonType; multiplier: number } | null {
-  if (moveType !== "normal") return null;
+  if (moveType !== CORE_TYPE_IDS.normal) return null;
 
   switch (abilityId) {
     case "pixilate":
-      return { type: "fairy", multiplier: 5325 / 4096 };
+      return { type: CORE_TYPE_IDS.fairy, multiplier: 5325 / 4096 };
     case "aerilate":
-      return { type: "flying", multiplier: 5325 / 4096 };
+      return { type: CORE_TYPE_IDS.flying, multiplier: 5325 / 4096 };
     case "refrigerate":
-      return { type: "ice", multiplier: 5325 / 4096 };
+      return { type: CORE_TYPE_IDS.ice, multiplier: 5325 / 4096 };
     default:
       return null;
   }

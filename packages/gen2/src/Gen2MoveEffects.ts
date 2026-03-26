@@ -23,6 +23,7 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { GEN2_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen2Status } from "./Gen2Status";
 
 // ---------------------------------------------------------------------------
@@ -424,7 +425,7 @@ export function handleCustomEffect(
       result.customDamage = {
         target: "defender",
         amount: attacker.lastDamageTaken * 2,
-        source: "counter",
+        source: GEN2_MOVE_IDS.counter,
       };
       break;
     }
@@ -440,7 +441,7 @@ export function handleCustomEffect(
       result.customDamage = {
         target: "defender",
         amount: attacker.lastDamageTaken * 2,
-        source: "mirror-coat",
+        source: GEN2_MOVE_IDS.mirrorCoat,
       };
       break;
     }
@@ -508,7 +509,7 @@ export function handleCustomEffect(
       }
 
       result.futureAttack = {
-        moveId: "future-sight",
+        moveId: GEN2_MOVE_IDS.futureSight,
         turnsLeft: 2,
         sourceSide: actorSide,
       };
