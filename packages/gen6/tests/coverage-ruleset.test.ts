@@ -62,7 +62,7 @@ const WEATHER = CORE_WEATHER_IDS;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeActive(
+function createOnFieldPokemon(
   overrides: {
     speed?: number;
     ability?: string | null;
@@ -129,7 +129,7 @@ function makeActive(
   } as unknown as ActivePokemon;
 }
 
-function makeSide(
+function createBattleSide(
   index: 0 | 1,
   overrides?: {
     tailwind?: boolean;
@@ -164,7 +164,7 @@ function makeRng(overrides?: { next?: () => number }): SeededRandom {
   } as unknown as SeededRandom;
 }
 
-function makeState(overrides?: {
+function createBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number } | null;
   trickRoom?: boolean;
   terrain?: { type: string; turnsLeft: number } | null;
@@ -176,7 +176,7 @@ function makeState(overrides?: {
     generation: 6,
     format: "singles",
     turnNumber: 1,
-    sides: overrides?.sides ?? [makeSide(0), makeSide(1)],
+    sides: overrides?.sides ?? [createBattleSide(0), createBattleSide(1)],
     weather: overrides?.weather ?? null,
     terrain: overrides?.terrain ?? null,
     trickRoom: { active: overrides?.trickRoom ?? false, turnsLeft: overrides?.trickRoom ? 5 : 0 },
@@ -244,8 +244,8 @@ describe("Gen6Ruleset — canHitSemiInvulnerable (remaining branches)", () => {
 describe("Gen6Ruleset — capLethalDamage", () => {
   it("given non-Sturdy defender, when damage >= HP, then damage is not capped", () => {
     // Source: Showdown -- only Sturdy caps lethal damage
-    const defender = makeActive({ ability: ABILITIES.intimidate });
-    const attacker = makeActive();
+    const defender = createOnFieldPokemon({ ability: ABILITIES.intimidate });
+    const attacker = createOnFieldPokemon();
     const result = ruleset.capLethalDamage(999, defender, attacker, {} as never, {} as never);
     expect(result.damage).toBe(999);
     expect(result.survived).toBe(false);
@@ -253,9 +253,9 @@ describe("Gen6Ruleset — capLethalDamage", () => {
 
   it("given Sturdy defender not at full HP, when damage >= HP, then damage is not capped", () => {
     // Source: Showdown -- Sturdy only works from full HP
-    const defender = makeActive({ ability: ABILITIES.sturdy });
+    const defender = createOnFieldPokemon({ ability: ABILITIES.sturdy });
     (defender.pokemon as { currentHp: number }).currentHp = 100; // not full
-    const attacker = makeActive();
+    const attacker = createOnFieldPokemon();
     const result = ruleset.capLethalDamage(999, defender, attacker, {} as never, {} as never);
     expect(result.damage).toBe(999);
     expect(result.survived).toBe(false);
@@ -263,8 +263,8 @@ describe("Gen6Ruleset — capLethalDamage", () => {
 
   it("given Sturdy defender at full HP + damage < HP, when checking, then damage passes through", () => {
     // Source: Showdown -- Sturdy only activates when damage would KO
-    const defender = makeActive({ ability: ABILITIES.sturdy });
-    const attacker = makeActive();
+    const defender = createOnFieldPokemon({ ability: ABILITIES.sturdy });
+    const attacker = createOnFieldPokemon();
     const result = ruleset.capLethalDamage(50, defender, attacker, {} as never, {} as never);
     expect(result.damage).toBe(50);
     expect(result.survived).toBe(false);
@@ -278,8 +278,8 @@ describe("Gen6Ruleset — capLethalDamage", () => {
 describe("Gen6Ruleset — applyEntryHazards (no state)", () => {
   it("given no BattleState argument, when applying hazards, then returns empty result", () => {
     // Source: code path -- state is optional in interface
-    const defender = makeActive();
-    const side = makeSide(0);
+    const defender = createOnFieldPokemon();
+    const side = createBattleSide(0);
     const result = ruleset.applyEntryHazards(defender, side);
     expect(result.damage).toBe(0);
     expect(result.statusInflicted).toBe(null);
@@ -371,8 +371,8 @@ describe("Gen6Ruleset — calculateExpGain (traded Pokemon branches)", () => {
 describe("Gen6Ruleset — checkTerrainStatusImmunity", () => {
   it("given Electric Terrain + grounded target + sleep, when checking, then immune", () => {
     // Source: Bulbapedia -- Electric Terrain blocks sleep for grounded Pokemon
-    const target = makeActive();
-    const state = makeState({
+    const target = createOnFieldPokemon();
+    const state = createBattleState({
       terrain: { type: TERRAINS.electric, turnsLeft: 5 },
     });
     const result = ruleset.checkTerrainStatusImmunity(STATUSES.sleep as never, target, state);
@@ -382,8 +382,8 @@ describe("Gen6Ruleset — checkTerrainStatusImmunity", () => {
 
   it("given Misty Terrain + grounded target + burn, when checking, then immune", () => {
     // Source: Bulbapedia -- Misty Terrain blocks all primary status for grounded
-    const target = makeActive();
-    const state = makeState({
+    const target = createOnFieldPokemon();
+    const state = createBattleState({
       terrain: { type: TERRAINS.misty, turnsLeft: 5 },
     });
     const result = ruleset.checkTerrainStatusImmunity(STATUSES.burn as never, target, state);
@@ -393,8 +393,8 @@ describe("Gen6Ruleset — checkTerrainStatusImmunity", () => {
 
   it("given no terrain, when checking status immunity, then not immune", () => {
     // Source: no terrain active, status is allowed
-    const target = makeActive();
-    const state = makeState();
+    const target = createOnFieldPokemon();
+    const state = createBattleState();
     const result = ruleset.checkTerrainStatusImmunity(STATUSES.paralysis as never, target, state);
     expect(result.immune).toBe(false);
   });
@@ -407,8 +407,8 @@ describe("Gen6Ruleset — checkTerrainStatusImmunity", () => {
 describe("Gen6Ruleset — rollCritical (ability immunity)", () => {
   it("given defender with Shell Armor, when rolling crit, then returns false", () => {
     // Source: Showdown -- Shell Armor prevents crits
-    const defender = makeActive({ ability: ABILITIES.shellArmor });
-    const attacker = makeActive();
+    const defender = createOnFieldPokemon({ ability: ABILITIES.shellArmor });
+    const attacker = createOnFieldPokemon();
     const context: CritContext = {
       attacker,
       defender,
@@ -475,11 +475,11 @@ describe("Gen6Ruleset — misc method coverage", () => {
 describe("Gen6Ruleset — resolveTurnOrder (branch coverage)", () => {
   it("given Trick Room active, when resolving two move actions, then slower goes first", () => {
     // Source: Bulbapedia -- Trick Room reverses speed order
-    const slowPoke = makeActive({ speed: 50 });
-    const fastPoke = makeActive({ speed: 150 });
-    const side0 = makeSide(0, { active: [slowPoke] });
-    const side1 = makeSide(1, { active: [fastPoke] });
-    const state = makeState({
+    const slowPoke = createOnFieldPokemon({ speed: 50 });
+    const fastPoke = createOnFieldPokemon({ speed: 150 });
+    const side0 = createBattleSide(0, { active: [slowPoke] });
+    const side1 = createBattleSide(1, { active: [fastPoke] });
+    const state = createBattleState({
       trickRoom: true,
       sides: [side0, side1],
     });
@@ -496,11 +496,11 @@ describe("Gen6Ruleset — resolveTurnOrder (branch coverage)", () => {
 
   it("given Tailwind on one side, when resolving, then that side's speed is doubled", () => {
     // Source: Bulbapedia -- Tailwind doubles speed of user's side
-    const slowPoke = makeActive({ speed: 80 });
-    const fastPoke = makeActive({ speed: 100 });
-    const side0 = makeSide(0, { active: [slowPoke], tailwind: true });
-    const side1 = makeSide(1, { active: [fastPoke] });
-    const state = makeState({ sides: [side0, side1] });
+    const slowPoke = createOnFieldPokemon({ speed: 80 });
+    const fastPoke = createOnFieldPokemon({ speed: 100 });
+    const side0 = createBattleSide(0, { active: [slowPoke], tailwind: true });
+    const side1 = createBattleSide(1, { active: [fastPoke] });
+    const state = createBattleState({ sides: [side0, side1] });
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 } as BattleAction,
@@ -514,10 +514,10 @@ describe("Gen6Ruleset — resolveTurnOrder (branch coverage)", () => {
 
   it("given switch vs move, when resolving, then switch always goes first", () => {
     // Source: Showdown -- switches always precede moves
-    const poke = makeActive();
-    const side0 = makeSide(0, { active: [poke] });
-    const side1 = makeSide(1, { active: [makeActive()] });
-    const state = makeState({ sides: [side0, side1] });
+    const poke = createOnFieldPokemon();
+    const side0 = createBattleSide(0, { active: [poke] });
+    const side1 = createBattleSide(1, { active: [createOnFieldPokemon()] });
+    const state = createBattleState({ sides: [side0, side1] });
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 } as BattleAction,
@@ -530,10 +530,10 @@ describe("Gen6Ruleset — resolveTurnOrder (branch coverage)", () => {
 
   it("given item use vs move, when resolving, then item goes first", () => {
     // Source: Showdown -- item usage precedes moves
-    const poke = makeActive();
-    const side0 = makeSide(0, { active: [poke] });
-    const side1 = makeSide(1, { active: [makeActive()] });
-    const state = makeState({ sides: [side0, side1] });
+    const poke = createOnFieldPokemon();
+    const side0 = createBattleSide(0, { active: [poke] });
+    const side1 = createBattleSide(1, { active: [createOnFieldPokemon()] });
+    const state = createBattleState({ sides: [side0, side1] });
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 } as BattleAction,
@@ -546,10 +546,10 @@ describe("Gen6Ruleset — resolveTurnOrder (branch coverage)", () => {
 
   it("given run vs move, when resolving, then run goes first", () => {
     // Source: Showdown -- run action precedes moves
-    const poke = makeActive();
-    const side0 = makeSide(0, { active: [poke] });
-    const side1 = makeSide(1, { active: [makeActive()] });
-    const state = makeState({ sides: [side0, side1] });
+    const poke = createOnFieldPokemon();
+    const side0 = createBattleSide(0, { active: [poke] });
+    const side1 = createBattleSide(1, { active: [createOnFieldPokemon()] });
+    const state = createBattleState({ sides: [side0, side1] });
 
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 } as BattleAction,
@@ -572,9 +572,9 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
     activeB: ActivePokemon,
     stateOverrides?: { weather?: { type: string; turnsLeft: number } },
   ): number {
-    const side0 = makeSide(0, { active: [activeA] });
-    const side1 = makeSide(1, { active: [activeB] });
-    const state = makeState({
+    const side0 = createBattleSide(0, { active: [activeA] });
+    const side1 = createBattleSide(1, { active: [activeB] });
+    const state = createBattleState({
       sides: [side0, side1],
       weather: stateOverrides?.weather ?? null,
     });
@@ -590,8 +590,8 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
     // Source: Bulbapedia -- Chlorophyll doubles speed in sun
     // Side 0: base 50 with Chlorophyll in sun = 100 effective
     // Side 1: base 80 = 80 effective
-    const chloro = makeActive({ speed: 50, ability: GEN6_ABILITY_IDS.chlorophyll });
-    const normal = makeActive({ speed: 80 });
+    const chloro = createOnFieldPokemon({ speed: 50, ability: GEN6_ABILITY_IDS.chlorophyll });
+    const normal = createOnFieldPokemon({ speed: 80 });
     const first = whoGoesFirst(chloro, normal, {
       weather: { type: WEATHER.sun, turnsLeft: 3 },
     });
@@ -600,8 +600,8 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Swift Swim in rain, when comparing speeds, then doubles speed", () => {
     // Source: Bulbapedia -- Swift Swim doubles speed in rain
-    const swim = makeActive({ speed: 50, ability: ABILITIES.swiftSwim });
-    const normal = makeActive({ speed: 80 });
+    const swim = createOnFieldPokemon({ speed: 50, ability: ABILITIES.swiftSwim });
+    const normal = createOnFieldPokemon({ speed: 80 });
     const first = whoGoesFirst(swim, normal, {
       weather: { type: WEATHER.rain, turnsLeft: 3 },
     });
@@ -610,8 +610,8 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Sand Rush in sandstorm, when comparing speeds, then doubles speed", () => {
     // Source: Bulbapedia -- Sand Rush doubles speed in sandstorm
-    const rush = makeActive({ speed: 50, ability: GEN6_ABILITY_IDS.sandRush });
-    const normal = makeActive({ speed: 80 });
+    const rush = createOnFieldPokemon({ speed: 50, ability: GEN6_ABILITY_IDS.sandRush });
+    const normal = createOnFieldPokemon({ speed: 80 });
     const first = whoGoesFirst(rush, normal, {
       weather: { type: WEATHER.sand, turnsLeft: 3 },
     });
@@ -620,12 +620,12 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Slow Start volatile, when comparing speeds, then halves speed", () => {
     // Source: Bulbapedia -- Slow Start halves speed for 5 turns
-    const slow = makeActive({
+    const slow = createOnFieldPokemon({
       speed: 200,
       ability: ABILITIES.slowStart,
       volatiles: [[ABILITIES.slowStart, { turnsLeft: 3 }]],
     });
-    const normal = makeActive({ speed: 120 });
+    const normal = createOnFieldPokemon({ speed: 120 });
     const first = whoGoesFirst(slow, normal);
     // 200/2=100 < 120
     expect(first).toBe(1);
@@ -633,13 +633,13 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Unburden + consumed item volatile, when comparing speeds, then doubles speed", () => {
     // Source: Bulbapedia -- Unburden doubles speed when item is consumed
-    const unburden = makeActive({
+    const unburden = createOnFieldPokemon({
       speed: 50,
       ability: GEN6_ABILITY_IDS.unburden,
       heldItem: null,
       volatiles: [[VOLATILES.unburden, { turnsLeft: -1 }]],
     });
-    const normal = makeActive({ speed: 80 });
+    const normal = createOnFieldPokemon({ speed: 80 });
     const first = whoGoesFirst(unburden, normal);
     // 50*2=100 > 80
     expect(first).toBe(0);
@@ -647,12 +647,12 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Quick Feet + status, when comparing speeds, then 1.5x and no paralysis penalty", () => {
     // Source: Bulbapedia -- Quick Feet: 1.5x speed with status, overrides paralysis
-    const quickFeet = makeActive({
+    const quickFeet = createOnFieldPokemon({
       speed: 100,
       ability: ABILITIES.quickFeet,
       status: STATUSES.paralysis,
     });
-    const normal = makeActive({ speed: 130 });
+    const normal = createOnFieldPokemon({ speed: 130 });
     const first = whoGoesFirst(quickFeet, normal);
     // Quick Feet: 100 * 1.5 = 150 > 130 (paralysis penalty NOT applied)
     expect(first).toBe(0);
@@ -660,8 +660,8 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Iron Ball (no Klutz), when comparing speeds, then halves speed", () => {
     // Source: Bulbapedia -- Iron Ball halves speed
-    const ironBall = makeActive({ speed: 200, heldItem: ITEMS.ironBall });
-    const normal = makeActive({ speed: 120 });
+    const ironBall = createOnFieldPokemon({ speed: 200, heldItem: ITEMS.ironBall });
+    const normal = createOnFieldPokemon({ speed: 120 });
     const first = whoGoesFirst(ironBall, normal);
     // 200 * 0.5 = 100 < 120
     expect(first).toBe(1);
@@ -669,12 +669,12 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Iron Ball + Klutz, when comparing speeds, then speed is not halved", () => {
     // Source: Bulbapedia -- Klutz suppresses Iron Ball speed penalty
-    const klutzIronBall = makeActive({
+    const klutzIronBall = createOnFieldPokemon({
       speed: 200,
       ability: GEN6_ABILITY_IDS.klutz,
       heldItem: ITEMS.ironBall,
     });
-    const normal = makeActive({ speed: 120 });
+    const normal = createOnFieldPokemon({ speed: 120 });
     const first = whoGoesFirst(klutzIronBall, normal);
     // Klutz: Iron Ball is suppressed, 200 > 120
     expect(first).toBe(0);
@@ -682,12 +682,12 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Embargo volatile + Choice Scarf, when comparing speeds, then scarf is suppressed", () => {
     // Source: Bulbapedia -- Embargo prevents held item effects
-    const embargoed = makeActive({
+    const embargoed = createOnFieldPokemon({
       speed: 80,
       heldItem: ITEMS.choiceScarf,
       volatiles: [[VOLATILES.embargo, { turnsLeft: 3 }]],
     });
-    const normal = makeActive({ speed: 100 });
+    const normal = createOnFieldPokemon({ speed: 100 });
     const first = whoGoesFirst(embargoed, normal);
     // Embargo blocks Choice Scarf: 80 < 100
     expect(first).toBe(1);
@@ -695,12 +695,12 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 
   it("given Simple + speed stage +1, when comparing speeds, then stage is doubled to +2", () => {
     // Source: Bulbapedia -- Simple doubles stat stage effects
-    const simple = makeActive({
+    const simple = createOnFieldPokemon({
       speed: 100,
       ability: ABILITIES.simple,
       speedStage: 1,
     });
-    const normal = makeActive({ speed: 200 });
+    const normal = createOnFieldPokemon({ speed: 200 });
     const first = whoGoesFirst(simple, normal);
     // Simple: +1 becomes +2 (2.0x multiplier) => 100 * 2 = 200
     // Speed tie: RNG tiebreak (both return 0.5, whichever has lower tiebreak)
@@ -716,7 +716,7 @@ describe("Gen6Ruleset — getEffectiveSpeed branches (via resolveTurnOrder)", ()
 describe("Gen6Ruleset — applyStatusDamage (poison delegates to BaseRuleset)", () => {
   it("given poisoned Pokemon, when applying status damage, then returns 1/8 max HP", () => {
     // Source: Showdown -- Poison damage is 1/8 max HP in Gen 3+
-    const pokemon = makeActive();
+    const pokemon = createOnFieldPokemon();
     (pokemon.pokemon as { status: string }).status = STATUSES.poison;
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.poison as never, {} as never);
     // BaseRuleset default for poison is 1/8 max HP = 200/8 = 25

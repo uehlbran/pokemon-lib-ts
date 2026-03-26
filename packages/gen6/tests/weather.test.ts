@@ -22,7 +22,7 @@ const C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
 const W = CORE_WEATHER_IDS;
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   types?: string[];
@@ -52,7 +52,7 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
+function createBattleSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   return {
     index,
     active: [active],
@@ -69,7 +69,7 @@ function makeSide(active: ActivePokemon, index: 0 | 1 = 0): BattleSide {
   } as unknown as BattleSide;
 }
 
-function makeState(
+function createBattleState(
   weatherType: WeatherType | null,
   turnsLeft: number,
   sides: [BattleSide, BattleSide],
@@ -238,10 +238,10 @@ describe("Gen6 sandstorm chip damage", () => {
   it("given sandstorm active, when Normal-type with 160 HP takes end-of-turn tick, then takes 10 damage (floor(160/16))", () => {
     // Source: Bulbapedia -- Sandstorm chip damage is 1/16 max HP
     // Derivation: floor(160 / 16) = 10
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -253,10 +253,10 @@ describe("Gen6 sandstorm chip damage", () => {
   it("given sandstorm active, when Fire-type with 320 HP takes end-of-turn tick, then takes 20 damage (floor(320/16))", () => {
     // Source: Bulbapedia -- Sandstorm chip damage is 1/16 max HP
     // Derivation: floor(320 / 16) = 20
-    const pokemon = makeActivePokemon({ maxHp: 320, types: [T.fire] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 320, types: [T.fire] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -267,10 +267,10 @@ describe("Gen6 sandstorm chip damage", () => {
 
   it("given sandstorm active, when Rock-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.rock] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.rock] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -280,10 +280,10 @@ describe("Gen6 sandstorm chip damage", () => {
 
   it("given sandstorm active, when Steel-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.steel] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.steel] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.steel] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.steel] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -292,10 +292,10 @@ describe("Gen6 sandstorm chip damage", () => {
 
   it("given sandstorm active, when Ground-type pokemon takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Rock, Ground, Steel immune to sandstorm chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.ground] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ground] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.ground] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ground] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -309,10 +309,10 @@ describe("Gen6 hail chip damage", () => {
   it("given hail active, when Fire-type with 320 HP takes end-of-turn tick, then takes 20 damage (floor(320/16))", () => {
     // Source: Bulbapedia -- Hail chip damage is 1/16 max HP
     // Derivation: floor(320 / 16) = 20
-    const pokemon = makeActivePokemon({ maxHp: 320, types: [T.fire] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 320, types: [T.fire] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -324,10 +324,10 @@ describe("Gen6 hail chip damage", () => {
   it("given hail active, when Normal-type with 160 HP takes end-of-turn tick, then takes 10 damage (floor(160/16))", () => {
     // Source: Bulbapedia -- Hail chip damage is 1/16 max HP
     // Derivation: floor(160 / 16) = 10
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -338,10 +338,10 @@ describe("Gen6 hail chip damage", () => {
 
   it("given hail active, when Ice-type takes end-of-turn tick, then takes no damage", () => {
     // Source: Bulbapedia -- Ice types immune to hail chip
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.ice] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.ice] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -354,14 +354,14 @@ describe("Gen6 hail chip damage", () => {
 describe("Gen6 weather chip damage with ability immunities", () => {
   it("given sandstorm and pokemon with Overcoat, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [T.normal],
       ability: A.overcoat,
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -371,14 +371,14 @@ describe("Gen6 weather chip damage with ability immunities", () => {
 
   it("given hail and pokemon with Magic Guard, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [T.normal],
       ability: A.magicGuard,
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -388,14 +388,14 @@ describe("Gen6 weather chip damage with ability immunities", () => {
 
   it("given sandstorm and pokemon with Sand Veil, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Sand Veil: "immune to sandstorm damage"
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [T.normal],
       ability: A.sandVeil,
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -405,14 +405,14 @@ describe("Gen6 weather chip damage with ability immunities", () => {
 
   it("given hail and pokemon with Snow Cloak, when end-of-turn tick fires, then takes no damage", () => {
     // Source: Bulbapedia -- Snow Cloak: "immune to hail damage"
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [T.normal],
       ability: A.snowCloak,
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -427,10 +427,10 @@ describe("Gen6 weather minimum chip damage", () => {
   it("given sandstorm and non-immune pokemon with 1 HP max, when chip applied, then takes 1 damage (minimum)", () => {
     // Source: Bulbapedia -- weather damage has a minimum of 1 HP
     // Derivation: floor(1 / 16) = 0, but minimum is 1
-    const pokemon = makeActivePokemon({ maxHp: 1, types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 1, types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -442,10 +442,10 @@ describe("Gen6 weather minimum chip damage", () => {
   it("given hail and non-immune pokemon with 15 HP max, when chip applied, then takes 1 damage (floor(15/16) = 0, min 1)", () => {
     // Source: Bulbapedia -- weather damage has a minimum of 1 HP
     // Derivation: floor(15 / 16) = 0, but minimum is 1
-    const pokemon = makeActivePokemon({ maxHp: 15, types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 15, types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -460,10 +460,10 @@ describe("Gen6 weather minimum chip damage", () => {
 describe("Gen6 weather chip damage -- no chip for rain/sun/no weather", () => {
   it("given rain active, when end-of-turn tick fires, then no chip damage to anyone", () => {
     // Source: Bulbapedia -- Rain has no chip damage
-    const pokemon = makeActivePokemon({ types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.fire] }), 1);
-    const state = makeState(W.rain, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.fire] }), 1);
+    const state = createBattleState(W.rain, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -472,10 +472,10 @@ describe("Gen6 weather chip damage -- no chip for rain/sun/no weather", () => {
 
   it("given sun active, when end-of-turn tick fires, then no chip damage to anyone", () => {
     // Source: Bulbapedia -- Sun has no chip damage
-    const pokemon = makeActivePokemon({ types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.grass] }), 1);
-    const state = makeState(W.sun, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.grass] }), 1);
+    const state = createBattleState(W.sun, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -484,10 +484,10 @@ describe("Gen6 weather chip damage -- no chip for rain/sun/no weather", () => {
 
   it("given no weather active, when end-of-turn tick fires, then no results", () => {
     // Source: No weather = no effects
-    const pokemon = makeActivePokemon({ types: [T.normal] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.fire] }), 1);
-    const state = makeState(null, 0, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ types: [T.normal] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.fire] }), 1);
+    const state = createBattleState(null, 0, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -507,9 +507,9 @@ describe("Gen6 weather duration -- BattleState shape", () => {
   it("given a BattleState with sand turnsLeft=5 (ability-summoned), when applyWeatherEffects called, then non-immune types take chip damage", () => {
     // Source: Bulbapedia -- ability-summoned weather lasts 5 turns in Gen 6
     const ruleset = new Gen6Ruleset();
-    const state = makeState(W.sand, 5, [
-      makeSide(makeActivePokemon({ maxHp: 160, types: [T.fire] }), 0),
-      makeSide(makeActivePokemon({ types: [T.rock] }), 1),
+    const state = createBattleState(W.sand, 5, [
+      createBattleSide(createOnFieldPokemon({ maxHp: 160, types: [T.fire] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     expect(results).toHaveLength(1); // only Fire takes chip; Rock is immune
@@ -519,9 +519,9 @@ describe("Gen6 weather duration -- BattleState shape", () => {
   it("given a BattleState with sand turnsLeft=8 (weather rock), when applyWeatherEffects called, then chip damage still applies", () => {
     // Source: Bulbapedia -- Smooth Rock extends sandstorm to 8 turns
     const ruleset = new Gen6Ruleset();
-    const state = makeState(W.sand, 8, [
-      makeSide(makeActivePokemon({ maxHp: 160, types: [T.fire] }), 0),
-      makeSide(makeActivePokemon({ types: [T.rock] }), 1),
+    const state = createBattleState(W.sand, 8, [
+      createBattleSide(createOnFieldPokemon({ maxHp: 160, types: [T.fire] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     expect(results).toHaveLength(1);
@@ -531,9 +531,9 @@ describe("Gen6 weather duration -- BattleState shape", () => {
   it("given a BattleState with rain turnsLeft=5, when applyWeatherEffects called, then no chip damage (rain has none)", () => {
     // Source: Bulbapedia -- Rain does not deal chip damage
     const ruleset = new Gen6Ruleset();
-    const state = makeState(W.rain, 5, [
-      makeSide(makeActivePokemon({ types: [T.fire] }), 0),
-      makeSide(makeActivePokemon({ types: [T.water] }), 1),
+    const state = createBattleState(W.rain, 5, [
+      createBattleSide(createOnFieldPokemon({ types: [T.fire] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [T.water] }), 1),
     ]);
     const results = ruleset.applyWeatherEffects(state);
     expect(results).toHaveLength(0);
@@ -545,14 +545,14 @@ describe("Gen6 weather duration -- BattleState shape", () => {
 describe("Gen6 weather damage messages", () => {
   it("given sandstorm, when chip damage dealt, then message says 'buffeted by the sandstorm'", () => {
     // Source: Showdown -- sandstorm damage message format
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [T.normal],
       nickname: "Chansey",
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -561,14 +561,14 @@ describe("Gen6 weather damage messages", () => {
 
   it("given hail, when chip damage dealt, then message says 'pelted by hail'", () => {
     // Source: Showdown -- hail damage message format
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       maxHp: 160,
       types: [T.normal],
       nickname: "Blissey",
     });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 
@@ -582,10 +582,10 @@ describe("Gen6 weather integration via ruleset", () => {
   it("given Gen6Ruleset, when applyWeatherEffects called with sandstorm state, then returns chip results", () => {
     // Source: Bulbapedia -- Sandstorm chip damage
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActivePokemon({ maxHp: 160, types: [T.fire] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.rock] }), 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 160, types: [T.fire] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.rock] }), 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = ruleset.applyWeatherEffects(state);
 
@@ -598,10 +598,10 @@ describe("Gen6 weather integration via ruleset", () => {
   it("given Gen6Ruleset, when applyWeatherEffects called with hail state, then returns chip results for non-Ice", () => {
     // Source: Bulbapedia -- Hail chip damage
     const ruleset = new Gen6Ruleset();
-    const pokemon = makeActivePokemon({ maxHp: 320, types: [T.grass] });
-    const side0 = makeSide(pokemon, 0);
-    const side1 = makeSide(makeActivePokemon({ types: [T.ice] }), 1);
-    const state = makeState(W.hail, 5, [side0, side1]);
+    const pokemon = createOnFieldPokemon({ maxHp: 320, types: [T.grass] });
+    const side0 = createBattleSide(pokemon, 0);
+    const side1 = createBattleSide(createOnFieldPokemon({ types: [T.ice] }), 1);
+    const state = createBattleState(W.hail, 5, [side0, side1]);
 
     const results = ruleset.applyWeatherEffects(state);
 
@@ -612,9 +612,9 @@ describe("Gen6 weather integration via ruleset", () => {
   it("given Gen6Ruleset, when applyWeatherEffects called with no weather, then returns empty", () => {
     // Source: No weather = no effects
     const ruleset = new Gen6Ruleset();
-    const state = makeState(null, 0, [
-      makeSide(makeActivePokemon({ types: [T.normal] }), 0),
-      makeSide(makeActivePokemon({ types: [T.fire] }), 1),
+    const state = createBattleState(null, 0, [
+      createBattleSide(createOnFieldPokemon({ types: [T.normal] }), 0),
+      createBattleSide(createOnFieldPokemon({ types: [T.fire] }), 1),
     ]);
 
     const results = ruleset.applyWeatherEffects(state);
@@ -628,19 +628,19 @@ describe("Gen6 weather integration via ruleset", () => {
 describe("Gen6 weather affects both sides", () => {
   it("given sandstorm, when both sides have non-immune pokemon, then both take chip damage", () => {
     // Source: Bulbapedia -- sandstorm damages all non-immune Pokemon on both sides
-    const pokemon0 = makeActivePokemon({
+    const pokemon0 = createOnFieldPokemon({
       maxHp: 160,
       types: [T.fire],
       nickname: "Arcanine",
     });
-    const pokemon1 = makeActivePokemon({
+    const pokemon1 = createOnFieldPokemon({
       maxHp: 200,
       types: [T.water],
       nickname: "Vaporeon",
     });
-    const side0 = makeSide(pokemon0, 0);
-    const side1 = makeSide(pokemon1, 1);
-    const state = makeState(W.sand, 5, [side0, side1]);
+    const side0 = createBattleSide(pokemon0, 0);
+    const side1 = createBattleSide(pokemon1, 1);
+    const state = createBattleState(W.sand, 5, [side0, side1]);
 
     const results = applyGen6WeatherEffects(state);
 

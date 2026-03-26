@@ -15,6 +15,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -51,9 +52,9 @@ const abilitySlots = CORE_ABILITY_SLOTS;
 const abilityTriggerIds = CORE_ABILITY_TRIGGER_IDS;
 const itemTriggerIds = {
   beforeMove: "before-move",
-  endOfTurn: "end-of-turn",
+  endOfTurn: CORE_ITEM_TRIGGER_IDS.endOfTurn,
   onDamageTaken: abilityTriggerIds.onDamageTaken,
-  onHit: "on-hit",
+  onHit: CORE_ITEM_TRIGGER_IDS.onHit,
 } as const;
 const dataManager = createGen6DataManager();
 const defaultSpecies = dataManager.getSpecies(GEN6_SPECIES_IDS.bulbasaur);

@@ -13,9 +13,13 @@ import type { ActivePokemon, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
+  createEvs,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -35,14 +39,14 @@ const dataManager = createGen6DataManager();
 const PHANTOM_FORCE = GEN6_MOVE_IDS.phantomForce;
 const POWER_HERB = GEN6_ITEM_IDS.powerHerb;
 const DEFAULT_SPECIES_ID = GEN6_SPECIES_IDS.pikachu;
-const DEFAULT_NATURE_ID = GEN6_NATURE_IDS.hardy;
+const DEFAULT_NATURE_ID = dataManager.getNature(GEN6_NATURE_IDS.hardy).id;
 const DEFAULT_ABILITY = CORE_ABILITY_IDS.none;
 const KLUTZ = CORE_ABILITY_IDS.klutz;
 const EMBARGO = CORE_VOLATILE_IDS.embargo;
 const SHADOW_FORCE_CHARGING = CORE_VOLATILE_IDS.shadowForceCharging;
 const PHANTOM_FORCE_MOVE = dataManager.getMove(PHANTOM_FORCE);
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   ability?: string;
   heldItem?: string | null;
   volatileStatuses?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
@@ -59,8 +63,8 @@ function makeActivePokemon(overrides: {
       level: 50,
       experience: 0,
       nature: DEFAULT_NATURE_ID,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       calculatedStats: {
         hp: maxHp,
         attack: 100,
@@ -73,6 +77,8 @@ function makeActivePokemon(overrides: {
       status: null,
       heldItem: overrides.heldItem ?? null,
       moves: overrides.moves ?? [{ moveId: PHANTOM_FORCE }],
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: CORE_GENDERS.male,
       nickname: overrides.nickname ?? null,
       speciesId: DEFAULT_SPECIES_ID,
     },
@@ -93,10 +99,11 @@ function makeActivePokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
+function createCanonicalMove(id: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(id);
   return {
-    ...dataManager.getMove(id),
-    target: dataManager.getMove(id).target as MoveTarget,
+    ...baseMove,
+    target: baseMove.target as MoveTarget,
     ...overrides,
   } as MoveData;
 }
@@ -104,15 +111,15 @@ function makeMove(id: string, overrides?: Partial<MoveData>): MoveData {
 function makeContext(
   moveId: string,
   options?: {
-    attacker?: Parameters<typeof makeActivePokemon>[0];
-    defender?: Parameters<typeof makeActivePokemon>[0];
+    attacker?: Parameters<typeof createOnFieldPokemon>[0];
+    defender?: Parameters<typeof createOnFieldPokemon>[0];
     moveOverrides?: Partial<MoveData>;
   },
 ): MoveEffectContext {
   return {
-    attacker: makeActivePokemon(options?.attacker ?? {}),
-    defender: makeActivePokemon(options?.defender ?? {}),
-    move: makeMove(moveId, options?.moveOverrides),
+    attacker: createOnFieldPokemon(options?.attacker ?? {}),
+    defender: createOnFieldPokemon(options?.defender ?? {}),
+    move: createCanonicalMove(moveId, options?.moveOverrides),
     damage: 0,
     state: {
       weather: null,
