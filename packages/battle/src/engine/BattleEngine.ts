@@ -1023,12 +1023,12 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: Bulbapedia — "Gravity prevents the use of moves that involve the user going airborne"
         disabled = true;
         disabledReason = "Blocked by Gravity";
-      } else if (active.volatileStatuses.has("encore")) {
+      } else if (active.volatileStatuses.has(CORE_VOLATILE_IDS.encore)) {
         // Encore forces the Pokemon to use its encored move.
         // Gen 2 stores moveIndex; Gen 4 stores moveId — support both.
         // Source: pret/pokecrystal engine/battle/core.asm HandleEncore
         // Source: Showdown Gen 4 mod — Encore restricts to the encored move only
-        const encoreData = active.volatileStatuses.get("encore")?.data;
+        const encoreData = active.volatileStatuses.get(CORE_VOLATILE_IDS.encore)?.data;
         const encoreMoveId = encoreData?.moveId as string | undefined;
         const encoreMoveIndex = encoreData?.moveIndex as number | undefined;
         const lockedById = encoreMoveId !== undefined && slot.moveId !== encoreMoveId;
@@ -1529,8 +1529,12 @@ export class BattleEngine implements BattleEventEmitter {
     // Enforce recharge volatile: override submitted action for recharging Pokemon
     for (let side = 0 as 0 | 1; side <= 1; side = (side + 1) as 0 | 1) {
       const active = this.getActiveMutable(side);
-      if (active && active.pokemon.currentHp > 0 && active.volatileStatuses.has("recharge")) {
-        active.volatileStatuses.delete("recharge");
+      if (
+        active &&
+        active.pokemon.currentHp > 0 &&
+        active.volatileStatuses.has(CORE_VOLATILE_IDS.recharge)
+      ) {
+        active.volatileStatuses.delete(CORE_VOLATILE_IDS.recharge);
         actions[side] = { type: "recharge", side };
       }
     }
@@ -1888,14 +1892,14 @@ export class BattleEngine implements BattleEventEmitter {
     // removed before damage calculation so the attacker is targetable again.
     // Source: Showdown — semi-invulnerable status cleared at move execution start
     const semiInvulnerableVolatiles: readonly SemiInvulnerableVolatile[] = [
-      "flying",
-      "underground",
-      "underwater",
-      "shadow-force-charging",
+      CORE_VOLATILE_IDS.flying,
+      CORE_VOLATILE_IDS.underground,
+      CORE_VOLATILE_IDS.underwater,
+      CORE_VOLATILE_IDS.shadowForceCharging,
     ];
     const actorWasCharging =
       semiInvulnerableVolatiles.some((vol) => actor.volatileStatuses.has(vol)) ||
-      actor.volatileStatuses.has("charging");
+      actor.volatileStatuses.has(CORE_VOLATILE_IDS.charging);
 
     for (const vol of semiInvulnerableVolatiles) {
       if (actor.volatileStatuses.has(vol)) {
@@ -1904,8 +1908,8 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
     // Also remove the non-semi-invulnerable charge volatile (SolarBeam, Skull Bash, etc.)
-    if (actor.volatileStatuses.has("charging")) {
-      actor.volatileStatuses.delete("charging");
+    if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.charging)) {
+      actor.volatileStatuses.delete(CORE_VOLATILE_IDS.charging);
     }
 
     // Find the target
@@ -2073,8 +2077,8 @@ export class BattleEngine implements BattleEventEmitter {
       "max-guard",
     )
       ? "max-guard"
-      : defender.volatileStatuses.has("protect")
-        ? "protect"
+      : defender.volatileStatuses.has(CORE_VOLATILE_IDS.protect)
+        ? CORE_VOLATILE_IDS.protect
         : null;
     if (activeProtectVolatile !== null && effectiveMoveData.flags.protect) {
       if (this.ruleset.canBypassProtect(effectiveMoveData, actor, activeProtectVolatile)) {
@@ -2581,7 +2585,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Recharge: if the move requires recharge and noRecharge was not set, mark the attacker
     if (effectiveMoveData.flags.recharge && !resolvedEffectResult.noRecharge) {
-      actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
+      actor.volatileStatuses.set(CORE_VOLATILE_IDS.recharge, { turnsLeft: 1 });
     }
 
     // Held item: on-hit trigger for attacker
@@ -2899,7 +2903,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Recharge: if the recursively-called move requires recharge and noRecharge was not set
     if (moveData.flags.recharge && !effectResult.noRecharge) {
-      actor.volatileStatuses.set("recharge", { turnsLeft: 1 });
+      actor.volatileStatuses.set(CORE_VOLATILE_IDS.recharge, { turnsLeft: 1 });
     }
   }
 
@@ -3427,8 +3431,8 @@ export class BattleEngine implements BattleEventEmitter {
     const side = this.getSideIndex(actor);
 
     // Flinch check
-    if (actor.volatileStatuses.has("flinch")) {
-      actor.volatileStatuses.delete("flinch");
+    if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.flinch)) {
+      actor.volatileStatuses.delete(CORE_VOLATILE_IDS.flinch);
       this.emit({
         type: "message",
         text: `${getPokemonName(actor)} flinched and couldn't move!`,
@@ -4237,14 +4241,14 @@ export class BattleEngine implements BattleEventEmitter {
       for (const side of this.state.sides) {
         const sideActive = side.active[0];
         if (!sideActive) continue;
-        if (sideActive.volatileStatuses.has("flying")) {
-          sideActive.volatileStatuses.delete("flying");
+        if (sideActive.volatileStatuses.has(CORE_VOLATILE_IDS.flying)) {
+          sideActive.volatileStatuses.delete(CORE_VOLATILE_IDS.flying);
           sideActive.forcedMove = null;
           this.emit({
             type: "volatile-end",
             side: side.index,
             pokemon: getPokemonName(sideActive),
-            volatile: "flying",
+            volatile: CORE_VOLATILE_IDS.flying,
           });
           this.emit({
             type: "message",
@@ -4782,7 +4786,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: Bulbapedia — "If the user faints after using this move, the
         // Pokemon that knocked it out also faints."
         if (
-          active.volatileStatuses.has("destiny-bond") &&
+          active.volatileStatuses.has(CORE_VOLATILE_IDS.destinyBond) &&
           moveSource &&
           moveSource.attackerSide !== side.index
         ) {
@@ -5176,7 +5180,7 @@ export class BattleEngine implements BattleEventEmitter {
         case "flinch": {
           const flinchTarget = opponent ?? this.getOpponentActive(side);
           if (flinchTarget) {
-            flinchTarget.volatileStatuses.set("flinch", { turnsLeft: 1 });
+            flinchTarget.volatileStatuses.set(CORE_VOLATILE_IDS.flinch, { turnsLeft: 1 });
           }
           break;
         }
@@ -5583,7 +5587,7 @@ export class BattleEngine implements BattleEventEmitter {
     const side = this.state.sides[sideIndex];
     const active = side.active[0];
     if (!active || active.pokemon.currentHp <= 0) return;
-    if (!active.volatileStatuses.has("leech-seed")) return;
+    if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.leechSeed)) return;
 
     const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
     const drain = this.ruleset.calculateLeechSeedDrain(active);
@@ -5630,7 +5634,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.volatileStatuses.has("perish-song")) continue;
+      if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.perishSong)) continue;
 
       // Source: GenerationRuleset.processPerishSong contract — the ruleset owns
       // Perish Song countdown semantics, so the engine delegates the mutation and
@@ -5653,7 +5657,7 @@ export class BattleEngine implements BattleEventEmitter {
     const side = this.state.sides[sideIndex];
     const active = side.active[0];
     if (!active || active.pokemon.currentHp <= 0) return;
-    if (!active.volatileStatuses.has("curse")) return;
+    if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.curse)) return;
 
     const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
     const damage = this.ruleset.calculateCurseDamage(active);
@@ -5824,7 +5828,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      if (active.pokemon.heldItem !== "mystery-berry") continue;
+      if (active.pokemon.heldItem !== CORE_ITEM_IDS.mysteryBerry) continue;
 
       // Find the first move with 0 PP
       const moveSlot = active.pokemon.moves.find((m) => m.currentPP === 0 && m.moveId);
@@ -5838,7 +5842,7 @@ export class BattleEngine implements BattleEventEmitter {
         type: "item-consumed",
         side: side.index,
         pokemon: getPokemonName(active),
-        item: "mystery-berry",
+        item: CORE_ITEM_IDS.mysteryBerry,
       });
       this.emit({
         type: "message",
@@ -5925,9 +5929,9 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.volatileStatuses.has("encore")) continue;
+      if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.encore)) continue;
 
-      const encoreState = active.volatileStatuses.get("encore");
+      const encoreState = active.volatileStatuses.get(CORE_VOLATILE_IDS.encore);
       if (!encoreState) continue;
       encoreState.turnsLeft--;
 
@@ -5941,12 +5945,12 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       if (shouldEnd) {
-        active.volatileStatuses.delete("encore");
+        active.volatileStatuses.delete(CORE_VOLATILE_IDS.encore);
         this.emit({
           type: "volatile-end",
           side: side.index,
           pokemon: getPokemonName(active),
-          volatile: "encore",
+          volatile: CORE_VOLATILE_IDS.encore,
         });
       }
     }

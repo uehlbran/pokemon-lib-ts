@@ -146,6 +146,7 @@ export const CORE_ITEM_IDS = {
   potion: "potion",
   luckyEgg: "lucky-egg",
   luckyPunch: "lucky-punch",
+  mysteryBerry: "mystery-berry",
   pixiePlate: "pixie-plate",
   redOrb: "red-orb",
   revive: "revive",

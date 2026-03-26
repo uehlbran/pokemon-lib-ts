@@ -16,6 +16,11 @@ import type {
   VolatileStatusByGeneration,
   WeatherType,
 } from "@pokemon-lib-ts/core";
+import type {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+} from "../constants/effect-protocol";
 import type { BattleEvent } from "../events/BattleEvent";
 import type {
   ActivePokemon,
@@ -539,27 +544,19 @@ export interface AbilityContext {
  * Result of an ability trigger.
  * Returned by `GenerationRuleset.applyAbility()`.
  */
+type AbilityTarget = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+type AbilityTargetWithAlly = AbilityTarget | typeof BATTLE_EFFECT_TARGETS.ally;
+type AbilityTargetWithField = AbilityTarget | typeof BATTLE_EFFECT_TARGETS.field;
+
 /** Discriminated union of ability effect categories. */
 export type AbilityEffectType =
-  | "stat-change"
-  | "status-cure"
-  | "status-inflict"
-  | "damage-reduction"
-  | "type-change"
-  | "weather-set"
-  | "ability-change"
-  | "heal"
-  | "chip-damage"
-  | "volatile-inflict"
-  | "volatile-remove"
-  | "item-restore"
-  | "none";
+  (typeof BATTLE_ABILITY_EFFECT_TYPES)[keyof typeof BATTLE_ABILITY_EFFECT_TYPES];
 
 /** A single effect produced by an ability trigger — proper discriminated union on effectType. */
 export type AbilityEffect =
   | {
-      readonly effectType: "stat-change";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statChange;
+      readonly target: AbilityTarget;
       readonly stat:
         | "attack"
         | "defense"
@@ -571,51 +568,64 @@ export type AbilityEffect =
       readonly stages: number;
     }
   | {
-      readonly effectType: "weather-set";
-      readonly target: "field";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.weatherSet;
+      readonly target: typeof BATTLE_EFFECT_TARGETS.field;
       readonly weather: import("@pokemon-lib-ts/core").WeatherType;
       readonly weatherTurns: number;
     }
-  | { readonly effectType: "damage-reduction"; readonly target: "self" | "opponent" }
   | {
-      readonly effectType: "type-change";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.damageReduction;
+      readonly target: AbilityTarget;
+    }
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.typeChange;
+      readonly target: AbilityTarget;
       readonly types: readonly import("@pokemon-lib-ts/core").PokemonType[];
     }
-  | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" | "ally" }
   | {
-      readonly effectType: "ability-change";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statusCure;
+      readonly target: AbilityTargetWithAlly;
+    }
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.abilityChange;
+      readonly target: AbilityTarget;
       readonly newAbility: string;
     }
-  | { readonly effectType: "heal"; readonly target: "self" | "opponent"; readonly value: number }
   | {
-      readonly effectType: "chip-damage";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.heal;
+      readonly target: AbilityTarget;
       readonly value: number;
     }
   | {
-      readonly effectType: "status-inflict";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.chipDamage;
+      readonly target: AbilityTarget;
+      readonly value: number;
+    }
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statusInflict;
+      readonly target: AbilityTarget;
       readonly status: PrimaryStatus;
     }
   | {
-      readonly effectType: "volatile-inflict";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.volatileInflict;
+      readonly target: AbilityTarget;
       readonly volatile: VolatileStatus;
       readonly data?: Record<string, unknown>;
     }
   | {
-      readonly effectType: "volatile-remove";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.volatileRemove;
+      readonly target: AbilityTarget;
       readonly volatile: VolatileStatus;
     }
   | {
-      readonly effectType: "item-restore";
-      readonly target: "self";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.itemRestore;
+      readonly target: typeof BATTLE_EFFECT_TARGETS.self;
       readonly item: string;
     }
-  | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.none;
+      readonly target: AbilityTargetWithField;
+    };
 
 export interface AbilityResult {
   /** `true` if the ability actually activated and produced effects */
@@ -666,21 +676,12 @@ export interface ItemContext {
   readonly damage?: number;
 }
 
+type ItemEffectTarget = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+type ItemEffectTargetWithField = ItemEffectTarget | typeof BATTLE_EFFECT_TARGETS.field;
+
 /** Discriminated union of item effect categories. */
 export type ItemEffectType =
-  | "stat-boost"
-  | "heal"
-  | "speed-boost"
-  | "status-cure"
-  | "consume"
-  | "survive"
-  | "flinch"
-  | "volatile-cure"
-  | "status-inflict"
-  | "self-damage"
-  | "chip-damage"
-  | "inflict-status"
-  | "none";
+  (typeof BATTLE_ITEM_EFFECT_TYPES)[keyof typeof BATTLE_ITEM_EFFECT_TYPES];
 
 /**
  * A single effect produced by an item trigger — proper discriminated union on `type`.
@@ -694,47 +695,67 @@ export type ItemEffectType =
  * - `status-inflict`: status via value field (value: PrimaryStatus string); prefer `inflict-status` in new code
  */
 export type ItemEffect =
-  | { readonly type: "heal"; readonly target: "self" | "opponent"; readonly value: number }
-  | { readonly type: "status-cure"; readonly target: "self" | "opponent" }
-  | { readonly type: "consume"; readonly target: "self" | "opponent"; readonly value: string }
-  | { readonly type: "survive"; readonly target: "self"; readonly value: number }
-  | { readonly type: "flinch"; readonly target: "self" | "opponent" }
-  | { readonly type: "volatile-cure"; readonly target: "self" | "opponent"; readonly value: string }
   | {
-      readonly type: "stat-boost";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.heal;
+      readonly target: ItemEffectTarget;
+      readonly value: number;
+    }
+  | { readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.statusCure; readonly target: ItemEffectTarget }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.consume;
+      readonly target: ItemEffectTarget;
+      readonly value: string;
+    }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.survive;
+      readonly target: typeof BATTLE_EFFECT_TARGETS.self;
+      readonly value: number;
+    }
+  | { readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.flinch; readonly target: ItemEffectTarget }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.volatileCure;
+      readonly target: ItemEffectTarget;
+      readonly value: string;
+    }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.statBoost;
+      readonly target: ItemEffectTarget;
       readonly value: string;
       readonly stages?: number;
     }
-  | { readonly type: "speed-boost"; readonly target: "self" | "opponent"; readonly value: number }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.speedBoost;
+      readonly target: ItemEffectTarget;
+      readonly value: number;
+    }
   | {
       /** Chip damage to a target (Life Orb recoil, Black Sludge, Sticky Barb, Rocky Helmet). */
-      readonly type: "chip-damage";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.chipDamage;
+      readonly target: ItemEffectTarget;
       /** HP to subtract from the target (always positive). */
       readonly value: number;
     }
   | {
       /** Inflict a primary status condition on a target (Toxic Orb, Flame Orb). */
-      readonly type: "inflict-status";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.inflictStatus;
+      readonly target: ItemEffectTarget;
       readonly status: PrimaryStatus;
     }
   | {
       /** @deprecated Use `chip-damage` instead. Kept for Gen 3–4 backward compatibility. */
-      readonly type: "self-damage";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.selfDamage;
+      readonly target: ItemEffectTarget;
       readonly value: number;
     }
   | {
       /** @deprecated Use `inflict-status` instead. Kept for Gen 3–4 backward compatibility. */
-      readonly type: "status-inflict";
-      readonly target?: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.statusInflict;
+      readonly target?: ItemEffectTarget;
       readonly value: PrimaryStatus;
     }
   | {
-      readonly type: "none";
-      readonly target?: "self" | "opponent" | "field";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.none;
+      readonly target?: ItemEffectTargetWithField;
       readonly value?: number | string;
     };
 
