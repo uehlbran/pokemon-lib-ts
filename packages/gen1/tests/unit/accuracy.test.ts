@@ -1,8 +1,21 @@
 import type { AccuracyContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createPokemonInstance,
+  createStatExp,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS, Gen1Ruleset } from "../../src";
 
 /**
  * Gen 1 Accuracy Tests
@@ -21,94 +34,81 @@ import { Gen1Ruleset } from "../../src/Gen1Ruleset";
 
 // --- Test Helpers ---
 
-const ruleset = new Gen1Ruleset();
+const dataManager = createGen1DataManager();
+const ruleset = new Gen1Ruleset({ dataManager });
+const MOVE_IDS = GEN1_MOVE_IDS;
+const SPECIES_IDS = GEN1_SPECIES_IDS;
+const DEFAULT_SPECIES = dataManager.getSpecies(SPECIES_IDS.pikachu);
+const DEFAULT_THUNDERBOLT = dataManager.getMove(MOVE_IDS.thunderbolt);
+const DEFAULT_SWIFT = dataManager.getMove(MOVE_IDS.swift);
+const DEFAULT_PARTICIPANT_MOVE = dataManager.getMove(MOVE_IDS.tackle);
+const DEFAULT_NATURE = CORE_NATURE_IDS.hardy;
+const DEFAULT_MET_LOCATION = "pallet-town";
+const DEFAULT_TRAINER = "Red";
+const DEFAULT_POKEBALL = CORE_ITEM_IDS.pokeBall;
 
-function makeMove(overrides: Partial<MoveData> = {}): MoveData {
+const DEFAULT_CALCULATED_STATS = {
+  hp: 100,
+  attack: 80,
+  defense: 60,
+  spAttack: 80,
+  spDefense: 60,
+  speed: 120,
+};
+
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData> = {}): MoveData {
+  const { flags: overrideFlags, ...rest } = overrides;
   return {
-    id: "test-move",
-    displayName: "Test Move",
-    type: "normal" as PokemonType,
-    category: "physical",
-    power: 50,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
+    ...baseMove,
+    ...rest,
+    id: rest.id ?? `synthetic-${baseMove.id}`,
+    displayName: rest.displayName ?? `Synthetic ${baseMove.displayName}`,
     flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
+      ...baseMove.flags,
+      ...(overrideFlags ?? {}),
     },
-    effect: null,
-    description: "A test move.",
-    generation: 1,
-    ...overrides,
   };
 }
 
-function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemon {
+function createSyntheticActivePokemon(): ActivePokemon {
+  const species = DEFAULT_SPECIES;
+  const pokemon = createPokemonInstance(species, 50, new SeededRandom(1), {
+    nature: DEFAULT_NATURE,
+    ivs: createDvs(),
+    evs: createStatExp(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
+    heldItem: null,
+    friendship: createFriendship(70),
+    isShiny: false,
+    metLocation: DEFAULT_MET_LOCATION,
+    originalTrainer: DEFAULT_TRAINER,
+    originalTrainerId: 12345,
+    pokeball: DEFAULT_POKEBALL,
+  }) as PokemonInstance;
+
+  pokemon.moves = [createMoveSlot(DEFAULT_PARTICIPANT_MOVE.id, DEFAULT_PARTICIPANT_MOVE.pp)];
+  pokemon.currentHp = DEFAULT_CALCULATED_STATS.hp;
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.calculatedStats = { ...DEFAULT_CALCULATED_STATS };
+
   return {
-    pokemon: {
-      speciesId: "pikachu",
-      nickname: null,
-      level: 50,
-      nature: "hardy",
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [],
-      currentHp: 100,
-      status: null,
-      statusTurns: 0,
-      friendship: 70,
-      heldItem: null,
-      ability: "",
-      gender: null,
-      isShiny: false,
-      pokeball: "poke-ball",
-      calculatedStats: {
-        hp: 100,
-        attack: 80,
-        defense: 60,
-        spAttack: 80,
-        spDefense: 60,
-        speed: 120,
-      },
-    } as PokemonInstance,
+    pokemon,
     teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: ["electric"] as PokemonType[],
-    ability: "",
+    types: [...species.types],
+    ability: CORE_ABILITY_IDS.none,
+    suppressedAbility: null,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
+    lastDamageCategory: null,
     turnsOnField: 1,
     movedThisTurn: false,
     consecutiveProtects: 0,
     substituteHp: 0,
+    itemKnockedOff: false,
     transformed: false,
     transformedSpecies: null,
     isMega: false,
@@ -117,11 +117,11 @@ function makeActivePokemon(overrides: Partial<ActivePokemon> = {}): ActivePokemo
     isTerastallized: false,
     teraType: null,
     stellarBoostedTypes: [],
-    ...overrides,
+    forcedMove: null,
   };
 }
 
-function makeState(rng: SeededRandom): BattleState {
+function createSyntheticBattleState(rng: SeededRandom): BattleState {
   return {
     phase: "turn-resolve",
     generation: 1,
@@ -132,7 +132,7 @@ function makeState(rng: SeededRandom): BattleState {
         index: 0,
         trainer: null,
         team: [],
-        active: [],
+        active: [null],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -146,7 +146,7 @@ function makeState(rng: SeededRandom): BattleState {
         index: 1,
         trainer: null,
         team: [],
-        active: [],
+        active: [null],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -165,12 +165,14 @@ function makeState(rng: SeededRandom): BattleState {
     gravity: { active: false, turnsLeft: 0 },
     turnHistory: [],
     rng,
+    isWildBattle: false,
+    fleeAttempts: 0,
     ended: false,
     winner: null,
-  } as BattleState;
+  };
 }
 
-function makeContext(
+function createAccuracyContext(
   overrides: {
     moveAccuracy?: number | null;
     accuracyStage?: number;
@@ -179,34 +181,18 @@ function makeContext(
   } = {},
 ): AccuracyContext {
   const rng = overrides.rng ?? new SeededRandom(42);
-  const attacker = makeActivePokemon({
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: overrides.accuracyStage ?? 0,
-      evasion: 0,
-    },
-  });
-  const defender = makeActivePokemon({
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: overrides.evasionStage ?? 0,
-    },
-  });
-  const move = makeMove({
-    accuracy: overrides.moveAccuracy === undefined ? 100 : overrides.moveAccuracy,
-  });
-  return { attacker, defender, move, state: makeState(rng), rng };
+  const attacker = createSyntheticActivePokemon();
+  attacker.statStages.accuracy = overrides.accuracyStage ?? 0;
+  const defender = createSyntheticActivePokemon();
+  defender.statStages.evasion = overrides.evasionStage ?? 0;
+  const move =
+    overrides.moveAccuracy === null
+      ? DEFAULT_SWIFT
+      : overrides.moveAccuracy === undefined ||
+          overrides.moveAccuracy === DEFAULT_THUNDERBOLT.accuracy
+        ? DEFAULT_THUNDERBOLT
+        : createSyntheticMoveFrom(DEFAULT_THUNDERBOLT, { accuracy: overrides.moveAccuracy });
+  return { attacker, defender, move, state: createSyntheticBattleState(rng), rng };
 }
 
 /**
@@ -226,30 +212,27 @@ function computeThreshold(
   evasionStage: number,
 ): number {
   // Step 1: Convert to 0-255 scale
-  let acc: number;
-  if (moveAccuracy >= 100) {
-    acc = 255;
-  } else {
-    acc = Math.floor((moveAccuracy * 255) / 100);
-  }
+  const baseAccuracy = moveAccuracy >= 100 ? 255 : Math.floor((moveAccuracy * 255) / 100);
 
   // Step 2: Apply accuracy stage
-  if (accuracyStage !== 0) {
-    const accNum = Math.max(2, 2 + accuracyStage);
-    const accDen = Math.max(2, 2 - accuracyStage);
-    acc = Math.floor((acc * accNum) / accDen);
-  }
-  acc = Math.max(0, Math.min(255, acc));
+  const afterAccuracyStage =
+    accuracyStage === 0
+      ? baseAccuracy
+      : Math.floor(
+          (baseAccuracy * Math.max(2, 2 + accuracyStage)) / Math.max(2, 2 - accuracyStage),
+        );
+  const clampedAfterAccuracyStage = Math.max(0, Math.min(255, afterAccuracyStage));
 
   // Step 3: Apply evasion stage (inverted)
-  if (evasionStage !== 0) {
-    const evaNum = Math.max(2, 2 - evasionStage);
-    const evaDen = Math.max(2, 2 + evasionStage);
-    acc = Math.floor((acc * evaNum) / evaDen);
-  }
-  acc = Math.max(0, Math.min(255, acc));
+  const afterEvasionStage =
+    evasionStage === 0
+      ? clampedAfterAccuracyStage
+      : Math.floor(
+          (clampedAfterAccuracyStage * Math.max(2, 2 - evasionStage)) /
+            Math.max(2, 2 + evasionStage),
+        );
 
-  return acc;
+  return Math.max(0, Math.min(255, afterEvasionStage));
 }
 
 describe("Gen 1 Accuracy", () => {
@@ -276,7 +259,7 @@ describe("Gen 1 Accuracy", () => {
     const trials = 10000;
     // Act
     for (let i = 0; i < trials; i++) {
-      const ctx = makeContext({ moveAccuracy: 100, rng });
+      const ctx = createAccuracyContext({ moveAccuracy: 100, rng });
       const result = ruleset.doesMoveHit(ctx);
       if (result) hits++;
       else _misses++;
@@ -292,7 +275,7 @@ describe("Gen 1 Accuracy", () => {
     const rng = new SeededRandom(42);
     // Act / Assert: null accuracy (e.g., Swift) should always return true
     for (let i = 0; i < 100; i++) {
-      const ctx = makeContext({ moveAccuracy: null, rng });
+      const ctx = createAccuracyContext({ moveAccuracy: null, rng });
       expect(ruleset.doesMoveHit(ctx)).toBe(true);
     }
   });
@@ -431,7 +414,7 @@ describe("Gen 1 Accuracy", () => {
     const trials = 10000;
     // Act
     for (let i = 0; i < trials; i++) {
-      const ctx = makeContext({ moveAccuracy: 50, rng });
+      const ctx = createAccuracyContext({ moveAccuracy: 50, rng });
       if (ruleset.doesMoveHit(ctx)) {
         hits++;
       }
@@ -450,7 +433,7 @@ describe("Gen 1 Accuracy", () => {
     let hits = 0;
     const trials = 1000;
     for (let i = 0; i < trials; i++) {
-      const ctx = makeContext({ moveAccuracy: 0, rng });
+      const ctx = createAccuracyContext({ moveAccuracy: 0, rng });
       if (ruleset.doesMoveHit(ctx)) hits++;
     }
     // Assert: threshold = 0 means no roll can be < 0, so 0% hit rate
@@ -465,8 +448,8 @@ describe("Gen 1 Accuracy", () => {
     const rng2 = new SeededRandom(99);
     // Act / Assert
     for (let i = 0; i < 50; i++) {
-      const ctx1 = makeContext({ moveAccuracy: 75, rng: rng1 });
-      const ctx2 = makeContext({ moveAccuracy: 75, rng: rng2 });
+      const ctx1 = createAccuracyContext({ moveAccuracy: 75, rng: rng1 });
+      const ctx2 = createAccuracyContext({ moveAccuracy: 75, rng: rng2 });
       const result1 = ruleset.doesMoveHit(ctx1);
       const result2 = ruleset.doesMoveHit(ctx2);
       expect(result1).toBe(result2);
