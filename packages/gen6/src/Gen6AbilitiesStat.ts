@@ -1,7 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveCategory } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 6 stat-modifying and priority ability handlers.
@@ -122,7 +122,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       //   by a Pokemon with Gale Wings will have their priority increased by 1."
       // Source: Showdown data/mods/gen6/abilities.ts -- galeWings has no HP check
       if (!ctx.move) return INACTIVE;
-      if (ctx.move.type !== "flying") return INACTIVE;
+      if (ctx.move.type !== CORE_TYPE_IDS.flying) return INACTIVE;
       const name = getName(ctx);
       return {
         activated: true,

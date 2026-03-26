@@ -3,6 +3,7 @@ import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib
 import {
   CORE_ABILITY_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TARGETS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   type MoveEffect,
@@ -90,7 +91,8 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
       return true;
     case "stat-change":
       if (effect.target === "foe" && effect.chance > 0) return true;
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
     case "volatile-status":
       return effect.chance > 0;

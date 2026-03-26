@@ -6,7 +6,7 @@ import {
   BATTLE_EFFECT_TARGETS,
 } from "@pokemon-lib-ts/battle";
 import type { MoveCategory } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 7 stat-modifying, priority, and KO-trigger ability handlers.
@@ -140,7 +140,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       // Source: Bulbapedia "Gale Wings" Gen 7 -- "only activates when at full HP"
       // Source: Showdown data/abilities.ts -- galeWings: requires pokemon.hp === pokemon.maxhp
       if (!ctx.move) return INACTIVE;
-      if (ctx.move.type !== "flying") return INACTIVE;
+      if (ctx.move.type !== CORE_TYPE_IDS.flying) return INACTIVE;
       // Gen 7 nerf: must be at full HP
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       if (ctx.pokemon.pokemon.currentHp < maxHp) return INACTIVE;
@@ -265,7 +265,7 @@ export function isGaleWingsActive(
   maxHp: number,
 ): boolean {
   if (abilityId !== "gale-wings") return false;
-  if (moveType !== "flying") return false;
+  if (moveType !== CORE_TYPE_IDS.flying) return false;
   return currentHp >= maxHp;
 }
 

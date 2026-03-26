@@ -34,7 +34,14 @@ import {
   type MoveEffectContext,
   type MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { CORE_STAT_IDS, type SeededRandom, type VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type SeededRandom,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -281,7 +288,7 @@ export function isBlockedByKingsShield(
   moveHasProtectFlag: boolean,
   moveHasContactFlag: boolean,
 ): { blocked: boolean; contactPenalty: boolean; attackDropStages: number } {
-  if (!moveHasProtectFlag || moveCategory === "status") {
+  if (!moveHasProtectFlag || moveCategory === CORE_MOVE_CATEGORIES.status) {
     return { blocked: false, contactPenalty: false, attackDropStages: 0 };
   }
   return {
@@ -331,7 +338,8 @@ export function isBlockedByMatBlock(
   moveTarget: string,
 ): boolean {
   if (!moveHasProtectFlag) return false;
-  if (moveTarget === "self" || moveCategory === "status") return false;
+  if (moveTarget === BATTLE_EFFECT_TARGETS.self || moveCategory === CORE_MOVE_CATEGORIES.status)
+    return false;
   return true;
 }
 
@@ -345,9 +353,9 @@ export function isBlockedByMatBlock(
  *   onTryHit: if (['self', 'all'].includes(move.target) || move.category !== 'Status') return;
  */
 export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string): boolean {
-  if (moveCategory !== "status") return false;
+  if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
   if (
-    moveTarget === "self" ||
+    moveTarget === BATTLE_EFFECT_TARGETS.self ||
     moveTarget === "all" ||
     moveTarget === "entire-field" ||
     moveTarget === "foe-field" ||
@@ -670,7 +678,7 @@ export function handleNoRetreat(hasNoRetreatAlready: boolean): MoveEffectResult 
 
   return {
     ...base,
-    selfVolatileInflicted: "no-retreat",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.noRetreat,
     selfVolatileData: { turnsLeft: -1 }, // Permanent until switch
     statChanges: [
       { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
@@ -1052,7 +1060,7 @@ export function executeGen8MoveEffect(
 
     // --- New Gen 8 moves (handled inline) ---
     case "no-retreat": {
-      const hasNoRetreat = ctx.attacker.volatileStatuses.has("no-retreat");
+      const hasNoRetreat = ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.noRetreat);
       return handleNoRetreat(hasNoRetreat);
     }
     case "tar-shot": {

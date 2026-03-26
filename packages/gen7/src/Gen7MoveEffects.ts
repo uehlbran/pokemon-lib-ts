@@ -20,8 +20,19 @@
  * Source: Bulbapedia -- individual move pages
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
-import type { MoveData, SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type MoveData,
+  type SeededRandom,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -345,7 +356,7 @@ export function isBlockedByKingsShield(
 ): { blocked: boolean; contactPenalty: boolean; attackDropStages: number } {
   // King's Shield allows Status moves through
   // Source: Showdown -- if (!move.flags['protect'] || move.category === 'Status') return;
-  if (!moveHasProtectFlag || moveCategory === "status") {
+  if (!moveHasProtectFlag || moveCategory === CORE_MOVE_CATEGORIES.status) {
     return { blocked: false, contactPenalty: false, attackDropStages: 0 };
   }
   return {
@@ -398,7 +409,8 @@ export function isBlockedByMatBlock(
   if (!moveHasProtectFlag) return false;
   // Mat Block allows self-targeting moves and Status moves through
   // Source: Showdown -- if (move && (move.target === 'self' || move.category === 'Status')) return;
-  if (moveTarget === "self" || moveCategory === "status") return false;
+  if (moveTarget === BATTLE_EFFECT_TARGETS.self || moveCategory === CORE_MOVE_CATEGORIES.status)
+    return false;
   return true;
 }
 
@@ -415,14 +427,14 @@ export function isBlockedByMatBlock(
 export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string): boolean {
   // Only blocks Status category moves
   // Source: Showdown -- if (... move.category !== 'Status') return;
-  if (moveCategory !== "status") return false;
+  if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
   // Does not block self-targeting or field-wide moves
   // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
   // Entry hazards target "foe-field" or "user-field" and pass through Crafty Shield.
   // Source: Bulbapedia -- Crafty Shield does not protect against entry hazard moves
   // Source: Showdown data/moves.ts -- hazards (stealth-rock, spikes, toxic-spikes, sticky-web) use target: foeSide
   if (
-    moveTarget === "self" ||
+    moveTarget === BATTLE_EFFECT_TARGETS.self ||
     moveTarget === "all" ||
     moveTarget === "entire-field" ||
     moveTarget === "foe-field" ||

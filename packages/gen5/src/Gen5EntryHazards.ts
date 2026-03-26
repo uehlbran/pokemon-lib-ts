@@ -29,6 +29,12 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,7 +99,7 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
 
   // Iron Ball grounds the holder (only when item effects are active)
   // Source: Bulbapedia -- Iron Ball: "makes the holder grounded"
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
 
   // Smack Down grounds the target
   // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
@@ -102,19 +108,19 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
 
   // Flying-type is not grounded
-  if (pokemon.types.includes("flying")) return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
 
   // Levitate grants levitation
   // Source: Bulbapedia -- Levitate: "gives full immunity to Ground-type moves"
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
 
   // Magnet Rise grants levitation
   // Source: Bulbapedia -- Magnet Rise: "makes the user immune to Ground-type moves"
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
 
   // Air Balloon grants levitation ONLY when item effects are not suppressed.
   // Source: Bulbapedia -- Air Balloon: "makes the holder immune to Ground-type moves"
-  if (pokemon.pokemon.heldItem === "air-balloon" && !itemsSuppressed) return false;
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon && !itemsSuppressed) return false;
 
   return true;
 }

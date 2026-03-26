@@ -9,6 +9,7 @@ import {
 } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
+  CORE_MOVE_EFFECT_TARGETS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -678,7 +679,8 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
       return true;
     case "stat-change":
       if (effect.target === "foe" && effect.chance > 0) return true;
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
     case "volatile-status":
       return effect.chance > 0;

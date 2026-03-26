@@ -33,7 +33,13 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -127,18 +133,20 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   //   even if it is a Flying-type or has the Levitate ability."
   // Source: Showdown sim/pokemon.ts -- isGrounded: checks 'ingrain' volatile before
   //   Flying/Levitate checks
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
   // Compute item suppression once. Klutz ability and Embargo volatile both suppress
   // held-item effects, preventing Iron Ball from grounding and Air Balloon from levitating.
   // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses items under Klutz/Embargo
   // Source: Bulbapedia -- Klutz: "The held item has no effect"
   // Source: Bulbapedia -- Embargo: "The target cannot use its held item"
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
 
   // Iron Ball grounds the holder (only when item effects are active)
   // Source: Bulbapedia -- Iron Ball: "makes the holder grounded"
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
 
   // Smack Down grounds the target
   // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
@@ -147,11 +155,11 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
 
   // Flying-type is not grounded
-  if (pokemon.types.includes("flying")) return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
 
   // Levitate grants levitation
   // Source: Bulbapedia -- Levitate: "gives full immunity to Ground-type moves"
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
 
   // Magnet Rise grants levitation
   // Source: Bulbapedia -- Magnet Rise: "makes the user immune to Ground-type moves"

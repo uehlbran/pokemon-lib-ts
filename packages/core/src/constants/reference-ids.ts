@@ -38,6 +38,7 @@ export const CORE_ABILITY_IDS = {
   intimidate: "intimidate",
   lightningRod: "lightning-rod",
   magicGuard: "magic-guard",
+  magicBounce: "magic-bounce",
   marvelScale: "marvel-scale",
   moldBreaker: "mold-breaker",
   moody: "moody",
@@ -229,6 +230,13 @@ export const CORE_MOVE_CATEGORIES = {
   physical: "physical",
   special: "special",
   status: "status",
+} as const;
+
+export const CORE_MOVE_EFFECT_TARGETS = {
+  self: "self",
+  foe: "foe",
+  all: "all",
+  entireField: "entire-field",
 } as const;
 
 export const CORE_ABILITY_SLOTS = {

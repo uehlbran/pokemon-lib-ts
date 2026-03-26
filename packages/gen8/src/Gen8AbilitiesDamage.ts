@@ -1,7 +1,12 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TARGETS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN8_ABILITY_IDS, GEN8_MOVE_IDS } from "./data/reference-ids.js";
 
 /**
@@ -71,7 +76,8 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
       return true;
     case "stat-change":
       if (effect.target === "foe" && effect.chance > 0) return true;
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
     case "volatile-status":
       return effect.chance > 0;

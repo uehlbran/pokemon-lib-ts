@@ -1,6 +1,7 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
+  CORE_MOVE_EFFECT_TARGETS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   type MoveEffect,
@@ -127,7 +128,8 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
       // Draco Meteor SpAtk drop) are NOT eligible.
       // Source: Showdown data/abilities.ts -- sheerforce: delete move.secondaries; delete move.self
       //   (move.self is only deleted when move.secondaries exists -- i.e., secondary.self)
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
 
     case "volatile-status":

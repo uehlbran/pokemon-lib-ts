@@ -20,7 +20,16 @@
  */
 
 import type { ActivePokemon, BattleState, TerrainEffectResult } from "@pokemon-lib-ts/battle";
-import type { PrimaryStatus, TerrainType, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type PrimaryStatus,
+  type TerrainType,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
 
 // ---- Constants ----
 
@@ -61,22 +70,24 @@ export const TERRAIN_EXTENDED_TURNS = 8;
  */
 export function isGen9Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
   if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
 
-  if (pokemon.types.includes("flying")) return false;
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
   if (
-    pokemon.pokemon.heldItem === "air-balloon" &&
+    pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon &&
     !itemsSuppressed &&
     pokemon.pokemon.currentHp > 0
   ) {
     return false;
   }
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
   if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
 
   return true;
@@ -118,7 +129,7 @@ export function checkGen9TerrainStatusImmunity(
   // Electric Terrain: prevents sleep for grounded Pokemon
   // Source: Showdown data/conditions.ts -- electricterrain.onSetStatus:
   //   if (status.id === 'slp') { ... return false; }
-  if (state.terrain.type === "electric" && status === "sleep") {
+  if (state.terrain.type === "electric" && status === CORE_STATUS_IDS.sleep) {
     return {
       immune: true,
       message: `${pokemonName} is protected by Electric Terrain!`,

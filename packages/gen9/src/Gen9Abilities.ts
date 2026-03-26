@@ -1,5 +1,5 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import { type AbilityTrigger, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen9NewAbility, isEmbodyAspect } from "./Gen9AbilitiesNew.js";
 import { handleGen9StatAbility } from "./Gen9AbilitiesStat.js";
@@ -107,7 +107,7 @@ function handleCarryForwardPriorityCheck(ctx: AbilityContext): AbilityResult {
     case "gale-wings": {
       // +1 priority to Flying moves at full HP (Gen 7+ nerf)
       // Source: Showdown data/abilities.ts -- requires pokemon.hp === pokemon.maxhp
-      if (ctx.move.type !== "flying") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.flying) return NO_ACTIVATION;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       if (ctx.pokemon.pokemon.currentHp < maxHp) return NO_ACTIVATION;
       return {
