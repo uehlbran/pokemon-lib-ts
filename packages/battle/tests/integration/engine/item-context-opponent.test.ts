@@ -1,5 +1,5 @@
-import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS, type PokemonInstance } from "../../../../core/src";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -36,7 +36,13 @@ class ItemContextCaptureMockRuleset extends MockRuleset {
   }
 }
 
-function createItemContextEngine(overrides?: {
+const ITEM_TRIGGERS = {
+  damageTaken: CORE_ITEM_TRIGGER_IDS.onDamageTaken,
+  hit: CORE_ITEM_TRIGGER_IDS.onHit,
+  contact: CORE_ITEM_TRIGGER_IDS.onContact,
+} as const;
+
+function createItemContextBattleEngine(overrides?: {
   seed?: number;
   team1?: PokemonInstance[];
   team2?: PokemonInstance[];
@@ -50,7 +56,7 @@ function createItemContextEngine(overrides?: {
     createTestPokemon(6, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -67,7 +73,7 @@ function createItemContextEngine(overrides?: {
     createTestPokemon(9, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -97,7 +103,7 @@ function createItemContextEngine(overrides?: {
 describe("Bug #519 — ItemContext.opponent field", () => {
   it("given on-damage-taken item trigger, when fired, then ItemContext.opponent is the attacker", () => {
     // Arrange
-    const { engine, ruleset } = createItemContextEngine();
+    const { engine, ruleset } = createItemContextBattleEngine();
     engine.start();
 
     // Act — both sides use tackle. Charizard (speed 120) moves first, hitting Blastoise.
@@ -106,7 +112,9 @@ describe("Bug #519 — ItemContext.opponent field", () => {
 
     // Assert — find the on-damage-taken trigger context
     // Source: Showdown — onDamagingHit item hooks receive attacker as opponent
-    const damageTakenCtx = ruleset.capturedContexts.filter((c) => c.trigger === "on-damage-taken");
+    const damageTakenCtx = ruleset.capturedContexts.filter(
+      (c) => c.trigger === ITEM_TRIGGERS.damageTaken,
+    );
     expect(damageTakenCtx.length).toBeGreaterThanOrEqual(1);
 
     // The first on-damage-taken fires for Blastoise (defender) when Charizard (attacker) hits.
@@ -119,7 +127,7 @@ describe("Bug #519 — ItemContext.opponent field", () => {
 
   it("given on-hit item trigger, when fired, then ItemContext.opponent is the defender", () => {
     // Arrange
-    const { engine, ruleset } = createItemContextEngine();
+    const { engine, ruleset } = createItemContextBattleEngine();
     engine.start();
 
     // Act — both sides use tackle
@@ -128,7 +136,7 @@ describe("Bug #519 — ItemContext.opponent field", () => {
 
     // Assert — find the on-hit trigger context
     // Source: Showdown — onHit item hooks receive defender as opponent
-    const onHitCtx = ruleset.capturedContexts.filter((c) => c.trigger === "on-hit");
+    const onHitCtx = ruleset.capturedContexts.filter((c) => c.trigger === ITEM_TRIGGERS.hit);
     expect(onHitCtx.length).toBeGreaterThanOrEqual(1);
 
     // The first on-hit fires for Charizard (attacker/holder) when it hits Blastoise (defender).
@@ -141,7 +149,7 @@ describe("Bug #519 — ItemContext.opponent field", () => {
 
   it("given a contact move hitting a contact-item holder, when on-contact item trigger fires, then ItemContext.opponent is the attacker", () => {
     // Arrange — tackle has contact flag, so on-contact should fire
-    const { engine, ruleset } = createItemContextEngine();
+    const { engine, ruleset } = createItemContextBattleEngine();
     engine.start();
 
     // Act — both sides use tackle (which has the contact flag)
@@ -150,7 +158,9 @@ describe("Bug #519 — ItemContext.opponent field", () => {
 
     // Assert — find the on-contact trigger context
     // Source: Showdown — on-contact item hooks (Rocky Helmet) receive attacker as opponent
-    const onContactCtx = ruleset.capturedContexts.filter((c) => c.trigger === "on-contact");
+    const onContactCtx = ruleset.capturedContexts.filter(
+      (c) => c.trigger === ITEM_TRIGGERS.contact,
+    );
     expect(onContactCtx.length).toBeGreaterThanOrEqual(1);
 
     // The first on-contact fires for Blastoise (defender/holder) when Charizard (attacker) hits.
