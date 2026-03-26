@@ -1,27 +1,34 @@
 import type { ActivePokemon, BattleAction, BattleState } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createMoveSlot,
   NEUTRAL_NATURES,
   SeededRandom,
-  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
   GEN4_TYPES,
   Gen4Ruleset,
-  createGen4DataManager,
 } from "../src";
 
 const DATA_MANAGER = createGen4DataManager();
@@ -84,7 +91,7 @@ function makeRuleset(): Gen4Ruleset {
 }
 
 /** Minimal PokemonInstance for mechanic tests. */
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   maxHp?: number;
   speed?: number;
   status?: PokemonInstance["status"];
@@ -98,16 +105,16 @@ function makePokemonInstance(overrides: {
     level: 50,
     experience: 0,
     nature: DEFAULT_NATURE,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: maxHp,
     moves: [],
     ability: ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: overrides.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(0),
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -126,24 +133,16 @@ function makePokemonInstance(overrides: {
 }
 
 /** Minimal ActivePokemon for mechanic tests. */
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   speed?: number;
   status?: PokemonInstance["status"];
   types?: PokemonType[];
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance(overrides),
+    pokemon: createSyntheticPokemonInstance(overrides),
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
     types: overrides.types ?? [TYPES.normal],
     ability: ABILITIES.none,
@@ -267,7 +266,7 @@ describe("Gen4Ruleset applyStatusDamage — burn", () => {
     // Source: specs/battle/05-gen4.md — "Burn damage is 1/8 max HP"
     // Derivation: floor(160 / 8) = 20
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 160, status: STATUSES.burn });
+    const mon = createOnFieldPokemon({ maxHp: 160, status: STATUSES.burn });
     expect(ruleset.applyStatusDamage(mon, STATUSES.burn, STUB_STATE)).toBe(20);
   });
 
@@ -275,7 +274,7 @@ describe("Gen4Ruleset applyStatusDamage — burn", () => {
     // Source: pret/pokeplatinum — burn tick = floor(maxHP / 8)
     // Derivation: floor(200 / 8) = 25
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, status: STATUSES.burn });
+    const mon = createOnFieldPokemon({ maxHp: 200, status: STATUSES.burn });
     expect(ruleset.applyStatusDamage(mon, STATUSES.burn, STUB_STATE)).toBe(25);
   });
 
@@ -283,7 +282,7 @@ describe("Gen4Ruleset applyStatusDamage — burn", () => {
     // Source: pret/pokeplatinum — damage always >= 1
     // Derivation: floor(1 / 8) = 0 → clamped to 1
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 1, status: STATUSES.burn });
+    const mon = createOnFieldPokemon({ maxHp: 1, status: STATUSES.burn });
     expect(ruleset.applyStatusDamage(mon, STATUSES.burn, STUB_STATE)).toBe(1);
   });
 });
@@ -297,7 +296,7 @@ describe("Gen4Ruleset applyStatusDamage — poison", () => {
     // Source: BaseRuleset — poison tick = floor(maxHP / 8) (same in Gen 3-6)
     // Derivation: floor(160 / 8) = 20
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 160, status: STATUSES.poison });
+    const mon = createOnFieldPokemon({ maxHp: 160, status: STATUSES.poison });
     expect(ruleset.applyStatusDamage(mon, STATUSES.poison, STUB_STATE)).toBe(20);
   });
 
@@ -305,7 +304,7 @@ describe("Gen4Ruleset applyStatusDamage — poison", () => {
     // Source: BaseRuleset — poison tick = floor(maxHP / 8)
     // Derivation: floor(200 / 8) = 25
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200, status: STATUSES.poison });
+    const mon = createOnFieldPokemon({ maxHp: 200, status: STATUSES.poison });
     expect(ruleset.applyStatusDamage(mon, STATUSES.poison, STUB_STATE)).toBe(25);
   });
 });
@@ -320,7 +319,7 @@ describe("Gen4Ruleset rollMultiHitCount", () => {
     // Distribution: 2 (37.5%), 3 (37.5%), 4 (12.5%), 5 (12.5%)
     // Source: packages/core/src/logic/gen12-shared.ts gen1to4MultiHitRoll
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
 
     for (let seed = 1; seed <= 1000; seed++) {
       const rng = new SeededRandom(seed);
@@ -333,7 +332,7 @@ describe("Gen4Ruleset rollMultiHitCount", () => {
   it("given rollMultiHitCount called 1000 times, then never returns 1 or 6+", () => {
     // Source: pret/pokeplatinum — gen1to4MultiHitRoll only produces 2, 3, 4, or 5
     const ruleset = makeRuleset();
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
 
     for (let seed = 1; seed <= 1000; seed++) {
       const rng = new SeededRandom(seed);
@@ -354,7 +353,7 @@ describe("Gen4Ruleset calculateBindDamage", () => {
     // Source: pret/pokeplatinum — trap damage = maxHP / 16
     // Derivation: floor(200 / 16) = floor(12.5) = 12
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 200 });
+    const mon = createOnFieldPokemon({ maxHp: 200 });
     expect(ruleset.calculateBindDamage(mon)).toBe(12);
   });
 
@@ -362,7 +361,7 @@ describe("Gen4Ruleset calculateBindDamage", () => {
     // Source: pret/pokeplatinum — trap damage = maxHP / 16
     // Derivation: floor(160 / 16) = 10
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 160 });
+    const mon = createOnFieldPokemon({ maxHp: 160 });
     expect(ruleset.calculateBindDamage(mon)).toBe(10);
   });
 
@@ -370,7 +369,7 @@ describe("Gen4Ruleset calculateBindDamage", () => {
     // Source: pret/pokeplatinum — damage always >= 1
     // Derivation: floor(1 / 16) = 0 → clamped to 1
     const ruleset = makeRuleset();
-    const mon = makeActivePokemon({ maxHp: 1 });
+    const mon = createOnFieldPokemon({ maxHp: 1 });
     expect(ruleset.calculateBindDamage(mon)).toBe(1);
   });
 });
@@ -452,7 +451,7 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
     side0Pokemon: ActivePokemon,
     side1Pokemon: ActivePokemon,
   ): BattleState {
-    const makeSide = (index: 0 | 1, active: ActivePokemon) => ({
+    const createBattleSide = (index: 0 | 1, active: ActivePokemon) => ({
       index,
       trainer: null,
       team: [],
@@ -472,7 +471,7 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
       generation: 4,
       format: "singles",
       turnNumber: 1,
-      sides: [makeSide(0, side0Pokemon), makeSide(1, side1Pokemon)],
+      sides: [createBattleSide(0, side0Pokemon), createBattleSide(1, side1Pokemon)],
       weather: null,
       terrain: null,
       trickRoom: { active: false, turnsLeft: 0 },
@@ -499,8 +498,8 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Gen 7+ changed the penalty to 0.5x (BaseRuleset default)
     // Derivation: paralyzed effective speed = floor(100 * 0.25) = 25; healthy = 50
     // Result: healthy (50) > paralyzed (25), so healthy moves first
-    const paralyzedMon = makeActivePokemon({ speed: 100, status: STATUSES.paralysis });
-    const healthyMon = makeActivePokemon({ speed: 50, status: null });
+    const paralyzedMon = createOnFieldPokemon({ speed: 100, status: STATUSES.paralysis });
+    const healthyMon = createOnFieldPokemon({ speed: 50, status: null });
 
     paralyzedMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
     healthyMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
@@ -525,8 +524,8 @@ describe("Gen4Ruleset getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Source: pret/pokeplatinum — paralyzed speed = floor(speed / 4) = floor(100 * 0.25) = 25
     // Derivation: paralyzed effective speed = 25; healthy slow mon = 20
     // Result: paralyzed (25) > slow healthy (20), so paralyzed moves first
-    const paralyzedMon = makeActivePokemon({ speed: 100, status: STATUSES.paralysis });
-    const slowMon = makeActivePokemon({ speed: 20, status: null });
+    const paralyzedMon = createOnFieldPokemon({ speed: 100, status: STATUSES.paralysis });
+    const slowMon = createOnFieldPokemon({ speed: 20, status: null });
 
     paralyzedMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
     slowMon.pokemon.moves.push(createMoveSlot(TACKLE.id, TACKLE.pp));
@@ -667,10 +666,10 @@ describe("Gen4Ruleset applyHeldItem", () => {
     // Source: Showdown Gen 4 mod — Leftovers heals 1/16 max HP at end of turn
     // This tests that the Gen4Ruleset.applyHeldItem method correctly delegates
     const ruleset = makeRuleset();
-    const pokemon = makePokemonInstance({ maxHp: 160, speed: 100 });
+    const pokemon = createSyntheticPokemonInstance({ maxHp: 160, speed: 100 });
     pokemon.heldItem = ITEMS.leftovers;
     pokemon.currentHp = 100;
-    const active = makeActivePokemon({ maxHp: 160, speed: 100 });
+    const active = createOnFieldPokemon({ maxHp: 160, speed: 100 });
     active.pokemon = pokemon;
 
     const ctx = {
@@ -688,7 +687,7 @@ describe("Gen4Ruleset applyHeldItem", () => {
       damage: undefined,
     } as unknown as import("@pokemon-lib-ts/battle").ItemContext;
 
-    const result = ruleset.applyHeldItem("end-of-turn", ctx);
+    const result = ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, ctx);
     // Leftovers heals 1/16 max HP = floor(160/16) = 10
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toMatchObject({ type: "heal", value: 10 });
