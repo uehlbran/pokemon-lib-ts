@@ -1,10 +1,15 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { GEN2_ITEM_IDS } from "@pokemon-lib-ts/gen2";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, CatchResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import {
+  createMockDataManager,
+  MOCK_ITEM_IDS,
+  MOCK_SPECIES_IDS,
+} from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 /**
@@ -23,10 +28,9 @@ function createWildBattleEngine(overrides?: {
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -40,10 +44,9 @@ function createWildBattleEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(25, 50, {
+    createTestPokemon(MOCK_SPECIES_IDS.pikachu, 50, {
       uid: "pikachu-wild",
       nickname: "Pikachu",
-      moves: [{ moveId: "tackle", currentPP: 35, maxPP: 35, ppUps: 0 }],
       calculatedStats: {
         hp: 150,
         attack: 80,
@@ -81,7 +84,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.start();
 
     // Act — side 0 throws poke-ball, side 1 uses move
-    engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
+    engine.submitAction(0, { type: "item", side: 0, itemId: GEN2_ITEM_IDS.pokeBall });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — catch-attempt event carries full content
@@ -91,7 +94,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
         type: "catch-attempt",
         caught: true,
         shakes: 3,
-        ball: "poke-ball",
+        ball: GEN2_ITEM_IDS.pokeBall,
       }),
     );
 
@@ -114,7 +117,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.start();
 
     // Act
-    engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
+    engine.submitAction(0, { type: "item", side: 0, itemId: GEN2_ITEM_IDS.pokeBall });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — catch-attempt event carries full content
@@ -141,7 +144,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.start();
 
     // Act
-    engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
+    engine.submitAction(0, { type: "item", side: 0, itemId: GEN2_ITEM_IDS.pokeBall });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — should get a blocking message, no catch event
@@ -167,7 +170,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
 
     // Act — side 1 tries to throw a ball (invalid, wild Pokemon shouldn't throw balls)
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-    engine.submitAction(1, { type: "item", side: 1, itemId: "poke-ball" });
+    engine.submitAction(1, { type: "item", side: 1, itemId: GEN2_ITEM_IDS.pokeBall });
 
     // Assert — no catch attempt event
     const catchEvent = events.find((e) => e.type === "catch-attempt");
@@ -196,7 +199,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.start();
 
     // Act — throw ultra-ball
-    engine.submitAction(0, { type: "item", side: 0, itemId: "ultra-ball" });
+    engine.submitAction(0, { type: "item", side: 0, itemId: GEN2_ITEM_IDS.ultraBall });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — Ultra Ball has catchRateModifier = 2
@@ -207,10 +210,9 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     expect(catchEvent).toEqual(expect.objectContaining({ type: "catch-attempt", caught: true }));
   });
 
-  it("given a Potion used (not a catch item), when item action submitted, then normal bag item logic applies (regression)", () => {
-    // Arrange — ensure catch-type fork doesn't break normal items
+  it("given a synthetic non-catch bag item, when item action submitted, then normal bag item logic applies (regression)", () => {
+    // Arrange — ensure the catch-item fork does not break ordinary bag-item handling
     const ruleset = new MockRuleset();
-    // Source: Bulbapedia "Potion" — heals 20 HP
     ruleset.setNextBagItemResult({
       activated: true,
       healAmount: 20,
@@ -225,8 +227,8 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     const maxHp = active!.pokemon.calculatedStats!.hp;
     active!.pokemon.currentHp = maxHp - 50;
 
-    // Act — use potion (not a catch item)
-    engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
+    // Act — use a non-catch bag item
+    engine.submitAction(0, { type: "item", side: 0, itemId: MOCK_ITEM_IDS.testHealItem });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — should get heal event, NOT catch event
@@ -247,7 +249,7 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
       // sequence, so the catch outcome is driven by the seeded RNG state.
       const { engine, events } = createWildBattleEngine({ ruleset, seed });
       engine.start();
-      engine.submitAction(0, { type: "item", side: 0, itemId: "poke-ball" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: GEN2_ITEM_IDS.pokeBall });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
       return [...events];
     }

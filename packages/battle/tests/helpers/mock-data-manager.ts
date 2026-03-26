@@ -1,554 +1,85 @@
 import type { ItemData, MoveData, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, DataManager } from "@pokemon-lib-ts/core";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS } from "@pokemon-lib-ts/gen2";
+import { createGen4DataManager, GEN4_MOVE_IDS } from "@pokemon-lib-ts/gen4";
 
-/**
- * Creates a DataManager pre-loaded with minimal test data.
- */
-export function createMockDataManager(): DataManager {
-  const dm = new DataManager();
+const GEN1_DATA_MANAGER = createGen1DataManager();
+const GEN2_DATA_MANAGER = createGen2DataManager();
+const GEN4_DATA_MANAGER = createGen4DataManager();
 
-  const tackleMoveData: MoveData = {
-    id: "tackle",
-    displayName: "Tackle",
-    type: "normal",
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "A physical attack in which the user charges and slams into the target.",
-    generation: 1,
-  };
+export const MOCK_SPECIES_IDS = {
+  charizard: GEN1_SPECIES_IDS.charizard,
+  blastoise: GEN1_SPECIES_IDS.blastoise,
+  pikachu: GEN1_SPECIES_IDS.pikachu,
+} as const;
 
-  const thunderboltMoveData: MoveData = {
-    id: "thunderbolt",
-    displayName: "Thunderbolt",
-    type: "electric",
-    category: "special",
-    power: 90,
-    accuracy: 100,
-    pp: 15,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: { type: "status-chance", status: "paralysis", chance: 10 },
-    description: "A strong electric blast.",
-    generation: 1,
-  };
+export const MOCK_ITEM_IDS = {
+  testHealItem: "test-heal-item",
+} as const;
 
-  const scratchMoveData: MoveData = {
-    id: "scratch",
-    displayName: "Scratch",
-    type: "normal",
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "Hard, pointed, sharp claws rake the target.",
-    generation: 1,
-  };
+function createIdentityTypeChart(): TypeChart {
+  const typeChart = {} as Record<string, Record<string, number>>;
+  const allTypes = Object.values(CORE_TYPE_IDS);
 
-  const quickAttackMoveData: MoveData = {
-    id: "quick-attack",
-    displayName: "Quick Attack",
-    type: "normal",
-    category: "physical",
-    power: 40,
-    accuracy: 100,
-    pp: 30,
-    priority: 1,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "The user lunges at the target at a speed that makes it almost invisible.",
-    generation: 1,
-  };
-
-  // Minimal species data for Charizard (6) and Blastoise (9)
-  const charizardSpecies: PokemonSpeciesData = {
-    id: 6,
-    name: "charizard",
-    displayName: "Charizard",
-    types: ["fire", "flying"],
-    baseStats: {
-      hp: 78,
-      attack: 84,
-      defense: 78,
-      spAttack: 109,
-      spDefense: 85,
-      speed: 100,
-    },
-    abilities: { normal: ["blaze"], hidden: "solar-power" },
-    genderRatio: 87.5,
-    catchRate: 45,
-    baseExp: 240,
-    expGroup: "medium-slow",
-    evYield: { spAttack: 3 },
-    eggGroups: ["monster", "dragon"],
-    learnset: {
-      levelUp: [
-        { level: 1, move: "scratch" },
-        { level: 1, move: "tackle" },
-      ],
-      tm: [],
-      egg: [],
-      tutor: [],
-    },
-    evolution: null,
-    dimensions: { height: 1.7, weight: 90.5 },
-    spriteKey: "charizard",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  };
-
-  const blastoiseSpecies: PokemonSpeciesData = {
-    id: 9,
-    name: "blastoise",
-    displayName: "Blastoise",
-    types: ["water"],
-    baseStats: {
-      hp: 79,
-      attack: 83,
-      defense: 100,
-      spAttack: 85,
-      spDefense: 105,
-      speed: 78,
-    },
-    abilities: { normal: ["torrent"], hidden: "rain-dish" },
-    genderRatio: 87.5,
-    catchRate: 45,
-    baseExp: 239,
-    expGroup: "medium-slow",
-    evYield: { spDefense: 3 },
-    eggGroups: ["monster", "water1"],
-    learnset: {
-      levelUp: [{ level: 1, move: "tackle" }],
-      tm: [],
-      egg: [],
-      tutor: [],
-    },
-    evolution: null,
-    dimensions: { height: 1.6, weight: 85.5 },
-    spriteKey: "blastoise",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  };
-
-  const pikachuSpecies: PokemonSpeciesData = {
-    id: 25,
-    name: "pikachu",
-    displayName: "Pikachu",
-    types: ["electric"],
-    baseStats: {
-      hp: 35,
-      attack: 55,
-      defense: 40,
-      spAttack: 50,
-      spDefense: 50,
-      speed: 90,
-    },
-    abilities: { normal: ["static"], hidden: "lightning-rod" },
-    genderRatio: 50,
-    catchRate: 190,
-    baseExp: 112,
-    expGroup: "medium-fast",
-    evYield: { speed: 2 },
-    eggGroups: ["field", "fairy"],
-    learnset: {
-      levelUp: [
-        { level: 1, move: "thunder-shock" },
-        { level: 1, move: "quick-attack" },
-      ],
-      tm: ["thunderbolt"],
-      egg: [],
-      tutor: [],
-    },
-    evolution: null,
-    dimensions: { height: 0.4, weight: 6.0 },
-    spriteKey: "pikachu",
-    baseFriendship: 70,
-    generation: 1,
-    isLegendary: false,
-    isMythical: false,
-  };
-
-  const typeChart: Record<string, Record<string, number>> = {};
-  const allTypes = [
-    "normal",
-    "fire",
-    "water",
-    "electric",
-    "grass",
-    "ice",
-    "fighting",
-    "poison",
-    "ground",
-    "flying",
-    "psychic",
-    "bug",
-    "rock",
-    "ghost",
-    "dragon",
-    "dark",
-    "steel",
-    "fairy",
-  ];
-  for (const atk of allTypes) {
-    const row: Record<string, number> = {};
-    typeChart[atk] = row;
-    for (const def of allTypes) {
-      row[def] = 1;
+  for (const attackType of allTypes) {
+    const defendingTypes = {} as Record<string, number>;
+    for (const defenseType of allTypes) {
+      defendingTypes[defenseType] = 1;
     }
+    typeChart[attackType] = defendingTypes;
   }
 
-  const flyMoveData: MoveData = {
-    id: "fly",
-    displayName: "Fly",
-    type: "flying",
-    category: "physical",
-    power: 90,
-    accuracy: 95,
-    pp: 15,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: true,
-      defrost: false,
-      recharge: false,
-      charge: true,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "The user flies up high, then strikes on the next turn.",
-    generation: 1,
-  };
+  return typeChart as TypeChart;
+}
 
-  const flameWheelMoveData: MoveData = {
-    id: "flame-wheel",
-    displayName: "Flame Wheel",
-    type: "fire",
-    category: "physical",
-    power: 60,
-    accuracy: 100,
-    pp: 25,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: true,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: true,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description:
-      "The user cloaks itself in fire and charges at the target. It can also thaw the user if frozen.",
-    generation: 2,
-  };
+function getMockSpecies(): PokemonSpeciesData[] {
+  return [
+    GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard),
+    GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise),
+    GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu),
+  ];
+}
 
-  const futureSightMoveData: MoveData = {
-    id: "future-sight",
-    displayName: "Future Sight",
-    type: "psychic",
-    category: "special",
-    power: 120,
-    accuracy: 100,
-    pp: 10,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "Two turns after this move is used, a hunk of psychic energy attacks the target.",
-    generation: 2,
-  };
+function getMockMoves(): MoveData[] {
+  return [
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle),
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.thunderbolt),
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.scratch),
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.quickAttack),
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.fly),
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.swordsDance),
+    GEN2_DATA_MANAGER.getMove(GEN2_MOVE_IDS.flameWheel),
+    GEN2_DATA_MANAGER.getMove(GEN2_MOVE_IDS.futureSight),
+    GEN4_DATA_MANAGER.getMove(GEN4_MOVE_IDS.stealthRock),
+    GEN4_DATA_MANAGER.getMove(GEN4_MOVE_IDS.gravity),
+  ];
+}
 
-  // Self-targeting status move for Pressure PP cost tests
-  // Source: Bulbapedia — "Swords Dance sharply raises the user's Attack stat"
-  const swordsDanceMoveData: MoveData = {
-    id: "swords-dance",
-    displayName: "Swords Dance",
-    type: "normal",
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 20,
-    priority: 0,
-    target: "self",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: true,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: {
-      type: "stat-change",
-      changes: [{ stat: "attack", stages: 2 }],
-      target: "self",
-      chance: 100,
-    },
-    description:
-      "A frenetic dance to uplift the fighting spirit. This sharply raises the user's Attack stat.",
-    generation: 1,
-  };
+function getMockItems(): ItemData[] {
+  return [
+    GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.pokeBall),
+    GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.ultraBall),
+  ];
+}
 
-  // Poke Ball items for catch attempt testing
-  // Source: Bulbapedia -- Poke Ball catch rate modifier = 1x
-  const pokeBallItem: ItemData = {
-    id: "poke-ball",
-    displayName: "Poke Ball",
-    description: "A device for catching wild Pokemon.",
-    category: "pokeball",
-    pocket: "pokeballs",
-    price: 200,
-    battleUsable: true,
-    fieldUsable: false,
-    useEffect: { type: "catch", catchRateModifier: 1 },
-    generation: 1,
-    spriteKey: "poke-ball",
-  };
+/**
+ * Creates a DataManager pre-loaded with a minimal canonical record set for battle tests.
+ *
+ * Species, moves, and items are sourced from the owning generation data managers so tests
+ * do not duplicate canonical payloads. The only intentionally synthetic surface here is the
+ * identity type chart used by generic engine tests that are not exercising generation type
+ * effectiveness.
+ */
+export function createMockDataManager(): DataManager {
+  const dataManager = new DataManager();
 
-  // Source: Bulbapedia -- Ultra Ball catch rate modifier = 2x
-  const ultraBallItem: ItemData = {
-    id: "ultra-ball",
-    displayName: "Ultra Ball",
-    description: "An ultra-high-performance Ball with a higher catch rate than a Great Ball.",
-    category: "pokeball",
-    pocket: "pokeballs",
-    price: 1200,
-    battleUsable: true,
-    fieldUsable: false,
-    useEffect: { type: "catch", catchRateModifier: 2 },
-    generation: 1,
-    spriteKey: "ultra-ball",
-  };
-
-  // foe-field targeting move for Pressure PP cost tests
-  // Source: Bulbapedia — "Stealth Rock sets an entry hazard on the opposing side"
-  const stealthRockMoveData: MoveData = {
-    id: "stealth-rock",
-    displayName: "Stealth Rock",
-    type: "rock",
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 20,
-    priority: 0,
-    target: "foe-field",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: { type: "entry-hazard", hazardType: "stealth-rock", target: "opponent" },
-    description: "The user lays a trap of levitating stones around the opposing team.",
-    generation: 4,
-  };
-
-  // entire-field targeting move for Pressure PP cost tests
-  // Source: Bulbapedia — "Gravity intensifies gravity for five turns"
-  const gravityMoveData: MoveData = {
-    id: "gravity",
-    displayName: "Gravity",
-    type: "psychic",
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 5,
-    priority: 0,
-    target: "entire-field",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: false,
-      mirror: false,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: null,
-    description: "Gravity is intensified for five turns, grounding all Pokemon.",
-    generation: 4,
-  };
-
-  dm.loadFromObjects({
-    pokemon: [charizardSpecies, blastoiseSpecies, pikachuSpecies],
-    moves: [
-      tackleMoveData,
-      thunderboltMoveData,
-      scratchMoveData,
-      quickAttackMoveData,
-      flyMoveData,
-      flameWheelMoveData,
-      futureSightMoveData,
-      swordsDanceMoveData,
-      stealthRockMoveData,
-      gravityMoveData,
-    ],
-    items: [pokeBallItem, ultraBallItem],
-    typeChart: typeChart as unknown as TypeChart,
+  dataManager.loadFromObjects({
+    pokemon: getMockSpecies(),
+    moves: getMockMoves(),
+    items: getMockItems(),
+    typeChart: createIdentityTypeChart(),
   });
 
-  return dm;
+  return dataManager;
 }

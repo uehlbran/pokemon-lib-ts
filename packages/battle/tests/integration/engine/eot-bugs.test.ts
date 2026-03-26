@@ -1,9 +1,11 @@
 import {
+  type AbilityTrigger,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
-  type AbilityTrigger,
   type PokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { GEN2_ITEM_IDS } from "@pokemon-lib-ts/gen2";
@@ -12,7 +14,7 @@ import type { AbilityContext, BattleConfig, EndOfTurnEffect } from "../../../src
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 // ---------------------------------------------------------------------------
@@ -22,8 +24,8 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
 describe("Bug #484 — EoT ability deduplication", () => {
   /**
    * A mock ruleset that returns multiple EoT cases that all dispatch
-   * applyAbility("on-turn-end") and tracks how many times applyAbility
-   * is called with "on-turn-end".
+   * applyAbility(CORE_ABILITY_TRIGGER_IDS.onTurnEnd) and tracks how many times
+   * applyAbility is called with that trigger.
    */
   class SpeedBoostMockRuleset extends MockRuleset {
     onTurnEndCallCount = 0;
@@ -31,8 +33,12 @@ describe("Bug #484 — EoT ability deduplication", () => {
     override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
       // Return multiple ability-dispatching EoT cases.
       // Before the fix, each of these would independently call
-      // applyAbility("on-turn-end") for all active Pokemon.
-      return ["weather-healing", CORE_ABILITY_IDS.shedSkin, CORE_ABILITY_IDS.speedBoost];
+      // applyAbility(CORE_ABILITY_TRIGGER_IDS.onTurnEnd) for all active Pokemon.
+      return [
+        CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+        CORE_ABILITY_IDS.shedSkin,
+        CORE_ABILITY_IDS.speedBoost,
+      ];
     }
 
     override hasAbilities(): boolean {
@@ -40,7 +46,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
     }
 
     override applyAbility(trigger: AbilityTrigger, _context: AbilityContext) {
-      if (trigger === "on-turn-end") {
+      if (trigger === CORE_ABILITY_TRIGGER_IDS.onTurnEnd) {
         this.onTurnEndCallCount++;
         // Simulate Speed Boost: +1 speed to the Pokemon
         return {
@@ -70,11 +76,10 @@ describe("Bug #484 — EoT ability deduplication", () => {
     const events: BattleEvent[] = [];
 
     const team1 = overrides?.team1 ?? [
-      createTestPokemon(6, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
         uid: "ninjask-1",
         nickname: "Ninjask",
         ability: CORE_ABILITY_IDS.speedBoost,
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -88,11 +93,10 @@ describe("Bug #484 — EoT ability deduplication", () => {
     ];
 
     const team2 = overrides?.team2 ?? [
-      createTestPokemon(9, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
         ability: CORE_ABILITY_IDS.thickFat,
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -122,7 +126,8 @@ describe("Bug #484 — EoT ability deduplication", () => {
   it("given a Pokemon with Speed Boost and 3 EoT ability-dispatching cases, when the turn ends, then applyAbility on-turn-end fires exactly once per Pokemon", () => {
     // Source: pret/pokeemerald src/battle_util.c — ABILITYEFFECT_ENDTURN fires once per Pokemon
     // Source: Bulbapedia — "Speed Boost raises Speed by 1 stage at the end of each turn"
-    // Bug #484: before the fix, applyAbility("on-turn-end") fired once per EoT case
+    // Bug #484: before the fix, applyAbility(CORE_ABILITY_TRIGGER_IDS.onTurnEnd)
+    // fired once per EoT case
     // (weather-healing, shed-skin, speed-boost = 3 times). After the fix, it fires once.
     // Arrange
     const { engine, ruleset, events } = createSpeedBoostEngine();
@@ -133,7 +138,8 @@ describe("Bug #484 — EoT ability deduplication", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert: applyAbility("on-turn-end") should fire exactly once per active Pokemon
+    // Assert: applyAbility(CORE_ABILITY_TRIGGER_IDS.onTurnEnd) should fire
+    // exactly once per active Pokemon
     // We have 2 active Pokemon (one per side), so exactly 2 calls total.
     // Before the fix this was 6 (3 EoT cases x 2 active Pokemon).
     // Source: pret/pokeemerald — each Pokemon's EoT ability fires once per turn
@@ -153,7 +159,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
     class FiveAbilityCasesRuleset extends SpeedBoostMockRuleset {
       override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
         return [
-          "weather-healing",
+          CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
           CORE_ABILITY_IDS.shedSkin,
           CORE_ABILITY_IDS.poisonHeal,
           CORE_ABILITY_IDS.badDreams,
@@ -167,11 +173,10 @@ describe("Bug #484 — EoT ability deduplication", () => {
     const events: BattleEvent[] = [];
 
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
         uid: "ninjask-1",
         nickname: "Ninjask",
         ability: CORE_ABILITY_IDS.speedBoost,
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -185,11 +190,10 @@ describe("Bug #484 — EoT ability deduplication", () => {
     ];
 
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
         ability: CORE_ABILITY_IDS.thickFat,
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -252,10 +256,9 @@ describe("Bug #494 — Uproar wake condition", () => {
 
     // Side 0: Pokemon that will have uproar volatile
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
         uid: "exploud-1",
         nickname: "Exploud",
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -270,11 +273,10 @@ describe("Bug #494 — Uproar wake condition", () => {
 
     // Side 1: Pokemon that is asleep
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
         status: CORE_STATUS_IDS.sleep,
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -398,7 +400,7 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
     }
 
     override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-        return [GEN2_ITEM_IDS.mysteryBerry];
+      return [GEN2_ITEM_IDS.mysteryBerry];
     }
   }
 
@@ -408,7 +410,7 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
     const events: BattleEvent[] = [];
 
     const team1 = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
         heldItem: GEN2_ITEM_IDS.mysteryBerry,
@@ -429,10 +431,9 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
     ];
 
     const team2 = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -522,10 +523,9 @@ describe("Bug #514 — Uproar + Soundproof", () => {
     const events: BattleEvent[] = [];
 
     const team1: PokemonInstance[] = [
-      createTestPokemon(6, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
         uid: "charizard-1",
         nickname: "Charizard",
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -539,10 +539,9 @@ describe("Bug #514 — Uproar + Soundproof", () => {
     ];
 
     const team2: PokemonInstance[] = [
-      createTestPokemon(9, 50, {
+      createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "blastoise-1",
         nickname: "Blastoise",
-        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
         calculatedStats: {
           hp: 200,
           attack: 100,
