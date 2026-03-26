@@ -29,6 +29,7 @@ import {
   CORE_VOLATILE_IDS,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { GEN9_SPECIAL_TERA_TYPE_IDS } from "./constants/mechanics.js";
 import { GEN9_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
@@ -546,7 +547,7 @@ export function handleSaltCure(ctx: MoveEffectContext): MoveEffectResult {
 export function shouldApplyStellarDebuff(attacker: ActivePokemon): boolean {
   if (!attacker.isTerastallized) return false;
   const teraType = attacker.teraType ?? attacker.pokemon.teraType;
-  return (teraType as string) === "stellar";
+  return (teraType as string) === GEN9_SPECIAL_TERA_TYPE_IDS.stellar;
 }
 
 /**

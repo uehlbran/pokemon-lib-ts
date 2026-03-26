@@ -14,3 +14,13 @@ export const GEN9_ORICHALCUM_HADRON_MODIFIER = 5461;
 
 export const GEN9_ORICHALCUM_HADRON_MULTIPLIER =
   GEN9_ORICHALCUM_HADRON_MODIFIER / CORE_FIXED_POINT.identity;
+
+/**
+ * Gen 9 Tera-only special type ids that are not part of the standard PokemonType union.
+ *
+ * Stellar is a Terastallization-only pseudo type used by Tera Blast/STAB logic and
+ * should not be hand-written at call sites.
+ */
+export const GEN9_SPECIAL_TERA_TYPE_IDS = {
+  stellar: "stellar",
+} as const;

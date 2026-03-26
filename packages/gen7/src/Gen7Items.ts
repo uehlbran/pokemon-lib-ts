@@ -65,6 +65,31 @@ const TYPED_Z_CRYSTALS: Readonly<Record<string, PokemonType>> = {
 };
 
 /**
+ * Species-specific Z-Move ids are canonical runtime ids, but they are not present in the
+ * generated move reference surface because they are unlocked through held-item state rather
+ * than standard learnset/move-data lookup in this package.
+ */
+const GEN7_Z_MOVE_IDS = {
+  catastrophika: "catastropika",
+  tenMillionVoltThunderbolt: "10000000-volt-thunderbolt",
+  stokedSparksurfer: "stoked-sparksurfer",
+  pulverizingPancake: "pulverizing-pancake",
+  genesisSupernova: "genesis-supernova",
+  sinisterArrowRaid: "sinister-arrow-raid",
+  maliciousMoonsault: "malicious-moonsault",
+  oceanicOperetta: "oceanic-operetta",
+  guardianOfAlola: "guardian-of-alola",
+  soulStealingSevenStarStrike: "soul-stealing-7-star-strike",
+  clangorousSoulblaze: "clangorous-soulblaze",
+  splinteredStormshards: "splintered-stormshards",
+  letsSnuggleForever: "lets-snuggle-forever",
+  menacingMoonrazeMaelstrom: "menacing-moonraze-maelstrom",
+  searingSunrazeSmash: "searing-sunraze-smash",
+  lightThatBurnsTheSky: "light-that-burns-the-sky",
+  extremeEvoboost: "extreme-evoboost",
+} as const;
+
+/**
  * Map of species-specific Z-Crystal item IDs to the signature Z-Move they unlock.
  * These Z-Crystals require a specific Pokemon holding a specific move.
  *
@@ -72,23 +97,23 @@ const TYPED_Z_CRYSTALS: Readonly<Record<string, PokemonType>> = {
  * Source: Bulbapedia "Z-Crystal" -- species-specific Z-Crystals section
  */
 const SPECIES_Z_CRYSTALS: Readonly<Record<string, string>> = {
-  "pikanium-z": "catastropika",
-  "pikashunium-z": "10000000-volt-thunderbolt",
-  "aloraichium-z": "stoked-sparksurfer",
-  "snorlium-z": "pulverizing-pancake",
-  "mewnium-z": "genesis-supernova",
-  "decidium-z": "sinister-arrow-raid",
-  "incinium-z": "malicious-moonsault",
-  "primarium-z": "oceanic-operetta",
-  "tapunium-z": "guardian-of-alola",
-  "marshadium-z": "soul-stealing-7-star-strike",
-  "kommonium-z": "clangorous-soulblaze",
-  "lycanium-z": "splintered-stormshards",
-  "mimikium-z": "lets-snuggle-forever",
-  "lunalium-z": "menacing-moonraze-maelstrom",
-  "solganium-z": "searing-sunraze-smash",
-  "ultranecrozium-z": "light-that-burns-the-sky",
-  "eevium-z": "extreme-evoboost",
+  [GEN7_ITEM_IDS.pikaniumZ]: GEN7_Z_MOVE_IDS.catastrophika,
+  [GEN7_ITEM_IDS.pikashuniumZ]: GEN7_Z_MOVE_IDS.tenMillionVoltThunderbolt,
+  [GEN7_ITEM_IDS.aloraichiumZ]: GEN7_Z_MOVE_IDS.stokedSparksurfer,
+  [GEN7_ITEM_IDS.snorliumZ]: GEN7_Z_MOVE_IDS.pulverizingPancake,
+  [GEN7_ITEM_IDS.mewniumZ]: GEN7_Z_MOVE_IDS.genesisSupernova,
+  [GEN7_ITEM_IDS.decidiumZ]: GEN7_Z_MOVE_IDS.sinisterArrowRaid,
+  [GEN7_ITEM_IDS.inciniumZ]: GEN7_Z_MOVE_IDS.maliciousMoonsault,
+  [GEN7_ITEM_IDS.primariumZ]: GEN7_Z_MOVE_IDS.oceanicOperetta,
+  [GEN7_ITEM_IDS.tapuniumZ]: GEN7_Z_MOVE_IDS.guardianOfAlola,
+  [GEN7_ITEM_IDS.marshadiumZ]: GEN7_Z_MOVE_IDS.soulStealingSevenStarStrike,
+  [GEN7_ITEM_IDS.kommoniumZ]: GEN7_Z_MOVE_IDS.clangorousSoulblaze,
+  [GEN7_ITEM_IDS.lycaniumZ]: GEN7_Z_MOVE_IDS.splinteredStormshards,
+  [GEN7_ITEM_IDS.mimikiumZ]: GEN7_Z_MOVE_IDS.letsSnuggleForever,
+  [GEN7_ITEM_IDS.lunaliumZ]: GEN7_Z_MOVE_IDS.menacingMoonrazeMaelstrom,
+  [GEN7_ITEM_IDS.solganiumZ]: GEN7_Z_MOVE_IDS.searingSunrazeSmash,
+  [GEN7_ITEM_IDS.ultranecroziumZ]: GEN7_Z_MOVE_IDS.lightThatBurnsTheSky,
+  [GEN7_ITEM_IDS.eeviumZ]: GEN7_Z_MOVE_IDS.extremeEvoboost,
 };
 
 /**
@@ -906,7 +931,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "attack",
+              value: CORE_STAT_IDS.attack,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -929,7 +954,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "defense",
+              value: CORE_STAT_IDS.defense,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -952,7 +977,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "speed",
+              value: CORE_STAT_IDS.speed,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1202,7 +1227,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "attack",
+              value: CORE_STAT_IDS.attack,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1233,13 +1258,13 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
               {
                 type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
                 target: BATTLE_EFFECT_TARGETS.self,
-                value: "attack",
+                value: CORE_STAT_IDS.attack,
                 stages: 2,
               },
               {
                 type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
                 target: BATTLE_EFFECT_TARGETS.self,
-                value: "spAttack",
+                value: CORE_STAT_IDS.spAttack,
                 stages: 2,
               },
               {
@@ -1265,7 +1290,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "defense",
+              value: CORE_STAT_IDS.defense,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1337,7 +1362,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "attack",
+              value: CORE_STAT_IDS.attack,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
