@@ -1,21 +1,24 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
-  CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { isChoiceLocked } from "../src/Gen8Items";
 import {
+  createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_ITEM_IDS,
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
   Gen8Ruleset,
-  createGen8DataManager,
 } from "../src";
+import { isChoiceLocked } from "../src/Gen8Items";
 
 /**
  * Phase 2 bugfix tests for Gen 8 issues:
@@ -28,7 +31,7 @@ import {
 // Helper factories
 // ---------------------------------------------------------------------------
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   uid?: string;
   speciesId?: number;
   heldItem?: string | null;
@@ -60,16 +63,18 @@ function makeActivePokemon(overrides: {
       level: 50,
       experience: 0,
       nature: NATURES.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? maxHp,
-      moves: overrides.moves ?? [{ moveId: MOVES.tackle, currentPP: TACKLE_MOVE.pp, maxPP: TACKLE_MOVE.pp }],
+      moves: overrides.moves ?? [
+        { moveId: MOVES.tackle, currentPP: TACKLE_MOVE.pp, maxPP: TACKLE_MOVE.pp },
+      ],
       ability: overrides.ability ?? ABILITIES.blaze,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: null,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -120,7 +125,7 @@ function makeActivePokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -135,7 +140,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeMoveData(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
+function createCanonicalMove(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
   const base = GEN8_DATA.getMove(moveId);
   const move = { ...base, flags: { ...base.flags } } as MoveData;
   move.id = moveId;
@@ -159,7 +164,6 @@ const MOVES = GEN8_MOVE_IDS;
 const NATURES = GEN8_NATURE_IDS;
 const SPECIES = GEN8_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
-const VOLATILES = CORE_VOLATILE_IDS;
 const GEN8_DATA = createGen8DataManager();
 const TACKLE_MOVE = GEN8_DATA.getMove(MOVES.tackle);
 // Synthetic volatile used by the bugfix harness; no owned Gen 8 id exists for this internal state.
@@ -175,19 +179,19 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     // Source: Showdown data/abilities.ts — disguise Gen 8: Math.ceil(maxhp / 8) chip damage
     // Source: Bulbapedia "Disguise" Gen 8 — "deals 1/8 of max HP as damage when busted"
     // 200 max HP -> Math.ceil(200/8) = 25 chip damage
-    const defender = makeActivePokemon({
+    const defender = createOnFieldPokemon({
       speciesId: SPECIES.mimikyu,
       ability: ABILITIES.disguise,
       types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
     });
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
     // Synthetic probe: a deliberately weak physical hit to exercise Disguise chip damage.
-    const move = makeMoveData(MOVES.tackle);
+    const move = createCanonicalMove(MOVES.tackle);
     move.category = "physical";
     move.power = 10;
-    const state = makeState();
+    const state = createBattleState();
 
     const result = ruleset.capLethalDamage(10, defender, attacker, move, state);
 
@@ -202,19 +206,19 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
   it("given Mimikyu with intact Disguise hit by a lethal move, when capLethalDamage fires, then damage is 1/8 maxHP chip (not lethal)", () => {
     // Disguise blocks the killing blow AND replaces with chip damage
     // Source: Showdown data/abilities.ts — disguise blocks all hits including lethal ones
-    const defender = makeActivePokemon({
+    const defender = createOnFieldPokemon({
       speciesId: SPECIES.mimikyu,
       ability: ABILITIES.disguise,
       types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
     });
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
     // Synthetic probe: an overkill physical hit should still be converted into chip damage.
-    const move = makeMoveData(MOVES.tackle);
+    const move = createCanonicalMove(MOVES.tackle);
     move.category = "physical";
     move.power = 250;
-    const state = makeState();
+    const state = createBattleState();
 
     const result = ruleset.capLethalDamage(300, defender, attacker, move, state);
 
@@ -227,7 +231,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     // Source: Showdown — once busted, Disguise doesn't activate again
     const volatiles = new Map<string, { turnsLeft: number }>();
     volatiles.set(DISGUISE_BROKEN, { turnsLeft: -1 });
-    const defender = makeActivePokemon({
+    const defender = createOnFieldPokemon({
       speciesId: SPECIES.mimikyu,
       ability: ABILITIES.disguise,
       types: [TYPES.ghost, TYPES.fairy],
@@ -235,12 +239,12 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
       maxHp: 200,
       volatiles,
     });
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
     // Synthetic probe: once Disguise is busted, the same physical move should pass through unchanged.
-    const move = makeMoveData(MOVES.tackle);
+    const move = createCanonicalMove(MOVES.tackle);
     move.category = "physical";
     move.power = 50;
-    const state = makeState();
+    const state = createBattleState();
 
     const result = ruleset.capLethalDamage(50, defender, attacker, move, state);
 
@@ -251,7 +255,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
   it("given Mimikyu with intact Disguise (maxHp=161), when Disguise busts in Gen 8, then chip damage = ceil(161/8) = 21", () => {
     // Source: Math verification — ceil(161/8) = ceil(20.125) = 21
     // Source: Showdown data/abilities.ts — Math.ceil(pokemon.maxhp / 8)
-    const defender = makeActivePokemon({
+    const defender = createOnFieldPokemon({
       speciesId: SPECIES.mimikyu,
       ability: ABILITIES.disguise,
       types: [TYPES.ghost, TYPES.fairy],
@@ -259,12 +263,12 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
       maxHp: 161,
       calculatedStats: { hp: 161 },
     });
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
     // Synthetic probe: a non-lethal physical hit ensures the rounded chip damage stays correct.
-    const move = makeMoveData(MOVES.tackle);
+    const move = createCanonicalMove(MOVES.tackle);
     move.category = "physical";
     move.power = 80;
-    const state = makeState();
+    const state = createBattleState();
 
     const result = ruleset.capLethalDamage(80, defender, attacker, move, state);
 
@@ -274,19 +278,19 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
 
   it("given Mimikyu with intact Disguise hit by a status move in Gen 8, when capLethalDamage fires, then Disguise does NOT activate", () => {
     // Source: Showdown data/abilities.ts — disguise only blocks damaging moves
-    const defender = makeActivePokemon({
+    const defender = createOnFieldPokemon({
       speciesId: SPECIES.mimikyu,
       ability: ABILITIES.disguise,
       types: [TYPES.ghost, TYPES.fairy],
       currentHp: 200,
       maxHp: 200,
     });
-    const attacker = makeActivePokemon({});
+    const attacker = createOnFieldPokemon({});
     // Synthetic probe: a status move should not trigger the damage-capping branch.
-    const move = makeMoveData(MOVES.tackle);
+    const move = createCanonicalMove(MOVES.tackle);
     move.category = "status";
     move.power = 0;
-    const state = makeState();
+    const state = createBattleState();
 
     const result = ruleset.capLethalDamage(0, defender, attacker, move, state);
 
@@ -303,7 +307,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
   it("given a Dynamaxed Pokemon holding Choice Band, when isChoiceLocked is checked, then returns false", () => {
     // Source: Showdown data/conditions.ts — dynamax: prevents choice lock during dynamax
     // Source: Bulbapedia "Dynamax" — "Choice items do not lock the user into a single move"
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.choiceBand,
       isDynamaxed: true,
     });
@@ -313,7 +317,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
 
   it("given a non-Dynamaxed Pokemon holding Choice Band, when isChoiceLocked is checked, then returns true", () => {
     // Normal Choice lock behavior when not Dynamaxed
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.choiceBand,
       isDynamaxed: false,
     });
@@ -323,7 +327,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
 
   it("given a Dynamaxed Pokemon holding Choice Specs, when isChoiceLocked is checked, then returns false", () => {
     // Source: Showdown — all Choice items (Band/Specs/Scarf) suppressed during Dynamax
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.choiceSpecs,
       isDynamaxed: true,
     });
@@ -332,7 +336,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
   });
 
   it("given a Dynamaxed Pokemon holding Choice Scarf, when isChoiceLocked is checked, then returns false", () => {
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.choiceScarf,
       isDynamaxed: true,
     });
@@ -341,7 +345,7 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
   });
 
   it("given a Dynamaxed Pokemon without a Choice item, when isChoiceLocked is checked, then returns false", () => {
-    const pokemon = makeActivePokemon({
+    const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.leftovers,
       isDynamaxed: true,
     });

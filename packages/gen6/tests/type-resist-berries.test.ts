@@ -2,13 +2,15 @@ import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/
 import type { MoveData, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen6Damage, TYPE_RESIST_BERRIES } from "../src/Gen6DamageCalc";
-import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 import {
   createGen6DataManager,
   GEN6_ITEM_IDS,
@@ -16,6 +18,8 @@ import {
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
 } from "../src";
+import { calculateGen6Damage, TYPE_RESIST_BERRIES } from "../src/Gen6DamageCalc";
+import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
 /**
  * Gen 6 Type Resist Berries -- damage calc integration tests.
@@ -35,17 +39,17 @@ import {
 // Helper factories (same pattern as damage-calc.test.ts)
 // ---------------------------------------------------------------------------
 
-const ABILITIES = CORE_ABILITY_IDS
-const CORE_ITEMS = CORE_ITEM_IDS
-const CORE_MOVES = CORE_MOVE_IDS
-const GEN6_ITEMS = GEN6_ITEM_IDS
-const GEN6_MOVES = GEN6_MOVE_IDS
-const NATURES = GEN6_NATURE_IDS
-const SPECIES = GEN6_SPECIES_IDS
-const TYPES = CORE_TYPE_IDS
-const gen6Data = createGen6DataManager()
+const ABILITIES = CORE_ABILITY_IDS;
+const CORE_ITEMS = CORE_ITEM_IDS;
+const CORE_MOVES = CORE_MOVE_IDS;
+const GEN6_ITEMS = GEN6_ITEM_IDS;
+const GEN6_MOVES = GEN6_MOVE_IDS;
+const NATURES = GEN6_NATURE_IDS;
+const SPECIES = GEN6_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const gen6Data = createGen6DataManager();
 
-function makeActive(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -74,16 +78,16 @@ function makeActive(overrides: {
       level: overrides.level ?? 50,
       experience: 0,
       nature: NATURES.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? ABILITIES.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -127,14 +131,14 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(
+function createCanonicalMove(
   moveId: string = CORE_MOVES.tackle,
   overrides: {
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-} = {},
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+  } = {},
 ): MoveData {
-  const move = gen6Data.getMove(moveId)
+  const move = gen6Data.getMove(moveId);
   return {
     ...move,
     ...overrides,
@@ -143,7 +147,7 @@ function makeMove(
   } as MoveData;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -171,7 +175,7 @@ function makeFixedRng(): SeededRandom {
   } as unknown as SeededRandom;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -179,10 +183,10 @@ function makeDamageContext(overrides: {
   isCrit?: boolean;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove(),
-    state: overrides.state ?? makeState(),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? createCanonicalMove(),
+    state: overrides.state ?? createBattleState(),
     rng: makeFixedRng(),
     isCrit: overrides.isCrit ?? false,
   };
@@ -202,16 +206,16 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
     //   random factor with int return 0 => floor(37 * (100-0)/100) = 37
     //   no STAB, Fire vs Grass = 2x: 37*2 = 74
     //   Occa Berry: pokeRound(74, 2048) = floor((74*2048+2047)/4096) = 37
-    const attacker = makeActive({ types: [TYPES.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.grass],
       defense: 100,
       heldItem: CORE_ITEMS.occaBerry,
     });
-    const fireMove = makeMove(CORE_MOVES.firePledge);
+    const fireMove = createCanonicalMove(CORE_MOVES.firePledge);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -224,15 +228,15 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
   it("given Grass-type defender WITHOUT Occa Berry vs super-effective Fire move, when damage calculated, then full 2x damage applies", () => {
     // Source: Showdown data/items.ts -- without resist berry, full SE damage
     // Derivation: baseDmg = 37, Fire vs Grass = 2x: 37*2 = 74
-    const attacker = makeActive({ types: [TYPES.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.grass],
       defense: 100,
     });
-    const fireMove = makeMove(CORE_MOVES.firePledge);
+    const fireMove = createCanonicalMove(CORE_MOVES.firePledge);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -242,16 +246,16 @@ describe("Gen 6 type resist berries -- damage calc integration", () => {
 
   it("given Normal-type defender with Occa Berry vs neutral Fire move, when damage calculated, then Occa Berry does NOT activate (not SE)", () => {
     // Source: Showdown data/items.ts -- type resist berries only activate on SE damage
-    const attacker = makeActive({ types: [TYPES.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.normal],
       defense: 100,
       heldItem: CORE_ITEMS.occaBerry,
     });
-    const fireMove = makeMove(CORE_MOVES.firePledge);
+    const fireMove = createCanonicalMove(CORE_MOVES.firePledge);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -272,16 +276,16 @@ describe("Gen 6 Roseli Berry -- halves Fairy-type SE damage", () => {
     // Derivation using canonical Gen 6 Moonblast (95 BP), SpA=100, SpDef=100, no STAB:
     //   pre-type damage = 43, Fairy vs Dragon = 2x => 86
     //   Roseli Berry halves via pokeRound(86, 2048) => 43
-    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.dragon],
       spDefense: 100,
       heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove(GEN6_MOVES.moonblast);
+    const fairyMove = createCanonicalMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fairyMove }),
+      createDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
@@ -294,16 +298,16 @@ describe("Gen 6 Roseli Berry -- halves Fairy-type SE damage", () => {
     // Source: Showdown data/items.ts -- resist berries only activate when SE
     // Fairy vs Fire = 0.5x (NVE), so berry should not activate
     // Attacker is Normal-type to avoid STAB on Fairy move
-    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.fire],
       spDefense: 100,
       heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove(GEN6_MOVES.moonblast);
+    const fairyMove = createCanonicalMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fairyMove }),
+      createDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
@@ -323,20 +327,20 @@ describe("Gen 6 type resist berries -- Magic Room suppression", () => {
     // Source: Bulbapedia -- Magic Room: "Nullifies the effect of each Pokémon's held item"
     // Without Magic Room the same setup gives 43 (halved). Under Magic Room: full 86.
     // Attacker is Normal-type to avoid STAB on Fairy move.
-    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.dragon],
       spDefense: 100,
       heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove(GEN6_MOVES.moonblast);
+    const fairyMove = createCanonicalMove(GEN6_MOVES.moonblast);
     const magicRoomState = {
-      ...makeState(),
+      ...createBattleState(),
       magicRoom: { active: true, turnsLeft: 3 },
     } as unknown as BattleState;
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fairyMove, state: magicRoomState }),
+      createDamageContext({ attacker, defender, move: fairyMove, state: magicRoomState }),
       typeChart,
     );
 
@@ -350,16 +354,16 @@ describe("Gen 6 type resist berries -- Magic Room suppression", () => {
     // Source: Showdown data/moves.ts -- Magic Room only suppresses when active
     // Without Magic Room the berry should halve SE damage as expected.
     // Attacker is Normal-type to avoid STAB on Fairy move.
-    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.dragon],
       spDefense: 100,
       heldItem: GEN6_ITEMS.roseliBerry,
     });
-    const fairyMove = makeMove(GEN6_MOVES.moonblast);
+    const fairyMove = createCanonicalMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fairyMove }),
+      createDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
@@ -394,17 +398,17 @@ describe("Gen 6 type resist berries -- Klutz suppression", () => {
   it("given defender with Klutz + Roseli Berry vs SE Fairy move, when damage calculated, then Klutz suppresses berry", () => {
     // Source: Showdown data/abilities.ts -- Klutz prevents item usage
     // Attacker is Normal-type to avoid STAB on Fairy move
-    const attacker = makeActive({ types: [TYPES.normal], spAttack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [TYPES.normal], spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [TYPES.dragon],
       spDefense: 100,
       heldItem: GEN6_ITEMS.roseliBerry,
       ability: ABILITIES.klutz,
     });
-    const fairyMove = makeMove(GEN6_MOVES.moonblast);
+    const fairyMove = createCanonicalMove(GEN6_MOVES.moonblast);
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fairyMove }),
+      createDamageContext({ attacker, defender, move: fairyMove }),
       typeChart,
     );
 
