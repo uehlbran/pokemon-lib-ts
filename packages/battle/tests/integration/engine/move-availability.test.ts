@@ -1,7 +1,7 @@
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -23,12 +23,12 @@ function createMoveAvailabilityDataManager(): DataManager {
   const dm = new DataManager();
   const gen1DataManager = createGen1DataManager();
 
-  const makeMove = (
+  const createSyntheticMoveForAvailability = (
     id: string,
     displayName: string,
-    category: "physical" | "special" | "status",
+    category: (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES],
     type = CORE_TYPE_IDS.normal,
-    power: number | null = category === "status" ? null : 40,
+    power: number | null = category === CORE_MOVE_CATEGORIES.status ? null : 40,
   ): MoveData => ({
     id,
     displayName,
@@ -40,7 +40,7 @@ function createMoveAvailabilityDataManager(): DataManager {
     priority: 0,
     target: "adjacent-foe",
     flags: {
-      contact: category === "physical",
+      contact: category === CORE_MOVE_CATEGORIES.physical,
       sound: false,
       bullet: false,
       pulse: false,
@@ -69,10 +69,29 @@ function createMoveAvailabilityDataManager(): DataManager {
   dm.loadFromObjects({
     pokemon: [species, blastoise],
     moves: [
-      makeMove(CORE_MOVE_IDS.tackle, "Tackle", "physical"),
-      makeMove(CORE_MOVE_IDS.thunderbolt, "Thunderbolt", "special", CORE_TYPE_IDS.electric, 90),
-      makeMove(CORE_MOVE_IDS.thunderWave, "Thunder Wave", "status", CORE_TYPE_IDS.electric),
-      makeMove(CORE_MOVE_IDS.swordsDance, "Swords Dance", "status"),
+      createSyntheticMoveForAvailability(
+        CORE_MOVE_IDS.tackle,
+        "Tackle",
+        CORE_MOVE_CATEGORIES.physical,
+      ),
+      createSyntheticMoveForAvailability(
+        CORE_MOVE_IDS.thunderbolt,
+        "Thunderbolt",
+        CORE_MOVE_CATEGORIES.special,
+        CORE_TYPE_IDS.electric,
+        90,
+      ),
+      createSyntheticMoveForAvailability(
+        CORE_MOVE_IDS.thunderWave,
+        "Thunder Wave",
+        CORE_MOVE_CATEGORIES.status,
+        CORE_TYPE_IDS.electric,
+      ),
+      createSyntheticMoveForAvailability(
+        CORE_MOVE_IDS.swordsDance,
+        "Swords Dance",
+        CORE_MOVE_CATEGORIES.status,
+      ),
     ],
     typeChart: gen1DataManager.getTypeChart(),
   });
@@ -80,7 +99,9 @@ function createMoveAvailabilityDataManager(): DataManager {
   return dm;
 }
 
-const CHOICE_LOCKED_VOLATILE = ["choice", "locked"].join("-") as import("@pokemon-lib-ts/core").VolatileStatus;
+const CHOICE_LOCKED_VOLATILE = ["choice", "locked"].join(
+  "-",
+) as import("@pokemon-lib-ts/core").VolatileStatus;
 
 /**
  * MockRuleset that supports held items (for choice lock testing).
