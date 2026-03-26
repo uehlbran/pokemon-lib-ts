@@ -5,15 +5,25 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   SeededRandom,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { CORE_STATUS_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import {
   GEN3_ABILITY_IDS,
   GEN3_ITEM_IDS,
@@ -77,47 +87,56 @@ function createMockRng(opts: {
   } as SeededRandom;
 }
 
-function createActivePokemon(opts?: {
+function createSyntheticOnFieldPokemon(options?: {
   level?: number;
   attack?: number;
   defense?: number;
   spAttack?: number;
   spDefense?: number;
   speed?: number;
-  types?: PokemonType[];
-  status?: string | null;
+  types?: readonly [PokemonType] | readonly [PokemonType, PokemonType];
+  status?: PrimaryStatus | null;
   heldItem?: string | null;
   ability?: string;
   hp?: number;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
-  const o = opts ?? {};
+  const overrides = options ?? {};
+  const species = dataManager.getSpecies(GEN3_SPECIES_IDS.bulbasaur);
+  const defaultGender =
+    species.genderRatio === -1
+      ? CORE_GENDERS.genderless
+      : species.genderRatio === 0
+        ? CORE_GENDERS.female
+        : CORE_GENDERS.male;
+  const defaultAbility =
+    overrides.ability ?? species.abilities.normal[0] ?? GEN3_ABILITY_IDS.static;
   const stats: StatBlock = {
-    hp: o.hp ?? 200,
-    attack: o.attack ?? 100,
-    defense: o.defense ?? 100,
-    spAttack: o.spAttack ?? 100,
-    spDefense: o.spDefense ?? 100,
-    speed: o.speed ?? 100,
+    hp: overrides.hp ?? 200,
+    attack: overrides.attack ?? 100,
+    defense: overrides.defense ?? 100,
+    spAttack: overrides.spAttack ?? 100,
+    spDefense: overrides.spDefense ?? 100,
+    speed: overrides.speed ?? 100,
   };
 
   const pokemon = {
     uid: "test",
-    speciesId: GEN3_SPECIES_IDS.bulbasaur,
+    speciesId: species.id,
     nickname: null,
-    level: o.level ?? 50,
+    level: overrides.level ?? 50,
     experience: 0,
     nature: GEN3_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: o.hp ?? 200,
+    ivs: createIvs(),
+    evs: createEvs(),
+    currentHp: overrides.hp ?? 200,
     moves: [],
-    ability: o.ability ?? GEN3_ABILITY_IDS.static,
-    abilitySlot: "normal1" as const,
-    heldItem: o.heldItem ?? null,
-    status: o.status ?? null,
-    friendship: 0,
-    gender: "male" as const,
+    ability: defaultAbility,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: overrides.heldItem ?? null,
+    status: overrides.status ?? null,
+    friendship: createFriendship(species.baseFriendship),
+    gender: defaultGender,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -131,17 +150,17 @@ function createActivePokemon(opts?: {
     pokemon,
     teamSlot: 0,
     statStages: {
-      attack: o.statStages?.attack ?? 0,
-      defense: o.statStages?.defense ?? 0,
-      spAttack: o.statStages?.spAttack ?? 0,
-      spDefense: o.statStages?.spDefense ?? 0,
-      speed: 0,
-      accuracy: o.statStages?.accuracy ?? 0,
-      evasion: o.statStages?.evasion ?? 0,
+      ...createDefaultStatStages(),
+      attack: overrides.statStages?.attack ?? 0,
+      defense: overrides.statStages?.defense ?? 0,
+      spAttack: overrides.statStages?.spAttack ?? 0,
+      spDefense: overrides.statStages?.spDefense ?? 0,
+      accuracy: overrides.statStages?.accuracy ?? 0,
+      evasion: overrides.statStages?.evasion ?? 0,
     },
     volatileStatuses: new Map(),
-    types: o.types ?? [CORE_TYPE_IDS.normal],
-    ability: o.ability ?? GEN3_ABILITY_IDS.static,
+    types: [...(overrides.types ?? species.types)],
+    ability: defaultAbility,
     lastMoveUsed: null,
     lastDamageTaken: 0,
     lastDamageType: null,
@@ -160,39 +179,13 @@ function createActivePokemon(opts?: {
   } as ActivePokemon;
 }
 
-function createMove(type: PokemonType, power: number, opts?: Partial<MoveData>): MoveData {
+function createSyntheticMove(moveId: string, overrides?: Partial<MoveData>): MoveData {
+  const baseMove = dataManager.getMove(moveId);
   return {
-    id: opts?.id ?? GEN3_MOVE_IDS.tackle,
-    displayName: "Test Move",
-    type,
-    category: "physical",
-    power,
-    accuracy: opts?.accuracy !== undefined ? opts.accuracy : 100,
-    pp: 35,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: {
-      contact: false,
-      sound: false,
-      bullet: false,
-      pulse: false,
-      punch: false,
-      bite: false,
-      wind: false,
-      slicing: false,
-      powder: false,
-      protect: true,
-      mirror: true,
-      snatch: false,
-      gravity: false,
-      defrost: false,
-      recharge: false,
-      charge: false,
-      bypassSubstitute: false,
-    },
-    effect: opts?.effect ?? null,
-    description: "",
-    generation: 3,
+    ...baseMove,
+    flags: { ...baseMove.flags, ...overrides?.flags },
+    ...overrides,
+    effect: overrides?.effect ?? baseMove.effect,
   } as MoveData;
 }
 
@@ -277,14 +270,14 @@ describe("Bug 5A: Damage formula — burn applied AFTER base formula", () => {
     //   base = floor(floor(22 * 80 * 100 / 100) / 50) = floor(1760/50) = 35
     //   burn: floor(35 / 2) = 17
     //   +2: 17 + 2 = 19
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting], // not normal → no STAB
       status: CORE_STATUS_IDS.burn,
     });
-    const defender = createActivePokemon({ defense: 100 });
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { id: GEN3_MOVE_IDS.bodySlam });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove(GEN3_MOVE_IDS.bodySlam, { power: 80 });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen3Damage(
@@ -313,15 +306,15 @@ describe("Bug 5A: Damage formula — burn applied AFTER base formula", () => {
     //   base = floor(floor(22 * 80 * 150 / 100) / 50) = floor(floor(264000/100)/50) = floor(2640/50) = 52
     //   NO burn halving (Guts active)
     //   +2: 52 + 2 = 54
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting],
       status: CORE_STATUS_IDS.burn,
       ability: GEN3_ABILITY_IDS.guts,
     });
-    const defender = createActivePokemon({ defense: 100 });
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { id: GEN3_MOVE_IDS.bodySlam });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove(GEN3_MOVE_IDS.bodySlam, { power: 80 });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen3Damage(
@@ -355,19 +348,19 @@ describe("Bug 5A: Damage formula — type-boost items applied to raw stat", () =
     // Without Charcoal:
     //   base = floor(floor(22 * 80 * 100 / 100) / 50) = floor(1760/50) = 35
     //   +2: 35 + 2 = 37
-    const withItem = createActivePokemon({
+    const withItem = createSyntheticOnFieldPokemon({
       level: 50,
       spAttack: 100,
       types: [CORE_TYPE_IDS.normal], // no STAB
       heldItem: GEN3_ITEM_IDS.charcoal,
     });
-    const withoutItem = createActivePokemon({
+    const withoutItem = createSyntheticOnFieldPokemon({
       level: 50,
       spAttack: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const defender = createActivePokemon({ spDefense: 100 });
-    const move = createMove(CORE_TYPE_IDS.fire, 80, { id: GEN3_MOVE_IDS.flamethrower });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove(GEN3_MOVE_IDS.flamethrower, { power: 80 });
     const chart = createNeutralTypeChart();
     const state = createMinimalBattleState();
 
@@ -412,19 +405,19 @@ describe("Bug 5A: Damage formula — type-boost items applied to raw stat", () =
     // Without Choice Band:
     //   base = floor(floor(22 * 80 * 100 / 100) / 50) = 35
     //   +2: 35 + 2 = 37
-    const withBand = createActivePokemon({
+    const withBand = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting], // no STAB for normal
       heldItem: GEN3_ITEM_IDS.choiceBand,
     });
-    const withoutBand = createActivePokemon({
+    const withoutBand = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       types: [CORE_TYPE_IDS.fighting],
     });
-    const defender = createActivePokemon({ defense: 100 });
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { id: GEN3_MOVE_IDS.bodySlam });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove(GEN3_MOVE_IDS.bodySlam, { power: 80 });
     const chart = createNeutralTypeChart();
     const state = createMinimalBattleState();
 
@@ -466,8 +459,11 @@ describe("Bug 5B: Quick Claw activation rate is 20%", () => {
     // "if (holdEffect == HOLD_EFFECT_QUICK_CLAW && gRandomTurnNumber < (0xFFFF * holdEffectParam) / 100)"
     // holdEffectParam = 20 (src/data/items.h:2241), giving (0xFFFF * 20) / 100 = 13107
     // 13107 / 65536 = 20.00%, so the implementation should pass 0.2 to rng.chance.
-    const slowMon = createActivePokemon({ heldItem: GEN3_ITEM_IDS.quickClaw, speed: 50 });
-    const fastMon = createActivePokemon({ speed: 100 });
+    const slowMon = createSyntheticOnFieldPokemon({
+      heldItem: GEN3_ITEM_IDS.quickClaw,
+      speed: 50,
+    });
+    const fastMon = createSyntheticOnFieldPokemon({ speed: 100 });
     const state = createMinimalBattleState();
     state.sides[0]!.active = [slowMon];
     state.sides[1]!.active = [fastMon];
@@ -501,7 +497,7 @@ describe("Bug 5C: Struggle recoil is 1/4 damage dealt", () => {
   it("given Struggle dealing 100 damage, when calculating recoil, then recoil is 25 (floor(100/4))", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c:2636-2639
     // "case MOVE_EFFECT_RECOIL_25: gBattleMoveDamage = (gHpDealt) / 4;"
-    const attacker = createActivePokemon({ hp: 200 });
+    const attacker = createSyntheticOnFieldPokemon({ hp: 200 });
     const recoil = ruleset.calculateStruggleRecoil(attacker, 100);
     expect(recoil).toBe(25);
   });
@@ -509,7 +505,7 @@ describe("Bug 5C: Struggle recoil is 1/4 damage dealt", () => {
   it("given Struggle dealing 47 damage, when calculating recoil, then recoil is 11 (floor(47/4))", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c:2637
     // floor(47/4) = floor(11.75) = 11
-    const attacker = createActivePokemon({ hp: 200 });
+    const attacker = createSyntheticOnFieldPokemon({ hp: 200 });
     const recoil = ruleset.calculateStruggleRecoil(attacker, 47);
     expect(recoil).toBe(11);
   });
@@ -518,7 +514,7 @@ describe("Bug 5C: Struggle recoil is 1/4 damage dealt", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c:2638-2639
     // "if (gBattleMoveDamage == 0) gBattleMoveDamage = 1;"
     // floor(3/4) = 0, clamped to 1
-    const attacker = createActivePokemon({ hp: 200 });
+    const attacker = createSyntheticOnFieldPokemon({ hp: 200 });
     const recoil = ruleset.calculateStruggleRecoil(attacker, 3);
     expect(recoil).toBe(1);
   });
@@ -534,13 +530,12 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
     // "else if (Random() % 100 < percentChance ..."
     // Random() % 100 produces 0-99. 0-99 < 100 is ALWAYS true.
     // The old 0-255 scale had a 1/256 failure at 100% — this is wrong for Gen 3.
-    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.water] });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.water] });
+    const defender = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState();
 
     // Use a move with 100% chance status-chance effect (e.g., Scald's burn)
-    const move = createMove(CORE_TYPE_IDS.water, 80, {
-      id: GEN3_MOVE_IDS.waterGun,
+    const move = createSyntheticMove(GEN3_MOVE_IDS.waterGun, {
       effect: {
         type: "status-chance",
         status: CORE_STATUS_IDS.burn,
@@ -563,12 +558,11 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
 
   it("given 50% secondary effect chance, when the modulo roll is below 50, then the effect applies", () => {
     // Source: pret/pokeemerald — Random() % 100 < 50 succeeds
-    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.water] });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.water] });
+    const defender = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState();
 
-    const move = createMove(CORE_TYPE_IDS.water, 80, {
-      id: GEN3_MOVE_IDS.waterGun,
+    const move = createSyntheticMove(GEN3_MOVE_IDS.waterGun, {
       effect: {
         type: "status-chance",
         status: CORE_STATUS_IDS.burn,
@@ -590,11 +584,10 @@ describe("Bug 5D: Secondary effect chance uses modulo 100 scale", () => {
 
   it("given 50% secondary effect chance, when the modulo roll is 50 or higher, then the effect does not apply", () => {
     // Source: pret/pokeemerald — Random() % 100 < 50 fails at 50 because the comparison is strict.
-    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.water] });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.water] });
+    const defender = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState();
-    const move = createMove(CORE_TYPE_IDS.water, 80, {
-      id: GEN3_MOVE_IDS.waterGun,
+    const move = createSyntheticMove(GEN3_MOVE_IDS.waterGun, {
       effect: {
         type: "status-chance",
         status: CORE_STATUS_IDS.burn,
@@ -630,11 +623,11 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     //
     // Hit check: (Random() % 100 + 1) > calc means miss
     // So roll of 36 hits (36 <= 36), roll of 37 misses (37 > 36)
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       statStages: { accuracy: -5 },
     });
-    const defender = createActivePokemon();
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { accuracy: 100 });
     const state = createMinimalBattleState();
 
     // Roll of 36 should hit (36 <= 36)
@@ -667,11 +660,11 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     //
     // The old 3-based formula gives: floor(100 * 3 / 7) = floor(42.857) = 42
     // pokeemerald gives 43 — the difference matters.
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       statStages: { accuracy: -4 },
     });
-    const defender = createActivePokemon();
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { accuracy: 100 });
     const state = createMinimalBattleState();
 
     // Roll of 43 should hit (43 <= 43)
@@ -702,9 +695,9 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     // sAccuracyStageRatios[0] = { 1, 1 }
     // calc = floor(1 * 100 / 1) = 100
     // All rolls 1-100 hit (roll <= 100)
-    const attacker = createActivePokemon();
-    const defender = createActivePokemon();
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { accuracy: 100 });
     const state = createMinimalBattleState();
 
     // Roll of 100 should hit (100 <= 100)
@@ -735,11 +728,11 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     // sAccuracyStageRatios[+6] = { 3, 1 }
     // calc = floor(3 * 100 / 1) = 300
     // All rolls 1-100 easily hit
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       statStages: { accuracy: 6 },
     });
-    const defender = createActivePokemon();
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 100, id: GEN3_MOVE_IDS.tackle });
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { accuracy: 100 });
     const state = createMinimalBattleState();
 
     const context: AccuracyContext = {
@@ -756,9 +749,9 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
   it("given never-miss move (accuracy null), when checking hit, then always returns true", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c:1103
     // "if (move == NO_ACC_CALC ...)" — certain moves skip accuracy entirely
-    const attacker = createActivePokemon();
-    const defender = createActivePokemon({ statStages: { evasion: 6 } });
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: null, id: GEN3_MOVE_IDS.tackle });
+    const attacker = createSyntheticOnFieldPokemon();
+    const defender = createSyntheticOnFieldPokemon({ statStages: { evasion: 6 } });
+    const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { accuracy: null });
     const state = createMinimalBattleState();
 
     const context: AccuracyContext = {
@@ -777,11 +770,11 @@ describe("Bug 5E: Accuracy uses pokeemerald sAccuracyStageRatios table", () => {
     // sAccuracyStageRatios[-6] = { 33, 100 }
     // calc = floor(33 * 80 / 100) = floor(26.4) = 26
     // Roll of 26 hits, roll of 27 misses
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       statStages: { accuracy: -6 },
     });
-    const defender = createActivePokemon();
-    const move = createMove(CORE_TYPE_IDS.normal, 80, { accuracy: 80, id: GEN3_MOVE_IDS.tackle });
+    const defender = createSyntheticOnFieldPokemon();
+    const move = createSyntheticMove(GEN3_MOVE_IDS.tackle, { accuracy: 80 });
     const state = createMinimalBattleState();
 
     // Roll of 26 should hit
