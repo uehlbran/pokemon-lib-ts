@@ -28,6 +28,8 @@ export type {
   MoveEffectContextFor,
   MoveEffectResult,
   MoveEffectResultFor,
+  MoveEffectSideTarget,
+  MoveEffectSideTargetWithBoth,
   TerrainEffectResult,
   ValidationResult,
   WeatherEffectResult,

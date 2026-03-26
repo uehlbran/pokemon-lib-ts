@@ -23,6 +23,8 @@ import {
   BATTLE_EFFECT_TARGETS,
   type MoveEffectContext,
   type MoveEffectResult,
+  type MoveEffectSideTarget,
+  type MoveEffectSideTargetWithBoth,
 } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
@@ -56,7 +58,7 @@ import { canInflictGen3Status } from "./Gen3Ruleset";
 type MutableResult = {
   statusInflicted: PrimaryStatus | null;
   volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+  statChanges: Array<{ target: MoveEffectSideTarget; stat: BattleStat; stages: number }>;
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
@@ -66,23 +68,23 @@ type MutableResult = {
   /** When true along with switchOut, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
   forcedSwitch?: boolean;
   customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     amount: number;
     source: string;
   } | null;
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
   hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-  volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-  clearSideHazards?: "attacker" | "defender";
-  itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+  volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
+  clearSideHazards?: MoveEffectSideTarget;
+  itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
   selfStatusInflicted?: PrimaryStatus | null;
   selfVolatileInflicted?: VolatileStatus | null;
   selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  screenSet?: { screen: string; turnsLeft: number; side: MoveEffectSideTarget } | null;
   forcedMoveSet?: { moveIndex: number; moveId: string; volatileStatus: VolatileStatus } | null;
   /** Screens to clear from the defender's side (e.g., Brick Break removes Reflect/Light Screen) */
-  screensCleared?: "attacker" | "defender" | "both" | null;
+  screensCleared?: MoveEffectSideTargetWithBoth | null;
   /** When set, only remove screens whose type is in this list (Brick Break: reflect, light-screen) */
   screenTypesToRemove?: readonly string[];
 };
@@ -320,7 +322,7 @@ function applyMoveEffect(
       result.screenSet = {
         screen: effect.screen,
         turnsLeft: effect.turns,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       };
       break;
     }
@@ -840,7 +842,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_BRICK_BREAK
       // Source: Bulbapedia — "Brick Break removes Reflect and Light Screen from the target's
       //   side of the field, then inflicts damage."
-      result.screensCleared = "defender";
+      result.screensCleared = BATTLE_EFFECT_TARGETS.defender;
       // Source: pret/pokeemerald EFFECT_BRICK_BREAK -- only removes Reflect and Light Screen,
       // NOT Safeguard. Defog (Gen 4) clears all screens including Safeguard.
       result.screenTypesToRemove = [CORE_SCREEN_IDS.reflect, CORE_SCREEN_IDS.lightScreen];

@@ -44,6 +44,8 @@ export type {
   MoveEffectContextFor,
   MoveEffectResult,
   MoveEffectResultFor,
+  MoveEffectSideTarget,
+  MoveEffectSideTargetWithBoth,
   TerrainEffectResult,
   TrainerDataRef,
   ValidationResult,

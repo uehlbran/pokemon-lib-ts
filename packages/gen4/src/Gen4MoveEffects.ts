@@ -22,6 +22,8 @@ import type {
   BattleState,
   MoveEffectContext,
   MoveEffectResult,
+  MoveEffectSideTarget,
+  MoveEffectSideTargetWithBoth,
 } from "@pokemon-lib-ts/battle";
 import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
@@ -58,37 +60,37 @@ import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference
 type MutableResult = {
   statusInflicted: PrimaryStatus | null;
   volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+  statChanges: Array<{ target: MoveEffectSideTarget; stat: BattleStat; stages: number }>;
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
   /** When true along with switchOut, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
   forcedSwitch?: boolean;
   messages: string[];
-  screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  screenSet?: { screen: string; turnsLeft: number; side: MoveEffectSideTarget } | null;
   selfFaint?: boolean;
   customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     amount: number;
     source: string;
     type?: PokemonType | null;
   } | null;
-  statusCured?: { target: "attacker" | "defender" | "both" } | null;
+  statusCured?: { target: MoveEffectSideTargetWithBoth } | null;
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
   hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-  volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-  clearSideHazards?: "attacker" | "defender";
-  itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
-  screensCleared?: "attacker" | "defender" | "both" | null;
+  volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
+  clearSideHazards?: MoveEffectSideTarget;
+  itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
+  screensCleared?: MoveEffectSideTargetWithBoth | null;
   /** When set, only remove screens whose type is in this list (Brick Break: reflect, light-screen) */
   screenTypesToRemove?: readonly string[];
-  statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
-  statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+  statStagesReset?: { target: MoveEffectSideTargetWithBoth } | null;
+  statusCuredOnly?: { target: MoveEffectSideTargetWithBoth } | null;
   selfStatusInflicted?: PrimaryStatus | null;
   selfVolatileInflicted?: VolatileStatus | null;
   selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
-  tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
+  typeChange?: { target: MoveEffectSideTarget; types: readonly PokemonType[] } | null;
+  tailwindSet?: { turnsLeft: number; side: MoveEffectSideTarget } | null;
   trickRoomSet?: { turnsLeft: number } | null;
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;

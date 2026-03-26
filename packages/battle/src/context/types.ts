@@ -177,11 +177,11 @@ export interface MoveEffectContext {
   readonly defenderSelectedMove?: { id: string; category: MoveCategory } | null;
 }
 
-type MoveEffectSideTarget =
+export type MoveEffectSideTarget =
   | typeof BATTLE_EFFECT_TARGETS.attacker
   | typeof BATTLE_EFFECT_TARGETS.defender;
 
-type MoveEffectSideTargetWithBoth = MoveEffectSideTarget | typeof BATTLE_EFFECT_TARGETS.both;
+export type MoveEffectSideTargetWithBoth = MoveEffectSideTarget | typeof BATTLE_EFFECT_TARGETS.both;
 
 /**
  * Structured result produced by `GenerationRuleset.executeMoveEffect()`.

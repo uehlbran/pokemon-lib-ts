@@ -58,6 +58,15 @@ import { createGen1DataManager } from "./data";
 import { GEN1_MOVE_IDS } from "./data/reference-ids";
 import { rollGen1Critical } from "./Gen1CritCalc";
 import { calculateGen1Damage } from "./Gen1DamageCalc";
+
+type Gen1MoveEffectSideTarget =
+  | typeof BATTLE_EFFECT_TARGETS.attacker
+  | typeof BATTLE_EFFECT_TARGETS.defender;
+
+type Gen1MoveEffectSideTargetWithBoth =
+  | Gen1MoveEffectSideTarget
+  | typeof BATTLE_EFFECT_TARGETS.both;
+
 import type { Gen1BadgeBoosts } from "./Gen1StatCalc";
 import { applyGen1BadgeBoosts, calculateGen1Stats } from "./Gen1StatCalc";
 import { GEN1_TYPE_CHART, GEN1_TYPES } from "./Gen1TypeChart";
@@ -380,7 +389,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       statusInflicted: PrimaryStatus | null;
       volatileInflicted: VolatileStatus | null;
       statChanges: Array<{
-        target: "attacker" | "defender";
+        target: Gen1MoveEffectSideTarget;
         stat:
           | "hp"
           | "attack"
@@ -397,25 +406,25 @@ export class Gen1Ruleset implements GenerationRuleset {
       switchOut: boolean;
       escapeBattle?: boolean;
       messages: string[];
-      screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+      screenSet?: { screen: string; turnsLeft: number; side: Gen1MoveEffectSideTarget } | null;
       selfFaint?: boolean;
       noRecharge?: boolean;
       customDamage?: {
-        target: "attacker" | "defender";
+        target: Gen1MoveEffectSideTarget;
         amount: number;
         source: string;
         type?: PokemonType | null;
       } | null;
-      statusCured?: { target: "attacker" | "defender" | "both" } | null;
-      statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
+      statusCured?: { target: Gen1MoveEffectSideTargetWithBoth } | null;
+      statStagesReset?: { target: Gen1MoveEffectSideTargetWithBoth } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-      screensCleared?: "attacker" | "defender" | "both" | null;
-      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-      statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+      screensCleared?: Gen1MoveEffectSideTargetWithBoth | null;
+      volatilesToClear?: Array<{ target: Gen1MoveEffectSideTarget; volatile: VolatileStatus }>;
+      statusCuredOnly?: { target: Gen1MoveEffectSideTargetWithBoth } | null;
       selfStatusInflicted?: PrimaryStatus | null;
       selfVolatileInflicted?: VolatileStatus | null;
       selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-      typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+      typeChange?: { target: Gen1MoveEffectSideTarget; types: readonly PokemonType[] } | null;
       recursiveMove?: string | null;
       moveSlotChange?: {
         slot: number;
@@ -468,7 +477,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       statusInflicted: PrimaryStatus | null;
       volatileInflicted: VolatileStatus | null;
       statChanges: Array<{
-        target: "attacker" | "defender";
+        target: Gen1MoveEffectSideTarget;
         stat:
           | "hp"
           | "attack"
@@ -485,25 +494,25 @@ export class Gen1Ruleset implements GenerationRuleset {
       switchOut: boolean;
       escapeBattle?: boolean;
       messages: string[];
-      screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+      screenSet?: { screen: string; turnsLeft: number; side: Gen1MoveEffectSideTarget } | null;
       selfFaint?: boolean;
       noRecharge?: boolean;
       customDamage?: {
-        target: "attacker" | "defender";
+        target: Gen1MoveEffectSideTarget;
         amount: number;
         source: string;
         type?: PokemonType | null;
       } | null;
-      statusCured?: { target: "attacker" | "defender" | "both" } | null;
-      statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
+      statusCured?: { target: Gen1MoveEffectSideTargetWithBoth } | null;
+      statStagesReset?: { target: Gen1MoveEffectSideTargetWithBoth } | null;
       volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-      screensCleared?: "attacker" | "defender" | "both" | null;
-      volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-      statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+      screensCleared?: Gen1MoveEffectSideTargetWithBoth | null;
+      volatilesToClear?: Array<{ target: Gen1MoveEffectSideTarget; volatile: VolatileStatus }>;
+      statusCuredOnly?: { target: Gen1MoveEffectSideTargetWithBoth } | null;
       selfStatusInflicted?: PrimaryStatus | null;
       selfVolatileInflicted?: VolatileStatus | null;
       selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-      typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+      typeChange?: { target: Gen1MoveEffectSideTarget; types: readonly PokemonType[] } | null;
       recursiveMove?: string | null;
       moveSlotChange?: {
         slot: number;
@@ -647,7 +656,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           screen: effect.screen,
           turnsLeft: -1, // Gen 1: screens are permanent — never expire by countdown.
           // Removed by Haze or when the setter switches out.
-          side: "attacker",
+          side: BATTLE_EFFECT_TARGETS.attacker,
         };
         result.messages.push(
           `${effect.screen === "reflect" ? "Reflect" : "Light Screen"} raised ${attacker.pokemon.nickname ?? "the user"}'s defenses!`,
@@ -659,7 +668,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Dragon Rage (40 damage), Sonic Boom (20 damage), etc.
         // Override the damage dealt with a fixed amount
         result.customDamage = {
-          target: "defender",
+          target: BATTLE_EFFECT_TARGETS.defender,
           amount: effect.damage,
           source: move.id,
           type: move.type,
@@ -670,7 +679,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       case "level-damage": {
         // Night Shade, Seismic Toss: damage = user's level
         result.customDamage = {
-          target: "defender",
+          target: BATTLE_EFFECT_TARGETS.defender,
           amount: attacker.pokemon.level,
           source: move.id,
           type: move.type,
@@ -754,7 +763,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Super Fang
           // Deals damage equal to half the target's current HP, minimum 1.
           result.customDamage = {
-            target: "defender",
+            target: BATTLE_EFFECT_TARGETS.defender,
             amount: Math.max(1, Math.floor(defender.pokemon.currentHp / 2)),
             source: GEN1_MOVE_IDS.superFang,
           };
@@ -778,7 +787,7 @@ export class Gen1Ruleset implements GenerationRuleset {
             amount = rng.int(1, upperBound);
           }
           result.customDamage = {
-            target: "defender",
+            target: BATTLE_EFFECT_TARGETS.defender,
             amount,
             source: GEN1_MOVE_IDS.psywave,
           };
@@ -801,10 +810,10 @@ export class Gen1Ruleset implements GenerationRuleset {
           result.statusCured = { target: BATTLE_EFFECT_TARGETS.defender };
           // statStagesReset: resets attacker's stages only — attacker's status is NOT cured by Haze
           result.statStagesReset = { target: BATTLE_EFFECT_TARGETS.attacker };
-          result.screensCleared = "both";
+          result.screensCleared = BATTLE_EFFECT_TARGETS.both;
           // Build volatilesToClear from all current volatile statuses on both Pokemon.
           // The engine will delete each and emit volatile-end events via processEffectResult.
-          const hazeClears: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }> =
+          const hazeClears: Array<{ target: Gen1MoveEffectSideTarget; volatile: VolatileStatus }> =
             [];
           for (const volatile of attacker.volatileStatuses.keys()) {
             hazeClears.push({ target: BATTLE_EFFECT_TARGETS.attacker, volatile });
@@ -858,7 +867,7 @@ export class Gen1Ruleset implements GenerationRuleset {
             lastType === CORE_TYPE_IDS.normal || lastType === CORE_TYPE_IDS.fighting;
           if (lastDamage > 0 && counterableType) {
             result.customDamage = {
-              target: "defender",
+              target: BATTLE_EFFECT_TARGETS.defender,
               amount: lastDamage * 2,
               source: GEN1_MOVE_IDS.counter,
               type: move.type,
@@ -1090,7 +1099,7 @@ export class Gen1Ruleset implements GenerationRuleset {
                 result.messages.push("But it failed!");
               } else {
                 result.customDamage = {
-                  target: "defender",
+                  target: BATTLE_EFFECT_TARGETS.defender,
                   amount: accumulated * 2,
                   source: GEN1_MOVE_IDS.bide,
                 };

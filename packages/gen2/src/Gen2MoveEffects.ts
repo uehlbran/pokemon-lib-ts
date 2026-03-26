@@ -14,7 +14,11 @@
  * Source: pret/pokecrystal engine/battle/effect_commands.asm
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
+import type {
+  MoveEffectContext,
+  MoveEffectResult,
+  MoveEffectSideTarget,
+} from "@pokemon-lib-ts/battle";
 import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
@@ -44,8 +48,8 @@ export type MutableResult = Omit<
   "messages" | "statChanges" | "volatilesToClear"
 > & {
   messages: string[];
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
-  volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+  statChanges: Array<{ target: MoveEffectSideTarget; stat: BattleStat; stages: number }>;
+  volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
   /**
    * Lazy per-hit damage function. Added explicitly because the mapped type may not
    * pick up new MoveEffectResult fields during cross-package builds in worktrees.
@@ -237,7 +241,7 @@ export function applyMoveEffect(
       result.screenSet = {
         screen: effect.screen as ScreenType,
         turnsLeft: 5,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       };
       break;
     }
