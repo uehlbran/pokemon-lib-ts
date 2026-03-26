@@ -1213,7 +1213,11 @@ describe("Rivalry in damage calc", () => {
       typeChart,
     );
 
+    // Derived from this exact fixture with Tackle (BP 50), SeededRandom(100), and STAB:
+    // neutral damage path produces baseDamage 24 and finalDamage 31.
     expect(baseResult.breakdown).toMatchObject({ baseDamage: 24, finalDamage: 31 });
+    // Rivalry applies floor(50 * 1.25) = 62 base power for same-gender targets in Gen 6.
+    // Under the same fixture and RNG path that yields baseDamage 29 and finalDamage 37.
     expect(rivalryResult.breakdown).toMatchObject({ baseDamage: 29, finalDamage: 37 });
   });
 
@@ -1242,7 +1246,11 @@ describe("Rivalry in damage calc", () => {
       typeChart,
     );
 
+    // Derived from this exact fixture with Tackle (BP 50), SeededRandom(100), and STAB:
+    // neutral damage path produces baseDamage 24 and finalDamage 31.
     expect(baseResult.breakdown).toMatchObject({ baseDamage: 24, finalDamage: 31 });
+    // Rivalry applies floor(50 * 0.75) = 37 base power for opposite-gender targets in Gen 6.
+    // Under the same fixture and RNG path that yields baseDamage 18 and finalDamage 22.
     expect(rivalryResult.breakdown).toMatchObject({ baseDamage: 18, finalDamage: 22 });
   });
 
