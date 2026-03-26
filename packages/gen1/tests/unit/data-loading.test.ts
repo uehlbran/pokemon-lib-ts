@@ -13,33 +13,6 @@ const GEN1_EVOLUTION_LEVELS = {
   ivysaurToVenusaur: 32,
 } as const;
 
-const GEN1_MOVE_STATS = {
-  flamethrower: { power: 95, accuracy: 100 },
-  tackle: { power: 35 },
-  earthquake: { power: 100, accuracy: 100 },
-  thunderbolt: { power: 95 },
-  psychic: { power: 90 },
-  swift: { power: 60, accuracy: null, pp: 20 },
-  quickAttack: { power: 40 },
-  hyperBeam: { power: 150 },
-} as const;
-
-const GEN1_SPECIES_EXPECTATIONS = {
-  bulbasaur: { name: "bulbasaur", displayName: "Bulbasaur" },
-  ivysaur: { name: "ivysaur", displayName: "Ivysaur" },
-  venusaur: { name: "venusaur", displayName: "Venusaur" },
-  charizard: { name: "charizard", displayName: "Charizard" },
-  pikachu: { name: "pikachu", displayName: "Pikachu" },
-  gengar: { name: "gengar", displayName: "Gengar" },
-  snorlax: { name: "snorlax", displayName: "Snorlax" },
-  mewtwo: { name: "mewtwo", displayName: "Mewtwo" },
-  mew: { name: "mew", displayName: "Mew" },
-  eevee: { name: "eevee", displayName: "Eevee" },
-  vaporeon: { name: "vaporeon", displayName: "Vaporeon" },
-  jolteon: { name: "jolteon", displayName: "Jolteon" },
-  flareon: { name: "flareon", displayName: "Flareon" },
-} as const;
-
 const GEN1_BULBASAUR_LEVEL_UP_MOVES = [
   { level: 1, move: GEN1_MOVE_IDS.tackle },
   { level: 1, move: GEN1_MOVE_IDS.growl },
@@ -115,8 +88,8 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const bulbasaur = dm.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
     // Assert
-    expect(bulbasaur.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.bulbasaur.displayName);
-    expect(bulbasaur.name).toBe(GEN1_SPECIES_EXPECTATIONS.bulbasaur.name);
+    expect(bulbasaur.displayName).toBe("Bulbasaur");
+    expect(bulbasaur.name).toBe("bulbasaur");
     expect(bulbasaur.types).toEqual(["grass", "poison"]);
     expect(bulbasaur.baseStats).toEqual({
       hp: 45,
@@ -134,7 +107,7 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const charizard = dm.getSpecies(GEN1_SPECIES_IDS.charizard);
     // Assert
-    expect(charizard.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.charizard.displayName);
+    expect(charizard.displayName).toBe("Charizard");
     expect(charizard.types).toEqual(["fire", "flying"]);
     expect(charizard.baseStats).toEqual({
       hp: 78,
@@ -152,7 +125,7 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const pikachu = dm.getSpecies(GEN1_SPECIES_IDS.pikachu);
     // Assert
-    expect(pikachu.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.pikachu.displayName);
+    expect(pikachu.displayName).toBe("Pikachu");
     expect(pikachu.types).toEqual(["electric"]);
     expect(pikachu.baseStats).toEqual({
       hp: 35,
@@ -170,7 +143,7 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const mewtwo = dm.getSpecies(GEN1_SPECIES_IDS.mewtwo);
     // Assert
-    expect(mewtwo.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.mewtwo.displayName);
+    expect(mewtwo.displayName).toBe("Mewtwo");
     expect(mewtwo.isLegendary).toBe(true);
     expect(mewtwo.isMythical).toBe(false);
     expect(mewtwo.types).toEqual(["psychic"]);
@@ -190,7 +163,7 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const mew = dm.getSpecies(GEN1_SPECIES_IDS.mew);
     // Assert
-    expect(mew.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.mew.displayName);
+    expect(mew.displayName).toBe("Mew");
     expect(mew.isMythical).toBe(true);
     expect(mew.isLegendary).toBe(false);
     expect(mew.types).toEqual(["psychic"]);
@@ -234,7 +207,7 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const gengar = dm.getSpecies(GEN1_SPECIES_IDS.gengar);
     // Assert
-    expect(gengar.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.gengar.displayName);
+    expect(gengar.displayName).toBe("Gengar");
     expect(gengar.types).toEqual(["ghost", "poison"]);
   });
 
@@ -244,7 +217,7 @@ describe("Gen 1 Data Loading", () => {
     // Act
     const snorlax = dm.getSpecies(GEN1_SPECIES_IDS.snorlax);
     // Assert
-    expect(snorlax.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.snorlax.displayName);
+    expect(snorlax.displayName).toBe("Snorlax");
     expect(snorlax.baseStats).toEqual({
       hp: 160,
       attack: 110,
@@ -272,17 +245,17 @@ describe("Gen 1 Data Loading", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const bulbasaur = dm.getSpeciesByName(GEN1_SPECIES_EXPECTATIONS.bulbasaur.name);
+    const bulbasaur = dm.getSpeciesByName("bulbasaur");
     // Assert
     expect(bulbasaur.id).toBe(GEN1_SPECIES_IDS.bulbasaur);
-    expect(bulbasaur.displayName).toBe(GEN1_SPECIES_EXPECTATIONS.bulbasaur.displayName);
+    expect(bulbasaur.displayName).toBe("Bulbasaur");
   });
 
   it("given Gen 1 data, when loading species by name with different case, then still finds it", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
-    const pikachu = dm.getSpeciesByName(GEN1_SPECIES_EXPECTATIONS.pikachu.displayName);
+    const pikachu = dm.getSpeciesByName("Pikachu");
     // Assert
     expect(pikachu.id).toBe(GEN1_SPECIES_IDS.pikachu);
   });
@@ -341,7 +314,7 @@ describe("Gen 1 Data Loading", () => {
 
   // --- Moves Data ---
 
-  it("given Gen 1 data, when loaded, then contains 164 moves", () => {
+  it("given Gen 1 data, when loaded, then contains 165 moves", () => {
     // Arrange
     const dm = createGen1DataManager();
     // Act
@@ -358,8 +331,9 @@ describe("Gen 1 Data Loading", () => {
     // Assert: In Gen 1, Fire-type moves are Special
     expect(flamethrower.type).toBe("fire");
     expect(flamethrower.category).toBe("special");
-    expect(flamethrower.power).toBe(GEN1_MOVE_STATS.flamethrower.power);
-    expect(flamethrower.accuracy).toBe(GEN1_MOVE_STATS.flamethrower.accuracy);
+    // Source: committed Gen 1 move data bundle (pret/pokered-aligned) lists Flamethrower at 95 BP / 100 accuracy.
+    expect(flamethrower.power).toBe(95);
+    expect(flamethrower.accuracy).toBe(100);
   });
 
   it("given Gen 1 data, when loading Tackle, then is physical category normal type", () => {
@@ -370,7 +344,8 @@ describe("Gen 1 Data Loading", () => {
     // Assert: In Gen 1, Normal-type moves are Physical
     expect(tackle.type).toBe("normal");
     expect(tackle.category).toBe("physical");
-    expect(tackle.power).toBe(GEN1_MOVE_STATS.tackle.power);
+    // Source: committed Gen 1 move data bundle lists Tackle at 35 base power.
+    expect(tackle.power).toBe(35);
   });
 
   it("given Gen 1 data, when loading Earthquake, then is physical ground type", () => {
@@ -381,8 +356,8 @@ describe("Gen 1 Data Loading", () => {
     // Assert
     expect(earthquake.type).toBe("ground");
     expect(earthquake.category).toBe("physical");
-    expect(earthquake.power).toBe(GEN1_MOVE_STATS.earthquake.power);
-    expect(earthquake.accuracy).toBe(GEN1_MOVE_STATS.earthquake.accuracy);
+    expect(earthquake.power).toBe(100);
+    expect(earthquake.accuracy).toBe(100);
   });
 
   it("given Gen 1 data, when loading Thunderbolt, then is special electric type", () => {
@@ -393,7 +368,8 @@ describe("Gen 1 Data Loading", () => {
     // Assert
     expect(thunderbolt.type).toBe("electric");
     expect(thunderbolt.category).toBe("special");
-    expect(thunderbolt.power).toBe(GEN1_MOVE_STATS.thunderbolt.power);
+    // Source: committed Gen 1 move data bundle lists Thunderbolt at 95 base power.
+    expect(thunderbolt.power).toBe(95);
   });
 
   it("given Gen 1 data, when loading Psychic, then is special psychic type", () => {
@@ -404,7 +380,8 @@ describe("Gen 1 Data Loading", () => {
     // Assert
     expect(psychic.type).toBe("psychic");
     expect(psychic.category).toBe("special");
-    expect(psychic.power).toBe(GEN1_MOVE_STATS.psychic.power);
+    // Source: committed Gen 1 move data bundle lists Psychic at 90 base power.
+    expect(psychic.power).toBe(90);
   });
 
   it("given Gen 1 data, when loading Swift, then has null accuracy (never misses)", () => {
@@ -415,9 +392,10 @@ describe("Gen 1 Data Loading", () => {
     // Assert
     expect(swift.type).toBe("normal");
     expect(swift.category).toBe("physical");
-    expect(swift.power).toBe(GEN1_MOVE_STATS.swift.power);
+    // Source: committed Gen 1 move data bundle lists Swift at 60 BP / 20 PP with null accuracy.
+    expect(swift.power).toBe(60);
     expect(swift.accuracy).toBeNull();
-    expect(swift.pp).toBe(GEN1_MOVE_STATS.swift.pp);
+    expect(swift.pp).toBe(20);
     expect(swift.target).toBe("all-adjacent-foes");
     expect(swift.flags.recharge).toBe(false);
     expect(swift.description).toContain("never misses");
@@ -432,7 +410,8 @@ describe("Gen 1 Data Loading", () => {
     expect(quickAttack.priority).toBe(1);
     expect(quickAttack.type).toBe("normal");
     expect(quickAttack.category).toBe("physical");
-    expect(quickAttack.power).toBe(GEN1_MOVE_STATS.quickAttack.power);
+    // Source: committed Gen 1 move data bundle lists Quick Attack at 40 base power.
+    expect(quickAttack.power).toBe(40);
   });
 
   it("given Gen 1 data, when loading Counter, then has negative priority", () => {
@@ -451,7 +430,8 @@ describe("Gen 1 Data Loading", () => {
     const hyperBeam = dm.getMove(GEN1_MOVE_IDS.hyperBeam);
     // Assert
     expect(hyperBeam.flags.recharge).toBe(true);
-    expect(hyperBeam.power).toBe(GEN1_MOVE_STATS.hyperBeam.power);
+    // Source: committed Gen 1 move data bundle lists Hyper Beam at 150 base power.
+    expect(hyperBeam.power).toBe(150);
     expect(hyperBeam.type).toBe("normal");
   });
 
