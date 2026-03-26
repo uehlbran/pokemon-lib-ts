@@ -306,6 +306,7 @@ export const CORE_NATURE_IDS = {
 } as const;
 
 export const CORE_HAZARD_IDS = {
+  gmaxSteelsurge: "gmax-steelsurge",
   spikes: "spikes",
   stealthRock: "stealth-rock",
   stickyWeb: "sticky-web",

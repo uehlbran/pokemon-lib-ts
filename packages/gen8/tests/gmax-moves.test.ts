@@ -1,4 +1,4 @@
-import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_STATUS_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -71,7 +71,7 @@ describe("Gen8GMaxMoves", () => {
       expect(GMAX_MOVES["gmax-volt-crash"]).toEqual({
         species: "Pikachu",
         moveType: "electric",
-        effect: { type: "status", status: "par" },
+        effect: { type: "status", status: CORE_STATUS_IDS.paralysis },
       });
     });
   });
@@ -93,7 +93,7 @@ describe("Gen8GMaxMoves", () => {
       expect(result).toEqual({
         species: "Pikachu",
         moveType: TYPE_IDS.electric,
-        effect: { type: CORE_MOVE_CATEGORIES.status, status: "par" },
+        effect: { type: CORE_MOVE_CATEGORIES.status, status: CORE_STATUS_IDS.paralysis },
       });
     });
 

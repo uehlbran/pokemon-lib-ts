@@ -45,6 +45,8 @@ function getOpponentName(ctx: AbilityContext): string {
   return ctx.opponent.pokemon.nickname ?? String(ctx.opponent.pokemon.speciesId);
 }
 
+type MirrorArmorSource = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -1281,12 +1283,12 @@ export function getScreenCleanerTargets(): readonly ScreenType[] {
 export function shouldMirrorArmorReflect(
   abilityId: string,
   stages: number,
-  source: "self" | "opponent",
+  source: MirrorArmorSource,
 ): boolean {
   if (abilityId !== GEN8_ABILITY_IDS.mirrorArmor) return false;
   // Only reflects drops (negative stages) from the opponent
   if (stages >= 0) return false;
-  if (source !== "opponent") return false;
+  if (source !== BATTLE_EFFECT_TARGETS.opponent) return false;
   return true;
 }
 

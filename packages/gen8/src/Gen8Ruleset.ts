@@ -35,6 +35,7 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
 import { handleGen8StatAbility } from "./Gen8AbilitiesStat.js";
@@ -241,7 +242,13 @@ export class Gen8Ruleset extends BaseRuleset {
    * Source: Bulbapedia -- G-Max Steelsurge (Copperajah G-Max move)
    */
   override getAvailableHazards(): readonly EntryHazardType[] {
-    return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web", "gmax-steelsurge"];
+    return [
+      CORE_HAZARD_IDS.stealthRock,
+      CORE_HAZARD_IDS.spikes,
+      CORE_HAZARD_IDS.toxicSpikes,
+      CORE_HAZARD_IDS.stickyWeb,
+      CORE_HAZARD_IDS.gmaxSteelsurge,
+    ];
   }
 
   /**

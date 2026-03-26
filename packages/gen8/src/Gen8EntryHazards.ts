@@ -28,7 +28,7 @@ import type {
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
 import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { isGen8Grounded } from "./Gen8DamageCalc.js";
 
 // ---------------------------------------------------------------------------
@@ -454,7 +454,7 @@ export function applyGen8EntryHazards(
     // --- G-Max Steelsurge ---
     // No grounding check -- G-Max Steelsurge hits everything (same as Stealth Rock)
     // Source: Showdown data/moves.ts line 7475 -- gmaxsteelsurge condition
-    const steelsurge = side.hazards.find((h) => h.type === "gmax-steelsurge");
+    const steelsurge = side.hazards.find((h) => h.type === CORE_HAZARD_IDS.gmaxSteelsurge);
     if (steelsurge && steelsurge.layers > 0) {
       const result = applyGen8GMaxSteelsurge(switchingIn, typeChart);
       if (result) {

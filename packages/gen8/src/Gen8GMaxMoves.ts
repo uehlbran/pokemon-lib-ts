@@ -5,7 +5,71 @@
  * Source: Bulbapedia "Gigantamax" -- species-specific G-Max Moves
  */
 
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import type { BattleStat, EntryHazardType, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_HAZARD_IDS,
+  CORE_MOVE_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN8_MOVE_IDS } from "./data/reference-ids";
+
+export const GEN8_GMAX_EFFECT_TYPES = {
+  statusRandom: "status-random",
+  residual: "residual",
+  trap: "trap",
+  critBoost: "crit-boost",
+  infatuateFoes: "infatuate-foes",
+  ppDeduct: "pp-deduct",
+  ignoreAbility: "ignore-ability",
+  healAllies: "heal-allies",
+  statChange: "stat-change",
+  confuseFoes: "confuse-foes",
+  pseudoWeather: "pseudo-weather",
+  status: "status",
+  tormentFoes: "torment-foes",
+  bypassProtect: "bypass-protect",
+  restoreBerries: "restore-berries",
+  sideCondition: "side-condition",
+  yawn: "yawn",
+  hazard: "hazard",
+  cureAllies: "cure-allies",
+  trapFoes: "trap-foes",
+} as const;
+
+export const GEN8_GMAX_EFFECT_TARGETS = {
+  foes: "foes",
+} as const;
+
+export const GEN8_GMAX_DAMAGE_FRACTIONS = {
+  oneSixth: "1/6",
+} as const;
+
+export const GEN8_GMAX_HAZARD_IDS = {
+  gmaxSteelsurge: CORE_HAZARD_IDS.gmaxSteelsurge,
+  stealthRock: CORE_HAZARD_IDS.stealthRock,
+} as const;
+
+export const GEN8_GMAX_PSEUDO_WEATHER_IDS = {
+  gravity: CORE_MOVE_IDS.gravity,
+} as const;
+
+export const GEN8_GMAX_STATUS_IDS = {
+  sleep: CORE_STATUS_IDS.sleep,
+  paralysis: CORE_STATUS_IDS.paralysis,
+  poison: CORE_STATUS_IDS.poison,
+} as const;
+
+export const GEN8_GMAX_TRAP_MOVE_IDS = {
+  fireSpin: GEN8_MOVE_IDS.fireSpin,
+  sandTomb: GEN8_MOVE_IDS.sandTomb,
+} as const;
+
+export const GEN8_GMAX_SIDE_CONDITION_IDS = {
+  auroraVeil: CORE_SCREEN_IDS.auroraVeil,
+} as const;
 
 /**
  * Describes the unique effect of a G-Max Move.
@@ -13,26 +77,57 @@ import type { PokemonType } from "@pokemon-lib-ts/core";
  * Source: Showdown data/moves.ts -- individual G-Max move effect implementations
  */
 export type GMaxMoveEffectType =
-  | { type: "status-random"; statuses: readonly string[] }
-  | { type: "residual"; duration: number; damage: string; immunity: readonly string[] }
-  | { type: "trap"; trapType: string }
-  | { type: "crit-boost"; layers: number }
-  | { type: "infatuate-foes" }
-  | { type: "pp-deduct"; amount: number }
-  | { type: "ignore-ability" }
-  | { type: "heal-allies"; fraction: string }
-  | { type: "stat-change"; stat: string; stages: number; target: string }
-  | { type: "confuse-foes" }
-  | { type: "pseudo-weather"; condition: string }
-  | { type: "status"; status: string }
-  | { type: "torment-foes" }
-  | { type: "bypass-protect" }
-  | { type: "restore-berries"; chance: number }
-  | { type: "side-condition"; condition: string }
-  | { type: "yawn"; chance: number }
-  | { type: "hazard"; hazard: string }
-  | { type: "cure-allies" }
-  | { type: "trap-foes" };
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.statusRandom;
+      statuses: readonly PrimaryStatus[];
+    }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.residual;
+      duration: number;
+      damage: (typeof GEN8_GMAX_DAMAGE_FRACTIONS)[keyof typeof GEN8_GMAX_DAMAGE_FRACTIONS];
+      immunity: readonly PokemonType[];
+    }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.trap;
+      trapType: (typeof GEN8_GMAX_TRAP_MOVE_IDS)[keyof typeof GEN8_GMAX_TRAP_MOVE_IDS];
+    }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.critBoost; layers: number }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.infatuateFoes }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.ppDeduct; amount: number }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.ignoreAbility }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.healAllies;
+      fraction: (typeof GEN8_GMAX_DAMAGE_FRACTIONS)[keyof typeof GEN8_GMAX_DAMAGE_FRACTIONS];
+    }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.statChange;
+      stat: BattleStat;
+      stages: number;
+      target: (typeof GEN8_GMAX_EFFECT_TARGETS)[keyof typeof GEN8_GMAX_EFFECT_TARGETS];
+    }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.confuseFoes }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.pseudoWeather;
+      condition: (typeof GEN8_GMAX_PSEUDO_WEATHER_IDS)[keyof typeof GEN8_GMAX_PSEUDO_WEATHER_IDS];
+    }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.status;
+      status: PrimaryStatus;
+    }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.tormentFoes }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.bypassProtect }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.restoreBerries; chance: number }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.sideCondition;
+      condition: (typeof GEN8_GMAX_SIDE_CONDITION_IDS)[keyof typeof GEN8_GMAX_SIDE_CONDITION_IDS];
+    }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.yawn; chance: number }
+  | {
+      type: typeof GEN8_GMAX_EFFECT_TYPES.hazard;
+      hazard: EntryHazardType;
+    }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.cureAllies }
+  | { type: typeof GEN8_GMAX_EFFECT_TYPES.trapFoes };
 
 /**
  * Data for a single G-Max Move.
@@ -57,166 +152,215 @@ export interface GMaxMoveData {
 export const GMAX_MOVES: Readonly<Record<string, GMaxMoveData>> = {
   "gmax-befuddle": {
     species: "Butterfree",
-    moveType: "bug",
-    effect: { type: "status-random", statuses: ["slp", "par", "psn"] },
+    moveType: CORE_TYPE_IDS.bug,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.statusRandom,
+      statuses: [
+        GEN8_GMAX_STATUS_IDS.sleep,
+        GEN8_GMAX_STATUS_IDS.paralysis,
+        GEN8_GMAX_STATUS_IDS.poison,
+      ],
+    },
   },
   "gmax-cannonade": {
     species: "Blastoise",
-    moveType: "water",
-    effect: { type: "residual", duration: 4, damage: "1/6", immunity: ["water"] },
+    moveType: CORE_TYPE_IDS.water,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.residual,
+      duration: 4,
+      damage: GEN8_GMAX_DAMAGE_FRACTIONS.oneSixth,
+      immunity: [CORE_TYPE_IDS.water],
+    },
   },
   "gmax-centiferno": {
     species: "Centiskorch",
-    moveType: "fire",
-    effect: { type: "trap", trapType: "fire-spin" },
+    moveType: CORE_TYPE_IDS.fire,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.trap, trapType: GEN8_GMAX_TRAP_MOVE_IDS.fireSpin },
   },
   "gmax-chi-strike": {
     species: "Machamp",
-    moveType: "fighting",
-    effect: { type: "crit-boost", layers: 1 },
+    moveType: CORE_TYPE_IDS.fighting,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.critBoost, layers: 1 },
   },
   "gmax-cuddle": {
     species: "Eevee",
-    moveType: "normal",
-    effect: { type: "infatuate-foes" },
+    moveType: CORE_TYPE_IDS.normal,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.infatuateFoes },
   },
   "gmax-depletion": {
     species: "Duraludon",
-    moveType: "dragon",
-    effect: { type: "pp-deduct", amount: 2 },
+    moveType: CORE_TYPE_IDS.dragon,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.ppDeduct, amount: 2 },
   },
   "gmax-drum-solo": {
     species: "Rillaboom",
-    moveType: "grass",
-    effect: { type: "ignore-ability" },
+    moveType: CORE_TYPE_IDS.grass,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.ignoreAbility },
     basePower: 160,
   },
   "gmax-finale": {
     species: "Alcremie",
-    moveType: "fairy",
-    effect: { type: "heal-allies", fraction: "1/6" },
+    moveType: CORE_TYPE_IDS.fairy,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.healAllies,
+      fraction: GEN8_GMAX_DAMAGE_FRACTIONS.oneSixth,
+    },
   },
   "gmax-fireball": {
     species: "Cinderace",
-    moveType: "fire",
-    effect: { type: "ignore-ability" },
+    moveType: CORE_TYPE_IDS.fire,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.ignoreAbility },
     basePower: 160,
   },
   "gmax-foam-burst": {
     species: "Kingler",
-    moveType: "water",
-    effect: { type: "stat-change", stat: "spe", stages: -2, target: "foes" },
+    moveType: CORE_TYPE_IDS.water,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.statChange,
+      stat: CORE_STAT_IDS.speed,
+      stages: -2,
+      target: GEN8_GMAX_EFFECT_TARGETS.foes,
+    },
   },
   "gmax-gold-rush": {
     species: "Meowth",
-    moveType: "normal",
-    effect: { type: "confuse-foes" },
+    moveType: CORE_TYPE_IDS.normal,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.confuseFoes },
   },
   "gmax-gravitas": {
     species: "Orbeetle",
-    moveType: "psychic",
-    effect: { type: "pseudo-weather", condition: "gravity" },
+    moveType: CORE_TYPE_IDS.psychic,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.pseudoWeather,
+      condition: GEN8_GMAX_PSEUDO_WEATHER_IDS.gravity,
+    },
   },
   "gmax-hydrosnipe": {
     species: "Inteleon",
-    moveType: "water",
-    effect: { type: "ignore-ability" },
+    moveType: CORE_TYPE_IDS.water,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.ignoreAbility },
     basePower: 160,
   },
   "gmax-malodor": {
     species: "Garbodor",
-    moveType: "poison",
-    effect: { type: "status", status: "psn" },
+    moveType: CORE_TYPE_IDS.poison,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.status, status: GEN8_GMAX_STATUS_IDS.poison },
   },
   "gmax-meltdown": {
     species: "Melmetal",
-    moveType: "steel",
-    effect: { type: "torment-foes" },
+    moveType: CORE_TYPE_IDS.steel,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.tormentFoes },
   },
   "gmax-one-blow": {
     species: "Urshifu",
-    moveType: "dark",
-    effect: { type: "bypass-protect" },
+    moveType: CORE_TYPE_IDS.dark,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.bypassProtect },
   },
   "gmax-rapid-flow": {
     species: "Urshifu-Rapid-Strike",
-    moveType: "water",
-    effect: { type: "bypass-protect" },
+    moveType: CORE_TYPE_IDS.water,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.bypassProtect },
   },
   "gmax-replenish": {
     species: "Snorlax",
-    moveType: "normal",
-    effect: { type: "restore-berries", chance: 0.5 },
+    moveType: CORE_TYPE_IDS.normal,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.restoreBerries, chance: 0.5 },
   },
   "gmax-resonance": {
     species: "Lapras",
-    moveType: "ice",
-    effect: { type: "side-condition", condition: "aurora-veil" },
+    moveType: CORE_TYPE_IDS.ice,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.sideCondition,
+      condition: GEN8_GMAX_SIDE_CONDITION_IDS.auroraVeil,
+    },
   },
   "gmax-sandblast": {
     species: "Sandaconda",
-    moveType: "ground",
-    effect: { type: "trap", trapType: "sand-tomb" },
+    moveType: CORE_TYPE_IDS.ground,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.trap, trapType: GEN8_GMAX_TRAP_MOVE_IDS.sandTomb },
   },
   "gmax-smite": {
     species: "Hatterene",
-    moveType: "fairy",
-    effect: { type: "confuse-foes" },
+    moveType: CORE_TYPE_IDS.fairy,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.confuseFoes },
   },
   "gmax-snooze": {
     species: "Grimmsnarl",
-    moveType: "dark",
-    effect: { type: "yawn", chance: 0.5 },
+    moveType: CORE_TYPE_IDS.dark,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.yawn, chance: 0.5 },
   },
   "gmax-steelsurge": {
     species: "Copperajah",
-    moveType: "steel",
-    effect: { type: "hazard", hazard: "gmax-steelsurge" },
+    moveType: CORE_TYPE_IDS.steel,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.hazard, hazard: GEN8_GMAX_HAZARD_IDS.gmaxSteelsurge },
   },
   "gmax-stonesurge": {
     species: "Drednaw",
-    moveType: "water",
-    effect: { type: "hazard", hazard: "stealth-rock" },
+    moveType: CORE_TYPE_IDS.water,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.hazard, hazard: GEN8_GMAX_HAZARD_IDS.stealthRock },
   },
   "gmax-stun-shock": {
     species: "Toxtricity",
-    moveType: "electric",
-    effect: { type: "status-random", statuses: ["par", "psn"] },
+    moveType: CORE_TYPE_IDS.electric,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.statusRandom,
+      statuses: [GEN8_GMAX_STATUS_IDS.paralysis, GEN8_GMAX_STATUS_IDS.poison],
+    },
   },
   "gmax-sweetness": {
     species: "Appletun",
-    moveType: "grass",
-    effect: { type: "cure-allies" },
+    moveType: CORE_TYPE_IDS.grass,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.cureAllies },
   },
   "gmax-tartness": {
     species: "Flapple",
-    moveType: "grass",
-    effect: { type: "stat-change", stat: "eva", stages: -1, target: "foes" },
+    moveType: CORE_TYPE_IDS.grass,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.statChange,
+      stat: CORE_STAT_IDS.evasion,
+      stages: -1,
+      target: GEN8_GMAX_EFFECT_TARGETS.foes,
+    },
   },
   "gmax-terror": {
     species: "Gengar",
-    moveType: "ghost",
-    effect: { type: "trap-foes" },
+    moveType: CORE_TYPE_IDS.ghost,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.trapFoes },
   },
   "gmax-vine-lash": {
     species: "Venusaur",
-    moveType: "grass",
-    effect: { type: "residual", duration: 4, damage: "1/6", immunity: ["grass"] },
+    moveType: CORE_TYPE_IDS.grass,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.residual,
+      duration: 4,
+      damage: GEN8_GMAX_DAMAGE_FRACTIONS.oneSixth,
+      immunity: [CORE_TYPE_IDS.grass],
+    },
   },
   "gmax-volcalith": {
     species: "Coalossal",
-    moveType: "rock",
-    effect: { type: "residual", duration: 4, damage: "1/6", immunity: ["rock"] },
+    moveType: CORE_TYPE_IDS.rock,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.residual,
+      duration: 4,
+      damage: GEN8_GMAX_DAMAGE_FRACTIONS.oneSixth,
+      immunity: [CORE_TYPE_IDS.rock],
+    },
   },
   "gmax-volt-crash": {
     species: "Pikachu",
-    moveType: "electric",
-    effect: { type: "status", status: "par" },
+    moveType: CORE_TYPE_IDS.electric,
+    effect: { type: GEN8_GMAX_EFFECT_TYPES.status, status: GEN8_GMAX_STATUS_IDS.paralysis },
   },
   "gmax-wildfire": {
     species: "Charizard",
-    moveType: "fire",
-    effect: { type: "residual", duration: 4, damage: "1/6", immunity: ["fire"] },
+    moveType: CORE_TYPE_IDS.fire,
+    effect: {
+      type: GEN8_GMAX_EFFECT_TYPES.residual,
+      duration: 4,
+      damage: GEN8_GMAX_DAMAGE_FRACTIONS.oneSixth,
+      immunity: [CORE_TYPE_IDS.fire],
+    },
   },
 };
 
