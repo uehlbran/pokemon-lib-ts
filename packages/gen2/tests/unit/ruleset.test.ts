@@ -13,19 +13,27 @@ import type {
   PrimaryStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
   CORE_GIMMICK_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  createDvs,
+  createFriendship,
+  createMoveSlot,
+  createStatExp,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
-import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS } from "../../src";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 
 const {
@@ -69,28 +77,18 @@ const {
 const { charcoal, mysteryBerry, quickClaw } = GEN2_ITEM_IDS;
 const { quickAttack, tackle } = GEN2_MOVE_IDS;
 const TEST_DATA_MANAGER = createGen2DataManager();
-const GEN2_WEATHER_IDS = {
-  sand: "sand" as const,
-  rain: CORE_WEATHER_IDS.rain,
-} as const;
-
-function createGen2MoveSlot(
+function createMoveSlotFixture(
   moveId: string,
-  overrides: Partial<{ pp: number; maxPp: number }> = {},
-): { moveId: string; pp: number; maxPp: number } {
+  overrides: Partial<{ pp: number }> = {},
+): ReturnType<typeof createMoveSlot> {
   const moveData = TEST_DATA_MANAGER.getMove(moveId);
-
-  return {
-    moveId,
-    pp: overrides.pp ?? moveData.pp,
-    maxPp: overrides.maxPp ?? moveData.pp,
-  };
+  return createMoveSlot(moveId, overrides.pp ?? moveData.pp);
 }
 
 /**
  * Helper to create a minimal ActivePokemon mock for testing.
  */
-function createMockActive(
+function createOnFieldPokemonFixture(
   overrides: Partial<{
     level: number;
     currentHp: number;
@@ -100,26 +98,42 @@ function createMockActive(
     spAttack: number;
     spDefense: number;
     speed: number;
-    status: string | null;
-    types: string[];
+    status: PrimaryStatus | null;
+    types: PokemonType[];
     heldItem: string | null;
     speciesId: number;
     nickname: string | null;
-    moves: Array<{ moveId: string; pp: number; maxPp: number }>;
+    moves: ReturnType<typeof createMoveSlot>[];
+    friendship: number;
+    abilitySlot: PokemonInstance["abilitySlot"];
+    gender: PokemonInstance["gender"];
   }> = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
+  const species =
+    overrides.speciesId === undefined
+      ? TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.bulbasaur)
+      : TEST_DATA_MANAGER.getSpecies(overrides.speciesId);
   return {
     pokemon: {
-      speciesId: overrides.speciesId ?? 1,
+      speciesId: species.id,
       level: overrides.level ?? 50,
       currentHp: overrides.currentHp ?? maxHp,
-      status: (overrides.status as unknown as PrimaryStatus | null) ?? null,
+      status: overrides.status ?? null,
       heldItem: overrides.heldItem ?? null,
       nickname: overrides.nickname ?? null,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: overrides.moves ?? [createGen2MoveSlot(tackle)],
+      ivs: createDvs(),
+      evs: createStatExp(),
+      moves: overrides.moves ?? [createMoveSlotFixture(tackle)],
+      friendship: createFriendship(overrides.friendship ?? species.baseFriendship),
+      abilitySlot: overrides.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
+      gender:
+        overrides.gender ??
+        (species.genderRatio === -1
+          ? CORE_GENDERS.genderless
+          : species.genderRatio === 0
+            ? CORE_GENDERS.female
+            : CORE_GENDERS.male),
       calculatedStats: {
         hp: maxHp,
         attack: overrides.attack ?? 100,
@@ -141,7 +155,7 @@ function createMockActive(
       evasion: 0,
     },
     volatileStatuses: new Map(),
-    types: (overrides.types as unknown as PokemonType[]) ?? [normal],
+    types: overrides.types ?? species.types,
     ability: "",
     lastMoveUsed: null,
     turnsOnField: 0,
@@ -162,7 +176,7 @@ function createMockActive(
 /**
  * Helper to create a minimal BattleSide mock.
  */
-function createMockSide(
+function createBattleSideFixture(
   index: 0 | 1,
   active: ActivePokemon,
   hazards: Array<{ type: string; layers: number }> = [],
@@ -186,7 +200,7 @@ function createMockSide(
 /**
  * Helper to create a minimal BattleState mock.
  */
-function createMockState(
+function createBattleStateFixture(
   side0: BattleSide,
   side1: BattleSide,
   weather: { type: string; turnsLeft: number } | null = null,
@@ -372,7 +386,7 @@ describe("Gen2Ruleset", () => {
       // pre-move, so it must always return false for Gen 2.
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockActive = createMockActive({ status: freeze });
+      const mockActive = createOnFieldPokemonFixture({ status: freeze });
       const rng = new SeededRandom(42);
 
       // Act
@@ -386,7 +400,7 @@ describe("Gen2Ruleset", () => {
       // Source: pret/pokecrystal engine/battle/core.asm:289 HandleDefrost
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockActive = createMockActive({ status: freeze });
+      const mockActive = createOnFieldPokemonFixture({ status: freeze });
       const rng = new SeededRandom(42);
 
       // Act
@@ -422,12 +436,12 @@ describe("Gen2Ruleset", () => {
     it("given a sleep-counter of 1 turn, when the sleep turn resolves, then the Pokemon wakes up and can act", () => {
       // Given a Pokemon that will wake up this turn (turnsLeft = 1)
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: sleep });
+      const mockActivePokemon = createOnFieldPokemonFixture({ status: sleep });
       mockActivePokemon.pokemon.status = sleep;
       mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 1 });
-      const mockState = createMockState(
-        createMockSide(0, mockActivePokemon),
-        createMockSide(1, createMockActive()),
+      const mockState = createBattleStateFixture(
+        createBattleSideFixture(0, mockActivePokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // When processing the sleep turn
@@ -442,12 +456,12 @@ describe("Gen2Ruleset", () => {
     it("given more than 1 sleep turn remaining, when the sleep turn resolves, then the Pokemon stays asleep", () => {
       // Given a Pokemon with multiple sleep turns left
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: sleep });
+      const mockActivePokemon = createOnFieldPokemonFixture({ status: sleep });
       mockActivePokemon.pokemon.status = sleep;
       mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 3 });
-      const mockState = createMockState(
-        createMockSide(0, mockActivePokemon),
-        createMockSide(1, createMockActive()),
+      const mockState = createBattleStateFixture(
+        createBattleSideFixture(0, mockActivePokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // When processing the sleep turn
@@ -462,12 +476,12 @@ describe("Gen2Ruleset", () => {
     it("given exactly 1 sleep turn remaining, when the sleep turn resolves, then the Pokemon wakes up", () => {
       // Given a Pokemon with 1 turn of sleep remaining
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: sleep });
+      const mockActivePokemon = createOnFieldPokemonFixture({ status: sleep });
       mockActivePokemon.pokemon.status = sleep;
       mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 1 });
-      const mockState = createMockState(
-        createMockSide(0, mockActivePokemon),
-        createMockSide(1, createMockActive()),
+      const mockState = createBattleStateFixture(
+        createBattleSideFixture(0, mockActivePokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // When processing the sleep turn
@@ -481,12 +495,12 @@ describe("Gen2Ruleset", () => {
     it("given a sleep counter already at 0, when the sleep turn resolves, then the Pokemon wakes up immediately", () => {
       // Given a Pokemon with 0 turns of sleep remaining
       const ruleset = new Gen2Ruleset();
-      const mockActivePokemon = createMockActive({ status: sleep });
+      const mockActivePokemon = createOnFieldPokemonFixture({ status: sleep });
       mockActivePokemon.pokemon.status = sleep;
       mockActivePokemon.volatileStatuses.set(sleepCounter, { turnsLeft: 0 });
-      const mockState = createMockState(
-        createMockSide(0, mockActivePokemon),
-        createMockSide(1, createMockActive()),
+      const mockState = createBattleStateFixture(
+        createBattleSideFixture(0, mockActivePokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // When processing the sleep turn
@@ -504,8 +518,8 @@ describe("Gen2Ruleset", () => {
     it("given one layer of Spikes, when a grounded Pokemon switches in, then it takes floor(maxHp/8) damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 320, types: [normal] });
-      const side = createMockSide(0, pokemon, [{ type: spikes, layers: 1 }]);
+      const pokemon = createOnFieldPokemonFixture({ maxHp: 320, types: [normal] });
+      const side = createBattleSideFixture(0, pokemon, [{ type: spikes, layers: 1 }]);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -518,8 +532,8 @@ describe("Gen2Ruleset", () => {
     it("given a Flying-type Pokemon, when it switches into Spikes, then it takes no damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 320, types: [flying, normal] });
-      const side = createMockSide(0, pokemon, [{ type: spikes, layers: 1 }]);
+      const pokemon = createOnFieldPokemonFixture({ maxHp: 320, types: [flying, normal] });
+      const side = createBattleSideFixture(0, pokemon, [{ type: spikes, layers: 1 }]);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -531,8 +545,8 @@ describe("Gen2Ruleset", () => {
     it("given 1 max HP, when a grounded Pokemon switches into Spikes, then it still takes 1 damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 1, types: [normal] });
-      const side = createMockSide(0, pokemon, [{ type: spikes, layers: 1 }]);
+      const pokemon = createOnFieldPokemonFixture({ maxHp: 1, types: [normal] });
+      const side = createBattleSideFixture(0, pokemon, [{ type: spikes, layers: 1 }]);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -544,8 +558,8 @@ describe("Gen2Ruleset", () => {
     it("given no Spikes on the field, when a Pokemon switches in, then it takes no hazard damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 320, types: [normal] });
-      const side = createMockSide(0, pokemon);
+      const pokemon = createOnFieldPokemonFixture({ maxHp: 320, types: [normal] });
+      const side = createBattleSideFixture(0, pokemon);
 
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
@@ -586,11 +600,11 @@ describe("Gen2Ruleset", () => {
     it("given a dex number in the Gen 2 range, when validatePokemon runs, then the species is accepted", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.celebi);
       const pokemon = {
         level: 50,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       } as unknown as PokemonInstance;
-      const species = { id: 251, displayName: "Celebi" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -605,7 +619,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 50,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 252, displayName: "Treecko" } as unknown as PokemonSpeciesData;
 
@@ -620,12 +634,12 @@ describe("Gen2Ruleset", () => {
     it("given a Pokemon with a held item, when validatePokemon runs, then the item is accepted", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.snorlax);
       const pokemon = {
         level: 50,
         heldItem: leftovers,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       } as unknown as PokemonInstance;
-      const species = { id: 143, displayName: "Snorlax" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -637,11 +651,11 @@ describe("Gen2Ruleset", () => {
     it("given a Pokemon with zero moves, when validatePokemon runs, then the move-count validation fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
       const pokemon = {
         level: 50,
         moves: [],
       } as unknown as PokemonInstance;
-      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -654,17 +668,17 @@ describe("Gen2Ruleset", () => {
     it("given a Pokemon with five moves, when validatePokemon runs, then the move-count validation fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
       const pokemon = {
         level: 50,
         moves: [
-          { moveId: "a", pp: 1, maxPp: 1 },
-          { moveId: "b", pp: 1, maxPp: 1 },
-          { moveId: "c", pp: 1, maxPp: 1 },
-          { moveId: "d", pp: 1, maxPp: 1 },
-          { moveId: "e", pp: 1, maxPp: 1 },
+          createMoveSlotFixture(tackle),
+          createMoveSlotFixture(quickAttack),
+          createMoveSlotFixture(tackle),
+          createMoveSlotFixture(quickAttack),
+          createMoveSlotFixture(tackle),
         ],
       } as unknown as PokemonInstance;
-      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -676,11 +690,11 @@ describe("Gen2Ruleset", () => {
     it("given an invalid level, when validatePokemon runs, then the level validation fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
       const pokemon = {
         level: 0,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       } as unknown as PokemonInstance;
-      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -697,10 +711,13 @@ describe("Gen2Ruleset", () => {
     it("given a 100% accurate move, when hit chance is checked, then Gen 2 short-circuits before any RNG roll", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
       const move = { accuracy: 100, id: tackle } as unknown as MoveData;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const int = vi.fn();
       const rng = { int } as unknown as SeededRandom;
 
@@ -715,25 +732,33 @@ describe("Gen2Ruleset", () => {
     it("given a 100% accurate move, when hit chance is checked, then it always hits", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
       const move = { accuracy: 100 } as unknown as MoveData;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
 
       // Act / Assert
-      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) })).toBe(true);
+      expect(
+        ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) }),
+      ).toBe(true);
     });
 
     it("given a null-accuracy move, when hit chance is checked, then it always hits", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const attacker = createMockActive();
-      const defender = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
       // Even with -6 evasion stage changes
       defender.statStages.evasion = 6;
       const move = { accuracy: null } as unknown as MoveData;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
 
       // Act
       const hit = ruleset.doesMoveHit({ attacker, defender, move, state, rng });
@@ -750,14 +775,14 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const pokemon = createMockActive({
+      const pokemon = createOnFieldPokemonFixture({
         level: 50,
         attack: 150,
         defense: 100,
       });
-      const state = createMockState(
-        createMockSide(0, pokemon),
-        createMockSide(1, createMockActive()),
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, pokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // Act
@@ -774,15 +799,15 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
       // High attack Pokemon
-      const pokemon = createMockActive({
+      const pokemon = createOnFieldPokemonFixture({
         level: 100,
         maxHp: 300,
         attack: 400,
         defense: 100,
       });
-      const state = createMockState(
-        createMockSide(0, pokemon),
-        createMockSide(1, createMockActive()),
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, pokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // Act
@@ -797,14 +822,14 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const pokemon = createMockActive({
+      const pokemon = createOnFieldPokemonFixture({
         level: 1,
         attack: 1,
         defense: 999,
       });
-      const state = createMockState(
-        createMockSide(0, pokemon),
-        createMockSide(1, createMockActive()),
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, pokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // Act
@@ -823,7 +848,10 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
 
       // Act
-      const result = ruleset.applyAbility("on-switch-in", {} as unknown as AbilityContext);
+      const result = ruleset.applyAbility(
+        CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
+        {} as unknown as AbilityContext,
+      );
 
       // Assert
       expect(result.activated).toBe(false);
@@ -850,10 +878,13 @@ describe("Gen2Ruleset", () => {
     it("given sandstorm and two non-immune Pokemon, when weather effects resolve, then both take damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ maxHp: 400, types: [fire] });
-      const side0 = createMockSide(0, pokemon);
-      const side1 = createMockSide(1, createMockActive({ types: [water] }));
-      const state = createMockState(side0, side1, { type: GEN2_WEATHER_IDS.sand, turnsLeft: 3 });
+      const pokemon = createOnFieldPokemonFixture({ maxHp: 400, types: [fire] });
+      const side0 = createBattleSideFixture(0, pokemon);
+      const side1 = createBattleSideFixture(1, createOnFieldPokemonFixture({ types: [water] }));
+      const state = createBattleStateFixture(side0, side1, {
+        type: CORE_WEATHER_IDS.sand,
+        turnsLeft: 3,
+      });
 
       // Act
       const results = ruleset.applyWeatherEffects(state);
@@ -865,11 +896,14 @@ describe("Gen2Ruleset", () => {
     it("given sandstorm and Rock/Steel Pokemon, when weather effects resolve, then they take no damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const rockPokemon = createMockActive({ types: [rock] });
-      const steelPokemon = createMockActive({ types: [steel] });
-      const side0 = createMockSide(0, rockPokemon);
-      const side1 = createMockSide(1, steelPokemon);
-      const state = createMockState(side0, side1, { type: GEN2_WEATHER_IDS.sand, turnsLeft: 3 });
+      const rockPokemon = createOnFieldPokemonFixture({ types: [rock] });
+      const steelPokemon = createOnFieldPokemonFixture({ types: [steel] });
+      const side0 = createBattleSideFixture(0, rockPokemon);
+      const side1 = createBattleSideFixture(1, steelPokemon);
+      const state = createBattleStateFixture(side0, side1, {
+        type: CORE_WEATHER_IDS.sand,
+        turnsLeft: 3,
+      });
 
       // Act
       const results = ruleset.applyWeatherEffects(state);
@@ -885,12 +919,15 @@ describe("Gen2Ruleset", () => {
     it("given a status move, when critical hit chance is rolled, then it never crits", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const state = createMockState(
-        createMockSide(0, attacker),
-        createMockSide(1, createMockActive()),
+      const attacker = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
-      const statusMove = { category: "status", id: GEN2_MOVE_IDS.toxic } as unknown as MoveData;
+      const statusMove = {
+        category: CORE_MOVE_CATEGORIES.status,
+        id: GEN2_MOVE_IDS.toxic,
+      } as unknown as MoveData;
 
       // Act
       for (let seed = 0; seed < 100; seed++) {
@@ -910,17 +947,17 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const active0 = createMockActive({
+      const active0 = createOnFieldPokemonFixture({
         speed: 50,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const active1 = createMockActive({
+      const active1 = createOnFieldPokemonFixture({
         speed: 200,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const side0 = createMockSide(0, active0);
-      const side1 = createMockSide(1, active1);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, active0);
+      const side1 = createBattleSideFixture(1, active1);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -939,11 +976,11 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const active0 = createMockActive({ moves: [createGen2MoveSlot(tackle)] });
-      const active1 = createMockActive();
-      const side0 = createMockSide(0, active0);
-      const side1 = createMockSide(1, active1);
-      const state = createMockState(side0, side1);
+      const active0 = createOnFieldPokemonFixture({ moves: [createMoveSlotFixture(tackle)] });
+      const active1 = createOnFieldPokemonFixture();
+      const side0 = createBattleSideFixture(0, active0);
+      const side1 = createBattleSideFixture(1, active1);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -963,17 +1000,17 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
       // quick-attack has priority +1 (Showdown-compatible scale), tackle has priority 0
-      const active0 = createMockActive({
+      const active0 = createOnFieldPokemonFixture({
         speed: 50,
-        moves: [createGen2MoveSlot(quickAttack)],
+        moves: [createMoveSlotFixture(quickAttack)],
       });
-      const active1 = createMockActive({
+      const active1 = createOnFieldPokemonFixture({
         speed: 200,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const side0 = createMockSide(0, active0);
-      const side1 = createMockSide(1, active1);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, active0);
+      const side1 = createBattleSideFixture(1, active1);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -992,17 +1029,17 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const slowActive = createMockActive({
+      const slowActive = createOnFieldPokemonFixture({
         speed: 50,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const fastActive = createMockActive({
+      const fastActive = createOnFieldPokemonFixture({
         speed: 200,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const side0 = createMockSide(0, slowActive);
-      const side1 = createMockSide(1, fastActive);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, slowActive);
+      const side1 = createBattleSideFixture(1, fastActive);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -1020,18 +1057,18 @@ describe("Gen2Ruleset", () => {
     it("given Quick Claw and a slower attacker, when turn order is resolved, then Quick Claw can move first", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const slowActive = createMockActive({
+      const slowActive = createOnFieldPokemonFixture({
         speed: 10,
         heldItem: quickClaw,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const fastActive = createMockActive({
+      const fastActive = createOnFieldPokemonFixture({
         speed: 300,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const side0 = createMockSide(0, slowActive);
-      const side1 = createMockSide(1, fastActive);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, slowActive);
+      const side1 = createBattleSideFixture(1, fastActive);
+      const state = createBattleStateFixture(side0, side1);
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
@@ -1051,32 +1088,28 @@ describe("Gen2Ruleset", () => {
     it("given equal speed on both sides, when turn order is resolved, then the tiebreak key decides the order", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const active0 = createMockActive({
+      const active0 = createOnFieldPokemonFixture({
         speed: 100,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const active1 = createMockActive({
+      const active1 = createOnFieldPokemonFixture({
         speed: 100,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const side0 = createMockSide(0, active0);
-      const side1 = createMockSide(1, active1);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, active0);
+      const side1 = createBattleSideFixture(1, active1);
+      const state = createBattleStateFixture(side0, side1);
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
 
-      const firstSorted = ruleset.resolveTurnOrder(
-        actions,
-        state,
-        { next: vi.fn().mockReturnValueOnce(0.1).mockReturnValueOnce(0.9) } as unknown as SeededRandom,
-      );
-      const secondSorted = ruleset.resolveTurnOrder(
-        actions,
-        state,
-        { next: vi.fn().mockReturnValueOnce(0.9).mockReturnValueOnce(0.1) } as unknown as SeededRandom,
-      );
+      const firstSorted = ruleset.resolveTurnOrder(actions, state, {
+        next: vi.fn().mockReturnValueOnce(0.1).mockReturnValueOnce(0.9),
+      } as unknown as SeededRandom);
+      const secondSorted = ruleset.resolveTurnOrder(actions, state, {
+        next: vi.fn().mockReturnValueOnce(0.9).mockReturnValueOnce(0.1),
+      } as unknown as SeededRandom);
 
       // Assert
       expect(firstSorted[0].side).toBe(0);
@@ -1087,11 +1120,11 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const slowActive = createMockActive({ speed: 50 });
-      const fastActive = createMockActive({ speed: 200 });
-      const side0 = createMockSide(0, slowActive);
-      const side1 = createMockSide(1, fastActive);
-      const state = createMockState(side0, side1);
+      const slowActive = createOnFieldPokemonFixture({ speed: 50 });
+      const fastActive = createOnFieldPokemonFixture({ speed: 200 });
+      const side0 = createBattleSideFixture(0, slowActive);
+      const side1 = createBattleSideFixture(1, fastActive);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "struggle", side: 0 },
@@ -1109,8 +1142,8 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const active0 = createMockActive({ moves: [createGen2MoveSlot(tackle)] });
-      const side0 = createMockSide(0, active0);
+      const active0 = createOnFieldPokemonFixture({ moves: [createMoveSlotFixture(tackle)] });
+      const side0 = createBattleSideFixture(0, active0);
       // Create a side with no active Pokemon
       const side1 = {
         index: 1,
@@ -1126,7 +1159,7 @@ describe("Gen2Ruleset", () => {
         faintCount: 0,
         gimmickUsed: false,
       } as unknown as BattleSide;
-      const state = createMockState(side0, side1);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -1144,17 +1177,17 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const active0 = createMockActive({
+      const active0 = createOnFieldPokemonFixture({
         speed: 100,
         moves: [{ moveId: "nonexistent-move", pp: 10, maxPp: 10 }],
       });
-      const active1 = createMockActive({
+      const active1 = createOnFieldPokemonFixture({
         speed: 100,
         moves: [{ moveId: "another-fake-move", pp: 10, maxPp: 10 }],
       });
-      const side0 = createMockSide(0, active0);
-      const side1 = createMockSide(1, active1);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, active0);
+      const side1 = createBattleSideFixture(1, active1);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -1174,18 +1207,18 @@ describe("Gen2Ruleset", () => {
       const rng = new SeededRandom(42);
       // Paralyzed Pokemon with 200 speed -> effective 50
       // Other Pokemon with 60 speed -> faster after paralysis
-      const paralyzedActive = createMockActive({
+      const paralyzedActive = createOnFieldPokemonFixture({
         speed: 200,
         status: paralysis,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const healthyActive = createMockActive({
+      const healthyActive = createOnFieldPokemonFixture({
         speed: 60,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       });
-      const side0 = createMockSide(0, paralyzedActive);
-      const side1 = createMockSide(1, healthyActive);
-      const state = createMockState(side0, side1);
+      const side0 = createBattleSideFixture(0, paralyzedActive);
+      const side1 = createBattleSideFixture(1, healthyActive);
+      const state = createBattleStateFixture(side0, side1);
 
       const actions: BattleAction[] = [
         { type: "move", side: 0, moveIndex: 0 },
@@ -1207,11 +1240,14 @@ describe("Gen2Ruleset", () => {
     it("given positive accuracy stages, when hit chance is checked, then the threshold increases exactly", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
       attacker.statStages.accuracy = 2;
-      const defender = createMockActive();
+      const defender = createOnFieldPokemonFixture();
       const move = { accuracy: 50 } as unknown as MoveData;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const hitRng = { int: () => 209 } as unknown as SeededRandom;
       const missRng = { int: () => 210 } as unknown as SeededRandom;
 
@@ -1223,11 +1259,14 @@ describe("Gen2Ruleset", () => {
     it("given a negative net accuracy stage, when hit chance is checked, then the threshold decreases exactly", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
       defender.statStages.evasion = 2;
       const move = { accuracy: 100 } as unknown as MoveData;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const hitRng = { int: () => 152 } as unknown as SeededRandom;
       const missRng = { int: () => 153 } as unknown as SeededRandom;
 
@@ -1243,9 +1282,12 @@ describe("Gen2Ruleset", () => {
     it("given a move with no effect, when executeMoveEffect runs, then it returns the zero-value payload", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = { id: tackle, effect: null } as unknown as MoveData;
       const rng = new SeededRandom(42);
 
@@ -1276,9 +1318,12 @@ describe("Gen2Ruleset", () => {
     it("given a successful status-chance effect, when executeMoveEffect runs, then it inflicts the status", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ types: [ice] });
-      const defender = createMockActive({ types: [normal] });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ types: [ice] });
+      const defender = createOnFieldPokemonFixture({ types: [normal] });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.iceBeam,
         type: ice,
@@ -1311,9 +1356,12 @@ describe("Gen2Ruleset", () => {
     it("given a status-chance move, when the target already has a status, then no additional status is inflicted", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive({ status: paralysis });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture({ status: paralysis });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.thunder,
         effect: { type: "status-chance", status: paralysis, chance: 100 },
@@ -1345,9 +1393,12 @@ describe("Gen2Ruleset", () => {
     it("given a status-chance burn move, when the target is Fire-type, then Gen 2 type immunity prevents burn", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive({ types: [fire] });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture({ types: [fire] });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.flamethrower,
         effect: { type: "status-chance", status: burn, chance: 100 },
@@ -1379,9 +1430,12 @@ describe("Gen2Ruleset", () => {
     it("given a status-guaranteed effect, when executeMoveEffect runs, then it inflicts the status", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive({ types: [normal] });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture({ types: [normal] });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.toxic,
         effect: { type: "status-guaranteed", status: badlyPoisoned },
@@ -1413,9 +1467,12 @@ describe("Gen2Ruleset", () => {
     it("given a guaranteed-status move, when the target already has a status, then no replacement status is inflicted", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive({ status: burn });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture({ status: burn });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.thunderWave,
         effect: { type: "status-guaranteed", status: paralysis },
@@ -1447,9 +1504,12 @@ describe("Gen2Ruleset", () => {
     it("given a successful stat-change effect, when executeMoveEffect runs, then it applies the stat stage change", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.swordsDance,
         effect: {
@@ -1486,9 +1546,12 @@ describe("Gen2Ruleset", () => {
     it("given a stat-change effect with a failed 0-255 roll, when executeMoveEffect runs, then it applies no stat changes", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.psychic,
         effect: {
@@ -1524,9 +1587,12 @@ describe("Gen2Ruleset", () => {
     it("given a recoil effect, when executeMoveEffect runs, then it applies the exact configured recoil fraction", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const damageDealt = 100;
       const move = {
         id: GEN2_MOVE_IDS.doubleEdge,
@@ -1551,9 +1617,12 @@ describe("Gen2Ruleset", () => {
     it("given a drain effect, when executeMoveEffect runs, then it heals exactly the configured fraction of dealt damage", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const damageDealt = 80;
       const move = {
         id: GEN2_MOVE_IDS.gigaDrain,
@@ -1579,9 +1648,12 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const attackerMaxHp = 300;
-      const attacker = createMockActive({ maxHp: attackerMaxHp });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ maxHp: attackerMaxHp });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.recover,
         effect: { type: "heal", amount: 0.5 },
@@ -1605,9 +1677,12 @@ describe("Gen2Ruleset", () => {
     it("given a multi-effect move, when executeMoveEffect runs, then each sub-effect is applied", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive({ types: [normal] });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture({ types: [normal] });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.firePunch,
         effect: {
@@ -1650,9 +1725,12 @@ describe("Gen2Ruleset", () => {
     it("given a volatile-status effect, when executeMoveEffect runs, then it inflicts the volatile status", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.confuseRay,
         effect: { type: "volatile-status", status: confusion, chance: 100 },
@@ -1684,9 +1762,12 @@ describe("Gen2Ruleset", () => {
     it("given a volatile-status move with a failed 0-255 roll, when executeMoveEffect runs, then it applies no volatile", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.headbutt,
         effect: { type: "volatile-status", status: flinch, chance: 1 },
@@ -1717,12 +1798,15 @@ describe("Gen2Ruleset", () => {
     it("given a weather effect, when executeMoveEffect runs, then it returns the exact weather payload for the engine to apply", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.rainDance,
-        effect: { type: "weather", weather: GEN2_WEATHER_IDS.rain, turns: 5 },
+        effect: { type: "weather", weather: CORE_WEATHER_IDS.rain, turns: 5 },
       } as unknown as MoveData;
 
       // Act
@@ -1738,7 +1822,7 @@ describe("Gen2Ruleset", () => {
       // Assert
       // Source: the move effect specifies a five-turn Rain Dance payload.
       expect(result.weatherSet).toEqual({
-        weather: GEN2_WEATHER_IDS.rain,
+        weather: CORE_WEATHER_IDS.rain,
         turns: 5,
         source: GEN2_MOVE_IDS.rainDance,
       });
@@ -1747,11 +1831,11 @@ describe("Gen2Ruleset", () => {
     it("given an entry-hazard effect, when executeMoveEffect runs, then it targets the defender side with Spikes", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const side0 = createMockSide(0, attacker);
-      const side1 = createMockSide(1, defender);
-      const state = createMockState(side0, side1);
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const side0 = createBattleSideFixture(0, attacker);
+      const side1 = createBattleSideFixture(1, defender);
+      const state = createBattleStateFixture(side0, side1);
       const move = {
         id: GEN2_MOVE_IDS.spikes,
         effect: { type: "entry-hazard", hazard: spikes },
@@ -1777,9 +1861,12 @@ describe("Gen2Ruleset", () => {
     it("given a self-targeted switch-out effect, when executeMoveEffect runs, then it marks the attacker to switch out", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.batonPass,
         effect: { type: "switch-out", target: "self" },
@@ -1811,9 +1898,12 @@ describe("Gen2Ruleset", () => {
     it("given a protect effect, when executeMoveEffect runs, then it returns the protect volatile for the engine to apply", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.protect,
         effect: { type: "protect" },
@@ -1845,9 +1935,12 @@ describe("Gen2Ruleset", () => {
     it("given a remove-hazards effect, when executeMoveEffect runs, then it emits the exact hazard-clearing message", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ nickname: "Starmie" });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ nickname: "Starmie" });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: "rapid-spin-generic",
         effect: { type: "remove-hazards" },
@@ -1870,9 +1963,12 @@ describe("Gen2Ruleset", () => {
     it("given fixed-damage, level-damage, ohko, and damage effects, when executeMoveEffect runs, then they are treated as no-ops", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const rng = new SeededRandom(42);
 
       for (const effectType of ["fixed-damage", "level-damage", "ohko", "damage"]) {
@@ -1900,9 +1996,12 @@ describe("Gen2Ruleset", () => {
     it("given terrain, screen, multi-hit, and two-turn effects, when executeMoveEffect runs, then they are treated as no-ops", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const rng = new SeededRandom(42);
 
       for (const effectType of ["terrain", "screen", "multi-hit", "two-turn"]) {
@@ -1934,9 +2033,16 @@ describe("Gen2Ruleset", () => {
     it("given Belly Drum, when the user has more than half HP, then it pays half HP and maximizes Attack", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ maxHp: 200, currentHp: 200, nickname: "Poliwrath" });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({
+        maxHp: 200,
+        currentHp: 200,
+        nickname: "Poliwrath",
+      });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.bellyDrum,
         effect: { type: "custom" },
@@ -1972,9 +2078,16 @@ describe("Gen2Ruleset", () => {
     it("given Belly Drum at 50% HP or below, when executeMoveEffect runs, then it fails without recoil or stat changes", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ maxHp: 200, currentHp: 99, nickname: "Poliwrath" });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({
+        maxHp: 200,
+        currentHp: 99,
+        nickname: "Poliwrath",
+      });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.bellyDrum,
         effect: { type: "custom" },
@@ -2003,9 +2116,12 @@ describe("Gen2Ruleset", () => {
     it("given Rapid Spin, when executeMoveEffect runs, then it emits the hazard-clearing message", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ nickname: "Starmie" });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ nickname: "Starmie" });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.rapidSpin,
         effect: { type: "custom" },
@@ -2028,9 +2144,12 @@ describe("Gen2Ruleset", () => {
     it("given Mean Look, when executeMoveEffect runs, then it inflicts the trapped volatile", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.meanLook,
         effect: { type: "custom" },
@@ -2062,9 +2181,12 @@ describe("Gen2Ruleset", () => {
     it("given Spider Web, when executeMoveEffect runs, then it inflicts the trapped volatile", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.spiderWeb,
         effect: { type: "custom" },
@@ -2087,9 +2209,12 @@ describe("Gen2Ruleset", () => {
     it("given Thief and an itemless attacker, when the defender holds an item, then the item is transferred to the attacker", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ heldItem: null, nickname: "Sneasel" });
-      const defender = createMockActive({ heldItem: leftovers, nickname: "Snorlax" });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ heldItem: null, nickname: "Sneasel" });
+      const defender = createOnFieldPokemonFixture({ heldItem: leftovers, nickname: "Snorlax" });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.thief,
         effect: { type: "custom" },
@@ -2117,9 +2242,12 @@ describe("Gen2Ruleset", () => {
     it("given Thief and an attacker that already holds an item, when executeMoveEffect runs, then no item is stolen", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ heldItem: charcoal });
-      const defender = createMockActive({ heldItem: leftovers });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ heldItem: charcoal });
+      const defender = createOnFieldPokemonFixture({ heldItem: leftovers });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.thief,
         effect: { type: "custom" },
@@ -2142,9 +2270,12 @@ describe("Gen2Ruleset", () => {
     it("given Baton Pass, when executeMoveEffect runs, then it requests a switching baton-pass handoff", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.batonPass,
         effect: { type: "custom" },
@@ -2177,9 +2308,12 @@ describe("Gen2Ruleset", () => {
     it("given an unsupported custom move effect, when executeMoveEffect runs, then it returns the default no-op result", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: "some-unknown-move",
         effect: { type: "custom" },
@@ -2216,9 +2350,12 @@ describe("Gen2Ruleset", () => {
     it("given Explosion, when executeMoveEffect runs, then it marks the user to faint", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ nickname: "Gengar" });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ nickname: "Gengar" });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.explosion,
         effect: { type: "custom" },
@@ -2246,9 +2383,12 @@ describe("Gen2Ruleset", () => {
     it("given Self-Destruct, when executeMoveEffect runs, then it marks the user to faint", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ nickname: "Electrode" });
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ nickname: "Electrode" });
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.selfDestruct,
         effect: { type: "custom" },
@@ -2276,9 +2416,12 @@ describe("Gen2Ruleset", () => {
     it("given a regular damaging move, when executeMoveEffect runs, then it emits no self-faint signal", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: tackle,
         effect: null,
@@ -2408,9 +2551,9 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 101,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       } as unknown as PokemonInstance;
-      const species = { id: 25, displayName: "Pikachu" } as unknown as PokemonSpeciesData;
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -2426,7 +2569,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const pokemon = {
         level: 50,
-        moves: [createGen2MoveSlot(tackle)],
+        moves: [createMoveSlotFixture(tackle)],
       } as unknown as PokemonInstance;
       const species = { id: 0, displayName: "MissingNo" } as unknown as PokemonSpeciesData;
 
@@ -2464,10 +2607,10 @@ describe("Gen2Ruleset", () => {
     it("given confusion self-hit damage, when different RNG seeds are used, then the damage stays identical", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ level: 50, attack: 100, defense: 100 });
-      const state = createMockState(
-        createMockSide(0, pokemon),
-        createMockSide(1, createMockActive()),
+      const pokemon = createOnFieldPokemonFixture({ level: 50, attack: 100, defense: 100 });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, pokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // Act
@@ -2489,26 +2632,36 @@ describe("Gen2Ruleset", () => {
     it("given a 100% accurate move at zero stat stages, when checking hit chance, then Gen 2 short-circuits to a guaranteed hit", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
-      const defender = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
+      const defender = createOnFieldPokemonFixture();
       const move = { accuracy: 100, id: tackle } as any;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
 
       // Act / Assert: floor(100 * 255 / 100) = 255, which short-circuits to hit.
-      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) })).toBe(true);
+      expect(
+        ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) }),
+      ).toBe(true);
     });
 
     it("given +6 accuracy stages on a 70% move, when checking hit chance, then Gen 2 caps at 255 and always hits", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive();
+      const attacker = createOnFieldPokemonFixture();
       attacker.statStages.accuracy = 6;
-      const defender = createMockActive();
+      const defender = createOnFieldPokemonFixture();
       const move = { accuracy: 70, id: GEN2_MOVE_IDS.thunder } as any;
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
 
       // Act / Assert: floor(70 * 255 / 100) = 178, * 3 = 534, capped at 255 → always hits.
-      expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) })).toBe(true);
+      expect(
+        ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) }),
+      ).toBe(true);
     });
   });
 
@@ -2518,9 +2671,12 @@ describe("Gen2Ruleset", () => {
     it("given a 100% status-chance effect, when the RNG rolls 255, then Gen 2 still allows the 1/256 failure", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const attacker = createMockActive({ types: [fire] });
-      const defender = createMockActive({ types: [normal] });
-      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+      const attacker = createOnFieldPokemonFixture({ types: [fire] });
+      const defender = createOnFieldPokemonFixture({ types: [normal] });
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, attacker),
+        createBattleSideFixture(1, defender),
+      );
       const move = {
         id: GEN2_MOVE_IDS.flamethrower,
         type: fire,
@@ -2555,11 +2711,11 @@ describe("Gen2Ruleset", () => {
     it("given badly-poisoned status and toxic-counter volatile, when the Pokemon switches out, then it clears the counter and reverts to poison", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = createMockActive({ status: badlyPoisoned });
+      const pokemon = createOnFieldPokemonFixture({ status: badlyPoisoned });
       pokemon.volatileStatuses.set(toxicCounter, 4);
-      const state = createMockState(
-        createMockSide(0, pokemon),
-        createMockSide(1, createMockActive()),
+      const state = createBattleStateFixture(
+        createBattleSideFixture(0, pokemon),
+        createBattleSideFixture(1, createOnFieldPokemonFixture()),
       );
 
       // Act
@@ -2583,7 +2739,7 @@ describe("Gen2Ruleset", () => {
     it("given attacker with 200 max HP and damage=100, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive(); // maxHp defaults to 200
+      const mockAttacker = createOnFieldPokemonFixture(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
       // Assert: floor(200/4) = 50
@@ -2594,7 +2750,7 @@ describe("Gen2Ruleset", () => {
     it("given attacker with 200 max HP and damage=1, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive(); // maxHp defaults to 200
+      const mockAttacker = createOnFieldPokemonFixture(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
       // Assert: floor(200/4) = 50 (damage dealt is irrelevant)
@@ -2605,7 +2761,7 @@ describe("Gen2Ruleset", () => {
     it("given attacker with 200 max HP and damage=0, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive(); // maxHp defaults to 200
+      const mockAttacker = createOnFieldPokemonFixture(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
       // Assert: floor(200/4) = 50 (damage dealt is irrelevant)
@@ -2616,7 +2772,7 @@ describe("Gen2Ruleset", () => {
     it("given attacker with 200 max HP and damage=101, when calculating recoil, then returns 50 (floor(200/4))", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const mockAttacker = createMockActive(); // maxHp defaults to 200
+      const mockAttacker = createOnFieldPokemonFixture(); // maxHp defaults to 200
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
       // Assert: floor(200/4) = 50 (damage dealt is irrelevant)
@@ -2632,7 +2788,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(0);
-      const mockAttacker = createMockActive();
+      const mockAttacker = createOnFieldPokemonFixture();
       // Act
       const count = ruleset.rollMultiHitCount(mockAttacker, rng);
       // Assert: must be one of the values in the weighted array
@@ -2643,7 +2799,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const mockAttacker = createMockActive();
+      const mockAttacker = createOnFieldPokemonFixture();
       // Act / Assert
       for (let i = 0; i < 100; i++) {
         const count = ruleset.rollMultiHitCount(mockAttacker, rng);
@@ -2655,7 +2811,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      const mockAttacker = createMockActive();
+      const mockAttacker = createOnFieldPokemonFixture();
       const counts = new Set<number>();
       // Act
       for (let i = 0; i < 100; i++) {
