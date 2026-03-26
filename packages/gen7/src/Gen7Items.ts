@@ -10,6 +10,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -1435,11 +1436,11 @@ function handleStatBoostBetweenTurns(item: string, context: ItemContext): ItemRe
   // Map of stat-pinch berries to their stat boost
   // Source: Showdown data/items.ts -- liechi-berry raises attack, ganlon-berry raises defense, etc.
   const STAT_PINCH_BERRIES: Record<string, { stat: string; displayStat: string }> = {
-    [GEN7_ITEM_IDS.liechiBerry]: { stat: "attack", displayStat: "Attack" },
-    [GEN7_ITEM_IDS.ganlonBerry]: { stat: "defense", displayStat: "Defense" },
-    [GEN7_ITEM_IDS.salacBerry]: { stat: "speed", displayStat: "Speed" },
-    [GEN7_ITEM_IDS.petayaBerry]: { stat: "spAttack", displayStat: "Sp. Atk" },
-    [GEN7_ITEM_IDS.apicotBerry]: { stat: "spDefense", displayStat: "Sp. Def" },
+    [GEN7_ITEM_IDS.liechiBerry]: { stat: CORE_STAT_IDS.attack, displayStat: "Attack" },
+    [GEN7_ITEM_IDS.ganlonBerry]: { stat: CORE_STAT_IDS.defense, displayStat: "Defense" },
+    [GEN7_ITEM_IDS.salacBerry]: { stat: CORE_STAT_IDS.speed, displayStat: "Speed" },
+    [GEN7_ITEM_IDS.petayaBerry]: { stat: CORE_STAT_IDS.spAttack, displayStat: "Sp. Atk" },
+    [GEN7_ITEM_IDS.apicotBerry]: { stat: CORE_STAT_IDS.spDefense, displayStat: "Sp. Def" },
   };
 
   const berryData = STAT_PINCH_BERRIES[item];

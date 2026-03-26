@@ -2,6 +2,7 @@ import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
   CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -352,7 +353,7 @@ export function handleGen9IntrepidSwordTrigger(ctx: AbilityContext): AbilityResu
       {
         effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
         target: BATTLE_EFFECT_TARGETS.self,
-        stat: "attack",
+        stat: CORE_STAT_IDS.attack,
         stages: 1,
       },
     ],
@@ -395,7 +396,7 @@ export function handleGen9DauntlessShieldTrigger(ctx: AbilityContext): AbilityRe
       {
         effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
         target: BATTLE_EFFECT_TARGETS.self,
-        stat: "defense",
+        stat: CORE_STAT_IDS.defense,
         stages: 1,
       },
     ],
