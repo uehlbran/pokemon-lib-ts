@@ -48,13 +48,20 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  BASE_ABILITY_TYPE_IMMUNITIES,
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  BASE_TYPE_RESIST_BERRIES,
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   getStatStageMultiplier,
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import {
   getFluffyModifier,
   getHadronEngineSpAModifier,
@@ -90,24 +97,8 @@ const GIRATINA_SPECIES_ID = 487;
  * Source: Bulbapedia -- type-resist berries
  */
 export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
-  "roseli-berry": "fairy",
+  ...BASE_TYPE_RESIST_BERRIES,
+  [CORE_ITEM_IDS.roseliBerry]: CORE_TYPE_IDS.fairy,
 };
 
 // ---- Type-Boosting Items ----
@@ -130,7 +121,7 @@ const TYPE_BOOST_ITEMS = BASE_TYPE_BOOST_ITEMS;
  */
 const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
   ...BASE_PLATE_ITEMS,
-  "pixie-plate": "fairy",
+  [CORE_ITEM_IDS.pixiePlate]: CORE_TYPE_IDS.fairy,
 };
 
 // ---- Gem Items (Gen 9) ----
@@ -144,7 +135,7 @@ const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
  * Source: Bulbapedia "Gem" -- "From Generation VII onwards, only Normal Gem is available."
  */
 const GEM_ITEMS: Readonly<Record<string, string>> = {
-  "normal-gem": "normal",
+  [CORE_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
 };
 
 /**
@@ -178,16 +169,8 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  * Source: Bulbapedia -- Motor Drive, Dry Skin, etc.
  */
 const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
-  "storm-drain": "water",
-  "lightning-rod": "electric",
-  "sap-sipper": "grass",
-  "earth-eater": "ground",
+  ...BASE_ABILITY_TYPE_IMMUNITIES,
+  [GEN9_ABILITY_IDS.earthEater]: CORE_TYPE_IDS.ground,
 };
 
 // ---- Recoil Detection Helper ----
@@ -262,23 +245,25 @@ function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): bo
  */
 export function isGen9Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
-  if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
-  if (pokemon.types.includes("flying")) return false;
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
   if (
-    pokemon.pokemon.heldItem === "air-balloon" &&
+    pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon &&
     !itemsSuppressed &&
     pokemon.pokemon.currentHp > 0
   ) {
     return false;
   }
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
-  if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis as VolatileStatus)) return false;
 
   return true;
 }
@@ -543,14 +528,15 @@ function getDefenseStat(
   // checked separately in calculateGen9Damage where state is available.
   // Source: Showdown sim/pokemon.ts -- ignoringItem() checks klutz + embargo + magicRoom
   const defenderItemsSuppressed =
-    defender.ability === "klutz" || defender.volatileStatuses.has("embargo");
+    defender.ability === CORE_ABILITY_IDS.klutz ||
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
 
   // Deep Sea Scale: 2x SpDef for Clamperl (366)
   // Source: Showdown data/items.ts -- Deep Sea Scale
   if (
     !defenderItemsSuppressed &&
     !isPhysical &&
-    defenderItem === "deep-sea-scale" &&
+    defenderItem === CORE_ITEM_IDS.deepSeaScale &&
     defenderSpecies === CLAMPERL_SPECIES_ID
   ) {
     baseStat = baseStat * 2;
@@ -558,7 +544,7 @@ function getDefenseStat(
 
   // Eviolite: 1.5x Def and SpDef for not-fully-evolved Pokemon
   // Source: Showdown data/items.ts -- Eviolite onModifyDef / onModifySpD
-  if (!defenderItemsSuppressed && defenderItem === "eviolite") {
+  if (!defenderItemsSuppressed && defenderItem === CORE_ITEM_IDS.eviolite) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -789,7 +775,7 @@ export function calculateGen9Damage(
 
   // -ate abilities: change Normal-type moves to the ability's type + 1.2x power (Gen 9)
   const ateType = ATE_ABILITY_TYPES[attackerAbility];
-  if (move.type === "normal" && ateType) {
+  if (move.type === CORE_TYPE_IDS.normal && ateType) {
     effectiveMoveType = ateType;
     ateBoostApplied = true;
   }
@@ -797,12 +783,12 @@ export function calculateGen9Damage(
   // Normalize: all moves become Normal type + 1.2x boost in Gen 7+
   // Source: Showdown data/abilities.ts -- Normalize Gen 7+: includes 1.2x power boost
   if (attackerAbility === "normalize") {
-    effectiveMoveType = "normal";
+    effectiveMoveType = CORE_TYPE_IDS.normal;
     ateBoostApplied = true;
   }
 
   // Klutz check
-  const attackerHasKlutz = attackerAbility === "klutz";
+  const attackerHasKlutz = attackerAbility === CORE_ABILITY_IDS.klutz;
   const attackerItem = attacker.pokemon.heldItem;
 
   // ---- Pre-damage base power modifications ----
@@ -820,7 +806,7 @@ export function calculateGen9Damage(
 
   // Gem boost: only Normal Gem available in Gen 9, 1.3x via pokeRound
   // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096])
-  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
+  const attackerHasEmbargo = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   let gemConsumed = false;
   if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
@@ -848,10 +834,10 @@ export function calculateGen9Damage(
   // Source: Showdown data/items.ts -- Soul Dew Gen 7+: onBasePower: chainModify([4915, 4096])
   if (
     !attackerHasKlutz &&
-    attackerItem === "soul-dew" &&
+    attackerItem === CORE_ITEM_IDS.soulDew &&
     (attacker.pokemon.speciesId === LATIAS_SPECIES_ID ||
       attacker.pokemon.speciesId === LATIOS_SPECIES_ID) &&
-    (effectiveMoveType === "psychic" || effectiveMoveType === "dragon")
+    (effectiveMoveType === CORE_TYPE_IDS.psychic || effectiveMoveType === CORE_TYPE_IDS.dragon)
   ) {
     power = pokeRound(power, 4915);
   }
@@ -877,7 +863,10 @@ export function calculateGen9Damage(
 
   // Flash Fire volatile: 1.5x power for Fire moves
   // Source: Showdown data/abilities.ts -- Flash Fire
-  if (effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+  if (
+    effectiveMoveType === CORE_TYPE_IDS.fire &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire)
+  ) {
     power = Math.floor(power * 1.5);
   }
 
@@ -887,7 +876,11 @@ export function calculateGen9Damage(
     attackerAbility === "mold-breaker" ||
     attackerAbility === "teravolt" ||
     attackerAbility === "turboblaze";
-  if (!moldBreaker && defenderAbility === "dry-skin" && effectiveMoveType === "fire") {
+  if (
+    !moldBreaker &&
+    defenderAbility === CORE_ABILITY_IDS.drySkin &&
+    effectiveMoveType === CORE_TYPE_IDS.fire
+  ) {
     power = Math.floor(power * 1.25);
   }
 
@@ -1076,14 +1069,15 @@ export function calculateGen9Damage(
 
   const gravityActive = context.state.gravity?.active ?? false;
   const ironBallGrounded =
-    defender.pokemon.heldItem === "iron-ball" && effectiveMoveType === "ground";
+    defender.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+    effectiveMoveType === CORE_TYPE_IDS.ground;
 
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
       const isLevitateGrounded =
-        defenderAbility === "levitate" &&
-        effectiveMoveType === "ground" &&
+        defenderAbility === CORE_ABILITY_IDS.levitate &&
+        effectiveMoveType === CORE_TYPE_IDS.ground &&
         (gravityActive || ironBallGrounded);
       if (!isLevitateGrounded) {
         return {
@@ -1100,8 +1094,8 @@ export function calculateGen9Damage(
   // Magnet Rise: Ground immunity (not ability-based, Mold Breaker does NOT bypass)
   // Source: Showdown -- Magnet Rise
   if (
-    effectiveMoveType === "ground" &&
-    defender.volatileStatuses.has("magnet-rise") &&
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise) &&
     !gravityActive &&
     !ironBallGrounded
   ) {
@@ -1148,7 +1142,7 @@ export function calculateGen9Damage(
   if (
     !moldBreaker &&
     defenderAbility === "thick-fat" &&
-    (effectiveMoveType === "fire" || effectiveMoveType === "ice")
+    (effectiveMoveType === CORE_TYPE_IDS.fire || effectiveMoveType === CORE_TYPE_IDS.ice)
   ) {
     effectiveAttack = Math.floor(attack / 2);
     abilityMultiplier = 0.5;
@@ -1156,7 +1150,7 @@ export function calculateGen9Damage(
 
   // Heatproof: halves fire damage
   // Source: Showdown data/abilities.ts -- Heatproof
-  if (!moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire") {
+  if (!moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === CORE_TYPE_IDS.fire) {
     power = Math.floor(power / 2);
     abilityMultiplier *= 0.5;
   }
@@ -1267,23 +1261,23 @@ export function calculateGen9Damage(
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
   if (
     (gravityActive || ironBallGrounded) &&
-    effectiveMoveType === "ground" &&
-    defender.types.includes("flying")
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.types.includes(CORE_TYPE_IDS.flying)
   ) {
-    const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
-    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
+    const nonFlyingTypes = defender.types.filter((t) => t !== CORE_TYPE_IDS.flying);
+    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : [CORE_TYPE_IDS.normal];
   }
   let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
 
   // Scrappy: Normal and Fighting hit Ghost
   // Source: Showdown data/abilities.ts -- Scrappy
   if (
-    attackerAbility === "scrappy" &&
+    attackerAbility === CORE_ABILITY_IDS.scrappy &&
     effectiveness === 0 &&
-    (effectiveMoveType === "normal" || effectiveMoveType === "fighting") &&
-    defender.types.includes("ghost")
+    (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
+    defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
-    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
+    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== CORE_TYPE_IDS.ghost);
     effectiveness =
       nonGhostTypes.length > 0
         ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
@@ -1507,7 +1501,7 @@ export function calculateGen9Damage(
   let typeResistBerryConsumed: string | null = null;
   const defenderItemForBerry = defender.pokemon.heldItem;
   const defenderHasKlutzForBerry = defender.ability === "klutz";
-  const defenderHasEmbargoForBerry = defender.volatileStatuses.has("embargo");
+  const defenderHasEmbargoForBerry = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   const magicRoomActive = context.state?.magicRoom?.active ?? false;
   if (
     defenderItemForBerry &&
@@ -1519,7 +1513,7 @@ export function calculateGen9Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === "normal" || effectiveness > 1) {
+      if (resistType === CORE_TYPE_IDS.normal || effectiveness > 1) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound
         typeResistBerryConsumed = defenderItemForBerry;
       }
