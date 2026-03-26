@@ -12,11 +12,17 @@
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -41,7 +47,7 @@ function getGen5Move(id: string): MoveData {
   return { ...move, flags: { ...move.flags } };
 }
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -55,7 +61,7 @@ function makeActive(overrides: {
   heldItem?: string | null;
   status?: string | null;
   speciesId?: number;
-  gender?: "male" | "female" | "genderless";
+  gender?: (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
@@ -73,16 +79,16 @@ function makeActive(overrides: {
       level: overrides.level ?? 50,
       experience: 0,
       nature: GEN5_NATURE_IDS.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: (overrides.gender ?? "male") as any,
+      friendship: createFriendship(0),
+      gender: overrides.gender ?? CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -93,13 +99,12 @@ function makeActive(overrides: {
     },
     teamSlot: 0,
     statStages: {
+      ...createDefaultStatStages(),
       attack: overrides.statStages?.attack ?? 0,
       defense: overrides.statStages?.defense ?? 0,
       spAttack: overrides.statStages?.spAttack ?? 0,
       spDefense: overrides.statStages?.spDefense ?? 0,
       speed: overrides.statStages?.speed ?? 0,
-      accuracy: 0,
-      evasion: 0,
     },
     volatileStatuses: overrides.volatiles ?? new Map(),
     types: overrides.types ?? [CORE_TYPE_IDS.normal],
@@ -126,7 +131,7 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -141,7 +146,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -150,10 +155,10 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
+    attacker: overrides.attacker ?? createOnFieldPokemon({}),
+    defender: overrides.defender ?? createOnFieldPokemon({}),
     move: overrides.move ?? getGen5Move(GEN5_MOVE_IDS.tackle),
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   };
@@ -168,13 +173,13 @@ const typeChart = GEN5_TYPE_CHART as Record<string, Record<string, number>>;
 describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () => {
   it("given attacker has Simple with +2 atk stages and defender has Unaware, when calculating damage, then Unaware ignores stages (Unaware beats Simple)", () => {
     // Source: Showdown data/abilities.ts -- Unaware onAnyModifyBoost; Simple.
-    const attacker = makeActive({
+    const attacker = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.simple,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 },
     });
-    const defenderUnaware = makeActive({
+    const defenderUnaware = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.unaware,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
@@ -182,24 +187,24 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     const move = getGen5Move(GEN5_MOVE_IDS.tackle);
 
     const resultUnaware = calculateGen5Damage(
-      makeDamageContext({ attacker, defender: defenderUnaware, move, seed: 99999 }),
+      createDamageContext({ attacker, defender: defenderUnaware, move, seed: 99999 }),
       typeChart,
     );
 
-    const attackerBaseline = makeActive({
+    const attackerBaseline = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 0 },
     });
-    const defenderBaseline = makeActive({
+    const defenderBaseline = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
 
     const resultBaseline = calculateGen5Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker: attackerBaseline,
         defender: defenderBaseline,
         move,
@@ -213,19 +218,19 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
 
   it("given attacker has Simple with +2 atk stages and defender has no Unaware, when calculating damage, then Simple doubles stages to +4 (3.0x multiplier)", () => {
     // Source: Showdown data/abilities.ts -- Simple doubles stat boosts.
-    const attackerSimple = makeActive({
+    const attackerSimple = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.simple,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 },
     });
-    const attackerNormal = makeActive({
+    const attackerNormal = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 },
     });
-    const defender = makeActive({
+    const defender = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
@@ -233,11 +238,11 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     const move = getGen5Move(GEN5_MOVE_IDS.tackle);
 
     const resultSimple = calculateGen5Damage(
-      makeDamageContext({ attacker: attackerSimple, defender, move, seed: 99999 }),
+      createDamageContext({ attacker: attackerSimple, defender, move, seed: 99999 }),
       typeChart,
     );
     const resultNormal = calculateGen5Damage(
-      makeDamageContext({ attacker: attackerNormal, defender, move, seed: 99999 }),
+      createDamageContext({ attacker: attackerNormal, defender, move, seed: 99999 }),
       typeChart,
     );
 
@@ -247,13 +252,13 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
 
   it("given attacker has Mold Breaker with +2 atk stages and defender has Unaware, when calculating damage, then Mold Breaker bypasses Unaware (stages apply)", () => {
     // Source: Showdown data/abilities.ts -- moldbreaker bypasses Unaware.
-    const attackerMoldBreaker = makeActive({
+    const attackerMoldBreaker = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.moldBreaker,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 },
     });
-    const defenderUnaware = makeActive({
+    const defenderUnaware = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.unaware,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
@@ -261,7 +266,7 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     const move = getGen5Move(GEN5_MOVE_IDS.tackle);
 
     const resultMoldBreaker = calculateGen5Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker: attackerMoldBreaker,
         defender: defenderUnaware,
         move,
@@ -270,20 +275,20 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
       typeChart,
     );
 
-    const attackerNormal = makeActive({
+    const attackerNormal = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 2 },
     });
-    const defenderNone = makeActive({
+    const defenderNone = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
 
     const resultNormal = calculateGen5Damage(
-      makeDamageContext({ attacker: attackerNormal, defender: defenderNone, move, seed: 99999 }),
+      createDamageContext({ attacker: attackerNormal, defender: defenderNone, move, seed: 99999 }),
       typeChart,
     );
 
@@ -292,13 +297,13 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
 
   it("given attacker has Turboblaze with +3 atk stages and defender has Unaware, when calculating damage, then Turboblaze bypasses Unaware (stages apply)", () => {
     // Source: Showdown data/abilities.ts -- turboblaze has the same effect as moldbreaker.
-    const attackerTurboblaze = makeActive({
+    const attackerTurboblaze = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.turboblaze,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 3 },
     });
-    const defenderUnaware = makeActive({
+    const defenderUnaware = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.unaware,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
@@ -306,7 +311,7 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     const move = getGen5Move(GEN5_MOVE_IDS.tackle);
 
     const resultTurboblaze = calculateGen5Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker: attackerTurboblaze,
         defender: defenderUnaware,
         move,
@@ -315,20 +320,25 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
       typeChart,
     );
 
-    const attackerBaseline = makeActive({
+    const attackerBaseline = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
       statStages: { attack: 3 },
     });
-    const defenderNone = makeActive({
+    const defenderNone = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
     });
 
     const resultBaseline = calculateGen5Damage(
-      makeDamageContext({ attacker: attackerBaseline, defender: defenderNone, move, seed: 99999 }),
+      createDamageContext({
+        attacker: attackerBaseline,
+        defender: defenderNone,
+        move,
+        seed: 99999,
+      }),
       typeChart,
     );
 
@@ -337,12 +347,12 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
 
   it("given defender has Simple with +2 def stages and attacker has Mold Breaker, when calculating damage, then Mold Breaker bypasses defender's Simple (defense stages not doubled)", () => {
     // Source: Showdown data/abilities.ts -- moldbreaker bypasses Simple on the opponent.
-    const attackerMoldBreaker = makeActive({
+    const attackerMoldBreaker = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.moldBreaker,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
     });
-    const defenderSimple = makeActive({
+    const defenderSimple = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.simple,
       defense: 100,
       types: [CORE_TYPE_IDS.normal],
@@ -351,7 +361,7 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
     const move = getGen5Move(GEN5_MOVE_IDS.tackle);
 
     const resultMoldBreaker = calculateGen5Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker: attackerMoldBreaker,
         defender: defenderSimple,
         move,
@@ -360,14 +370,14 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
       typeChart,
     );
 
-    const attackerNone = makeActive({
+    const attackerNone = createOnFieldPokemon({
       ability: CORE_ABILITY_IDS.none,
       attack: 100,
       types: [CORE_TYPE_IDS.normal],
     });
 
     const resultNoBreaker = calculateGen5Damage(
-      makeDamageContext({ attacker: attackerNone, defender: defenderSimple, move, seed: 99999 }),
+      createDamageContext({ attacker: attackerNone, defender: defenderSimple, move, seed: 99999 }),
       typeChart,
     );
 
@@ -377,10 +387,10 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
 
   it("given attacker has Unaware and defender has Mold Breaker with +2 def stages, when calculating defense stat stage, then Unaware zeros defender's stages (defender MB cannot bypass attacker's Unaware)", () => {
     // Source: Showdown data/abilities.ts -- moldbreaker only suppresses target abilities while attacking.
-    const attacker = makeActive({
+    const attacker = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.unaware,
     });
-    const defender = makeActive({
+    const defender = createOnFieldPokemon({
       ability: GEN5_ABILITY_IDS.moldBreaker,
       statStages: { defense: 2 },
     });
