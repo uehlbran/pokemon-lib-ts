@@ -1,12 +1,16 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
   type MoveData,
-  type PrimaryStatus,
   type PokemonType,
+  type PrimaryStatus,
   type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -39,7 +43,7 @@ import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 // Helper factories (same pattern as damage-calc.test.ts)
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -70,16 +74,16 @@ function makeActive(overrides: {
       level: overrides.level ?? 50,
       experience: 0,
       nature: overrides.nature ?? DEFAULT_NATURE,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: overrides.status ?? null,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -127,12 +131,12 @@ const dataManager = createGen5DataManager();
 const BASE_SPECIES = dataManager.getSpecies(GEN5_SPECIES_IDS.bulbasaur);
 const DEFAULT_NATURE = dataManager.getNature(GEN5_NATURE_IDS.hardy).id;
 
-function makeMove(moveId: string): ReturnType<typeof dataManager.getMove> {
+function createCanonicalMove(moveId: string): ReturnType<typeof dataManager.getMove> {
   const move = dataManager.getMove(moveId);
   return { ...move, flags: { ...move.flags } };
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -160,7 +164,7 @@ function makeFixedRng(): SeededRandom {
   } as unknown as SeededRandom;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -168,10 +172,10 @@ function makeDamageContext(overrides: {
   isCrit?: boolean;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove(GEN5_MOVE_IDS.tackle),
-    state: overrides.state ?? makeState(),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? createCanonicalMove(GEN5_MOVE_IDS.tackle),
+    state: overrides.state ?? createBattleState(),
     rng: makeFixedRng(),
     isCrit: overrides.isCrit ?? false,
   };
@@ -191,16 +195,16 @@ describe("Gen 5 type resist berries -- damage calc integration", () => {
     //   random factor with int return 0 => floor(43 * (100-0)/100) = 43
     //   no STAB (attacker not Fire type), Fire vs Grass = 2x: 43*2 = 86
     //   Occa Berry: pokeRound(86, 2048) = floor((86*2048+2047)/4096) = floor(178175/4096) = 43
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -214,15 +218,15 @@ describe("Gen 5 type resist berries -- damage calc integration", () => {
     // Source: Showdown data/items.ts -- without resist berry, full SE damage
     // Derivation: same as above but no berry halving
     //   baseDmg = 43, Fire vs Grass = 2x: 43*2 = 86
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -233,16 +237,16 @@ describe("Gen 5 type resist berries -- damage calc integration", () => {
   it("given Grass-type defender with Occa Berry vs neutral Normal move, when damage calculated, then Occa Berry does NOT activate (wrong type)", () => {
     // Source: Showdown data/items.ts -- Occa Berry only activates for Fire-type moves
     // Attacker is Water-type to avoid STAB on Normal move
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.water], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.water], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
     });
-    const normalMove = makeMove(GEN5_MOVE_IDS.tackle);
+    const normalMove = createCanonicalMove(GEN5_MOVE_IDS.tackle);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: normalMove }),
+      createDamageContext({ attacker, defender, move: normalMove }),
       typeChart,
     );
 
@@ -255,16 +259,16 @@ describe("Gen 5 type resist berries -- damage calc integration", () => {
   it("given Normal-type defender with Occa Berry vs neutral Fire move, when damage calculated, then Occa Berry does NOT activate (not SE)", () => {
     // Source: Showdown data/items.ts -- type resist berries only activate on SE damage
     // Fire vs Normal = 1x (neutral), so berry should not activate
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.normal],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -285,16 +289,16 @@ describe("Gen 5 Chilan Berry -- halves Normal-type damage without SE requirement
     // Attacker is Water-type to avoid STAB on the move
     // Derivation: L50, Tackle 50BP, Atk=100, Def=100, no STAB, Normal vs Psychic = 1x
     //   baseDmg = 24, Chilan Berry: pokeRound(24, 2048) = floor((24*2048+2047)/4096) = 12
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.water], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.water], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.psychic],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.chilanBerry,
     });
-    const normalMove = makeMove(GEN5_MOVE_IDS.tackle);
+    const normalMove = createCanonicalMove(GEN5_MOVE_IDS.tackle);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: normalMove }),
+      createDamageContext({ attacker, defender, move: normalMove }),
       typeChart,
     );
 
@@ -305,16 +309,16 @@ describe("Gen 5 Chilan Berry -- halves Normal-type damage without SE requirement
   it("given Psychic-type defender with Chilan Berry vs Fire move, when damage calculated, then Chilan Berry does NOT activate (wrong type)", () => {
     // Source: Showdown data/items.ts -- Chilan Berry only works for Normal-type moves
     // Attacker is Water-type to avoid STAB on Fire move
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.water], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.water], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.psychic],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.chilanBerry,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -331,17 +335,17 @@ describe("Gen 5 Chilan Berry -- halves Normal-type damage without SE requirement
 describe("Gen 5 type resist berries -- suppression by Klutz and Embargo", () => {
   it("given defender with Klutz + Occa Berry vs SE Fire move, when damage calculated, then Klutz suppresses berry and full damage applies", () => {
     // Source: Showdown data/abilities.ts -- Klutz: prevents holder from using held item
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
       ability: CORE_ABILITY_IDS.klutz,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -352,19 +356,19 @@ describe("Gen 5 type resist berries -- suppression by Klutz and Embargo", () => 
 
   it("given defender with Embargo + Yache Berry vs SE Ice move, when damage calculated, then Embargo suppresses berry and full damage applies", () => {
     // Source: Showdown data/moves.ts -- Embargo: suppresses item use
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
     const embargoVolatiles = new Map<string, { turnsLeft: number }>();
     embargoVolatiles.set(CORE_VOLATILE_IDS.embargo, { turnsLeft: 3 });
-    const defender = makeActive({
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.yacheBerry,
       volatiles: embargoVolatiles,
     });
-    const iceMove = makeMove(GEN5_MOVE_IDS.iceBeam);
+    const iceMove = createCanonicalMove(GEN5_MOVE_IDS.iceBeam);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: iceMove }),
+      createDamageContext({ attacker, defender, move: iceMove }),
       typeChart,
     );
 
@@ -382,16 +386,16 @@ describe("Gen 5 type resist berry + Unburden interaction", () => {
   it("given Unburden holder with Occa Berry vs SE Fire move, when damage calculated, then Unburden volatile is activated after berry consumption", () => {
     // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is consumed"
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
       ability: CORE_ABILITY_IDS.unburden,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
-    calculateGen5Damage(makeDamageContext({ attacker, defender, move: fireMove }), typeChart);
+    calculateGen5Damage(createDamageContext({ attacker, defender, move: fireMove }), typeChart);
 
     expect(defender.pokemon.heldItem).toBeNull();
     expect(defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
@@ -405,16 +409,16 @@ describe("Gen 5 type resist berry + Unburden interaction", () => {
 describe("Gen 5 type resist berry -- breakdown itemMultiplier", () => {
   it("given resist berry activates, when damage calculated, then breakdown itemMultiplier is 0.5", () => {
     // Source: internal consistency -- itemMultiplier should track berry contribution
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove }),
+      createDamageContext({ attacker, defender, move: fireMove }),
       typeChart,
     );
 
@@ -431,20 +435,20 @@ describe("Gen 5 type resist berries -- Magic Room suppression", () => {
     // Source: Showdown data/moves.ts -- Magic Room: "For 5 turns, held items have no effect"
     // Source: Bulbapedia -- Magic Room: "Nullifies the effect of each Pokémon's held item"
     // Without Magic Room the same setup gives 43 (halved). Under Magic Room: full 86.
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.occaBerry,
     });
-    const fireMove = makeMove(GEN5_MOVE_IDS.flamethrower);
+    const fireMove = createCanonicalMove(GEN5_MOVE_IDS.flamethrower);
     const magicRoomState = {
-      ...makeState(),
+      ...createBattleState(),
       magicRoom: { active: true, turnsLeft: 3 },
     } as unknown as BattleState;
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, state: magicRoomState }),
+      createDamageContext({ attacker, defender, move: fireMove, state: magicRoomState }),
       typeChart,
     );
 
@@ -457,16 +461,16 @@ describe("Gen 5 type resist berries -- Magic Room suppression", () => {
   it("given Grass-type defender with Yache Berry vs SE Ice move when Magic Room is inactive, when damage calculated, then berry activates normally", () => {
     // Source: Showdown data/moves.ts -- Magic Room only suppresses when active
     // With Magic Room inactive the berry should still halve damage.
-    const attacker = makeActive({ types: [CORE_TYPE_IDS.normal], attack: 100 });
-    const defender = makeActive({
+    const attacker = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       defense: 100,
       heldItem: GEN5_ITEM_IDS.yacheBerry,
     });
-    const iceMove = makeMove(GEN5_MOVE_IDS.iceBeam);
+    const iceMove = createCanonicalMove(GEN5_MOVE_IDS.iceBeam);
 
     const result = calculateGen5Damage(
-      makeDamageContext({ attacker, defender, move: iceMove }),
+      createDamageContext({ attacker, defender, move: iceMove }),
       typeChart,
     );
 
