@@ -427,7 +427,7 @@ export function handleTidyUp(ctx: MoveEffectContext): MoveEffectResult {
     for (const active of side.active) {
       if (active && active.substituteHp > 0) {
         active.substituteHp = 0;
-        active.volatileStatuses.delete("substitute");
+        active.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
         const pokeName = active.pokemon.nickname ?? "The Pokemon";
         messages.push(`${pokeName}'s substitute faded!`);
       }
@@ -588,31 +588,31 @@ export function handleTeraBlast(ctx: MoveEffectContext): MoveEffectResult {
  */
 export function executeGen9MoveEffect(ctx: MoveEffectContext): MoveEffectResult | null {
   switch (ctx.move.id) {
-    case "population-bomb":
+    case GEN9_MOVE_IDS.populationBomb:
       return handlePopulationBomb(ctx);
 
-    case "rage-fist":
+    case GEN9_MOVE_IDS.rageFist:
       return handleRageFist(ctx);
 
-    case "make-it-rain":
+    case GEN9_MOVE_IDS.makeItRain:
       return handleMakeItRain(ctx);
 
-    case "revival-blessing":
+    case GEN9_MOVE_IDS.revivalBlessing:
       return handleRevivalBlessing(ctx);
 
-    case "last-respects":
+    case GEN9_MOVE_IDS.lastRespects:
       return handleLastRespects(ctx);
 
-    case "shed-tail":
+    case GEN9_MOVE_IDS.shedTail:
       return handleShedTail(ctx);
 
-    case "tidy-up":
+    case GEN9_MOVE_IDS.tidyUp:
       return handleTidyUp(ctx);
 
     case GEN9_MOVE_IDS.saltCure:
       return handleSaltCure(ctx);
 
-    case "tera-blast":
+    case GEN9_MOVE_IDS.teraBlast:
       return handleTeraBlast(ctx);
 
     default:
