@@ -33,7 +33,12 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
+  getStatStageMultiplier,
+} from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
 import {
   handleGen7DamageCalcAbility,
@@ -410,11 +415,11 @@ export class Gen7Ruleset extends BaseRuleset {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
     const itemSuppressed =
-      defender.ability === "klutz" ||
-      defender.volatileStatuses.has("embargo") ||
+      defender.ability === CORE_ABILITY_IDS.klutz ||
+      defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo) ||
       (state.magicRoom?.active ?? false);
     if (
-      heldItem === "focus-sash" &&
+      heldItem === CORE_ITEM_IDS.focusSash &&
       !itemSuppressed &&
       currentHp === maxHp &&
       damage >= currentHp
@@ -423,7 +428,7 @@ export class Gen7Ruleset extends BaseRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on with its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 
@@ -528,11 +533,15 @@ export class Gen7Ruleset extends BaseRuleset {
 
     // Embargo: prevents held item effects
     // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
-    const isEmbargoed = active.volatileStatuses.has("embargo");
+    const isEmbargoed = active.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
 
     // Choice Scarf: 1.5x Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Choice Scarf boosts Speed 1.5x
-    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz" && !isEmbargoed) {
+    if (
+      active.pokemon.heldItem === CORE_ITEM_IDS.choiceScarf &&
+      active.ability !== CORE_ABILITY_IDS.klutz &&
+      !isEmbargoed
+    ) {
       effective = Math.floor(effective * 1.5);
     }
 
@@ -595,7 +604,11 @@ export class Gen7Ruleset extends BaseRuleset {
 
     // Iron Ball: halve Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Iron Ball halves Speed
-    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz" && !isEmbargoed) {
+    if (
+      active.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+      active.ability !== CORE_ABILITY_IDS.klutz &&
+      !isEmbargoed
+    ) {
       effective = Math.floor(effective * 0.5);
     }
 

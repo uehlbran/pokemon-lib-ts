@@ -35,7 +35,12 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_HAZARD_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
 import { handleGen8StatAbility } from "./Gen8AbilitiesStat.js";
@@ -599,11 +604,11 @@ export class Gen8Ruleset extends BaseRuleset {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
     const itemSuppressed =
-      defender.ability === "klutz" ||
-      defender.volatileStatuses.has("embargo") ||
+      defender.ability === CORE_ABILITY_IDS.klutz ||
+      defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo) ||
       (state.magicRoom?.active ?? false);
     if (
-      heldItem === "focus-sash" &&
+      heldItem === CORE_ITEM_IDS.focusSash &&
       !itemSuppressed &&
       currentHp === maxHp &&
       damage >= currentHp
@@ -612,7 +617,7 @@ export class Gen8Ruleset extends BaseRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on with its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 
