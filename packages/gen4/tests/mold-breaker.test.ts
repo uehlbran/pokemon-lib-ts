@@ -1,6 +1,13 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
@@ -36,6 +43,10 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 
 const A = GEN4_ABILITY_IDS;
 const CA = CORE_ABILITY_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
+const CORE_ITEMS = CORE_ITEM_IDS;
 const T = CORE_TYPE_IDS;
 const M = GEN4_MOVE_IDS;
 const N = GEN4_NATURE_IDS;
@@ -92,17 +103,17 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? CA.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEMS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
@@ -180,11 +191,11 @@ describe("Mold Breaker", () => {
       // Source: Showdown Gen 4 — Mold Breaker switch-in announcement
       const pokemon = createActivePokemon({ ability: A.moldBreaker, speciesId: SP.rampardos });
       pokemon.pokemon.nickname = "Rampardos";
-      const result = applyGen4Ability("on-switch-in", {
+      const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, {
         pokemon,
         state: createMockState() as never,
         rng: createMockRng(100) as never,
-        trigger: "on-switch-in",
+        trigger: ABILITY_TRIGGERS.onSwitchIn,
       });
       expect(result.activated).toBe(true);
       expect(result.messages).toContain("Rampardos breaks the mold!");
