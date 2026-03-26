@@ -2,6 +2,8 @@ import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
@@ -9,18 +11,11 @@ import {
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  calculateGen8Damage,
-  isGen8Grounded,
-  pokeRound,
-  TYPE_RESIST_BERRIES,
-} from "../src/Gen8DamageCalc";
-import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
@@ -29,31 +24,38 @@ import {
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
 } from "../src";
+import {
+  calculateGen8Damage,
+  isGen8Grounded,
+  pokeRound,
+  TYPE_RESIST_BERRIES,
+} from "../src/Gen8DamageCalc";
+import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-const data = createGen8DataManager()
-const moves = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const
-const items = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const
-const abilities = { none: CORE_ABILITY_IDS.none, ...GEN8_ABILITY_IDS } as const
-const species = GEN8_SPECIES_IDS
-const natures = GEN8_NATURE_IDS
-const moveCategories = CORE_MOVE_CATEGORIES
-const statuses = CORE_STATUS_IDS
-const terrains = CORE_TERRAIN_IDS
-const types = CORE_TYPE_IDS
-const weathers = CORE_WEATHER_IDS
-const tackle = data.getMove(moves.tackle)
-const growl = data.getMove(moves.growl)
-const flamethrower = data.getMove(moves.flamethrower)
-const bodyPress = data.getMove(moves.bodyPress)
-const behemothBlade = data.getMove(moves.behemothBlade)
-const behemothBash = data.getMove(moves.behemothBash)
-const dynamaxCannon = data.getMove(moves.dynamaxCannon)
-const facade = data.getMove(moves.facade)
-const defaultSpecies = data.getSpecies(species.bulbasaur)
+const data = createGen8DataManager();
+const moves = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
+const items = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const;
+const abilities = { none: CORE_ABILITY_IDS.none, ...GEN8_ABILITY_IDS } as const;
+const species = GEN8_SPECIES_IDS;
+const natures = GEN8_NATURE_IDS;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const statuses = CORE_STATUS_IDS;
+const terrains = CORE_TERRAIN_IDS;
+const types = CORE_TYPE_IDS;
+const weathers = CORE_WEATHER_IDS;
+const tackle = data.getMove(moves.tackle);
+const growl = data.getMove(moves.growl);
+const flamethrower = data.getMove(moves.flamethrower);
+const bodyPress = data.getMove(moves.bodyPress);
+const behemothBlade = data.getMove(moves.behemothBlade);
+const behemothBash = data.getMove(moves.behemothBash);
+const dynamaxCannon = data.getMove(moves.dynamaxCannon);
+const facade = data.getMove(moves.facade);
+const defaultSpecies = data.getSpecies(species.bulbasaur);
 const defaultCalculatedStats = {
   hp: 200,
   attack: 100,
@@ -61,7 +63,7 @@ const defaultCalculatedStats = {
   spAttack: 100,
   spDefense: 100,
   speed: 100,
-} as const
+} as const;
 const neutralStatStages = {
   attack: 0,
   defense: 0,
@@ -70,13 +72,13 @@ const neutralStatStages = {
   speed: 0,
   accuracy: 0,
   evasion: 0,
-} as const
+} as const;
 
 function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
   return {
     ...baseMove,
     ...overrides,
-  }
+  };
 }
 
 function createSyntheticMove(
@@ -98,7 +100,7 @@ function createSyntheticMove(
       ? flamethrower
       : category === moveCategories.status
         ? growl
-        : tackle)
+        : tackle);
 
   return createSyntheticMoveFrom(baseMove, {
     id: opts?.id ?? baseMove.id,
@@ -113,7 +115,7 @@ function createSyntheticMove(
       ...opts?.flags,
     },
     generation: 8,
-  })
+  });
 }
 
 function createOnFieldPokemon(overrides: {
@@ -129,33 +131,38 @@ function createOnFieldPokemon(overrides: {
   ability?: string;
   heldItem?: string | null;
   status?: string | null;
-  gender?: "male" | "female" | "genderless";
+  gender?: (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   isDynamaxed?: boolean;
 }): ActivePokemon {
-  const hp = overrides.hp ?? defaultCalculatedStats.hp
-  const attack = overrides.attack ?? defaultCalculatedStats.attack
-  const defense = overrides.defense ?? defaultCalculatedStats.defense
-  const spAttack = overrides.spAttack ?? defaultCalculatedStats.spAttack
-  const spDefense = overrides.spDefense ?? defaultCalculatedStats.spDefense
-  const speed = overrides.speed ?? defaultCalculatedStats.speed
-  const pokemon = createPokemonInstance(defaultSpecies, overrides.level ?? 50, new SeededRandom(7), {
-    nature: natures.hardy,
-    gender: overrides.gender ?? "male",
-    abilitySlot: "normal1",
-    heldItem: overrides.heldItem ?? null,
-    moves: [],
-    isShiny: false,
-    metLocation: "test-location",
-    originalTrainer: "Test",
-    originalTrainerId: 12345,
-    pokeball: items.pokeBall,
-  })
-  pokemon.moves = [createMoveSlot(tackle.id, tackle.pp)]
-  pokemon.currentHp = overrides.currentHp ?? hp
-  pokemon.ability = overrides.ability ?? abilities.none
-  pokemon.status = (overrides.status ?? null) as typeof pokemon.status
-  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed }
+  const hp = overrides.hp ?? defaultCalculatedStats.hp;
+  const attack = overrides.attack ?? defaultCalculatedStats.attack;
+  const defense = overrides.defense ?? defaultCalculatedStats.defense;
+  const spAttack = overrides.spAttack ?? defaultCalculatedStats.spAttack;
+  const spDefense = overrides.spDefense ?? defaultCalculatedStats.spDefense;
+  const speed = overrides.speed ?? defaultCalculatedStats.speed;
+  const pokemon = createPokemonInstance(
+    defaultSpecies,
+    overrides.level ?? 50,
+    new SeededRandom(7),
+    {
+      nature: natures.hardy,
+      gender: overrides.gender ?? CORE_GENDERS.male,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      heldItem: overrides.heldItem ?? null,
+      moves: [],
+      isShiny: false,
+      metLocation: "test-location",
+      originalTrainer: "Test",
+      originalTrainerId: 12345,
+      pokeball: items.pokeBall,
+    },
+  );
+  pokemon.moves = [createMoveSlot(tackle.id, tackle.pp)];
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = overrides.ability ?? abilities.none;
+  pokemon.status = (overrides.status ?? null) as typeof pokemon.status;
+  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
 
   return {
     pokemon,
@@ -186,7 +193,7 @@ function createOnFieldPokemon(overrides: {
   } as ActivePokemon;
 }
 
-function makeState(overrides?: {
+function createSyntheticBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   terrain?: { type: string; turnsLeft: number; source: string } | null;
   format?: string;
@@ -205,7 +212,7 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeDamageContext(overrides: {
+function createSyntheticDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -216,13 +223,14 @@ function makeDamageContext(overrides: {
   return {
     attacker: overrides.attacker ?? createOnFieldPokemon({}),
     defender: overrides.defender ?? createOnFieldPokemon({}),
-    move: overrides.move ??
+    move:
+      overrides.move ??
       createSyntheticMoveFrom(tackle, {
         type: types.normal,
         power: 50,
         category: moveCategories.physical,
       }),
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createSyntheticBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   };
@@ -283,7 +291,7 @@ describe("Gen 8 base damage formula", () => {
     // roll [85..100]:
     //   min = floor(24 * 85 / 100) = floor(2040/100) = 20
     //   max = floor(24 * 100 / 100) = 24
-    const ctx = makeDamageContext({
+    const ctx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.water] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
@@ -307,7 +315,7 @@ describe("Gen 8 base damage formula", () => {
     // roll [85..100]:
     //   min = floor(91 * 85 / 100) = floor(7735/100) = 77
     //   max = floor(91 * 100 / 100) = 91
-    const ctx = makeDamageContext({
+    const ctx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ level: 100, attack: 200, types: [types.water] }),
       defender: createOnFieldPokemon({ defense: 150 }),
       move: createSyntheticMove(types.normal, 80, moveCategories.physical),
@@ -322,7 +330,7 @@ describe("Gen 8 base damage formula", () => {
 
   it("given a status move, when calculating damage, then returns 0 damage", () => {
     // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
-    const ctx = makeDamageContext({
+    const ctx = createSyntheticDamageContext({
       move: createSyntheticMove(types.normal, null, moveCategories.status),
     });
     const result = calculateGen8Damage(ctx, typeChart);
@@ -339,13 +347,13 @@ describe("Gen 8 STAB", () => {
   it("given a Fire-type attacker using a Fire move, when calculating with STAB, then damage is 1.5x base", () => {
     // Source: Showdown sim/battle-actions.ts -- STAB = 1.5x (6144/4096)
     // Use same seed for both to get same random roll
-    const noStabCtx = makeDamageContext({
+    const noStabCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.water] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.physical),
       seed: 12345,
     });
-    const stabCtx = makeDamageContext({
+    const stabCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.fire] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.physical),
@@ -368,13 +376,13 @@ describe("Gen 8 STAB", () => {
 
   it("given an Adaptability attacker using a STAB move, when calculating, then STAB is 2.0x", () => {
     // Source: Showdown data/abilities.ts -- Adaptability: STAB becomes 2.0x (8192/4096)
-    const normalStabCtx = makeDamageContext({
+    const normalStabCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.fire], ability: abilities.none }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.physical),
       seed: 12345,
     });
-    const adaptCtx = makeDamageContext({
+    const adaptCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({
         attack: 100,
         types: [types.fire],
@@ -405,17 +413,17 @@ describe("Gen 8 terrain boost (1.3x, nerfed from Gen 7 1.5x)", () => {
     // After terrain power adjustment:
     //   baseDamage = floor(floor(22 * 65 * 100 / 100) / 50) + 2 = floor(1430/50) + 2 = 28+2 = 30
     // Note: terrain boost applied to power before the base damage formula
-    const noTerrainCtx = makeDamageContext({
+    const noTerrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.electric] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.electric, 50, moveCategories.physical),
       seed: 99999,
     });
-    const terrainCtx = makeDamageContext({
+    const terrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.electric] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.electric, 50, moveCategories.physical),
-      state: makeState({
+      state: createSyntheticBattleState({
         terrain: { type: terrains.electric, turnsLeft: 5, source: moves.electricTerrain },
       }),
       seed: 99999,
@@ -437,17 +445,17 @@ describe("Gen 8 terrain boost (1.3x, nerfed from Gen 7 1.5x)", () => {
 
   it("given a grounded attacker using a Grass move in Grassy Terrain, when calculating, then terrain applies 1.3x boost", () => {
     // Source: Showdown data/mods/gen8/scripts.ts -- terrain boost nerfed to 1.3x in Gen 8
-    const noTerrainCtx = makeDamageContext({
+    const noTerrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 150, types: [types.grass] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.grass, 80, moveCategories.physical),
       seed: 77777,
     });
-    const terrainCtx = makeDamageContext({
+    const terrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 150, types: [types.grass] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.grass, 80, moveCategories.physical),
-      state: makeState({
+      state: createSyntheticBattleState({
         terrain: { type: terrains.grassy, turnsLeft: 5, source: moves.grassyTerrain },
       }),
       seed: 77777,
@@ -465,17 +473,17 @@ describe("Gen 8 terrain boost (1.3x, nerfed from Gen 7 1.5x)", () => {
 
   it("given a grounded attacker using a Psychic move in Psychic Terrain, when calculating, then terrain applies 1.3x boost", () => {
     // Source: Showdown data/mods/gen8/scripts.ts -- terrain boost nerfed to 1.3x in Gen 8
-    const noTerrainCtx = makeDamageContext({
+    const noTerrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 120, types: [types.psychic] }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.psychic, 90, moveCategories.special),
       seed: 55555,
     });
-    const terrainCtx = makeDamageContext({
+    const terrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 120, types: [types.psychic] }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.psychic, 90, moveCategories.special),
-      state: makeState({
+      state: createSyntheticBattleState({
         terrain: { type: terrains.psychic, turnsLeft: 5, source: moves.psychicTerrain },
       }),
       seed: 55555,
@@ -492,20 +500,20 @@ describe("Gen 8 terrain boost (1.3x, nerfed from Gen 7 1.5x)", () => {
 
   it("given a Flying-type (non-grounded) attacker using an Electric move in Electric Terrain, when calculating, then terrain does NOT apply", () => {
     // Source: Showdown data/conditions.ts -- terrain only boosts grounded Pokemon
-    const groundedCtx = makeDamageContext({
+    const groundedCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.electric] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.electric, 50, moveCategories.physical),
-      state: makeState({
+      state: createSyntheticBattleState({
         terrain: { type: terrains.electric, turnsLeft: 5, source: moves.electricTerrain },
       }),
       seed: 42,
     });
-    const flyingCtx = makeDamageContext({
+    const flyingCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [types.flying] }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.electric, 50, moveCategories.physical),
-      state: makeState({
+      state: createSyntheticBattleState({
         terrain: { type: terrains.electric, turnsLeft: 5, source: moves.electricTerrain },
       }),
       seed: 42,
@@ -520,17 +528,17 @@ describe("Gen 8 terrain boost (1.3x, nerfed from Gen 7 1.5x)", () => {
 
   it("given Misty Terrain and a Dragon move vs grounded defender, when calculating, then Dragon move is halved (0.5x)", () => {
     // Source: Showdown data/conditions.ts -- mistyterrain: onBasePower 0.5x for Dragon vs grounded
-    const noTerrainCtx = makeDamageContext({
+    const noTerrainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [types.dragon] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.normal] }),
       move: createSyntheticMove(types.dragon, 60, moveCategories.special),
       seed: 42,
     });
-    const mistyCtx = makeDamageContext({
+    const mistyCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [types.dragon] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.normal] }),
       move: createSyntheticMove(types.dragon, 60, moveCategories.special),
-      state: makeState({
+      state: createSyntheticBattleState({
         terrain: { type: terrains.misty, turnsLeft: 5, source: moves.mistyTerrain },
       }),
       seed: 42,
@@ -553,17 +561,19 @@ describe("Gen 8 terrain boost (1.3x, nerfed from Gen 7 1.5x)", () => {
 describe("Gen 8 weather modifiers", () => {
   it("given Sun weather and a Fire-type move, when calculating, then damage is 1.5x", () => {
     // Source: Showdown sim/battle-actions.ts -- Sun: Fire 1.5x (6144/4096)
-    const noWeatherCtx = makeDamageContext({
+    const noWeatherCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
       seed: 42,
     });
-    const sunCtx = makeDamageContext({
+    const sunCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
-      state: makeState({ weather: { type: weathers.sun, turnsLeft: 5, source: moves.sunnyDay } }),
+      state: createSyntheticBattleState({
+        weather: { type: weathers.sun, turnsLeft: 5, source: moves.sunnyDay },
+      }),
       seed: 42,
     });
 
@@ -578,17 +588,19 @@ describe("Gen 8 weather modifiers", () => {
 
   it("given Rain weather and a Water-type move, when calculating, then damage is 1.5x", () => {
     // Source: Showdown sim/battle-actions.ts -- Rain: Water 1.5x (6144/4096)
-    const noWeatherCtx = makeDamageContext({
+    const noWeatherCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.water, 50, moveCategories.special),
       seed: 42,
     });
-    const rainCtx = makeDamageContext({
+    const rainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.water, 50, moveCategories.special),
-      state: makeState({ weather: { type: weathers.rain, turnsLeft: 5, source: moves.rainDance } }),
+      state: createSyntheticBattleState({
+        weather: { type: weathers.rain, turnsLeft: 5, source: moves.rainDance },
+      }),
       seed: 42,
     });
 
@@ -602,17 +614,19 @@ describe("Gen 8 weather modifiers", () => {
 
   it("given Sun weather and a Water-type move, when calculating, then damage is 0.5x", () => {
     // Source: Showdown sim/battle-actions.ts -- Sun: Water 0.5x (2048/4096)
-    const noWeatherCtx = makeDamageContext({
+    const noWeatherCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.water, 50, moveCategories.special),
       seed: 42,
     });
-    const sunCtx = makeDamageContext({
+    const sunCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.water, 50, moveCategories.special),
-      state: makeState({ weather: { type: weathers.sun, turnsLeft: 5, source: moves.sunnyDay } }),
+      state: createSyntheticBattleState({
+        weather: { type: weathers.sun, turnsLeft: 5, source: moves.sunnyDay },
+      }),
       seed: 42,
     });
 
@@ -626,17 +640,19 @@ describe("Gen 8 weather modifiers", () => {
 
   it("given Rain weather and a Fire-type move, when calculating, then damage is 0.5x", () => {
     // Source: Showdown sim/battle-actions.ts -- Rain: Fire 0.5x (2048/4096)
-    const noWeatherCtx = makeDamageContext({
+    const noWeatherCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
       seed: 42,
     });
-    const rainCtx = makeDamageContext({
+    const rainCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
-      state: makeState({ weather: { type: weathers.rain, turnsLeft: 5, source: moves.rainDance } }),
+      state: createSyntheticBattleState({
+        weather: { type: weathers.rain, turnsLeft: 5, source: moves.rainDance },
+      }),
       seed: 42,
     });
 
@@ -656,14 +672,14 @@ describe("Gen 8 weather modifiers", () => {
 describe("Gen 8 critical hit", () => {
   it("given a critical hit, when calculating damage, then damage is 1.5x", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+ crit: pokeRound(baseDamage, 6144)
-    const noCritCtx = makeDamageContext({
+    const noCritCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
       isCrit: false,
       seed: 42,
     });
-    const critCtx = makeDamageContext({
+    const critCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
@@ -684,14 +700,14 @@ describe("Gen 8 critical hit", () => {
 
   it("given a critical hit with Sniper ability, when calculating damage, then crit damage is higher than normal crit", () => {
     // Source: Showdown data/abilities.ts -- Sniper: 1.5x on top of 1.5x crit = 2.25x total
-    const normalCritCtx = makeDamageContext({
+    const normalCritCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
       isCrit: true,
       seed: 42,
     });
-    const sniperCritCtx = makeDamageContext({
+    const sniperCritCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, ability: abilities.sniper }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
@@ -721,8 +737,12 @@ describe("Gen 8 Body Press", () => {
     //   baseDamage = floor(floor(22 * 80 * 131 / 100) / 50) + 2
     //     = floor(floor(230560 / 100) / 50) + 2
     //     = floor(2305 / 50) + 2 = 46 + 2 = 48
-    const ctx = makeDamageContext({
-      attacker: createOnFieldPokemon({ attack: 50, defense: 131, types: [types.grass, types.steel] }),
+    const ctx = createSyntheticDamageContext({
+      attacker: createOnFieldPokemon({
+        attack: 50,
+        defense: 131,
+        types: [types.grass, types.steel],
+      }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.water] }),
       move: bodyPress,
       seed: 42,
@@ -739,7 +759,7 @@ describe("Gen 8 Body Press", () => {
   it("given Body Press with low Defense attacker but high Attack, when calculating damage, then still uses Defense (not Attack)", () => {
     // Source: Showdown data/moves.ts -- Body Press always uses Defense, ignores Attack
     // Defense = 60, Attack = 200 (should use 60)
-    const ctx = makeDamageContext({
+    const ctx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 200, defense: 60, types: [types.water] }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.water] }),
       move: bodyPress,
@@ -763,7 +783,7 @@ describe("Gen 8 Body Press", () => {
 describe("Gen 8 anti-Dynamax moves", () => {
   it("given Behemoth Blade vs non-Dynamaxed target, when calculating, then damage is normal", () => {
     // Source: Showdown data/conditions.ts:785 -- Behemoth Blade 2x only vs Dynamaxed
-    const ctx = makeDamageContext({
+    const ctx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 150, types: [types.steel] }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.normal], isDynamaxed: false }),
       move: behemothBlade,
@@ -780,13 +800,13 @@ describe("Gen 8 anti-Dynamax moves", () => {
 
   it("given Behemoth Blade vs Dynamaxed target, when calculating, then damage is 2x compared to non-Dynamaxed", () => {
     // Source: Showdown data/conditions.ts:785-786 -- Behemoth series + Dynamax Cannon deal 2x vs Dynamaxed
-    const normalCtx = makeDamageContext({
+    const normalCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 150, types: [types.steel] }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.normal], isDynamaxed: false }),
       move: behemothBlade,
       seed: 42,
     });
-    const dynamaxCtx = makeDamageContext({
+    const dynamaxCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 150, types: [types.steel] }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.normal], isDynamaxed: true }),
       move: behemothBlade,
@@ -804,13 +824,13 @@ describe("Gen 8 anti-Dynamax moves", () => {
 
   it("given Behemoth Bash vs Dynamaxed target, when calculating, then damage is 2x", () => {
     // Source: Showdown data/conditions.ts:785-786 -- Behemoth Bash: 2x vs Dynamaxed
-    const normalCtx = makeDamageContext({
+    const normalCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 130, types: [types.steel] }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.normal], isDynamaxed: false }),
       move: behemothBash,
       seed: 42,
     });
-    const dynamaxCtx = makeDamageContext({
+    const dynamaxCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 130, types: [types.steel] }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.normal], isDynamaxed: true }),
       move: behemothBash,
@@ -827,13 +847,13 @@ describe("Gen 8 anti-Dynamax moves", () => {
 
   it("given Dynamax Cannon vs Dynamaxed target, when calculating, then damage is 2x", () => {
     // Source: Showdown data/conditions.ts:785-786 -- Dynamax Cannon: 2x vs Dynamaxed
-    const normalCtx = makeDamageContext({
+    const normalCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 120, types: [types.dragon] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.normal], isDynamaxed: false }),
       move: dynamaxCannon,
       seed: 42,
     });
-    const dynamaxCtx = makeDamageContext({
+    const dynamaxCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 120, types: [types.dragon] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.normal], isDynamaxed: true }),
       move: dynamaxCannon,
@@ -856,13 +876,13 @@ describe("Gen 8 anti-Dynamax moves", () => {
 describe("Gen 8 type effectiveness", () => {
   it("given a super-effective Fire move vs Grass defender, when calculating, then damage is 2x", () => {
     // Source: Showdown data/typechart.ts -- Fire > Grass = 2x
-    const neutralCtx = makeDamageContext({
+    const neutralCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.normal] }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
       seed: 42,
     });
-    const seCtx = makeDamageContext({
+    const seCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.grass] }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
@@ -882,13 +902,13 @@ describe("Gen 8 type effectiveness", () => {
 
   it("given a not-very-effective Fire move vs Water defender, when calculating, then damage is 0.5x", () => {
     // Source: Showdown data/typechart.ts -- Fire > Water = 0.5x
-    const neutralCtx = makeDamageContext({
+    const neutralCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.normal] }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
       seed: 42,
     });
-    const nveCtx = makeDamageContext({
+    const nveCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.water] }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
@@ -906,7 +926,7 @@ describe("Gen 8 type effectiveness", () => {
 
   it("given a Normal move vs Ghost defender, when calculating, then damage is 0 (immune)", () => {
     // Source: Showdown data/typechart.ts -- Normal > Ghost = 0x
-    const ctx = makeDamageContext({
+    const ctx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.ghost] }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
@@ -926,13 +946,13 @@ describe("Gen 8 type effectiveness", () => {
 describe("Gen 8 burn debuff", () => {
   it("given a burned attacker using a physical move, when calculating, then damage is halved", () => {
     // Source: Showdown sim/battle-actions.ts -- burn: pokeRound(baseDamage, 2048) = 0.5x
-    const noBurnCtx = makeDamageContext({
+    const noBurnCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
       seed: 42,
     });
-    const burnCtx = makeDamageContext({
+    const burnCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, status: statuses.burn }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
@@ -950,13 +970,13 @@ describe("Gen 8 burn debuff", () => {
 
   it("given a burned attacker using a special move, when calculating, then burn does NOT apply", () => {
     // Source: Showdown sim/battle-actions.ts -- burn penalty only on physical moves
-    const noBurnCtx = makeDamageContext({
+    const noBurnCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
       seed: 42,
     });
-    const burnCtx = makeDamageContext({
+    const burnCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, status: statuses.burn }),
       defender: createOnFieldPokemon({ spDefense: 100 }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
@@ -972,13 +992,13 @@ describe("Gen 8 burn debuff", () => {
 
   it("given a burned attacker using Facade (physical), when calculating, then burn penalty is bypassed", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 6+: Facade bypasses burn
-    const burnNormalCtx = makeDamageContext({
+    const burnNormalCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, status: statuses.burn }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.normal, 70, moveCategories.physical),
       seed: 42,
     });
-    const burnFacadeCtx = makeDamageContext({
+    const burnFacadeCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, status: statuses.burn }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: facade,
@@ -1002,13 +1022,13 @@ describe("Gen 8 burn debuff", () => {
 describe("Gen 8 type resist berries", () => {
   it("given defender with Occa Berry taking super-effective Fire hit, when calculating, then berry halves damage", () => {
     // Source: Showdown data/items.ts -- type-resist berries: onSourceModifyDamage 0.5x
-    const noBerrySECtx = makeDamageContext({
+    const noBerrySECtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [types.grass] }),
       move: createSyntheticMove(types.fire, 50, moveCategories.special),
       seed: 42,
     });
-    const berryCtx = makeDamageContext({
+    const berryCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
       defender: createOnFieldPokemon({
         spDefense: 100,
@@ -1030,13 +1050,13 @@ describe("Gen 8 type resist berries", () => {
 
   it("given defender with Chilan Berry taking normal-effectiveness Normal hit, when calculating, then berry halves damage", () => {
     // Source: Showdown data/items.ts -- Chilan Berry activates on any Normal-type hit (no SE requirement)
-    const noBerryCtx = makeDamageContext({
+    const noBerryCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100, types: [types.normal] }),
       move: createSyntheticMove(types.normal, 50, moveCategories.physical),
       seed: 42,
     });
-    const berryCtx = makeDamageContext({
+    const berryCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({
         defense: 100,
@@ -1109,7 +1129,7 @@ describe("isGen8Grounded function", () => {
 describe("Gen 8 Gorilla Tactics", () => {
   it("given attacker with Gorilla Tactics using a physical move, when calculating damage, then attack is boosted by 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Gorilla Tactics: onModifyAtk 1.5x
-    const noAbilityCtx = makeDamageContext({
+    const noAbilityCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({
         attack: 100,
         types: [types.fighting],
@@ -1119,7 +1139,7 @@ describe("Gen 8 Gorilla Tactics", () => {
       move: createSyntheticMove(types.fighting, 80, moveCategories.physical),
       seed: 42,
     });
-    const gorillaCtx = makeDamageContext({
+    const gorillaCtx = createSyntheticDamageContext({
       attacker: createOnFieldPokemon({
         attack: 100,
         types: [types.fighting],
@@ -1148,14 +1168,22 @@ describe("Gen 8 Libero/Protean type-changing", () => {
     // Note: The actual type-change is handled by the engine, but the damage calc
     // should correctly use the attacker's current types for STAB.
     // If the engine has already set the attacker's type to match the move, STAB applies.
-    const liberoCtx = makeDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: [types.ice], ability: abilities.libero }),
+    const liberoCtx = createSyntheticDamageContext({
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: [types.ice],
+        ability: abilities.libero,
+      }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.ice, 50, moveCategories.physical),
       seed: 42,
     });
-    const noStabCtx = makeDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: [types.normal], ability: abilities.none }),
+    const noStabCtx = createSyntheticDamageContext({
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: [types.normal],
+        ability: abilities.none,
+      }),
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove(types.ice, 50, moveCategories.physical),
       seed: 42,
@@ -1186,11 +1214,19 @@ describe("Gen 8 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 100 / 100) = 1100
     //   baseDamage = floor(1100 / 50) + 2 = 22 + 2 = 24
     //   random(seed=42) = 94 → floor(24 * 94 / 100) = floor(22.56) = 22
-    const attacker = createOnFieldPokemon({ attack: 100, ability: abilities.simple, types: [types.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: abilities.simple,
+      types: [types.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: abilities.unaware, types: [types.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: abilities.unaware,
+      types: [types.water],
+    });
     const move = createSyntheticMove(types.normal, 50, moveCategories.physical);
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createSyntheticDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen8Damage(ctx, typeChart);
     expect(result.damage).toBe(22);
   });
@@ -1204,11 +1240,19 @@ describe("Gen 8 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = createOnFieldPokemon({ attack: 100, ability: abilities.simple, types: [types.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: abilities.simple,
+      types: [types.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: abilities.none, types: [types.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: abilities.none,
+      types: [types.water],
+    });
     const move = createSyntheticMove(types.normal, 50, moveCategories.physical);
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createSyntheticDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen8Damage(ctx, typeChart);
     expect(result.damage).toBe(63);
   });
@@ -1224,11 +1268,19 @@ describe("Gen 8 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 200 / 100) = 2200
     //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
     //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
-    const attacker = createOnFieldPokemon({ attack: 100, ability: abilities.teravolt, types: [types.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: abilities.teravolt,
+      types: [types.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: abilities.unaware, types: [types.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: abilities.unaware,
+      types: [types.water],
+    });
     const move = createSyntheticMove(types.normal, 50, moveCategories.physical);
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createSyntheticDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen8Damage(ctx, typeChart);
     expect(result.damage).toBe(43);
   });
@@ -1244,11 +1296,19 @@ describe("Gen 8 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = createOnFieldPokemon({ attack: 100, ability: abilities.simple, types: [types.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: abilities.simple,
+      types: [types.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: abilities.turboblaze, types: [types.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: abilities.turboblaze,
+      types: [types.water],
+    });
     const move = createSyntheticMove(types.normal, 50, moveCategories.physical);
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createSyntheticDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen8Damage(ctx, typeChart);
     expect(result.damage).toBe(63);
   });
