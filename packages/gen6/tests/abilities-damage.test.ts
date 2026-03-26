@@ -2,13 +2,15 @@ import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts
 import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  CORE_ITEM_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
-  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
-  CORE_VOLATILE_IDS,
-  CORE_WEATHER_IDS,
+  createEvs,
+  createIvs,
+  createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -44,59 +46,64 @@ import {
 
 const dataManager = createGen6DataManager();
 const DEFAULT_MOVE = dataManager.getMove(CORE_MOVE_IDS.tackle);
-const DEFAULT_UID = "test-active";
 const DEFAULT_SPECIES_ID = GEN6_SPECIES_IDS.bulbasaur;
 const DEFAULT_NATURE_ID = GEN6_NATURE_IDS.hardy;
 
-function makeActive(overrides: {
-  level?: number;
-  attack?: number;
-  defense?: number;
-  spAttack?: number;
-  spDefense?: number;
-  speed?: number;
-  hp?: number;
-  currentHp?: number;
-  types?: PokemonType[];
-  ability?: string;
-  heldItem?: string | null;
-  status?: string | null;
-  speciesId?: number;
-  nickname?: string | null;
-  movedThisTurn?: boolean;
-}): ActivePokemon {
+function createOnFieldPokemonFixture(
+  overrides: {
+    level?: number;
+    attack?: number;
+    defense?: number;
+    spAttack?: number;
+    spDefense?: number;
+    speed?: number;
+    hp?: number;
+    currentHp?: number;
+    types?: PokemonType[];
+    ability?: string;
+    heldItem?: string | null;
+    status?: string | null;
+    speciesId?: number;
+    nickname?: string | null;
+    movedThisTurn?: boolean;
+  } = {},
+): ActivePokemon {
+  const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
   const hp = overrides.hp ?? 200;
   const attack = overrides.attack ?? 100;
   const defense = overrides.defense ?? 100;
   const spAttack = overrides.spAttack ?? 100;
   const spDefense = overrides.spDefense ?? 100;
   const speed = overrides.speed ?? 100;
-  return {
-    pokemon: {
-      uid: DEFAULT_UID,
-      speciesId: overrides.speciesId ?? DEFAULT_SPECIES_ID,
-      nickname: overrides.nickname ?? null,
-      level: overrides.level ?? 50,
-      experience: 0,
+  const pokemon = createPokemonInstance(
+    species,
+    overrides.level ?? 50,
+    new SeededRandom(species.id),
+    {
       nature: DEFAULT_NATURE_ID,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
+      ivs: createIvs(),
+      evs: createEvs(),
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: species.genderRatio === -1 ? CORE_GENDERS.genderless : CORE_GENDERS.male,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: "male" as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
+      friendship: species.baseFriendship,
+      metLocation: "test",
+      originalTrainer: "Test",
       originalTrainerId: 0,
       pokeball: GEN6_ITEM_IDS.pokeBall,
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
+      moves: [],
+      nickname: overrides.nickname ?? null,
     },
+  );
+
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = overrides.ability ?? CORE_ABILITY_IDS.none;
+  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
+
+  return {
+    pokemon,
     teamSlot: 0,
     statStages: {
       attack: 0,
@@ -132,8 +139,8 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(moveId = DEFAULT_MOVE.id, overrides: Partial<MoveData> = {}): MoveData {
-  const baseMove = dataManager.getMove(moveId)
+function createMoveFixture(moveId = DEFAULT_MOVE.id, overrides: Partial<MoveData> = {}): MoveData {
+  const baseMove = dataManager.getMove(moveId);
   return {
     ...baseMove,
     ...overrides,
@@ -144,7 +151,7 @@ function makeMove(moveId = DEFAULT_MOVE.id, overrides: Partial<MoveData> = {}): 
   } as MoveData;
 }
 
-function makeState(overrides?: {
+function createBattleStateFixture(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
 }): BattleState {
   return {
@@ -161,7 +168,7 @@ function makeState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeAbilityContext(overrides: {
+function createAbilityContextFixture(overrides: {
   pokemon?: ActivePokemon;
   opponent?: ActivePokemon;
   move?: MoveData;
@@ -169,12 +176,12 @@ function makeAbilityContext(overrides: {
   damage?: number;
 }): AbilityContext {
   return {
-    pokemon: overrides.pokemon ?? makeActive({}),
-    opponent: overrides.opponent ?? makeActive({}),
-    state: overrides.state ?? makeState(),
+    pokemon: overrides.pokemon ?? createOnFieldPokemonFixture({}),
+    opponent: overrides.opponent ?? createOnFieldPokemonFixture({}),
+    state: overrides.state ?? createBattleStateFixture(),
     rng: new SeededRandom(42),
-    trigger: "on-damage-calc",
-    move: overrides.move ?? makeMove(),
+    trigger: CORE_ABILITY_TRIGGER_IDS.onDamageCalc,
+    move: overrides.move ?? createMoveFixture(),
     damage: overrides.damage,
   };
 }
@@ -187,9 +194,9 @@ describe("Tough Claws", () => {
   it("given Tough Claws + contact move (Tackle), when checking damage-calc, then activates with boost", () => {
     // Source: Bulbapedia "Tough Claws" Gen 6 -- 1.3x contact moves
     // Source: Showdown data/abilities.ts -- toughclaws: move.flags['contact'], chainModify([5325, 4096])
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.toughClaws }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.toughClaws }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -197,9 +204,9 @@ describe("Tough Claws", () => {
 
   it("given Tough Claws + non-contact move (Flamethrower), when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Tough Claws" Gen 6 -- only contact moves
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.toughClaws }),
-      move: makeMove(CORE_MOVE_IDS.flamethrower),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.toughClaws }),
+      move: createMoveFixture(CORE_MOVE_IDS.flamethrower),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -224,9 +231,9 @@ describe("Strong Jaw", () => {
   it("given Strong Jaw + Crunch (bite move), when checking damage-calc, then activates", () => {
     // Source: Bulbapedia "Strong Jaw" Gen 6 -- boosts bite moves by 50%
     // Source: Showdown data/abilities.ts -- strongjaw: move.flags['bite']
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.strongJaw }),
-      move: makeMove(GEN6_MOVE_IDS.crunch),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.strongJaw }),
+      move: createMoveFixture(GEN6_MOVE_IDS.crunch),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -234,9 +241,9 @@ describe("Strong Jaw", () => {
 
   it("given Strong Jaw + non-bite move (Tackle), when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Strong Jaw" -- only bite moves are boosted
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.strongJaw }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.strongJaw }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -261,9 +268,9 @@ describe("Mega Launcher", () => {
   it("given Mega Launcher + Aura Sphere (pulse move), when checking damage-calc, then activates", () => {
     // Source: Bulbapedia "Mega Launcher" Gen 6 -- boosts pulse/aura moves by 50%
     // Source: Showdown data/abilities.ts -- megalauncher: move.flags['pulse']
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.megaLauncher }),
-      move: makeMove(GEN6_MOVE_IDS.auraSphere),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.megaLauncher }),
+      move: createMoveFixture(GEN6_MOVE_IDS.auraSphere),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -271,9 +278,9 @@ describe("Mega Launcher", () => {
 
   it("given Mega Launcher + non-pulse move (Tackle), when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Mega Launcher" -- only pulse/aura moves
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.megaLauncher }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.megaLauncher }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -298,9 +305,9 @@ describe("Fur Coat", () => {
   it("given Fur Coat defender + physical move, when checking damage-calc, then activates", () => {
     // Source: Bulbapedia "Fur Coat" Gen 6 -- doubles Defense against physical attacks
     // Source: Showdown data/abilities.ts -- furcoat: onModifyDef, chainModify(2)
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.furCoat }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.furCoat }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -309,9 +316,9 @@ describe("Fur Coat", () => {
 
   it("given Fur Coat defender + special move, when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Fur Coat" -- only physical attacks trigger defense doubling
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.furCoat }),
-      move: makeMove(CORE_MOVE_IDS.flamethrower),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.furCoat }),
+      move: createMoveFixture(CORE_MOVE_IDS.flamethrower),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -336,9 +343,12 @@ describe("Pixilate", () => {
   it("given Pixilate + Normal move, when checking damage-calc, then activates with type-change to Fairy", () => {
     // Source: Bulbapedia "Pixilate" Gen 6 -- Normal moves become Fairy, 1.3x boost
     // Source: Showdown data/abilities.ts -- pixilate: onModifyType + onBasePower([5325, 4096])
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.pixilate, types: [CORE_TYPE_IDS.fairy] }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({
+        ability: GEN6_ABILITY_IDS.pixilate,
+        types: [CORE_TYPE_IDS.fairy],
+      }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -349,9 +359,9 @@ describe("Pixilate", () => {
 
   it("given Pixilate + Fire move, when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Pixilate" -- only Normal-type moves are converted
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.pixilate }),
-      move: makeMove(CORE_MOVE_IDS.flamethrower),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.pixilate }),
+      move: createMoveFixture(CORE_MOVE_IDS.flamethrower),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -379,9 +389,12 @@ describe("Aerilate", () => {
   it("given Aerilate + Normal move, when checking damage-calc, then activates with type-change to Flying", () => {
     // Source: Bulbapedia "Aerilate" Gen 6 -- Normal moves become Flying, 1.3x boost
     // Source: Showdown data/abilities.ts -- aerilate: onModifyType + onBasePower
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.aerilate, types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying] }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({
+        ability: GEN6_ABILITY_IDS.aerilate,
+        types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying],
+      }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -392,9 +405,9 @@ describe("Aerilate", () => {
 
   it("given Aerilate + Ice move, when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Aerilate" -- only Normal-type moves
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.aerilate }),
-      move: makeMove(GEN6_MOVE_IDS.iceBeam),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.aerilate }),
+      move: createMoveFixture(GEN6_MOVE_IDS.iceBeam),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -423,20 +436,25 @@ describe("Refrigerate", () => {
   it("given Refrigerate + Normal move, when checking damage-calc, then activates with type-change to Ice", () => {
     // Source: Bulbapedia "Refrigerate" Gen 6 -- Normal moves become Ice, 1.3x boost
     // Source: Showdown data/abilities.ts -- refrigerate: onModifyType + onBasePower
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.refrigerate, types: [CORE_TYPE_IDS.ice] }),
-      move: makeMove(CORE_MOVE_IDS.tackle),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({
+        ability: GEN6_ABILITY_IDS.refrigerate,
+        types: [CORE_TYPE_IDS.ice],
+      }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] }]);
+    expect(result.effects).toEqual([
+      { effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] },
+    ]);
   });
 
   it("given Refrigerate + Grass move, when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Refrigerate" -- only Normal-type moves
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.refrigerate }),
-      move: makeMove(GEN6_MOVE_IDS.energyBall),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.refrigerate }),
+      move: createMoveFixture(GEN6_MOVE_IDS.energyBall),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -465,9 +483,9 @@ describe("Parental Bond", () => {
   it("given Parental Bond + single-hit move, when checking damage-calc, then activates", () => {
     // Source: Bulbapedia "Parental Bond" Gen 6 -- moves hit twice, second at 50%
     // Source: Showdown data/abilities.ts -- parentalbond: onModifyMove adds multihit
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.parentalBond }),
-      move: makeMove(GEN6_MOVE_IDS.strength),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.parentalBond }),
+      move: createMoveFixture(GEN6_MOVE_IDS.strength),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -476,9 +494,9 @@ describe("Parental Bond", () => {
   it("given Parental Bond + multi-hit move (Double Slap), when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Parental Bond" -- does not apply to multi-hit moves
     const multiHitEffect: MoveEffect = { type: "multi-hit", min: 2, max: 5 };
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.parentalBond }),
-      move: makeMove(GEN6_MOVE_IDS.doubleSlap, { effect: multiHitEffect }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.parentalBond }),
+      move: createMoveFixture(GEN6_MOVE_IDS.doubleSlap, { effect: multiHitEffect }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -486,9 +504,9 @@ describe("Parental Bond", () => {
 
   it("given Parental Bond + status move, when checking damage-calc, then does not activate", () => {
     // Source: Bulbapedia "Parental Bond" -- only damaging moves
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.parentalBond }),
-      move: makeMove(GEN6_MOVE_IDS.growl),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.parentalBond }),
+      move: createMoveFixture(GEN6_MOVE_IDS.growl),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -526,9 +544,9 @@ describe("Parental Bond", () => {
 describe("Technician (carry-forward)", () => {
   it("given Technician + move with BP 60, when checking damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- technician: basePower <= 60, chainModify(1.5)
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.technician }),
-      move: makeMove(GEN6_MOVE_IDS.swift),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.technician }),
+      move: createMoveFixture(GEN6_MOVE_IDS.swift),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -536,9 +554,9 @@ describe("Technician (carry-forward)", () => {
 
   it("given Technician + move with BP 80, when checking damage-calc, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- technician only for basePower <= 60
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.technician }),
-      move: makeMove(GEN6_MOVE_IDS.strength),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.technician }),
+      move: createMoveFixture(GEN6_MOVE_IDS.strength),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -552,8 +570,12 @@ describe("Technician (carry-forward)", () => {
 describe("Multiscale (carry-forward)", () => {
   it("given Multiscale at full HP, when checking damage-calc, then activates", () => {
     // Source: Showdown data/abilities.ts -- multiscale: target.hp >= target.maxhp, chainModify(0.5)
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.multiscale, hp: 200, currentHp: 200 }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({
+        ability: GEN6_ABILITY_IDS.multiscale,
+        hp: 200,
+        currentHp: 200,
+      }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -562,8 +584,12 @@ describe("Multiscale (carry-forward)", () => {
 
   it("given Multiscale at less than full HP, when checking damage-calc, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- multiscale only at full HP
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.multiscale, hp: 200, currentHp: 150 }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({
+        ability: GEN6_ABILITY_IDS.multiscale,
+        hp: 200,
+        currentHp: 150,
+      }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -588,9 +614,9 @@ describe("Sturdy (carry-forward)", () => {
   it("given Sturdy + OHKO move, when checking damage immunity, then blocks the move", () => {
     // Source: Showdown data/abilities.ts -- sturdy onTryHit: if move.ohko, return null
     const ohkoEffect: MoveEffect = { type: "ohko" };
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: CORE_ABILITY_IDS.sturdy }),
-      move: makeMove(GEN6_MOVE_IDS.fissure, { effect: ohkoEffect }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: CORE_ABILITY_IDS.sturdy }),
+      move: createMoveFixture(GEN6_MOVE_IDS.fissure, { effect: ohkoEffect }),
     });
     const result = handleGen6DamageImmunityAbility(ctx);
     expect(result.activated).toBe(true);
@@ -599,9 +625,9 @@ describe("Sturdy (carry-forward)", () => {
 
   it("given Sturdy + normal move, when checking damage immunity, then does not activate", () => {
     // Source: Showdown -- OHKO-block only; survival is in capLethalDamage
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: CORE_ABILITY_IDS.sturdy }),
-      move: makeMove(),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: CORE_ABILITY_IDS.sturdy }),
+      move: createMoveFixture(),
     });
     const result = handleGen6DamageImmunityAbility(ctx);
     expect(result.activated).toBe(false);
@@ -638,9 +664,9 @@ describe("Sheer Force (carry-forward)", () => {
   it("given Sheer Force + move with status-chance effect, when checking, then activates", () => {
     // Source: Showdown data/abilities.ts -- sheerforce: move with secondaries
     const effect: MoveEffect = { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 10 };
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove(CORE_MOVE_IDS.flamethrower, { effect }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.sheerForce }),
+      move: createMoveFixture(CORE_MOVE_IDS.flamethrower, { effect }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -648,9 +674,9 @@ describe("Sheer Force (carry-forward)", () => {
 
   it("given Sheer Force + move without secondary, when checking, then does not activate", () => {
     // Source: Showdown -- Sheer Force only for moves with secondary effects
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove(CORE_MOVE_IDS.tackle, { effect: null }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.sheerForce }),
+      move: createMoveFixture(CORE_MOVE_IDS.tackle, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(false);
@@ -659,7 +685,10 @@ describe("Sheer Force (carry-forward)", () => {
   it("given Sheer Force utility, when computing multiplier for eligible move, then returns ~1.3x", () => {
     // Source: Showdown data/abilities.ts -- sheerforce: chainModify([5325, 4096])
     const effect: MoveEffect = { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 10 };
-    expect(getSheerForceMultiplier(GEN6_ABILITY_IDS.sheerForce, effect)).toBeCloseTo(5325 / 4096, 10);
+    expect(getSheerForceMultiplier(GEN6_ABILITY_IDS.sheerForce, effect)).toBeCloseTo(
+      5325 / 4096,
+      10,
+    );
   });
 
   it("given Sheer Force utility, when move has no secondary effect, then returns 1 (no boost)", () => {
@@ -670,9 +699,9 @@ describe("Sheer Force (carry-forward)", () => {
   it("given Sheer Force + Tri Attack (effect=null, whitelisted), when checking activation, then activates", () => {
     // Source: Showdown data/moves.ts -- triattack has secondary.onHit with chance: 20
     //   Our data stores effect=null because the onHit function is not serializable
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove(CORE_MOVE_IDS.triAttack, { effect: null }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.sheerForce }),
+      move: createMoveFixture(CORE_MOVE_IDS.triAttack, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -682,9 +711,9 @@ describe("Sheer Force (carry-forward)", () => {
     // Source: Showdown data/moves.ts -- secretpower has secondary effect (30% chance)
     //   In Gen 6 data, effect is status-chance (paralysis 30%), so it would also be caught
     //   by hasSheerForceEligibleEffect. The whitelist provides defense-in-depth.
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove(GEN6_MOVE_IDS.secretPower, { effect: null }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.sheerForce }),
+      move: createMoveFixture(GEN6_MOVE_IDS.secretPower, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
@@ -694,9 +723,9 @@ describe("Sheer Force (carry-forward)", () => {
     // Source: Showdown data/moves.ts -- relicsong has secondary (10% sleep)
     //   In Gen 6 data, effect is status-chance (sleep 10%), so it would also be caught
     //   by hasSheerForceEligibleEffect. The whitelist provides defense-in-depth.
-    const ctx = makeAbilityContext({
-      pokemon: makeActive({ ability: GEN6_ABILITY_IDS.sheerForce }),
-      move: makeMove(GEN6_MOVE_IDS.relicSong, { effect: null }),
+    const ctx = createAbilityContextFixture({
+      pokemon: createOnFieldPokemonFixture({ ability: GEN6_ABILITY_IDS.sheerForce }),
+      move: createMoveFixture(GEN6_MOVE_IDS.relicSong, { effect: null }),
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
