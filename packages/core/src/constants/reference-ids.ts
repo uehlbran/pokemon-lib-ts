@@ -432,6 +432,7 @@ export const CORE_VOLATILE_IDS = {
   leechSeed: "leech-seed",
   saltCure: "salt-cure",
   magnetRise: "magnet-rise",
+  metronomeCount: "metronome-count",
   nightmare: "nightmare",
   shadowForceCharging: "shadow-force-charging",
   silkTrap: "silk-trap",

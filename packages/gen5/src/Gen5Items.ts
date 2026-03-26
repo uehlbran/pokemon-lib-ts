@@ -1,6 +1,7 @@
 import {
   BATTLE_EFFECT_TARGETS,
   BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
   type ItemContext,
   type ItemEffect,
   type ItemResult,
@@ -24,6 +25,7 @@ const NO_ACTIVATION: ItemResult = {
 
 const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
 const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
+const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
 
 /**
  * Map of gem item IDs to the type they boost.
@@ -185,20 +187,20 @@ function handleBeforeMove(item: string, context: ItemContext): ItemResult {
   const moveId = context.move?.id;
   if (!moveId) return NO_ACTIVATION;
 
-  const existing = pokemon.volatileStatuses.get("metronome-count");
+  const existing = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
   const previousMoveId = existing?.data?.moveId as string | undefined;
   const previousCount = (existing?.data?.count as number) ?? 0;
 
   if (previousMoveId === moveId) {
     // Same move used consecutively -- increment count
     const newCount = previousCount + 1;
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: newCount, moveId },
     });
   } else {
     // Different move (or first use) -- reset to count 1
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 1, moveId },
     });
@@ -883,7 +885,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.none, target: EFFECT_TARGET.opponent, value: "force-switch" },
+            {
+              type: ITEM_EFFECT.none,
+              target: EFFECT_TARGET.opponent,
+              value: ITEM_EFFECT_VALUE.forceSwitch,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: GEN5_ITEM_IDS.redCard },
           ],
           messages: [`${pokemonName} held up its Red Card against the attacker!`],
@@ -900,7 +906,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.none, target: EFFECT_TARGET.self, value: "force-switch" },
+            {
+              type: ITEM_EFFECT.none,
+              target: EFFECT_TARGET.self,
+              value: ITEM_EFFECT_VALUE.forceSwitch,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,

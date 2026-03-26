@@ -1335,7 +1335,7 @@ export function calculateGen8Damage(
   // Metronome item: consecutive use boost
   // Source: Showdown data/items.ts -- Metronome onModifyDamage
   if (!attackerHasKlutz && attackerItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+    const metronomeState = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
     if (metronomeState?.data?.count) {
       const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
       if (boostSteps > 0) {

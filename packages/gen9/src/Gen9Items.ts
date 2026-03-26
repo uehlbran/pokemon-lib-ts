@@ -2,12 +2,13 @@ import {
   type ActivePokemon,
   BATTLE_EFFECT_TARGETS,
   BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
   type ItemContext,
   type ItemEffect,
   type ItemResult,
 } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
-import { CORE_WEATHER_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS, CORE_WEATHER_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { GEN9_TYPE_CHART } from "./Gen9TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -23,6 +24,7 @@ const NO_ACTIVATION: ItemResult = {
 
 const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
 const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
+const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Type-Boost Items (carried from Gen 6-8, 1.2x = 4915/4096)
@@ -879,18 +881,18 @@ function handleBeforeMove(item: string, context: ItemContext): ItemResult {
   const moveId = context.move?.id;
   if (!moveId) return NO_ACTIVATION;
 
-  const existing = pokemon.volatileStatuses.get("metronome-count");
+  const existing = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
   const previousMoveId = existing?.data?.moveId as string | undefined;
   const previousCount = (existing?.data?.count as number) ?? 0;
 
   if (previousMoveId === moveId) {
     const newCount = previousCount + 1;
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: newCount, moveId },
     });
   } else {
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 1, moveId },
     });
@@ -1473,7 +1475,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.none, target: EFFECT_TARGET.opponent, value: "force-switch" },
+            {
+              type: ITEM_EFFECT.none,
+              target: EFFECT_TARGET.opponent,
+              value: ITEM_EFFECT_VALUE.forceSwitch,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "red-card" },
           ],
           messages: [`${pokemonName} held up its Red Card against the attacker!`],
@@ -1489,7 +1495,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.none, target: EFFECT_TARGET.self, value: "force-switch" },
+            {
+              type: ITEM_EFFECT.none,
+              target: EFFECT_TARGET.self,
+              value: ITEM_EFFECT_VALUE.forceSwitch,
+            },
             { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "eject-button" },
           ],
           messages: [`${pokemonName}'s Eject Button activated!`],

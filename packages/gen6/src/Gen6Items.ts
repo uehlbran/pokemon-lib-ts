@@ -1,5 +1,9 @@
 import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
-import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
+} from "@pokemon-lib-ts/battle";
 import type { MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ITEM_IDS,
@@ -19,6 +23,8 @@ const NO_ACTIVATION: ItemResult = {
   effects: [],
   messages: [],
 };
+
+const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
 
 /**
  * Map of gem item IDs to the type they boost.
@@ -261,18 +267,18 @@ function handleBeforeMove(item: string, context: ItemContext): ItemResult {
   const moveId = context.move?.id;
   if (!moveId) return NO_ACTIVATION;
 
-  const existing = pokemon.volatileStatuses.get("metronome-count");
+  const existing = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
   const previousMoveId = existing?.data?.moveId as string | undefined;
   const previousCount = (existing?.data?.count as number) ?? 0;
 
   if (previousMoveId === moveId) {
     const newCount = previousCount + 1;
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: newCount, moveId },
     });
   } else {
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 1, moveId },
     });
@@ -1029,7 +1035,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.none,
               target: BATTLE_EFFECT_TARGETS.opponent,
-              value: "force-switch",
+              value: ITEM_EFFECT_VALUE.forceSwitch,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,
@@ -1053,7 +1059,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
             {
               type: BATTLE_ITEM_EFFECT_TYPES.none,
               target: BATTLE_EFFECT_TARGETS.self,
-              value: "force-switch",
+              value: ITEM_EFFECT_VALUE.forceSwitch,
             },
             {
               type: BATTLE_ITEM_EFFECT_TYPES.consume,

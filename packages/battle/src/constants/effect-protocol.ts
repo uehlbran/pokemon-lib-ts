@@ -47,3 +47,7 @@ export const BATTLE_ITEM_EFFECT_TYPES = {
   inflictStatus: "inflict-status",
   none: "none",
 } as const;
+
+export const BATTLE_ITEM_EFFECT_VALUES = {
+  forceSwitch: "force-switch",
+} as const;

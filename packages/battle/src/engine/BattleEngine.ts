@@ -17,6 +17,7 @@ import {
   getStatStageMultiplier,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
+import { BATTLE_ITEM_EFFECT_VALUES } from "../constants/effect-protocol";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
@@ -5263,7 +5264,7 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case "none":
-          if (effect.value === "force-switch") {
+          if (effect.value === BATTLE_ITEM_EFFECT_VALUES.forceSwitch) {
             const switchSide =
               effect.target === "opponent" && opponent ? ((1 - side) as 0 | 1) : side;
             this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });

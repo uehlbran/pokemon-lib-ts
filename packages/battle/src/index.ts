@@ -7,6 +7,7 @@ export {
   BATTLE_ABILITY_EFFECT_TYPES,
   BATTLE_EFFECT_TARGETS,
   BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
 } from "./constants/effect-protocol";
 export {
   BATTLE_GIMMICK_IDS,
