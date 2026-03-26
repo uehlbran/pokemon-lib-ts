@@ -1,15 +1,21 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
+  createEvs,
+  createIvs,
+  createMoveSlot,
+  createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
-import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 import {
   createGen6DataManager,
   GEN6_ITEM_IDS,
@@ -17,51 +23,55 @@ import {
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
 } from "../src";
+import { calculateGen6Damage, pokeRound } from "../src/Gen6DamageCalc";
+import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-const dataManager = createGen6DataManager();
-const SYNTHETIC_MOVE_BASE = dataManager.getMove(GEN6_MOVE_IDS.tackle);
+const GEN6_DATA = createGen6DataManager();
+const DEFAULT_SPECIES = GEN6_DATA.getSpecies(GEN6_SPECIES_IDS.bulbasaur);
+const DEFAULT_MOVE = GEN6_DATA.getMove(GEN6_MOVE_IDS.tackle);
+const DEFAULT_NATURE = GEN6_DATA.getNature(GEN6_NATURE_IDS.hardy).id;
+const DEFAULT_POKEBALL = CORE_ITEM_IDS.pokeBall;
 
 function getGen6Move(id: string): MoveData {
-  const move = dataManager.getMove(id);
+  const move = GEN6_DATA.getMove(id);
   return { ...move, flags: { ...move.flags } };
 }
 
-function getGen6Item(id: string) {
-  return dataManager.getItem(id);
+function createSyntheticMove(
+  baseMove: MoveData,
+  overrides: {
+    id?: string;
+    type?: PokemonType;
+    category?: (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES];
+    power?: number | null;
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+    critRatio?: number;
+    target?: string;
+  } = {},
+): MoveData {
+  return {
+    ...baseMove,
+    id: overrides.id ?? baseMove.id,
+    displayName: baseMove.displayName,
+    type: overrides.type ?? baseMove.type,
+    category: overrides.category ?? baseMove.category,
+    power: overrides.power ?? baseMove.power,
+    target: overrides.target ?? baseMove.target,
+    effect: overrides.effect ?? baseMove.effect,
+    critRatio: overrides.critRatio ?? baseMove.critRatio,
+    flags: {
+      ...baseMove.flags,
+      ...overrides.flags,
+    },
+  } as MoveData;
 }
 
-function makeSyntheticMove(overrides: {
-  id: string;
-  type: PokemonType;
-  category?: "physical" | "special" | "status";
-  power: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  critRatio?: number;
-  target?: string;
-}): MoveData {
-  const move = { ...SYNTHETIC_MOVE_BASE } as MoveData;
-  move.id = overrides.id;
-  move.displayName = overrides.id;
-  move.type = overrides.type;
-  move.category = overrides.category ?? "physical";
-  move.power = overrides.power;
-  move.target = overrides.target ?? move.target;
-  move.effect = overrides.effect ?? null;
-  move.critRatio = overrides.critRatio ?? 0;
-  move.flags = {
-    ...move.flags,
-    ...overrides.flags,
-  };
-  move.generation = 6;
-  return move;
-}
-
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -70,14 +80,8 @@ function makeActive(overrides: {
   speed?: number;
   hp?: number;
   currentHp?: number;
-  types?: PokemonType[];
-  ability?: string;
   heldItem?: string | null;
-  status?: string | null;
   speciesId?: number;
-  gender?: "male" | "female" | "genderless";
-  volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
-  itemKnockedOff?: boolean;
 }): ActivePokemon {
   const hp = overrides.hp ?? 200;
   const attack = overrides.attack ?? 100;
@@ -85,68 +89,33 @@ function makeActive(overrides: {
   const spAttack = overrides.spAttack ?? 100;
   const spDefense = overrides.spDefense ?? 100;
   const speed = overrides.speed ?? 100;
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: overrides.speciesId ?? GEN6_SPECIES_IDS.bulbasaur,
-      nickname: null,
-      level: overrides.level ?? 50,
-      experience: 0,
-      nature: GEN6_NATURE_IDS.hardy,
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? hp,
-      moves: [],
-      ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
-      heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
-      friendship: 0,
-      gender: (overrides.gender ?? "male") as any,
-      isShiny: false,
-      metLocation: "",
-      metLevel: 1,
-      originalTrainer: "",
-      originalTrainerId: 0,
-      pokeball: CORE_ITEM_IDS.pokeBall,
-      calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
-    },
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: overrides.volatiles ?? new Map(),
-    types: overrides.types ?? [CORE_TYPE_IDS.normal],
-    ability: overrides.ability ?? CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    itemKnockedOff: overrides.itemKnockedOff ?? false,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    suppressedAbility: null,
-    forcedMove: null,
-  } as ActivePokemon;
+  const species = GEN6_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
+  const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(6), {
+    nature: DEFAULT_NATURE,
+    ivs: createIvs(),
+    evs: createEvs(),
+    moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
+    ability: CORE_ABILITY_IDS.none,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: overrides.heldItem ?? null,
+    friendship: species.baseFriendship,
+    gender: species.genderRatio === null ? CORE_GENDERS.genderless : CORE_GENDERS.male,
+    isShiny: false,
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: DEFAULT_POKEBALL,
+  });
+
+  pokemon.uid = `test-${species.id}-${pokemon.level}`;
+  pokemon.currentHp = overrides.currentHp ?? hp;
+  pokemon.ability = CORE_ABILITY_IDS.none;
+  pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
+
+  return createBattleOnFieldPokemon(pokemon, 0, [...species.types]);
 }
 
-function makeState(overrides?: {
+function createBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
   format?: string;
 }): BattleState {
@@ -161,10 +130,10 @@ function makeState(overrides?: {
     generation: 6,
     turnNumber: 1,
     sides: [{}, {}],
-  } as unknown as BattleState;
+  } as BattleState;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -173,10 +142,17 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeSyntheticMove({ id: "test-neutral-physical", type: CORE_TYPE_IDS.normal, power: 50 }),
-    state: overrides.state ?? makeState(),
+    attacker: overrides.attacker ?? createOnFieldPokemon({}),
+    defender: overrides.defender ?? createOnFieldPokemon({}),
+    move:
+      overrides.move ??
+      createSyntheticMove(DEFAULT_MOVE, {
+        id: "test-neutral-physical",
+        type: CORE_TYPE_IDS.normal,
+        category: CORE_MOVE_CATEGORIES.physical,
+        power: 50,
+      }),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   };
@@ -193,32 +169,29 @@ describe("Knock Off item removability (issue #610)", () => {
     // Source: Showdown data/items.ts -- removable items receive the Gen 6 Knock Off boost.
     // Source: Bulbapedia "Knock Off" Gen 6 -- 1.5x damage if target holds a removable item.
     // We compare Knock Off against an equally powered synthetic Dark move so the boost is isolated.
-    const attacker = makeActive({
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.absol,
-      types: [CORE_TYPE_IDS.dark],
       attack: 100,
     });
-    const defender = makeActive({
+    const defender = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.bulbasaur,
-      heldItem: getGen6Item(GEN6_ITEM_IDS.eviolite).id,
+      heldItem: GEN6_ITEM_IDS.eviolite,
       defense: 100,
-      types: [CORE_TYPE_IDS.normal],
     });
     const knockOff = getGen6Move(GEN6_MOVE_IDS.knockOff);
-    const darkStrike = makeSyntheticMove({
+    const darkStrike = createSyntheticMove(knockOff, {
       id: "test-dark-strike",
       type: CORE_TYPE_IDS.dark,
       power: knockOff.power,
-      category: knockOff.category,
     });
 
     const knockOffResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
+      createDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
       typeChart,
     );
 
     const darkStrikeResult = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: darkStrike, seed: 12345 }),
+      createDamageContext({ attacker, defender, move: darkStrike, seed: 12345 }),
       typeChart,
     );
 
@@ -227,31 +200,28 @@ describe("Knock Off item removability (issue #610)", () => {
 
   it("given a defender holding a Mega Stone, when Knock Off is used, then it does not get the 1.5x boost", () => {
     // Source: Showdown data/items.ts -- Mega Stones are not removable by Knock Off.
-    const attacker = makeActive({
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.absol,
-      types: [CORE_TYPE_IDS.dark],
       attack: 100,
     });
-    const defender = makeActive({
+    const defender = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.charizard,
-      heldItem: getGen6Item(GEN6_ITEM_IDS.charizarditeX).id,
+      heldItem: GEN6_ITEM_IDS.charizarditeX,
       defense: 100,
-      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
     });
     const knockOff = getGen6Move(GEN6_MOVE_IDS.knockOff);
 
     const withMegaStone = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
+      createDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
       typeChart,
     );
 
-    const defenderNoItem = makeActive({
+    const defenderNoItem = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.charizard,
       defense: 100,
-      types: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying],
     });
     const withoutItem = calculateGen6Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker,
         defender: defenderNoItem,
         move: knockOff,
@@ -266,31 +236,28 @@ describe("Knock Off item removability (issue #610)", () => {
   it("given a defender holding another Mega Stone, when Knock Off is used, then it does not get the 1.5x boost", () => {
     // Source: Showdown data/items.ts -- Mega Stones are not removable by Knock Off.
     // Triangulation: second Mega Stone test to prove the suffix-based rule still holds.
-    const attacker = makeActive({
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.absol,
-      types: [CORE_TYPE_IDS.dark],
       attack: 100,
     });
-    const defender = makeActive({
+    const defender = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.venusaur,
-      heldItem: getGen6Item(GEN6_ITEM_IDS.venusaurite).id,
+      heldItem: GEN6_ITEM_IDS.venusaurite,
       defense: 100,
-      types: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
     });
     const knockOff = getGen6Move(GEN6_MOVE_IDS.knockOff);
 
     const withMegaStone = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
+      createDamageContext({ attacker, defender, move: knockOff, seed: 12345 }),
       typeChart,
     );
 
-    const defenderNoItem = makeActive({
+    const defenderNoItem = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.venusaur,
       defense: 100,
-      types: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
     });
     const withoutItem = calculateGen6Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker,
         defender: defenderNoItem,
         move: knockOff,
@@ -311,23 +278,22 @@ describe("type-boost items use pokeRound for the shared fixed-point modifier (is
   it("given Charcoal boosting a Fire move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {
     // Source: Showdown data/items.ts -- Charcoal uses onBasePower with the shared fixed-point type boost.
     // Source: Showdown sim/battle.ts -- chainModify uses modify() which is pokeRound.
-    const charcoal = getGen6Item(GEN6_ITEM_IDS.charcoal);
-    const attacker = makeActive({
+    const charcoal = GEN6_ITEM_IDS.charcoal;
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.charizard,
-      types: [CORE_TYPE_IDS.fire],
       attack: 100,
-      heldItem: charcoal.id,
+      heldItem: charcoal,
     });
-    const defender = makeActive({ defense: 100 });
-    const fireMove = makeSyntheticMove({
+    const defender = createOnFieldPokemon({ defense: 100 });
+    const fireMove = createSyntheticMove(DEFAULT_MOVE, {
       id: "test-fire-60",
       type: CORE_TYPE_IDS.fire,
       power: 60,
-      category: "physical",
+      category: CORE_MOVE_CATEGORIES.physical,
     });
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 42 }),
+      createDamageContext({ attacker, defender, move: fireMove, seed: 42 }),
       typeChart,
     );
 
@@ -341,23 +307,22 @@ describe("type-boost items use pokeRound for the shared fixed-point modifier (is
     expect(pokeRound(3, CORE_FIXED_POINT.typeBoost)).toBe(4);
     expect(Math.floor((3 * CORE_FIXED_POINT.typeBoost) / CORE_FIXED_POINT.identity)).toBe(3);
 
-    const charcoal = getGen6Item(GEN6_ITEM_IDS.charcoal);
-    const attacker = makeActive({
+    const charcoal = GEN6_ITEM_IDS.charcoal;
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.charizard,
-      types: [CORE_TYPE_IDS.fire],
       attack: 100,
-      heldItem: charcoal.id,
+      heldItem: charcoal,
     });
-    const defender = makeActive({ defense: 100 });
-    const fireMove = makeSyntheticMove({
+    const defender = createOnFieldPokemon({ defense: 100 });
+    const fireMove = createSyntheticMove(DEFAULT_MOVE, {
       id: "test-fire-3",
       type: CORE_TYPE_IDS.fire,
       power: 3,
-      category: "physical",
+      category: CORE_MOVE_CATEGORIES.physical,
     });
 
     const result = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: fireMove, seed: 42 }),
+      createDamageContext({ attacker, defender, move: fireMove, seed: 42 }),
       typeChart,
     );
 
@@ -366,34 +331,32 @@ describe("type-boost items use pokeRound for the shared fixed-point modifier (is
 
   it("given Adamant Orb boosting Dialga's Dragon move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {
     // Source: Showdown data/items.ts -- Adamant Orb uses onBasePower with the shared fixed-point type boost for Dialga.
-    const adamantOrb = getGen6Item(GEN6_ITEM_IDS.adamantOrb);
-    const attacker = makeActive({
+    const adamantOrb = GEN6_ITEM_IDS.adamantOrb;
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.dialga,
-      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.steel],
       attack: 100,
-      heldItem: adamantOrb.id,
+      heldItem: adamantOrb,
     });
-    const defender = makeActive({ defense: 100, types: [CORE_TYPE_IDS.normal] });
-    const dragonMove = makeSyntheticMove({
+    const defender = createOnFieldPokemon({ defense: 100 });
+    const dragonMove = createSyntheticMove(DEFAULT_MOVE, {
       id: "test-dragon-60",
       type: CORE_TYPE_IDS.dragon,
       power: 60,
-      category: "physical",
+      category: CORE_MOVE_CATEGORIES.physical,
     });
 
     const withOrb = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: dragonMove, seed: 42 }),
+      createDamageContext({ attacker, defender, move: dragonMove, seed: 42 }),
       typeChart,
     );
 
-    const attackerNoItem = makeActive({
+    const attackerNoItem = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.dialga,
-      types: [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.steel],
       attack: 100,
     });
 
     const withoutOrb = calculateGen6Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker: attackerNoItem,
         defender,
         move: dragonMove,
@@ -408,33 +371,31 @@ describe("type-boost items use pokeRound for the shared fixed-point modifier (is
 
   it("given Splash Plate boosting a Water move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {
     // Source: Showdown data/items.ts -- Splash Plate uses onBasePower with the shared fixed-point type boost.
-    const splashPlate = getGen6Item(GEN6_ITEM_IDS.splashPlate);
-    const attacker = makeActive({
+    const splashPlate = GEN6_ITEM_IDS.splashPlate;
+    const attacker = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.blastoise,
-      types: [CORE_TYPE_IDS.water],
       attack: 100,
-      heldItem: splashPlate.id,
+      heldItem: splashPlate,
     });
-    const defender = makeActive({ defense: 100, types: [CORE_TYPE_IDS.normal] });
-    const waterMove = makeSyntheticMove({
+    const defender = createOnFieldPokemon({ defense: 100 });
+    const waterMove = createSyntheticMove(DEFAULT_MOVE, {
       id: "test-water-60",
       type: CORE_TYPE_IDS.water,
       power: 60,
-      category: "physical",
+      category: CORE_MOVE_CATEGORIES.physical,
     });
 
     const withPlate = calculateGen6Damage(
-      makeDamageContext({ attacker, defender, move: waterMove, seed: 42 }),
+      createDamageContext({ attacker, defender, move: waterMove, seed: 42 }),
       typeChart,
     );
 
-    const attackerNoItem = makeActive({
+    const attackerNoItem = createOnFieldPokemon({
       speciesId: GEN6_SPECIES_IDS.blastoise,
-      types: [CORE_TYPE_IDS.water],
       attack: 100,
     });
     const withoutPlate = calculateGen6Damage(
-      makeDamageContext({
+      createDamageContext({
         attacker: attackerNoItem,
         defender,
         move: waterMove,
