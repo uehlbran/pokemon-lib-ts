@@ -1,5 +1,6 @@
+import { CORE_HAZARD_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager, Gen3Ruleset } from "../../src";
+import { createGen3DataManager, GEN3_MOVE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 
 /**
  * Gen 3 Smoke Tests
@@ -10,6 +11,7 @@ import { createGen3DataManager, Gen3Ruleset } from "../../src";
 
 describe("Gen 3 Smoke Tests", () => {
   it("given Gen3Ruleset constructor, when instantiated, then generation = 3 and name is set", () => {
+    // Source: Gen 3 is the Ruby/Sapphire/Emerald generation.
     const ruleset = new Gen3Ruleset();
 
     expect(ruleset.generation).toBe(3);
@@ -26,16 +28,16 @@ describe("Gen 3 Smoke Tests", () => {
   it("given createGen3DataManager, when getSpecies('blaziken'), then returns Blaziken data", () => {
     // Source: Blaziken is #257 in the National Dex, a Gen 3 starter final evolution
     const dm = createGen3DataManager();
-    const blaziken = dm.getSpecies(257);
+    const blaziken = dm.getSpecies(GEN3_SPECIES_IDS.blaziken);
 
-    expect(blaziken).toBeDefined();
-    expect(blaziken.name.toLowerCase()).toContain("blaziken");
+    expect(blaziken.id).toBe(GEN3_SPECIES_IDS.blaziken);
+    expect(blaziken.name).toBe("blaziken");
   });
 
-  it("given createGen3DataManager, when getMove('earthquake'), then returns Earthquake data", () => {
-    // Source: Earthquake is a Gen 1 move available in all gens
+  it("given createGen3DataManager, when getMove is called for the canonical ground move, then returns correct data", () => {
+    // Source: Earthquake is a Gen 1 move available in all gens.
     const dm = createGen3DataManager();
-    const earthquake = dm.getMove("earthquake");
+    const earthquake = dm.getMove(GEN3_MOVE_IDS.earthquake);
 
     expect(earthquake).toBeDefined();
     expect(earthquake.type).toBe("ground");
@@ -49,10 +51,10 @@ describe("Gen 3 Smoke Tests", () => {
     const types = ruleset.getAvailableTypes();
 
     expect(types.length).toBe(17);
-    expect(types).not.toContain("fairy");
-    expect(types).toContain("dark");
-    expect(types).toContain("steel");
-    expect(types).toContain("dragon");
+    expect(types).not.toContain(CORE_TYPE_IDS.fairy);
+    expect(types).toContain(CORE_TYPE_IDS.dark);
+    expect(types).toContain(CORE_TYPE_IDS.steel);
+    expect(types).toContain(CORE_TYPE_IDS.dragon);
   });
 
   it("given Gen3Ruleset, when getAvailableHazards called, then returns only spikes", () => {
@@ -60,7 +62,7 @@ describe("Gen 3 Smoke Tests", () => {
     const ruleset = new Gen3Ruleset();
     const hazards = ruleset.getAvailableHazards();
 
-    expect(hazards).toEqual(["spikes"]);
+    expect(hazards).toEqual([CORE_HAZARD_IDS.spikes]);
   });
 
   it("given Gen3Ruleset, when hasAbilities called, then returns true", () => {
