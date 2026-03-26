@@ -14,6 +14,7 @@ import * as path from "node:path";
 import type { Generation, Move, Specie } from "@pkmn/data";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
+import { CORE_MOVE_EFFECT_TARGETS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Local interfaces for typed casts
@@ -393,8 +394,8 @@ function buildMoveEffect(move: Move): object | null {
         { type: "volatile-status", status: "confusion", chance: 100 },
         {
           type: "stat-change",
-          changes: [{ stat: "attack", stages: 2 }],
-          target: "foe",
+          changes: [{ stat: CORE_STAT_IDS.attack, stages: 2 }],
+          target: CORE_MOVE_EFFECT_TARGETS.foe,
           chance: 100,
         },
       ],
@@ -409,8 +410,8 @@ function buildMoveEffect(move: Move): object | null {
         { type: "volatile-status", status: "confusion", chance: 100 },
         {
           type: "stat-change",
-          changes: [{ stat: "spAttack", stages: 1 }],
-          target: "foe",
+          changes: [{ stat: CORE_STAT_IDS.spAttack, stages: 1 }],
+          target: CORE_MOVE_EFFECT_TARGETS.foe,
           chance: 100,
         },
       ],
@@ -503,7 +504,7 @@ function buildMoveEffect(move: Move): object | null {
       stat: mapBoostStat(stat),
       stages,
     }));
-    return { type: "stat-change", changes, target: "self", chance: 100 };
+    return { type: "stat-change", changes, target: CORE_MOVE_EFFECT_TARGETS.self, chance: 100 };
   }
 
   // Entry hazards — check BEFORE screens
@@ -575,7 +576,7 @@ function buildMoveEffect(move: Move): object | null {
         effects.push({
           type: "stat-change",
           changes,
-          target: "foe",
+          target: CORE_MOVE_EFFECT_TARGETS.foe,
           chance: sec.chance ?? 100,
         });
       }
@@ -588,7 +589,7 @@ function buildMoveEffect(move: Move): object | null {
         effects.push({
           type: "stat-change",
           changes,
-          target: "self",
+          target: CORE_MOVE_EFFECT_TARGETS.self,
           chance: sec.chance ?? 100,
           fromSecondary: true, // marks as coming from secondary.self -- Sheer Force eligible
         });
@@ -605,7 +606,7 @@ function buildMoveEffect(move: Move): object | null {
     effects.push({
       type: "stat-change",
       changes,
-      target: "self",
+      target: CORE_MOVE_EFFECT_TARGETS.self,
       chance: 100,
     });
   }
