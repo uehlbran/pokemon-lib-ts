@@ -5,7 +5,13 @@ import {
   type ItemEffect,
   type ItemResult,
 } from "@pokemon-lib-ts/battle";
-import { CORE_STAT_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 
 /** No-op result for when an item doesn't activate. */
 const NO_ACTIVATION: ItemResult = {
@@ -69,14 +75,14 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
   // Klutz: holder cannot use its held item — suppress all item triggers
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
-  if (context.pokemon.ability === "klutz") {
+  if (context.pokemon.ability === CORE_ABILITY_IDS.klutz) {
     return NO_ACTIVATION;
   }
 
   // Embargo: prevents item use for 5 turns
   // Source: Bulbapedia — Embargo: "prevents the target from using its held item"
   // Source: Showdown Gen 4 mod — Embargo blocks item effects
-  if (context.pokemon.volatileStatuses.has("embargo")) {
+  if (context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
     return NO_ACTIVATION;
   }
 
@@ -106,11 +112,11 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
   // Source: Showdown data/abilities.ts — Unburden onAfterUseItem
   if (
     result.activated &&
-    context.pokemon.ability === "unburden" &&
+    context.pokemon.ability === CORE_ABILITY_IDS.unburden &&
     result.effects.some((e) => e.type === "consume") &&
-    !context.pokemon.volatileStatuses.has("unburden")
+    !context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
   ) {
-    context.pokemon.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    context.pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
   }
 
   return result;
@@ -700,7 +706,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     //   this.damage(source.baseMaxhp / 8, source, target) — source is the attacker
     case "jaboca-berry": {
       const moveCategory = context.move?.category;
-      if (moveCategory === "physical" && damage > 0) {
+      if (moveCategory === CORE_MOVE_CATEGORIES.physical && damage > 0) {
         // Find the attacker's max HP from the battle state
         const attackerMaxHp = getOpponentMaxHp(context);
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
@@ -727,7 +733,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     //   this.damage(source.baseMaxhp / 8, source, target) — source is the attacker
     case "rowap-berry": {
       const moveCategory = context.move?.category;
-      if (moveCategory === "special" && damage > 0) {
+      if (moveCategory === CORE_MOVE_CATEGORIES.special && damage > 0) {
         // Find the attacker's max HP from the battle state
         const attackerMaxHp = getOpponentMaxHp(context);
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
@@ -780,8 +786,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       // Unburden: if holder had Unburden, activate it now that their item is gone
       // Source: Showdown Gen 4 mod — Unburden activates on any item loss including Sticky Barb transfer
       // Follows the same pattern as Knock Off (Gen4MoveEffects.ts)
-      if (pokemon.ability === "unburden" && !pokemon.volatileStatuses.has("unburden")) {
-        pokemon.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      if (
+        pokemon.ability === CORE_ABILITY_IDS.unburden &&
+        !pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+      ) {
+        pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
       }
       return {
         activated: true,

@@ -95,7 +95,9 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // Source: Showdown sim/pokemon.ts -- isGrounded: suppresses items under Klutz/Embargo
   // Source: Bulbapedia -- Klutz: "The held item has no effect"
   // Source: Bulbapedia -- Embargo: "The target cannot use its held item"
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
 
   // Iron Ball grounds the holder (only when item effects are active)
   // Source: Bulbapedia -- Iron Ball: "makes the holder grounded"

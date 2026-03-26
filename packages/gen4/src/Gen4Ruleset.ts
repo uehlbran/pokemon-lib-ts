@@ -31,6 +31,8 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_VOLATILE_IDS,
   calculateExpGainClassic,
   DataManager,
   gen1to4MultiHitRoll,
@@ -362,7 +364,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Magnet Rise: grants levitation — immune to ground-based hazards (Spikes, Toxic Spikes)
     // Source: Bulbapedia — Magnet Rise: "makes the user immune to Ground-type moves"
     // Source: Showdown Gen 4 mod — Magnet Rise grants same grounding immunity as Levitate
-    const hasMagnetRise = pokemon.volatileStatuses.has("magnet-rise");
+    const hasMagnetRise = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise);
 
     // Gravity: grounds all Pokemon, overriding Flying type, Levitate, and Magnet Rise
     // Source: Bulbapedia — Gravity: "All Pokemon are grounded."
@@ -707,7 +709,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Klutz: held item has no effect (including Choice Scarf speed boost)
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
-    const hasKlutz = active.ability === "klutz";
+    const hasKlutz = active.ability === CORE_ABILITY_IDS.klutz;
 
     // Choice Scarf: 1.5x Speed
     // Source: Bulbapedia — Choice Scarf raises Speed by 50%
@@ -743,8 +745,8 @@ export class Gen4Ruleset extends BaseRuleset {
     //   item is used or lost."
     // Source: Showdown data/abilities.ts — Unburden onModifySpe
     if (
-      active.ability === "unburden" &&
-      active.volatileStatuses.has("unburden") &&
+      active.ability === CORE_ABILITY_IDS.unburden &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.unburden) &&
       !active.pokemon.heldItem
     ) {
       effective = effective * 2;
@@ -985,9 +987,9 @@ export class Gen4Ruleset extends BaseRuleset {
         if (!active) continue;
         if (active.pokemon.heldItem !== "custap-berry") continue;
         // Klutz prevents item activation
-        if (active.ability === "klutz") continue;
+        if (active.ability === CORE_ABILITY_IDS.klutz) continue;
         // Embargo prevents item activation
-        if (active.volatileStatuses.has("embargo")) continue;
+        if (active.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) continue;
         const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
         // Gluttony: activates at <=50% HP instead of <=25% HP
         // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —

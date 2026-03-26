@@ -1,5 +1,6 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 5 remaining ability handlers (Wave 4A).
@@ -461,7 +462,7 @@ function handleSereneGrace(ctx: AbilityContext): AbilityResult {
 
   // Gen 5: Secret Power is excluded from Serene Grace
   // Source: Showdown data/mods/gen5/abilities.ts -- move.id !== 'secretpower'
-  if (ctx.move.id === "secret-power") return NO_EFFECT;
+  if (ctx.move.id === GEN5_MOVE_IDS.secretPower) return NO_EFFECT;
 
   return {
     activated: true,
@@ -500,9 +501,9 @@ export const LIGHT_METAL_WEIGHT_MULTIPLIER = 0.5;
  */
 export function getWeightMultiplier(abilityId: string): number {
   switch (abilityId) {
-    case "heavy-metal":
+    case GEN5_ABILITY_IDS.heavyMetal:
       return HEAVY_METAL_WEIGHT_MULTIPLIER;
-    case "light-metal":
+    case GEN5_ABILITY_IDS.lightMetal:
       return LIGHT_METAL_WEIGHT_MULTIPLIER;
     default:
       return 1;
@@ -566,7 +567,7 @@ export const HEALER_PROBABILITY = 0.3;
  * Source: Showdown data/mods/gen5/abilities.ts -- excludes secretpower
  */
 export function getSereneGraceMultiplier(abilityId: string, moveId: string): number {
-  if (abilityId !== "serene-grace") return 1;
-  if (moveId === "secret-power") return 1;
+  if (abilityId !== GEN5_ABILITY_IDS.sereneGrace) return 1;
+  if (moveId === GEN5_MOVE_IDS.secretPower) return 1;
   return SERENE_GRACE_CHANCE_MULTIPLIER;
 }

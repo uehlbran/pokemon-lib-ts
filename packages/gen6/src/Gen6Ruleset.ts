@@ -520,8 +520,8 @@ export class Gen6Ruleset extends BaseRuleset {
     // Unburden: 2x Speed when held item is consumed/lost AND currently has no item.
     // Source: Bulbapedia -- Unburden doubles Speed when held item is lost
     if (
-      active.ability === "unburden" &&
-      active.volatileStatuses.has("unburden") &&
+      active.ability === CORE_ABILITY_IDS.unburden &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.unburden) &&
       !active.pokemon.heldItem
     ) {
       effective = effective * 2;

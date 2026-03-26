@@ -28,7 +28,7 @@ import type {
   EntryHazardResult,
 } from "@pokemon-lib-ts/battle";
 import type { BattleStat, EntryHazardType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_STAT_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { isGen9Grounded } from "./Gen9Terrain.js";
 
 // ---------------------------------------------------------------------------
@@ -371,7 +371,8 @@ export function applyGen9EntryHazards(
   // Source: Showdown data/abilities.ts -- klutz: ignoreItem = true (item has no effect)
   // Source: Bulbapedia -- Heavy-Duty Boots page; Klutz page
   const itemSuppressed =
-    switchingIn.ability === "klutz" || switchingIn.volatileStatuses?.has("embargo") === true;
+    switchingIn.ability === CORE_ABILITY_IDS.klutz ||
+    switchingIn.volatileStatuses?.has(CORE_VOLATILE_IDS.embargo) === true;
   if (hasHeavyDutyBoots(switchingIn) && !itemSuppressed) {
     return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
   }

@@ -29,7 +29,9 @@ import {
 } from "@pokemon-lib-ts/battle";
 import {
   type BattleStat,
+  CORE_ABILITY_IDS,
   CORE_STAT_IDS,
+  CORE_VOLATILE_IDS,
   type PrimaryStatus,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
@@ -256,8 +258,11 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem + onUpdate:
     //   activates when the Pokemon loses its item by any means (consumed, stolen, knocked off).
     // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
-    if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
-      ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      ctx.defender.ability === CORE_ABILITY_IDS.unburden &&
+      !ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      ctx.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
 
     return makeResult({
@@ -327,8 +332,11 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   // Unburden: if the target has Unburden, set the volatile to double Speed.
   // Source: Showdown data/abilities.ts -- Unburden activates when item is lost by any means.
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
-  if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
-    ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+  if (
+    ctx.defender.ability === CORE_ABILITY_IDS.unburden &&
+    !ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+  ) {
+    ctx.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
   }
 
   return makeResult({
@@ -465,14 +473,14 @@ function handleDisable(ctx: MoveEffectContext): MoveEffectResult {
 
   // Fail if target has no last move or is already Disabled
   // Source: Showdown data/moves.ts -- disable: onTry checks target.lastMove and volatile
-  if (!defender.lastMoveUsed || defender.volatileStatuses.has("disable")) {
+  if (!defender.lastMoveUsed || defender.volatileStatuses.has(CORE_VOLATILE_IDS.disable)) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
   // Gen 5: exactly 4 turns (changed from Gen 4's random 4-7)
   // Source: Showdown data/mods/gen5/moves.ts -- disable: condition.duration = 4
   return makeResult({
-    volatileInflicted: "disable",
+    volatileInflicted: CORE_VOLATILE_IDS.disable,
     volatileData: { turnsLeft: 4, data: { moveId: defender.lastMoveUsed } },
     messages: [`${defenderName}'s ${defender.lastMoveUsed} was disabled!`],
   });

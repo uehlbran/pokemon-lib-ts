@@ -9,7 +9,9 @@ import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  CORE_ABILITY_IDS,
   CORE_GENDERS,
+  CORE_VOLATILE_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
@@ -248,7 +250,7 @@ function getAttackStat(
   // Klutz: holder cannot use its held item — all item-based stat modifiers are suppressed
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts — Klutz gates item modifiers
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === CORE_ABILITY_IDS.klutz;
 
   // 1. Huge Power / Pure Power: doubles physical attack
   // Source: Showdown sim/battle.ts — Huge Power / Pure Power in Gen 4
@@ -413,7 +415,7 @@ function getDefenseStat(
   // Klutz: holder cannot use its held item — all item-based stat modifiers are suppressed
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts — Klutz gates item modifiers
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
 
   // Soul Dew: 1.5x SpDef for Latias (380) / Latios (381)
   // Source: Bulbapedia — Soul Dew: "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
@@ -591,7 +593,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // Klutz: holder cannot use its held item — suppresses all held-item modifiers
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
-  const attackerHasKlutz = attackerAbility === "klutz";
+  const attackerHasKlutz = attackerAbility === CORE_ABILITY_IDS.klutz;
 
   // Type-boost items (Charcoal, Mystic Water, etc.) and Plates (Flame Plate, etc.):
   // Both apply ~1.2x to BASE POWER (not attack stat).
@@ -722,7 +724,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/items.ts — Adamant Orb / Lustrous Orb onBasePower: basePower * 0x1333 / 0x1000
   // Source: Bulbapedia — Adamant Orb boosts Dialga's Dragon/Steel moves by 20%
   // Source: Bulbapedia — Lustrous Orb boosts Palkia's Water/Dragon moves by 20%
-  const attackerHasKlutzPower = attackerAbility === "klutz";
+  const attackerHasKlutzPower = attackerAbility === CORE_ABILITY_IDS.klutz;
   const attackerItemPower = attacker.pokemon.heldItem;
   const attackerSpeciesIdPower = attacker.pokemon.speciesId;
   if (
@@ -804,7 +806,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   //   magnetism for five turns."
   if (
     effectiveMoveType === "ground" &&
-    defender.volatileStatuses.has("magnet-rise") &&
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise) &&
     !gravityActive &&
     !ironBallGrounded
   ) {
@@ -1155,8 +1157,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown sim/items.ts — type-resist berries onSourceModifyDamage
   let typeResistBerryConsumed: string | null = null;
   const defenderItem = defender.pokemon.heldItem;
-  const defenderHasKlutz = defenderAbility === "klutz";
-  const defenderHasEmbargo = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutz = defenderAbility === CORE_ABILITY_IDS.klutz;
+  const defenderHasEmbargo = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && effectiveness > 1) {
     const resistType = TYPE_RESIST_BERRIES[defenderItem];
     if (resistType && resistType === effectiveMoveType) {
@@ -1200,8 +1202,11 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Unburden: if defender has Unburden ability and loses its item, activate the volatile.
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === CORE_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 

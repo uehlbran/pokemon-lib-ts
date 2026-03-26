@@ -122,7 +122,7 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
 
     case "stat-change":
       // Foe-targeted stat changes are always eligible (Acid Spray, Bulldoze, etc.)
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       // Self-targeted stat changes are eligible ONLY when they come from secondary.self
       // (e.g., Flame Charge Speed boost). Primary self-effects (Close Combat Def/SpDef drop,
       // Draco Meteor SpAtk drop) are NOT eligible.

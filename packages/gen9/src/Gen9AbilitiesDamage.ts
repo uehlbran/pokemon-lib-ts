@@ -183,7 +183,6 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  */
 const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
   CORE_MOVE_IDS.triAttack,
-  "secret-power",
   GEN9_MOVE_IDS.relicSong,
 ]);
 

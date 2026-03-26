@@ -9,14 +9,17 @@ import {
 } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
+  CORE_MOVE_IDS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   getTypeEffectiveness,
 } from "@pokemon-lib-ts/core";
-import { GEN9_ITEM_IDS } from "./data/reference-ids";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_MOVE_IDS } from "./data/reference-ids";
 import { GEN9_TYPE_CHART } from "./Gen9TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -224,7 +227,8 @@ export function getItemDamageModifier(
   // Status moves like Will-O-Wisp and Toxic must not receive a boost.
   // Source: Showdown data/items.ts -- all type-boost and Life Orb handlers check for
   //   damaging hits via onBasePower / onModifyDamage (which never fire for status moves)
-  const isDamagingMove = moveCategory === "physical" || moveCategory === "special";
+  const isDamagingMove =
+    moveCategory === CORE_MOVE_CATEGORIES.physical || moveCategory === CORE_MOVE_CATEGORIES.special;
 
   // Type-boost items: 1.2x (4915/4096) for matching type
   if (isDamagingMove && moveType) {
@@ -244,11 +248,11 @@ export function getItemDamageModifier(
 
   // Choice Band: 1.5x (6144/4096) for physical moves only
   // Source: Showdown data/items.ts -- Choice Band onModifyAtk
-  if (item === ITEM_IDS.choiceBand && moveCategory === "physical") return 6144;
+  if (item === ITEM_IDS.choiceBand && moveCategory === CORE_MOVE_CATEGORIES.physical) return 6144;
 
   // Choice Specs: 1.5x (6144/4096) for special moves only
   // Source: Showdown data/items.ts -- Choice Specs onModifySpA
-  if (item === ITEM_IDS.choiceSpecs && moveCategory === "special") return 6144;
+  if (item === ITEM_IDS.choiceSpecs && moveCategory === CORE_MOVE_CATEGORIES.special) return 6144;
 
   return 4096;
 }
@@ -356,7 +360,7 @@ export function getEvioliteModifier(isUnevolved: boolean): number {
  * Source: Bulbapedia "Assault Vest" -- boosts SpDef by 50%, prevents status moves
  */
 export function isAssaultVestHolder(pokemon: ActivePokemon): boolean {
-  return pokemon.pokemon.heldItem === "assault-vest";
+  return pokemon.pokemon.heldItem === ITEM_IDS.assaultVest;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -421,7 +425,7 @@ export function getTypeResistBerry(
   const berryType = TYPE_RESIST_BERRIES[item];
   if (!berryType || berryType !== moveType) return 4096;
   // Chilan Berry: activates on any Normal hit (no SE requirement)
-  if (berryType === "normal") return 2048;
+  if (berryType === CORE_TYPE_IDS.normal) return 2048;
   // Other berries: only activate on super-effective (>= 2x)
   if (typeEffectiveness >= 2) return 2048;
   return 4096;
@@ -439,7 +443,7 @@ export function getTypeResistBerry(
  *   pops when hit by a damaging move
  */
 export function hasAirBalloon(pokemon: ActivePokemon): boolean {
-  return pokemon.pokemon.heldItem === "air-balloon";
+  return pokemon.pokemon.heldItem === ITEM_IDS.airBalloon;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -453,7 +457,7 @@ export function hasAirBalloon(pokemon: ActivePokemon): boolean {
  * Source: Bulbapedia "Iron Ball" -- halves Speed, negates Ground immunity
  */
 export function hasIronBall(pokemon: ActivePokemon): boolean {
-  return pokemon.pokemon.heldItem === "iron-ball";
+  return pokemon.pokemon.heldItem === ITEM_IDS.ironBall;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -662,9 +666,8 @@ export function isGen9PowderBlocked(itemId: string, moveFlags: { powder?: boolea
  * Source: Showdown data/moves.ts -- moves with secondaries as onHit
  */
 const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
-  "secret-power",
-  "relic-song",
+  CORE_MOVE_IDS.triAttack,
+  GEN9_MOVE_IDS.relicSong,
 ]);
 
 /**
@@ -678,7 +681,7 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
     case "status-chance":
       return true;
     case "stat-change":
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
         return true;
       return false;
@@ -701,7 +704,7 @@ function sheerForceSuppressesLifeOrb(
   effect: MoveEffect | null,
   moveId: string,
 ): boolean {
-  if (abilityId !== "sheer-force") return false;
+  if (abilityId !== GEN9_ABILITY_IDS.sheerForce) return false;
   return hasSheerForceEligibleEffect(effect) || SHEER_FORCE_WHITELIST.has(moveId);
 }
 
@@ -782,14 +785,14 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
   // Klutz: holder cannot use its held item -- suppress all item triggers
   // Source: Bulbapedia -- Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts -- Klutz gates all item battle effects
-  if (context.pokemon.ability === "klutz") {
+  if (context.pokemon.ability === CORE_ABILITY_IDS.klutz) {
     return NO_ACTIVATION;
   }
 
   // Embargo: prevents item use for 5 turns
   // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
   // Source: Showdown Gen 5/6/7/8/9 -- Embargo blocks item effects
-  if (context.pokemon.volatileStatuses.has("embargo")) {
+  if (context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
     return NO_ACTIVATION;
   }
 
@@ -832,11 +835,11 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
   // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem
   if (
     result.activated &&
-    context.pokemon.ability === "unburden" &&
+    context.pokemon.ability === CORE_ABILITY_IDS.unburden &&
     result.effects.some((e) => e.type === ITEM_EFFECT.consume) &&
-    !context.pokemon.volatileStatuses.has("unburden")
+    !context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
   ) {
-    context.pokemon.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    context.pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
   }
 
   return result;
@@ -1429,7 +1432,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Source: Showdown data/items.ts -- Jaboca Berry onDamagingHit
     case "jaboca-berry": {
       const moveCategory = context.move?.category;
-      if (moveCategory === "physical" && damage > 0) {
+      if (moveCategory === CORE_MOVE_CATEGORIES.physical && damage > 0) {
         const attackerMaxHp = getOpponentMaxHp(context);
         if (attackerMaxHp === null) return NO_ACTIVATION;
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
@@ -1453,7 +1456,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Source: Showdown data/items.ts -- Rowap Berry onDamagingHit
     case "rowap-berry": {
       const moveCategory = context.move?.category;
-      if (moveCategory === "special" && damage > 0) {
+      if (moveCategory === CORE_MOVE_CATEGORIES.special && damage > 0) {
         const attackerMaxHp = getOpponentMaxHp(context);
         if (attackerMaxHp === null) return NO_ACTIVATION;
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
@@ -1475,12 +1478,12 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     // Air Balloon: pops when hit by any damaging move (consumed)
     // Source: Showdown data/items.ts -- Air Balloon onDamagingHit: useItem()
-    case "air-balloon": {
+    case ITEM_IDS.airBalloon: {
       if (damage > 0) {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "air-balloon" },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.airBalloon },
           ],
           messages: [`${pokemonName}'s Air Balloon popped!`],
         };

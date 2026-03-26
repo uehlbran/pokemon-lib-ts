@@ -4,10 +4,11 @@ import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
+  CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import { GEN8_ABILITY_IDS, GEN8_MOVE_IDS } from "./data/reference-ids.js";
+import { GEN8_ABILITY_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 8 damage-modifying ability handlers.
@@ -57,11 +58,7 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  * Source: Showdown data/moves.ts -- triattack: secondary.onHit randomly picks
  *   from burn/paralysis/freeze with 20% chance
  */
-const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
-  GEN8_MOVE_IDS.triAttack,
-  "secret-power",
-  "relic-song",
-]);
+const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([CORE_MOVE_IDS.triAttack]);
 
 /**
  * Check if a move has secondary effects that Sheer Force would suppress.

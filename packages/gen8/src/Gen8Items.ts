@@ -44,9 +44,6 @@ const CONSUMABLE_ITEM_STAT_IDS = {
 
 const ABILITY_IDS = GEN8_ABILITY_IDS;
 const STATUS_IDS = CORE_STATUS_IDS;
-const SECRET_POWER_ID = "secret-power" as const;
-const RELIC_SONG_ID = "relic-song" as const;
-const RAZOR_FANG_ID = "razor-fang" as const;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Type-Boost Items (carried from Gen 6-7, 1.2x = 4915/4096)
@@ -604,11 +601,7 @@ export function isGen8PowderBlocked(itemId: string, moveFlags: { powder?: boolea
  *
  * Source: Showdown data/moves.ts -- moves with secondaries as onHit
  */
-const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
-  CORE_MOVE_IDS.triAttack,
-  SECRET_POWER_ID,
-  RELIC_SONG_ID,
-]);
+const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([CORE_MOVE_IDS.triAttack]);
 
 /**
  * Check if a move has a secondary effect that Sheer Force can boost.
@@ -621,7 +614,7 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
     case "status-chance":
       return true;
     case "stat-change":
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
         return true;
       return false;

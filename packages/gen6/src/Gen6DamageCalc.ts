@@ -23,6 +23,7 @@ import {
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
+import { GEN6_MOVE_IDS } from "./data/reference-ids.js";
 import { isGen6Grounded } from "./Gen6EntryHazards.js";
 import { getTerrainDamageModifier } from "./Gen6Terrain.js";
 import { isWeatherSuppressedGen6 } from "./Gen6Weather.js";
@@ -161,7 +162,7 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
 
     case "stat-change":
       // Foe-targeted stat changes with a chance are eligible (Acid Spray, Bulldoze, etc.)
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       // Self-targeted stat changes from secondary.self (e.g., Flame Charge Speed boost)
       if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
         return true;
@@ -189,9 +190,9 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
  * Source: Showdown data/moves.ts -- moves with secondaries as onHit
  */
 const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
-  "secret-power",
-  "relic-song",
+  GEN6_MOVE_IDS.triAttack,
+  GEN6_MOVE_IDS.secretPower,
+  GEN6_MOVE_IDS.relicSong,
 ]);
 
 function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): boolean {
@@ -222,7 +223,7 @@ function getAttackStat(
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
   const attackerSpecies = attacker.pokemon.speciesId;
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === CORE_ABILITY_IDS.klutz;
 
   // Huge Power / Pure Power: doubles physical attack
   // Source: Showdown -- Huge Power / Pure Power
@@ -368,7 +369,7 @@ function getDefenseStat(
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
 
   // Soul Dew: Gen 6 behavior -- 1.5x SpDef for Latias (380) / Latios (381)
   // Source: Showdown sim/items.ts -- Soul Dew Gen 3-6 behavior
@@ -401,7 +402,7 @@ function getDefenseStat(
   // Assault Vest (NEW in Gen 6): 1.5x SpDef
   // Source: Showdown data/items.ts -- Assault Vest onModifySpD
   // Source: Bulbapedia "Assault Vest" -- introduced in Gen 6, raises SpDef by 50%
-  if (!defenderHasKlutz && !isPhysical && defenderItem === "assault-vest") {
+  if (!defenderHasKlutz && !isPhysical && defenderItem === CORE_ITEM_IDS.assaultVest) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -609,7 +610,7 @@ export function calculateGen6Damage(
   // Gem boost: 1.3x base power in Gen 6 (consumed before damage)
   // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
   // Source: Bulbapedia "Gem" Gen 6 -- gem boost nerfed from 1.5x to 1.3x
-  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
+  const attackerHasEmbargo = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   let gemConsumed = false;
   if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
@@ -1162,8 +1163,8 @@ export function calculateGen6Damage(
   // Source: Showdown data/moves.ts -- Magic Room: "Items have no effect" (suppresses berries)
   let typeResistBerryConsumed: string | null = null;
   const defenderItemForBerry = defender.pokemon.heldItem;
-  const defenderHasKlutzForBerry = defender.ability === "klutz";
-  const defenderHasEmbargoForBerry = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutzForBerry = defender.ability === CORE_ABILITY_IDS.klutz;
+  const defenderHasEmbargoForBerry = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   const magicRoomActive = context.state?.magicRoom?.active ?? false;
   if (
     defenderItemForBerry &&
@@ -1175,7 +1176,7 @@ export function calculateGen6Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === "normal" || effectiveness > 1) {
+      if (resistType === CORE_TYPE_IDS.normal || effectiveness > 1) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound in Gen 5+
         typeResistBerryConsumed = defenderItemForBerry;
       }
@@ -1193,8 +1194,11 @@ export function calculateGen6Damage(
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is consumed"
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === CORE_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 
@@ -1207,8 +1211,11 @@ export function calculateGen6Damage(
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
     attacker.pokemon.heldItem = null;
-    if (attacker.ability === "unburden" && !attacker.volatileStatuses.has("unburden")) {
-      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      attacker.ability === CORE_ABILITY_IDS.unburden &&
+      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
     // Mark gem-used so item-theft checks know the attacker consumed an item
     // Source: Showdown data/moves.ts -- thief/covet: source.volatiles['gem'] guard

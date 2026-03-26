@@ -231,7 +231,7 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
     case "status-chance":
       return true;
     case "stat-change":
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
         return true;
       return false;

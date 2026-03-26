@@ -163,7 +163,7 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
 
   // Magnet Rise grants levitation
   // Source: Bulbapedia -- Magnet Rise: "makes the user immune to Ground-type moves"
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
 
   // Telekinesis grants levitation (new in Gen 5, but the Gen 5 implementation did not
   // check it in isGen5Grounded; Gen 6 adds this check per Showdown)
@@ -175,7 +175,7 @@ export function isGen6Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
 
   // Air Balloon grants levitation ONLY when item effects are not suppressed.
   // Source: Bulbapedia -- Air Balloon: "makes the holder immune to Ground-type moves"
-  if (pokemon.pokemon.heldItem === "air-balloon" && !itemsSuppressed) return false;
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon && !itemsSuppressed) return false;
 
   return true;
 }

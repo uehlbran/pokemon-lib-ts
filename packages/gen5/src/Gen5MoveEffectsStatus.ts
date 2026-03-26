@@ -25,7 +25,12 @@ import {
   type MoveEffectContext,
   type MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { CORE_TYPE_IDS, type PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 import { GEN5_ABILITY_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
@@ -246,8 +251,11 @@ function handleIncinerate(ctx: MoveEffectContext): MoveEffectResult {
 
     // Unburden: if the target has Unburden, set the volatile to double Speed.
     // Source: Showdown data/abilities.ts -- Unburden activates when item is lost
-    if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
-      ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      ctx.defender.ability === CORE_ABILITY_IDS.unburden &&
+      !ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      ctx.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
 
     return makeResult({

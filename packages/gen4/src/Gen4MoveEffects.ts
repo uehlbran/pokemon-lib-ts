@@ -36,6 +36,7 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -1212,7 +1213,7 @@ function handleNullEffectMoves(
       // Source: Showdown Gen 4 mod conditions.ts — if gripclaw => return 6
       const hasGripClaw =
         bindAtk.pokemon.heldItem === ITEM_IDS.gripClaw &&
-        bindAtk.ability !== GEN4_ABILITY_IDS.klutz;
+        bindAtk.ability !== CORE_ABILITY_IDS.klutz;
       const turnsLeft = hasGripClaw ? 6 : context.rng.int(3, 6);
       result.volatileInflicted = CORE_VOLATILE_IDS.bound;
       result.volatileData = { turnsLeft };
@@ -1529,7 +1530,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Embargo: prevent item use for 5 turns
   // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
   // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
-  if (context.move.id === "embargo") {
+  if (context.move.id === GEN4_MOVE_IDS.embargo) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
     if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
@@ -1807,7 +1808,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown Gen 4 mod — Magnet Rise sets volatile on self for 5 turns
   // Source: Bulbapedia — Magnet Rise: "The user levitates using electrically generated
   //   magnetism for five turns." Fails under Gravity.
-  if (context.move.id === "magnet-rise") {
+  if (context.move.id === GEN4_MOVE_IDS.magnetRise) {
     const { attacker, state } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     // Fail if Gravity is active
@@ -1899,7 +1900,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     if (
       !heldItem ||
       !NATURAL_GIFT_TABLE[heldItem] ||
-      attacker.ability === "klutz" ||
+      attacker.ability === CORE_ABILITY_IDS.klutz ||
       attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
     ) {
       result.messages.push("But it failed!");

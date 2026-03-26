@@ -166,7 +166,7 @@ function getAttackStat(
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
   const attackerSpecies = attacker.pokemon.speciesId;
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === CORE_ABILITY_IDS.klutz;
 
   // Huge Power / Pure Power: doubles physical attack
   // Source: Showdown -- Huge Power / Pure Power
@@ -320,7 +320,7 @@ function getDefenseStat(
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
 
   // Soul Dew: 1.5x SpDef for Latias (380) / Latios (381)
   // Source: Showdown sim/items.ts -- Soul Dew Gen 3-6 behavior
@@ -469,7 +469,7 @@ export function calculateGen5Damage(
   const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
 
   // Klutz check
-  const attackerHasKlutz = attackerAbility === "klutz";
+  const attackerHasKlutz = attackerAbility === CORE_ABILITY_IDS.klutz;
   const attackerItem = attacker.pokemon.heldItem;
 
   // ---- Pre-damage base power modifications ----
@@ -489,7 +489,7 @@ export function calculateGen5Damage(
   // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts gem condition -- chainModify(1.5)
   // Embargo suppresses all held item effects including gems
   // Source: Showdown data/moves.ts -- embargo: suppresses item use
-  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
+  const attackerHasEmbargo = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   let gemConsumed = false;
   if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
@@ -997,8 +997,8 @@ export function calculateGen5Damage(
   // Source: Showdown data/moves.ts -- Magic Room: "Items have no effect" (suppresses berries)
   let typeResistBerryConsumed: string | null = null;
   const defenderItem = defender.pokemon.heldItem;
-  const defenderHasKlutz = defender.ability === "klutz";
-  const defenderHasEmbargo = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
+  const defenderHasEmbargo = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   const magicRoomActive = context.state?.magicRoom?.active ?? false;
   if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && !magicRoomActive) {
     const resistType = TYPE_RESIST_BERRIES[defenderItem];
@@ -1023,8 +1023,11 @@ export function calculateGen5Damage(
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is consumed"
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === CORE_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 
@@ -1037,8 +1040,11 @@ export function calculateGen5Damage(
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
     attacker.pokemon.heldItem = null;
-    if (attacker.ability === "unburden" && !attacker.volatileStatuses.has("unburden")) {
-      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      attacker.ability === CORE_ABILITY_IDS.unburden &&
+      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
     // Mark gem-used so onAfterHit item-theft checks (Thief/Covet) know the attacker
     // held an item that was consumed this move. Showdown uses source.volatiles['gem']

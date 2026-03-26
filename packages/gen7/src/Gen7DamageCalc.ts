@@ -60,6 +60,7 @@ import {
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
+import { GEN7_MOVE_IDS } from "./data/reference-ids.js";
 import { isWeatherSuppressedGen7 } from "./Gen7Weather.js";
 
 // Re-exported for backwards compatibility; canonical implementation lives in core.
@@ -188,7 +189,7 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
       return true;
 
     case "stat-change":
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
         return true;
       return false;
@@ -210,9 +211,9 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
  * Source: Showdown data/moves.ts -- moves with secondaries as onHit
  */
 const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
-  "secret-power",
-  "relic-song",
+  GEN7_MOVE_IDS.triAttack,
+  GEN7_MOVE_IDS.secretPower,
+  GEN7_MOVE_IDS.relicSong,
 ]);
 
 function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): boolean {
@@ -340,7 +341,7 @@ function getAttackStat(
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
   const attackerSpecies = attacker.pokemon.speciesId;
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === CORE_ABILITY_IDS.klutz;
 
   // Huge Power / Pure Power: doubles physical attack
   // Source: Showdown -- Huge Power / Pure Power
@@ -461,7 +462,7 @@ function getDefenseStat(
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
 
   // Soul Dew: Gen 7 -- no longer boosts SpDef (changed from Gen 6)
   // Source: Showdown data/items.ts -- Soul Dew Gen 7+: onBasePower, not onModifySpD
@@ -486,7 +487,7 @@ function getDefenseStat(
 
   // Assault Vest: 1.5x SpDef
   // Source: Showdown data/items.ts -- Assault Vest onModifySpD
-  if (!defenderHasKlutz && !isPhysical && defenderItem === "assault-vest") {
+  if (!defenderHasKlutz && !isPhysical && defenderItem === CORE_ITEM_IDS.assaultVest) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -685,7 +686,7 @@ export function calculateGen7Damage(
 
   // Gem boost: only Normal Gem available in Gen 7, 1.3x via pokeRound
   // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096])
-  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
+  const attackerHasEmbargo = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   let gemConsumed = false;
   if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
@@ -1297,8 +1298,8 @@ export function calculateGen7Damage(
   // Source: Showdown data/items.ts -- type-resist berries onSourceModifyDamage
   let typeResistBerryConsumed: string | null = null;
   const defenderItemForBerry = defender.pokemon.heldItem;
-  const defenderHasKlutzForBerry = defender.ability === "klutz";
-  const defenderHasEmbargoForBerry = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutzForBerry = defender.ability === CORE_ABILITY_IDS.klutz;
+  const defenderHasEmbargoForBerry = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   const magicRoomActive = context.state?.magicRoom?.active ?? false;
   if (
     defenderItemForBerry &&
@@ -1332,8 +1333,11 @@ export function calculateGen7Damage(
   // Source: Showdown data/items.ts -- type-resist berries: consumed after activation
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === CORE_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 
@@ -1346,8 +1350,11 @@ export function calculateGen7Damage(
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
     attacker.pokemon.heldItem = null;
-    if (attacker.ability === "unburden" && !attacker.volatileStatuses.has("unburden")) {
-      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      attacker.ability === CORE_ABILITY_IDS.unburden &&
+      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
     attacker.volatileStatuses.set("gem-used" as VolatileStatus, { turnsLeft: 1 });
   }

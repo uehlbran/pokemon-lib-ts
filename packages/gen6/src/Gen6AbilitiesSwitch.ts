@@ -749,7 +749,7 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Cursed Body: 30% to disable attacker's move
       // Source: Bulbapedia — Cursed Body: "30% chance of disabling the attacker's move."
       if (!ctx.opponent) return NO_EFFECT;
-      if (ctx.opponent.volatileStatuses.has("disable")) return NO_EFFECT;
+      if (ctx.opponent.volatileStatuses.has(CORE_VOLATILE_IDS.disable)) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
@@ -757,7 +757,7 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
           {
             effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
             target: BATTLE_EFFECT_TARGETS.opponent,
-            volatile: "disable",
+            volatile: CORE_VOLATILE_IDS.disable,
             data: { turnsLeft: 4 },
           },
         ],
