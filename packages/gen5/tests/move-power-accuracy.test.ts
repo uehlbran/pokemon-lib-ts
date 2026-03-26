@@ -16,9 +16,9 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
   type WeatherType,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -282,7 +282,7 @@ describe("Gen 5 move data verification (snapshot)", () => {
 
 // --- Defog ---
 
-  describe("Gen 5 Defog behavioral override", () => {
+describe("Gen 5 Defog behavioral override", () => {
   it("given Defog used in Gen 5, when executed, then clears only the TARGET side hazards and screens", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts -- defog.onHit:
     //   removes from `pokemon.side` (the TARGET), not the user's side.
@@ -308,7 +308,7 @@ describe("Gen 5 move data verification (snapshot)", () => {
 
 // --- Scald ---
 
-  describe("Gen 5 Scald behavioral override", () => {
+describe("Gen 5 Scald behavioral override", () => {
   it("given frozen user using Scald in Gen 5, when executed, then thaws the user", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts -- scald:
     //   The defrost flag is set in data (flags.defrost: true), causing user thaw.
@@ -367,7 +367,7 @@ describe("Gen 5 Toxic accuracy (no Poison-type guarantee)", () => {
 
 // --- Growth ---
 
-  describe("Gen 5 Growth behavioral override", () => {
+describe("Gen 5 Growth behavioral override", () => {
   it("given Growth used in sun in Gen 5, when executed, then boosts Attack and SpAttack by 2 stages each", () => {
     // Source: Bulbapedia -- Growth: "In intense sunlight, the stat increases are doubled,
     //   raising both Attack and Special Attack by two stages."
@@ -418,7 +418,7 @@ describe("Gen 5 Toxic accuracy (no Poison-type guarantee)", () => {
 
 // --- Powder Moves ---
 
-  describe("Gen 5 powder move Grass-type immunity (none)", () => {
+describe("Gen 5 powder move Grass-type immunity (none)", () => {
   it("given Spore targeting a Grass-type in Gen 5, when checking powder block, then returns false (not blocked)", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts -- spore:
     //   `onTryHit() {}` — empty override removes Gen 6+ Grass immunity.
@@ -471,7 +471,7 @@ describe("Gen 5 Toxic accuracy (no Poison-type guarantee)", () => {
 
 // --- Knock Off ---
 
-  describe("Gen 5 Knock Off behavioral override", () => {
+describe("Gen 5 Knock Off behavioral override", () => {
   it("given Knock Off against a target with a held item in Gen 5, when executed, then removes the item with no BP bonus", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/moves.ts -- knockoff:
     //   `basePower: 20, onBasePower() {}` — empty onBasePower removes the

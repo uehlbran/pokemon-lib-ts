@@ -1,12 +1,12 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "@pokemon-lib-ts/gen2";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createEngine(overrides?: {
   seed?: number;
@@ -119,7 +119,9 @@ describe("Pursuit — pre-switch execution", () => {
       const firstActionMoveStart = moveStarts[0];
 
       expect(firstActionMoveStart?.e).toEqual(expect.objectContaining({ type: "move-start" }));
-      expect(postStartSwitchOut?.e).toEqual(expect.objectContaining({ type: "switch-out", side: 1 }));
+      expect(postStartSwitchOut?.e).toEqual(
+        expect.objectContaining({ type: "switch-out", side: 1 }),
+      );
       if (firstActionMoveStart && postStartSwitchOut) {
         // Pursuit (move-start) should appear at or before side 1's switch-out
         expect(firstActionMoveStart.i).toBeLessThanOrEqual(postStartSwitchOut.i);

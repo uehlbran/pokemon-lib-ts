@@ -8,11 +8,11 @@ import {
   GEN6_SPECIES_IDS,
 } from "../src";
 
-const moveIds = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const
-const typeIds = CORE_TYPE_IDS
-const abilityIds = GEN6_ABILITY_IDS
-const itemIds = GEN6_ITEM_IDS
-const speciesIds = GEN6_SPECIES_IDS
+const moveIds = { ...CORE_MOVE_IDS, ...GEN6_MOVE_IDS } as const;
+const typeIds = CORE_TYPE_IDS;
+const abilityIds = GEN6_ABILITY_IDS;
+const itemIds = GEN6_ITEM_IDS;
+const speciesIds = GEN6_SPECIES_IDS;
 
 describe("Gen 6 DataManager -- data loading", () => {
   it("given gen6 data files, when loading DataManager, then loads exactly 721 Pokemon", () => {

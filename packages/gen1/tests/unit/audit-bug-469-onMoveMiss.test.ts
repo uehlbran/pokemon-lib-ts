@@ -9,16 +9,16 @@
  */
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ITEM_IDS,
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
+  CORE_ITEM_IDS,
   CORE_NATURE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createPokemonInstance,
-  type PokemonType,
   type MoveData,
+  type PokemonType,
+  SeededRandom,
   type StatBlock,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";

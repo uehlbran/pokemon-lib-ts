@@ -22,20 +22,19 @@ import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_END_OF_TURN_EFFECT_IDS,
-  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
-  SeededRandom,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
   Gen4Ruleset,
-  createGen4DataManager,
 } from "../src";
 
 // ---------------------------------------------------------------------------
@@ -52,14 +51,16 @@ function createGen4BattleStateStub(): BattleState {
   return {} as BattleState;
 }
 
-function createGen4PokemonInstance(options: {
-  abilityOverride?: string;
-  currentHp?: number;
-  primaryStatus?: PrimaryStatus | null;
-  seedOffset?: number;
-  speed?: number;
-  heldItem?: string | null;
-} = {}): PokemonInstance {
+function createGen4PokemonInstance(
+  options: {
+    abilityOverride?: string;
+    currentHp?: number;
+    primaryStatus?: PrimaryStatus | null;
+    seedOffset?: number;
+    speed?: number;
+    heldItem?: string | null;
+  } = {},
+): PokemonInstance {
   const pokemon = createPokemonInstance(
     GEN4_DEFAULT_SPECIES,
     GEN4_DEFAULT_LEVEL,
@@ -92,14 +93,16 @@ function createGen4PokemonInstance(options: {
   return pokemon;
 }
 
-function createGen4ActivePokemon(options: {
-  abilityOverride?: string;
-  currentHp?: number;
-  primaryStatus?: PrimaryStatus | null;
-  seedOffset?: number;
-  speed?: number;
-  heldItem?: string | null;
-} = {}): ActivePokemon {
+function createGen4ActivePokemon(
+  options: {
+    abilityOverride?: string;
+    currentHp?: number;
+    primaryStatus?: PrimaryStatus | null;
+    seedOffset?: number;
+    speed?: number;
+    heldItem?: string | null;
+  } = {},
+): ActivePokemon {
   const pokemon = createGen4PokemonInstance(options);
   return createOnFieldPokemon(pokemon, 0, [...GEN4_DEFAULT_SPECIES.types]);
 }
@@ -116,16 +119,26 @@ describe("Gen4Ruleset paralysis speed penalty (0.25x)", () => {
     // Source: Showdown data/mods/gen4/conditions.ts lines 9-13 —
     //   par.onModifySpe: if (!quick-feet) return chainModify(0.25)
     // Gen 3-6 all use 0.25x. Gen 7+ uses 0.5x (BaseRuleset default).
-    const pokemon = createGen4ActivePokemon({ primaryStatus: CORE_STATUS_IDS.paralysis, speed: 100 });
-    const speed = (ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }).getEffectiveSpeed(pokemon);
+    const pokemon = createGen4ActivePokemon({
+      primaryStatus: CORE_STATUS_IDS.paralysis,
+      speed: 100,
+    });
+    const speed = (
+      ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
+    ).getEffectiveSpeed(pokemon);
     expect(speed).toBe(25);
   });
 
   it("given a paralyzed Pokemon with 80 base speed in Gen4, when getEffectiveSpeed is called, then returns 20 (0.25x)", () => {
     // Source: pret/pokeplatinum — paralysis quarters speed
     // Triangulation: floor(80 * 0.25) = 20
-    const pokemon = createGen4ActivePokemon({ primaryStatus: CORE_STATUS_IDS.paralysis, speed: 80 });
-    const speed = (ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }).getEffectiveSpeed(pokemon);
+    const pokemon = createGen4ActivePokemon({
+      primaryStatus: CORE_STATUS_IDS.paralysis,
+      speed: 80,
+    });
+    const speed = (
+      ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
+    ).getEffectiveSpeed(pokemon);
     expect(speed).toBe(20);
   });
 
@@ -138,7 +151,9 @@ describe("Gen4Ruleset paralysis speed penalty (0.25x)", () => {
       abilityOverride: GEN4_ABILITY_IDS.quickFeet,
       speed: 100,
     });
-    const speed = (ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }).getEffectiveSpeed(pokemon);
+    const speed = (
+      ruleset as unknown as { getEffectiveSpeed: (p: ActivePokemon) => number }
+    ).getEffectiveSpeed(pokemon);
     expect(speed).toBe(150);
   });
 });
@@ -154,7 +169,11 @@ describe("Gen4Ruleset burn damage (1/8 maxHP)", () => {
     // Source: pret/pokeplatinum — burn tick = maxHP / 8
     // Gen 3-6: 1/8 max HP. Gen 7+: 1/16 (BaseRuleset default).
     const pokemon = createGen4ActivePokemon({ currentHp: 200 });
-    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, createGen4BattleStateStub());
+    const damage = ruleset.applyStatusDamage(
+      pokemon,
+      CORE_STATUS_IDS.burn,
+      createGen4BattleStateStub(),
+    );
     expect(damage).toBe(25);
   });
 
@@ -162,23 +181,41 @@ describe("Gen4Ruleset burn damage (1/8 maxHP)", () => {
     // Source: pret/pokeplatinum — burn = maxHP / 8
     // Triangulation: floor(160/8) = 20
     const pokemon = createGen4ActivePokemon({ currentHp: 160 });
-    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, createGen4BattleStateStub());
+    const damage = ruleset.applyStatusDamage(
+      pokemon,
+      CORE_STATUS_IDS.burn,
+      createGen4BattleStateStub(),
+    );
     expect(damage).toBe(20);
   });
 
   it("given a burned Magic Guard Pokemon with 200 maxHP in Gen4, when applyStatusDamage is called, then returns 0", () => {
     // Source: Showdown Gen 4 -- Magic Guard prevents burn damage
     // Source: Bulbapedia -- Magic Guard (Gen 4 introduction): "prevents all indirect damage"
-    const pokemon = createGen4ActivePokemon({ currentHp: 200, abilityOverride: GEN4_ABILITY_IDS.magicGuard });
-    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, createGen4BattleStateStub());
+    const pokemon = createGen4ActivePokemon({
+      currentHp: 200,
+      abilityOverride: GEN4_ABILITY_IDS.magicGuard,
+    });
+    const damage = ruleset.applyStatusDamage(
+      pokemon,
+      CORE_STATUS_IDS.burn,
+      createGen4BattleStateStub(),
+    );
     expect(damage).toBe(0);
   });
 
   it("given a burned Heatproof Pokemon with 200 maxHP in Gen4, when applyStatusDamage is called, then returns 12 (1/16)", () => {
     // Source: Showdown Gen4 data/mods/gen4/ -- Heatproof halves burn damage in Gen 4
     // floor(200/16) = 12
-    const pokemon = createGen4ActivePokemon({ currentHp: 200, abilityOverride: GEN4_ABILITY_IDS.heatproof });
-    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, createGen4BattleStateStub());
+    const pokemon = createGen4ActivePokemon({
+      currentHp: 200,
+      abilityOverride: GEN4_ABILITY_IDS.heatproof,
+    });
+    const damage = ruleset.applyStatusDamage(
+      pokemon,
+      CORE_STATUS_IDS.burn,
+      createGen4BattleStateStub(),
+    );
     expect(damage).toBe(12);
   });
 });

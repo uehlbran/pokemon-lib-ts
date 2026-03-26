@@ -4,17 +4,13 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
-import {
-  CORE_TERRAIN_IDS,
-  CORE_VOLATILE_IDS,
-  CORE_WEATHER_IDS,
-} from "@pokemon-lib-ts/core";
-import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS } from "./data/reference-ids.js";
+import { CORE_TERRAIN_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import {
   GEN9_ORICHALCUM_HADRON_MULTIPLIER,
   GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
   GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
 } from "./constants/mechanics.js";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 9 stat-boosting abilities: Protosynthesis, Quark Drive.

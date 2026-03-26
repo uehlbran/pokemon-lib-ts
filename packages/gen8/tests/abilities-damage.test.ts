@@ -1,26 +1,33 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
-  CORE_ABILITY_IDS,
   CORE_FIXED_POINT,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
-  CORE_VOLATILE_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen8DataManager, GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_MOVE_IDS, GEN8_NATURE_IDS, GEN8_SPECIES_IDS } from "../src";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_NATURE_IDS,
+  GEN8_SPECIES_IDS,
+} from "../src";
 import {
   getAteAbilityOverride,
   getDragonsMawMultiplier,
@@ -146,14 +153,14 @@ function createCanonicalMove(moveId: string): MoveData {
 function createSyntheticMoveFrom(
   baseMove: MoveData,
   overrides: {
-  type?: PokemonType;
-  category?: MoveData["category"];
-  power?: number | null;
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  hasCrashDamage?: boolean;
-  id?: string;
-} = {},
+    type?: PokemonType;
+    category?: MoveData["category"];
+    power?: number | null;
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+    hasCrashDamage?: boolean;
+    id?: string;
+  } = {},
 ): MoveData {
   return {
     ...baseMove,
@@ -171,13 +178,11 @@ function createSyntheticMoveFrom(
 }
 
 function createBattleState(overrides?: {
-  weather?:
-    | {
-        type: (typeof weatherIds)[keyof typeof weatherIds];
-        turnsLeft: number;
-        source: (typeof abilityIds)[keyof typeof abilityIds];
-      }
-    | null;
+  weather?: {
+    type: (typeof weatherIds)[keyof typeof weatherIds];
+    turnsLeft: number;
+    source: (typeof abilityIds)[keyof typeof abilityIds];
+  } | null;
 }): BattleState {
   return {
     weather: overrides?.weather ?? null,
@@ -391,23 +396,35 @@ describe("Gen 8 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- pixilate Gen 7+: chainModify([4915, 4096])
       // CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity = 1.1999...
       const result = getAteAbilityOverride(abilityIds.pixilate, typeIds.normal);
-      expect(result).toEqual({ type: typeIds.fairy, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      expect(result).toEqual({
+        type: typeIds.fairy,
+        multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity,
+      });
     });
 
     it("given Aerilate and a Normal move, when checking type override, then returns Flying + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- aerilate Gen 7+: chainModify([4915, 4096])
       const result = getAteAbilityOverride(abilityIds.aerilate, typeIds.normal);
-      expect(result).toEqual({ type: typeIds.flying, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      expect(result).toEqual({
+        type: typeIds.flying,
+        multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity,
+      });
     });
 
     it("given Refrigerate and a Normal move, when checking type override, then returns Ice + 1.2x", () => {
       const result = getAteAbilityOverride(abilityIds.refrigerate, typeIds.normal);
-      expect(result).toEqual({ type: typeIds.ice, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      expect(result).toEqual({
+        type: typeIds.ice,
+        multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity,
+      });
     });
 
     it("given Galvanize and a Normal move, when checking type override, then returns Electric + 1.2x", () => {
       const result = getAteAbilityOverride(abilityIds.galvanize, typeIds.normal);
-      expect(result).toEqual({ type: typeIds.electric, multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity });
+      expect(result).toEqual({
+        type: typeIds.electric,
+        multiplier: CORE_FIXED_POINT.boost12 / CORE_FIXED_POINT.identity,
+      });
     });
 
     it("given Pixilate and a Fire move (non-Normal), when checking type override, then returns null", () => {

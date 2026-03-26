@@ -12,7 +12,6 @@ import {
   CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
@@ -22,6 +21,7 @@ import {
   type PokemonInstance,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -72,10 +72,7 @@ function getCanonicalMove(moveId: string): MoveData {
   return dataManager.getMove(moveId);
 }
 
-function createSyntheticMoveFrom(
-  baseMove: MoveData,
-  overrides: Partial<MoveData>,
-): MoveData {
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData>): MoveData {
   return {
     ...baseMove,
     ...overrides,
@@ -171,11 +168,7 @@ function createOnFieldPokemon(overrides: {
     speed: overrides.speed,
     level: overrides.level,
   });
-  const activePokemon = createBattleOnFieldPokemon(
-    pokemon,
-    0,
-    overrides.types ?? [typeIds.normal],
-  );
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, overrides.types ?? [typeIds.normal]);
   activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
   activePokemon.ability = overrides.ability ?? abilityIds.none;
   activePokemon.turnsOnField = overrides.turnsOnField ?? 0;

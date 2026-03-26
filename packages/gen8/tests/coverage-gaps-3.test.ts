@@ -14,72 +14,62 @@
  */
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  CORE_FIXED_POINT,
-  CORE_GIMMICK_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  CORE_TERRAIN_IDS,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen8Damage, isGen8Grounded } from "../src/Gen8DamageCalc";
-import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 import {
+  createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_ITEM_IDS,
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-  createGen8DataManager,
 } from "../src";
+import { calculateGen8Damage, isGen8Grounded } from "../src/Gen8DamageCalc";
+import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
 // ---------------------------------------------------------------------------
 // Helper factories
 // ---------------------------------------------------------------------------
 
-const A = GEN8_ABILITY_IDS;
+const _A = GEN8_ABILITY_IDS;
 const I = GEN8_ITEM_IDS;
 const M = GEN8_MOVE_IDS;
-const C = CORE_ABILITY_IDS;
+const _C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
 const MC = CORE_MOVE_CATEGORIES;
 const GENDERS = CORE_GENDERS;
-const S = CORE_STATUS_IDS;
+const _S = CORE_STATUS_IDS;
 const V = CORE_VOLATILE_IDS;
-const W = CORE_WEATHER_IDS;
-const SC = CORE_SCREEN_IDS;
+const _W = CORE_WEATHER_IDS;
+const _SC = CORE_SCREEN_IDS;
 const DATA_MANAGER = createGen8DataManager();
 const SP = GEN8_SPECIES_IDS;
 const DEFAULT_SPECIES_ID = SP.bulbasaur;
 const TELEKINESIS_VOLATILE = V.telekinesis;
-const SYNTHETIC_NORMAL_PHYSICAL_50 = () =>
-  makeSyntheticMove(M.tackle, T.normal, MC.physical, 50);
-const SYNTHETIC_NORMAL_PHYSICAL_65 = () =>
-  makeSyntheticMove(M.bodySlam, T.normal, MC.physical, 65);
-const SYNTHETIC_NORMAL_PHYSICAL_70 = () =>
-  makeSyntheticMove(M.headbutt, T.normal, MC.physical, 70);
-const SYNTHETIC_NORMAL_PHYSICAL_80 = () =>
-  makeSyntheticMove(M.bodySlam, T.normal, MC.physical, 80);
-const SYNTHETIC_WATER_SPECIAL_50 = () =>
-  makeSyntheticMove(M.surf, T.water, MC.special, 50);
-const SYNTHETIC_WATER_SPECIAL_60 = () =>
-  makeSyntheticMove(M.surf, T.water, MC.special, 60);
-const SYNTHETIC_WATER_SPECIAL_80 = () =>
-  makeSyntheticMove(M.surf, T.water, MC.special, 80);
+const SYNTHETIC_NORMAL_PHYSICAL_50 = () => makeSyntheticMove(M.tackle, T.normal, MC.physical, 50);
+const SYNTHETIC_NORMAL_PHYSICAL_65 = () => makeSyntheticMove(M.bodySlam, T.normal, MC.physical, 65);
+const SYNTHETIC_NORMAL_PHYSICAL_70 = () => makeSyntheticMove(M.headbutt, T.normal, MC.physical, 70);
+const SYNTHETIC_NORMAL_PHYSICAL_80 = () => makeSyntheticMove(M.bodySlam, T.normal, MC.physical, 80);
+const SYNTHETIC_WATER_SPECIAL_50 = () => makeSyntheticMove(M.surf, T.water, MC.special, 50);
+const SYNTHETIC_WATER_SPECIAL_60 = () => makeSyntheticMove(M.surf, T.water, MC.special, 60);
+const SYNTHETIC_WATER_SPECIAL_80 = () => makeSyntheticMove(M.surf, T.water, MC.special, 80);
 const SYNTHETIC_ELECTRIC_SPECIAL_50 = () =>
   makeSyntheticMove(M.triAttack, T.electric, MC.special, 50);
-const SYNTHETIC_FIRE_SPECIAL_80 = () =>
-  makeSyntheticMove(M.flamethrower, T.fire, MC.special, 80);
+const SYNTHETIC_FIRE_SPECIAL_80 = () => makeSyntheticMove(M.flamethrower, T.fire, MC.special, 80);
 const SYNTHETIC_PSYCHIC_SPECIAL_80 = () =>
   makeSyntheticMove(M.focusBlast, T.psychic, MC.special, 80);
 
@@ -177,7 +167,10 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeCanonicalMove(moveId: (typeof M)[keyof typeof M], overrides?: Partial<MoveData>): MoveData {
+function makeCanonicalMove(
+  moveId: (typeof M)[keyof typeof M],
+  overrides?: Partial<MoveData>,
+): MoveData {
   const baseMove = DATA_MANAGER.getMove(moveId);
   return {
     ...baseMove,
@@ -262,14 +255,22 @@ describe(`isGen8G${CORE_MOVE_IDS.round}ed`, () => {
 
   it(`given pokemon holds ${CORE_ITEM_IDS.ironBall} and ability is not klutz, when gravityActive=false, then returns grounded=true`, () => {
     // Source: Showdown data/items.ts -- Iron Ball: grounds the holder (isGrounded returns true)
-    const pokemon = makeActive({ types: [T.flying], heldItem: CORE_ITEM_IDS.ironBall, ability: CORE_ABILITY_IDS.none });
+    const pokemon = makeActive({
+      types: [T.flying],
+      heldItem: CORE_ITEM_IDS.ironBall,
+      ability: CORE_ABILITY_IDS.none,
+    });
     const result = isGen8Grounded(pokemon, false);
     expect(result).toBe(true);
   });
 
   it(`given pokemon has klutz and holds ${CORE_ITEM_IDS.ironBall}, when gravityActive=false, then returns NOT grounded (false for flying)`, () => {
     // Source: Showdown data/items.ts -- Klutz suppresses item effects including Iron Ball grounding
-    const pokemon = makeActive({ types: [T.flying], heldItem: CORE_ITEM_IDS.ironBall, ability: CORE_ABILITY_IDS.klutz });
+    const pokemon = makeActive({
+      types: [T.flying],
+      heldItem: CORE_ITEM_IDS.ironBall,
+      ability: CORE_ABILITY_IDS.klutz,
+    });
     const result = isGen8Grounded(pokemon, false);
     // klutz suppresses iron-ball → flying type applies → NOT grounded
     expect(result).toBe(false);
@@ -387,8 +388,16 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
 
   it(`given attacker has klutz ability and holds ${CORE_ITEM_IDS.choiceBand}, when using physical move, then no choice-band boost`, () => {
     // Source: Showdown data/items.ts -- Klutz: suppresses held item, Choice Band gives no boost
-    const withKlutzBand = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.klutz, heldItem: CORE_ITEM_IDS.choiceBand });
-    const withBandOnly = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none, heldItem: CORE_ITEM_IDS.choiceBand });
+    const withKlutzBand = makeActive({
+      attack: 100,
+      ability: CORE_ABILITY_IDS.klutz,
+      heldItem: CORE_ITEM_IDS.choiceBand,
+    });
+    const withBandOnly = makeActive({
+      attack: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: CORE_ITEM_IDS.choiceBand,
+    });
     const defender = makeActive({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
 
@@ -561,8 +570,16 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
 
   it(`given attacker has guts and is ${CORE_STATUS_IDS.burn}ed, when using physical move, then guts 1.5x boost applies (overcomes burn penalty)`, () => {
     // Source: Showdown data/abilities.ts -- Guts: onModifyAtk *= 1.5 when statused, overrides burn penalty
-    const withGutsNoStatus = makeActive({ attack: 100, ability: GEN8_ABILITY_IDS.guts, status: null });
-    const withGutsBurned = makeActive({ attack: 100, ability: GEN8_ABILITY_IDS.guts, status: CORE_STATUS_IDS.burn });
+    const withGutsNoStatus = makeActive({
+      attack: 100,
+      ability: GEN8_ABILITY_IDS.guts,
+      status: null,
+    });
+    const withGutsBurned = makeActive({
+      attack: 100,
+      ability: GEN8_ABILITY_IDS.guts,
+      status: CORE_STATUS_IDS.burn,
+    });
     const defender = makeActive({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_70();
 
@@ -575,7 +592,11 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
 
   it(`given attacker has guts but no status, when using physical move, then no guts attack boost`, () => {
     // Source: Showdown data/abilities.ts -- Guts: only activates when pokemon has a status condition
-    const withGutsNoStatus = makeActive({ attack: 100, ability: GEN8_ABILITY_IDS.guts, status: null });
+    const withGutsNoStatus = makeActive({
+      attack: 100,
+      ability: GEN8_ABILITY_IDS.guts,
+      status: null,
+    });
     const baseline = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none, status: null });
     const defender = makeActive({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_70();
@@ -592,7 +613,11 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
   it(`given attacker has ${CORE_ABILITY_IDS.slowStart} ability and slow-start volatile, when using physical move, then halved attack damage`, () => {
     // Source: Showdown data/abilities.ts -- Slow Start: halves Attack for first 5 turns
     const volatile = new Map([[CORE_ABILITY_IDS.slowStart, { turnsLeft: 3 }]]);
-    const withSlowStart = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.slowStart, volatiles: volatile });
+    const withSlowStart = makeActive({
+      attack: 100,
+      ability: CORE_ABILITY_IDS.slowStart,
+      volatiles: volatile,
+    });
     const noSlowStart = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const defender = makeActive({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_70();
@@ -614,7 +639,12 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
       hp: maxHp,
       currentHp: 100, // exactly 50% = Math.floor(200/2) = 100
     });
-    const noAbility = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none, hp: maxHp, currentHp: 100 });
+    const noAbility = makeActive({
+      attack: 100,
+      ability: CORE_ABILITY_IDS.none,
+      hp: maxHp,
+      currentHp: 100,
+    });
     const defender = makeActive({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_70();
 
@@ -635,7 +665,12 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
       hp: maxHp,
       currentHp: 101, // above 50% threshold
     });
-    const noAbility = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none, hp: maxHp, currentHp: 101 });
+    const noAbility = makeActive({
+      attack: 100,
+      ability: CORE_ABILITY_IDS.none,
+      hp: maxHp,
+      currentHp: 101,
+    });
     const defender = makeActive({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_70();
 
@@ -726,8 +761,16 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
 
   it(`given defender has ${CORE_ABILITY_IDS.klutz} and holds eviolite, when using physical move, then no eviolite Def boost`, () => {
     // Source: Showdown data/items.ts -- Klutz suppresses item effects including Eviolite
-    const withKlutzEviolite = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.klutz, heldItem: GEN8_ITEM_IDS.eviolite });
-    const withEvioliteOnly = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.none, heldItem: GEN8_ITEM_IDS.eviolite });
+    const withKlutzEviolite = makeActive({
+      defense: 100,
+      ability: CORE_ABILITY_IDS.klutz,
+      heldItem: GEN8_ITEM_IDS.eviolite,
+    });
+    const withEvioliteOnly = makeActive({
+      defense: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: GEN8_ITEM_IDS.eviolite,
+    });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
 
@@ -740,7 +783,11 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
 
   it(`given defender holds eviolite without ${CORE_ABILITY_IDS.klutz}, when using physical move, then eviolite Def boost applies`, () => {
     // Source: Showdown data/items.ts -- Eviolite: 1.5x Def and SpDef for non-fully-evolved
-    const withEviolite = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.none, heldItem: GEN8_ITEM_IDS.eviolite });
+    const withEviolite = makeActive({
+      defense: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: GEN8_ITEM_IDS.eviolite,
+    });
     const noItem = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.none, heldItem: null });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
@@ -761,7 +808,12 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
       ability: CORE_ABILITY_IDS.none,
       heldItem: GEN8_ITEM_IDS.assaultVest,
     });
-    const noItem = makeActive({ defense: 100, spDefense: 100, ability: CORE_ABILITY_IDS.none, heldItem: null });
+    const noItem = makeActive({
+      defense: 100,
+      spDefense: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: null,
+    });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
 
@@ -774,7 +826,11 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
 
   it(`given defender holds ${GEN8_ITEM_IDS.assaultVest}, when using special move, then 1.5x SpDef boost applies`, () => {
     // Source: Showdown data/items.ts -- Assault Vest: onModifySpD * 1.5
-    const withAV = makeActive({ spDefense: 100, ability: CORE_ABILITY_IDS.none, heldItem: GEN8_ITEM_IDS.assaultVest });
+    const withAV = makeActive({
+      spDefense: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: GEN8_ITEM_IDS.assaultVest,
+    });
     const noItem = makeActive({ spDefense: 100, ability: CORE_ABILITY_IDS.none, heldItem: null });
     const attacker = makeActive({ spAttack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_WATER_SPECIAL_80();
@@ -789,8 +845,16 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
 
   it(`given defender has ${CORE_ABILITY_IDS.marvelScale} and is burned, when using physical move, then 1.5x Def boost applies`, () => {
     // Source: Showdown data/abilities.ts -- Marvel Scale: onModifyDef * 1.5 when pokemon has status
-    const withMarvelBurned = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.marvelScale, status: CORE_STATUS_IDS.burn });
-    const withMarvelNoStatus = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.marvelScale, status: null });
+    const withMarvelBurned = makeActive({
+      defense: 100,
+      ability: CORE_ABILITY_IDS.marvelScale,
+      status: CORE_STATUS_IDS.burn,
+    });
+    const withMarvelNoStatus = makeActive({
+      defense: 100,
+      ability: CORE_ABILITY_IDS.marvelScale,
+      status: null,
+    });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
 
@@ -804,7 +868,11 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
 
   it(`given defender has ${CORE_ABILITY_IDS.marvelScale} but no status, when using physical move, then no Def boost`, () => {
     // Source: Showdown data/abilities.ts -- Marvel Scale: requires status condition to activate
-    const withMarvelNoStatus = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.marvelScale, status: null });
+    const withMarvelNoStatus = makeActive({
+      defense: 100,
+      ability: CORE_ABILITY_IDS.marvelScale,
+      status: null,
+    });
     const noAbility = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.none, status: null });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
@@ -851,10 +919,16 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     // Source: Bulbapedia -- Sandstorm: Rock-types gain 1.5x SpDef during sandstorm (Gen IV+)
     // Compare rock defender with sandstorm vs without sandstorm to isolate the SpDef boost.
     // Use a neutral-type special move (psychic vs rock = 1x effectiveness) to avoid type chart skew.
-    const rockDefender = makeActive({ types: [CORE_TYPE_IDS.rock], spDefense: 100, ability: CORE_ABILITY_IDS.none });
+    const rockDefender = makeActive({
+      types: [CORE_TYPE_IDS.rock],
+      spDefense: 100,
+      ability: CORE_ABILITY_IDS.none,
+    });
     const attacker = makeActive({ spAttack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_PSYCHIC_SPECIAL_80();
-    const stateWithSand = createSyntheticBattleState({ weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const stateWithSand = createSyntheticBattleState({
+      weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource },
+    });
     const stateNoWeather = createSyntheticBattleState();
 
     const dmgWithSand = calcDmg(
@@ -881,7 +955,9 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     // Use normal-type physical move: normal vs rock = 1x effectiveness
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
-    const stateWithSand = createSyntheticBattleState({ weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const stateWithSand = createSyntheticBattleState({
+      weather: { type: "sand", turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource },
+    });
     const stateNoWeather = createSyntheticBattleState();
 
     const dmgWithSand = calcDmg(
@@ -903,7 +979,9 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const noAbility = makeActive({ spDefense: 100, ability: CORE_ABILITY_IDS.none });
     const attacker = makeActive({ spAttack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_WATER_SPECIAL_80();
-    const state = createSyntheticBattleState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource },
+    });
 
     const dmgFlowerGift = calcDmg(
       makeDmgCtx({ attacker, defender: withFlowerGift, move, state }),
@@ -919,7 +997,9 @@ describe(`getDefenseStat — item and ability buffs (via calculateGen${GEN8_SPEC
     const noAbility = makeActive({ defense: 100, ability: CORE_ABILITY_IDS.none });
     const attacker = makeActive({ attack: 100, ability: CORE_ABILITY_IDS.none });
     const move = SYNTHETIC_NORMAL_PHYSICAL_80();
-    const state = createSyntheticBattleState({ weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource } });
+    const state = createSyntheticBattleState({
+      weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: CORE_TERRAIN_IDS.testSource },
+    });
 
     const dmgFlowerGift = calcDmg(
       makeDmgCtx({ attacker, defender: withFlowerGift, move, state }),

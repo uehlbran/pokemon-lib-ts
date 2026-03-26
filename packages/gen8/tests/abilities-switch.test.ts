@@ -1,8 +1,15 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type {
+  AbilityTrigger,
+  MoveData,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_MOVE_IDS,
@@ -15,8 +22,15 @@ import {
   createIvs,
   createPokemonInstance,
 } from "@pokemon-lib-ts/core";
-import type { AbilityTrigger, MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
 import { describe, expect, it } from "vitest";
+import {
+  createGen8DataManager,
+  GEN8_ABILITY_IDS,
+  GEN8_ITEM_IDS,
+  GEN8_MOVE_IDS,
+  GEN8_SPECIES_IDS,
+} from "../src";
 import {
   getGulpMissileResult,
   getScreenCleanerTargets,
@@ -48,14 +62,6 @@ import {
   TRACE_UNCOPYABLE_ABILITIES,
   UNSUPPRESSABLE_ABILITIES,
 } from "../src/Gen8AbilitiesSwitch";
-import {
-  createGen8DataManager,
-  GEN8_ABILITY_IDS,
-  GEN8_ITEM_IDS,
-  GEN8_MOVE_IDS,
-  GEN8_SPECIES_IDS,
-} from "../src";
-import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
 
 /**
  * Gen 8 switch-in, switch-out, contact, and passive ability tests.
@@ -82,15 +88,15 @@ import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const A = GEN8_ABILITY_IDS;
-const I = GEN8_ITEM_IDS;
-const M = GEN8_MOVE_IDS;
-const C = CORE_ABILITY_IDS;
+const _A = GEN8_ABILITY_IDS;
+const _I = GEN8_ITEM_IDS;
+const _M = GEN8_MOVE_IDS;
+const _C = CORE_ABILITY_IDS;
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
-const T = CORE_TYPE_IDS;
-const S = CORE_STATUS_IDS;
-const W = CORE_WEATHER_IDS;
-const SC = CORE_SCREEN_IDS;
+const _T = CORE_TYPE_IDS;
+const _S = CORE_STATUS_IDS;
+const _W = CORE_WEATHER_IDS;
+const _SC = CORE_SCREEN_IDS;
 const DATA_MANAGER = createGen8DataManager();
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN8_SPECIES_IDS.pikachu);
 const DEFAULT_NATURE = DATA_MANAGER.getNature(CORE_NATURE_IDS.hardy).id;
@@ -115,28 +121,33 @@ function createSyntheticPokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
-  const pokemon = createPokemonInstance(species, 50, {
-    next: () => 0,
-    int: () => 0,
-    chance: () => false,
-    pick: <T>(arr: readonly T[]) => arr[0] as T,
-    shuffle: <T>(arr: T[]) => arr,
-    getState: () => 0,
-    setState: () => {},
-  }, {
-    nature: DEFAULT_NATURE,
-    ivs: createIvs(),
-    evs: createEvs(),
-    abilitySlot: CORE_ABILITY_SLOTS.normal1,
-    gender: overrides.gender ?? CORE_GENDERS.male,
-    heldItem: overrides.heldItem ?? null,
-    friendship: species.baseFriendship,
-    metLocation: "test",
-    originalTrainer: "Test",
-    originalTrainerId: 0,
-    pokeball: GEN8_ITEM_IDS.pokeBall,
-    moves: [DEFAULT_MOVE_SLOT],
-  });
+  const pokemon = createPokemonInstance(
+    species,
+    50,
+    {
+      next: () => 0,
+      int: () => 0,
+      chance: () => false,
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: T[]) => arr,
+      getState: () => 0,
+      setState: () => {},
+    },
+    {
+      nature: DEFAULT_NATURE,
+      ivs: createIvs(),
+      evs: createEvs(),
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: overrides.gender ?? CORE_GENDERS.male,
+      heldItem: overrides.heldItem ?? null,
+      friendship: species.baseFriendship,
+      metLocation: "test",
+      originalTrainer: "Test",
+      originalTrainerId: 0,
+      pokeball: GEN8_ITEM_IDS.pokeBall,
+      moves: [DEFAULT_MOVE_SLOT],
+    },
+  );
   return {
     ...pokemon,
     uid: createTestUid(),
@@ -539,12 +550,20 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Neutralizing Gas`, () => {
   it(`given ${GEN8_ABILITY_IDS.neutralizingGas} on field, when checking isNeutralizingGasActive, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Neutralizing Gas suppresses all abilities on field
     // Source: Bulbapedia "Neutralizing Gas" -- nullifies all abilities while on field
-    expect(isNeutralizingGasActive([CORE_ABILITY_IDS.intimidate, GEN8_ABILITY_IDS.neutralizingGas, CORE_ABILITY_IDS.levitate])).toBe(true);
+    expect(
+      isNeutralizingGasActive([
+        CORE_ABILITY_IDS.intimidate,
+        GEN8_ABILITY_IDS.neutralizingGas,
+        CORE_ABILITY_IDS.levitate,
+      ]),
+    ).toBe(true);
   });
 
   it(`given no ${GEN8_ABILITY_IDS.neutralizingGas} on field, when checking isNeutralizingGasActive, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only active when Neutralizing Gas Pokemon is on field
-    expect(isNeutralizingGasActive([CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.levitate])).toBe(false);
+    expect(isNeutralizingGasActive([CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.levitate])).toBe(
+      false,
+    );
   });
 
   it(`given ${GEN8_ABILITY_IDS.neutralizingGas} ability, when checking immunity, then is immune to its own suppression`, () => {
@@ -585,18 +604,30 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Pastel Veil`, () => {
   it(`given pastel-veil on side and ${CORE_STATUS_IDS.poison} status, when checking, then blocks poison`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil onAllySetStatus: blocks poison
     // Source: Bulbapedia "Pastel Veil" -- prevents poisoning for holder and allies
-    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil, GEN8_ABILITY_IDS.runAway], CORE_STATUS_IDS.poison)).toBe(true);
+    expect(
+      isPastelVeilBlocking(
+        [GEN8_ABILITY_IDS.pastelVeil, GEN8_ABILITY_IDS.runAway],
+        CORE_STATUS_IDS.poison,
+      ),
+    ).toBe(true);
   });
 
   it(`given pastel-veil on side and bad-${CORE_STATUS_IDS.poison} status, when checking, then blocks toxic`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil blocks Toxic poison too
-    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], `bad-${CORE_STATUS_IDS.poison}`)).toBe(true);
+    expect(
+      isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], `bad-${CORE_STATUS_IDS.poison}`),
+    ).toBe(true);
   });
 
   it(`given pastel-veil on ally (not self), when checking ${CORE_STATUS_IDS.poison}, then still blocks`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil onAllySetStatus (covers allies too)
     // Source: Bulbapedia "Pastel Veil" -- `prevents the Pokemon and its allies from being ${CORE_STATUS_IDS.poison}ed`
-    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.runAway, GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.poison)).toBe(true);
+    expect(
+      isPastelVeilBlocking(
+        [GEN8_ABILITY_IDS.runAway, GEN8_ABILITY_IDS.pastelVeil],
+        CORE_STATUS_IDS.poison,
+      ),
+    ).toBe(true);
   });
 
   it(`given pastel-veil on side and ${CORE_STATUS_IDS.burn} status, when checking, then does NOT block burn`, () => {
@@ -606,11 +637,18 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Pastel Veil`, () => {
 
   it(`given pastel-veil on side and ${CORE_STATUS_IDS.paralysis} status, when checking, then does NOT block paralysis`, () => {
     // Source: Showdown data/abilities.ts -- Pastel Veil only blocks poison/toxic
-    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.paralysis)).toBe(false);
+    expect(isPastelVeilBlocking([GEN8_ABILITY_IDS.pastelVeil], CORE_STATUS_IDS.paralysis)).toBe(
+      false,
+    );
   });
 
   it(`given no pastel-veil on side and ${CORE_STATUS_IDS.poison} status, when checking, then does not block`, () => {
-    expect(isPastelVeilBlocking([CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.levitate], CORE_STATUS_IDS.poison)).toBe(false);
+    expect(
+      isPastelVeilBlocking(
+        [CORE_ABILITY_IDS.intimidate, CORE_ABILITY_IDS.levitate],
+        CORE_STATUS_IDS.poison,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -622,20 +660,28 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Wandering Spirit`, () => {
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and on-contact trigger with contact, when checking, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Wandering Spirit onDamagingHit: swaps on contact
     // Source: Bulbapedia "Wandering Spirit" -- swaps abilities on contact
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onContact, true)).toBe(true);
+    expect(
+      shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onContact, true),
+    ).toBe(true);
   });
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and on-contact trigger without contact, when checking, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- requires contact flag
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onContact, false)).toBe(false);
+    expect(
+      shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onContact, false),
+    ).toBe(false);
   });
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} and non-contact trigger, when checking, then returns false`, () => {
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onSwitchIn, true)).toBe(false);
+    expect(
+      shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.wanderingSpirit, TRIGGERS.onSwitchIn, true),
+    ).toBe(false);
   });
 
   it(`given non-${GEN8_ABILITY_IDS.wanderingSpirit} ability, when checking, then returns false`, () => {
-    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.roughSkin, TRIGGERS.onContact, true)).toBe(false);
+    expect(shouldWanderingSpiritSwap(GEN8_ABILITY_IDS.roughSkin, TRIGGERS.onContact, true)).toBe(
+      false,
+    );
   });
 
   it(`given ${GEN8_ABILITY_IDS.wanderingSpirit} holder hit by contact, when triggered, then swaps both abilities`, () => {
@@ -686,15 +732,21 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Perish Body`, () => {
   it(`given ${GEN8_ABILITY_IDS.perishBody} and on-contact trigger with contact, when checking, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Perish Body onDamagingHit: triggers on contact
     // Source: Bulbapedia "Perish Body" -- both get Perish Song on contact
-    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, TRIGGERS.onContact, true)).toBe(true);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, TRIGGERS.onContact, true)).toBe(
+      true,
+    );
   });
 
   it(`given ${GEN8_ABILITY_IDS.perishBody} and on-contact trigger without contact, when checking, then returns false`, () => {
-    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, TRIGGERS.onContact, false)).toBe(false);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.perishBody, TRIGGERS.onContact, false)).toBe(
+      false,
+    );
   });
 
   it(`given non-${GEN8_ABILITY_IDS.perishBody} ability, when checking, then returns false`, () => {
-    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.roughSkin, TRIGGERS.onContact, true)).toBe(false);
+    expect(shouldPerishBodyTrigger(GEN8_ABILITY_IDS.roughSkin, TRIGGERS.onContact, true)).toBe(
+      false,
+    );
   });
 
   it(`given perish-body holder hit by contact move, when triggered, then both get ${CORE_MOVE_IDS.perishSong} volatile`, () => {
@@ -814,7 +866,9 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
 
   it(`given non-Eiscue with ${CORE_TYPE_IDS.ice}-face, when isIceFaceActive, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only works for Eiscue
-    expect(isIceFaceActive(GEN8_SPECIES_IDS.pikachu, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(false);
+    expect(isIceFaceActive(GEN8_SPECIES_IDS.pikachu, `${CORE_TYPE_IDS.ice}-face`, false)).toBe(
+      false,
+    );
   });
 
   it(`given Eiscue with different ability, when isIceFaceActive, then ${GEN7_MOVE_IDS.return}s false`, () => {
@@ -880,15 +934,21 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Ice Face`, () => {
 describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Gulp Missile`, () => {
   it(`given Cramorant with ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Gulp Missile: Cramorant only
-    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.cramorant, GEN8_ABILITY_IDS.gulpMissile)).toBe(true);
+    expect(
+      isCramorantWithGulpMissile(GEN8_SPECIES_IDS.cramorant, GEN8_ABILITY_IDS.gulpMissile),
+    ).toBe(true);
   });
 
   it(`given non-Cramorant with ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns false`, () => {
-    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.pikachu, GEN8_ABILITY_IDS.gulpMissile)).toBe(false);
+    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.pikachu, GEN8_ABILITY_IDS.gulpMissile)).toBe(
+      false,
+    );
   });
 
   it(`given Cramorant without ${GEN8_ABILITY_IDS.gulpMissile}, when isCramorantWithGulpMissile, then returns false`, () => {
-    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.cramorant, GEN8_ABILITY_IDS.keenEye)).toBe(false);
+    expect(isCramorantWithGulpMissile(GEN8_SPECIES_IDS.cramorant, GEN8_ABILITY_IDS.keenEye)).toBe(
+      false,
+    );
   });
 
   it(`given gulping form, when getGulpMissileResult, then returns 1/4 HP damage and defense-drop`, () => {
@@ -925,16 +985,22 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Hunger Switch`, () => {
   it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and Morpeko, when shouldHungerSwitchToggle, then returns true`, () => {
     // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko only
     // Source: Bulbapedia "Hunger Switch" -- toggles form each turn
-    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, GEN8_SPECIES_IDS.morpeko)).toBe(true);
+    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, GEN8_SPECIES_IDS.morpeko)).toBe(
+      true,
+    );
   });
 
   it(`given ${GEN8_ABILITY_IDS.hungerSwitch} and non-Morpeko, when shouldHungerSwitchToggle, then returns false`, () => {
     // Source: Showdown data/abilities.ts -- only applies to Morpeko
-    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, GEN8_SPECIES_IDS.pikachu)).toBe(false);
+    expect(shouldHungerSwitchToggle(GEN8_ABILITY_IDS.hungerSwitch, GEN8_SPECIES_IDS.pikachu)).toBe(
+      false,
+    );
   });
 
   it(`given non-${GEN8_ABILITY_IDS.hungerSwitch} ability and Morpeko, when shouldHungerSwitchToggle, then returns false`, () => {
-    expect(shouldHungerSwitchToggle(CORE_ABILITY_IDS.intimidate, GEN8_SPECIES_IDS.morpeko)).toBe(false);
+    expect(shouldHungerSwitchToggle(CORE_ABILITY_IDS.intimidate, GEN8_SPECIES_IDS.morpeko)).toBe(
+      false,
+    );
   });
 });
 

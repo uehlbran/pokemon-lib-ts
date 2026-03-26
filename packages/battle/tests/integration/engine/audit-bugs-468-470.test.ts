@@ -8,14 +8,13 @@
  * Source: pret/pokered engine/battle/core.asm — multi-hit poison/burn/leech per hit
  */
 import type { PokemonInstance, VolatileStatus } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import {
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import type {
   BattleConfig,
   EndOfTurnEffect,
@@ -27,6 +26,7 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -148,7 +148,8 @@ describe("#468 — Uproar end-of-turn handler", () => {
 
     // Should emit a volatile-end event and a message about uproar ending
     const volatileEndEvents = events.filter(
-      (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.uproar,
+      (e) =>
+        e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.uproar,
     );
     expect(volatileEndEvents.length).toBeGreaterThan(0);
 
@@ -173,7 +174,9 @@ describe("#468 — Uproar end-of-turn handler", () => {
     // Without sleep-counter, MockRuleset.processSleepTurn wakes the Pokemon immediately.
     const charizard = state.sides[0].active[0];
     charizard.pokemon.status = CORE_STATUS_IDS.sleep;
-    charizard.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter as VolatileStatus, { turnsLeft: 5 });
+    charizard.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter as VolatileStatus, {
+      turnsLeft: 5,
+    });
 
     events.length = 0;
 
@@ -191,7 +194,10 @@ describe("#468 — Uproar end-of-turn handler", () => {
 
     // Should emit a message about waking up due to uproar
     const wakeMessages = events.filter(
-      (e) => e.type === "message" && "text" in e && (e.text as string).includes(CORE_VOLATILE_IDS.uproar),
+      (e) =>
+        e.type === "message" &&
+        "text" in e &&
+        (e.text as string).includes(CORE_VOLATILE_IDS.uproar),
     );
     expect(wakeMessages.length).toBeGreaterThan(0);
   });
@@ -316,7 +322,11 @@ describe("#470 — Multi-hit final-hit defender residuals", () => {
     // Count burn damage events on Charizard (side 0)
     const burnDamageEvents = events.filter(
       (e) =>
-        e.type === "damage" && "source" in e && e.source === CORE_STATUS_IDS.burn && "side" in e && e.side === 0,
+        e.type === "damage" &&
+        "source" in e &&
+        e.source === CORE_STATUS_IDS.burn &&
+        "side" in e &&
+        e.side === 0,
     );
 
     // 2-hit move: residuals between hit 1 and hit 2 (inside loop), then after hit 2 (the fix).

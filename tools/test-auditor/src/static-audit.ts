@@ -90,7 +90,11 @@ function main(): void {
   const filesIdx = args.indexOf("--files");
   const requestedFiles =
     filesIdx !== -1
-      ? args.slice(filesIdx + 1).filter((arg) => !arg.startsWith("--")).map((arg) => arg.trim()).filter(Boolean)
+      ? args
+          .slice(filesIdx + 1)
+          .filter((arg) => !arg.startsWith("--"))
+          .map((arg) => arg.trim())
+          .filter(Boolean)
       : [];
 
   const targets = discoverAuditTargets();
@@ -108,11 +112,17 @@ function main(): void {
       totalFiles++;
     }
 
-    for (const [packageName, files] of [...filesByPackage.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    for (const [packageName, files] of [...filesByPackage.entries()].sort(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
       audited.push(auditFiles(packageName, files));
     }
   } else {
-    const packagesToAudit = isAll ? targets : singlePkg ? targets.filter((t) => t.name === singlePkg) : targets;
+    const packagesToAudit = isAll
+      ? targets
+      : singlePkg
+        ? targets.filter((t) => t.name === singlePkg)
+        : targets;
 
     for (const target of packagesToAudit) {
       totalFiles += discoverTestFiles(target.testDir).length;

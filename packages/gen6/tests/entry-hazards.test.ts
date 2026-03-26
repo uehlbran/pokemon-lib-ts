@@ -15,16 +15,14 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  GEN6_ABILITY_IDS,
-  GEN6_MOVE_IDS,
-  GEN6_SPECIES_IDS,
-} from "../src";
-import {
   applyGen6EntryHazards,
   applyGen6SpikesHazard,
   applyGen6StealthRock,
   applyGen6StickyWeb,
   applyGen6ToxicSpikes,
+  GEN6_ABILITY_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_SPECIES_IDS,
   isGen6Grounded,
 } from "../src";
 import { GEN6_TYPE_CHART } from "../src/Gen6TypeChart";

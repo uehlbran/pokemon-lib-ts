@@ -1,8 +1,6 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
-import { CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, FleeAttemptEvent } from "../../../src/events";
@@ -10,6 +8,7 @@ import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // Concrete TestRuleset for testing BaseRuleset.rollFleeSuccess directly
 class FormulaTestRuleset extends BaseRuleset {

@@ -1,7 +1,7 @@
 import type { TypeChart } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN2_TYPE_CHART, GEN2_TYPES } from "../../src/Gen2TypeChart";
-import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Helper to get a type effectiveness multiplier from the chart.
@@ -68,12 +68,12 @@ describe("Gen 2 Type Chart", () => {
 
   // --- Steel Resistances ---
 
-    it("given Gen 2 type chart, when checking Steel resistance to Ghost, then is 0.5x", () => {
-      // Arrange / Act
-      const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.steel);
-      // Assert
-      expect(multiplier).toBe(0.5);
-    });
+  it("given Gen 2 type chart, when checking Steel resistance to Ghost, then is 0.5x", () => {
+    // Arrange / Act
+    const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.steel);
+    // Assert
+    expect(multiplier).toBe(0.5);
+  });
 
   it("given Gen 2 type chart, when checking Steel resistance to Dark, then is 0.5x", () => {
     // Arrange / Act

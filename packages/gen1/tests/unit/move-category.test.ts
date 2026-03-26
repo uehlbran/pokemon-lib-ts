@@ -182,28 +182,44 @@ describe("Gen 1 Type Chart Utilities", () => {
 
   it("given Gen1TypeChart, when getting effectiveness of Fire vs Grass, then returns 2", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(CORE_TYPE_IDS.fire, [CORE_TYPE_IDS.grass], GEN1_TYPE_CHART);
+    const multiplier = getTypeEffectiveness(
+      CORE_TYPE_IDS.fire,
+      [CORE_TYPE_IDS.grass],
+      GEN1_TYPE_CHART,
+    );
     // Assert
     expect(multiplier).toBe(2);
   });
 
   it("given Gen1TypeChart, when getting effectiveness of Water vs Fire, then returns 2", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(CORE_TYPE_IDS.water, [CORE_TYPE_IDS.fire], GEN1_TYPE_CHART);
+    const multiplier = getTypeEffectiveness(
+      CORE_TYPE_IDS.water,
+      [CORE_TYPE_IDS.fire],
+      GEN1_TYPE_CHART,
+    );
     // Assert
     expect(multiplier).toBe(2);
   });
 
   it("given Gen1TypeChart, when getting effectiveness of Normal vs Ghost, then returns 0", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(CORE_TYPE_IDS.normal, [CORE_TYPE_IDS.ghost], GEN1_TYPE_CHART);
+    const multiplier = getTypeEffectiveness(
+      CORE_TYPE_IDS.normal,
+      [CORE_TYPE_IDS.ghost],
+      GEN1_TYPE_CHART,
+    );
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen1TypeChart, when getting effectiveness of Ghost vs Psychic, then returns 0 (Gen 1 bug)", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(CORE_TYPE_IDS.ghost, [CORE_TYPE_IDS.psychic], GEN1_TYPE_CHART);
+    const multiplier = getTypeEffectiveness(
+      CORE_TYPE_IDS.ghost,
+      [CORE_TYPE_IDS.psychic],
+      GEN1_TYPE_CHART,
+    );
     // Assert
     expect(multiplier).toBe(0);
   });
@@ -261,7 +277,11 @@ describe("Gen 1 Type Chart Utilities", () => {
 
   it("given Gen1TypeChart, when getting effectiveness of Normal vs Normal, then returns 1 (neutral)", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(CORE_TYPE_IDS.normal, [CORE_TYPE_IDS.normal], GEN1_TYPE_CHART);
+    const multiplier = getTypeEffectiveness(
+      CORE_TYPE_IDS.normal,
+      [CORE_TYPE_IDS.normal],
+      GEN1_TYPE_CHART,
+    );
     // Assert
     expect(multiplier).toBe(1);
   });

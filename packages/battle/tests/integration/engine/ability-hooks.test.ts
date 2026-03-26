@@ -2,19 +2,18 @@ import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_TRIGGER_IDS,
-  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ---- Helpers ----
 
@@ -44,7 +43,7 @@ class ContactImmunityMockRuleset extends MockRuleset {
   }
 }
 
-const TRIGGERS = CORE_ABILITY_TRIGGER_IDS
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 
 /**
  * Creates an engine with two teams using the ContactImmunityMockRuleset.
@@ -207,7 +206,7 @@ describe("on-contact ability hook", () => {
     const blastoise = engine.state.sides[1].active[0];
     expect(blastoise).not.toBeNull();
     blastoise!.substituteHp = 50;
-      blastoise!.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
+    blastoise!.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
 
     ruleset.triggerLog = [];
 

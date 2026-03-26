@@ -9,6 +9,7 @@
 
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -19,14 +20,12 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
 import {
   createGen6DataManager,
   GEN6_ABILITY_IDS,
@@ -35,6 +34,7 @@ import {
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
 } from "@pokemon-lib-ts/gen6";
+import { describe, expect, it } from "vitest";
 import { applyGen6HeldItem } from "../src/Gen6Items";
 
 // ---------------------------------------------------------------------------
@@ -113,7 +113,9 @@ function createOnFieldPokemon(overrides: {
   };
   pokemon.ability = overrides.ability ?? pokemon.ability;
 
-  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, [...(overrides.types ?? species.types)]);
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, [
+    ...(overrides.types ?? species.types),
+  ]);
   activePokemon.ability = pokemon.ability;
   activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
   return activePokemon;
@@ -158,7 +160,10 @@ function createItemContext(overrides: {
 describe("Gen 6 Items -- Status cure berries (end-of-turn)", () => {
   it("given Cheri Berry + paralysis status, when end-of-turn triggers, then cures paralysis and is consumed", () => {
     // Source: Showdown data/items.ts -- Cheri Berry cures paralysis
-    const pokemon = createOnFieldPokemon({ heldItem: itemIds.cheriBerry, status: statusIds.paralysis });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.cheriBerry,
+      status: statusIds.paralysis,
+    });
     const result = applyGen6HeldItem(itemTriggerIds.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -175,7 +180,10 @@ describe("Gen 6 Items -- Status cure berries (end-of-turn)", () => {
 
   it("given Chesto Berry + sleep status, when end-of-turn triggers, then cures sleep", () => {
     // Source: Showdown data/items.ts -- Chesto Berry cures sleep
-    const pokemon = createOnFieldPokemon({ heldItem: itemIds.chestoBerry, status: statusIds.sleep });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.chestoBerry,
+      status: statusIds.sleep,
+    });
     const result = applyGen6HeldItem(itemTriggerIds.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -186,7 +194,10 @@ describe("Gen 6 Items -- Status cure berries (end-of-turn)", () => {
 
   it("given Pecha Berry + poison status, when end-of-turn triggers, then cures poison", () => {
     // Source: Showdown data/items.ts -- Pecha Berry cures poison/badly-poisoned
-    const pokemon = createOnFieldPokemon({ heldItem: itemIds.pechaBerry, status: statusIds.poison });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.pechaBerry,
+      status: statusIds.poison,
+    });
     const result = applyGen6HeldItem(itemTriggerIds.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -197,7 +208,10 @@ describe("Gen 6 Items -- Status cure berries (end-of-turn)", () => {
 
   it("given Pecha Berry + badly-poisoned, when end-of-turn triggers, then cures it", () => {
     // Source: Showdown data/items.ts -- Pecha Berry also cures badly-poisoned
-    const pokemon = createOnFieldPokemon({ heldItem: itemIds.pechaBerry, status: statusIds.badlyPoisoned });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.pechaBerry,
+      status: statusIds.badlyPoisoned,
+    });
     const result = applyGen6HeldItem(itemTriggerIds.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
   });
@@ -215,7 +229,10 @@ describe("Gen 6 Items -- Status cure berries (end-of-turn)", () => {
 
   it("given Aspear Berry + freeze status, when end-of-turn triggers, then cures freeze", () => {
     // Source: Showdown data/items.ts -- Aspear Berry cures freeze
-    const pokemon = createOnFieldPokemon({ heldItem: itemIds.aspearBerry, status: statusIds.freeze });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.aspearBerry,
+      status: statusIds.freeze,
+    });
     const result = applyGen6HeldItem(itemTriggerIds.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
@@ -253,7 +270,11 @@ describe("Gen 6 Items -- Lum Berry", () => {
     const result = applyGen6HeldItem(itemTriggerIds.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
-    expect(result.effects).toContainEqual({ type: "consume", target: "self", value: itemIds.lumBerry });
+    expect(result.effects).toContainEqual({
+      type: "consume",
+      target: "self",
+      value: itemIds.lumBerry,
+    });
   });
 
   it("given Lum Berry + confusion (no primary status), when end-of-turn triggers, then cures confusion", () => {
@@ -384,13 +405,19 @@ describe("Gen 6 Items -- Focus Sash (moved to capLethalDamage, #784)", () => {
     // because handleOnDamageTaken fires post-damage, making currentHp === maxHp always false.
     // See: Gen6Ruleset.capLethalDamage and GitHub issue #784
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.focusSash, hp: 200, currentHp: 200 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 300 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 300 }),
+    );
     expect(result.activated).toBe(false);
   });
 
   it("given Focus Sash NOT at full HP with lethal damage, when on-damage-taken triggers, then does NOT activate", () => {
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.focusSash, hp: 200, currentHp: 150 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 200 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 200 }),
+    );
     expect(result.activated).toBe(false);
   });
 });
@@ -400,7 +427,10 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
     // Source: Showdown data/items.ts -- Liechi Berry: +1 Atk at 25% HP
     // 200 HP * 0.25 = 50 threshold
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.liechiBerry, hp: 200, currentHp: 45 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 50 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 50 }),
+    );
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({ type: "stat-boost", target: "self", value: "attack" });
     expect(result.effects).toContainEqual({
@@ -413,7 +443,10 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
   it("given Ganlon Berry at 25% HP, when on-damage-taken triggers, then +1 Defense", () => {
     // Source: Showdown data/items.ts -- Ganlon Berry: +1 Def at 25% HP
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.ganlonBerry, hp: 200, currentHp: 40 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 50 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 50 }),
+    );
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({ type: "stat-boost", target: "self", value: "defense" });
   });
@@ -421,7 +454,10 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
   it("given Salac Berry at 25% HP, when on-damage-taken triggers, then +1 Speed", () => {
     // Source: Showdown data/items.ts -- Salac Berry: +1 Speed at 25% HP
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.salacBerry, hp: 200, currentHp: 40 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 50 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 50 }),
+    );
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({ type: "stat-boost", target: "self", value: "speed" });
   });
@@ -429,7 +465,10 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
   it("given Petaya Berry at 25% HP, when on-damage-taken triggers, then +1 SpAtk", () => {
     // Source: Showdown data/items.ts -- Petaya Berry: +1 SpAtk at 25% HP
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.petayaBerry, hp: 200, currentHp: 40 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 50 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 50 }),
+    );
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({
       type: "stat-boost",
@@ -441,7 +480,10 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
   it("given Apicot Berry at 25% HP, when on-damage-taken triggers, then +1 SpDef", () => {
     // Source: Showdown data/items.ts -- Apicot Berry: +1 SpDef at 25% HP
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.apicotBerry, hp: 200, currentHp: 40 });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 50 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 50 }),
+    );
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({
       type: "stat-boost",
@@ -458,7 +500,10 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
       currentHp: 90,
       ability: abilityIds.gluttony,
     });
-    const result = applyGen6HeldItem(itemTriggerIds.onDamageTaken, createItemContext({ pokemon, damage: 50 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onDamageTaken,
+      createItemContext({ pokemon, damage: 50 }),
+    );
     expect(result.activated).toBe(true);
     expect(result.effects).toContainEqual({ type: "stat-boost", target: "self", value: "attack" });
   });
@@ -467,7 +512,11 @@ describe("Gen 6 Items -- Pinch berries on-damage-taken", () => {
 describe("Gen 6 Items -- Jaboca Berry and Rowap Berry", () => {
   it("given Jaboca Berry + physical damage, when on-damage-taken triggers, then deals 1/8 attacker's max HP", () => {
     // Source: Showdown data/items.ts -- Jaboca Berry: 1/8 of ATTACKER's max HP on physical hit
-    const defender = createOnFieldPokemon({ heldItem: itemIds.jabocaBerry, hp: 200, currentHp: 100 });
+    const defender = createOnFieldPokemon({
+      heldItem: itemIds.jabocaBerry,
+      hp: 200,
+      currentHp: 100,
+    });
     const attacker = createOnFieldPokemon({ hp: 300, currentHp: 300 });
     const state = createBattleState({
       sides: [
@@ -521,7 +570,11 @@ describe("Gen 6 Items -- Jaboca Berry and Rowap Berry", () => {
 
   it("given Rowap Berry + special damage, when on-damage-taken triggers, then deals 1/8 attacker's max HP", () => {
     // Source: Showdown data/items.ts -- Rowap Berry: 1/8 of ATTACKER's max HP on special hit
-    const defender = createOnFieldPokemon({ heldItem: itemIds.rowapBerry, hp: 200, currentHp: 100 });
+    const defender = createOnFieldPokemon({
+      heldItem: itemIds.rowapBerry,
+      hp: 200,
+      currentHp: 100,
+    });
     const attacker = createOnFieldPokemon({ hp: 240, currentHp: 240 });
     const state = createBattleState({
       sides: [
@@ -567,7 +620,9 @@ describe("Gen 6 Items -- Air Balloon, Red Card, Eject Button", () => {
       }),
     );
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "consume", target: "self", value: itemIds.airBalloon }]);
+    expect(result.effects).toEqual([
+      { type: "consume", target: "self", value: itemIds.airBalloon },
+    ]);
   });
 
   it("given Red Card + damage > 0, when on-damage-taken triggers, then force-switch opponent", () => {
@@ -595,7 +650,11 @@ describe("Gen 6 Items -- Air Balloon, Red Card, Eject Button", () => {
 
   it("given Eject Button + damage > 0, when on-damage-taken triggers, then force-switch self", () => {
     // Source: Showdown data/items.ts -- Eject Button: self switches on damaging hit
-    const pokemon = createOnFieldPokemon({ heldItem: itemIds.ejectButton, hp: 200, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: itemIds.ejectButton,
+      hp: 200,
+      currentHp: 100,
+    });
     const result = applyGen6HeldItem(
       itemTriggerIds.onDamageTaken,
       createItemContext({
@@ -787,7 +846,10 @@ describe("Gen 6 Items -- Shell Bell", () => {
 
   it("given Shell Bell dealing 0 damage, when on-hit triggers, then does NOT activate", () => {
     const pokemon = createOnFieldPokemon({ heldItem: itemIds.shellBell });
-    const result = applyGen6HeldItem(itemTriggerIds.onHit, createItemContext({ pokemon, damage: 0 }));
+    const result = applyGen6HeldItem(
+      itemTriggerIds.onHit,
+      createItemContext({ pokemon, damage: 0 }),
+    );
     expect(result.activated).toBe(false);
   });
 });

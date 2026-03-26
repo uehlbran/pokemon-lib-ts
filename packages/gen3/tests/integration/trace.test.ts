@@ -12,12 +12,12 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen3Ability,
   createGen3DataManager,
   GEN3_ABILITY_IDS,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
-  applyGen3Ability,
 } from "../../src";
 
 /**

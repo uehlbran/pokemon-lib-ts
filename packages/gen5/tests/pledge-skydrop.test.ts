@@ -5,8 +5,8 @@
  * Source Authority: Bulbapedia -- Pledge (move), Sky Drop (move)
  */
 
-import { describe, expect, it } from "vitest";
 import { CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import { createGen5DataManager, GEN5_MOVE_IDS } from "../src";
 import { handleGen5PledgeMove, isPledgeMove } from "../src/Gen5MovePledges";
 import { handleGen5SkyDrop, isSkyDrop } from "../src/Gen5SkyDrop";

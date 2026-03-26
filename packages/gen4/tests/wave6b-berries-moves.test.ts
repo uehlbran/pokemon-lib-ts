@@ -4,20 +4,14 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type {
-  Gender,
-  MoveData,
-  PokemonType,
-  StatBlock,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { Gender, MoveData, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
-  CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -27,19 +21,18 @@ import {
   createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen4Damage, TYPE_RESIST_BERRIES } from "../src/Gen4DamageCalc";
-import { applyGen4HeldItem, getPinchBerryThreshold } from "../src/Gen4Items";
-import { executeGen4MoveEffect, getFlingPower, NATURAL_GIFT_TABLE } from "../src/Gen4MoveEffects";
 import {
+  createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
-  createGen4DataManager,
 } from "../src";
+import { calculateGen4Damage, TYPE_RESIST_BERRIES } from "../src/Gen4DamageCalc";
+import { applyGen4HeldItem, getPinchBerryThreshold } from "../src/Gen4Items";
+import { executeGen4MoveEffect, getFlingPower, NATURAL_GIFT_TABLE } from "../src/Gen4MoveEffects";
 import { GEN4_TYPES } from "../src/Gen4TypeChart";
-import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 
 /**
  * Gen 4 Wave 6B -- Berry Moves, Type-Resist Berries, Stat Pinch Berries, Jaboca/Rowap
@@ -104,27 +97,22 @@ function createSyntheticActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = createPokemonInstance(
-    species,
-    opts.level ?? 50,
-    createMockRng(0),
-    {
-      nature: DEFAULT_NATURE_ID,
-      ivs: createIvs(),
-      evs: createEvs(),
-      abilitySlot: CORE_ABILITY_SLOTS.normal1,
-      gender: opts.gender ?? CORE_GENDERS.male,
-      friendship: createFriendship(species.baseFriendship),
-      heldItem: opts.heldItem ?? null,
-      status: opts.status ?? null,
-      nickname: opts.nickname ?? null,
-      moves: opts.moves?.map((move) => move.moveId) ?? [GEN4_MOVE_IDS.tackle, GEN4_MOVE_IDS.ember],
-      metLocation: "test",
-      originalTrainer: "Test",
-      originalTrainerId: 0,
-      pokeball: CORE_ITEM_IDS.pokeBall,
-    },
-  );
+  const pokemon = createPokemonInstance(species, opts.level ?? 50, createMockRng(0), {
+    nature: DEFAULT_NATURE_ID,
+    ivs: createIvs(),
+    evs: createEvs(),
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: opts.gender ?? CORE_GENDERS.male,
+    friendship: createFriendship(species.baseFriendship),
+    heldItem: opts.heldItem ?? null,
+    status: opts.status ?? null,
+    nickname: opts.nickname ?? null,
+    moves: opts.moves?.map((move) => move.moveId) ?? [GEN4_MOVE_IDS.tackle, GEN4_MOVE_IDS.ember],
+    metLocation: "test",
+    originalTrainer: "Test",
+    originalTrainerId: 0,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+  });
 
   pokemon.currentHp = opts.currentHp ?? maxHp;
   pokemon.calculatedStats = stats;
@@ -308,7 +296,10 @@ describe("Natural Gift", () => {
 
   it("given attacker holds no item, when using Natural Gift, then fails", () => {
     // Source: Bulbapedia -- Natural Gift fails if user has no held Berry
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: null });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: null,
+    });
     const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = getGen4Move(GEN4_MOVE_IDS.naturalGift, { type: CORE_TYPE_IDS.normal });
     const rng = createMockRng(0);
@@ -381,18 +372,39 @@ describe("Natural Gift table completeness", () => {
   it("given the NATURAL_GIFT_TABLE, then all type-resist berries have entries", () => {
     // Source: Bulbapedia -- Natural Gift table lists entries for all berries including type-resist
     // Spot check: Occa (fire-resist) = fire/60, Yache (ice-resist) = ice/60
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.occaBerry]).toEqual({ type: CORE_TYPE_IDS.fire, power: 60 });
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.yacheBerry]).toEqual({ type: CORE_TYPE_IDS.ice, power: 60 });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.occaBerry]).toEqual({
+      type: CORE_TYPE_IDS.fire,
+      power: 60,
+    });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.yacheBerry]).toEqual({
+      type: CORE_TYPE_IDS.ice,
+      power: 60,
+    });
   });
 
   it("given the NATURAL_GIFT_TABLE, then stat pinch berries have entries with power 80", () => {
     // Source: Bulbapedia -- Natural Gift: Liechi/Ganlon/Salac/Petaya/Apicot = 80 power (Gen IV)
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.liechiBerry]).toEqual({ type: CORE_TYPE_IDS.grass, power: 80 });
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.ganlonBerry]).toEqual({ type: CORE_TYPE_IDS.ice, power: 80 });
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.salacBerry]).toEqual({ type: CORE_TYPE_IDS.fighting, power: 80 });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.liechiBerry]).toEqual({
+      type: CORE_TYPE_IDS.grass,
+      power: 80,
+    });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.ganlonBerry]).toEqual({
+      type: CORE_TYPE_IDS.ice,
+      power: 80,
+    });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.salacBerry]).toEqual({
+      type: CORE_TYPE_IDS.fighting,
+      power: 80,
+    });
     // Source: Bulbapedia — Petaya Berry Natural Gift type is Poison in Gen IV
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.petayaBerry]).toEqual({ type: CORE_TYPE_IDS.poison, power: 80 });
-    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.apicotBerry]).toEqual({ type: CORE_TYPE_IDS.ground, power: 80 });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.petayaBerry]).toEqual({
+      type: CORE_TYPE_IDS.poison,
+      power: 80,
+    });
+    expect(NATURAL_GIFT_TABLE[GEN4_ITEM_IDS.apicotBerry]).toEqual({
+      type: CORE_TYPE_IDS.ground,
+      power: 80,
+    });
   });
 });
 
@@ -445,7 +457,10 @@ describe("Fling", () => {
 
   it("given attacker holds no item, when using Fling, then fails", () => {
     // Source: Bulbapedia -- Fling fails if user has no held item
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: null });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: null,
+    });
     const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = getGen4Move(GEN4_MOVE_IDS.fling, { type: CORE_TYPE_IDS.dark });
     const rng = createMockRng(0);
@@ -585,7 +600,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
   it("given defender holds liechi-berry, when attacker uses Pluck, then attacker gets +1 Attack", () => {
     // Source: Bulbapedia -- Liechi Berry: when eaten, boosts Attack by 1 stage
     // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying], nickname: "Staraptor" });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.flying],
+      nickname: "Staraptor",
+    });
     const defender = createSyntheticActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.liechiBerry,
@@ -606,7 +624,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     // Source: Bulbapedia -- Ganlon Berry: when eaten, boosts Defense by 1 stage
     // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
     // Exercises Gen4MoveEffects.ts lines 2130-2132 — ganlon-berry case in applyBerryEffectToAttacker
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying], nickname: "Staraptor" });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.flying],
+      nickname: "Staraptor",
+    });
     const defender = createSyntheticActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.ganlonBerry,
@@ -627,7 +648,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     // Source: Bulbapedia -- Salac Berry: when eaten, boosts Speed by 1 stage
     // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
     // Exercises Gen4MoveEffects.ts lines 2133-2135 — salac-berry case in applyBerryEffectToAttacker
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying], nickname: "Staraptor" });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.flying],
+      nickname: "Staraptor",
+    });
     const defender = createSyntheticActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.salacBerry,
@@ -648,7 +672,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     // Source: Bulbapedia -- Petaya Berry: when eaten, boosts Sp. Atk by 1 stage
     // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
     // Exercises Gen4MoveEffects.ts lines 2136-2138 — petaya-berry case in applyBerryEffectToAttacker
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying], nickname: "Staraptor" });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.flying],
+      nickname: "Staraptor",
+    });
     const defender = createSyntheticActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.petayaBerry,
@@ -669,7 +696,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
     // Source: Bulbapedia -- Apicot Berry: when eaten, boosts Sp. Def by 1 stage
     // Source: Showdown -- Pluck/Bug Bite eat stat pinch berries for their effect
     // Exercises Gen4MoveEffects.ts lines 2139-2141 — apicot-berry case in applyBerryEffectToAttacker
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying], nickname: "Staraptor" });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.flying],
+      nickname: "Staraptor",
+    });
     const defender = createSyntheticActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.apicotBerry,
@@ -689,7 +719,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
   it("given defender holds no berry, when attacker uses Pluck, then no berry effect occurs and move resolves normally", () => {
     // Source: Bulbapedia -- Pluck: "If the target is not holding a Berry, the move functions normally"
     const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying] });
-    const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: null });
+    const defender = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: null,
+    });
     const move = getGen4Move(GEN4_MOVE_IDS.pluck);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -704,7 +737,10 @@ describe("Pluck / Bug Bite -- berry stealing", () => {
   it("given defender holds a non-berry item, when attacker uses Bug Bite, then item is NOT stolen", () => {
     // Source: Bulbapedia -- Bug Bite/Pluck only steal berries, not other items
     const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.bug] });
-    const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], heldItem: CORE_ITEM_IDS.leftovers });
+    const defender = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      heldItem: CORE_ITEM_IDS.leftovers,
+    });
     const move = getGen4Move(GEN4_MOVE_IDS.bugBite);
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -993,7 +1029,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Sceptile",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1022,7 +1061,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       maxHp: 200,
       currentHp: 200,
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1048,7 +1090,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       ability: GEN4_ABILITY_IDS.gluttony,
       nickname: "Floatzel",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1078,7 +1123,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Alakazam",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1108,7 +1156,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Regice",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1137,7 +1188,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       maxHp: 200,
       currentHp: 200,
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1163,7 +1217,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Floatzel",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1188,7 +1245,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Alakazam",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1213,7 +1273,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Regice",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1237,7 +1300,10 @@ describe("Stat pinch berries -- on-damage-taken triggers", () => {
       currentHp: 200,
       nickname: "Alakazam",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1291,7 +1357,10 @@ describe("Jaboca Berry", () => {
       currentHp: 150,
       nickname: "Skarmory",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1320,7 +1389,10 @@ describe("Jaboca Berry", () => {
       maxHp: 200,
       currentHp: 150,
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1348,7 +1420,10 @@ describe("Rowap Berry", () => {
       currentHp: 150,
       nickname: "Bronzong",
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1377,7 +1452,10 @@ describe("Rowap Berry", () => {
       maxHp: 200,
       currentHp: 150,
     });
-    const state = createMinimalBattleState(pokemon, createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
     const rng = createMockRng(0);
 
     const result = applyGen4HeldItem(ITEM_DAMAGE_TAKEN_TRIGGER, {
@@ -1403,7 +1481,11 @@ describe("Rowap Berry", () => {
       nickname: "Shedinja",
     });
     // Opponent (attacker) has maxHp=1 to test minimum floor
-    const opponent = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 1, currentHp: 1 });
+    const opponent = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      maxHp: 1,
+      currentHp: 1,
+    });
     const state = createMinimalBattleState(pokemon, opponent);
     const rng = createMockRng(0);
 

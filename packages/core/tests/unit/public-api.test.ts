@@ -4,13 +4,13 @@ import {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
 } from "../../src/constants/index.js";
+import * as core from "../../src/index.js";
 import {
   gen1to2FullParalysisCheck,
   gen1to4MultiHitRoll,
   gen1to6ConfusionSelfHitRoll,
 } from "../../src/logic/gen12-shared.js";
-import { MAX_EV, MAX_IV, MAX_TOTAL_EVS, createEvs, createIvs } from "../../src/logic/index.js";
-import * as core from "../../src/index.js";
+import { createEvs, createIvs, MAX_EV, MAX_IV, MAX_TOTAL_EVS } from "../../src/logic/index.js";
 
 describe("core public API exports", () => {
   it("given the root barrel, when reading shared damage lookup table exports, then it re-exports the canonical module bindings", () => {

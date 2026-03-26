@@ -1,9 +1,6 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { DataManager } from "@pokemon-lib-ts/core";
+import { CORE_END_OF_TURN_EFFECT_IDS, CORE_MOVE_IDS, type DataManager } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
-import { CORE_END_OF_TURN_EFFECT_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import type {
   BattleConfig,
   DamageContext,
@@ -15,7 +12,9 @@ import type {
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
+import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // Source: packages/battle/src/engine/BattleEngine.ts — CORE_END_OF_TURN_EFFECT_IDS.futureAttack resolves at end
 // of turn once the countdown reaches 0.

@@ -1,23 +1,24 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ABILITY_SLOTS,
+  type AbilityTrigger,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
-  CORE_SCREEN_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   createEvs,
   createIvs,
-  type AbilityTrigger,
   type PokemonInstance,
   type PokemonType,
   type PrimaryStatus,
   type SeededRandom,
 } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import {
   createGen9DataManager,
   GEN9_ABILITY_IDS,
@@ -25,7 +26,6 @@ import {
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
 } from "../src";
-import { describe, expect, it } from "vitest";
 import {
   getWeatherDuration,
   handleGen9SwitchAbility,
@@ -1045,7 +1045,6 @@ describe("UNSUPPRESSABLE_ABILITIES", () => {
     expect(UNSUPPRESSABLE_ABILITIES.has(A.quarkDrive)).toBe(true);
     expect(UNSUPPRESSABLE_ABILITIES.has(A.goodAsGold)).toBe(true);
   });
-
 });
 
 describe("MOLD_BREAKER_ALIASES", () => {

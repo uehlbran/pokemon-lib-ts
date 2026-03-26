@@ -24,9 +24,9 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   type Generation,
   type PokemonType,
+  SeededRandom,
   type TypeChart,
 } from "@pokemon-lib-ts/core";
 import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
@@ -142,7 +142,9 @@ describe("BaseRuleset — rollMultiHitCount", () => {
   it("given an attacker with skill-link ability, when rollMultiHitCount is called, then always returns 5 hits", () => {
     // Arrange
     // Source: Showdown — Skill Link always hits 5 times for multi-hit moves
-    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { ability: CORE_ABILITY_IDS.skillLink });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      ability: CORE_ABILITY_IDS.skillLink,
+    });
     const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.normal]);
     const rng = new SeededRandom(42);
 
@@ -815,7 +817,9 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     // Source: Gen 3+ stat formula — non-HP: floor(((2*base + iv + floor(ev/4)) * L) / 100) + 5
     //   Attack: floor(((2*84 + 31 + 0) * 50) / 100) + 5 = floor(199*50/100) + 5 = floor(99.5) + 5 = 99 + 5 = 104
     //   Hardy nature: neutral (no modifier)
-    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { nature: CORE_NATURE_IDS.hardy });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      nature: CORE_NATURE_IDS.hardy,
+    });
 
     // Act
     const stats = ruleset.calculateStats(pokemon, charizardSpecies);
@@ -840,7 +844,9 @@ describe("BaseRuleset — calculateStats (exact non-HP values)", () => {
     //   SpAttack (modest +10%): floor(129 * 1.1) = floor(141.9) = 141
     //   Attack (base): 104
     //   Attack (modest -10%): floor(104 * 0.9) = floor(93.6) = 93
-    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { nature: CORE_NATURE_IDS.modest });
+    const pokemon = createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+      nature: CORE_NATURE_IDS.modest,
+    });
 
     // Act
     const stats = ruleset.calculateStats(pokemon, charizardSpecies);

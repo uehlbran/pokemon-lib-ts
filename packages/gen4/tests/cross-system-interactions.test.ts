@@ -7,26 +7,26 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createMoveSlot,
   type MoveData,
   type PokemonInstance,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
   type StatBlock,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen4HeldItem,
+  calculateGen4Damage,
   createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
-  calculateGen4Damage,
-  applyGen4HeldItem,
-  Gen4Ruleset,
   GEN4_TYPE_CHART,
+  Gen4Ruleset,
 } from "../src";
 
 /**
@@ -85,9 +85,9 @@ const V = CORE_VOLATILE_IDS;
 const NONE = CORE_ABILITY_IDS.none;
 const TACKLE = dataManager.getMove(M.tackle);
 const STRENGTH = dataManager.getMove(M.strength);
-const EMBER = dataManager.getMove(M.ember);
+const _EMBER = dataManager.getMove(M.ember);
 const FLAME_WHEEL = dataManager.getMove(M.flameWheel);
-const WATER_PULSE = dataManager.getMove(M.waterPulse);
+const _WATER_PULSE = dataManager.getMove(M.waterPulse);
 const ROCK_SLIDE = dataManager.getMove(M.rockSlide);
 const DOUBLE_EDGE = dataManager.getMove(M.doubleEdge);
 const STRUGGLE = dataManager.getMove(M.struggle);
@@ -893,7 +893,14 @@ describe("Focus Sash — does not activate unless holder is at full HP", () => {
 // ===========================================================================
 
 describe("Lum Berry — cures all primary statuses individually", () => {
-  const statuses = [ST.burn, ST.poison, ST.badlyPoisoned, ST.paralysis, ST.sleep, ST.freeze] as const;
+  const statuses = [
+    ST.burn,
+    ST.poison,
+    ST.badlyPoisoned,
+    ST.paralysis,
+    ST.sleep,
+    ST.freeze,
+  ] as const;
 
   for (const status of statuses) {
     it(`given Lum Berry and status=${status}, when end-of-turn triggers, then status is cured and berry consumed`, () => {
@@ -903,7 +910,9 @@ describe("Lum Berry — cures all primary statuses individually", () => {
       const result = applyGen4HeldItem(TRIGGERS.endOfTurn, ctx);
 
       expect(result.effects.some((e) => e.type === "status-cure")).toBe(true);
-      expect(result.effects.some((e) => e.type === "consume" && "value" in e && e.value === I.lumBerry)).toBe(true);
+      expect(
+        result.effects.some((e) => e.type === "consume" && "value" in e && e.value === I.lumBerry),
+      ).toBe(true);
     });
   }
 });

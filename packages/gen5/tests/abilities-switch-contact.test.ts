@@ -1,12 +1,5 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { Gender, MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import {
-  handleGen5SwitchAbility,
-  isMoldBreakerAbility,
-  isTrappedByAbility,
-  VICTORY_STAR_ACCURACY_MULTIPLIER,
-} from "../src/Gen5AbilitiesSwitch";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -19,18 +12,25 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
+  createGen5DataManager,
   GEN5_ABILITY_IDS,
   GEN5_ITEM_IDS,
   GEN5_MOVE_IDS,
   GEN5_SPECIES_IDS,
-  createGen5DataManager,
 } from "@pokemon-lib-ts/gen5";
+import { describe, expect, it } from "vitest";
+import {
+  handleGen5SwitchAbility,
+  isMoldBreakerAbility,
+  isTrappedByAbility,
+  VICTORY_STAR_ACCURACY_MULTIPLIER,
+} from "../src/Gen5AbilitiesSwitch";
 
 const gen5DataManager = createGen5DataManager();
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS } as const;
@@ -210,7 +210,7 @@ function createBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function createCanonicalMove(moveId: string): MoveData {
+function _createCanonicalMove(moveId: string): MoveData {
   return gen5DataManager.getMove(moveId);
 }
 
@@ -246,7 +246,14 @@ function createAbilityContext(opts: {
   trigger: string;
   types?: PokemonType[];
   opponent?: ReturnType<typeof createOnFieldPokemon>;
-  status?: STATUS_IDS.burn | STATUS_IDS.poison | STATUS_IDS.badlyPoisoned | STATUS_IDS.paralysis | STATUS_IDS.sleep | STATUS_IDS.freeze | null;
+  status?:
+    | STATUS_IDS.burn
+    | STATUS_IDS.poison
+    | STATUS_IDS.badlyPoisoned
+    | STATUS_IDS.paralysis
+    | STATUS_IDS.sleep
+    | STATUS_IDS.freeze
+    | null;
   currentHp?: number;
   maxHp?: number;
   heldItem?: string | null;
@@ -309,7 +316,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Intimidate", () => {
   it("given Intimidate, when Pokemon switches in with opponent present, then lowers opponent Attack by 1", () => {
     // Source: Showdown data/abilities.ts — Intimidate: -1 Atk to opponent on switch-in
     const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.blaze, nickname: "Charizard" });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.intimidate, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.intimidate,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -329,7 +340,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Intimidate", () => {
       nickname: "Charizard",
       substituteHp: 50,
     });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.intimidate, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.intimidate,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
@@ -340,7 +355,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Intimidate", () => {
 describe("handleGen5SwitchAbility on-switch-in -- Pressure", () => {
   it("given Pressure, when Pokemon switches in, then emits announcement message", () => {
     // Source: Showdown data/abilities.ts — Pressure onStart message
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.pressure, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.pressure,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -349,7 +367,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Pressure", () => {
 
   it("given Pressure, when Pokemon switches in, then effect is none (informational only)", () => {
     // Source: Showdown data/abilities.ts — Pressure onStart has no stat/status effect
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.pressure, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.pressure,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.effects[0]).toEqual({ effectType: "none", target: "self" });
@@ -359,7 +380,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Pressure", () => {
 describe("handleGen5SwitchAbility on-switch-in -- Weather setters", () => {
   it("given Drizzle, when Pokemon switches in, then sets permanent rain", () => {
     // Source: Showdown Gen 5 — Drizzle sets permanent rain (weatherTurns=-1)
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.drizzle, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.drizzle,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -373,7 +397,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Weather setters", () => {
 
   it("given Drought, when Pokemon switches in, then sets permanent sun", () => {
     // Source: Showdown Gen 5 — Drought sets permanent sun (weatherTurns=-1)
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.drought, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.drought,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -387,7 +414,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Weather setters", () => {
 
   it("given Sand Stream, when Pokemon switches in, then sets permanent sandstorm", () => {
     // Source: Showdown Gen 5 — Sand Stream sets permanent sandstorm (weatherTurns=-1)
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.sandStream, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.sandStream,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -401,7 +431,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Weather setters", () => {
 
   it("given Snow Warning, when Pokemon switches in, then sets permanent hail", () => {
     // Source: Showdown Gen 5 — Snow Warning sets permanent hail (weatherTurns=-1)
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.snowWarning, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.snowWarning,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -422,7 +455,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Download", () => {
       defense: 80,
       spDefense: 120,
     });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.download, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.download,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -441,7 +478,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Download", () => {
       defense: 120,
       spDefense: 80,
     });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.download, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.download,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -458,7 +499,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Trace", () => {
   it("given Trace with copyable opponent ability, when switches in, then copies ability", () => {
     // Source: Showdown data/abilities.ts — Trace copies opponent's ability
     const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.blaze, nickname: "Foe" });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.trace, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.trace,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -472,7 +517,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Trace", () => {
   it("given Trace with Illusion opponent, when switches in, then fails (uncopyable)", () => {
     // Source: Bulbapedia — Trace cannot copy Illusion in Gen 5
     const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.illusion, nickname: "Foe" });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.trace, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.trace,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
@@ -482,7 +531,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Trace", () => {
 describe("handleGen5SwitchAbility on-switch-in -- Mold Breaker / Teravolt / Turboblaze", () => {
   it("given Mold Breaker, when switches in, then emits 'breaks the mold' message", () => {
     // Source: Showdown data/abilities.ts — Mold Breaker switch-in announcement
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.moldBreaker, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.moldBreaker,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -491,7 +543,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Mold Breaker / Teravolt / Turb
 
   it("given Teravolt, when switches in, then emits 'bursting aura' message", () => {
     // Source: Showdown data/abilities.ts — Teravolt switch-in announcement
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.teravolt, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.teravolt,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -500,7 +555,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Mold Breaker / Teravolt / Turb
 
   it("given Turboblaze, when switches in, then emits 'blazing aura' message", () => {
     // Source: Showdown data/abilities.ts — Turboblaze switch-in announcement
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.turboblaze, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.turboblaze,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -512,7 +570,11 @@ describe("handleGen5SwitchAbility on-switch-in -- Imposter", () => {
   it("given Imposter with opponent present, when switches in, then emits transform message", () => {
     // Source: Showdown data/abilities.ts — Imposter transforms into opponent
     const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.blaze, nickname: "Foe" });
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.imposter, trigger: TRIGGER_IDS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.imposter,
+      trigger: TRIGGER_IDS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -521,7 +583,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Imposter", () => {
 
   it("given Imposter without opponent, when switches in, then does not activate", () => {
     // Source: Showdown data/abilities.ts — Imposter requires a target
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.imposter, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.imposter,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
@@ -531,7 +596,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Imposter", () => {
 describe("handleGen5SwitchAbility on-switch-in -- Illusion", () => {
   it("given Illusion, when switches in, then sets illusion volatile", () => {
     // Source: Showdown data/abilities.ts — Illusion onStart
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.illusion, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.illusion,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
@@ -544,7 +612,10 @@ describe("handleGen5SwitchAbility on-switch-in -- Illusion", () => {
 
   it("given Illusion, when switches in, then no messages (disguise is silent)", () => {
     // Source: Showdown data/abilities.ts — Illusion: no message on activation
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.illusion, trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.illusion,
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.messages).toHaveLength(0);
@@ -677,7 +748,10 @@ describe("handleGen5SwitchAbility on-contact -- Flame Body", () => {
 
   it("given Flame Body when attacker already has status, then does not trigger", () => {
     // Source: Showdown data/abilities.ts — cannot inflict status if already statused
-    const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.blaze, status: STATUS_IDS.poison });
+    const opponent = createOnFieldPokemon({
+      ability: ABILITY_IDS.blaze,
+      status: STATUS_IDS.poison,
+    });
     const ctx = createAbilityContext({
       ability: ABILITY_IDS.flameBody,
       trigger: TRIGGER_IDS.onContact,
@@ -1193,7 +1267,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Levitate", () => {
   it("given Levitate and incoming Ground move, when passive check, then blocks move", () => {
     // Source: Showdown data/abilities.ts — Levitate: Ground immunity
     const move = createSyntheticTypedMove(TYPE_IDS.ground);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.levitate, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.levitate,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1202,7 +1280,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Levitate", () => {
   it("given Levitate and incoming Fire move, when passive check, then does not block", () => {
     // Source: Showdown data/abilities.ts — Levitate: only Ground
     const move = createSyntheticTypedMove(TYPE_IDS.fire);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.levitate, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.levitate,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1213,7 +1295,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Flash Fire", () => {
   it("given Flash Fire and incoming Fire move, when passive check, then activates boost", () => {
     // Source: Showdown data/abilities.ts — Flash Fire: Fire immunity + flash-fire volatile
     const move = createSyntheticTypedMove(TYPE_IDS.fire);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.flashFire, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.flashFire,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1308,7 +1394,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Motor Drive", () => {
   it("given Motor Drive and incoming Electric move, when passive check, then raises Speed +1", () => {
     // Source: Showdown data/abilities.ts — Motor Drive: Electric immune + Speed +1
     const move = createSyntheticTypedMove(TYPE_IDS.electric);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.motorDrive, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.motorDrive,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1323,7 +1413,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Motor Drive", () => {
   it("given Motor Drive and incoming Ground move, when passive check, then does not activate", () => {
     // Source: Showdown data/abilities.ts — Motor Drive: only Electric
     const move = createSyntheticTypedMove(TYPE_IDS.ground);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.motorDrive, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.motorDrive,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1367,7 +1461,10 @@ describe("handleGen5SwitchAbility passive-immunity -- Overcoat", () => {
   it("given Overcoat, when passive check triggered, then returns no passive-immunity effect", () => {
     // Source: Showdown data/mods/gen5/abilities.ts — Overcoat's weather immunity is handled
     // by the weather module, not the passive-immunity ability hook.
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.overcoat, trigger: TRIGGER_IDS.passiveImmunity });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.overcoat,
+      trigger: TRIGGER_IDS.passiveImmunity,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1376,7 +1473,10 @@ describe("handleGen5SwitchAbility passive-immunity -- Overcoat", () => {
 
   it("given Overcoat, when passive check triggered, then no messages (silent)", () => {
     // Source: Showdown data/mods/gen5/abilities.ts — Overcoat: no announcement
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.overcoat, trigger: TRIGGER_IDS.passiveImmunity });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.overcoat,
+      trigger: TRIGGER_IDS.passiveImmunity,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.messages).toHaveLength(0);
@@ -1387,7 +1487,10 @@ describe("handleGen5SwitchAbility passive-immunity -- Sand Rush", () => {
   it("given Sand Rush, when passive check triggered, then returns no passive-immunity effect", () => {
     // Source: Showdown data/abilities.ts — Sand Rush's sandstorm immunity is handled by the
     // weather module, not the passive-immunity ability hook.
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.sandRush, trigger: TRIGGER_IDS.passiveImmunity });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.sandRush,
+      trigger: TRIGGER_IDS.passiveImmunity,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1396,7 +1499,10 @@ describe("handleGen5SwitchAbility passive-immunity -- Sand Rush", () => {
 
   it("given Sand Rush, when passive check triggered, then speed doubling handled elsewhere", () => {
     // Source: Bulbapedia — Sand Rush: speed handled in getEffectiveSpeed, not here
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.sandRush, trigger: TRIGGER_IDS.passiveImmunity });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.sandRush,
+      trigger: TRIGGER_IDS.passiveImmunity,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     // Just confirm it remains a no-op, not a stat-change hook.
@@ -1408,7 +1514,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Sap Sipper", () => {
   it("given Sap Sipper and incoming Grass move, when passive check, then raises Attack +1", () => {
     // Source: Showdown data/abilities.ts — Sap Sipper: Grass immune + Atk +1
     const move = createSyntheticTypedMove(TYPE_IDS.grass);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.sapSipper, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.sapSipper,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1423,7 +1533,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Sap Sipper", () => {
   it("given Sap Sipper and incoming Water move, when passive check, then does not activate", () => {
     // Source: Showdown data/abilities.ts — Sap Sipper: only Grass
     const move = createSyntheticTypedMove(TYPE_IDS.water);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.sapSipper, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.sapSipper,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1433,7 +1547,10 @@ describe("handleGen5SwitchAbility passive-immunity -- Sap Sipper", () => {
 describe("handleGen5SwitchAbility passive-immunity -- Magic Guard", () => {
   it("given Magic Guard, when passive check triggered, then activates (signals indirect damage immunity)", () => {
     // Source: Showdown data/abilities.ts — Magic Guard: immune to non-move damage
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.magicGuard, trigger: TRIGGER_IDS.passiveImmunity });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.magicGuard,
+      trigger: TRIGGER_IDS.passiveImmunity,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1441,7 +1558,10 @@ describe("handleGen5SwitchAbility passive-immunity -- Magic Guard", () => {
 
   it("given Magic Guard, when passive check triggered, then effect is none (flag only)", () => {
     // Source: Showdown data/abilities.ts — Magic Guard: no specific effects, just a flag
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.magicGuard, trigger: TRIGGER_IDS.passiveImmunity });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.magicGuard,
+      trigger: TRIGGER_IDS.passiveImmunity,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.effects[0]).toEqual({ effectType: "none", target: "self" });
@@ -1453,7 +1573,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Storm Drain (Gen 5+)", () 
     // Source: Bulbapedia — Storm Drain (Gen 5+): Water immune + SpAtk +1
     // Gen 5 changed from redirect-only (Gen 4) to immunity + boost
     const move = createSyntheticTypedMove(TYPE_IDS.water);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.stormDrain, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.stormDrain,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1468,7 +1592,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Storm Drain (Gen 5+)", () 
   it("given Storm Drain and incoming Fire move, when passive check, then does not activate", () => {
     // Source: Showdown data/abilities.ts — Storm Drain: only Water
     const move = createSyntheticTypedMove(TYPE_IDS.fire);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.stormDrain, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.stormDrain,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1480,7 +1608,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Lightning Rod (Gen 5+)", (
     // Source: Bulbapedia — Lightning Rod (Gen 5+): Electric immune + SpAtk +1
     // Gen 5 changed from redirect-only (Gen 3-4) to immunity + boost
     const move = createSyntheticTypedMove(TYPE_IDS.electric);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.lightningRod, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.lightningRod,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(true);
@@ -1495,7 +1627,11 @@ describe("handleGen5SwitchAbility passive-immunity -- Lightning Rod (Gen 5+)", (
   it("given Lightning Rod and incoming Water move, when passive check, then does not activate", () => {
     // Source: Showdown data/abilities.ts — Lightning Rod: only Electric
     const move = createSyntheticTypedMove(TYPE_IDS.water);
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.lightningRod, trigger: TRIGGER_IDS.passiveImmunity, move });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.lightningRod,
+      trigger: TRIGGER_IDS.passiveImmunity,
+      move,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     expect(result.activated).toBe(false);
@@ -1566,7 +1702,10 @@ describe("handleGen5SwitchAbility on-stat-change -- Big Pecks", () => {
 describe("handleGen5SwitchAbility on-accuracy-check -- Victory Star", () => {
   it("given Victory Star, when accuracy check triggers, then activates", () => {
     // Source: Showdown data/abilities.ts — Victory Star: accuracy * 4506/4096
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.victoryStar, trigger: TRIGGER_IDS.onAccuracyCheck });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.victoryStar,
+      trigger: TRIGGER_IDS.onAccuracyCheck,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onAccuracyCheck, ctx);
 
     expect(result.activated).toBe(true);
@@ -1574,7 +1713,10 @@ describe("handleGen5SwitchAbility on-accuracy-check -- Victory Star", () => {
 
   it("given Victory Star, when accuracy check triggers, then effect is informational", () => {
     // Source: Showdown data/abilities.ts — actual accuracy modification is in engine
-    const ctx = createAbilityContext({ ability: ABILITY_IDS.victoryStar, trigger: TRIGGER_IDS.onAccuracyCheck });
+    const ctx = createAbilityContext({
+      ability: ABILITY_IDS.victoryStar,
+      trigger: TRIGGER_IDS.onAccuracyCheck,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onAccuracyCheck, ctx);
 
     expect(result.effects[0]).toEqual({ effectType: "none", target: "self" });
@@ -1698,7 +1840,10 @@ describe("VICTORY_STAR_ACCURACY_MULTIPLIER", () => {
 
 describe("handleGen5SwitchAbility default behavior", () => {
   it("given unknown ability for any trigger, when dispatched, then returns no effect", () => {
-    const ctx = createAbilityContext({ ability: "some-unknown-ability", trigger: TRIGGER_IDS.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: "some-unknown-ability",
+      trigger: TRIGGER_IDS.onSwitchIn,
+    });
     const result = handleGen5SwitchAbility(TRIGGER_IDS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);

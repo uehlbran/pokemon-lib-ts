@@ -16,13 +16,13 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  Gen4Ruleset,
   createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
+  Gen4Ruleset,
 } from "../src";
 
 /**
@@ -402,9 +402,7 @@ describe("Gen 4 Two-Turn Moves — Power Herb", () => {
     expect(result.forcedMoveSet).toBeUndefined();
     // Item is consumed
     expect(result.attackerItemConsumed).toBe(true);
-    expect(result.messages).toEqual([
-      "The Pokemon became fully charged due to its Power Herb!",
-    ]);
+    expect(result.messages).toEqual(["The Pokemon became fully charged due to its Power Herb!"]);
   });
 });
 
@@ -474,9 +472,15 @@ describe("Gen 4 canHitSemiInvulnerable", () => {
   it("given defender in shadow-force-charging state, when canHitSemiInvulnerable called with any move, then returns false", () => {
     // Source: Showdown Gen 4 — Nothing can hit a Pokemon during Shadow Force's charge
     // Source: Bulbapedia — "Shadow Force bypasses Protect and Detect."
-    expect(ruleset.canHitSemiInvulnerable(moveIds.thunder, volatileIds.shadowForceCharging)).toBe(false);
-    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.shadowForceCharging)).toBe(false);
-    expect(ruleset.canHitSemiInvulnerable(moveIds.surf, volatileIds.shadowForceCharging)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.thunder, volatileIds.shadowForceCharging)).toBe(
+      false,
+    );
+    expect(
+      ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.shadowForceCharging),
+    ).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.surf, volatileIds.shadowForceCharging)).toBe(
+      false,
+    );
   });
 
   it("given defender in charging state (generic), when canHitSemiInvulnerable called with any move, then returns true", () => {

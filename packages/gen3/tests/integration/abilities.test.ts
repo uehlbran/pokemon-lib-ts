@@ -6,7 +6,6 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
-  PokemonInstance,
   PokemonType,
   PrimaryStatus,
   StatBlock,
@@ -32,12 +31,12 @@ import {
   applyGen3Ability,
   canInflictGen3Status,
   createGen3DataManager,
-  Gen3Ruleset,
   GEN3_ABILITY_IDS,
   GEN3_ITEM_IDS,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
+  Gen3Ruleset,
   isGen3VolatileBlockedByAbility,
 } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
@@ -162,11 +161,7 @@ function createOnFieldPokemon(opts: {
 }
 
 /** Explicit synthetic move builder for damage-slice probes that real Gen 3 move data does not cover directly. */
-function createSyntheticMove(
-  type: PokemonType,
-  power: number,
-  id = moveIds.tackle,
-): MoveData {
+function createSyntheticMove(type: PokemonType, power: number, id = moveIds.tackle): MoveData {
   const canonicalMove = dataManager.getMove(id);
   return {
     ...canonicalMove,
@@ -218,7 +213,9 @@ function createTypeChart(overrides: [PokemonType, PokemonType, number][]): TypeC
 }
 
 /** Create a BattleState mock with optional weather. */
-function createSyntheticDamageState(weather?: { type: string; turnsLeft: number; source: string } | null) {
+function createSyntheticDamageState(
+  weather?: { type: string; turnsLeft: number; source: string } | null,
+) {
   return {
     weather: weather ?? null,
   } as DamageContext["state"];
@@ -1181,7 +1178,9 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
       expect(result).toEqual({
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: CORE_STATUS_IDS.paralysis }],
+        effects: [
+          { effectType: "status-inflict", target: "opponent", status: CORE_STATUS_IDS.paralysis },
+        ],
         messages: [],
       });
     });
@@ -1195,7 +1194,9 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
       expect(result).toEqual({
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: CORE_STATUS_IDS.burn }],
+        effects: [
+          { effectType: "status-inflict", target: "opponent", status: CORE_STATUS_IDS.burn },
+        ],
         messages: [],
       });
     });
@@ -1223,7 +1224,9 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
       expect(result).toEqual({
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: CORE_STATUS_IDS.poison }],
+        effects: [
+          { effectType: "status-inflict", target: "opponent", status: CORE_STATUS_IDS.poison },
+        ],
         messages: [],
       });
     });
@@ -1369,11 +1372,15 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Own Tempo holder, when confusion is checked, then confusion is blocked", () => {
-      expect(isGen3VolatileBlockedByAbility(GEN3_ABILITY_IDS.ownTempo, CORE_VOLATILE_IDS.confusion)).toBe(true);
+      expect(
+        isGen3VolatileBlockedByAbility(GEN3_ABILITY_IDS.ownTempo, CORE_VOLATILE_IDS.confusion),
+      ).toBe(true);
     });
 
     it("given Oblivious holder, when infatuation is checked, then infatuation is blocked", () => {
-      expect(isGen3VolatileBlockedByAbility(GEN3_ABILITY_IDS.oblivious, CORE_VOLATILE_IDS.infatuation)).toBe(true);
+      expect(
+        isGen3VolatileBlockedByAbility(GEN3_ABILITY_IDS.oblivious, CORE_VOLATILE_IDS.infatuation),
+      ).toBe(true);
     });
   });
 

@@ -56,7 +56,11 @@ const GEN6_UNDERGROUND_BYPASS_MOVE_IDS: readonly string[] = [
   GEN6_MOVE_IDS.fissure,
 ];
 
-const GEN6_UNDERWATER_BYPASS_MOVE_IDS: readonly string[] = [GEN6_MOVE_IDS.surf, GEN6_MOVE_IDS.whirlpool];
+const GEN6_UNDERWATER_BYPASS_MOVE_IDS: readonly string[] = [
+  GEN6_MOVE_IDS.surf,
+  GEN6_MOVE_IDS.whirlpool,
+];
+
 import { Gen6MegaEvolution } from "./Gen6MegaEvolution.js";
 import { executeGen6MoveEffect, isGen6GrassPowderBlocked } from "./Gen6MoveEffects.js";
 import { applyGen6TerrainEffects, canInflictStatusWithTerrain } from "./Gen6Terrain.js";

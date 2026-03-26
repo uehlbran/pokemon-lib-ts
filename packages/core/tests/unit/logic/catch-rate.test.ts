@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { GEN2_ITEM_IDS } from "../../../../gen2/src/data/reference-ids";
+import { GEN3_ITEM_IDS } from "../../../../gen3/src/data/reference-ids";
+import { GEN4_ITEM_IDS } from "../../../../gen4/src/data/reference-ids";
+import { GEN5_ITEM_IDS } from "../../../../gen5/src/data/reference-ids";
 import { CORE_STATUS_IDS } from "../../../src/constants/reference-ids";
 import {
   calculateModifiedCatchRate,
@@ -8,10 +12,6 @@ import {
   STATUS_CATCH_MODIFIERS_GEN34,
 } from "../../../src/logic/catch-rate";
 import { SeededRandom } from "../../../src/prng/seeded-random";
-import { GEN2_ITEM_IDS } from "../../../../gen2/src/data/reference-ids";
-import { GEN3_ITEM_IDS } from "../../../../gen3/src/data/reference-ids";
-import { GEN4_ITEM_IDS } from "../../../../gen4/src/data/reference-ids";
-import { GEN5_ITEM_IDS } from "../../../../gen5/src/data/reference-ids";
 
 const ITEM_IDS_BY_GENERATION = {
   2: GEN2_ITEM_IDS,

@@ -1,21 +1,18 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import {
-  CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
-  CORE_ABILITY_TRIGGER_IDS,
-  CORE_VOLATILE_IDS,
-  CORE_WEATHER_IDS,
-  createMoveSlot,
-} from "@pokemon-lib-ts/core";
 import type {
   AbilityTrigger,
   MoveData,
-  PokemonCreationOptions,
   PokemonInstance,
   PokemonType,
   PrimaryStatus,
 } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
+import {
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import {
   createGen6DataManager,
   GEN6_ABILITY_IDS,
@@ -24,6 +21,7 @@ import {
   GEN6_SPECIES_IDS,
   GEN6_TYPES,
 } from "@pokemon-lib-ts/gen6";
+import { describe, expect, it } from "vitest";
 import {
   handleGen6SwitchAbility,
   isBulletproofBlocked,
@@ -61,7 +59,7 @@ const T = CORE_TYPE_IDS;
 const S = CORE_STATUS_IDS;
 const V = CORE_VOLATILE_IDS;
 const W = CORE_WEATHER_IDS;
-const G6T = GEN6_TYPES;
+const _G6T = GEN6_TYPES;
 const dataManager = createGen6DataManager();
 const GENDERS = {
   male: ["m", "ale"].join("") as PokemonInstance["gender"],
@@ -319,7 +317,11 @@ describe("Drizzle (Gen 6: 5-turn rain)", () => {
 
   it("given Drizzle, when on-switch-in, then produces expected message", () => {
     // Source: Showdown data/abilities.ts -- drizzle onStart message
-    const ctx = createAbilityContext({ ability: A.drizzle, trigger: TRIGGERS.onSwitchIn, nickname: "Politoed" });
+    const ctx = createAbilityContext({
+      ability: A.drizzle,
+      trigger: TRIGGERS.onSwitchIn,
+      nickname: "Politoed",
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain("Politoed");
@@ -411,7 +413,11 @@ describe("Intimidate", () => {
     // Source: Showdown data/abilities.ts -- intimidate: lower opponent Attack by 1
     // Source: Bulbapedia "Intimidate" -- "Lowers the foe's Attack stat by one stage upon entry."
     const opponent = createOnFieldPokemon({ ability: A.none, types: [T.normal] });
-    const ctx = createAbilityContext({ ability: A.intimidate, trigger: TRIGGERS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: A.intimidate,
+      trigger: TRIGGERS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     const statEffect = result.effects.find((e) => e.effectType === "stat-change");
@@ -424,7 +430,11 @@ describe("Intimidate", () => {
     // Source: Showdown Gen 6 -- Intimidate blocked by Substitute
     // Source: Bulbapedia "Intimidate" -- "Blocked by Substitute"
     const opponent = createOnFieldPokemon({ ability: A.none, substituteHp: 50 });
-    const ctx = createAbilityContext({ ability: A.intimidate, trigger: TRIGGERS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: A.intimidate,
+      trigger: TRIGGERS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
   });
@@ -464,7 +474,11 @@ describe("Regenerator", () => {
     // Source: Showdown data/abilities.ts -- regenerator: heals 1/3 maxHp on switch-out
     // Source: Bulbapedia "Regenerator" -- "Restores 1/3 of its maximum HP upon switching out."
     // floor(300 / 3) = 100
-    const ctx = createAbilityContext({ ability: A.regenerator, trigger: TRIGGERS.onSwitchOut, maxHp: 300 });
+    const ctx = createAbilityContext({
+      ability: A.regenerator,
+      trigger: TRIGGERS.onSwitchOut,
+      maxHp: 300,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchOut, ctx);
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.effectType === "heal");
@@ -474,7 +488,11 @@ describe("Regenerator", () => {
   it("given Regenerator at 1 HP, when on-switch-out, then heals at least 1", () => {
     // Source: Showdown data/abilities.ts -- Math.max(1, floor(maxHp/3))
     // floor(1 / 3) = 0, but clamped to 1
-    const ctx = createAbilityContext({ ability: A.regenerator, trigger: TRIGGERS.onSwitchOut, maxHp: 1 });
+    const ctx = createAbilityContext({
+      ability: A.regenerator,
+      trigger: TRIGGERS.onSwitchOut,
+      maxHp: 1,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchOut, ctx);
     expect(result.activated).toBe(true);
     const healEffect = result.effects.find((e) => e.effectType === "heal");
@@ -622,7 +640,11 @@ describe("Mummy (on-contact)", () => {
   it("given Mummy, when attacker has a copyable ability, then overwrites attacker's ability", () => {
     // Source: Showdown data/abilities.ts -- mummy: changes attacker ability to Mummy on contact
     const attacker = createOnFieldPokemon({ ability: A.swiftSwim });
-    const ctx = createAbilityContext({ ability: A.mummy, trigger: TRIGGERS.onContact, opponent: attacker });
+    const ctx = createAbilityContext({
+      ability: A.mummy,
+      trigger: TRIGGERS.onContact,
+      opponent: attacker,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(true);
     const abilityEffect = result.effects.find((e) => e.effectType === "ability-change");
@@ -632,7 +654,11 @@ describe("Mummy (on-contact)", () => {
   it("given Mummy, when attacker already has Mummy, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- mummy: cannot overwrite Mummy itself
     const attacker = createOnFieldPokemon({ ability: A.mummy });
-    const ctx = createAbilityContext({ ability: A.mummy, trigger: TRIGGERS.onContact, opponent: attacker });
+    const ctx = createAbilityContext({
+      ability: A.mummy,
+      trigger: TRIGGERS.onContact,
+      opponent: attacker,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(false);
   });
@@ -643,7 +669,11 @@ describe("Mummy (on-contact)", () => {
     // Bug #672: Previously UNSUPPRESSABLE_ABILITIES included Gen 7+ abilities like
     // wonder-guard, shields-down, power-construct, etc. which don't apply in Gen 6.
     const attacker = createOnFieldPokemon({ ability: A.wonderGuard });
-    const ctx = createAbilityContext({ ability: A.mummy, trigger: TRIGGERS.onContact, opponent: attacker });
+    const ctx = createAbilityContext({
+      ability: A.mummy,
+      trigger: TRIGGERS.onContact,
+      opponent: attacker,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(true);
     const abilityEffect = result.effects.find((e) => e.effectType === "ability-change");
@@ -654,7 +684,11 @@ describe("Mummy (on-contact)", () => {
     // Source: Showdown data/mods/gen6/abilities.ts -- stance-change: cantsuppress: 1
     // Stance Change IS in the Gen 6 unsuppressable set.
     const attacker = createOnFieldPokemon({ ability: A.stanceChange });
-    const ctx = createAbilityContext({ ability: A.mummy, trigger: TRIGGERS.onContact, opponent: attacker });
+    const ctx = createAbilityContext({
+      ability: A.mummy,
+      trigger: TRIGGERS.onContact,
+      opponent: attacker,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(false);
   });
@@ -947,7 +981,11 @@ describe("Flash Fire (passive-immunity)", () => {
     // Source: Showdown data/abilities.ts -- flashfire: immune to Fire + gains flash-fire boost
     // Source: Bulbapedia "Flash Fire" -- "Powers up Fire moves when hit by Fire-type moves."
     const fireMove = dataManager.getMove(GEN6_MOVE_IDS.flamethrower);
-    const ctx = createAbilityContext({ ability: A.flashFire, trigger: TRIGGERS.passiveImmunity, move: fireMove });
+    const ctx = createAbilityContext({
+      ability: A.flashFire,
+      trigger: TRIGGERS.passiveImmunity,
+      move: fireMove,
+    });
     const result = handleGen6SwitchAbility(TRIGGERS.passiveImmunity, ctx);
     expect(result.activated).toBe(true);
     const volatileEffect = result.effects.find((e) => e.effectType === "volatile-inflict");
@@ -1112,9 +1150,9 @@ describe("Victory Star (on-accuracy-check)", () => {
 describe("isTrappedByAbility utilities", () => {
   it("given Shadow Tag trapper, when trapped has different ability, then isTrapped is true", () => {
     // Source: Showdown data/abilities.ts -- shadowtag: traps unless opponent also has Shadow Tag
-    expect(
-      isTrappedByAbility({ ability: A.shadowTag }, { ability: A.none, types: [] }, true),
-    ).toBe(true);
+    expect(isTrappedByAbility({ ability: A.shadowTag }, { ability: A.none, types: [] }, true)).toBe(
+      true,
+    );
   });
 
   it("given Shadow Tag trapper, when trapped also has Shadow Tag, then isTrapped is false", () => {

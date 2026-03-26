@@ -1,12 +1,12 @@
 import { CORE_HAZARD_IDS, CORE_MOVE_IDS, getExpForLevel } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig, EntryHazardResult, ExpContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, ExpGainEvent, LevelUpEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 /**
  * Creates and starts a battle engine configured for EXP gain tests.

@@ -13,11 +13,11 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen2HeldItem,
+  createGen2DataManager,
   GEN2_ITEM_IDS,
   GEN2_NATURE_IDS,
   GEN2_SPECIES_IDS,
-  createGen2DataManager,
-  applyGen2HeldItem,
 } from "../../src";
 
 /**

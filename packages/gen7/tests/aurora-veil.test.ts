@@ -4,7 +4,7 @@ import type {
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -12,19 +12,19 @@ import {
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
+  AURORA_VEIL_DEFAULT_TURNS,
+  AURORA_VEIL_LIGHT_CLAY_TURNS,
   createGen7DataManager,
   GEN7_ITEM_IDS,
   GEN7_MOVE_IDS,
   GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
   Gen7Ruleset,
-  AURORA_VEIL_DEFAULT_TURNS,
-  AURORA_VEIL_LIGHT_CLAY_TURNS,
   handleAuroraVeil,
 } from "@pokemon-lib-ts/gen7";
 import { describe, expect, it } from "vitest";
@@ -41,14 +41,16 @@ const DEFAULT_ABILITY = NINETALES.abilities.normal[0] ?? CORE_ABILITY_IDS.none;
  * Verifies the gen-specific overrides already implemented in Gen7MoveEffects.
  */
 
-function createOnFieldPokemon(overrides: {
-  maxHp?: number;
-  types?: PokemonType[];
-  ability?: string;
-  nickname?: string;
-  heldItem?: string | null;
-  volatiles?: Map<string, { turnsLeft: number }>;
-} = {}): ActivePokemon {
+function createOnFieldPokemon(
+  overrides: {
+    maxHp?: number;
+    types?: PokemonType[];
+    ability?: string;
+    nickname?: string;
+    heldItem?: string | null;
+    volatiles?: Map<string, { turnsLeft: number }>;
+  } = {},
+): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
   return {
     pokemon: {
@@ -92,7 +94,8 @@ function createOnFieldPokemon(overrides: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: (overrides.volatiles as Map<VolatileStatus, { turnsLeft: number }>) ?? new Map(),
+    volatileStatuses:
+      (overrides.volatiles as Map<VolatileStatus, { turnsLeft: number }>) ?? new Map(),
     turnsOnField: 0,
     consecutiveProtects: 0,
     types: overrides.types ?? [...NINETALES.types],
@@ -100,7 +103,11 @@ function createOnFieldPokemon(overrides: {
   } as ActivePokemon;
 }
 
-function createBattleSide(active: ActivePokemon, index: 0 | 1 = 0, screens: Array<{ type: string; turnsLeft: number }> = []): BattleSide {
+function createBattleSide(
+  active: ActivePokemon,
+  index: 0 | 1 = 0,
+  screens: Array<{ type: string; turnsLeft: number }> = [],
+): BattleSide {
   return {
     index,
     active: [active],
@@ -214,7 +221,10 @@ describe("Gen7 Aurora Veil", () => {
   });
 
   it("given Hail is active and attacker holds Light Clay, when Aurora Veil used, then lasts 8 turns", () => {
-    const attacker = createOnFieldPokemon({ nickname: "TestMon", heldItem: GEN7_ITEM_IDS.lightClay });
+    const attacker = createOnFieldPokemon({
+      nickname: "TestMon",
+      heldItem: GEN7_ITEM_IDS.lightClay,
+    });
     const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createBattleState(CORE_WEATHER_IDS.hail, attacker, defender);
     const ctx = createAuroraVeilContext(attacker, defender, state);
@@ -230,7 +240,12 @@ describe("Gen7 Aurora Veil", () => {
   it("given Aurora Veil already active on attacker's side, when Aurora Veil used again, then fails", () => {
     const attacker = createOnFieldPokemon({ nickname: "TestMon" });
     const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
-    const state = createBattleState(CORE_WEATHER_IDS.hail, attacker, defender, createSyntheticScreenState(3));
+    const state = createBattleState(
+      CORE_WEATHER_IDS.hail,
+      attacker,
+      defender,
+      createSyntheticScreenState(3),
+    );
     const ctx = createAuroraVeilContext(attacker, defender, state);
 
     const result = handleAuroraVeil(ctx);

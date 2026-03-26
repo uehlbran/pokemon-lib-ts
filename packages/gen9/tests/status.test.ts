@@ -16,11 +16,11 @@ import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen9DataManager,
   GEN9_MOVE_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
   Gen9Ruleset,
-  createGen9DataManager,
 } from "../src";
 
 const STATUSES = CORE_STATUS_IDS;
@@ -228,7 +228,11 @@ describe("Gen9Ruleset -- applyStatusDamage (badly-poisoned)", () => {
       status: STATUSES.badlyPoisoned,
       volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 1 } }]],
     });
-    const result = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned as never, {} as BattleState);
+    const result = ruleset.applyStatusDamage(
+      pokemon,
+      STATUSES.badlyPoisoned as never,
+      {} as BattleState,
+    );
     expect(result).toBe(10);
   });
 
@@ -240,7 +244,11 @@ describe("Gen9Ruleset -- applyStatusDamage (badly-poisoned)", () => {
       status: STATUSES.badlyPoisoned,
       volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } }]],
     });
-    const result = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned as never, {} as BattleState);
+    const result = ruleset.applyStatusDamage(
+      pokemon,
+      STATUSES.badlyPoisoned as never,
+      {} as BattleState,
+    );
     expect(result).toBe(30);
   });
 });
@@ -267,7 +275,11 @@ describe("Gen9Ruleset -- applyStatusDamage (no-damage statuses)", () => {
   it("given paralyzed Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- paralysis has no per-turn chip damage
     const pokemon = createOnFieldPokemon({ status: STATUSES.paralysis });
-    const result = ruleset.applyStatusDamage(pokemon, STATUSES.paralysis as never, {} as BattleState);
+    const result = ruleset.applyStatusDamage(
+      pokemon,
+      STATUSES.paralysis as never,
+      {} as BattleState,
+    );
     expect(result).toBe(0);
   });
 });

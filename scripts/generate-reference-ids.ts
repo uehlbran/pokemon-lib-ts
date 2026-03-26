@@ -125,7 +125,9 @@ async function main(): Promise<void> {
   const packageNames = (await readdir(PACKAGES_DIR, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory() && /^gen[0-9]+$/.test(entry.name))
     .map((entry) => entry.name)
-    .sort((left, right) => Number.parseInt(left.slice(3), 10) - Number.parseInt(right.slice(3), 10));
+    .sort(
+      (left, right) => Number.parseInt(left.slice(3), 10) - Number.parseInt(right.slice(3), 10),
+    );
 
   await Promise.all(packageNames.map((packageName) => generateReferenceIdsForPackage(packageName)));
 }

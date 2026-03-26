@@ -1,8 +1,8 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { Gender, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
@@ -706,9 +706,15 @@ describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
   it("given attacker with Oblivious, when Cute Charm triggers, then infatuation is blocked", () => {
     // Source: Bulbapedia — Oblivious: prevents infatuation
     // Source: Showdown Gen 4 mod — ABILITY_VOLATILE_IMMUNITIES: oblivious: ['infatuation']
-    const attacker = createOnFieldPokemon({ ability: ABILITIES.oblivious, gender: CORE_GENDERS.male });
+    const attacker = createOnFieldPokemon({
+      ability: ABILITIES.oblivious,
+      gender: CORE_GENDERS.male,
+    });
     const state = createBattleState();
-    const defender = createOnFieldPokemon({ ability: ABILITIES.cuteCharm, gender: CORE_GENDERS.female });
+    const defender = createOnFieldPokemon({
+      ability: ABILITIES.cuteCharm,
+      gender: CORE_GENDERS.female,
+    });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,
@@ -727,7 +733,10 @@ describe("applyGen4Ability on-contact -- Cute Charm immunity checks", () => {
     // Source: Bulbapedia — Cute Charm: 30% chance to infatuate attacker of opposite gender
     const attacker = createOnFieldPokemon({ ability: ABILITIES.blaze, gender: CORE_GENDERS.male });
     const state = createBattleState();
-    const defender = createOnFieldPokemon({ ability: ABILITIES.cuteCharm, gender: CORE_GENDERS.female });
+    const defender = createOnFieldPokemon({
+      ability: ABILITIES.cuteCharm,
+      gender: CORE_GENDERS.female,
+    });
     const ctx: AbilityContext = {
       pokemon: defender,
       opponent: attacker,

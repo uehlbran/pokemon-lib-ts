@@ -6,6 +6,8 @@
  */
 
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -13,27 +15,26 @@ import {
   CORE_GENDERS,
   CORE_GIMMICK_IDS,
   CORE_ITEM_IDS,
-  CORE_MOVE_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
-  CORE_WEATHER_IDS,
   CORE_TYPE_IDS,
-  CORE_VOLATILE_IDS,
-  SeededRandom,
-  type MoveData,
+  CORE_WEATHER_IDS,
   createEvs,
   createFriendship,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  type MoveData,
   type PokemonInstance,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
-import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen7TerrainEffects,
+  checkPsychicTerrainPriorityBlock,
   createGen7DataManager,
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
@@ -41,7 +42,10 @@ import {
   GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
   handleGen7NewAbility,
+  handleSurgeAbility,
   isSchoolForm,
+  TERRAIN_DEFAULT_TURNS,
+  TERRAIN_EXTENDED_TURNS,
 } from "../../src";
 import {
   handleGen7StatAbility,
@@ -51,7 +55,6 @@ import {
 import { calculateGen7Damage } from "../../src/Gen7DamageCalc";
 import { Gen7MegaEvolution } from "../../src/Gen7MegaEvolution";
 import { Gen7Ruleset } from "../../src/Gen7Ruleset";
-import { applyGen7TerrainEffects, checkPsychicTerrainPriorityBlock, handleSurgeAbility, TERRAIN_DEFAULT_TURNS, TERRAIN_EXTENDED_TURNS } from "../../src";
 import { GEN7_TYPE_CHART } from "../../src/Gen7TypeChart";
 import { Gen7ZMove } from "../../src/Gen7ZMove";
 
@@ -64,7 +67,7 @@ const GIMMICKS = { ...CORE_GIMMICK_IDS, ...BATTLE_GIMMICK_IDS } as const;
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const MOVES = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
-const STATUS = CORE_STATUS_IDS;
+const _STATUS = CORE_STATUS_IDS;
 const SPECIES = GEN7_SPECIES_IDS;
 const TERRAIN = CORE_TERRAIN_IDS;
 const WEATHER = CORE_WEATHER_IDS;
@@ -188,7 +191,10 @@ function createSyntheticOnFieldPokemon(overrides: {
   return active as ActivePokemon;
 }
 
-function createSyntheticMoveFromCanonical(moveId = MOVES.tackle, overrides: Partial<MoveData> = {}): MoveData {
+function createSyntheticMoveFromCanonical(
+  moveId = MOVES.tackle,
+  overrides: Partial<MoveData> = {},
+): MoveData {
   const baseMove = getCanonicalMove(moveId);
   return {
     ...baseMove,
@@ -264,7 +270,12 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
     expect(canUseZ).toBe(true);
 
     // Mega should be available for side 1
-    const canUseMega = mega.canUse(megaUser, createSyntheticMoveFromCanonical(MOVES.flareBlitz), 1, createSyntheticBattleState());
+    const canUseMega = mega.canUse(
+      megaUser,
+      createSyntheticMoveFromCanonical(MOVES.flareBlitz),
+      1,
+      createSyntheticBattleState(),
+    );
     expect(canUseMega).toBe(true);
   });
 
@@ -294,7 +305,12 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
       nickname: "Charizard",
     });
 
-    const canMega = mega.canUse(megaUser, createSyntheticMoveFromCanonical(MOVES.flareBlitz), 0, state);
+    const canMega = mega.canUse(
+      megaUser,
+      createSyntheticMoveFromCanonical(MOVES.flareBlitz),
+      0,
+      state,
+    );
     expect(canMega).toBe(true);
   });
 });
@@ -314,7 +330,11 @@ describe("Integration: Grassy Terrain + Sun simultaneous effects", () => {
       ability: ABILITIES.none,
       level: 50,
     });
-    const defender = createSyntheticOnFieldPokemon({ types: [TYPES.normal], defense: 100, hp: 300 });
+    const defender = createSyntheticOnFieldPokemon({
+      types: [TYPES.normal],
+      defense: 100,
+      hp: 300,
+    });
     const grassMove = createSyntheticMoveFromCanonical(MOVES.energyBall);
     const fireMove = createSyntheticMoveFromCanonical(MOVES.flamethrower);
 
@@ -402,7 +422,11 @@ describe("Integration: Grassy Terrain + Sun simultaneous effects", () => {
 
   it("given Grassy Terrain active, end-of-turn heals grounded Pokemon", () => {
     // Source: Showdown data/conditions.ts -- grassyterrain.onResidual: heal(pokemon.baseMaxhp / 16)
-    const pokemon = createSyntheticOnFieldPokemon({ hp: 200, currentHp: 100, types: [TYPES.normal] });
+    const pokemon = createSyntheticOnFieldPokemon({
+      hp: 200,
+      currentHp: 100,
+      types: [TYPES.normal],
+    });
     const state = createSyntheticBattleState({
       terrain: { type: TERRAIN.grassy, turnsLeft: 3, source: ABILITIES.grassySurge },
     });
@@ -479,25 +503,34 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
   it("given Prankster user using status move vs Dark-type, move is blocked", () => {
     // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
     // Source: Bulbapedia "Prankster" Gen 7 -- "Status moves fail against Dark-type targets"
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [TYPES.dark]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+    ]);
     expect(blocked).toBe(true);
   });
 
   it("given Prankster user using physical move vs Dark-type, move is NOT blocked", () => {
     // Source: Showdown -- Prankster only blocks status moves
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.physical, [TYPES.dark]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.physical, [
+      TYPES.dark,
+    ]);
     expect(blocked).toBe(false);
   });
 
   it("given Prankster user using status move vs Dark/Fire dual type, move is blocked", () => {
     // Source: Showdown -- Dark-type check doesn't care about secondary type
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [TYPES.dark, TYPES.fire]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+      TYPES.fire,
+    ]);
     expect(blocked).toBe(true);
   });
 
   it("given non-Prankster user using status move vs Dark-type, move is NOT blocked", () => {
     // Source: Showdown -- immunity only applies to Prankster-boosted moves
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.none, MOVE_CATEGORIES.status, [TYPES.dark]);
+    const blocked = isPranksterBlockedByDarkType(ABILITIES.none, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+    ]);
     expect(blocked).toBe(false);
   });
 
@@ -510,7 +543,10 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
         types: [TYPES.fairy],
         nickname: "Whimsicott",
       }),
-      opponent: createSyntheticOnFieldPokemon({ types: [TYPES.dark, TYPES.fire], nickname: "Houndoom" }),
+      opponent: createSyntheticOnFieldPokemon({
+        types: [TYPES.dark, TYPES.fire],
+        nickname: "Houndoom",
+      }),
       state: createSyntheticBattleState(),
       rng: new SeededRandom(42),
       trigger: TRIGGERS.onPriorityCheck,
@@ -522,7 +558,10 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
     expect(priorityResult.activated).toBe(true);
 
     // Dark-type check also blocks
-    const darkBlocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [TYPES.dark, TYPES.fire]);
+    const darkBlocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
+      TYPES.dark,
+      TYPES.fire,
+    ]);
     expect(darkBlocked).toBe(true);
   });
 });
@@ -601,7 +640,11 @@ describe("Integration: Aurora Veil + Hail damage reduction", () => {
     // Source: Showdown data/conditions.ts -- Aurora Veil: 0.5x damage in singles
     // Source: Bulbapedia "Aurora Veil" -- "halves damage from physical and special moves"
     // Aurora Veil damage reduction is applied in the damage calc via side screens
-    const attacker = createSyntheticOnFieldPokemon({ attack: 150, types: [TYPES.fighting], nickname: "Machamp" });
+    const attacker = createSyntheticOnFieldPokemon({
+      attack: 150,
+      types: [TYPES.fighting],
+      nickname: "Machamp",
+    });
     const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       hp: 300,
@@ -779,7 +822,11 @@ describe("Integration: Beast Boost chain", () => {
       nickname: "Pheromosa",
     });
 
-    const faintedOpponent = createSyntheticOnFieldPokemon({ currentHp: 0, hp: 100, nickname: "Rattata" });
+    const faintedOpponent = createSyntheticOnFieldPokemon({
+      currentHp: 0,
+      hp: 100,
+      nickname: "Rattata",
+    });
 
     const ctx: AbilityContext = {
       pokemon: attacker,
@@ -838,7 +885,11 @@ describe("Integration: Beast Boost chain", () => {
       nickname: "Pheromosa",
     });
 
-    const aliveOpponent = createSyntheticOnFieldPokemon({ currentHp: 50, hp: 100, nickname: "Rattata" });
+    const aliveOpponent = createSyntheticOnFieldPokemon({
+      currentHp: 50,
+      hp: 100,
+      nickname: "Rattata",
+    });
 
     const ctx: AbilityContext = {
       pokemon: attacker,

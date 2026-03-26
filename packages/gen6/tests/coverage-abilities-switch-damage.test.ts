@@ -13,6 +13,7 @@
  * Source: Showdown data/abilities.ts, Bulbapedia ability articles
  */
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -24,8 +25,6 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
 import {
   createGen6DataManager,
   GEN6_ABILITY_IDS,
@@ -34,6 +33,7 @@ import {
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
 } from "@pokemon-lib-ts/gen6";
+import { describe, expect, it } from "vitest";
 import {
   handleGen6DamageCalcAbility,
   handleGen6DamageImmunityAbility,
@@ -50,11 +50,11 @@ const M = GEN6_MOVE_IDS;
 const T = CORE_TYPE_IDS;
 const S = CORE_STATUS_IDS;
 const V = CORE_VOLATILE_IDS;
-const W = CORE_WEATHER_IDS;
+const _W = CORE_WEATHER_IDS;
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const GENDERS = CORE_GENDERS;
 const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
-const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
+const _MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const dataManager = createGen6DataManager();
 const DEFAULT_SPECIES_ID = GEN6_SPECIES_IDS.bulbasaur;
 const DEFAULT_NATURE_ID = GEN6_NATURE_IDS.hardy;
@@ -214,7 +214,7 @@ function getCanonicalMove(moveId: Gen6MoveId): MoveData {
   return dataManager.getMove(moveId);
 }
 
-function createSyntheticMoveFrom(moveId: Gen6MoveId, overrides: Partial<MoveData>): MoveData {
+function _createSyntheticMoveFrom(moveId: Gen6MoveId, overrides: Partial<MoveData>): MoveData {
   const canonicalMove = getCanonicalMove(moveId);
   return {
     ...canonicalMove,

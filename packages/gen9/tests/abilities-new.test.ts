@@ -1,24 +1,28 @@
-import type { AbilityContext, ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  CORE_FIXED_POINT,
-  CORE_GENDERS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
   type MoveData,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -144,14 +148,14 @@ function createOnFieldPokemon(overrides: {
   isTerastallized?: boolean;
 }): ActivePokemon {
   const pokemon = createSyntheticPokemonInstance({
-      ability: overrides.ability,
-      nickname: overrides.nickname,
-      currentHp: overrides.currentHp,
-      maxHp: overrides.maxHp,
-      speciesId: overrides.speciesId,
-      status: overrides.status,
-      heldItem: overrides.heldItem,
-    });
+    ability: overrides.ability,
+    nickname: overrides.nickname,
+    currentHp: overrides.currentHp,
+    maxHp: overrides.maxHp,
+    speciesId: overrides.speciesId,
+    status: overrides.status,
+    heldItem: overrides.heldItem,
+  });
   const species = DATA_MANAGER.getSpecies(overrides.speciesId ?? BASE_SPECIES.id);
   const activePokemon = createBattleOnFieldPokemon(
     pokemon,
@@ -217,9 +221,7 @@ function createBattleState(): BattleState {
  * Scenario helper: clone a Gen 9 move record and override only the explicit
  * synthetic fields needed for the test.
  */
-function createCanonicalMove(
-  moveId: (typeof GEN9_MOVE_IDS)[keyof typeof GEN9_MOVE_IDS],
-): MoveData {
+function createCanonicalMove(moveId: (typeof GEN9_MOVE_IDS)[keyof typeof GEN9_MOVE_IDS]): MoveData {
   const move = DATA_MANAGER.getMove(moveId);
   return { ...move, flags: { ...move.flags } };
 }
@@ -448,7 +450,10 @@ describe("handleGoodAsGold", () => {
     const ctx = createAbilityContext({
       pokemon: createOnFieldPokemon({ ability: ABILITIES.goodAsGold, nickname: "Gholdengo" }),
       trigger: TRIGGER_IDS.onBeforeMove,
-      move: createSyntheticMoveFromRepresentativeBase({ category: MOVE_CATEGORIES.status, id: GEN9_MOVE_IDS.toxic }),
+      move: createSyntheticMoveFromRepresentativeBase({
+        category: MOVE_CATEGORIES.status,
+        id: GEN9_MOVE_IDS.toxic,
+      }),
     });
     const result = handleGoodAsGold(ctx);
     expect(result).toEqual({
@@ -764,26 +769,36 @@ describe("handleMyceliumMight", () => {
 describe("hasMyceliumMightPriorityReduction", () => {
   it("given mycelium-might and status move, when checking, then returns true", () => {
     // Source: Showdown data/abilities.ts:2722-2728
-    expect(hasMyceliumMightPriorityReduction(ABILITIES.myceliumMight, MOVE_CATEGORIES.status)).toBe(true);
+    expect(hasMyceliumMightPriorityReduction(ABILITIES.myceliumMight, MOVE_CATEGORIES.status)).toBe(
+      true,
+    );
   });
 
   it("given mycelium-might and physical move, when checking, then returns false", () => {
-    expect(hasMyceliumMightPriorityReduction(ABILITIES.myceliumMight, MOVE_CATEGORIES.physical)).toBe(false);
+    expect(
+      hasMyceliumMightPriorityReduction(ABILITIES.myceliumMight, MOVE_CATEGORIES.physical),
+    ).toBe(false);
   });
 
   it("given different ability and status move, when checking, then returns false", () => {
-    expect(hasMyceliumMightPriorityReduction(ABILITIES.intimidate, MOVE_CATEGORIES.status)).toBe(false);
+    expect(hasMyceliumMightPriorityReduction(ABILITIES.intimidate, MOVE_CATEGORIES.status)).toBe(
+      false,
+    );
   });
 });
 
 describe("isMyceliumMightBypassingAbility", () => {
   it("given mycelium-might and status move, when checking, then returns true", () => {
     // Source: Showdown data/abilities.ts:2730-2738
-    expect(isMyceliumMightBypassingAbility(ABILITIES.myceliumMight, MOVE_CATEGORIES.status)).toBe(true);
+    expect(isMyceliumMightBypassingAbility(ABILITIES.myceliumMight, MOVE_CATEGORIES.status)).toBe(
+      true,
+    );
   });
 
   it("given mycelium-might and special move, when checking, then returns false", () => {
-    expect(isMyceliumMightBypassingAbility(ABILITIES.myceliumMight, MOVE_CATEGORIES.special)).toBe(false);
+    expect(isMyceliumMightBypassingAbility(ABILITIES.myceliumMight, MOVE_CATEGORIES.special)).toBe(
+      false,
+    );
   });
 
   it("given other ability and status move, when checking, then returns false", () => {
@@ -1009,7 +1024,11 @@ describe("handleProteanGen9", () => {
   it("given on-before-move with no prior usage, when handling, then changes type and sets volatile", () => {
     // Source: Showdown data/abilities.ts -- protean/libero: once per switchin in Gen 9
     const ctx = createAbilityContext({
-      pokemon: createOnFieldPokemon({ ability: ABILITIES.protean, types: [TYPES.normal], nickname: "Greninja" }),
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protean,
+        types: [TYPES.normal],
+        nickname: "Greninja",
+      }),
       trigger: TRIGGER_IDS.onBeforeMove,
       move: createSyntheticMoveFromRepresentativeBase({ type: TYPES.fire }),
     });
@@ -1035,7 +1054,11 @@ describe("handleProteanGen9", () => {
   it("given Libero ability, when handling, then also works and message says Libero", () => {
     // Source: Showdown data/abilities.ts -- libero: same as protean
     const ctx = createAbilityContext({
-      pokemon: createOnFieldPokemon({ ability: ABILITIES.libero, types: [TYPES.grass], nickname: "Cinderace" }),
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.libero,
+        types: [TYPES.grass],
+        nickname: "Cinderace",
+      }),
       trigger: TRIGGER_IDS.onBeforeMove,
       move: createSyntheticMoveFromRepresentativeBase({ type: TYPES.fire }),
     });
@@ -1074,7 +1097,10 @@ describe("handleProteanGen9", () => {
   it("given dual type where one matches move type, when handling, then activates (changes to mono-type)", () => {
     // Dual-type means types.length !== 1, so the single-type check doesn't block
     const ctx = createAbilityContext({
-      pokemon: createOnFieldPokemon({ ability: ABILITIES.protean, types: [TYPES.fire, TYPES.flying] }),
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.protean,
+        types: [TYPES.fire, TYPES.flying],
+      }),
       trigger: TRIGGER_IDS.onBeforeMove,
       move: createSyntheticMoveFromRepresentativeBase({ type: TYPES.fire }),
     });

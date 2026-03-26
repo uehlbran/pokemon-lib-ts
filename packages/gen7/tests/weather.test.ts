@@ -6,13 +6,13 @@ import {
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS } from "../src/data/reference-ids";
 import {
   applyGen7WeatherEffects,
   HAIL_IMMUNE_TYPES,
   isGen7WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
 } from "../src/Gen7Weather";
-import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS } from "../src/data/reference-ids";
 
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
@@ -148,47 +148,65 @@ describe("Gen7 weather immunity", () => {
 
   it("given pokemon with Magic Guard in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage including weather
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.magicGuard)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.magicGuard)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Magic Guard in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage including weather
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.magicGuard)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.magicGuard)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Overcoat in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.overcoat)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.overcoat)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Overcoat in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.overcoat)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.overcoat)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Sand Rush in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Sand Rush: "immune to sandstorm damage"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.sandRush)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.sandRush)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Sand Force in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Sand Force: "immune to sandstorm damage"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.sandForce)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.sandForce)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Sand Veil in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Sand Veil: "immune to sandstorm damage"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.sandVeil)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, ABILITY_IDS.sandVeil)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Ice Body in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Ice Body: "unaffected by hail"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.iceBody)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.iceBody)).toBe(
+      true,
+    );
   });
 
   it("given pokemon with Snow Cloak in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Snow Cloak: "immune to hail damage"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.snowCloak)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.snowCloak)).toBe(
+      true,
+    );
   });
 
   // --- Gen 7 new: Slush Rush hail immunity ---
@@ -196,19 +214,25 @@ describe("Gen7 weather immunity", () => {
   it("given pokemon with Slush Rush in hail, when checking immunity, then is immune (Gen 7 new)", () => {
     // Source: Showdown data/abilities.ts -- slushrush: onImmunity for hail
     // Source: Bulbapedia -- Slush Rush: "is not damaged by hail"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.slushRush)).toBe(true);
+    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, ABILITY_IDS.slushRush)).toBe(
+      true,
+    );
   });
 
   // --- Safety Goggles ---
 
   it("given pokemon with Safety Goggles in sandstorm, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Safety Goggles: "holder is unaffected by weather damage"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, undefined, ITEM_IDS.safetyGoggles)).toBe(true);
+    expect(
+      isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.sand, undefined, ITEM_IDS.safetyGoggles),
+    ).toBe(true);
   });
 
   it("given pokemon with Safety Goggles in hail, when checking immunity, then is immune", () => {
     // Source: Bulbapedia -- Safety Goggles: "holder is unaffected by weather damage"
-    expect(isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, undefined, ITEM_IDS.safetyGoggles)).toBe(true);
+    expect(
+      isGen7WeatherImmune([TYPE_IDS.normal], WEATHER_IDS.hail, undefined, ITEM_IDS.safetyGoggles),
+    ).toBe(true);
   });
 
   // --- Rain/Sun have no chip ---
@@ -234,7 +258,10 @@ describe("Gen7 applyGen7WeatherEffects", () => {
     // Source: Bulbapedia -- Sandstorm: "1/16 of their maximum HP"
     // maxHp=200 -> floor(200/16) = 12
     const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 200, nickname: "Flareon" });
-    const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), createBattleSide(createOnFieldPokemon({}), 1)]);
+    const state = createBattleState(WEATHER_IDS.sand, 5, [
+      createBattleSide(mon),
+      createBattleSide(createOnFieldPokemon({}), 1),
+    ]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(2);
     // First result is the Fire-type
@@ -245,7 +272,10 @@ describe("Gen7 applyGen7WeatherEffects", () => {
   it("given sandstorm with a Rock-type, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Rock types are immune to sandstorm damage
     const mon = createOnFieldPokemon({ types: [TYPE_IDS.rock], maxHp: 200, nickname: "Golem" });
-    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.rock], nickname: "Onix" }), 1);
+    const side2 = createBattleSide(
+      createOnFieldPokemon({ types: [TYPE_IDS.rock], nickname: "Onix" }),
+      1,
+    );
     const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
@@ -271,8 +301,15 @@ describe("Gen7 applyGen7WeatherEffects", () => {
 
   it("given sandstorm with Magic Guard, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Magic Guard prevents all indirect damage
-    const mon = createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard, maxHp: 200 });
-    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard }), 1);
+    const mon = createOnFieldPokemon({
+      types: [TYPE_IDS.normal],
+      ability: ABILITY_IDS.magicGuard,
+      maxHp: 200,
+    });
+    const side2 = createBattleSide(
+      createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.magicGuard }),
+      1,
+    );
     const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
@@ -280,8 +317,15 @@ describe("Gen7 applyGen7WeatherEffects", () => {
 
   it("given sandstorm with Overcoat, when applying weather, then no chip damage", () => {
     // Source: Bulbapedia -- Overcoat blocks weather damage
-    const mon = createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat, maxHp: 200 });
-    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat }), 1);
+    const mon = createOnFieldPokemon({
+      types: [TYPE_IDS.normal],
+      ability: ABILITY_IDS.overcoat,
+      maxHp: 200,
+    });
+    const side2 = createBattleSide(
+      createOnFieldPokemon({ types: [TYPE_IDS.normal], ability: ABILITY_IDS.overcoat }),
+      1,
+    );
     const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
@@ -294,7 +338,10 @@ describe("Gen7 applyGen7WeatherEffects", () => {
       maxHp: 200,
       heldItem: ITEM_IDS.safetyGoggles,
     });
-    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.normal], heldItem: ITEM_IDS.safetyGoggles }), 1);
+    const side2 = createBattleSide(
+      createOnFieldPokemon({ types: [TYPE_IDS.normal], heldItem: ITEM_IDS.safetyGoggles }),
+      1,
+    );
     const state = createBattleState(WEATHER_IDS.sand, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     expect(results).toHaveLength(0);
@@ -305,7 +352,10 @@ describe("Gen7 applyGen7WeatherEffects", () => {
     // Source: Bulbapedia -- Hail: "1/16 of their maximum HP"
     // maxHp=160 -> floor(160/16) = 10
     const mon = createOnFieldPokemon({ types: [TYPE_IDS.fire], maxHp: 160, nickname: "Arcanine" });
-    const side2 = createBattleSide(createOnFieldPokemon({ types: [TYPE_IDS.ice], nickname: "Glaceon" }), 1);
+    const side2 = createBattleSide(
+      createOnFieldPokemon({ types: [TYPE_IDS.ice], nickname: "Glaceon" }),
+      1,
+    );
     const state = createBattleState(WEATHER_IDS.hail, 5, [createBattleSide(mon), side2]);
     const results = applyGen7WeatherEffects(state);
     // Only Arcanine takes damage (Glaceon is Ice-type, immune)

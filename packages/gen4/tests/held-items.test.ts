@@ -1,6 +1,12 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+  VolatileStatus,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -17,7 +23,13 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen4DataManager, GEN4_ITEM_IDS, GEN4_MOVE_IDS, GEN4_NATURE_IDS, GEN4_SPECIES_IDS } from "../src";
+import {
+  createGen4DataManager,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_NATURE_IDS,
+  GEN4_SPECIES_IDS,
+} from "../src";
 import { applyGen4HeldItem } from "../src/Gen4Items";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
@@ -187,7 +199,11 @@ describe("applyGen4HeldItem end of turn - Black Sludge (NEW in Gen 4)", () => {
   it("given Black Sludge and a Poison-type holder with 160 max HP, when end of turn triggers, then heals 10 HP (floor(160/16))", () => {
     // Source: Bulbapedia — Black Sludge: Poison-types heal floor(maxHP/16) each turn
     // Derivation: floor(160 / 16) = 10
-    const ctx = createHeldItemContext({ heldItem: itemIds.blackSludge, types: [typeIds.poison], maxHp: 160 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.blackSludge,
+      types: [typeIds.poison],
+      maxHp: 160,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
@@ -198,7 +214,11 @@ describe("applyGen4HeldItem end of turn - Black Sludge (NEW in Gen 4)", () => {
   it("given Black Sludge and a non-Poison-type holder with 160 max HP, when end of turn triggers, then damages 20 HP (floor(160/8))", () => {
     // Source: Bulbapedia — Black Sludge: non-Poison-types take floor(maxHP/8) damage each turn
     // Derivation: floor(160 / 8) = 20
-    const ctx = createHeldItemContext({ heldItem: itemIds.blackSludge, types: [typeIds.normal], maxHp: 160 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.blackSludge,
+      types: [typeIds.normal],
+      maxHp: 160,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
@@ -208,7 +228,11 @@ describe("applyGen4HeldItem end of turn - Black Sludge (NEW in Gen 4)", () => {
 
   it("given Black Sludge and a dual Poison/Normal-type holder, when end of turn triggers, then heals (Poison takes priority)", () => {
     // Source: Bulbapedia — Black Sludge: any Poison typing grants healing
-    const ctx = createHeldItemContext({ heldItem: itemIds.blackSludge, types: [typeIds.poison, typeIds.normal], maxHp: 160 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.blackSludge,
+      types: [typeIds.poison, typeIds.normal],
+      maxHp: 160,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.effects[0]?.type).toBe("heal");
@@ -227,7 +251,10 @@ describe("applyGen4HeldItem end of turn — Toxic Orb (NEW in Gen 4)", () => {
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "inflict-status", status: statusIds.badlyPoisoned });
+    expect(result.effects[0]).toMatchObject({
+      type: "inflict-status",
+      status: statusIds.badlyPoisoned,
+    });
     expect(result.messages[0]).toContain(dataManager.getItem(itemIds.toxicOrb).displayName);
   });
 
@@ -284,7 +311,11 @@ describe("applyGen4HeldItem end of turn — Sitrus Berry (Gen 4 CHANGE: 1/4 max 
 
   it("given Sitrus Berry and HP above 50%, when end of turn triggers, then does not activate", () => {
     // Source: Bulbapedia — Sitrus Berry: only triggers when HP <= floor(maxHP/2)
-    const ctx = createHeldItemContext({ heldItem: itemIds.sitrusBerry, maxHp: 160, currentHp: 120 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.sitrusBerry,
+      maxHp: 160,
+      currentHp: 120,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
@@ -308,7 +339,12 @@ describe("applyGen4HeldItem damage taken — Focus Sash (NEW in Gen 4)", () => {
   it("given Focus Sash, full HP, and a would-be KO hit, when damage is taken, then survives at 1 HP and Focus Sash is consumed", () => {
     // Source: Bulbapedia — Focus Sash: survive at 1 HP if at full HP and damage would KO; consumed
     // Derivation: maxHp=160, currentHp=160 (full), damage=200 (KO) → survive at 1 HP, consume
-    const ctx = createHeldItemContext({ heldItem: itemIds.focusSash, maxHp: 160, currentHp: 160, damage: 200 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.focusSash,
+      maxHp: 160,
+      currentHp: 160,
+      damage: 200,
+    });
     const result = applyGen4HeldItem(itemTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
@@ -319,7 +355,12 @@ describe("applyGen4HeldItem damage taken — Focus Sash (NEW in Gen 4)", () => {
 
   it("given Focus Sash and HP not at full, when a KO hit is taken, then does not activate (must be full HP)", () => {
     // Source: Bulbapedia — Focus Sash: MUST be at full HP to activate
-    const ctx = createHeldItemContext({ heldItem: itemIds.focusSash, maxHp: 160, currentHp: 100, damage: 200 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.focusSash,
+      maxHp: 160,
+      currentHp: 100,
+      damage: 200,
+    });
     const result = applyGen4HeldItem(itemTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
@@ -327,7 +368,12 @@ describe("applyGen4HeldItem damage taken — Focus Sash (NEW in Gen 4)", () => {
 
   it("given Focus Sash and full HP, when a non-KO hit is taken, then does not activate (damage does not KO)", () => {
     // Source: Bulbapedia — Focus Sash: only activates when hit would KO
-    const ctx = createHeldItemContext({ heldItem: itemIds.focusSash, maxHp: 160, currentHp: 160, damage: 50 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.focusSash,
+      maxHp: 160,
+      currentHp: 160,
+      damage: 50,
+    });
     const result = applyGen4HeldItem(itemTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(false);
@@ -390,7 +436,11 @@ describe("applyGen4HeldItem on hit — Razor Fang (NEW in Gen 4)", () => {
 
   it("given Razor Fang and RNG fails, when on hit triggers, then does not cause flinch", () => {
     // Source: Bulbapedia — Razor Fang: 10% chance (RNG fail = no flinch)
-    const ctx = createHeldItemContext({ heldItem: itemIds.razorFang, damage: 50, rngChance: false });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.razorFang,
+      damage: 50,
+      rngChance: false,
+    });
     (ctx as any).move = dataManager.getMove(moveIds.aerialAce);
     const result = applyGen4HeldItem(itemTriggers.onHit, ctx);
 
@@ -501,7 +551,12 @@ describe("applyGen4HeldItem damage taken — Oran Berry", () => {
   it("given Oran Berry and HP drops to 50% after damage, when damage is taken, then heals 10 HP", () => {
     // Source: Showdown Gen 4 mod — Oran Berry heals 10 HP flat (unchanged from Gen 3)
     // Derivation: maxHp=160, currentHp=120, damage=40 → hpAfterDamage=80 (50%), heal 10
-    const ctx = createHeldItemContext({ heldItem: itemIds.oranBerry, maxHp: 160, currentHp: 120, damage: 40 });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.oranBerry,
+      maxHp: 160,
+      currentHp: 120,
+      damage: 40,
+    });
     const result = applyGen4HeldItem(itemTriggers.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
@@ -564,7 +619,10 @@ describe("applyGen4HeldItem end of turn — Persim Berry", () => {
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "volatile-cure", value: volatileIds.confusion });
+    expect(result.effects[0]).toMatchObject({
+      type: "volatile-cure",
+      value: volatileIds.confusion,
+    });
     expect(result.effects[1]).toMatchObject({ type: "consume", value: itemIds.persimBerry });
   });
 
@@ -583,7 +641,10 @@ describe("applyGen4HeldItem end of turn — Mental Herb", () => {
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toMatchObject({ type: "volatile-cure", value: volatileIds.infatuation });
+    expect(result.effects[0]).toMatchObject({
+      type: "volatile-cure",
+      value: volatileIds.infatuation,
+    });
     expect(result.effects[1]).toMatchObject({ type: "consume", value: itemIds.mentalHerb });
   });
 
@@ -644,7 +705,10 @@ describe("applyGen4HeldItem — no item or unknown trigger", () => {
 describe("applyGen4HeldItem end of turn — status-curing berries", () => {
   it("given Cheri Berry and paralysis status, when end of turn triggers, then cures paralysis and consumes berry", () => {
     // Source: Showdown Gen 4 mod — Cheri Berry cures paralysis (same as Gen 3)
-    const ctx = createHeldItemContext({ heldItem: itemIds.cheriBerry, status: statusIds.paralysis });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.cheriBerry,
+      status: statusIds.paralysis,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
@@ -654,7 +718,10 @@ describe("applyGen4HeldItem end of turn — status-curing berries", () => {
 
   it("given Pecha Berry and badly-poisoned status, when end of turn triggers, then cures badly-poisoned", () => {
     // Source: Showdown Gen 4 mod — Pecha Berry cures both poison and badly-poisoned
-    const ctx = createHeldItemContext({ heldItem: itemIds.pechaBerry, status: statusIds.badlyPoisoned });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.pechaBerry,
+      status: statusIds.badlyPoisoned,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
@@ -663,7 +730,11 @@ describe("applyGen4HeldItem end of turn — status-curing berries", () => {
 
   it("given Lum Berry with both burn status and confusion, when end of turn triggers, then cures both and consumes", () => {
     // Source: Showdown Gen 4 mod — Lum Berry cures all statuses and confusion
-    const ctx = createHeldItemContext({ heldItem: itemIds.lumBerry, status: statusIds.burn, hasConfusion: true });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.lumBerry,
+      status: statusIds.burn,
+      hasConfusion: true,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
@@ -837,7 +908,11 @@ describe("applyGen4HeldItem end of turn — Lum Berry (branch coverage)", () => 
   it("given Lum Berry and no status and no confusion, when end of turn triggers, then does not activate", () => {
     // Source: Showdown Gen 4 mod — Lum Berry only activates when there is a status to cure
     // Covers the !hasPrimaryStatus && !hasConfusion early return (Gen4Items.ts line 164-165)
-    const ctx = createHeldItemContext({ heldItem: itemIds.lumBerry, status: null, hasConfusion: false });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.lumBerry,
+      status: null,
+      hasConfusion: false,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
@@ -846,7 +921,11 @@ describe("applyGen4HeldItem end of turn — Lum Berry (branch coverage)", () => 
   it("given Lum Berry with confusion only (no primary status), when end of turn triggers, then cures confusion and consumes", () => {
     // Source: Showdown Gen 4 mod — Lum Berry cures confusion even without a primary status
     // Covers the hasPrimaryStatus=false, hasConfusion=true branch (Gen4Items.ts line 168/171)
-    const ctx = createHeldItemContext({ heldItem: itemIds.lumBerry, status: null, hasConfusion: true });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.lumBerry,
+      status: null,
+      hasConfusion: true,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(true);
@@ -887,7 +966,10 @@ describe("applyGen4HeldItem end of turn — status-curing berry wrong-status cas
   it("given Pecha Berry and paralysis status (not poison/badly-poisoned), when end of turn triggers, then does not activate", () => {
     // Source: Showdown Gen 4 mod — Pecha Berry only cures poison/badly-poisoned, not paralysis
     // Covers the no-activation branch (Gen4Items.ts line 226) when status is unrelated
-    const ctx = createHeldItemContext({ heldItem: itemIds.pechaBerry, status: statusIds.paralysis });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.pechaBerry,
+      status: statusIds.paralysis,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
@@ -896,7 +978,10 @@ describe("applyGen4HeldItem end of turn — status-curing berry wrong-status cas
   it("given Rawst Berry and paralysis status (not burn), when end of turn triggers, then does not activate", () => {
     // Source: Showdown Gen 4 mod — Rawst Berry only cures burn, not paralysis
     // Covers the no-activation branch (Gen4Items.ts line 242) when status != burn
-    const ctx = createHeldItemContext({ heldItem: itemIds.rawstBerry, status: statusIds.paralysis });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.rawstBerry,
+      status: statusIds.paralysis,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
@@ -905,7 +990,10 @@ describe("applyGen4HeldItem end of turn — status-curing berry wrong-status cas
   it("given Aspear Berry and paralysis status (not freeze), when end of turn triggers, then does not activate", () => {
     // Source: Showdown Gen 4 mod — Aspear Berry only cures freeze, not paralysis
     // Covers the no-activation branch (Gen4Items.ts line 258) when status != freeze
-    const ctx = createHeldItemContext({ heldItem: itemIds.aspearBerry, status: statusIds.paralysis });
+    const ctx = createHeldItemContext({
+      heldItem: itemIds.aspearBerry,
+      status: statusIds.paralysis,
+    });
     const result = applyGen4HeldItem(itemTriggers.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);

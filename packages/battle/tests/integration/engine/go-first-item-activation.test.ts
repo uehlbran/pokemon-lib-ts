@@ -102,21 +102,21 @@ function createEngine(ruleset: MockRuleset, team1: PokemonInstance[], team2: Pok
 }
 
 function createTeams(heldItem: string | null) {
-    const slowerHolder = createTestPokemon(9, 50, {
-      uid: "blastoise-1",
-      nickname: "Blastoise",
-      heldItem,
+  const slowerHolder = createTestPokemon(9, 50, {
+    uid: "blastoise-1",
+    nickname: "Blastoise",
+    heldItem,
     currentHp: 200,
     calculatedStats: {
       hp: 200,
       attack: 110,
-        defense: 100,
-        spAttack: 65,
-        spDefense: 110,
-        speed: 30,
-      },
-      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
-    });
+      defense: 100,
+      spAttack: 65,
+      spDefense: 110,
+      speed: 30,
+    },
+    moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+  });
 
   const fasterOpponent = createTestPokemon(6, 50, {
     uid: "charizard-1",
@@ -125,13 +125,13 @@ function createTeams(heldItem: string | null) {
     calculatedStats: {
       hp: 200,
       attack: 65,
-        defense: 60,
-        spAttack: 110,
-        spDefense: 95,
-        speed: 130,
-      },
-      moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
-    });
+      defense: 60,
+      spAttack: 110,
+      spDefense: 95,
+      speed: 130,
+    },
+    moves: [{ moveId: MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+  });
 
   return { team1: [slowerHolder], team2: [fasterOpponent] };
 }

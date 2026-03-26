@@ -1,4 +1,9 @@
-import type { AbilityContext, ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
@@ -6,19 +11,19 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen3Ability,
+  createGen3DataManager,
   GEN3_ABILITY_IDS,
   GEN3_ITEM_IDS,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
-  applyGen3Ability,
-  createGen3DataManager,
   Gen3Ruleset,
 } from "../../src";
 
@@ -78,12 +83,17 @@ function createGen3PokemonInstance(
   } = {},
 ): PokemonInstance {
   const species = dataManager.getSpecies(speciesId);
-  const pokemon = createPokemonInstance(species, GEN3_DEFAULT_LEVEL, new SeededRandom(0x3d70 + nextPokemonSeed++), {
-    nature: GEN3_NATURE_IDS.hardy,
-    abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
-    pokeball: GEN3_ITEM_IDS.pokeBall,
-    nickname: options.nickname ?? species.displayName,
-  });
+  const pokemon = createPokemonInstance(
+    species,
+    GEN3_DEFAULT_LEVEL,
+    new SeededRandom(0x3d70 + nextPokemonSeed++),
+    {
+      nature: GEN3_NATURE_IDS.hardy,
+      abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
+      pokeball: GEN3_ITEM_IDS.pokeBall,
+      nickname: options.nickname ?? species.displayName,
+    },
+  );
 
   pokemon.moves = createCanonicalMoveSlots(options.moveIds ?? [GEN3_MOVE_IDS.tackle]);
   pokemon.currentHp = options.currentHp ?? GEN3_DEFAULT_HP;

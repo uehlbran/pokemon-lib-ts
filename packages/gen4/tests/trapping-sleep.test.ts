@@ -7,8 +7,8 @@ import {
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen4DataManager } from "../src/data";
@@ -35,12 +35,17 @@ function createGen4PokemonInstance(
   } = {},
 ): PokemonInstance {
   const species = dataManager.getSpecies(speciesId);
-  const pokemon = createPokemonInstance(species, GEN4_TEST_LEVEL, new SeededRandom(0x4d74 + speciesId + (options.seedOffset ?? 0)), {
-    nature: CORE_NATURE_IDS.hardy,
-    pokeball: CORE_ITEM_IDS.pokeBall,
-    abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
-    heldItem: options.heldItem ?? null,
-  });
+  const pokemon = createPokemonInstance(
+    species,
+    GEN4_TEST_LEVEL,
+    new SeededRandom(0x4d74 + speciesId + (options.seedOffset ?? 0)),
+    {
+      nature: CORE_NATURE_IDS.hardy,
+      pokeball: CORE_ITEM_IDS.pokeBall,
+      abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
+      heldItem: options.heldItem ?? null,
+    },
+  );
 
   const currentHp = options.currentHp ?? BASE_CURRENT_HP;
   pokemon.currentHp = currentHp;
@@ -92,7 +97,10 @@ function createBattleSide(index: 0 | 1, active: ActivePokemon) {
   };
 }
 
-function createTwoSideBattleState(side0Pokemon: ActivePokemon, side1Pokemon: ActivePokemon): BattleState {
+function createTwoSideBattleState(
+  side0Pokemon: ActivePokemon,
+  side1Pokemon: ActivePokemon,
+): BattleState {
   return {
     phase: "action-select",
     generation: 4,
@@ -236,7 +244,9 @@ describe("Gen4Ruleset canSwitch", () => {
     //   as long as the opponent is grounded"
     const ruleset = createGen4Ruleset();
     const self = createGen4ActivePokemon(GEN4_CHARMANDER);
-    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, { abilitySlot: CORE_ABILITY_SLOTS.normal2 });
+    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
     const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(false);
@@ -247,7 +257,9 @@ describe("Gen4Ruleset canSwitch", () => {
     // Flying-type is not grounded, so Arena Trap does not trap
     const ruleset = createGen4Ruleset();
     const self = createGen4ActivePokemon(GEN4_PIDGEY);
-    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, { abilitySlot: CORE_ABILITY_SLOTS.normal2 });
+    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
     const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);
@@ -258,7 +270,9 @@ describe("Gen4Ruleset canSwitch", () => {
     // Levitate makes the Pokemon non-grounded
     const ruleset = createGen4Ruleset();
     const self = createGen4ActivePokemon(GEN4_GENGAR);
-    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, { abilitySlot: CORE_ABILITY_SLOTS.normal2 });
+    const opponent = createGen4ActivePokemon(GEN4_DIGLETT, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
     const state = createTwoSideBattleState(self, opponent);
 
     expect(ruleset.canSwitch(self, state)).toBe(true);

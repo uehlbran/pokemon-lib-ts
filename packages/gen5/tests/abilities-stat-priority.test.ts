@@ -4,10 +4,8 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
-  CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
@@ -16,6 +14,7 @@ import {
   type MoveData,
   type PokemonInstance,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -34,7 +33,7 @@ const moveIds = GEN5_MOVE_IDS;
 const speciesIds = GEN5_SPECIES_IDS;
 const typeIds = CORE_TYPE_IDS;
 const natureIds = GEN5_NATURE_IDS;
-const moveCategories = CORE_MOVE_CATEGORIES;
+const _moveCategories = CORE_MOVE_CATEGORIES;
 const abilitySlots = CORE_ABILITY_SLOTS;
 const triggerIds = CORE_ABILITY_TRIGGER_IDS;
 const genders = CORE_GENDERS;
@@ -963,7 +962,10 @@ describe("handleGen5StatAbility -- Prankster Gen 5 Dark-type interaction", () =>
     // Source: Showdown data/abilities.ts -- Gen 7+ base data adds pranksterBoosted check
     //   but the Gen 5 mod doesn't override this, and our implementation for Gen 5 simply
     //   doesn't check the target's type at all.
-    const opponent = createOnFieldPokemon({ types: [typeIds.dark], ability: abilityIds.innerFocus });
+    const opponent = createOnFieldPokemon({
+      types: [typeIds.dark],
+      ability: abilityIds.innerFocus,
+    });
     const ctx = createAbilityContext({
       ability: abilityIds.prankster,
       trigger: triggerIds.onPriorityCheck,

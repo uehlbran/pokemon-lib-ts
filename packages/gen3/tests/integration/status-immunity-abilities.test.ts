@@ -1,6 +1,6 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -13,20 +13,20 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen3DataManager,
   GEN3_ABILITY_IDS,
   GEN3_ITEM_IDS,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
-  createGen3DataManager,
 } from "../../src";
 import {
   applyGen3Ability,
@@ -61,25 +61,25 @@ import { canInflictGen3Status } from "../../src/Gen3Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS }
-const ITEMS = GEN3_ITEM_IDS
-const MOVES = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS }
-const NATURES = GEN3_NATURE_IDS
-const SPECIES = GEN3_SPECIES_IDS
-const STATUSES = CORE_STATUS_IDS
-const TYPES = CORE_TYPE_IDS
-const VOLATILES = CORE_VOLATILE_IDS
-const WEATHER = CORE_WEATHER_IDS
-const TRIGGERS = CORE_ABILITY_TRIGGER_IDS
-const DATA_MANAGER = createGen3DataManager()
-const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur)
-const THUNDERBOLT = DATA_MANAGER.getMove(MOVES.thunderbolt)
-const SURF = DATA_MANAGER.getMove(MOVES.surf)
-const FLAMETHROWER = DATA_MANAGER.getMove(MOVES.flamethrower)
-const EARTHQUAKE = DATA_MANAGER.getMove(MOVES.earthquake)
-const HYPER_VOICE = DATA_MANAGER.getMove(MOVES.hyperVoice)
-const TACKLE = DATA_MANAGER.getMove(MOVES.tackle)
-const FISSURE = DATA_MANAGER.getMove(MOVES.fissure)
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS };
+const _ITEMS = GEN3_ITEM_IDS;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS };
+const _NATURES = GEN3_NATURE_IDS;
+const SPECIES = GEN3_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const WEATHER = CORE_WEATHER_IDS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const DATA_MANAGER = createGen3DataManager();
+const _DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
+const THUNDERBOLT = DATA_MANAGER.getMove(MOVES.thunderbolt);
+const SURF = DATA_MANAGER.getMove(MOVES.surf);
+const FLAMETHROWER = DATA_MANAGER.getMove(MOVES.flamethrower);
+const EARTHQUAKE = DATA_MANAGER.getMove(MOVES.earthquake);
+const HYPER_VOICE = DATA_MANAGER.getMove(MOVES.hyperVoice);
+const TACKLE = DATA_MANAGER.getMove(MOVES.tackle);
+const FISSURE = DATA_MANAGER.getMove(MOVES.fissure);
 
 function createMockRng(nextValues: number[] = [0.5]) {
   let index = 0;
@@ -346,7 +346,10 @@ describe("Gen 3 passive immunity abilities", () => {
     });
 
     it("given defender has Volt Absorb and incoming non-Electric move, then does not activate", () => {
-      const defender = createMockPokemon({ types: [TYPES.electric], ability: ABILITIES.voltAbsorb });
+      const defender = createMockPokemon({
+        types: [TYPES.electric],
+        ability: ABILITIES.voltAbsorb,
+      });
       const attacker = createMockPokemon({ types: [TYPES.water] });
       const state = createMinimalBattleState(attacker, defender);
       const rng = createMockRng([]);
@@ -369,7 +372,11 @@ describe("Gen 3 passive immunity abilities", () => {
     // Source: pret/pokeemerald -- ABILITY_WATER_ABSORB: Water moves heal 1/4 max HP
 
     it("given defender has Water Absorb and incoming Water move, then heals 1/4 max HP", () => {
-      const defender = createMockPokemon({ types: [TYPES.water], ability: ABILITIES.waterAbsorb, maxHp: 160 });
+      const defender = createMockPokemon({
+        types: [TYPES.water],
+        ability: ABILITIES.waterAbsorb,
+        maxHp: 160,
+      });
       const attacker = createMockPokemon({ types: [TYPES.water] });
       const state = createMinimalBattleState(attacker, defender);
       const rng = createMockRng([]);
@@ -415,8 +422,8 @@ describe("Gen 3 passive immunity abilities", () => {
       expect(result.effects[0]).toEqual({
         effectType: "volatile-inflict",
         target: "self",
-          volatile: VOLATILES.flashFire,
-        });
+        volatile: VOLATILES.flashFire,
+      });
     });
 
     it("given defender has Flash Fire with existing boost, when hit by Fire, then no new volatile", () => {
@@ -446,7 +453,10 @@ describe("Gen 3 passive immunity abilities", () => {
     // Source: pret/pokeemerald -- ABILITY_LEVITATE: Ground moves have no effect
 
     it("given defender has Levitate and incoming Ground move, then move is negated", () => {
-      const defender = createMockPokemon({ types: [TYPES.ghost, TYPES.poison], ability: ABILITIES.levitate });
+      const defender = createMockPokemon({
+        types: [TYPES.ghost, TYPES.poison],
+        ability: ABILITIES.levitate,
+      });
       const attacker = createMockPokemon({ types: [TYPES.ground] });
       const state = createMinimalBattleState(attacker, defender);
       const rng = createMockRng([]);
@@ -466,7 +476,10 @@ describe("Gen 3 passive immunity abilities", () => {
     });
 
     it("given defender has Levitate and incoming non-Ground move, then does not activate", () => {
-      const defender = createMockPokemon({ types: [TYPES.ghost, TYPES.poison], ability: ABILITIES.levitate });
+      const defender = createMockPokemon({
+        types: [TYPES.ghost, TYPES.poison],
+        ability: ABILITIES.levitate,
+      });
       const attacker = createMockPokemon({ types: [TYPES.fire] });
       const state = createMinimalBattleState(attacker, defender);
       const rng = createMockRng([]);
@@ -490,7 +503,10 @@ describe("Gen 3 passive immunity abilities", () => {
     // Source: Bulbapedia -- "In Generation III-IV, Lightning Rod does not grant immunity."
 
     it("given defender has Lightning Rod and incoming Electric move, then does NOT activate (Gen 3)", () => {
-      const defender = createMockPokemon({ types: [TYPES.ground], ability: ABILITIES.lightningRod });
+      const defender = createMockPokemon({
+        types: [TYPES.ground],
+        ability: ABILITIES.lightningRod,
+      });
       const attacker = createMockPokemon({ types: [TYPES.electric] });
       const state = createMinimalBattleState(attacker, defender);
       const rng = createMockRng([]);

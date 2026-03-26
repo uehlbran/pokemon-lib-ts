@@ -37,8 +37,8 @@ import type {
 } from "../state";
 import {
   clonePokemonInstance,
-  createOnFieldPokemon,
   createDefaultStatStages,
+  createOnFieldPokemon,
   createPokemonSnapshot,
   getPokemonName,
 } from "../utils";

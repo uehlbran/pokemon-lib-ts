@@ -1,6 +1,12 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import { CORE_TYPE_IDS, CORE_WEATHER_IDS, type PokemonType, type WeatherType } from "@pokemon-lib-ts/core";
+import {
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  type PokemonType,
+  type WeatherType,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN5_ABILITY_IDS, GEN5_SPECIES_IDS } from "../src";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
 import {
   applyGen5WeatherEffects,
@@ -8,7 +14,6 @@ import {
   isGen5WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
 } from "../src/Gen5Weather";
-import { GEN5_ABILITY_IDS, GEN5_SPECIES_IDS } from "../src";
 
 const ABILITIES = GEN5_ABILITY_IDS;
 const SPECIES = GEN5_SPECIES_IDS;

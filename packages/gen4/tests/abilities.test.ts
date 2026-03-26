@@ -1,17 +1,16 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
-  CORE_ABILITY_TRIGGER_IDS,
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  CORE_WEATHER_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
+  CORE_WEATHER_IDS,
   createEvs,
   createIvs,
   createPokemonInstance,
@@ -20,10 +19,10 @@ import {
   type PokemonInstance,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
   type WeatherType,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { applyGen4Ability } from "../src/Gen4Abilities";
 import { createGen4DataManager } from "../src/data";
 import {
   GEN4_ABILITY_IDS,
@@ -31,6 +30,7 @@ import {
   GEN4_MOVE_IDS,
   GEN4_SPECIES_IDS,
 } from "../src/data/reference-ids";
+import { applyGen4Ability } from "../src/Gen4Abilities";
 
 /**
  * Gen 4 Ability Tests

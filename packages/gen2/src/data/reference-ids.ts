@@ -340,13 +340,9 @@ export const GEN2_ITEM_IDS = {
   waterStone: "water-stone",
 } as const;
 
-export const GEN2_ABILITY_IDS = {
+export const GEN2_ABILITY_IDS = {} as const;
 
-} as const;
-
-export const GEN2_NATURE_IDS = {
-
-} as const;
+export const GEN2_NATURE_IDS = {} as const;
 
 export const GEN2_SPECIES_IDS = {
   bulbasaur: 1,

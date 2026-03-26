@@ -1,11 +1,10 @@
-import { describe, expect, it } from "vitest";
-
 import {
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   TYPES_BY_GEN,
 } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import {
   getMaxMoveName,
   getMaxMovePower,

@@ -1,9 +1,5 @@
-import {
-  CORE_MOVE_IDS,
-  CORE_STATUS_IDS,
-  createMoveSlot,
-} from "@pokemon-lib-ts/core";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_STATUS_IDS, createMoveSlot } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";

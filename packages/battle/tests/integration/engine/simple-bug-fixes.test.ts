@@ -1,7 +1,6 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { CORE_GIMMICK_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import type { BattleConfig, DamageContext, DamageResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -10,6 +9,7 @@ import { GenerationRegistry } from "../../../src/ruleset/GenerationRegistry";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // A MockRuleset subclass that returns super-effective + crit damage
 class SuperEffectiveCritRuleset extends MockRuleset {
@@ -258,20 +258,14 @@ describe("BattleEngine — simple bug fixes", () => {
 
       // Assert — find the relative ordering of the three event types
       const relevantEventTypes = events
-        .filter((e) => e.type === "effectiveness" || e.type === "critical-hit" || e.type === "damage")
+        .filter(
+          (e) => e.type === "effectiveness" || e.type === "critical-hit" || e.type === "damage",
+        )
         .map((e) => e.type);
 
       expect(relevantEventTypes).toHaveLength(6);
-      expect(relevantEventTypes.slice(0, 3)).toEqual([
-        "effectiveness",
-        "critical-hit",
-        "damage",
-      ]);
-      expect(relevantEventTypes.slice(3, 6)).toEqual([
-        "effectiveness",
-        "critical-hit",
-        "damage",
-      ]);
+      expect(relevantEventTypes.slice(0, 3)).toEqual(["effectiveness", "critical-hit", "damage"]);
+      expect(relevantEventTypes.slice(3, 6)).toEqual(["effectiveness", "critical-hit", "damage"]);
     });
 
     it("given a super-effective non-crit move, when damage is dealt, then effectiveness event appears before damage event", () => {

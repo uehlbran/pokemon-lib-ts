@@ -1,6 +1,17 @@
-import type { AbilityContext, ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { Gender, MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type {
+  Gender,
+  MoveData,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -8,43 +19,31 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
-  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
-  FRIEND_GUARD_DAMAGE_MULTIPLIER,
-  getSereneGraceMultiplier,
-  getWeightMultiplier,
-  HARVEST_BASE_PROBABILITY,
-  HARVEST_SUN_PROBABILITY,
-  HEALER_PROBABILITY,
-  HEAVY_METAL_WEIGHT_MULTIPLIER,
-  handleGen5RemainingAbility,
-  LIGHT_METAL_WEIGHT_MULTIPLIER,
-  SERENE_GRACE_CHANCE_MULTIPLIER,
-} from "../src/Gen5AbilitiesRemaining";
-import {
+  createGen5DataManager,
   GEN5_ABILITY_IDS,
   GEN5_ITEM_IDS,
   GEN5_MOVE_IDS,
   GEN5_NATURE_IDS,
   GEN5_SPECIES_IDS,
-  createGen5DataManager,
 } from "../src";
+import { handleGen5RemainingAbility } from "../src/Gen5AbilitiesRemaining";
 
 const gen5DataManager = createGen5DataManager();
 const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS } as const;
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN5_ITEM_IDS } as const;
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS } as const;
 const STATUS_IDS = CORE_STATUS_IDS;
-const TYPE_IDS = CORE_TYPE_IDS;
+const _TYPE_IDS = CORE_TYPE_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS;
 const TRIGGER_ON_TURN_END = CORE_ABILITY_TRIGGER_IDS.onTurnEnd;
 const TRIGGER_ON_SWITCH_IN = CORE_ABILITY_TRIGGER_IDS.onSwitchIn;
@@ -97,7 +96,7 @@ type Gen5AbilityContextOptions = {
   sides?: [BattleSide, BattleSide];
   speciesId?: number;
   gender?: Gender;
-  abilitySlot?: typeof CORE_ABILITY_SLOTS[keyof typeof CORE_ABILITY_SLOTS];
+  abilitySlot?: (typeof CORE_ABILITY_SLOTS)[keyof typeof CORE_ABILITY_SLOTS];
   nickname?: string | null;
 };
 
@@ -156,20 +155,25 @@ function createGen5PokemonInstance(
     seedOffset?: number;
     speed?: number;
     heldItem?: string | null;
-    abilitySlot?: typeof CORE_ABILITY_SLOTS[keyof typeof CORE_ABILITY_SLOTS];
+    abilitySlot?: (typeof CORE_ABILITY_SLOTS)[keyof typeof CORE_ABILITY_SLOTS];
     gender?: Gender;
     nickname?: string | null;
     types?: readonly PokemonType[];
   } = {},
 ): PokemonInstance {
   const species = gen5DataManager.getSpecies(speciesId);
-  const pokemon = createPokemonInstance(species, GEN5_DEFAULT_LEVEL, new SeededRandom(0x5d50 + (options.seedOffset ?? 0)), {
-    nature: GEN5_NATURE_IDS.hardy,
-    abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
-    gender: options.gender ?? CORE_GENDERS.male,
-    pokeball: GEN5_ITEM_IDS.pokeBall,
-    nickname: options.nickname ?? species.displayName,
-  });
+  const pokemon = createPokemonInstance(
+    species,
+    GEN5_DEFAULT_LEVEL,
+    new SeededRandom(0x5d50 + (options.seedOffset ?? 0)),
+    {
+      nature: GEN5_NATURE_IDS.hardy,
+      abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
+      gender: options.gender ?? CORE_GENDERS.male,
+      pokeball: GEN5_ITEM_IDS.pokeBall,
+      nickname: options.nickname ?? species.displayName,
+    },
+  );
 
   pokemon.moves = (options.moveIds ?? [GEN5_MOVE_IDS.tackle]).map((moveId) => {
     const move = createCanonicalMove(moveId);
@@ -207,7 +211,7 @@ function createGen5OnFieldPokemon(
     seedOffset?: number;
     speed?: number;
     heldItem?: string | null;
-    abilitySlot?: typeof CORE_ABILITY_SLOTS[keyof typeof CORE_ABILITY_SLOTS];
+    abilitySlot?: (typeof CORE_ABILITY_SLOTS)[keyof typeof CORE_ABILITY_SLOTS];
     gender?: Gender;
     nickname?: string | null;
     types?: readonly PokemonType[];
@@ -395,7 +399,10 @@ describe("handleGen5RemainingAbility on-turn-end -- Zen Mode", () => {
 
 describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
   it("given Harvest with consumed berry and sun active, when turn ends, then restores berry via item-restore", () => {
-    const harvestVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    const harvestVolatiles = new Map<
+      string,
+      { turnsLeft: number; data?: Record<string, unknown> }
+    >();
     harvestVolatiles.set(HARVEST_BERRY_VOLATILE as never, {
       turnsLeft: -1,
       data: { berryId: ITEM_IDS.sitrusBerry },
@@ -423,7 +430,10 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
   });
 
   it("given Harvest with consumed berry, no sun, and rng below 0.5, when turn ends, then restores berry via item-restore", () => {
-    const harvestVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    const harvestVolatiles = new Map<
+      string,
+      { turnsLeft: number; data?: Record<string, unknown> }
+    >();
     harvestVolatiles.set(HARVEST_BERRY_VOLATILE as never, {
       turnsLeft: -1,
       data: { berryId: ITEM_IDS.lumBerry },
@@ -450,7 +460,10 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
   });
 
   it("given Harvest with consumed berry, no sun, and rng at 0.5, when turn ends, then fails to restore", () => {
-    const harvestVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    const harvestVolatiles = new Map<
+      string,
+      { turnsLeft: number; data?: Record<string, unknown> }
+    >();
     harvestVolatiles.set(HARVEST_BERRY_VOLATILE as never, {
       turnsLeft: -1,
       data: { berryId: ITEM_IDS.sitrusBerry },
@@ -469,7 +482,10 @@ describe("handleGen5RemainingAbility on-turn-end -- Harvest", () => {
   });
 
   it("given Harvest but Pokemon still holding an item, when turn ends, then does not activate", () => {
-    const harvestVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+    const harvestVolatiles = new Map<
+      string,
+      { turnsLeft: number; data?: Record<string, unknown> }
+    >();
     harvestVolatiles.set(HARVEST_BERRY_VOLATILE as never, {
       turnsLeft: -1,
       data: { berryId: ITEM_IDS.sitrusBerry },

@@ -352,7 +352,14 @@ describe("parseLine", () => {
     ];
 
     // Act / Assert
-    expect(skippedLines.map((line) => parseLine(line))).toEqual([null, null, null, null, null, null]);
+    expect(skippedLines.map((line) => parseLine(line))).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   it("given unknown line type, when parsed, then returns UnknownEvent", () => {
@@ -524,7 +531,6 @@ describe("parseLine", () => {
     const ev = result as Extract<ShowdownEvent, { type: "switch" }>;
     expect(ev.species).toBe("Starmie");
   });
-
 });
 
 // ---------------------------------------------------------------------------

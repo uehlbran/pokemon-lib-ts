@@ -173,17 +173,11 @@ export const GEN1_MOVE_IDS = {
   sharpen: "sharpen",
 } as const;
 
-export const GEN1_ITEM_IDS = {
+export const GEN1_ITEM_IDS = {} as const;
 
-} as const;
+export const GEN1_ABILITY_IDS = {} as const;
 
-export const GEN1_ABILITY_IDS = {
-
-} as const;
-
-export const GEN1_NATURE_IDS = {
-
-} as const;
+export const GEN1_NATURE_IDS = {} as const;
 
 export const GEN1_SPECIES_IDS = {
   bulbasaur: 1,

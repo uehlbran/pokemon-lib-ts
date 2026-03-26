@@ -15,9 +15,8 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
-  CORE_STATUS_IDS,
+  type CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   createEvs,
   createFriendship,
@@ -25,6 +24,7 @@ import {
   createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN3_ABILITY_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { createGen3DataManager } from "../../src/data";
 import {
   applyGen3Ability,
@@ -32,7 +32,6 @@ import {
   isWeatherSuppressedGen3,
   WEATHER_SUPPRESSING_ABILITIES,
 } from "../../src/Gen3Abilities";
-import { GEN3_ABILITY_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 import { applyGen3WeatherEffects } from "../../src/Gen3Weather";
@@ -486,26 +485,47 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
   describe("isWeatherSuppressedGen3", () => {
     it("given pokemon has Cloud Nine, when checking weather suppression, then returns true", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT
-      const cloudNine = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: ABILITIES.cloudNine });
-      const normal = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: ABILITIES.blaze });
+      const cloudNine = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        ability: ABILITIES.cloudNine,
+      });
+      const normal = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        ability: ABILITIES.blaze,
+      });
       expect(isWeatherSuppressedGen3(cloudNine, normal)).toBe(true);
     });
 
     it("given opponent has Air Lock, when checking weather suppression, then returns true", () => {
       // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT
-      const normal = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: ABILITIES.blaze });
-      const airLock = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.flying], ability: ABILITIES.airLock });
+      const normal = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        ability: ABILITIES.blaze,
+      });
+      const airLock = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.flying],
+        ability: ABILITIES.airLock,
+      });
       expect(isWeatherSuppressedGen3(normal, airLock)).toBe(true);
     });
 
     it("given neither has weather-suppressing ability, when checking, then returns false", () => {
-      const a = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: ABILITIES.blaze });
-      const b = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: ABILITIES.torrent });
+      const a = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        ability: ABILITIES.blaze,
+      });
+      const b = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        ability: ABILITIES.torrent,
+      });
       expect(isWeatherSuppressedGen3(a, b)).toBe(false);
     });
 
     it("given pokemon is undefined, when opponent has Cloud Nine, then returns true", () => {
-      const cloudNine = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: ABILITIES.cloudNine });
+      const cloudNine = createSyntheticActivePokemon({
+        types: [CORE_TYPE_IDS.normal],
+        ability: ABILITIES.cloudNine,
+      });
       expect(isWeatherSuppressedGen3(undefined, cloudNine)).toBe(true);
     });
   });
@@ -977,7 +997,9 @@ describe("Gen 3 Forecast — Castform Type Change (#346)", () => {
     const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] }]);
+    expect(result.effects).toEqual([
+      { effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] },
+    ]);
   });
 
   it("given Castform with Forecast switches in during sandstorm, then stays Normal", () => {
@@ -1073,8 +1095,11 @@ describe("Gen 3 Baton Pass batonPass flag (#347)", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Baton Pass
     // Source: Bulbapedia — "Baton Pass passes stat stage changes and certain
     //   volatile statuses (Substitute, Focus Energy, etc.) to the replacement"
-    const attacker = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.bug], ability: ABILITIES.speedBoost });
-      const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: "" });
+    const attacker = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.bug],
+      ability: ABILITIES.speedBoost,
+    });
+    const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: "" });
     const move = DATA_MANAGER.getMove(MOVES.batonPass)!;
 
     const context = createMoveContext(attacker, defender, move!);
@@ -1185,11 +1210,11 @@ describe("Gen 3 Trace — No Blocklist (#340)", () => {
       ability: ABILITIES.trace,
       nickname: "Gardevoir",
     });
-      const opponent = createSyntheticActivePokemon({
-        types: [CORE_TYPE_IDS.normal],
-        ability: CORE_ABILITY_IDS.none,
-        nickname: "Ditto",
-      });
+    const opponent = createSyntheticActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+      nickname: "Ditto",
+    });
     const ctx = createAbilityContext({ pokemon: tracer, opponent });
 
     const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);

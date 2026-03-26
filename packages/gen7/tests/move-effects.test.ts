@@ -11,13 +11,21 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen7DataManager } from "../src/data";
+import {
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+} from "../src/data/reference-ids";
 import {
   calculateSpikyShieldDamage,
   executeGen7MoveEffect,
@@ -30,14 +38,6 @@ import {
   isGen7GrassPowderBlocked,
 } from "../src/Gen7MoveEffects";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
-import { createGen7DataManager } from "../src/data";
-import {
-  GEN7_ABILITY_IDS,
-  GEN7_ITEM_IDS,
-  GEN7_MOVE_IDS,
-  GEN7_NATURE_IDS,
-  GEN7_SPECIES_IDS,
-} from "../src/data/reference-ids";
 
 const dataManager = createGen7DataManager();
 const abilityIds = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
@@ -95,7 +95,7 @@ function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData
   } as MoveData;
 }
 
-function createCanonicalMoveSlots(moveIdList: readonly ((typeof moveIds)[keyof typeof moveIds])[]) {
+function createCanonicalMoveSlots(moveIdList: readonly (typeof moveIds)[keyof typeof moveIds][]) {
   return moveIdList.map((moveId) => {
     const move = dataManager.getMove(moveId);
     return createMoveSlot(move.id, move.pp);
@@ -112,7 +112,7 @@ function createOnFieldPokemon(overrides: {
   maxHp?: number;
   currentHp?: number;
   moves?: Array<{ moveId: (typeof moveIds)[keyof typeof moveIds] }>;
-  moveIds?: readonly ((typeof moveIds)[keyof typeof moveIds])[];
+  moveIds?: readonly (typeof moveIds)[keyof typeof moveIds][];
   types?: readonly PokemonType[];
   status?: PrimaryStatus | null;
   speciesId?: number;
@@ -139,17 +139,15 @@ function createOnFieldPokemon(overrides: {
   pokemon.currentHp = overrides.currentHp ?? maxHp;
   pokemon.status = overrides.status ?? null;
   pokemon.heldItem = overrides.heldItem ?? null;
-  const moveIdList =
-    overrides.moveIds ?? overrides.moves?.map((move) => move.moveId) ?? [moveIds.tackle];
+  const moveIdList = overrides.moveIds ??
+    overrides.moves?.map((move) => move.moveId) ?? [moveIds.tackle];
   pokemon.moves = createCanonicalMoveSlots(moveIdList);
   pokemon.ability = overrides.ability ?? abilityIds.none;
   pokemon.calculatedStats = createSyntheticBattleStats(maxHp);
 
-  const active = createBattleOnFieldPokemon(
-    pokemon,
-    0,
-    [...(overrides.types ?? [...speciesRecord.types])] as PokemonType[],
-  );
+  const active = createBattleOnFieldPokemon(pokemon, 0, [
+    ...(overrides.types ?? [...speciesRecord.types]),
+  ] as PokemonType[]);
   active.ability = overrides.ability ?? abilityIds.none;
   active.volatileStatuses = overrides.volatileStatuses ?? new Map();
   active.consecutiveProtects = overrides.consecutiveProtects ?? 0;
@@ -184,7 +182,9 @@ function createMoveEffectContext(
   return {
     attacker: createOnFieldPokemon(options?.attacker ?? {}),
     defender: createOnFieldPokemon(options?.defender ?? {}),
-    move: options?.moveOverrides ? createSyntheticMoveFrom(baseMove, options.moveOverrides) : baseMove,
+    move: options?.moveOverrides
+      ? createSyntheticMoveFrom(baseMove, options.moveOverrides)
+      : baseMove,
     damage: options?.damage ?? 0,
     state: createBattleState(options?.state),
     rng: new SeededRandom(42),
@@ -192,15 +192,15 @@ function createMoveEffectContext(
 }
 
 // Transitional aliases while the remaining call sites in this file are migrated.
-const MOVE_IDS = moveIds;
-const ITEM_IDS = itemIds;
-const ABILITY_IDS = abilityIds;
-const TYPE_IDS = typeIds;
-const VOLATILE_IDS = volatileIds;
-const WEATHER_IDS = weatherIds;
-const MOVE_CATEGORIES = moveCategories;
-const getCanonicalGen7Move = createCanonicalMove;
-const makeContext = createMoveEffectContext;
+const _MOVE_IDS = moveIds;
+const _ITEM_IDS = itemIds;
+const _ABILITY_IDS = abilityIds;
+const _TYPE_IDS = typeIds;
+const _VOLATILE_IDS = volatileIds;
+const _WEATHER_IDS = weatherIds;
+const _MOVE_CATEGORIES = moveCategories;
+const _getCanonicalGen7Move = createCanonicalMove;
+const _makeContext = createMoveEffectContext;
 
 /** Always-succeed protect roll for testing guard moves */
 function alwaysSucceedProtect(_consecutiveProtects: number, _rng: SeededRandom): boolean {
@@ -242,7 +242,9 @@ describe("Gen7 King's Shield -- executeGen7MoveEffect", () => {
 
   it("given attacker has consecutiveProtects=3, when King's Shield used, then passes correct count to rollProtectSuccess", () => {
     // Source: Showdown -- King's Shield shares stall counter with Protect
-    const ctx = createMoveEffectContext(moveIds.kingsShield, { attacker: { consecutiveProtects: 3 } });
+    const ctx = createMoveEffectContext(moveIds.kingsShield, {
+      attacker: { consecutiveProtects: 3 },
+    });
     const rng = new SeededRandom(42);
 
     const protectRollObservation = { count: -1 };
@@ -398,7 +400,9 @@ describe("Gen7 Baneful Bunker -- executeGen7MoveEffect", () => {
 
   it("given attacker has consecutiveProtects=2, when Baneful Bunker used, then passes correct count", () => {
     // Source: Showdown -- Baneful Bunker shares stall counter with Protect
-    const ctx = createMoveEffectContext(moveIds.banefulBunker, { attacker: { consecutiveProtects: 2 } });
+    const ctx = createMoveEffectContext(moveIds.banefulBunker, {
+      attacker: { consecutiveProtects: 2 },
+    });
     const rng = new SeededRandom(42);
 
     const protectRollObservation = { count: -1 };
@@ -968,7 +972,9 @@ describe("Gen7 Two-Turn Moves -- executeGen7MoveEffect", () => {
     // Should return null (no forced charge) to prevent slot-0 fallback executing wrong move
     expect(result).toBeNull();
     expect(ctx.attacker.volatileStatuses.size).toBe(0);
-    expect(ctx.attacker.pokemon.moves).toEqual(createCanonicalMoveSlots([moveIds.tackle, moveIds.roost]));
+    expect(ctx.attacker.pokemon.moves).toEqual(
+      createCanonicalMoveSlots([moveIds.tackle, moveIds.roost]),
+    );
   });
 });
 

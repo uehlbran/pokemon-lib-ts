@@ -1,13 +1,13 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it, vi } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { CORE_ABILITY_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it, vi } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

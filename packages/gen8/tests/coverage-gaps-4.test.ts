@@ -36,20 +36,18 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
-  CORE_MOVE_IDS,
-  CORE_STATUS_IDS,
   CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
@@ -58,6 +56,7 @@ import {
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
 } from "../src";
+import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
 const typeChart = GEN8_TYPE_CHART as Record<string, Record<string, number>>;
@@ -75,7 +74,7 @@ const SPECIES = GEN8_SPECIES_IDS;
 const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const TERRAIN = CORE_TERRAIN_IDS;
-const VOLATILES = CORE_VOLATILE_IDS;
+const _VOLATILES = CORE_VOLATILE_IDS;
 const WEATHER = CORE_WEATHER_IDS;
 
 // ---------------------------------------------------------------------------
@@ -180,11 +179,14 @@ function createCanonicalMove(moveId: string): MoveData {
   return gen8Data.getMove(moveId);
 }
 
-function createSyntheticMoveFrom(moveId: string, overrides: {
-  flags?: Partial<MoveData["flags"]>;
-  effect?: MoveData["effect"];
-  hasCrashDamage?: boolean;
-} = {}): MoveData {
+function createSyntheticMoveFrom(
+  moveId: string,
+  overrides: {
+    flags?: Partial<MoveData["flags"]>;
+    effect?: MoveData["effect"];
+    hasCrashDamage?: boolean;
+  } = {},
+): MoveData {
   const move = createCanonicalMove(moveId);
   return {
     ...move,
@@ -246,13 +248,21 @@ describe("ATE abilities and Normalize", () => {
     // isolating the 1.2x ATE power boost as the only difference.
     const pixilateMove = createCanonicalMove(MOVES.tackle);
     const withPixilate = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.pixilate, types: [TYPES.fighting], attack: 100 }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.pixilate,
+        types: [TYPES.fighting],
+        attack: 100,
+      }),
       defender: createOnFieldPokemon({ types: [TYPES.normal], defense: 100 }),
       move: pixilateMove,
       seed: 42,
     });
     const withoutAbility = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.none, types: [TYPES.fighting], attack: 100 }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.none,
+        types: [TYPES.fighting],
+        attack: 100,
+      }),
       defender: createOnFieldPokemon({ types: [TYPES.normal], defense: 100 }),
       move: pixilateMove,
       seed: 42,
@@ -368,7 +378,11 @@ describe("Type-boost items (Charcoal, Pixie Plate, Soul Dew)", () => {
     // Exact seeded values: withPixiePlate=61, noItem=51 (ratio ≈ 1.196)
     const fairyMove = createCanonicalMove(MOVES.dazzlingGleam);
     const withPixiePlate = dmg({
-      attacker: createOnFieldPokemon({ heldItem: ITEMS.pixiePlate, spAttack: 100, types: [TYPES.fairy] }),
+      attacker: createOnFieldPokemon({
+        heldItem: ITEMS.pixiePlate,
+        spAttack: 100,
+        types: [TYPES.fairy],
+      }),
       move: fairyMove,
       seed: 42,
     });
@@ -464,12 +478,22 @@ describe("Pinch abilities: 1.5x power at or below 1/3 HP", () => {
     const threshold = Math.floor(maxHp / 3); // = 50
     const fireMove = createCanonicalMove(MOVES.firePledge);
     const lowHpDmg = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.blaze, hp: maxHp, currentHp: threshold, spAttack: 100 }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.blaze,
+        hp: maxHp,
+        currentHp: threshold,
+        spAttack: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
     const fullHpDmg = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.blaze, hp: maxHp, currentHp: maxHp, spAttack: 100 }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.blaze,
+        hp: maxHp,
+        currentHp: maxHp,
+        spAttack: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
@@ -485,12 +509,22 @@ describe("Pinch abilities: 1.5x power at or below 1/3 HP", () => {
     const threshold = Math.floor(maxHp / 3); // = 50
     const waterMove = createCanonicalMove(MOVES.snipeShot);
     const lowHpDmg = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.torrent, hp: maxHp, currentHp: threshold, spAttack: 100 }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.torrent,
+        hp: maxHp,
+        currentHp: threshold,
+        spAttack: 100,
+      }),
       move: waterMove,
       seed: 42,
     });
     const fullHpDmg = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.torrent, hp: maxHp, currentHp: maxHp, spAttack: 100 }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.torrent,
+        hp: maxHp,
+        currentHp: maxHp,
+        spAttack: 100,
+      }),
       move: waterMove,
       seed: 42,
     });
@@ -867,7 +901,11 @@ describe("Venoshock: doubles power when target is poisoned", () => {
     // Exact seeded values: poisoned=55, healthy=28 (ratio ≈ 1.96 due to integer rounding of 2x)
     const venoshock = createCanonicalMove(MOVES.venoshock);
     const poisonedDmg = dmg({
-      defender: createOnFieldPokemon({ status: STATUSES.poison, types: [TYPES.normal], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        status: STATUSES.poison,
+        types: [TYPES.normal],
+        spDefense: 100,
+      }),
       move: venoshock,
       seed: 42,
     });
@@ -885,7 +923,11 @@ describe("Venoshock: doubles power when target is poisoned", () => {
     // Exact seeded values: badlyPoisoned=55, healthy=28 (same multiplier as poison)
     const venoshock = createCanonicalMove(MOVES.venoshock);
     const badlyPoisonedDmg = dmg({
-      defender: createOnFieldPokemon({ status: STATUSES.badlyPoisoned, types: [TYPES.normal], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        status: STATUSES.badlyPoisoned,
+        types: [TYPES.normal],
+        spDefense: 100,
+      }),
       move: venoshock,
       seed: 42,
     });
@@ -906,7 +948,11 @@ describe("Hex: doubles power when target has any status condition", () => {
     // Exact seeded values: sleep=110, healthy=56 (ratio ≈ 1.96 due to integer rounding of 2x)
     const hex = createCanonicalMove(MOVES.hex);
     const sleepDmg = dmg({
-      defender: createOnFieldPokemon({ status: STATUSES.sleep, types: [TYPES.psychic], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        status: STATUSES.sleep,
+        types: [TYPES.psychic],
+        spDefense: 100,
+      }),
       move: hex,
       seed: 42,
     });
@@ -926,12 +972,20 @@ describe("Acrobatics: doubles power when attacker has no held item", () => {
     // Exact seeded values: noItem=70, hasItem=36 (ratio ≈ 1.94 due to STAB on flying + integer rounding)
     const acrobatics = createCanonicalMove(MOVES.acrobatics);
     const noItemDmg = dmg({
-      attacker: createOnFieldPokemon({ heldItem: null, ability: ABILITIES.none, types: [TYPES.flying] }),
+      attacker: createOnFieldPokemon({
+        heldItem: null,
+        ability: ABILITIES.none,
+        types: [TYPES.flying],
+      }),
       move: acrobatics,
       seed: 42,
     });
     const hasItemDmg = dmg({
-      attacker: createOnFieldPokemon({ heldItem: ITEMS.oranBerry, ability: ABILITIES.none, types: [TYPES.flying] }),
+      attacker: createOnFieldPokemon({
+        heldItem: ITEMS.oranBerry,
+        ability: ABILITIES.none,
+        types: [TYPES.flying],
+      }),
       move: acrobatics,
       seed: 42,
     });
@@ -958,7 +1012,10 @@ describe("Rivalry: gender-dependent power modifier", () => {
     });
     // Genderless vs genderless gives no rivalry modifier
     const genderlessDmg = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.genderless }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.rivalry,
+        gender: CORE_GENDERS.genderless,
+      }),
       defender: createOnFieldPokemon({ gender: CORE_GENDERS.genderless }),
       move: rivalryMove,
       seed: 42,
@@ -979,7 +1036,10 @@ describe("Rivalry: gender-dependent power modifier", () => {
       seed: 42,
     });
     const genderlessDmg = dmg({
-      attacker: createOnFieldPokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.genderless }),
+      attacker: createOnFieldPokemon({
+        ability: ABILITIES.rivalry,
+        gender: CORE_GENDERS.genderless,
+      }),
       defender: createOnFieldPokemon({ gender: CORE_GENDERS.genderless }),
       move: rivalryMove,
       seed: 42,
@@ -1019,7 +1079,11 @@ describe("Adamant / Lustrous / Griseous Orbs: ~1.2x power for specific types on 
     // Exact seeded values: withLustrousOrb=43, noItem=36 (ratio ≈ 1.194)
     const dragonMove = createCanonicalMove(MOVES.dragonPulse);
     const withLustrousOrb = dmg({
-      attacker: createOnFieldPokemon({ speciesId: 484, heldItem: ITEMS.lustrousOrb, spAttack: 100 }),
+      attacker: createOnFieldPokemon({
+        speciesId: 484,
+        heldItem: ITEMS.lustrousOrb,
+        spAttack: 100,
+      }),
       move: dragonMove,
       seed: 42,
     });
@@ -1115,7 +1179,9 @@ describe("Heavy-rain and Harsh-sun weather extremes", () => {
     const fireMove = createCanonicalMove(MOVES.firePledge);
     const result = dmg({
       move: fireMove,
-      state: createBattleState({ weather: { type: WEATHER.heavyRain, turnsLeft: 255, source: "" } }),
+      state: createBattleState({
+        weather: { type: WEATHER.heavyRain, turnsLeft: 255, source: "" },
+      }),
     });
     expect(result).toBe(0);
   });
@@ -1194,7 +1260,11 @@ describe("Wonder Guard: only super-effective moves deal damage", () => {
     // Source: Showdown data/abilities.ts -- Wonder Guard: only SE hits land
     // Normal vs Normal = 1x (neutral) — Wonder Guard blocks it
     const normalMove = createCanonicalMove(MOVES.strength);
-    const wonderGuardDef = createOnFieldPokemon({ ability: ABILITIES.wonderGuard, types: [TYPES.normal], defense: 100 });
+    const wonderGuardDef = createOnFieldPokemon({
+      ability: ABILITIES.wonderGuard,
+      types: [TYPES.normal],
+      defense: 100,
+    });
     const result = dmg({
       defender: wonderGuardDef,
       move: normalMove,
@@ -1229,7 +1299,11 @@ describe("Levitate: immune to Ground-type moves", () => {
   it("given Levitate defender + ground-type move, when calculating damage, then returns 0 damage", () => {
     // Source: Showdown data/abilities.ts -- Levitate: immunity to Ground
     const groundMove = createCanonicalMove(MOVES.earthquake);
-    const levitateDefender = createOnFieldPokemon({ ability: ABILITIES.levitate, types: [TYPES.normal], defense: 100 });
+    const levitateDefender = createOnFieldPokemon({
+      ability: ABILITIES.levitate,
+      types: [TYPES.normal],
+      defense: 100,
+    });
     const result = dmg({
       defender: levitateDefender,
       move: groundMove,
@@ -1241,7 +1315,11 @@ describe("Levitate: immune to Ground-type moves", () => {
     // Source: Showdown data/abilities.ts -- Mold Breaker bypasses Levitate
     // Exact seeded value: result=43 (same as normal ground move — Levitate does not reduce damage, just immunity)
     const groundMove = createCanonicalMove(MOVES.earthquake);
-    const levitateDefender = createOnFieldPokemon({ ability: ABILITIES.levitate, types: [TYPES.normal], defense: 100 });
+    const levitateDefender = createOnFieldPokemon({
+      ability: ABILITIES.levitate,
+      types: [TYPES.normal],
+      defense: 100,
+    });
     const result = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.moldBreaker, attack: 100 }),
       defender: levitateDefender,
@@ -1331,13 +1409,21 @@ describe("Filter / Solid Rock: 0.75x SE damage (bypassed by Mold Breaker)", () =
     const fireMove = createCanonicalMove(MOVES.firePledge);
     const withFilter = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.none, spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.filter, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.filter,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
     const withoutFilter = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.none, spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.none, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.none,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
@@ -1350,13 +1436,21 @@ describe("Filter / Solid Rock: 0.75x SE damage (bypassed by Mold Breaker)", () =
     const fireMove = createCanonicalMove(MOVES.firePledge);
     const moldBreakerVsFilter = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.moldBreaker, spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.filter, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.filter,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
     const moldBreakerVsNone = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.moldBreaker, spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.none, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.none,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
@@ -1372,13 +1466,21 @@ describe("Prism Armor: 0.75x SE damage (NOT bypassed by Mold Breaker)", () => {
     const fireMove = createCanonicalMove(MOVES.firePledge);
     const withPrismArmor = dmg({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.prismArmor, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.prismArmor,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
     const withoutPrismArmor = dmg({
       attacker: createOnFieldPokemon({ spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.none, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.none,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
@@ -1392,13 +1494,21 @@ describe("Prism Armor: 0.75x SE damage (NOT bypassed by Mold Breaker)", () => {
     const fireMove = createCanonicalMove(MOVES.firePledge);
     const moldBreakerVsPrismArmor = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.moldBreaker, spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.prismArmor, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.prismArmor,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });
     const moldBreakerVsNone = dmg({
       attacker: createOnFieldPokemon({ ability: ABILITIES.moldBreaker, spAttack: 100 }),
-      defender: createOnFieldPokemon({ ability: ABILITIES.none, types: [TYPES.grass], spDefense: 100 }),
+      defender: createOnFieldPokemon({
+        ability: ABILITIES.none,
+        types: [TYPES.grass],
+        spDefense: 100,
+      }),
       move: fireMove,
       seed: 42,
     });

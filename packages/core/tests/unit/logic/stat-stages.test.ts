@@ -44,12 +44,14 @@ const EXPECTED_ACCURACY_EVASION_MULTIPLIERS = [
 ] as const;
 
 describe("getStatStageMultiplier", () => {
-  it.each(EXPECTED_STAT_STAGE_MULTIPLIERS)(
-    "given stage $stage, when getStatStageMultiplier is called, then it returns $expected",
-    ({ stage, expected }) => {
-      expect(getStatStageMultiplier(stage)).toBeCloseTo(expected);
-    },
-  );
+  it.each(
+    EXPECTED_STAT_STAGE_MULTIPLIERS,
+  )("given stage $stage, when getStatStageMultiplier is called, then it returns $expected", ({
+    stage,
+    expected,
+  }) => {
+    expect(getStatStageMultiplier(stage)).toBeCloseTo(expected);
+  });
 
   it("given out-of-range stages, when getStatStageMultiplier is called, then it clamps to the stage +/-6 entries", () => {
     const minStageExpected =
@@ -79,12 +81,14 @@ describe("getStatStageMultiplier", () => {
 });
 
 describe("getAccuracyEvasionMultiplier", () => {
-  it.each(EXPECTED_ACCURACY_EVASION_MULTIPLIERS)(
-    "given stage $stage, when getAccuracyEvasionMultiplier is called, then it returns $expected",
-    ({ stage, expected }) => {
-      expect(getAccuracyEvasionMultiplier(stage)).toBeCloseTo(expected);
-    },
-  );
+  it.each(
+    EXPECTED_ACCURACY_EVASION_MULTIPLIERS,
+  )("given stage $stage, when getAccuracyEvasionMultiplier is called, then it returns $expected", ({
+    stage,
+    expected,
+  }) => {
+    expect(getAccuracyEvasionMultiplier(stage)).toBeCloseTo(expected);
+  });
 
   it("given out-of-range stages, when getAccuracyEvasionMultiplier is called, then it clamps to the stage +/-6 entries", () => {
     const minStageExpected =

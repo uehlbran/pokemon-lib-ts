@@ -17,18 +17,18 @@
 import type { ActivePokemon, BattleState, ItemContext, ItemResult } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
   type MoveData,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
   createGen8DataManager,
@@ -152,10 +152,7 @@ function createRng(flinch = false): ItemContext["rng"] {
   };
 }
 
-function createCanonicalMove(
-  moveId: Gen8MoveId,
-  overrides: Partial<MoveData> = {},
-): MoveData {
+function createCanonicalMove(moveId: Gen8MoveId, overrides: Partial<MoveData> = {}): MoveData {
   const baseMove = dataManager.getMove(moveId);
   return {
     ...baseMove,
@@ -270,7 +267,7 @@ describe("getPinchBerryThreshold", () => {
   );
 
   it(
-      "given gluttony and normalFraction = 0.5 (> 0.25), " +
+    "given gluttony and normalFraction = 0.5 (> 0.25), " +
       "when getPinchBerryThreshold, then returns 0.5 unchanged (condition not met)",
     () => {
       // Source: Showdown data/abilities.ts — Gluttony only doubles fractions <= 0.25
@@ -459,13 +456,23 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
   it("given sitrus-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Sitrus Berry activates at <= 50% HP
     // 150/200 = 75% HP, still above threshold
-    const ctx = createItemContext({ heldItem: itemIds.sitrusBerry, hp: 200, currentHp: 150, damage: 10 });
+    const ctx = createItemContext({
+      heldItem: itemIds.sitrusBerry,
+      hp: 200,
+      currentHp: 150,
+      damage: 10,
+    });
     expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given oran-berry, when damage taken but HP stays above 50%, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Oran Berry activates at <= 50% HP
-    const ctx = createItemContext({ heldItem: itemIds.oranBerry, hp: 200, currentHp: 150, damage: 10 });
+    const ctx = createItemContext({
+      heldItem: itemIds.oranBerry,
+      hp: 200,
+      currentHp: 150,
+      damage: 10,
+    });
     expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
@@ -475,32 +482,57 @@ describe("handleOnDamageTaken — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — Liechi Berry activates at <= 25% HP
       // 120/200 = 60% HP, above threshold
-      const ctx = createItemContext({ heldItem: itemIds.liechiBerry, hp: 200, currentHp: 120, damage: 10 });
+      const ctx = createItemContext({
+        heldItem: itemIds.liechiBerry,
+        hp: 200,
+        currentHp: 120,
+        damage: 10,
+      });
       expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
     },
   );
 
   it("given ganlon-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Ganlon Berry activates at <= 25% HP
-    const ctx = createItemContext({ heldItem: itemIds.ganlonBerry, hp: 200, currentHp: 120, damage: 10 });
+    const ctx = createItemContext({
+      heldItem: itemIds.ganlonBerry,
+      hp: 200,
+      currentHp: 120,
+      damage: 10,
+    });
     expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given salac-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Salac Berry activates at <= 25% HP
-    const ctx = createItemContext({ heldItem: itemIds.salacBerry, hp: 200, currentHp: 120, damage: 10 });
+    const ctx = createItemContext({
+      heldItem: itemIds.salacBerry,
+      hp: 200,
+      currentHp: 120,
+      damage: 10,
+    });
     expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given petaya-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Petaya Berry activates at <= 25% HP
-    const ctx = createItemContext({ heldItem: itemIds.petayaBerry, hp: 200, currentHp: 120, damage: 10 });
+    const ctx = createItemContext({
+      heldItem: itemIds.petayaBerry,
+      hp: 200,
+      currentHp: 120,
+      damage: 10,
+    });
     expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
   it("given apicot-berry holder at 60% HP, when on-damage-taken, then NO_ACTIVATION", () => {
     // Source: Showdown data/items.ts — Apicot Berry activates at <= 25% HP
-    const ctx = createItemContext({ heldItem: itemIds.apicotBerry, hp: 200, currentHp: 120, damage: 10 });
+    const ctx = createItemContext({
+      heldItem: itemIds.apicotBerry,
+      hp: 200,
+      currentHp: 120,
+      damage: 10,
+    });
     expectNoActivation(applyGen8HeldItem(itemTriggers.onDamageTaken, ctx));
   });
 
@@ -671,7 +703,11 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
     () => {
       // Source: Showdown data/items.ts — King's Rock: 10% flinch via RNG chance
       // createRng(false) means chance() always returns false → no flinch
-      const ctx = createItemContext({ heldItem: itemIds.kingsRock, damage: 50, rng: createRng(false) });
+      const ctx = createItemContext({
+        heldItem: itemIds.kingsRock,
+        damage: 50,
+        rng: createRng(false),
+      });
       expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
     },
   );
@@ -687,7 +723,11 @@ describe("handleOnHit — NO_ACTIVATION paths", () => {
       "when on-hit, then NO_ACTIVATION (no flinch)",
     () => {
       // Source: Showdown data/items.ts — Razor Fang: 10% flinch via RNG chance
-      const ctx = createItemContext({ heldItem: itemIds.razorFang, damage: 50, rng: createRng(false) });
+      const ctx = createItemContext({
+        heldItem: itemIds.razorFang,
+        damage: 50,
+        rng: createRng(false),
+      });
       expectNoActivation(applyGen8HeldItem(itemTriggers.onHit, ctx));
     },
   );
@@ -812,7 +852,11 @@ describe("handleOnHit — activation (true branches)", () => {
     () => {
       // Source: Showdown data/items.ts — King's Rock: 10% flinch chance on damaging hits
       // Source: Gen8Items.ts line ~1518 — effects: [{ type: "flinch", target: "opponent" }]
-      const ctx = createItemContext({ heldItem: itemIds.kingsRock, damage: 50, rng: createRng(true) });
+      const ctx = createItemContext({
+        heldItem: itemIds.kingsRock,
+        damage: 50,
+        rng: createRng(true),
+      });
       const result = applyGen8HeldItem(itemTriggers.onHit, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([{ type: "flinch", target: "opponent" }]);

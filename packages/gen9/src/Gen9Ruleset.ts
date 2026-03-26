@@ -294,14 +294,9 @@ export class Gen9Ruleset extends BaseRuleset {
   override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
       case "flying":
-        return [
-          "gust",
-          "twister",
-          "thunder",
-          "sky-uppercut",
-          "hurricane",
-          "smack-down",
-        ].includes(moveId);
+        return ["gust", "twister", "thunder", "sky-uppercut", "hurricane", "smack-down"].includes(
+          moveId,
+        );
       case "underground":
         return ["earthquake", "fissure"].includes(moveId);
       case "underwater":

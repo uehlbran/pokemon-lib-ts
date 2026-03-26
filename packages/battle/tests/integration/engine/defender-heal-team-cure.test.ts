@@ -11,15 +11,15 @@
  */
 
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_STATUS_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createEngine(overrides?: {
   seed?: number;
@@ -271,7 +271,9 @@ describe("processEffectResult -- abilityChange", () => {
 
     // Verify a message was emitted about the ability change
     const abilityMessages = events.filter(
-      (e) => e.type === "message" && (e as { text?: string }).text?.includes(CORE_ABILITY_IDS.intimidate),
+      (e) =>
+        e.type === "message" &&
+        (e as { text?: string }).text?.includes(CORE_ABILITY_IDS.intimidate),
     );
     expect(abilityMessages.length).toBeGreaterThanOrEqual(1);
   });

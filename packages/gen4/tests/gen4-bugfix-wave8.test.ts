@@ -12,21 +12,21 @@ import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
-  CORE_GENDERS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
   type MoveData,
   type MoveFlags,
+  NEUTRAL_NATURES,
   type PokemonInstance,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -66,7 +66,7 @@ const VOLATILES = CORE_VOLATILE_IDS;
 const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
 const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
-const GENDERS = CORE_GENDERS;
+const _GENDERS = CORE_GENDERS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 const DEFAULT_SPECIES = dataManager.getSpecies(SPECIES.rattata);
 const DEFAULT_FLAGS: MoveFlags = {
@@ -145,7 +145,10 @@ function createSyntheticPokemonInstance(overrides: {
 
   pokemon.nickname = overrides.nickname ?? null;
   pokemon.currentHp = overrides.currentHp ?? maxHp;
-  pokemon.moves = overrides.moves ?? [createMoveSlotFromCanonical(MOVES.tackle), createMoveSlotFromCanonical(MOVES.ember)];
+  pokemon.moves = overrides.moves ?? [
+    createMoveSlotFromCanonical(MOVES.tackle),
+    createMoveSlotFromCanonical(MOVES.ember),
+  ];
   pokemon.ability = overrides.ability ?? pokemon.ability;
   pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.status = overrides.status ?? null;
@@ -161,7 +164,10 @@ function createSyntheticPokemonInstance(overrides: {
   return pokemon as PokemonInstance;
 }
 
-function createMoveSlotFromCanonical(moveId: string, overrides?: Partial<{ currentPP: number; maxPP: number }>) {
+function createMoveSlotFromCanonical(
+  moveId: string,
+  overrides?: Partial<{ currentPP: number; maxPP: number }>,
+) {
   const move = dataManager.getMove(moveId);
   const slot = createMoveSlot(moveId, move.pp);
   return {

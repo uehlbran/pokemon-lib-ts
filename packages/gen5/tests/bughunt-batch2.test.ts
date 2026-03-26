@@ -7,9 +7,9 @@ import type {
 import type {
   EntryHazardType,
   Gender,
-  PrimaryStatus,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -19,16 +19,13 @@ import {
   CORE_HAZARD_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
-import { applyGen5EntryHazards } from "../src/Gen5EntryHazards";
-import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 import {
   createGen5DataManager,
   GEN5_ABILITY_IDS,
@@ -36,6 +33,9 @@ import {
   GEN5_NATURE_IDS,
   GEN5_SPECIES_IDS,
 } from "../src";
+import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
+import { applyGen5EntryHazards } from "../src/Gen5EntryHazards";
+import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";
 
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN5_ABILITY_IDS };
 const ITEMS = GEN5_ITEM_IDS;

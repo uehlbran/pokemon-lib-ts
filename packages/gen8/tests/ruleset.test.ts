@@ -1,6 +1,6 @@
+import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { CORE_HAZARD_IDS, CORE_TYPE_IDS, DataManager } from "@pokemon-lib-ts/core";
-import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import { describe, expect, it } from "vitest";
 import { Gen8Ruleset } from "../src/Gen8Ruleset";
 

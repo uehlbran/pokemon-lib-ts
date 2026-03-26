@@ -31,15 +31,16 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  NEUTRAL_NATURES,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
+  NEUTRAL_NATURES,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -64,10 +65,11 @@ const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };
 const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };
 const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const SPECIES = GEN9_SPECIES_IDS;
-const TERRAINS = CORE_TERRAIN_IDS;
+const STATUS = CORE_STATUS_IDS;
+const _TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
-const WEATHER = CORE_WEATHER_IDS;
+const _WEATHER = CORE_WEATHER_IDS;
 const DEFAULT_NATURE = NEUTRAL_NATURES[0];
 const DATA_MANAGER = createGen9DataManager();
 // Source: Showdown resist berries use the 2048/4096 half-damage modifier.
@@ -168,13 +170,13 @@ function makeCanonicalMove(
   moveId: (typeof MOVES)[keyof typeof MOVES],
   overrides?: Partial<MoveData>,
 ): MoveData {
-  const baseMove = DATA_MANAGER.getMove(moveId)
+  const baseMove = DATA_MANAGER.getMove(moveId);
   return {
     ...baseMove,
     ...overrides,
     flags: overrides?.flags ? { ...baseMove.flags, ...overrides.flags } : baseMove.flags,
     effect: overrides && "effect" in overrides ? overrides.effect : baseMove.effect,
-  } as MoveData
+  } as MoveData;
 }
 
 /**
@@ -198,61 +200,61 @@ function makeSyntheticMove(
     hasCrashDamage: overrides?.hasCrashDamage,
     target: overrides?.target,
     flags: overrides?.flags,
-  })
+  });
 }
 
-const CANONICAL_TACKLE = () => makeCanonicalMove(MOVES.tackle)
-const CANONICAL_GROWL = () => makeCanonicalMove(MOVES.growl)
-const CANONICAL_SOLAR_BEAM = () => makeCanonicalMove(MOVES.solarBeam)
-const CANONICAL_EARTHQUAKE = () => makeCanonicalMove(MOVES.earthquake)
-const CANONICAL_FACADE = () => makeCanonicalMove(MOVES.facade)
-const CANONICAL_HEX = () => makeCanonicalMove(MOVES.hex)
-const CANONICAL_KNOCK_OFF = () => makeCanonicalMove(MOVES.knockOff)
-const CANONICAL_VENOSHOCK = () => makeCanonicalMove(MOVES.venoshock)
-const CANONICAL_DAZZLING_GLEAM = () => makeCanonicalMove(MOVES.dazzlingGleam)
-const CANONICAL_EXTRASENSORY = () => makeCanonicalMove(MOVES.extrasensory)
-const CANONICAL_DRILL_RUN = () => makeCanonicalMove(MOVES.drillRun)
-const CANONICAL_SCALD = () => makeCanonicalMove(MOVES.scald)
-const CANONICAL_ZEN_HEADBUTT = () => makeCanonicalMove(MOVES.zenHeadbutt)
-const CANONICAL_DOUBLE_EDGE = () => makeCanonicalMove(MOVES.doubleEdge)
-const CANONICAL_BELCH = () => makeCanonicalMove(MOVES.belch)
+const CANONICAL_TACKLE = () => makeCanonicalMove(MOVES.tackle);
+const CANONICAL_GROWL = () => makeCanonicalMove(MOVES.growl);
+const CANONICAL_SOLAR_BEAM = () => makeCanonicalMove(MOVES.solarBeam);
+const CANONICAL_EARTHQUAKE = () => makeCanonicalMove(MOVES.earthquake);
+const CANONICAL_FACADE = () => makeCanonicalMove(MOVES.facade);
+const CANONICAL_HEX = () => makeCanonicalMove(MOVES.hex);
+const CANONICAL_KNOCK_OFF = () => makeCanonicalMove(MOVES.knockOff);
+const CANONICAL_VENOSHOCK = () => makeCanonicalMove(MOVES.venoshock);
+const CANONICAL_DAZZLING_GLEAM = () => makeCanonicalMove(MOVES.dazzlingGleam);
+const CANONICAL_EXTRASENSORY = () => makeCanonicalMove(MOVES.extrasensory);
+const _CANONICAL_DRILL_RUN = () => makeCanonicalMove(MOVES.drillRun);
+const _CANONICAL_SCALD = () => makeCanonicalMove(MOVES.scald);
+const CANONICAL_ZEN_HEADBUTT = () => makeCanonicalMove(MOVES.zenHeadbutt);
+const CANONICAL_DOUBLE_EDGE = () => makeCanonicalMove(MOVES.doubleEdge);
+const CANONICAL_BELCH = () => makeCanonicalMove(MOVES.belch);
 
 const SYNTHETIC_NORMAL_PHYSICAL_50 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 50)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 50);
 const SYNTHETIC_NORMAL_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 80)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 80);
 const SYNTHETIC_NORMAL_PHYSICAL_60 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 60)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 60);
 const SYNTHETIC_NORMAL_PHYSICAL_10 = () =>
-  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 10)
+  makeSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 10);
 const SYNTHETIC_FIRE_SPECIAL_90 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 90)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 90);
 const SYNTHETIC_FIRE_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 80)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 80);
 const SYNTHETIC_FIRE_SPECIAL_50 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 50)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.special, 50);
 const SYNTHETIC_WATER_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.surf, TYPES.water, MOVE_CATEGORIES.special, 80)
+  makeSyntheticMove(MOVES.surf, TYPES.water, MOVE_CATEGORIES.special, 80);
 const SYNTHETIC_WATER_SPECIAL_50 = () =>
-  makeSyntheticMove(MOVES.surf, TYPES.water, MOVE_CATEGORIES.special, 50)
+  makeSyntheticMove(MOVES.surf, TYPES.water, MOVE_CATEGORIES.special, 50);
 const SYNTHETIC_FIRE_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.physical, 80)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.physical, 80);
 const SYNTHETIC_FIRE_PHYSICAL_10 = () =>
-  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.physical, 10)
+  makeSyntheticMove(MOVES.flamethrower, TYPES.fire, MOVE_CATEGORIES.physical, 10);
 const SYNTHETIC_ELECTRIC_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, MOVE_CATEGORIES.special, 80)
+  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, MOVE_CATEGORIES.special, 80);
 const SYNTHETIC_ELECTRIC_SPECIAL_120 = () =>
-  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, MOVE_CATEGORIES.special, 120)
+  makeSyntheticMove(MOVES.thunderbolt, TYPES.electric, MOVE_CATEGORIES.special, 120);
 const SYNTHETIC_GRASS_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.energyBall, TYPES.grass, MOVE_CATEGORIES.special, 80)
+  makeSyntheticMove(MOVES.energyBall, TYPES.grass, MOVE_CATEGORIES.special, 80);
 const SYNTHETIC_DRAGON_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.dragonPulse, TYPES.dragon, MOVE_CATEGORIES.special, 80)
+  makeSyntheticMove(MOVES.dragonPulse, TYPES.dragon, MOVE_CATEGORIES.special, 80);
 const SYNTHETIC_ICE_SPECIAL_80 = () =>
-  makeSyntheticMove(MOVES.iceBeam, TYPES.ice, MOVE_CATEGORIES.special, 80)
+  makeSyntheticMove(MOVES.iceBeam, TYPES.ice, MOVE_CATEGORIES.special, 80);
 const SYNTHETIC_FIGHTING_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.closeCombat, TYPES.fighting, MOVE_CATEGORIES.physical, 80)
+  makeSyntheticMove(MOVES.closeCombat, TYPES.fighting, MOVE_CATEGORIES.physical, 80);
 const SYNTHETIC_GROUND_PHYSICAL_80 = () =>
-  makeSyntheticMove(MOVES.earthquake, TYPES.ground, MOVE_CATEGORIES.physical, 80)
+  makeSyntheticMove(MOVES.earthquake, TYPES.ground, MOVE_CATEGORIES.physical, 80);
 
 function createBattleState(overrides?: {
   weather?: { type: string; turnsLeft: number; source: string } | null;
@@ -959,7 +961,12 @@ describe("Burn penalty", () => {
   it("given burned attacker with Guts, when calculating, then burn penalty is bypassed and attack boosted", () => {
     // Source: Showdown data/abilities.ts -- Guts: 1.5x Atk when statused, bypasses burn
     const ctxGuts = makeDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: ["normal"], ability: "guts", status: "burn" }),
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: ["normal"],
+        ability: ABILITIES.guts,
+        status: STATUS.burn,
+      }),
       defender: createOnFieldPokemon({ defense: 100, types: ["normal"] }),
       move: SYNTHETIC_NORMAL_PHYSICAL_50(),
       seed: 42,
@@ -1343,7 +1350,11 @@ describe("Ability type immunities", () => {
     // Source: Showdown -- Water Absorb grants Water immunity
     const ctx = makeDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: ["water"] }),
-      defender: createOnFieldPokemon({ spDefense: 100, types: ["normal"], ability: "water-absorb" }),
+      defender: createOnFieldPokemon({
+        spDefense: 100,
+        types: ["normal"],
+        ability: ABILITIES.waterAbsorb,
+      }),
       move: SYNTHETIC_WATER_SPECIAL_80(),
       seed: 42,
     });
@@ -2202,7 +2213,11 @@ describe("Defensive items", () => {
     // Source: Showdown data/items.ts -- Assault Vest: 1.5x SpDef
     const ctxAV = makeDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: ["fire"] }),
-      defender: createOnFieldPokemon({ spDefense: 100, types: ["normal"], heldItem: "assault-vest" }),
+      defender: createOnFieldPokemon({
+        spDefense: 100,
+        types: ["normal"],
+        heldItem: ITEMS.assaultVest,
+      }),
       move: SYNTHETIC_FIRE_SPECIAL_80(),
       seed: 42,
     });
@@ -2303,7 +2318,11 @@ describe("isGen9Grounded", () => {
 
   it("given Pokemon with Air Balloon, when checking, then is NOT grounded", () => {
     // Source: Showdown -- Air Balloon prevents grounding
-    const pokemon = createOnFieldPokemon({ types: ["normal"], heldItem: "air-balloon", currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      types: ["normal"],
+      heldItem: ITEMS.airBalloon,
+      currentHp: 100,
+    });
     expect(isGen9Grounded(pokemon, false)).toBe(false);
   });
 
@@ -2749,7 +2768,11 @@ describe("Rivalry", () => {
         ability: ABILITIES.rivalry,
         gender: CORE_GENDERS.male,
       }),
-      defender: createOnFieldPokemon({ defense: 100, types: ["normal"], gender: CORE_GENDERS.male }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: ["normal"],
+        gender: CORE_GENDERS.male,
+      }),
       move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
@@ -2757,7 +2780,11 @@ describe("Rivalry", () => {
 
     const ctxNone = makeDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: ["normal"], gender: CORE_GENDERS.male }),
-      defender: createOnFieldPokemon({ defense: 100, types: ["normal"], gender: CORE_GENDERS.male }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: ["normal"],
+        gender: CORE_GENDERS.male,
+      }),
       move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
@@ -2775,7 +2802,11 @@ describe("Rivalry", () => {
         ability: ABILITIES.rivalry,
         gender: CORE_GENDERS.male,
       }),
-      defender: createOnFieldPokemon({ defense: 100, types: ["normal"], gender: CORE_GENDERS.female }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: ["normal"],
+        gender: CORE_GENDERS.female,
+      }),
       move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
@@ -2783,7 +2814,11 @@ describe("Rivalry", () => {
 
     const ctxNone = makeDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: ["normal"], gender: CORE_GENDERS.male }),
-      defender: createOnFieldPokemon({ defense: 100, types: ["normal"], gender: CORE_GENDERS.female }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: ["normal"],
+        gender: CORE_GENDERS.female,
+      }),
       move: SYNTHETIC_NORMAL_PHYSICAL_80(),
       seed: 42,
     });
@@ -2919,7 +2954,11 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 200 / 100) = 2200
     //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
     //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
-    const attacker = createOnFieldPokemon({ attack: 100, ability: "mold-breaker", types: ["water"] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: ABILITIES.moldBreaker,
+      types: ["water"],
+    });
     attacker.statStages.attack = 2;
     const defender = createOnFieldPokemon({ defense: 100, ability: "unaware", types: ["water"] });
     const move = SYNTHETIC_NORMAL_PHYSICAL_50();

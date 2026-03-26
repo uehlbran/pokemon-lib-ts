@@ -17,9 +17,9 @@ import {
   CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -44,7 +44,7 @@ const DEFAULT_ABILITY = CORE_ABILITY_IDS.none;
 const KLUTZ = CORE_ABILITY_IDS.klutz;
 const EMBARGO = CORE_VOLATILE_IDS.embargo;
 const SHADOW_FORCE_CHARGING = CORE_VOLATILE_IDS.shadowForceCharging;
-const PHANTOM_FORCE_MOVE = dataManager.getMove(PHANTOM_FORCE);
+const _PHANTOM_FORCE_MOVE = dataManager.getMove(PHANTOM_FORCE);
 
 function createOnFieldPokemon(overrides: {
   ability?: string;

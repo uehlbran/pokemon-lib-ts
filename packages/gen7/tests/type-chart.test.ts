@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "../src/Gen7TypeChart.js";
 
 /**
@@ -14,9 +14,7 @@ describe("Gen7TypeChart", () => {
   const typeChartAvailable = (() => {
     try {
       // GEN7_TYPE_CHART will throw at import time if JSON is missing
-      return (
-        GEN7_TYPE_CHART !== undefined && Object.keys(GEN7_TYPE_CHART).length > 0
-      );
+      return GEN7_TYPE_CHART !== undefined && Object.keys(GEN7_TYPE_CHART).length > 0;
     } catch {
       return false;
     }

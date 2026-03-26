@@ -11,12 +11,7 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen2DataManager,
-  GEN2_ITEM_IDS,
-  GEN2_NATURE_IDS,
-  GEN2_SPECIES_IDS,
-} from "../../src";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_NATURE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 
 /**
@@ -24,7 +19,7 @@ import { Gen2Ruleset } from "../../src/Gen2Ruleset";
  */
 const DATA_MANAGER = createGen2DataManager();
 const END_OF_TURN = CORE_END_OF_TURN_EFFECT_IDS;
-const ITEMS = { ...CORE_ITEM_IDS, ...GEN2_ITEM_IDS } as const;
+const _ITEMS = { ...CORE_ITEM_IDS, ...GEN2_ITEM_IDS } as const;
 const MOVES = CORE_MOVE_IDS;
 const SPECIES = GEN2_SPECIES_IDS;
 const STATUSES = CORE_STATUS_IDS;

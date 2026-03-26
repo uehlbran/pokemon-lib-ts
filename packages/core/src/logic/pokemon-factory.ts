@@ -49,10 +49,7 @@ function generateUid(rng: SeededRandom): string {
 /**
  * Get the ability ID for a given ability slot.
  */
-function getAbilityForSlot(
-  species: PokemonSpeciesData,
-  slot: AbilitySlot,
-): string {
+function getAbilityForSlot(species: PokemonSpeciesData, slot: AbilitySlot): string {
   if (slot === CORE_ABILITY_SLOTS.hidden && species.abilities.hidden) {
     return species.abilities.hidden;
   }
@@ -141,7 +138,9 @@ export function createPokemonInstance(
   const abilitySlot =
     options?.abilitySlot ??
     (species.abilities.normal.length > 1
-      ? (rng.chance(0.5) ? CORE_ABILITY_SLOTS.normal1 : CORE_ABILITY_SLOTS.normal2)
+      ? rng.chance(0.5)
+        ? CORE_ABILITY_SLOTS.normal1
+        : CORE_ABILITY_SLOTS.normal2
       : CORE_ABILITY_SLOTS.normal1);
   const ability = getAbilityForSlot(species, abilitySlot);
 

@@ -20,19 +20,19 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen6Ability,
   createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
   GEN6_SPECIES_IDS,
-  applyGen6Ability,
 } from "../src";
 import { handleGen6RemainingAbility } from "../src/Gen6AbilitiesRemaining";
 import { handleGen6StatAbility } from "../src/Gen6AbilitiesStat";

@@ -13,7 +13,11 @@ function buildValidationResult(failures: ValidationFailure[]): ValidationResult 
 export function validateFriendship(candidate: unknown): ValidationResult {
   const failures: ValidationFailure[] = [];
 
-  if (typeof candidate !== "number" || !Number.isFinite(candidate) || !Number.isInteger(candidate)) {
+  if (
+    typeof candidate !== "number" ||
+    !Number.isFinite(candidate) ||
+    !Number.isInteger(candidate)
+  ) {
     failures.push({
       field: "friendship",
       value: candidate,

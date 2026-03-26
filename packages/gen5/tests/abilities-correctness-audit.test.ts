@@ -27,11 +27,11 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -113,21 +113,26 @@ function createSyntheticPokemonInstance(overrides: {
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   const speciesRecord = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES_ID);
-  const pokemon = createPokemonInstance(speciesRecord, DEFAULT_LEVEL, new SeededRandom(speciesRecord.id), {
-    nature: overrides.nature ?? DEFAULT_NATURE,
-    ivs: createIvs(),
-    evs: createEvs(),
-    abilitySlot: abilitySlots.normal1,
-    gender: genders.male,
-    isShiny: false,
-    moves: [DEFAULT_TACKLE.id],
-    heldItem: overrides.heldItem ?? null,
-    friendship: speciesRecord.baseFriendship,
-    metLocation: "test",
-    originalTrainer: "Test",
-    originalTrainerId: 0,
-    pokeball: overrides.pokeball ?? DEFAULT_POKEBALL,
-  });
+  const pokemon = createPokemonInstance(
+    speciesRecord,
+    DEFAULT_LEVEL,
+    new SeededRandom(speciesRecord.id),
+    {
+      nature: overrides.nature ?? DEFAULT_NATURE,
+      ivs: createIvs(),
+      evs: createEvs(),
+      abilitySlot: abilitySlots.normal1,
+      gender: genders.male,
+      isShiny: false,
+      moves: [DEFAULT_TACKLE.id],
+      heldItem: overrides.heldItem ?? null,
+      friendship: speciesRecord.baseFriendship,
+      metLocation: "test",
+      originalTrainer: "Test",
+      originalTrainerId: 0,
+      pokeball: overrides.pokeball ?? DEFAULT_POKEBALL,
+    },
+  );
   pokemon.nickname = overrides.nickname ?? null;
   pokemon.currentHp = overrides.currentHp ?? maxHp;
   pokemon.moves = [createMoveSlot(DEFAULT_TACKLE.id, DEFAULT_TACKLE.pp)];
@@ -399,7 +404,11 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when hasSheerForceEligibleEffect is called, then returns true",
     () => {
       // Source: Showdown data/moves.ts -- Air Slash: secondary flinch (30% chance)
-      const effect: MoveEffect = { type: "volatile-status", volatile: VOLATILE_IDS.flinch, chance: 30 };
+      const effect: MoveEffect = {
+        type: "volatile-status",
+        volatile: VOLATILE_IDS.flinch,
+        chance: 30,
+      };
       expect(hasSheerForceEligibleEffect(effect)).toBe(true);
     },
   );
@@ -430,7 +439,11 @@ describe("Sheer Force -- damage boost and secondary effect suppression", () => {
       "when sheerForceSuppressesLifeOrb is called, then returns true",
     () => {
       // Source: Showdown scripts.ts -- if move.hasSheerForce: skip Life Orb recoil
-      const effect: MoveEffect = { type: "status-chance", status: PRIMARY_STATUS.paralysis, chance: 30 };
+      const effect: MoveEffect = {
+        type: "status-chance",
+        status: PRIMARY_STATUS.paralysis,
+        chance: 30,
+      };
       expect(sheerForceSuppressesLifeOrb(abilityIds.sheerForce, effect)).toBe(true);
     },
   );

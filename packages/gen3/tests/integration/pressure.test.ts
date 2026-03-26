@@ -1,15 +1,15 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
-import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
-import { applyGen3Ability } from "../../src/Gen3Abilities";
 import { GEN3_ABILITY_IDS, GEN3_SPECIES_IDS } from "../../src/data/reference-ids";
+import { applyGen3Ability } from "../../src/Gen3Abilities";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 
 /**
@@ -114,9 +114,7 @@ function createActivePokemon(opts: {
   } as ActivePokemon;
 }
 
-function createPressurePokemon(opts: {
-  nickname?: string | null;
-} = {}): ActivePokemon {
+function createPressurePokemon(opts: { nickname?: string | null } = {}): ActivePokemon {
   const species = dataManager.getSpecies(GEN3_SPECIES_IDS.articuno);
 
   return createActivePokemon({

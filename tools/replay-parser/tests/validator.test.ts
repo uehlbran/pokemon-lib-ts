@@ -84,7 +84,14 @@ describe("validateReplay — type effectiveness", () => {
 
   it("given a replay where Showdown says resisted, when validated, then the real chart agrees for Flamethrower into Vaporeon", () => {
     const teams: [ReconstructedPokemon[], ReconstructedPokemon[]] = [
-      [{ species: "Arcanine", level: 100, knownMoves: [CORE_MOVE_IDS.flamethrower], nickname: "Arcanine" }],
+      [
+        {
+          species: "Arcanine",
+          level: 100,
+          knownMoves: [CORE_MOVE_IDS.flamethrower],
+          nickname: "Arcanine",
+        },
+      ],
       [{ species: "Vaporeon", level: 100, knownMoves: [], nickname: "Vaporeon" }],
     ];
     const turns = [

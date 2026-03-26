@@ -34,7 +34,9 @@ describe("runBattle — Gen 1 smoke test", () => {
     expect(report.timedOut).toBe(false);
     expect(report.events[0]?.type).toBe("battle-start");
     expect(report.events.at(-1)?.type).toBe("battle-end");
-    expect(report.turnCount).toBe(report.events.filter((event) => event.type === "turn-start").length);
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 
   it("given a Gen 1 config, when running a battle, then the report generation matches the config", () => {
@@ -48,7 +50,9 @@ describe("runBattle — Gen 1 smoke test", () => {
     expect(report.timedOut).toBe(false);
     expect(report.events[0]?.type).toBe("battle-start");
     expect(report.events.at(-1)?.type).toBe("battle-end");
-    expect(report.turnCount).toBe(report.events.filter((event) => event.type === "turn-start").length);
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 
   it("given a config with seed 99, when running a battle, then the report seed matches", () => {
@@ -63,7 +67,9 @@ describe("runBattle — Gen 1 smoke test", () => {
     expect(report.timedOut).toBe(false);
     expect(report.events[0]?.type).toBe("battle-start");
     expect(report.events.at(-1)?.type).toBe("battle-end");
-    expect(report.turnCount).toBe(report.events.filter((event) => event.type === "turn-start").length);
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 });
 
@@ -117,7 +123,9 @@ describe("runBattle — Gen 2 smoke test", () => {
     expect(report.timedOut).toBe(false);
     expect(report.events[0]?.type).toBe("battle-start");
     expect(report.events.at(-1)?.type).toBe("battle-end");
-    expect(report.turnCount).toBe(report.events.filter((event) => event.type === "turn-start").length);
+    expect(report.turnCount).toBe(
+      report.events.filter((event) => event.type === "turn-start").length,
+    );
   });
 });
 
@@ -162,7 +170,9 @@ describe("runBatch — progress callback", () => {
     runBatch(config, count, onProgress);
 
     expect(onProgress).toHaveBeenCalledTimes(count);
-    expect(onProgress.mock.calls.map(([i]) => i)).toEqual(Array.from({ length: count }, (_, i) => i));
+    expect(onProgress.mock.calls.map(([i]) => i)).toEqual(
+      Array.from({ length: count }, (_, i) => i),
+    );
     expect(onProgress.mock.calls.map(([, report]) => report.seed)).toEqual(
       Array.from({ length: count }, (_, i) => config.seed + i),
     );

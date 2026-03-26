@@ -1,35 +1,7 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
-import { createEvs, createIvs } from "@pokemon-lib-ts/core";
 import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import { createEvs, createIvs } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  chipDamageOpponent,
-  chipDamageSelf,
-  consumeSelf,
-  flinchOpponent,
-  forceSwitchOpponent,
-  forceSwitchSelf,
-  healSelf,
-  inflictStatusSelf,
-  statBoostSelf,
-  statusCureSelf,
-  surviveSelf,
-  TEST_ABILITY_IDS,
-  TEST_DEFAULTS,
-  TEST_EFFECT_IDS,
-  TEST_FIXED_POINT,
-  TEST_ITEM_IDS,
-  TEST_MOVE_CATEGORIES,
-  TEST_MOVE_IDS,
-  TEST_STAT_IDS,
-  TEST_STATUS_IDS,
-  TEST_TARGET_IDS,
-  TEST_TRIGGER_IDS,
-  TEST_TYPE_IDS,
-  TEST_VOLATILE_IDS,
-  TEST_WEATHER_IDS,
-  volatileCureSelf,
-} from "./helpers/item-test-ids";
 import {
   applyGen9HeldItem,
   getBlackSludgeEffect,
@@ -57,6 +29,33 @@ import {
   isGen9PowderBlocked,
 } from "../src/Gen9Items";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
+import {
+  chipDamageOpponent,
+  chipDamageSelf,
+  consumeSelf,
+  flinchOpponent,
+  forceSwitchOpponent,
+  forceSwitchSelf,
+  healSelf,
+  inflictStatusSelf,
+  statBoostSelf,
+  statusCureSelf,
+  surviveSelf,
+  TEST_ABILITY_IDS,
+  TEST_DEFAULTS,
+  TEST_EFFECT_IDS,
+  TEST_FIXED_POINT,
+  TEST_ITEM_IDS,
+  TEST_MOVE_CATEGORIES,
+  TEST_MOVE_IDS,
+  TEST_STAT_IDS,
+  TEST_STATUS_IDS,
+  TEST_TRIGGER_IDS,
+  TEST_TYPE_IDS,
+  TEST_VOLATILE_IDS,
+  TEST_WEATHER_IDS,
+  volatileCureSelf,
+} from "./helpers/item-test-ids";
 
 // ---------------------------------------------------------------------------
 // Helper factories
@@ -483,7 +482,10 @@ describe("Type-Resist Berries", () => {
     // resist berries since the halving is done during damage calc, not post-hit.
     // This test verifies the berry is not double-activated.
     it("given Pokemon with Occa Berry hit by a damaging move, the resist berry is applied in damage calc (not on-damage-taken)", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.occaBerry, types: [TEST_TYPE_IDS.grass] });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.occaBerry,
+        types: [TEST_TYPE_IDS.grass],
+      });
       const ctx = createItemContext({
         pokemon,
         move: MOVE_FIXTURES.flamethrower,
@@ -570,7 +572,11 @@ describe("Life Orb", () => {
 
 describe("go-first held items", () => {
   it("given Custap Berry in pinch range, when before-turn-order triggers, then it activates and consumes", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.custapBerry, hp: 200, currentHp: 50 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.custapBerry,
+      hp: 200,
+      currentHp: 50,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.tackle,
@@ -584,7 +590,11 @@ describe("go-first held items", () => {
   });
 
   it("given Custap Berry outside pinch range, when before-turn-order triggers, then it does not activate", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.custapBerry, hp: 200, currentHp: 51 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.custapBerry,
+      hp: 200,
+      currentHp: 51,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.tackle,
@@ -652,7 +662,11 @@ describe("Leftovers", () => {
   describe("applyGen9HeldItem -- Leftovers end-of-turn", () => {
     // Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP each end-of-turn
     it("given Pokemon with Leftovers at end-of-turn, when triggered, then heals floor(maxHP/16)", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.leftovers, hp: 200, currentHp: 150 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.leftovers,
+        hp: 200,
+        currentHp: 150,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -662,7 +676,11 @@ describe("Leftovers", () => {
 
     // Leftovers at full HP still triggers (the engine caps the heal)
     it("given Pokemon with Leftovers at full HP, when triggered, then still returns heal effect", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.leftovers, hp: 200, currentHp: 200 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.leftovers,
+        hp: 200,
+        currentHp: 200,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -748,7 +766,11 @@ describe("Focus Sash", () => {
   describe("applyGen9HeldItem -- Focus Sash on-damage-taken", () => {
     // Source: Showdown data/items.ts -- Focus Sash onDamagePriority: survive + consume
     it("given full HP Pokemon with Focus Sash hit by KO move, when triggered, then survives at 1 HP and sash consumed", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.focusSash, hp: 200, currentHp: 200 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.focusSash,
+        hp: 200,
+        currentHp: 200,
+      });
       const ctx = createItemContext({ pokemon, damage: 300 });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
@@ -757,7 +779,11 @@ describe("Focus Sash", () => {
 
     // Source: Showdown data/items.ts -- Focus Sash only from full HP
     it("given 95% HP Pokemon with Focus Sash hit by KO move, when triggered, then does not activate", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.focusSash, hp: 200, currentHp: 190 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.focusSash,
+        hp: 200,
+        currentHp: 190,
+      });
       const ctx = createItemContext({ pokemon, damage: 300 });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
@@ -773,7 +799,11 @@ describe("Focus Band", () => {
   describe("applyGen9HeldItem -- Focus Band on-damage-taken", () => {
     // Source: Showdown data/items.ts -- Focus Band 10% chance to survive at 1 HP
     it("given Pokemon with Focus Band and KO damage, when RNG succeeds, then survives at 1 HP (not consumed)", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.focusBand, hp: 200, currentHp: 100 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.focusBand,
+        hp: 200,
+        currentHp: 100,
+      });
       const ctx = createItemContext({
         pokemon,
         damage: 200,
@@ -783,12 +813,18 @@ describe("Focus Band", () => {
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([surviveSelf()]);
       // Not consumed -- Focus Band is reusable
-      expect(result.effects.some((effect: any) => effect.type === TEST_EFFECT_IDS.consume)).toBe(false);
+      expect(result.effects.some((effect: any) => effect.type === TEST_EFFECT_IDS.consume)).toBe(
+        false,
+      );
     });
 
     // Source: Showdown data/items.ts -- Focus Band 10% chance (fails 90%)
     it("given Pokemon with Focus Band and KO damage, when RNG fails, then does not activate", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.focusBand, hp: 200, currentHp: 100 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.focusBand,
+        hp: 200,
+        currentHp: 100,
+      });
       const ctx = createItemContext({
         pokemon,
         damage: 200,
@@ -896,7 +932,11 @@ describe("Sitrus Berry", () => {
   describe("applyGen9HeldItem -- Sitrus Berry end-of-turn", () => {
     // Source: Showdown data/items.ts -- Sitrus Berry heals 1/4 maxHP at <= 50%
     it("given Pokemon at 40% HP with Sitrus Berry at end-of-turn, when triggered, then heals 1/4 maxHP and consumed", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.sitrusBerry, hp: 200, currentHp: 80 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.sitrusBerry,
+        hp: 200,
+        currentHp: 80,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -907,7 +947,11 @@ describe("Sitrus Berry", () => {
 
     // Source: Showdown data/items.ts -- Sitrus Berry only at <= 50% HP
     it("given Pokemon at 60% HP with Sitrus Berry at end-of-turn, when triggered, then does not activate", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.sitrusBerry, hp: 200, currentHp: 120 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.sitrusBerry,
+        hp: 200,
+        currentHp: 120,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
@@ -917,7 +961,11 @@ describe("Sitrus Berry", () => {
   describe("applyGen9HeldItem -- Sitrus Berry on-damage-taken", () => {
     // Source: Showdown data/items.ts -- Sitrus Berry also triggers after taking damage
     it("given Pokemon dropped to 50% HP after damage with Sitrus Berry, when on-damage-taken, then heals and consumed", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.sitrusBerry, hp: 200, currentHp: 100 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.sitrusBerry,
+        hp: 200,
+        currentHp: 100,
+      });
       const ctx = createItemContext({ pokemon, damage: 100 });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
@@ -934,7 +982,11 @@ describe("Oran Berry", () => {
   describe("applyGen9HeldItem -- Oran Berry end-of-turn", () => {
     // Source: Showdown data/items.ts -- Oran Berry restores 10 HP at <= 50%
     it("given Pokemon at 40% HP with Oran Berry, when end-of-turn, then heals 10 HP and consumed", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.oranBerry, hp: 200, currentHp: 80 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.oranBerry,
+        hp: 200,
+        currentHp: 80,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -943,7 +995,11 @@ describe("Oran Berry", () => {
     });
 
     it("given Pokemon at 60% HP with Oran Berry, when end-of-turn, then no activation", () => {
-      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.oranBerry, hp: 200, currentHp: 120 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.oranBerry,
+        hp: 200,
+        currentHp: 120,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
@@ -1008,7 +1064,10 @@ describe("Status-Cure Berries", () => {
 
   // Source: Showdown data/items.ts -- Chesto Berry cures sleep
   it("given sleeping Pokemon with Chesto Berry, when end-of-turn, then wakes up", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.chestoBerry, status: TEST_STATUS_IDS.sleep });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.chestoBerry,
+      status: TEST_STATUS_IDS.sleep,
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(statusCureSelf());
@@ -1016,7 +1075,10 @@ describe("Status-Cure Berries", () => {
 
   // Source: Showdown data/items.ts -- Pecha Berry cures poison
   it("given poisoned Pokemon with Pecha Berry, when end-of-turn, then cures poison", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.pechaBerry, status: TEST_STATUS_IDS.poison });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.pechaBerry,
+      status: TEST_STATUS_IDS.poison,
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(statusCureSelf());
@@ -1024,7 +1086,10 @@ describe("Status-Cure Berries", () => {
 
   // Source: Showdown data/items.ts -- Rawst Berry cures burn
   it("given burned Pokemon with Rawst Berry, when end-of-turn, then cures burn", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.rawstBerry, status: TEST_STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.rawstBerry,
+      status: TEST_STATUS_IDS.burn,
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(statusCureSelf());
@@ -1032,7 +1097,10 @@ describe("Status-Cure Berries", () => {
 
   // Source: Showdown data/items.ts -- Aspear Berry cures freeze
   it("given frozen Pokemon with Aspear Berry, when end-of-turn, then thaws out", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.aspearBerry, status: TEST_STATUS_IDS.freeze });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.aspearBerry,
+      status: TEST_STATUS_IDS.freeze,
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual(statusCureSelf());
@@ -1040,7 +1108,10 @@ describe("Status-Cure Berries", () => {
 
   // Cheri Berry does not activate without paralysis
   it("given burned Pokemon with Cheri Berry, when end-of-turn, then no activation (wrong status)", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.cheriBerry, status: TEST_STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.cheriBerry,
+      status: TEST_STATUS_IDS.burn,
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(false);
   });
@@ -1055,7 +1126,10 @@ describe("Pinch Berries", () => {
     // Source: Showdown data/abilities.ts -- Gluttony changes threshold to 50%
     it("given Gluttony ability with 25% threshold, when checking, then returns 0.5 (50%)", () => {
       expect(
-        getPinchBerryThreshold({ ability: TEST_ABILITY_IDS.gluttony }, PINCH_BERRY_THRESHOLDS.standard),
+        getPinchBerryThreshold(
+          { ability: TEST_ABILITY_IDS.gluttony },
+          PINCH_BERRY_THRESHOLDS.standard,
+        ),
       ).toBe(PINCH_BERRY_THRESHOLDS.boosted);
     });
 
@@ -1069,7 +1143,11 @@ describe("Pinch Berries", () => {
   // Source: Showdown data/items.ts -- Liechi Berry +1 Atk at 25% HP
   it("given Pokemon at 25% HP with Liechi Berry, when on-damage-taken, then +1 Attack and consumed", () => {
     // 200 * 0.25 = 50; currentHp = 50 <= 50 triggers
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.liechiBerry, hp: 200, currentHp: 50 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.liechiBerry,
+      hp: 200,
+      currentHp: 50,
+    });
     const ctx = createItemContext({ pokemon, damage: 10 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1079,7 +1157,11 @@ describe("Pinch Berries", () => {
 
   // Source: Showdown data/items.ts -- Salac Berry +1 Speed at 25% HP
   it("given Pokemon at 25% HP with Salac Berry, when on-damage-taken, then +1 Speed and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.salacBerry, hp: 200, currentHp: 50 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.salacBerry,
+      hp: 200,
+      currentHp: 50,
+    });
     const ctx = createItemContext({ pokemon, damage: 10 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1088,7 +1170,11 @@ describe("Pinch Berries", () => {
 
   // Source: Showdown data/items.ts -- Petaya Berry +1 SpAtk at 25% HP
   it("given Pokemon at 25% HP with Petaya Berry, when on-damage-taken, then +1 SpAtk and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.petayaBerry, hp: 200, currentHp: 50 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.petayaBerry,
+      hp: 200,
+      currentHp: 50,
+    });
     const ctx = createItemContext({ pokemon, damage: 10 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1098,7 +1184,11 @@ describe("Pinch Berries", () => {
   // Pinch berry does not activate above threshold
   it("given Pokemon at 30% HP with Liechi Berry, when on-damage-taken, then no activation (above 25% threshold)", () => {
     // 200 * 0.25 = 50; currentHp = 60 > 50 does not trigger
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.liechiBerry, hp: 200, currentHp: 60 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.liechiBerry,
+      hp: 200,
+      currentHp: 60,
+    });
     const ctx = createItemContext({ pokemon, damage: 10 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -1164,7 +1254,10 @@ describe("Status Orbs", () => {
 
   // Source: Showdown -- Poison types immune to Toxic Orb
   it("given Poison-type Pokemon with Toxic Orb, when end-of-turn, then no activation (immune)", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.toxicOrb, types: [TEST_TYPE_IDS.poison] });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.toxicOrb,
+      types: [TEST_TYPE_IDS.poison],
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(false);
   });
@@ -1179,14 +1272,20 @@ describe("Status Orbs", () => {
 
   // Source: Showdown -- Fire types immune to Flame Orb
   it("given Fire-type Pokemon with Flame Orb, when end-of-turn, then no activation (immune)", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.flameOrb, types: [TEST_TYPE_IDS.fire] });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.flameOrb,
+      types: [TEST_TYPE_IDS.fire],
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(false);
   });
 
   // Already-statused Pokemon do not gain another status
   it("given already-burned Pokemon with Toxic Orb, when end-of-turn, then no activation", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.toxicOrb, status: TEST_STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.toxicOrb,
+      status: TEST_STATUS_IDS.burn,
+    });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon }));
     expect(result.activated).toBe(false);
   });
@@ -1351,7 +1450,9 @@ describe("Consumable Items", () => {
 
     // Source: Showdown data/items.ts -- Throat Spray +1 SpAtk on sound
     it("given Throat Spray with sound move, when checking effect, then returns +1 SpAtk consumed", () => {
-      const result = getConsumableItemEffect(TEST_ITEM_IDS.throatSpray, { moveFlags: { sound: true } });
+      const result = getConsumableItemEffect(TEST_ITEM_IDS.throatSpray, {
+        moveFlags: { sound: true },
+      });
       expect(result).toEqual({ stat: TEST_STAT_IDS.spAttack, stages: 1, consumed: true });
     });
 
@@ -1476,9 +1577,16 @@ describe("Item Suppression", () => {
 
   // Source: Showdown data/moves.ts -- Magic Room blocks all held item effects
   it("given Magic Room active with Leftovers holder, when end-of-turn, then no activation", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.leftovers, hp: 200, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.leftovers,
+      hp: 200,
+      currentHp: 100,
+    });
     const state = createBattleState({ magicRoom: { active: true, turnsLeft: 3 } });
-    const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, createItemContext({ pokemon, state }));
+    const result = applyGen9HeldItem(
+      TEST_TRIGGER_IDS.endOfTurn,
+      createItemContext({ pokemon, state }),
+    );
     expect(result.activated).toBe(false);
   });
 });
@@ -1532,7 +1640,10 @@ describe("Edge cases", () => {
 
   it("given unknown trigger type, when applyGen9HeldItem called, then returns inactive", () => {
     const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.leftovers });
-    const result = applyGen9HeldItem(TEST_TRIGGER_IDS.unknown as string, createItemContext({ pokemon }));
+    const result = applyGen9HeldItem(
+      TEST_TRIGGER_IDS.unknown as string,
+      createItemContext({ pokemon }),
+    );
     expect(result.activated).toBe(false);
   });
 });
@@ -1544,7 +1655,11 @@ describe("Edge cases", () => {
 describe("Air Balloon on-damage-taken", () => {
   // Source: Showdown data/items.ts -- Air Balloon pops when hit by damaging move
   it("given Pokemon with Air Balloon hit by damaging move, when on-damage-taken, then balloon consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.airBalloon, hp: 200, currentHp: 180 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.airBalloon,
+      hp: 200,
+      currentHp: 180,
+    });
     const ctx = createItemContext({ pokemon, damage: 20 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1552,7 +1667,11 @@ describe("Air Balloon on-damage-taken", () => {
   });
 
   it("given Pokemon with Air Balloon taking 0 damage, when on-damage-taken, then no activation", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.airBalloon, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.airBalloon,
+      hp: 200,
+      currentHp: 200,
+    });
     const ctx = createItemContext({ pokemon, damage: 0 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -1566,7 +1685,11 @@ describe("Air Balloon on-damage-taken", () => {
 describe("Red Card and Eject Button", () => {
   // Source: Showdown data/items.ts -- Red Card forces attacker to switch
   it("given Pokemon with Red Card taking damage, when on-damage-taken, then forces opponent switch and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.redCard, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.redCard,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({ pokemon, damage: 50 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1576,7 +1699,11 @@ describe("Red Card and Eject Button", () => {
 
   // Source: Showdown data/items.ts -- Eject Button forces holder to switch
   it("given Pokemon with Eject Button taking damage, when on-damage-taken, then forces self switch and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.ejectButton, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.ejectButton,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({ pokemon, damage: 50 });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1614,7 +1741,11 @@ describe("Mental Herb", () => {
 describe("Sticky Barb", () => {
   // Source: Showdown data/items.ts -- Sticky Barb 1/8 HP damage each turn
   it("given Pokemon with Sticky Barb at end-of-turn, when triggered, then takes 1/8 maxHP damage", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.stickyBarb, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.stickyBarb,
+      hp: 200,
+      currentHp: 200,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -1624,7 +1755,11 @@ describe("Sticky Barb", () => {
 
   // Different maxHP for triangulation
   it("given Pokemon with Sticky Barb with maxHP 160, when end-of-turn, then takes 20 damage", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.stickyBarb, hp: 160, currentHp: 160 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.stickyBarb,
+      hp: 160,
+      currentHp: 160,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen9HeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -1640,7 +1775,11 @@ describe("Sticky Barb", () => {
 describe("Type-triggered stat berries/items", () => {
   // Source: Showdown data/items.ts -- Absorb Bulb +1 SpA on Water hit
   it("given Pokemon with Absorb Bulb hit by Water move, when on-damage-taken, then +1 SpA and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.absorbBulb, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.absorbBulb,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.surf,
@@ -1654,7 +1793,11 @@ describe("Type-triggered stat berries/items", () => {
 
   // Absorb Bulb does not trigger on non-Water
   it("given Pokemon with Absorb Bulb hit by Fire move, when on-damage-taken, then no activation", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.absorbBulb, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.absorbBulb,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.flamethrower,
@@ -1666,7 +1809,11 @@ describe("Type-triggered stat berries/items", () => {
 
   // Source: Showdown data/items.ts -- Cell Battery +1 Atk on Electric hit
   it("given Pokemon with Cell Battery hit by Electric move, when on-damage-taken, then +1 Atk and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.cellBattery, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.cellBattery,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.thunderbolt,
@@ -1679,7 +1826,11 @@ describe("Type-triggered stat berries/items", () => {
 
   // Source: Showdown data/items.ts -- Snowball +1 Atk on Ice hit
   it("given Pokemon with Snowball hit by Ice move, when on-damage-taken, then +1 Atk and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.snowball, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.snowball,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.iceBeam,
@@ -1698,7 +1849,11 @@ describe("Type-triggered stat berries/items", () => {
 describe("Kee and Maranga Berries", () => {
   // Source: Showdown data/items.ts -- Kee Berry +1 Def on physical hit
   it("given Pokemon with Kee Berry hit by physical move, when on-damage-taken, then +1 Def and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.keeBerry, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.keeBerry,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.tackle,
@@ -1711,7 +1866,11 @@ describe("Kee and Maranga Berries", () => {
 
   // Source: Showdown data/items.ts -- Maranga Berry +1 SpDef on special hit
   it("given Pokemon with Maranga Berry hit by special move, when on-damage-taken, then +1 SpDef and consumed", () => {
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.marangaBerry, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.marangaBerry,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({
       pokemon,
       move: MOVE_FIXTURES.flamethrower,
@@ -1732,7 +1891,11 @@ describe("Gen 9 Ruleset -- applyHeldItem wiring", () => {
   // Verifies Gen9Ruleset.applyHeldItem delegates to applyGen9HeldItem (not a no-op)
   it("given Gen9Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen9 item handler", () => {
     const ruleset = new Gen9Ruleset();
-    const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.leftovers, hp: 160, currentHp: 120 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: TEST_ITEM_IDS.leftovers,
+      hp: 160,
+      currentHp: 120,
+    });
     const ctx = createItemContext({ pokemon });
     const result = ruleset.applyHeldItem(TEST_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);

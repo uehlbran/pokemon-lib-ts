@@ -1,5 +1,11 @@
-import type { AbilityContext, ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import {
+  type AbilityTrigger,
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
@@ -10,12 +16,11 @@ import {
   createIvs,
   createMoveSlot,
   createPokemonInstance,
-  SeededRandom,
-  type AbilityTrigger,
   type MoveData,
-  type PrimaryStatus,
   type PokemonInstance,
   type PokemonType,
+  type PrimaryStatus,
+  SeededRandom,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -327,7 +332,9 @@ describe("Disguise (Mimikyu)", () => {
       nickname: "Mimikyu",
       speciesId: SPECIES.mimikyu,
       move: CONTACT_MOVE,
-      volatiles: new Map<VolatileStatus, { turnsLeft: number }>([[DISGUISE_BROKEN, { turnsLeft: -1 }]]),
+      volatiles: new Map<VolatileStatus, { turnsLeft: number }>([
+        [DISGUISE_BROKEN, { turnsLeft: -1 }],
+      ]),
     });
 
     const result = handleGen7NewAbility(ctx);

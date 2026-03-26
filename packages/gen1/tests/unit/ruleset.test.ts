@@ -1,6 +1,11 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
-import { CORE_END_OF_TURN_EFFECT_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN1_TYPES, isGen1PhysicalType } from "../../src";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";

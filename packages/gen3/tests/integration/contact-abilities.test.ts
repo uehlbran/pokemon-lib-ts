@@ -14,12 +14,12 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen3Ability,
   createGen3DataManager,
   GEN3_ABILITY_IDS,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
-  applyGen3Ability,
 } from "../../src";
 
 /**
@@ -45,7 +45,7 @@ import {
 
 const DATA_MANAGER = createGen3DataManager();
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN3_ABILITY_IDS } as const;
-const TYPES = CORE_TYPE_IDS;
+const _TYPES = CORE_TYPE_IDS;
 const STATUSES = CORE_STATUS_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
@@ -153,10 +153,7 @@ function createOnFieldPokemon(opts: {
   } as unknown as ActivePokemon;
 }
 
-function createBattleState(
-  side0Active: ActivePokemon,
-  side1Active: ActivePokemon,
-): BattleState {
+function createBattleState(side0Active: ActivePokemon, side1Active: ActivePokemon): BattleState {
   return {
     sides: [
       {
@@ -203,7 +200,10 @@ describe("Gen 3 Static ability (on-contact)", () => {
   it("given defender with Static and rng < 0.3, when attacker makes contact, then paralysis is inflicted", () => {
     // rng.next() returns 0.1 (< 0.3 = triggers)
     // Source: pret/pokeemerald -- Static triggers when Random() % 100 < 30
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.pikachu, ability: ABILITIES.static });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.pikachu,
+      ability: ABILITIES.static,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
@@ -229,7 +229,10 @@ describe("Gen 3 Static ability (on-contact)", () => {
 
   it("given defender with Static and rng >= 0.3, when attacker makes contact, then no paralysis", () => {
     // rng.next() returns 0.5 (>= 0.3 = does not trigger)
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.pikachu, ability: ABILITIES.static });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.pikachu,
+      ability: ABILITIES.static,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.5]);
@@ -251,7 +254,10 @@ describe("Gen 3 Static ability (on-contact)", () => {
     // Source: pret/pokeemerald src/battle_util.c — CanBeStatusd has no Electric-type paralysis check.
     // Electric-type paralysis immunity was introduced in Gen 6 (blanket).
     // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.pikachu, ability: ABILITIES.static });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.pikachu,
+      ability: ABILITIES.static,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.pikachu });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]); // would trigger
@@ -272,8 +278,14 @@ describe("Gen 3 Static ability (on-contact)", () => {
 
   it("given attacker has Limber, when Static triggers, then paralysis is blocked by ability immunity", () => {
     // Source: pret/pokeemerald -- Limber prevents paralysis from any source
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.pikachu, ability: ABILITIES.static });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, ability: ABILITIES.limber });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.pikachu,
+      ability: ABILITIES.static,
+    });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      ability: ABILITIES.limber,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]); // would trigger
 
@@ -292,8 +304,14 @@ describe("Gen 3 Static ability (on-contact)", () => {
 
   it("given attacker already has a status, when Static would trigger, then no additional status", () => {
     // Source: pret/pokeemerald -- primary status prevents additional primary status
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.pikachu, ability: ABILITIES.static });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, status: STATUSES.burn });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.pikachu,
+      ability: ABILITIES.static,
+    });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      status: STATUSES.burn,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]); // would trigger
 
@@ -319,7 +337,10 @@ describe("Gen 3 Flame Body ability (on-contact)", () => {
   // Source: pret/pokeemerald -- Flame Body: 30% chance to burn on contact
 
   it("given defender with Flame Body and rng < 0.3, when attacker makes contact, then burn is inflicted", () => {
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.magcargo, ability: ABILITIES.flameBody });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.magcargo,
+      ability: ABILITIES.flameBody,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.2]);
@@ -344,7 +365,10 @@ describe("Gen 3 Flame Body ability (on-contact)", () => {
 
   it("given attacker is Fire-type, when Flame Body triggers, then burn is blocked by type immunity", () => {
     // Source: pret/pokeemerald -- Fire types immune to burn
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.magcargo, ability: ABILITIES.flameBody });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.magcargo,
+      ability: ABILITIES.flameBody,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.charizard });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
@@ -371,7 +395,10 @@ describe("Gen 3 Poison Point ability (on-contact)", () => {
   // Source: pret/pokeemerald -- Poison Point: 30% chance to poison on contact
 
   it("given defender with Poison Point and rng < 0.3, when attacker makes contact, then poison is inflicted", () => {
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.nidoking, ability: ABILITIES.poisonPoint });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.nidoking,
+      ability: ABILITIES.poisonPoint,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.15]);
@@ -396,7 +423,10 @@ describe("Gen 3 Poison Point ability (on-contact)", () => {
 
   it("given attacker is Poison-type, when Poison Point triggers, then poison is blocked by type immunity", () => {
     // Source: pret/pokeemerald -- Poison/Steel types immune to poison
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.nidoking, ability: ABILITIES.poisonPoint });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.nidoking,
+      ability: ABILITIES.poisonPoint,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.nidoranFemale });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
@@ -416,8 +446,14 @@ describe("Gen 3 Poison Point ability (on-contact)", () => {
 
   it("given attacker has Immunity ability, when Poison Point triggers, then poison is blocked", () => {
     // Source: pret/pokeemerald -- Immunity prevents poison from any source
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.nidoking, ability: ABILITIES.poisonPoint });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, ability: ABILITIES.immunity });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.nidoking,
+      ability: ABILITIES.poisonPoint,
+    });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      ability: ABILITIES.immunity,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
 
@@ -447,7 +483,10 @@ describe("Gen 3 Rough Skin ability (on-contact)", () => {
   it("given defender with Rough Skin and attacker has 160 max HP, when contact is made, then chip = floor(160/16) = 10", () => {
     // Source: Bulbapedia -- Gen 3 Rough Skin = 1/16 max HP
     // 160 / 16 = 10
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.gligar, ability: ABILITIES.roughSkin });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.gligar,
+      ability: ABILITIES.roughSkin,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, maxHp: 160 });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([]);
@@ -474,7 +513,10 @@ describe("Gen 3 Rough Skin ability (on-contact)", () => {
   it("given defender with Rough Skin and attacker has 200 max HP, when contact is made, then chip = floor(200/16) = 12", () => {
     // Source: Bulbapedia -- Gen 3 Rough Skin = 1/16 max HP
     // 200 / 16 = 12.5 => floor = 12
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.gligar, ability: ABILITIES.roughSkin });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.gligar,
+      ability: ABILITIES.roughSkin,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, maxHp: 200 });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([]);
@@ -499,7 +541,10 @@ describe("Gen 3 Rough Skin ability (on-contact)", () => {
 
   it("given attacker has 1 max HP, when Rough Skin triggers, then chip is clamped to minimum 1", () => {
     // Source: pret/pokeemerald -- minimum 1 HP damage
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.gligar, ability: ABILITIES.roughSkin });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.gligar,
+      ability: ABILITIES.roughSkin,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, maxHp: 1, hp: 1 });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([]);
@@ -537,7 +582,10 @@ describe("Gen 3 Effect Spore ability (on-contact)", () => {
     // Source: pret/pokeemerald — MOVE_EFFECT_SLEEP (value 1) is first status in 1/3 split
     // First rng.next() = 0.05 (< 0.1, triggers)
     // Second rng.next() = 0.1 (< 1/3, picks sleep)
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.breloom, ability: ABILITIES.effectSpore });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.breloom,
+      ability: ABILITIES.effectSpore,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.05, 0.1]);
@@ -564,7 +612,10 @@ describe("Gen 3 Effect Spore ability (on-contact)", () => {
     // Source: pret/pokeemerald — MOVE_EFFECT_POISON (value 2) is second status in 1/3 split
     // First rng.next() = 0.05 (< 0.1, triggers)
     // Second rng.next() = 0.5 (1/3 <= 0.5 < 2/3, picks poison)
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.breloom, ability: ABILITIES.effectSpore });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.breloom,
+      ability: ABILITIES.effectSpore,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.05, 0.5]);
@@ -591,7 +642,10 @@ describe("Gen 3 Effect Spore ability (on-contact)", () => {
     // Source: pret/pokeemerald — MOVE_EFFECT_BURN→PARALYSIS (value 3) is third in 1/3 split
     // First rng.next() = 0.05 (< 0.1, triggers)
     // Second rng.next() = 0.8 (>= 2/3, picks paralysis)
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.breloom, ability: ABILITIES.effectSpore });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.breloom,
+      ability: ABILITIES.effectSpore,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.05, 0.8]);
@@ -616,7 +670,10 @@ describe("Gen 3 Effect Spore ability (on-contact)", () => {
 
   it("given rng does not trigger (>= 0.1), when contact made, then no effect", () => {
     // Source: pret/pokeemerald — (Random() % 10) == 0, so >= 0.1 does not trigger
-    const defender = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.breloom, ability: ABILITIES.effectSpore });
+    const defender = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.breloom,
+      ability: ABILITIES.effectSpore,
+    });
     const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.15]);
@@ -649,7 +706,10 @@ describe("Gen 3 Cute Charm ability (on-contact)", () => {
       ability: ABILITIES.cuteCharm,
       gender: GENDERS.female,
     });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, gender: GENDERS.male });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      gender: GENDERS.male,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.2]);
 
@@ -677,7 +737,10 @@ describe("Gen 3 Cute Charm ability (on-contact)", () => {
       ability: ABILITIES.cuteCharm,
       gender: GENDERS.male,
     });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, gender: GENDERS.male });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      gender: GENDERS.male,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
 
@@ -700,7 +763,10 @@ describe("Gen 3 Cute Charm ability (on-contact)", () => {
       ability: ABILITIES.cuteCharm,
       gender: GENDERS.female,
     });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, gender: GENDERS.genderless });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      gender: GENDERS.genderless,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
 
@@ -724,7 +790,11 @@ describe("Gen 3 Cute Charm ability (on-contact)", () => {
       ability: ABILITIES.cuteCharm,
       gender: GENDERS.female,
     });
-    const attacker = createOnFieldPokemon({ speciesId: GEN3_SPECIES_IDS.rattata, ability: ABILITIES.oblivious, gender: GENDERS.male });
+    const attacker = createOnFieldPokemon({
+      speciesId: GEN3_SPECIES_IDS.rattata,
+      ability: ABILITIES.oblivious,
+      gender: GENDERS.male,
+    });
     const state = createBattleState(attacker, defender);
     const rng = createMockRng([0.1]);
 

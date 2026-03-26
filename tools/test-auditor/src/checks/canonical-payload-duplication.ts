@@ -6,7 +6,10 @@ const COMMENT_LINE_RE = /^\s*(?:\/\/|\/\*|\*)/;
 const FIELD_PATTERNS: ReadonlyArray<{ kind: string; re: RegExp }> = [
   { kind: "display name", re: /\bdisplayName:\s*["'`]/ },
   { kind: "move category", re: /\bcategory:\s*["'`](?:physical|special|status)["'`]/ },
-  { kind: "move metadata", re: /\b(?:power|accuracy|priority|pp|maxPP|currentPP|ppUps):\s*(?:-?\d+(?:\.\d+)?|true|false)\b/ },
+  {
+    kind: "move metadata",
+    re: /\b(?:power|accuracy|priority|pp|maxPP|currentPP|ppUps):\s*(?:-?\d+(?:\.\d+)?|true|false)\b/,
+  },
   { kind: "species typings", re: /\btypes:\s*\[/ },
   { kind: "species base stats", re: /\bbaseStats:\s*\{/ },
   { kind: "species abilities", re: /\babilities:\s*\{/ },
@@ -14,17 +17,26 @@ const FIELD_PATTERNS: ReadonlyArray<{ kind: string; re: RegExp }> = [
 ];
 
 const HELPER_SIGNATURE_PATTERNS: ReadonlyArray<{ kind: string; re: RegExp }> = [
-  { kind: "synthetic move helper category", re: /\b(?:createMove|makeMove)\([^,\n]+,\s*["'`](?:physical|special|status)["'`]/ },
+  {
+    kind: "synthetic move helper category",
+    re: /\b(?:createMove|makeMove)\([^,\n]+,\s*["'`](?:physical|special|status)["'`]/,
+  },
   {
     kind: "ambiguous move helper object call",
     re: /\b(?:makeMove|createMove)\(\s*\{/,
   },
 ];
 
-const DATA_BACKED_CONTEXT_RE = /\b(?:getMove|getSpecies|getItem|getAbility|getNature|createGen\d+DataManager|DATA_MANAGER)\b/;
+const DATA_BACKED_CONTEXT_RE =
+  /\b(?:getMove|getSpecies|getItem|getAbility|getNature|createGen\d+DataManager|DATA_MANAGER)\b/;
 const EXPLICIT_OVERRIDE_RE = /(?:override|synthetic|custom|derived|scenario)/i;
 const PRIMARY_FIELD_KINDS = new Set(["species base stats", "species abilities"]);
-const SPECIES_PAYLOAD_FIELD_KINDS = new Set(["display name", "species base stats", "species abilities", "species gender ratio"]);
+const SPECIES_PAYLOAD_FIELD_KINDS = new Set([
+  "display name",
+  "species base stats",
+  "species abilities",
+  "species gender ratio",
+]);
 
 function getWindowFieldKinds(lines: string[]): Set<string> {
   const kinds = new Set<string>();
@@ -48,7 +60,10 @@ export function checkCanonicalPayloadDuplication(ctx: FileContext): Finding[] {
     for (const pattern of FIELD_PATTERNS) {
       if (!pattern.re.test(line)) continue;
 
-      const contextLines = ctx.lines.slice(Math.max(0, index - 4), Math.min(ctx.lines.length, index + 5));
+      const contextLines = ctx.lines.slice(
+        Math.max(0, index - 4),
+        Math.min(ctx.lines.length, index + 5),
+      );
       const contextWindow = contextLines.join("\n");
       const explicitIntentWindow = ctx.lines
         .slice(Math.max(0, index - 20), Math.min(ctx.lines.length, index + 3))

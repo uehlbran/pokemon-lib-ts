@@ -9,7 +9,6 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_MOVE_CATEGORIES,
@@ -163,7 +162,6 @@ function createMove(
     displayName: DEFAULT_MOVE.displayName,
     type,
     category,
-    power,
     power: category === CORE_MOVE_CATEGORIES.status ? 0 : power,
   } as MoveData;
 }
@@ -433,7 +431,11 @@ describe("Gen 2 Damage Calculation", () => {
       attacker,
       defender,
       move,
-      state: createMockState({ type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN2_MOVE_IDS.rainDance }),
+      state: createMockState({
+        type: CORE_WEATHER_IDS.rain,
+        turnsLeft: 5,
+        source: GEN2_MOVE_IDS.rainDance,
+      }),
       rng: createMockRng(255) as DamageContext["rng"],
       isCrit: false,
     };
@@ -2156,7 +2158,11 @@ describe("Gen 2 Damage Calculation", () => {
     const chart = createNeutralTypeChart();
     const species = createSpecies([CORE_TYPE_IDS.water]);
 
-    const rainState = createMockState({ type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: GEN2_MOVE_IDS.rainDance });
+    const rainState = createMockState({
+      type: CORE_WEATHER_IDS.rain,
+      turnsLeft: 5,
+      source: GEN2_MOVE_IDS.rainDance,
+    });
 
     const withItemCtx: DamageContext = {
       attacker: attackerWithItem,

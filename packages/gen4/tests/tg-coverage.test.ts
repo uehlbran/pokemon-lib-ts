@@ -31,8 +31,8 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   NEUTRAL_NATURES,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
@@ -125,7 +125,7 @@ function createActivePokemonFixture(overrides: {
     calculatedDefense: overrides.calculatedDefense,
     calculatedSpDefense: overrides.calculatedSpDefense,
   });
-    pokemon.ability = overrides.ability ?? ABILITIES.none;
+  pokemon.ability = overrides.ability ?? ABILITIES.none;
   return {
     pokemon,
     teamSlot: 0,
@@ -661,7 +661,9 @@ describe("Gen4 canInflictGen4Status — Electric type paralysis (issue #443)", (
   it("given a dual Electric/Flying-type Pokemon in Gen 4, when checking if paralysis can be inflicted, then returns true", () => {
     // Source: Showdown Gen 4 mod — no type-based paralysis immunity in Gen 4
     // Derivation: GEN4_STATUS_IMMUNITIES has no entry for 'paralysis' key
-    const electricFlyingPokemon = createActivePokemonFixture({ types: [TYPES.electric, TYPES.flying] });
+    const electricFlyingPokemon = createActivePokemonFixture({
+      types: [TYPES.electric, TYPES.flying],
+    });
 
     const canParalyze = canInflictGen4Status(STATUSES.paralysis, electricFlyingPokemon);
 
@@ -740,7 +742,10 @@ describe("applyGen4Ability on switch in — Download SpAtk scenario (issue #455)
     // Source: Gen4Abilities.ts line 223 — raisesAtk = foeStats.defense < foeStats.spDefense
     // When Def >= SpDef (here Def=120, SpDef=80), raisesAtk is false → raises SpAtk
     // Derivation: foe has Def=120, SpDef=80 → 120 >= 80 → +1 SpAtk (foe's SpDef is the weaker stat)
-    const opponent = createActivePokemonFixture({ calculatedDefense: 120, calculatedSpDefense: 80 });
+    const opponent = createActivePokemonFixture({
+      calculatedDefense: 120,
+      calculatedSpDefense: 80,
+    });
     const ctx = createAbilityContextFixture({ ability: ABILITIES.download, opponent });
     const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx);
 
@@ -756,7 +761,10 @@ describe("applyGen4Ability on switch in — Download SpAtk scenario (issue #455)
   it("given Download and foe's SpDef > foe's Def, when Pokemon switches in, then raises Atk by 1", () => {
     // Source: Gen4Abilities.ts line 223 — raisesAtk = foeStats.defense < foeStats.spDefense
     // Derivation: foe has Def=80, SpDef=120 → 80 < 120 → +1 Atk (foe's Def is the weaker stat)
-    const opponent = createActivePokemonFixture({ calculatedDefense: 80, calculatedSpDefense: 120 });
+    const opponent = createActivePokemonFixture({
+      calculatedDefense: 80,
+      calculatedSpDefense: 120,
+    });
     const ctx = createAbilityContextFixture({ ability: ABILITIES.download, opponent });
     const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx);
 

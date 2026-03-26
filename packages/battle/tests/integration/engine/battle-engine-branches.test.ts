@@ -4,9 +4,8 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  DataManager,
+  type DataManager,
 } from "@pokemon-lib-ts/core";
 import { GEN1_MOVE_IDS } from "@pokemon-lib-ts/gen1";
 import { GEN3_MOVE_IDS } from "@pokemon-lib-ts/gen3";
@@ -17,8 +16,8 @@ import type { BattleEvent } from "../../../src/events";
 import type { VolatileStatusState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createEngine(overrides?: {
   seed?: number;
@@ -303,7 +302,10 @@ describe("BattleEngine — branch coverage", () => {
 
       // Assert
       const subEnd = events.find(
-        (e) => e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.substitute,
+        (e) =>
+          e.type === "volatile-end" &&
+          "volatile" in e &&
+          e.volatile === CORE_VOLATILE_IDS.substitute,
       );
       expect(subEnd).toBeDefined();
       expect(engine.state.sides[1].active[0]?.substituteHp).toBe(0);
@@ -762,7 +764,9 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine({ seed: 0 });
       engine.start();
 
-      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 5 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, {
+        turnsLeft: 5,
+      });
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -818,7 +822,9 @@ describe("BattleEngine — branch coverage", () => {
       const { engine, events } = createEngine();
       engine.start();
 
-      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: 0 });
+      engine.state.sides[1].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, {
+        turnsLeft: 0,
+      });
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -831,7 +837,9 @@ describe("BattleEngine — branch coverage", () => {
         pokemon: "Blastoise",
         volatile: CORE_VOLATILE_IDS.confusion,
       });
-      expect(engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)).toBe(false);
+      expect(
+        engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.confusion),
+      ).toBe(false);
       expect(
         events.find((e) => e.type === "move-start" && "pokemon" in e && e.pokemon === "Blastoise"),
       ).toEqual(

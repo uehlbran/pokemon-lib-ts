@@ -5,9 +5,9 @@ import { checkCanonicalPayloadDuplication } from "./canonical-payload-duplicatio
 import { checkInternalDomainMocking } from "./internal-domain-mock.ts";
 import { checkProvenance } from "./provenance.ts";
 import { checkRawReferenceIds } from "./raw-reference-id.ts";
+import { checkStaleTestComments } from "./stale-comments.ts";
 import { checkTestIsolation } from "./test-isolation.ts";
 import { checkTestNaming } from "./test-naming.ts";
-import { checkStaleTestComments } from "./stale-comments.ts";
 import { checkTodoSkipDebt } from "./todo-skip-debt.ts";
 
 export const ALL_CHECKS: readonly Check[] = [

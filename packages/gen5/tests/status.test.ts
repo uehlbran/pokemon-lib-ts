@@ -4,8 +4,8 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   type PrimaryStatus,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN5_ABILITY_IDS } from "../src";
@@ -272,7 +272,9 @@ describe("Gen5Ruleset status conditions", () => {
       // Source: Toxic increments: N/16 where N is the counter value
       const pokemon = createOnFieldPokemon({
         maxHp: 160,
-        volatileStatuses: new Map([[VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 3 } }]]),
+        volatileStatuses: new Map([
+          [VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 3 } }],
+        ]),
       });
       const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned, state);
@@ -285,7 +287,9 @@ describe("Gen5Ruleset status conditions", () => {
       // Triangulation case
       const pokemon = createOnFieldPokemon({
         maxHp: 160,
-        volatileStatuses: new Map([[VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 1 } }]]),
+        volatileStatuses: new Map([
+          [VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 1 } }],
+        ]),
       });
       const state = createBattleState();
       const damage = ruleset.applyStatusDamage(pokemon, STATUSES.badlyPoisoned, state);

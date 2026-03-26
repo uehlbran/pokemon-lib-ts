@@ -1,3 +1,6 @@
+import { describe, expect, it } from "vitest";
+import { GEN2_ITEM_IDS } from "../../../../gen2/src";
+import { createGen8DataManager, GEN8_SPECIES_IDS } from "../../../../gen8/src";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -8,9 +11,6 @@ import {
   CORE_TYPE_IDS,
   NATURES_BY_ID,
 } from "../../../src";
-import { describe, expect, it } from "vitest";
-import { GEN2_ITEM_IDS } from "../../../../gen2/src";
-import { createGen8DataManager, GEN8_SPECIES_IDS } from "../../../../gen8/src";
 import type { Learnset, PokemonSpeciesData } from "../../../src/entities/species";
 import {
   createMoveSlot,
@@ -601,7 +601,9 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng, { abilitySlot: CORE_ABILITY_SLOTS.hidden });
+    const instance = createPokemonInstance(species, 50, rng, {
+      abilitySlot: CORE_ABILITY_SLOTS.hidden,
+    });
 
     // Assert
     expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
@@ -613,7 +615,9 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng, { abilitySlot: CORE_ABILITY_SLOTS.normal2 });
+    const instance = createPokemonInstance(species, 50, rng, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
 
     // Assert
     expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
@@ -623,7 +627,9 @@ describe("createPokemonInstance", () => {
     const species = createSpeciesWithAbilities(DUAL_NORMAL_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    const instance = createPokemonInstance(species, 50, rng, { abilitySlot: CORE_ABILITY_SLOTS.normal2 });
+    const instance = createPokemonInstance(species, 50, rng, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    });
 
     // Derived from getAbilityForSlot: normal2 maps to abilities.normal[1] when present.
     expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal2);

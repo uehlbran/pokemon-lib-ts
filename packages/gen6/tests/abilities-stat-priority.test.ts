@@ -2,18 +2,17 @@ import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/ba
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
-  createMoveSlot,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -54,7 +53,7 @@ function createSyntheticPokemonInstance(overrides: {
   heldItem?: string | null;
   currentHp?: number;
   maxHp?: number;
-  gender?: typeof genderIds[keyof typeof genderIds];
+  gender?: (typeof genderIds)[keyof typeof genderIds];
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
   const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
@@ -563,12 +562,12 @@ describe("Justified (carry-forward)", () => {
 // ===========================================================================
 
 describe("Steadfast (carry-forward)", () => {
-    it("given Steadfast, when on-flinch, then +1 Speed", () => {
-      // Source: Showdown data/abilities.ts -- Steadfast: on flinch, boost spe
-      const ctx = createSyntheticAbilityContext({
-        ability: GEN6_ABILITY_IDS.steadfast,
-        trigger: abilityTriggers.onFlinch,
-      });
+  it("given Steadfast, when on-flinch, then +1 Speed", () => {
+    // Source: Showdown data/abilities.ts -- Steadfast: on flinch, boost spe
+    const ctx = createSyntheticAbilityContext({
+      ability: GEN6_ABILITY_IDS.steadfast,
+      trigger: abilityTriggers.onFlinch,
+    });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({

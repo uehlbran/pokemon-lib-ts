@@ -16,9 +16,9 @@ import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import type { ActivePokemon } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 const DEFAULT_CHARIZARD_STATS = {
   hp: 200,
@@ -175,8 +175,8 @@ describe("BattleEngine — advanced scenarios", () => {
           move: event.move,
         })),
       ).toEqual([
-      { type: "move-miss", side: 0, pokemon: "Charizard", move: CORE_MOVE_IDS.tackle },
-      { type: "move-miss", side: 1, pokemon: "Blastoise", move: CORE_MOVE_IDS.tackle },
+        { type: "move-miss", side: 0, pokemon: "Charizard", move: CORE_MOVE_IDS.tackle },
+        { type: "move-miss", side: 1, pokemon: "Blastoise", move: CORE_MOVE_IDS.tackle },
       ]);
     });
 
@@ -335,7 +335,11 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      expect(engine.state.weather).toEqual({ type: CORE_WEATHER_IDS.rain, turnsLeft: 1, source: "test" });
+      expect(engine.state.weather).toEqual({
+        type: CORE_WEATHER_IDS.rain,
+        turnsLeft: 1,
+        source: "test",
+      });
       expect(events.filter((event) => event.type === "weather-end")).toEqual([]);
     });
 
@@ -439,8 +443,7 @@ describe("BattleEngine — advanced scenarios", () => {
       // Assert
       expect(engine.state.sides[0].screens).toHaveLength(0);
       const screenEnd = events.find(
-        (event) =>
-          event.type === "screen-end" && event.side === 0 && event.screen === "safeguard",
+        (event) => event.type === "screen-end" && event.side === 0 && event.screen === "safeguard",
       );
       expect(screenEnd).toEqual({ type: "screen-end", side: 0, screen: "safeguard" });
       const screenEndIndex = events.indexOf(screenEnd);

@@ -1,16 +1,14 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
-  HAZARD_MAX_LAYERS,
   type EntryHazardType,
   type PrimaryStatus,
 } from "@pokemon-lib-ts/core";
-import { createGen6DataManager, GEN6_ABILITY_IDS, GEN6_TYPES, Gen6Ruleset } from "../../src";
 import { describe, expect, it } from "vitest";
+import { createGen6DataManager, GEN6_ABILITY_IDS, GEN6_TYPES, Gen6Ruleset } from "../../src";
 
 const DATA_MANAGER = createGen6DataManager();
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(1);

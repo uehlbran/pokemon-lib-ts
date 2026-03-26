@@ -47,16 +47,16 @@ function createOnFieldPokemon(overrides: {
         hp: maxHp,
         speed,
         attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+      },
+      currentHp: overrides.currentHp ?? maxHp,
+      status: overrides.status ?? null,
+      heldItem: overrides.heldItem ?? null,
+      speciesId: G_SPECIES.charizard,
+      nickname: "TestMon",
     },
-    currentHp: overrides.currentHp ?? maxHp,
-    status: overrides.status ?? null,
-    heldItem: overrides.heldItem ?? null,
-    speciesId: G_SPECIES.charizard,
-    nickname: "TestMon",
-  },
     ability: overrides.ability ?? C_ABILITIES.blaze,
     types: overrides.types ?? [C_TYPES.normal],
     volatileStatuses: overrides.volatileStatuses ?? new Map(),
@@ -72,13 +72,18 @@ function createOnFieldPokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function sampleProtectSuccessRate(consecutiveProtects: number, iterations: number, seed: number): number {
+function sampleProtectSuccessRate(
+  consecutiveProtects: number,
+  iterations: number,
+  seed: number,
+): number {
   const ruleset = new Gen5Ruleset();
   const rng = new SeededRandom(seed);
-  return Array.from({ length: iterations }, () => ruleset.rollProtectSuccess(consecutiveProtects, rng)).reduce(
-    (successCount, success) => successCount + (success ? 1 : 0),
-    0,
-  ) / iterations;
+  return (
+    Array.from({ length: iterations }, () =>
+      ruleset.rollProtectSuccess(consecutiveProtects, rng),
+    ).reduce((successCount, success) => successCount + (success ? 1 : 0), 0) / iterations
+  );
 }
 
 // --- Protect ---
@@ -380,7 +385,9 @@ describe("Gen5 status damage abilities", () => {
       maxHp: 200,
       ability: G_ABILITIES.magicGuard,
       status: C_STATUSES.badlyPoisoned,
-      volatileStatuses: new Map([[C_VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 3 } }]]),
+      volatileStatuses: new Map([
+        [C_VOLATILES.toxicCounter, { turnsLeft: 99, data: { counter: 3 } }],
+      ]),
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.badlyPoisoned, state);

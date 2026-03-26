@@ -207,8 +207,12 @@ describe("Gen9Ruleset -- canHitSemiInvulnerable", () => {
 
   it("given target is in shadow-force-charging, when any move is used, then it cannot hit", () => {
     // Source: Showdown data/moves.ts -- nothing bypasses Shadow Force / Phantom Force
-    expect(ruleset.canHitSemiInvulnerable(MOVES.thunder, VOLATILES.shadowForceCharging)).toBe(false);
-    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.shadowForceCharging)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.thunder, VOLATILES.shadowForceCharging)).toBe(
+      false,
+    );
+    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.shadowForceCharging)).toBe(
+      false,
+    );
     expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.shadowForceCharging)).toBe(false);
   });
 

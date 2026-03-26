@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { GEN4_ITEM_IDS } from "../../../../gen4/src";
+import { GEN8_ITEM_IDS } from "../../../../gen8/src";
 import { CORE_TYPE_IDS } from "../../../src";
 import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
 } from "../../../src/constants/damage-calc-shared";
-import { GEN4_ITEM_IDS } from "../../../../gen4/src";
-import { GEN8_ITEM_IDS } from "../../../../gen8/src";
 
 describe("shared damage calculation constants", () => {
   it("given the shared offensive item table, when imported, then it matches the Gen 4-9 base set", () => {

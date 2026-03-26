@@ -271,8 +271,16 @@ describe("Gen 4 Reckless", () => {
 describe("Gen 4 Rivalry", () => {
   it("given same-gender Rivalry attacker and defender, when damage is calculated, then damage is boosted", () => {
     // Source: Bulbapedia — Rivalry boosts power 25% against the same gender.
-    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.male, attack: 100 });
-    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: CORE_GENDERS.male, attack: 100 });
+    const attacker = createActivePokemon({
+      ability: ABILITIES.rivalry,
+      gender: CORE_GENDERS.male,
+      attack: 100,
+    });
+    const noAbilityAttacker = createActivePokemon({
+      ability: ABILITIES.none,
+      gender: CORE_GENDERS.male,
+      attack: 100,
+    });
     const defender = createActivePokemon({ gender: CORE_GENDERS.male, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);
@@ -292,8 +300,16 @@ describe("Gen 4 Rivalry", () => {
 
   it("given opposite-gender Rivalry attacker and defender, when damage is calculated, then damage is reduced", () => {
     // Source: Bulbapedia — Rivalry reduces power 25% against the opposite gender.
-    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.male, attack: 100 });
-    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: CORE_GENDERS.male, attack: 100 });
+    const attacker = createActivePokemon({
+      ability: ABILITIES.rivalry,
+      gender: CORE_GENDERS.male,
+      attack: 100,
+    });
+    const noAbilityAttacker = createActivePokemon({
+      ability: ABILITIES.none,
+      gender: CORE_GENDERS.male,
+      attack: 100,
+    });
     const defender = createActivePokemon({ gender: CORE_GENDERS.female, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);
@@ -313,8 +329,16 @@ describe("Gen 4 Rivalry", () => {
 
   it("given genderless defender, when Rivalry attacker uses Tackle, then damage is unchanged", () => {
     // Source: Bulbapedia — Rivalry has no effect if either Pokemon is genderless.
-    const attacker = createActivePokemon({ ability: ABILITIES.rivalry, gender: CORE_GENDERS.male, attack: 100 });
-    const noAbilityAttacker = createActivePokemon({ ability: ABILITIES.none, gender: CORE_GENDERS.male, attack: 100 });
+    const attacker = createActivePokemon({
+      ability: ABILITIES.rivalry,
+      gender: CORE_GENDERS.male,
+      attack: 100,
+    });
+    const noAbilityAttacker = createActivePokemon({
+      ability: ABILITIES.none,
+      gender: CORE_GENDERS.male,
+      attack: 100,
+    });
     const defender = createActivePokemon({ gender: CORE_GENDERS.genderless, defense: 100 });
     const move = TACKLE;
     const rng = createMockRng(100);

@@ -274,7 +274,9 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — layers must be 3
-    const spikes = engine.getState().sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
+    const spikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     expect(spikes?.layers).toBe(3);
 
     const hazardSetEvents = events.filter((e): e is HazardSetEvent => e.type === "hazard-set");
@@ -296,7 +298,9 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — layers must not exceed 3
-    const spikes = engine.getState().sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
+    const spikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     expect(spikes?.layers).toBe(3);
 
     // No hazard-set event should fire when already at max
@@ -320,9 +324,9 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const toxicSpikes = engine.getState().sides[1].hazards.find(
-      (h) => h.type === CORE_HAZARD_IDS.toxicSpikes,
-    );
+    const toxicSpikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     expect(toxicSpikes).toBeDefined();
     expect(toxicSpikes?.layers).toBe(1);
   });
@@ -345,9 +349,9 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — layers must be 2 for badly-poisoned switch-in to work
-    const toxicSpikes = engine.getState().sides[1].hazards.find(
-      (h) => h.type === CORE_HAZARD_IDS.toxicSpikes,
-    );
+    const toxicSpikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     expect(toxicSpikes?.layers).toBe(2);
 
     const hazardSetEvents = events.filter((e): e is HazardSetEvent => e.type === "hazard-set");
@@ -370,9 +374,9 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const toxicSpikes = engine.getState().sides[1].hazards.find(
-      (h) => h.type === CORE_HAZARD_IDS.toxicSpikes,
-    );
+    const toxicSpikes = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
     expect(toxicSpikes?.layers).toBe(2);
 
     // No hazard-set event at max layers
@@ -419,9 +423,9 @@ describe("Stealth Rock — single-layer hazard unaffected by layering bug", () =
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const stealthRock = engine.getState().sides[1].hazards.find(
-      (h) => h.type === CORE_HAZARD_IDS.stealthRock,
-    );
+    const stealthRock = engine
+      .getState()
+      .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.stealthRock);
     expect(stealthRock).toBeDefined();
     expect(stealthRock?.layers).toBe(1);
   });

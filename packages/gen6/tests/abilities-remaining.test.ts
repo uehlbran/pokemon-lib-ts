@@ -412,7 +412,11 @@ describe("Frisk (Gen 6: reveals all foes)", () => {
       ability: CORE_ABILITIES.none,
       heldItem: CORE_ITEMS.choiceBand,
     });
-    const ctx = createAbilityContext({ ability: ABILITIES.frisk, trigger: TRIGGERS.onSwitchIn, opponent });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.frisk,
+      trigger: TRIGGERS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.messages[0]).toContain(CORE_ITEMS.choiceBand);
@@ -420,8 +424,15 @@ describe("Frisk (Gen 6: reveals all foes)", () => {
 
   it("given Frisk, when opponent has no held item, then does not activate", () => {
     // Source: Showdown data/abilities.ts -- frisk: only reveals if item exists
-    const opponent = createSyntheticOnFieldPokemon({ ability: CORE_ABILITIES.none, heldItem: null });
-    const ctx = createAbilityContext({ ability: ABILITIES.frisk, trigger: TRIGGERS.onSwitchIn, opponent });
+    const opponent = createSyntheticOnFieldPokemon({
+      ability: CORE_ABILITIES.none,
+      heldItem: null,
+    });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.frisk,
+      trigger: TRIGGERS.onSwitchIn,
+      opponent,
+    });
     const result = handleGen6RemainingAbility(ctx);
     expect(result.activated).toBe(false);
   });

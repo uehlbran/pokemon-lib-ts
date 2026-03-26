@@ -1,9 +1,5 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import { applyGen5HeldItem, getPinchBerryThreshold } from "../src/Gen5Items";
-import { Gen5Ruleset } from "../src/Gen5Ruleset";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -19,14 +15,18 @@ import {
   createEvs,
   createFriendship,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
+  createGen5DataManager,
   GEN5_ABILITY_IDS,
   GEN5_ITEM_IDS,
   GEN5_MOVE_IDS,
   GEN5_SPECIES_IDS,
-  createGen5DataManager,
 } from "@pokemon-lib-ts/gen5";
+import { describe, expect, it } from "vitest";
+import { applyGen5HeldItem, getPinchBerryThreshold } from "../src/Gen5Items";
+import { Gen5Ruleset } from "../src/Gen5Ruleset";
 
 const gen5DataManager = createGen5DataManager();
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS } as const;
@@ -357,7 +357,9 @@ describe("Gen 5 Items -- Flame Orb", () => {
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: STATUS_IDS.burn }]);
+    expect(result.effects).toEqual([
+      { type: "inflict-status", target: "self", status: STATUS_IDS.burn },
+    ]);
   });
 
   it("given a Fire-type holding Flame Orb, when end-of-turn triggers, then it does not activate (type immune)", () => {
@@ -380,7 +382,11 @@ describe("Gen 5 Items -- Flame Orb", () => {
 describe("Gen 5 Items -- Sitrus Berry", () => {
   it("given a Pokemon with 200 max HP at 50% HP holding Sitrus Berry, when end-of-turn triggers, then it heals 50 HP and is consumed", () => {
     // Source: Showdown data/items.ts -- Sitrus Berry heals 1/4 max HP
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 200, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.sitrusBerry,
+      hp: 200,
+      currentHp: 100,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -393,7 +399,11 @@ describe("Gen 5 Items -- Sitrus Berry", () => {
   it("given a Pokemon at 51% HP holding Sitrus Berry, when end-of-turn triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Sitrus Berry: activates at <= 50% HP
     // 102 > floor(200 / 2) = 100, so threshold is not met
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 200, currentHp: 102 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.sitrusBerry,
+      hp: 200,
+      currentHp: 102,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
@@ -403,7 +413,11 @@ describe("Gen 5 Items -- Sitrus Berry", () => {
     // Source: Showdown -- Sitrus Berry also triggers on-damage-taken
     // Note: currentHp is already post-damage (engine subtracts HP before on-damage-taken fires)
     // 100 <= floor(200/2) = 100, so threshold is met
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 200, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.sitrusBerry,
+      hp: 200,
+      currentHp: 100,
+    });
     const ctx = createItemContext({ pokemon, damage: 100 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -467,7 +481,10 @@ describe("Gen 5 Items -- Lum Berry", () => {
 describe("Gen 5 Items -- Status-cure berries", () => {
   it("given a paralyzed Pokemon holding Cheri Berry, when end-of-turn triggers, then it cures paralysis and is consumed", () => {
     // Source: Showdown data/items.ts -- Cheri Berry onUpdate: cures 'par' status
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.cheriBerry, status: STATUS_IDS.paralysis });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.cheriBerry,
+      status: STATUS_IDS.paralysis,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -479,7 +496,10 @@ describe("Gen 5 Items -- Status-cure berries", () => {
 
   it("given a sleeping Pokemon holding Chesto Berry, when end-of-turn triggers, then it cures sleep and is consumed", () => {
     // Source: Showdown data/items.ts -- Chesto Berry onUpdate: cures 'slp' status
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.chestoBerry, status: STATUS_IDS.sleep });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.chestoBerry,
+      status: STATUS_IDS.sleep,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -491,7 +511,10 @@ describe("Gen 5 Items -- Status-cure berries", () => {
 
   it("given a poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then it cures poison and is consumed", () => {
     // Source: Showdown data/items.ts -- Pecha Berry onUpdate: cures 'psn' and 'tox' status
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.pechaBerry, status: STATUS_IDS.poison });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pechaBerry,
+      status: STATUS_IDS.poison,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -503,7 +526,10 @@ describe("Gen 5 Items -- Status-cure berries", () => {
 
   it("given a badly-poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then it cures badly-poisoned", () => {
     // Source: Showdown data/items.ts -- Pecha Berry cures both 'psn' and 'tox' (badly-poisoned)
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.pechaBerry, status: STATUS_IDS.badlyPoisoned });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.pechaBerry,
+      status: STATUS_IDS.badlyPoisoned,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -515,7 +541,10 @@ describe("Gen 5 Items -- Status-cure berries", () => {
 
   it("given a burned Pokemon holding Rawst Berry, when end-of-turn triggers, then it cures burn and is consumed", () => {
     // Source: Showdown data/items.ts -- Rawst Berry onUpdate: cures 'brn' status
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.rawstBerry, status: STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.rawstBerry,
+      status: STATUS_IDS.burn,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -527,7 +556,10 @@ describe("Gen 5 Items -- Status-cure berries", () => {
 
   it("given a frozen Pokemon holding Aspear Berry, when end-of-turn triggers, then it cures freeze and is consumed", () => {
     // Source: Showdown data/items.ts -- Aspear Berry onUpdate: cures 'frz' status
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.aspearBerry, status: STATUS_IDS.freeze });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.aspearBerry,
+      status: STATUS_IDS.freeze,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -645,7 +677,11 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
 describe("Gen 5 Items -- Sticky Barb", () => {
   it("given a Pokemon with 200 max HP holding Sticky Barb, when end-of-turn triggers, then it takes 25 HP damage (floor(200/8))", () => {
     // Source: Showdown data/items.ts -- Sticky Barb onResidual: 1/8 max HP
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.stickyBarb, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.stickyBarb,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -729,7 +765,13 @@ describe("Gen5Ruleset.capLethalDamage -- Focus Band (authoritative handler)", ()
     const ruleset = new Gen5Ruleset();
     const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.focusBand, hp: 200, currentHp: 60 });
     const state = { ...createBattleState(), rng: new SeededRandom(7) } as unknown as BattleState;
-    const luckyResult = ruleset.capLethalDamage(300, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const luckyResult = ruleset.capLethalDamage(
+      300,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(luckyResult.survived).toBe(true);
     expect(luckyResult.damage).toBe(59); // currentHp - 1 = 60 - 1 = 59; HP after = 60 - 59 = 1
     expect(luckyResult.messages[0]).toContain("Focus Band");
@@ -739,10 +781,20 @@ describe("Gen5Ruleset.capLethalDamage -- Focus Band (authoritative handler)", ()
     // Source: Showdown data/items.ts -- Focus Band 10% chance; most seeds fail
     // Find a seed where ALL 200 rolls fail (highly likely for a single seed at 10% chance)
     const ruleset = new Gen5Ruleset();
-    const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.focusBand, hp: 100, currentHp: 100 });
+    const defender = createOnFieldPokemon({
+      heldItem: ITEM_IDS.focusBand,
+      hp: 100,
+      currentHp: 100,
+    });
     // SeededRandom seed=42 consistently fails the 10% check
     const state = { ...createBattleState(), rng: new SeededRandom(42) } as unknown as BattleState;
-    const result = ruleset.capLethalDamage(100, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      100,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(false);
     expect(result.damage).toBe(100); // Original lethal damage unchanged
   });
@@ -764,7 +816,13 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
       currentHp: 200,
     });
     const state = createBattleState();
-    const result = ruleset.capLethalDamage(300, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      300,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(false);
     expect(result.damage).toBe(300);
     expect(result.consumedItem).toBeUndefined();
@@ -774,7 +832,9 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
     // Source: Showdown data/moves.ts -- embargo: target's item is unusable
     // Source: Showdown data/items.ts -- Focus Sash: not activated when items are suppressed
     const ruleset = new Gen5Ruleset();
-    const volatiles = new Map<string, { turnsLeft: number }>([[VOLATILE_IDS.embargo, { turnsLeft: 5 }]]);
+    const volatiles = new Map<string, { turnsLeft: number }>([
+      [VOLATILE_IDS.embargo, { turnsLeft: 5 }],
+    ]);
     const defender = createOnFieldPokemon({
       heldItem: ITEM_IDS.focusSash,
       hp: 200,
@@ -782,7 +842,13 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
       volatiles,
     });
     const state = createBattleState();
-    const result = ruleset.capLethalDamage(300, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      300,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(false);
     expect(result.damage).toBe(300);
     expect(result.consumedItem).toBeUndefined();
@@ -800,7 +866,13 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
       ...createBattleState(),
       magicRoom: { active: true, turnsLeft: 3 },
     } as unknown as BattleState;
-    const result = ruleset.capLethalDamage(300, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      300,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(false);
     expect(result.damage).toBe(300);
     expect(result.consumedItem).toBeUndefined();
@@ -822,7 +894,13 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
       ...createBattleState(),
       rng: new SeededRandom(7),
     } as unknown as BattleState;
-    const result = ruleset.capLethalDamage(200, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      200,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(false);
     expect(result.damage).toBe(200);
   });
@@ -832,7 +910,9 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
     // Verification: seed 7 is a lucky Focus Band seed without suppression, so using it here
     // proves Embargo blocks the activation rather than relying on an unlucky roll.
     const ruleset = new Gen5Ruleset();
-    const volatiles = new Map<string, { turnsLeft: number }>([[VOLATILE_IDS.embargo, { turnsLeft: 5 }]]);
+    const volatiles = new Map<string, { turnsLeft: number }>([
+      [VOLATILE_IDS.embargo, { turnsLeft: 5 }],
+    ]);
     const defender = createOnFieldPokemon({
       heldItem: ITEM_IDS.focusBand,
       hp: 100,
@@ -843,7 +923,13 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
       ...createBattleState(),
       rng: new SeededRandom(7),
     } as unknown as BattleState;
-    const result = ruleset.capLethalDamage(200, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      200,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(false);
     expect(result.damage).toBe(200);
   });
@@ -858,7 +944,13 @@ describe("Gen5Ruleset.capLethalDamage -- item suppression (#804)", () => {
       currentHp: 200,
     });
     const state = createBattleState();
-    const result = ruleset.capLethalDamage(300, defender, defender, createCanonicalMove(MOVE_IDS.tackle), state);
+    const result = ruleset.capLethalDamage(
+      300,
+      defender,
+      defender,
+      createCanonicalMove(MOVE_IDS.tackle),
+      state,
+    );
     expect(result.survived).toBe(true);
     expect(result.damage).toBe(199); // maxHp - 1 = 200 - 1 = 199
     expect(result.consumedItem).toBe(ITEM_IDS.focusSash);
@@ -875,7 +967,11 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
     // Source: Showdown data/items.ts -- Liechi Berry: +1 Atk at <=25% HP
     // Note: currentHp is already post-damage (engine subtracts HP before on-damage-taken fires)
     // 49 <= floor(200*0.25) = 50, so threshold is met
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.liechiBerry, hp: 200, currentHp: 49 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.liechiBerry,
+      hp: 200,
+      currentHp: 49,
+    });
     const ctx = createItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -888,7 +984,11 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   it("given a Pokemon at 26% HP after damage holding Liechi Berry, when on-damage-taken triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- pinch berries activate at <= 25% HP threshold
     // Note: currentHp is already post-damage. 51 > floor(200 * 0.25) = 50, so threshold is not met
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.liechiBerry, hp: 200, currentHp: 51 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.liechiBerry,
+      hp: 200,
+      currentHp: 51,
+    });
     const ctx = createItemContext({ pokemon, damage: 49 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -916,7 +1016,11 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   it("given Ganlon Berry activating, then it boosts Defense", () => {
     // Source: Showdown data/items.ts -- Ganlon Berry onEat: boosts: { def: 1 }
     // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.ganlonBerry, hp: 200, currentHp: 49 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.ganlonBerry,
+      hp: 200,
+      currentHp: 49,
+    });
     const ctx = createItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -944,7 +1048,11 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   it("given Petaya Berry activating, then it boosts Sp. Atk", () => {
     // Source: Showdown data/items.ts -- Petaya Berry onEat: boosts: { spa: 1 }
     // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.petayaBerry, hp: 200, currentHp: 49 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.petayaBerry,
+      hp: 200,
+      currentHp: 49,
+    });
     const ctx = createItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -958,7 +1066,11 @@ describe("Gen 5 Items -- Stat pinch berries", () => {
   it("given Apicot Berry activating, then it boosts Sp. Def", () => {
     // Source: Showdown data/items.ts -- Apicot Berry onEat: boosts: { spd: 1 }
     // Note: currentHp is already post-damage. 49 <= floor(200*0.25) = 50
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.apicotBerry, hp: 200, currentHp: 49 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.apicotBerry,
+      hp: 200,
+      currentHp: 49,
+    });
     const ctx = createItemContext({ pokemon, damage: 51 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -999,7 +1111,11 @@ describe("Gen 5 Items -- Rocky Helmet", () => {
   it("given a defender with Rocky Helmet hit by a contact move, when on-contact triggers, then attacker takes 1/6 attacker max HP", () => {
     // Source: Showdown data/items.ts -- Rocky Helmet onDamagingHit:
     //   if (move.flags['contact']) this.damage(source.baseMaxhp / 6, source, target)
-    const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.rockyHelmet, hp: 200, currentHp: 150 });
+    const defender = createOnFieldPokemon({
+      heldItem: ITEM_IDS.rockyHelmet,
+      hp: 200,
+      currentHp: 150,
+    });
     const attacker = createOnFieldPokemon({ hp: 300, currentHp: 300 });
     const sides = [
       { active: [defender], team: [], format: "singles" },
@@ -1016,7 +1132,11 @@ describe("Gen 5 Items -- Rocky Helmet", () => {
 
   it("given a defender with Rocky Helmet hit by a non-contact move, when on-contact triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Rocky Helmet: only fires when move.flags['contact'] is true
-    const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.rockyHelmet, hp: 200, currentHp: 150 });
+    const defender = createOnFieldPokemon({
+      heldItem: ITEM_IDS.rockyHelmet,
+      hp: 200,
+      currentHp: 150,
+    });
     const nonContactMove = createSyntheticMoveFrom({ flags: { contact: false } });
     const ctx = createItemContext({ pokemon: defender, move: nonContactMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onContact, ctx);
@@ -1031,17 +1151,27 @@ describe("Gen 5 Items -- Rocky Helmet", () => {
 describe("Gen 5 Items -- Air Balloon", () => {
   it("given a defender with Air Balloon taking damage, when on-damage-taken triggers, then balloon pops (consumed)", () => {
     // Source: Showdown data/items.ts -- Air Balloon onDamagingHit: useItem()
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.airBalloon, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.airBalloon,
+      hp: 200,
+      currentHp: 200,
+    });
     const ctx = createItemContext({ pokemon, damage: 30 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "consume", target: "self", value: ITEM_IDS.airBalloon }]);
+    expect(result.effects).toEqual([
+      { type: "consume", target: "self", value: ITEM_IDS.airBalloon },
+    ]);
     expect(result.messages[0]).toContain("popped");
   });
 
   it("given a defender with Air Balloon taking 0 damage, when on-damage-taken triggers, then it does not pop", () => {
     // Source: Showdown data/items.ts -- Air Balloon onDamagingHit only fires on actual damaging hits
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.airBalloon, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.airBalloon,
+      hp: 200,
+      currentHp: 200,
+    });
     const ctx = createItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -1085,7 +1215,11 @@ describe("Gen 5 Items -- Eject Button", () => {
   it("given a defender with Eject Button taking damage, when on-damage-taken triggers, then holder is forced to switch and Eject Button is consumed", () => {
     // Source: Showdown data/items.ts -- Eject Button onAfterMoveSecondary:
     //   target.switchFlag = true
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.ejectButton, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.ejectButton,
+      hp: 200,
+      currentHp: 200,
+    });
     const ctx = createItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1099,7 +1233,11 @@ describe("Gen 5 Items -- Eject Button", () => {
 
   it("given a defender with Eject Button taking 0 damage, when on-damage-taken triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Eject Button only fires on actual damaging hits
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.ejectButton, hp: 200, currentHp: 200 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.ejectButton,
+      hp: 200,
+      currentHp: 200,
+    });
     const ctx = createItemContext({ pokemon, damage: 0 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -1114,7 +1252,11 @@ describe("Gen 5 Items -- Absorb Bulb", () => {
   it("given a defender with Absorb Bulb hit by a Water move, when on-damage-taken triggers, then SpA is boosted and consumed", () => {
     // Source: Showdown data/items.ts -- Absorb Bulb onDamagingHit:
     //   if (move.type === 'Water') boost spa by 1, useItem
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.absorbBulb, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.absorbBulb,
+      hp: 200,
+      currentHp: 150,
+    });
     const waterMove = createSyntheticMoveFrom({ type: "water" });
     const ctx = createItemContext({ pokemon, move: waterMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
@@ -1127,7 +1269,11 @@ describe("Gen 5 Items -- Absorb Bulb", () => {
 
   it("given a defender with Absorb Bulb hit by a non-Water move, when on-damage-taken triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Absorb Bulb: only triggers on Water-type moves
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.absorbBulb, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.absorbBulb,
+      hp: 200,
+      currentHp: 150,
+    });
     const fireMove = createSyntheticMoveFrom({ type: "fire" });
     const ctx = createItemContext({ pokemon, move: fireMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
@@ -1143,7 +1289,11 @@ describe("Gen 5 Items -- Cell Battery", () => {
   it("given a defender with Cell Battery hit by an Electric move, when on-damage-taken triggers, then Atk is boosted and consumed", () => {
     // Source: Showdown data/items.ts -- Cell Battery onDamagingHit:
     //   if (move.type === 'Electric') boost atk by 1, useItem
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.cellBattery, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.cellBattery,
+      hp: 200,
+      currentHp: 150,
+    });
     const electricMove = createSyntheticMoveFrom({ type: "electric" });
     const ctx = createItemContext({ pokemon, move: electricMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
@@ -1156,7 +1306,11 @@ describe("Gen 5 Items -- Cell Battery", () => {
 
   it("given a defender with Cell Battery hit by a non-Electric move, when on-damage-taken triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Cell Battery: only triggers on Electric-type moves
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.cellBattery, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.cellBattery,
+      hp: 200,
+      currentHp: 150,
+    });
     const normalMove = createSyntheticMoveFrom({ type: "normal" });
     const ctx = createItemContext({ pokemon, move: normalMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
@@ -1174,7 +1328,10 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
     // (no more affectedByKingsRock whitelist)
     // Verification: seed 7 deterministically hits the King's Rock flinch branch.
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.kingsRock });
-    const flinchResult = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, createItemContext({ pokemon, damage: 50, seed: 7 }));
+    const flinchResult = applyGen5HeldItem(
+      ITEM_TRIGGER_IDS.onHit,
+      createItemContext({ pokemon, damage: 50, seed: 7 }),
+    );
     expect(flinchResult.activated).toBe(true);
     expect(flinchResult.effects).toEqual([{ type: "flinch", target: "opponent" }]);
   });
@@ -1183,7 +1340,10 @@ describe("Gen 5 Items -- King's Rock / Razor Fang (no whitelist in Gen 5)", () =
     // Source: Showdown data/items.ts -- Razor Fang: same 10% flinch chance as King's Rock, applies to all damaging moves in Gen 5
     // Verification: seed 7 deterministically hits the Razor Fang flinch branch.
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.razorFang });
-    const flinchResult = applyGen5HeldItem(ITEM_TRIGGER_IDS.onHit, createItemContext({ pokemon, damage: 50, seed: 7 }));
+    const flinchResult = applyGen5HeldItem(
+      ITEM_TRIGGER_IDS.onHit,
+      createItemContext({ pokemon, damage: 50, seed: 7 }),
+    );
     expect(flinchResult.activated).toBe(true);
     expect(flinchResult.effects).toEqual([{ type: "flinch", target: "opponent" }]);
   });
@@ -1385,7 +1545,11 @@ describe("Gen 5 Items -- Metronome item", () => {
 describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
   it("given a Pokemon holding Jaboca Berry hit by a physical move, when on-damage-taken triggers, then attacker takes 1/8 attacker max HP retaliation", () => {
     // Source: Showdown data/items.ts -- Jaboca Berry: this.damage(source.baseMaxhp / 8)
-    const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.jabocaBerry, hp: 200, currentHp: 150 });
+    const defender = createOnFieldPokemon({
+      heldItem: ITEM_IDS.jabocaBerry,
+      hp: 200,
+      currentHp: 150,
+    });
     const attacker = createOnFieldPokemon({ hp: 400, currentHp: 400 });
     const sides = [
       { active: [defender], team: [], format: "singles" },
@@ -1411,7 +1575,11 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
 
   it("given a Pokemon holding Rowap Berry hit by a special move, when on-damage-taken triggers, then attacker takes 1/8 attacker max HP retaliation", () => {
     // Source: Showdown data/items.ts -- Rowap Berry: same formula as Jaboca
-    const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.rowapBerry, hp: 200, currentHp: 150 });
+    const defender = createOnFieldPokemon({
+      heldItem: ITEM_IDS.rowapBerry,
+      hp: 200,
+      currentHp: 150,
+    });
     const attacker = createOnFieldPokemon({ hp: 240, currentHp: 240 });
     const sides = [
       { active: [defender], team: [], format: "singles" },
@@ -1432,7 +1600,11 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
 
   it("given a Pokemon holding Jaboca Berry hit by a special move, when on-damage-taken triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Jaboca Berry: only fires when move.category === 'physical'
-    const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.jabocaBerry, hp: 200, currentHp: 150 });
+    const defender = createOnFieldPokemon({
+      heldItem: ITEM_IDS.jabocaBerry,
+      hp: 200,
+      currentHp: 150,
+    });
     const specialMove = createSyntheticMoveFrom({ category: "special" });
     const ctx = createItemContext({ pokemon: defender, move: specialMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
@@ -1447,7 +1619,11 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
 describe("Gen 5 Items -- Berry Juice", () => {
   it("given a Pokemon at 50% HP holding Berry Juice, when end-of-turn triggers, then it heals 20 HP and is consumed", () => {
     // Source: Showdown data/items.ts -- Berry Juice: restores 20 HP at <=50%
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.berryJuice, hp: 200, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.berryJuice,
+      hp: 200,
+      currentHp: 100,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
@@ -1459,7 +1635,11 @@ describe("Gen 5 Items -- Berry Juice", () => {
 
   it("given a Pokemon above 50% HP holding Berry Juice, when end-of-turn triggers, then it does not activate", () => {
     // Source: Showdown data/items.ts -- Berry Juice: threshold is currentHP <= maxHP / 2; 150 > 100 so no activation
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.berryJuice, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.berryJuice,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(false);

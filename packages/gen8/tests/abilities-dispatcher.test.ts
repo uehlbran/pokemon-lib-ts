@@ -23,8 +23,8 @@ import type {
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_MOVE_IDS,
@@ -32,12 +32,11 @@ import {
   CORE_SCREEN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
@@ -46,6 +45,7 @@ import {
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
 } from "@pokemon-lib-ts/gen8";
+import { describe, expect, it } from "vitest";
 import {
   handleGen8ContactAbility,
   handleGen8FieldAbility,
@@ -234,7 +234,10 @@ function createAbilityContext(opts: {
 describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
   // Source: Gen8Abilities.ts -- returns NO_ACTIVATION when trigger !== "on-switch-in"
   it("given handleGen8SwitchInAbility with wrong trigger (on-contact), when called, then returns not activated", () => {
-    const ctx = createAbilityContext({ ability: abilityIds.intimidate, trigger: triggerIds.onContact });
+    const ctx = createAbilityContext({
+      ability: abilityIds.intimidate,
+      trigger: triggerIds.onContact,
+    });
     const result = handleGen8SwitchInAbility(abilityIds.intimidate, triggerIds.onContact, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
@@ -242,7 +245,10 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
   });
 
   it("given handleGen8SwitchInAbility with wrong trigger (on-turn-end), when called, then returns not activated", () => {
-    const ctx = createAbilityContext({ ability: abilityIds.drizzle, trigger: triggerIds.onTurnEnd });
+    const ctx = createAbilityContext({
+      ability: abilityIds.drizzle,
+      trigger: triggerIds.onTurnEnd,
+    });
     const result = handleGen8SwitchInAbility(abilityIds.drizzle, triggerIds.onTurnEnd, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
@@ -294,7 +300,10 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
 describe("Gen 8 Abilities Dispatcher -- handleGen8ContactAbility", () => {
   // Source: Gen8Abilities.ts -- returns NO_ACTIVATION when trigger !== "on-contact"
   it("given handleGen8ContactAbility with wrong trigger (on-switch-in), when called, then returns not activated", () => {
-    const ctx = createAbilityContext({ ability: abilityIds.static, trigger: triggerIds.onSwitchIn });
+    const ctx = createAbilityContext({
+      ability: abilityIds.static,
+      trigger: triggerIds.onSwitchIn,
+    });
     const result = handleGen8ContactAbility(abilityIds.static, triggerIds.onSwitchIn, ctx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
@@ -518,7 +527,9 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   });
 
   it("given flying volatile and sky-uppercut move, when canHitSemiInvulnerable, then returns true", () => {
-    expect(ruleset.canHitSemiInvulnerable(CORE_MOVE_IDS.skyUppercut, volatileIds.flying)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(CORE_MOVE_IDS.skyUppercut, volatileIds.flying)).toBe(
+      true,
+    );
   });
 
   it("given flying volatile and hurricane move, when canHitSemiInvulnerable, then returns true", () => {
@@ -589,11 +600,15 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
   // Source: Bulbapedia -- "No move can hit a Pokemon during the charging turn of Shadow Force"
 
   it("given shadow-force-charging volatile and any move (tackle), when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.shadowForceCharging)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.shadowForceCharging)).toBe(
+      false,
+    );
   });
 
   it("given shadow-force-charging volatile and any move (earthquake), when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.shadowForceCharging)).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.shadowForceCharging),
+    ).toBe(false);
   });
 
   // --- Charging volatile (generic, NOT semi-invulnerable) ---
@@ -613,10 +628,14 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
 
   it("given unknown volatile (confusion) and any move, when canHitSemiInvulnerable, then returns false", () => {
     // confusion is not a semi-invulnerable state
-    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.confusion as any)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.confusion as any)).toBe(
+      false,
+    );
   });
 
   it("given unknown volatile (substitute) and any move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.substitute as any)).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.substitute as any)).toBe(
+      false,
+    );
   });
 });

@@ -1,19 +1,19 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_FIXED_POINT,
   CORE_GENDERS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
-  type MoveData,
   type MoveCategory,
+  type MoveData,
   type PokemonType,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -88,19 +88,24 @@ function createSyntheticOnFieldPokemon(overrides: {
   const spDefense = overrides.spDefense ?? 100;
   const speed = overrides.speed ?? 100;
   const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
-  const pokemon = createPokemonInstance(species, overrides.level ?? DEFAULT_LEVEL, new SeededRandom(7), {
-    nature: DEFAULT_NATURE,
-    ivs: createIvs(),
-    evs: createEvs(),
-    abilitySlot: CORE_ABILITY_SLOTS.normal1,
-    gender: CORE_GENDERS.male,
-    heldItem: overrides.heldItem ?? null,
-    isShiny: false,
-    metLocation: "test",
-    originalTrainer: "test",
-    originalTrainerId: 0,
-    pokeball: itemIds.pokeBall,
-  });
+  const pokemon = createPokemonInstance(
+    species,
+    overrides.level ?? DEFAULT_LEVEL,
+    new SeededRandom(7),
+    {
+      nature: DEFAULT_NATURE,
+      ivs: createIvs(),
+      evs: createEvs(),
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      gender: CORE_GENDERS.male,
+      heldItem: overrides.heldItem ?? null,
+      isShiny: false,
+      metLocation: "test",
+      originalTrainer: "test",
+      originalTrainerId: 0,
+      pokeball: itemIds.pokeBall,
+    },
+  );
   pokemon.moves = [createMoveSlot(tackle.id, tackle.pp)];
   pokemon.currentHp = overrides.currentHp ?? hp;
   pokemon.ability = overrides.ability ?? NONE_ABILITY;
@@ -301,66 +306,45 @@ describe("Gen 7 Ability Nerfs", () => {
       // Source: Showdown data/abilities.ts -- Prankster Gen 7: dark targets immune to boosted status
       // Source: Bulbapedia "Prankster" Gen 7 -- "status moves fail against Dark-type targets"
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.status,
-          [typeIds.dark],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.dark]),
       ).toBe(true);
     });
 
     it("given Prankster user using a status move vs Dark/Fairy-type, then blocked (partial Dark typing)", () => {
       // Source: Showdown data/abilities.ts -- checks if target has Dark type
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.status,
-          [typeIds.dark, typeIds.fairy],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [
+          typeIds.dark,
+          typeIds.fairy,
+        ]),
       ).toBe(true);
     });
 
     it("given Prankster user using a physical move vs Dark-type, then NOT blocked (non-status)", () => {
       // Source: Showdown data/abilities.ts -- only status moves are blocked
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.physical,
-          [typeIds.dark],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.physical, [typeIds.dark]),
       ).toBe(false);
     });
 
     it("given Prankster user using a special move vs Dark-type, then NOT blocked (non-status)", () => {
       // Source: Showdown data/abilities.ts -- only status moves are blocked
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.special,
-          [typeIds.dark],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.special, [typeIds.dark]),
       ).toBe(false);
     });
 
     it("given Prankster user using a status move vs Normal-type, then NOT blocked (non-Dark)", () => {
       // Source: Showdown data/abilities.ts -- only Dark-type targets
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.status,
-          [typeIds.normal],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.normal]),
       ).toBe(false);
     });
 
     it("given non-Prankster ability using status move vs Dark-type, then NOT blocked", () => {
       // Only Prankster triggers this check
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.keenEye,
-          moveCategories.status,
-          [typeIds.dark],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.keenEye, moveCategories.status, [typeIds.dark]),
       ).toBe(false);
     });
 
@@ -386,24 +370,20 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Gale Wings at full HP with Flying move, then isGaleWingsActive returns true", () => {
       // Source: Showdown data/abilities.ts -- galeWings Gen 7: hp === maxhp
       // Source: Bulbapedia "Gale Wings" Gen 7 -- "only activates when at full HP"
-      expect(
-        isGaleWingsActive(abilityIds.galeWings, typeIds.flying, DEFAULT_HP, DEFAULT_HP),
-      ).toBe(true);
+      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, DEFAULT_HP, DEFAULT_HP)).toBe(
+        true,
+      );
     });
 
     it("given Gale Wings at 199/200 HP with Flying move, then isGaleWingsActive returns false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: strictly requires full HP
       // This is the key Gen 7 nerf: even 1 HP of damage disables Gale Wings.
-      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, 199, DEFAULT_HP)).toBe(
-        false,
-      );
+      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, 199, DEFAULT_HP)).toBe(false);
     });
 
     it("given Gale Wings at 1/200 HP with Flying move, then isGaleWingsActive returns false", () => {
       // Source: Showdown data/abilities.ts -- galeWings: hp < maxhp -> no boost
-      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, 1, DEFAULT_HP)).toBe(
-        false,
-      );
+      expect(isGaleWingsActive(abilityIds.galeWings, typeIds.flying, 1, DEFAULT_HP)).toBe(false);
     });
 
     it("given Gale Wings at full HP with non-Flying move, then isGaleWingsActive returns false", () => {

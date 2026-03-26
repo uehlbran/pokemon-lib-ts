@@ -21,26 +21,24 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
-  CORE_ITEM_TRIGGER_IDS,
-  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_GIMMICK_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
-  CORE_MOVE_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createMoveSlot,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS, GEN1_TYPES } from "../../src";
+import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { createGen1DataManager } from "../../src/data";
-import { applyGen1BadgeBoosts } from "../../src/Gen1StatCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
+import { applyGen1BadgeBoosts } from "../../src/Gen1StatCalc";
 
 /**
  * Gen1Ruleset Branch Coverage Tests
@@ -72,12 +70,12 @@ const HYPER_BEAM = gen1DataManager.getMove(GEN1_MOVE_IDS.hyperBeam);
 const FISSURE = gen1DataManager.getMove(GEN1_MOVE_IDS.fissure);
 const NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.normal];
 const FIRE_TYPES: PokemonType[] = [CORE_TYPE_IDS.fire];
-const WATER_TYPES: PokemonType[] = [CORE_TYPE_IDS.water];
+const _WATER_TYPES: PokemonType[] = [CORE_TYPE_IDS.water];
 const ICE_TYPES: PokemonType[] = [CORE_TYPE_IDS.ice];
 const POISON_TYPES: PokemonType[] = [CORE_TYPE_IDS.poison];
 const ELECTRIC_TYPES: PokemonType[] = [CORE_TYPE_IDS.electric];
-const WATER_ROCK_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock];
-const WATER_NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.normal];
+const _WATER_ROCK_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.rock];
+const _WATER_NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.water, CORE_TYPE_IDS.normal];
 const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 
@@ -256,7 +254,9 @@ function makeBattleState(
   } as BattleState;
 }
 
-function createMoveEffectContextFixture(overrides: Partial<MoveEffectContext> = {}): MoveEffectContext {
+function createMoveEffectContextFixture(
+  overrides: Partial<MoveEffectContext> = {},
+): MoveEffectContext {
   const rng = new SeededRandom(42);
   return {
     attacker: createActivePokemonFixture(),
@@ -1999,7 +1999,10 @@ describe("Gen1Ruleset bag item support", () => {
 describe("Gen1Ruleset no-op methods", () => {
   it("given Gen1Ruleset, when calling applyAbility, then returns inactive result", () => {
     // Arrange / Act
-    const result = ruleset.applyAbility(ABILITY_TRIGGERS.onSwitchIn, {} as unknown as AbilityContext);
+    const result = ruleset.applyAbility(
+      ABILITY_TRIGGERS.onSwitchIn,
+      {} as unknown as AbilityContext,
+    );
     // Assert
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);

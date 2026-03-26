@@ -1,6 +1,11 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_ITEM_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "../src";
 import {
@@ -145,24 +150,32 @@ describe("Gen 8 Weather", () => {
     it("given Ice Face (Gen 8 ability), when checking hail immunity, then returns true", () => {
       // Source: Showdown data/abilities.ts -- iceface: onImmunity for hail
       // Source: Bulbapedia -- Ice Face: Eiscue's ability, is not damaged by hail
-      expect(isGen8WeatherImmune([TYPES.normal], WEATHER.hail, GEN8_ABILITY_IDS.iceFace)).toBe(true);
+      expect(isGen8WeatherImmune([TYPES.normal], WEATHER.hail, GEN8_ABILITY_IDS.iceFace)).toBe(
+        true,
+      );
     });
 
     it("given Slush Rush, when checking hail immunity, then returns true", () => {
       // Source: Showdown data/abilities.ts -- slushrush: onImmunity for hail
-      expect(isGen8WeatherImmune([TYPES.normal], WEATHER.hail, GEN8_ABILITY_IDS.slushRush)).toBe(true);
+      expect(isGen8WeatherImmune([TYPES.normal], WEATHER.hail, GEN8_ABILITY_IDS.slushRush)).toBe(
+        true,
+      );
     });
 
     // --- Item Immunity ---
 
     it("given Safety Goggles, when checking sandstorm immunity, then returns true", () => {
       // Source: Showdown data/items.ts -- safetygoggles: onImmunity for weather damage
-      expect(isGen8WeatherImmune([TYPES.normal], WEATHER.sand, undefined, ITEMS.safetyGoggles)).toBe(true);
+      expect(
+        isGen8WeatherImmune([TYPES.normal], WEATHER.sand, undefined, ITEMS.safetyGoggles),
+      ).toBe(true);
     });
 
     it("given Safety Goggles, when checking hail immunity, then returns true", () => {
       // Source: Showdown data/items.ts -- safetygoggles: onImmunity for weather damage
-      expect(isGen8WeatherImmune([TYPES.normal], WEATHER.hail, undefined, ITEMS.safetyGoggles)).toBe(true);
+      expect(
+        isGen8WeatherImmune([TYPES.normal], WEATHER.hail, undefined, ITEMS.safetyGoggles),
+      ).toBe(true);
     });
 
     // --- Rain/Sun have no chip damage ---

@@ -10,13 +10,16 @@
  */
 
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import { createOnFieldPokemon as createBattleOnFieldPokemon, createTestPokemon } from "@pokemon-lib-ts/battle/utils";
+import {
+  createOnFieldPokemon as createBattleOnFieldPokemon,
+  createTestPokemon,
+} from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   PokemonInstance,
   PokemonSpeciesData,
-  PrimaryStatus,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
@@ -27,11 +30,7 @@ import {
   NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen1DataManager,
-  GEN1_MOVE_IDS,
-  GEN1_SPECIES_IDS,
-} from "../../src";
+import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { getGen1CritRate } from "../../src/Gen1CritCalc";
 import { calculateGen1Damage } from "../../src/Gen1DamageCalc";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
@@ -144,7 +143,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Mewtwo at L100 max DVs max StatExp, when calculating HP, then returns 416", () => {
     // Arrange — base HP 106: 106*2+204 = 416
     const species = getSpecies(P.mewtwo);
-    const pokemon = makeInstance({ speciesId: P.mewtwo, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -154,7 +158,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Mewtwo at L100 max DVs max StatExp, when calculating Attack, then returns 319", () => {
     // Arrange — base Atk 110: 110*2+99 = 319
     const species = getSpecies(P.mewtwo);
-    const pokemon = makeInstance({ speciesId: P.mewtwo, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -164,7 +173,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Mewtwo at L100 max DVs max StatExp, when calculating Special, then returns 407", () => {
     // Arrange — base Spc 154: 154*2+99 = 407
     const species = getSpecies(P.mewtwo);
-    const pokemon = makeInstance({ speciesId: P.mewtwo, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — Gen 1 unified special; spAttack and spDefense are equal
@@ -175,7 +189,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Chansey at L100 max DVs max StatExp, when calculating HP, then returns 704", () => {
     // Arrange — base HP 250: 250*2+204 = 704
     const species = getSpecies(P.chansey);
-    const pokemon = makeInstance({ speciesId: P.chansey, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.chansey,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -185,7 +204,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Chansey at L100 max DVs max StatExp, when calculating all stats, then match formula", () => {
     // Arrange
     const species = getSpecies(P.chansey);
-    const pokemon = makeInstance({ speciesId: P.chansey, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.chansey,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -198,7 +222,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Snorlax at L100 max DVs max StatExp, when calculating HP, then returns 524", () => {
     // Arrange — base HP 160: 160*2+204 = 524
     const species = getSpecies(P.snorlax);
-    const pokemon = makeInstance({ speciesId: P.snorlax, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.snorlax,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -210,7 +239,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Alakazam at L100 max DVs max StatExp, when calculating stats, then special is 369", () => {
     // Arrange — base Spc 135: 135*2+99 = 369
     const species = getSpecies(P.alakazam);
-    const pokemon = makeInstance({ speciesId: P.alakazam, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.alakazam,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -222,7 +256,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Tauros at L100 max DVs max StatExp, when calculating stats, then match formula", () => {
     // Arrange — base: HP 75, Atk 100, Def 95, Spe 110, Spc 70
     const species = getSpecies(P.tauros);
-    const pokemon = makeInstance({ speciesId: P.tauros, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.tauros,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -236,7 +275,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Dragonite at L100 max DVs max StatExp, when calculating Attack, then returns 367", () => {
     // Arrange — base Atk 134: 134*2+99 = 367
     const species = getSpecies(P.dragonite);
-    const pokemon = makeInstance({ speciesId: P.dragonite, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.dragonite,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -247,7 +291,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Gengar at L100 max DVs max StatExp, when calculating stats, then speed and special match formula", () => {
     // Arrange — base Spe 110, Spc 130
     const species = getSpecies(P.gengar);
-    const pokemon = makeInstance({ speciesId: P.gengar, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.gengar,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -261,7 +310,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
     //     = floor((100+64)*50/100) + 60
     //     = floor(164*50/100) + 60 = floor(82) + 60 = 82 + 60 = 142
     const species = getSpecies(P.pikachu);
-    const pokemon = makeInstance({ speciesId: P.pikachu, level: 50, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.pikachu,
+      level: 50,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -276,7 +330,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
     // Wait — let me recalc: (90+15)*2 = 210; 210+64 = 274; 274*50/100 = 137; floor(137)+5 = 142
     // Hmm. Speed = 142? Let me verify with formula.
     const species = getSpecies(P.pikachu);
-    const pokemon = makeInstance({ speciesId: P.pikachu, level: 50, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.pikachu,
+      level: 50,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — Speed: floor(((90+15)*2+64)*50/100)+5 = floor(274*0.5)+5 = 137+5 = 142
@@ -286,7 +345,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
   it("given Starmie at L100 max DVs max StatExp, when calculating stats, then speed is 329 and special is 299", () => {
     // Arrange — base Spe 115, Spc 100
     const species = getSpecies(P.starmie);
-    const pokemon = makeInstance({ speciesId: P.starmie, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.starmie,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert
@@ -307,7 +371,12 @@ describe("3A: Stat Calculations (known Pokemon, L100 max DVs max StatExp)", () =
         speed: 100,
       },
     } as PokemonSpeciesData;
-    const pokemon = makeInstance({ speciesId: P.mewtwo, level: 100, ivs: MAX_DVS, evs: MAX_STAT_EXP });
+    const pokemon = makeInstance({
+      speciesId: P.mewtwo,
+      level: 100,
+      ivs: MAX_DVS,
+      evs: MAX_STAT_EXP,
+    });
     // Act
     const stats = calculateGen1Stats(pokemon, species);
     // Assert — Source: Gen 1 HP formula adds Level+10 while non-HP stats add +5,

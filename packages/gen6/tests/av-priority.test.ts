@@ -4,20 +4,19 @@ import type { PokemonInstance, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
-  CORE_NATURE_IDS,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
   Gen6Ruleset,
-  createGen6DataManager,
 } from "../src";
 
 /**

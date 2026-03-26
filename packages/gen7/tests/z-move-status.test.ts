@@ -9,12 +9,12 @@ import {
   createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import {
+  createGen7DataManager,
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
   GEN7_MOVE_IDS,
   GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
-  createGen7DataManager,
   getSpeciesZMoves,
 } from "@pokemon-lib-ts/gen7";
 import { describe, expect, it } from "vitest";
@@ -23,7 +23,10 @@ import { Gen7ZMove, getZMovePower } from "../src/Gen7ZMove";
 const DATA_MANAGER = createGen7DataManager();
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN7_SPECIES_IDS.pikachu);
 const ZERO_STAT_STAGES = Object.fromEntries(
-  ["attack", "defense", "spAttack", "spDefense", "speed", "accuracy", "evasion"].map((stat) => [stat, 0]),
+  ["attack", "defense", "spAttack", "spDefense", "speed", "accuracy", "evasion"].map((stat) => [
+    stat,
+    0,
+  ]),
 ) as ActivePokemon["statStages"];
 
 // ---------------------------------------------------------------------------

@@ -199,41 +199,54 @@ const ruleset = new Gen6Ruleset();
 describe("Gen6Ruleset — canHitSemiInvulnerable (remaining branches)", () => {
   it("given surf vs underwater, when checking, then returns true", () => {
     // Source: Bulbapedia -- Surf hits Dive targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.underwater as VolatileStatus)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.underwater as VolatileStatus)).toBe(
+      true,
+    );
   });
 
   it("given whirlpool vs underwater, when checking, then returns true", () => {
     // Source: Bulbapedia -- Whirlpool hits Dive targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.whirlpool, VOLATILES.underwater as VolatileStatus)).toBe(true);
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.whirlpool, VOLATILES.underwater as VolatileStatus),
+    ).toBe(true);
   });
 
   it("given tackle vs underwater, when checking, then returns false", () => {
     // Source: Bulbapedia -- regular moves miss Dive targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.underwater as VolatileStatus)).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.underwater as VolatileStatus),
+    ).toBe(false);
   });
 
   it("given any move vs shadow-force-charging, when checking, then returns false", () => {
     // Source: Bulbapedia -- nothing bypasses Shadow Force/Phantom Force
     expect(
-      ruleset.canHitSemiInvulnerable(MOVES.thunder, VOLATILES.shadowForceCharging as VolatileStatus),
+      ruleset.canHitSemiInvulnerable(
+        MOVES.thunder,
+        VOLATILES.shadowForceCharging as VolatileStatus,
+      ),
     ).toBe(false);
   });
 
   it("given any move vs charging, when checking, then returns true", () => {
     // Source: Bulbapedia -- charging (SolarBeam etc.) is not semi-invulnerable
-    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.charging as VolatileStatus)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.charging as VolatileStatus)).toBe(
+      true,
+    );
   });
 
   it("given any move vs unknown volatile, when checking, then returns false", () => {
     // Default branch
-    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.confusion as VolatileStatus)).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.confusion as VolatileStatus),
+    ).toBe(false);
   });
 
   it("given earthquake vs underground, when checking, then returns true", () => {
     // Source: Bulbapedia -- Earthquake hits Dig targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.underground as VolatileStatus)).toBe(
-      true,
-    );
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.underground as VolatileStatus),
+    ).toBe(true);
   });
 });
 
@@ -452,7 +465,12 @@ describe("Gen6Ruleset — misc method coverage", () => {
   it("given Gen6Ruleset, when getAvailableHazards, then includes sticky-web", () => {
     // Source: Bulbapedia -- Sticky Web introduced in Gen 6
     const hazards = ruleset.getAvailableHazards();
-    expect(hazards).toEqual([HAZARDS.stealthRock, HAZARDS.spikes, HAZARDS.toxicSpikes, HAZARDS.stickyWeb]);
+    expect(hazards).toEqual([
+      HAZARDS.stealthRock,
+      HAZARDS.spikes,
+      HAZARDS.toxicSpikes,
+      HAZARDS.stickyWeb,
+    ]);
   });
 
   it("given Gen6Ruleset, when hasTerrain, then returns true", () => {

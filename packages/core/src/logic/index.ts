@@ -48,6 +48,7 @@ export {
   determineGender,
   getDefaultMoves,
 } from "./pokemon-factory";
+export { calculateAllStats, calculateHp, calculateStat, getNatureModifier } from "./stat-calc";
 export {
   createDvs,
   createEvs,
@@ -57,6 +58,12 @@ export {
   DEFAULT_EV,
   DEFAULT_IV,
   DEFAULT_STAT_EXP,
+  type DvOverrides,
+  type Dvs,
+  type EvOverrides,
+  type Evs,
+  type IvOverrides,
+  type Ivs,
   MAX_DV,
   MAX_EV,
   MAX_IV,
@@ -66,12 +73,6 @@ export {
   MIN_EV,
   MIN_IV,
   MIN_STAT_EXP,
-  type Dvs,
-  type DvOverrides,
-  type Evs,
-  type EvOverrides,
-  type Ivs,
-  type IvOverrides,
   type StatExpOverrides,
   type StatExpValues,
   validateDvs,
@@ -79,7 +80,6 @@ export {
   validateIvs,
   validateStatExp,
 } from "./stat-inputs";
-export { calculateAllStats, calculateHp, calculateStat, getNatureModifier } from "./stat-calc";
 export {
   ACCURACY_STAGE_RATIOS,
   calculateAccuracy,

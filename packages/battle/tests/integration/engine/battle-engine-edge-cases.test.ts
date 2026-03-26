@@ -14,21 +14,21 @@ import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
-const defaultDataManager = createMockDataManager()
-const TACKLE_MOVE = defaultDataManager.getMove(CORE_MOVE_IDS.tackle)
-const SCRATCH_MOVE = defaultDataManager.getMove(CORE_MOVE_IDS.scratch)
-const CHARIZARD_ID = defaultDataManager.getSpeciesByName("charizard").id
-const BLASTOISE_ID = defaultDataManager.getSpeciesByName("blastoise").id
-const PIKACHU_ID = defaultDataManager.getSpeciesByName("pikachu").id
+const defaultDataManager = createMockDataManager();
+const TACKLE_MOVE = defaultDataManager.getMove(CORE_MOVE_IDS.tackle);
+const SCRATCH_MOVE = defaultDataManager.getMove(CORE_MOVE_IDS.scratch);
+const CHARIZARD_ID = defaultDataManager.getSpeciesByName("charizard").id;
+const BLASTOISE_ID = defaultDataManager.getSpeciesByName("blastoise").id;
+const PIKACHU_ID = defaultDataManager.getSpeciesByName("pikachu").id;
 
 function createMoveSlot(moveId: string, dataManager: DataManager = defaultDataManager) {
-  const move = dataManager.getMove(moveId)
+  const move = dataManager.getMove(moveId);
   return {
     moveId: move.id,
     currentPP: move.pp,
     maxPP: move.pp,
     ppUps: 0,
-  }
+  };
 }
 
 function createEngine(overrides?: {

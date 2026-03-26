@@ -34,20 +34,13 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  handleGen7DamageCalcAbility,
-  handleGen7DamageImmunityAbility,
-} from "../src/Gen7AbilitiesDamage";
 import { createGen7DataManager } from "../src";
-import { handleGen7StatAbility, isPranksterEligible } from "../src/Gen7AbilitiesStat";
-import { handleGen7SwitchAbility } from "../src/Gen7AbilitiesSwitch";
-import { applyGen7HeldItem } from "../src/Gen7Items";
 import {
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
@@ -55,6 +48,13 @@ import {
   GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
 } from "../src/data/reference-ids";
+import {
+  handleGen7DamageCalcAbility,
+  handleGen7DamageImmunityAbility,
+} from "../src/Gen7AbilitiesDamage";
+import { handleGen7StatAbility, isPranksterEligible } from "../src/Gen7AbilitiesStat";
+import { handleGen7SwitchAbility } from "../src/Gen7AbilitiesSwitch";
+import { applyGen7HeldItem } from "../src/Gen7Items";
 
 const ABILITY_IDS = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
@@ -65,7 +65,7 @@ const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
 const WEATHER_IDS = CORE_WEATHER_IDS satisfies Record<string, WeatherType>;
-const TERRAIN_IDS = {
+const _TERRAIN_IDS = {
   electric: CORE_TERRAIN_IDS.electric,
   grassy: CORE_TERRAIN_IDS.grassy,
   misty: CORE_TERRAIN_IDS.misty,
@@ -841,7 +841,11 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.ironFist,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move: createSyntheticMove({ id: MOVE_IDS.machPunch, type: TYPE_IDS.fighting, flags: { punch: true } }),
+        move: createSyntheticMove({
+          id: MOVE_IDS.machPunch,
+          type: TYPE_IDS.fighting,
+          flags: { punch: true },
+        }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1336,7 +1340,10 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.parentalBond,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move: createSyntheticMove({ power: 80, effect: { type: "multi-hit", minHits: 2, maxHits: 5 } as any }),
+        move: createSyntheticMove({
+          power: 80,
+          effect: { type: "multi-hit", minHits: 2, maxHits: 5 } as any,
+        }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1416,7 +1423,10 @@ describe("Gen7Items coverage gaps", () => {
 
     it("given Pecha Berry and badly-poisoned, then cures it", () => {
       // Source: Showdown -- Pecha Berry also cures badly-poisoned
-      const ctx = createItemContext({ item: ITEM_IDS.pechaBerry, status: STATUS_IDS.badlyPoisoned });
+      const ctx = createItemContext({
+        item: ITEM_IDS.pechaBerry,
+        status: STATUS_IDS.badlyPoisoned,
+      });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
     });
@@ -1464,7 +1474,9 @@ describe("Gen7Items coverage gaps", () => {
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       expect(
-        result.effects.some((e: any) => e.type === "volatile-cure" && e.value === VOLATILE_IDS.taunt),
+        result.effects.some(
+          (e: any) => e.type === "volatile-cure" && e.value === VOLATILE_IDS.taunt,
+        ),
       ).toBe(true);
     });
 
@@ -1744,7 +1756,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Liechi Berry (on-damage-taken)", () => {
     it("given Liechi Berry at <=25% HP, then +1 Attack", () => {
       // Source: Showdown data/items.ts -- Liechi Berry at pinch threshold
-      const ctx = createItemContext({ item: ITEM_IDS.liechiBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const ctx = createItemContext({
+        item: ITEM_IDS.liechiBerry,
+        maxHp: 200,
+        currentHp: 50,
+        damage: 10,
+      });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
@@ -1756,7 +1773,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Ganlon Berry (on-damage-taken)", () => {
     it("given Ganlon Berry at <=25% HP, then +1 Defense", () => {
       // Source: Showdown data/items.ts -- Ganlon Berry at pinch threshold
-      const ctx = createItemContext({ item: ITEM_IDS.ganlonBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const ctx = createItemContext({
+        item: ITEM_IDS.ganlonBerry,
+        maxHp: 200,
+        currentHp: 50,
+        damage: 10,
+      });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "defense")).toBe(true);
@@ -1766,7 +1788,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Salac Berry (on-damage-taken)", () => {
     it("given Salac Berry at <=25% HP, then +1 Speed", () => {
       // Source: Showdown data/items.ts -- Salac Berry at pinch threshold
-      const ctx = createItemContext({ item: ITEM_IDS.salacBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const ctx = createItemContext({
+        item: ITEM_IDS.salacBerry,
+        maxHp: 200,
+        currentHp: 50,
+        damage: 10,
+      });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "speed")).toBe(true);
@@ -1776,7 +1803,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Petaya Berry (on-damage-taken)", () => {
     it("given Petaya Berry at <=25% HP, then +1 Sp. Atk", () => {
       // Source: Showdown data/items.ts -- Petaya Berry at pinch threshold
-      const ctx = createItemContext({ item: ITEM_IDS.petayaBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const ctx = createItemContext({
+        item: ITEM_IDS.petayaBerry,
+        maxHp: 200,
+        currentHp: 50,
+        damage: 10,
+      });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "spAttack")).toBe(true);
@@ -1786,7 +1818,12 @@ describe("Gen7Items coverage gaps", () => {
   describe("Apicot Berry (on-damage-taken)", () => {
     it("given Apicot Berry at <=25% HP, then +1 Sp. Def", () => {
       // Source: Showdown data/items.ts -- Apicot Berry at pinch threshold
-      const ctx = createItemContext({ item: ITEM_IDS.apicotBerry, maxHp: 200, currentHp: 50, damage: 10 });
+      const ctx = createItemContext({
+        item: ITEM_IDS.apicotBerry,
+        maxHp: 200,
+        currentHp: 50,
+        damage: 10,
+      });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.some((e: any) => e.value === "spDefense")).toBe(true);
@@ -2158,7 +2195,10 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
   // --- Unknown trigger ---
   describe("unknown trigger", () => {
     it("given unknown trigger, returns inactive", () => {
-      const ctx = createAbilityContext({ ability: ABILITY_IDS.none, trigger: TRIGGER_IDS.onDamageCalc });
+      const ctx = createAbilityContext({
+        ability: ABILITY_IDS.none,
+        trigger: TRIGGER_IDS.onDamageCalc,
+      });
       const result = handleGen7SwitchAbility(TRIGGER_IDS.onDamageCalc as any, ctx);
       expect(result.activated).toBe(false);
     });

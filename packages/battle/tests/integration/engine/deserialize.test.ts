@@ -7,8 +7,8 @@ import type { BattleEvent, ExpGainEvent } from "../../../src/events";
 import type { BattleGimmickType } from "../../../src/ruleset";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createTestEngine(overrides?: {
   seed?: number;
@@ -380,7 +380,9 @@ describe("BattleEngine.deserialize", () => {
     // Source: the original attacker started at confusion turnsLeft = 2, and the mock ruleset consumes
     // one confusion turn during move resolution before the switch prompt, so the replacement inherits 1.
     expect(replacement.volatileStatuses.get(CORE_VOLATILE_IDS.confusion)).toEqual({ turnsLeft: 1 });
-    expect(replacement.volatileStatuses.get(CORE_VOLATILE_IDS.substitute)).toEqual({ turnsLeft: -1 });
+    expect(replacement.volatileStatuses.get(CORE_VOLATILE_IDS.substitute)).toEqual({
+      turnsLeft: -1,
+    });
   });
 
   it("given serialized switch-prompt state with one pending switch already recorded, when deserialized, then the remaining switch submission completes the prompt", () => {

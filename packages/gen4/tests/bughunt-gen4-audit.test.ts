@@ -26,12 +26,12 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
-  createGen4DataManager,
 } from "../src";
 import { applyGen4Ability } from "../src/Gen4Abilities";
 import { calculateGen4Damage } from "../src/Gen4DamageCalc";
@@ -525,10 +525,16 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
     // base: floor(floor(22*50*100/100)/50)+2 = floor(1100/50)+2 = 22+2 = 24
     // STAB (normal attacker, normal move): floor(24*1.5) = 36
     // With Reckless incorrectly boosted: floor(floor(22*60)/50)+2=26, STAB: floor(26*1.5)=39 (WRONG)
-    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN4_ABILITY_IDS.reckless });
+    const attacker = createActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN4_ABILITY_IDS.reckless,
+    });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const struggleMove = getGen4Move(GEN4_MOVE_IDS.struggle);
-    const plainAttacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: CORE_ABILITY_IDS.none });
+    const plainAttacker = createActivePokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+    });
     const rng = createMockRng(100);
     const state = createNullState();
 
@@ -836,7 +842,10 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
   it("given Klutz holder with Toxic Orb, when end-of-turn item trigger fires, then Toxic Orb does NOT inflict badly-poisoned", () => {
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects including orbs
-    const ctx = createItemContext({ heldItem: GEN4_ITEM_IDS.toxicOrb, ability: GEN4_ABILITY_IDS.klutz });
+    const ctx = createItemContext({
+      heldItem: GEN4_ITEM_IDS.toxicOrb,
+      ability: GEN4_ABILITY_IDS.klutz,
+    });
     const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
@@ -845,7 +854,10 @@ describe("Gen4Items Klutz — suppresses Toxic Orb and Flame Orb", () => {
   it("given Klutz holder with Flame Orb, when end-of-turn item trigger fires, then Flame Orb does NOT inflict burn", () => {
     // Source: Bulbapedia — Klutz: holder cannot use any held items
     // Source: Showdown Gen 4 mod — Klutz check gates all item effects including Flame Orb
-    const ctx = createItemContext({ heldItem: GEN4_ITEM_IDS.flameOrb, ability: GEN4_ABILITY_IDS.klutz });
+    const ctx = createItemContext({
+      heldItem: GEN4_ITEM_IDS.flameOrb,
+      ability: GEN4_ABILITY_IDS.klutz,
+    });
     const result = applyGen4HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
 
     expect(result.activated).toBe(false);
@@ -883,9 +895,15 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     const trickMove = dataManager.getMove(GEN4_MOVE_IDS.trick);
     expect(trickMove).toMatchObject({ id: GEN4_MOVE_IDS.trick }); // fail fast if move data is missing — that would be a regression
 
-    const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.klutz, types: [CORE_TYPE_IDS.normal] });
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.klutz,
+      types: [CORE_TYPE_IDS.normal],
+    });
     attacker.pokemon.heldItem = GEN4_ITEM_IDS.lifeOrb; // Klutz holder with an item to swap
-    const defender = createActivePokemon({ ability: GEN4_ABILITY_IDS.blaze, types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
     defender.pokemon.heldItem = GEN4_ITEM_IDS.choiceBand;
 
     const state = createNullState();
@@ -912,9 +930,15 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
     const trickMove = dataManager.getMove(GEN4_MOVE_IDS.trick);
     expect(trickMove).toMatchObject({ id: GEN4_MOVE_IDS.trick });
 
-    const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.klutz, types: [CORE_TYPE_IDS.normal] });
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.klutz,
+      types: [CORE_TYPE_IDS.normal],
+    });
     attacker.pokemon.heldItem = null; // No item — Trick still allowed even for Klutz with no item
-    const defender = createActivePokemon({ ability: GEN4_ABILITY_IDS.blaze, types: [CORE_TYPE_IDS.normal] });
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
     defender.pokemon.heldItem = GEN4_ITEM_IDS.leftovers;
 
     const state = createNullState();
@@ -959,7 +983,11 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
     //             floor(9  * 2.0) = 18 (water vs rock)
     //   Single (buggy): floor(19 * 1.0) = 19
     // Source: pret/pokeplatinum battle_lib.c:2625-2637 — BattleSystem_Divide per type
-    const attacker = createActivePokemon({ level: 50, spAttack: 100, types: [CORE_TYPE_IDS.normal] });
+    const attacker = createActivePokemon({
+      level: 50,
+      spAttack: 100,
+      types: [CORE_TYPE_IDS.normal],
+    });
     const defender = createActivePokemon({
       level: 50,
       spDefense: 100,
@@ -988,7 +1016,11 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
     //             floor(5  * 2.0) = 10 (water vs rock)
     //   Single (buggy): floor(11 * 1.0) = 11
     // Source: pret/pokeplatinum battle_lib.c:2625-2637 — same sequential pattern
-    const attacker = createActivePokemon({ level: 25, spAttack: 100, types: [CORE_TYPE_IDS.normal] });
+    const attacker = createActivePokemon({
+      level: 25,
+      spAttack: 100,
+      types: [CORE_TYPE_IDS.normal],
+    });
     const defender = createActivePokemon({
       level: 25,
       spDefense: 100,
@@ -1025,7 +1057,11 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
     // With status + Marvel Scale (def becomes floor(100*150/100)=150):
     //   step2=floor(22*40*100/150)=floor(586.67)=586; step3=floor(586/50)=11; base=13; roll=1.0x → 13
     // Source: pret/pokeplatinum src/battle/battle_lib.c:6799
-    const attackerBase = createActivePokemon({ level: 50, attack: 100, types: [CORE_TYPE_IDS.fire] });
+    const attackerBase = createActivePokemon({
+      level: 50,
+      attack: 100,
+      types: [CORE_TYPE_IDS.fire],
+    });
     const defenderNoStatus = createActivePokemon({
       level: 50,
       defense: 100,

@@ -98,48 +98,61 @@ describe("Gen6Ruleset — canHitSemiInvulnerable", () => {
 
   it("given thousand-arrows vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown data/moves.ts -- thousandarrows hits Flying semi-invulnerable state
-    expect(ruleset.canHitSemiInvulnerable(MOVES.thousandArrows, VOLATILES.flying as VolatileStatus)).toBe(
-      true,
-    );
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.thousandArrows, VOLATILES.flying as VolatileStatus),
+    ).toBe(true);
   });
 
   it("given hurricane vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Hurricane hits Fly/Bounce targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.hurricane, VOLATILES.flying as VolatileStatus)).toBe(true);
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.hurricane, VOLATILES.flying as VolatileStatus),
+    ).toBe(true);
   });
 
   it("given thunder vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Thunder hits Fly/Bounce targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.thunder, VOLATILES.flying as VolatileStatus)).toBe(true);
-  });
-
-  it("given flamethrower vs flying, when checking semi-invulnerable bypass, then returns false", () => {
-    // Source: Showdown -- normal moves cannot hit Fly targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.flamethrower, VOLATILES.flying as VolatileStatus)).toBe(false);
-  });
-
-  it("given earthquake vs underground, when checking semi-invulnerable bypass, then returns true", () => {
-    // Source: Showdown -- Earthquake hits Dig targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.underground as VolatileStatus)).toBe(
+    expect(ruleset.canHitSemiInvulnerable(MOVES.thunder, VOLATILES.flying as VolatileStatus)).toBe(
       true,
     );
   });
 
+  it("given flamethrower vs flying, when checking semi-invulnerable bypass, then returns false", () => {
+    // Source: Showdown -- normal moves cannot hit Fly targets
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.flamethrower, VOLATILES.flying as VolatileStatus),
+    ).toBe(false);
+  });
+
+  it("given earthquake vs underground, when checking semi-invulnerable bypass, then returns true", () => {
+    // Source: Showdown -- Earthquake hits Dig targets
+    expect(
+      ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.underground as VolatileStatus),
+    ).toBe(true);
+  });
+
   it("given surf vs underwater, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Surf hits Dive targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.underwater as VolatileStatus)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.surf, VOLATILES.underwater as VolatileStatus)).toBe(
+      true,
+    );
   });
 
   it("given any move vs shadow-force-charging, when checking semi-invulnerable bypass, then returns false", () => {
     // Source: Showdown -- nothing bypasses Shadow Force / Phantom Force
     expect(
-      ruleset.canHitSemiInvulnerable(MOVES.earthquake, VOLATILES.shadowForceCharging as VolatileStatus),
+      ruleset.canHitSemiInvulnerable(
+        MOVES.earthquake,
+        VOLATILES.shadowForceCharging as VolatileStatus,
+      ),
     ).toBe(false);
   });
 
   it("given any move vs charging, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- charging moves (SolarBeam) are not semi-invulnerable
-    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.charging as VolatileStatus)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVES.tackle, VOLATILES.charging as VolatileStatus)).toBe(
+      true,
+    );
   });
 });
 
@@ -312,7 +325,10 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Pokemon at full HP holding Focus Sash with Klutz, when lethal damage is dealt, then Focus Sash is suppressed", () => {
     // Source: Showdown data/abilities.ts -- klutz: "This Pokemon's held item has no effect"
     // Klutz suppresses item activation, so Focus Sash does not trigger
-    const defender = makeActive({ ability: GEN6_ABILITY_IDS.klutz, heldItem: ITEMS.focusSash }) as any;
+    const defender = makeActive({
+      ability: GEN6_ABILITY_IDS.klutz,
+      heldItem: ITEMS.focusSash,
+    }) as any;
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(

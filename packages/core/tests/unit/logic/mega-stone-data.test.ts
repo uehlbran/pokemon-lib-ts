@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { GEN6_ABILITY_IDS, GEN6_ITEM_IDS } from "../../../../gen6/src/data/reference-ids";
 import { CORE_TYPE_IDS } from "../../../src/constants/reference-ids";
 import { MEGA_STONE_DATA } from "../../../src/logic/mega-stone-data.js";
-import { GEN6_ABILITY_IDS, GEN6_ITEM_IDS } from "../../../../gen6/src/data/reference-ids";
 
 const { dragon, fighting, fire, steel } = CORE_TYPE_IDS;
 

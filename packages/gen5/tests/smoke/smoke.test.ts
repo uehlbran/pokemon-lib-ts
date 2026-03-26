@@ -7,11 +7,7 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
-import {
-  GEN5_ABILITY_IDS,
-  GEN5_MOVE_IDS,
-  GEN5_SPECIES_IDS,
-} from "@pokemon-lib-ts/gen5";
+import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS, GEN5_SPECIES_IDS } from "@pokemon-lib-ts/gen5";
 import { describe, expect, it, vi } from "vitest";
 import { applyGen5Ability } from "../../src/Gen5Abilities";
 import { applyGen5HeldItem } from "../../src/Gen5Items";
@@ -232,39 +228,36 @@ describe("Gen5Ruleset canHitSemiInvulnerable", () => {
 
   it("given flying volatile and Thunder, when checking canHit, then returns true", () => {
     // Source: Bulbapedia -- Thunder can hit Pokemon using Fly/Bounce
-    expect(
-      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.thunder, CORE_VOLATILE_IDS.flying),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.thunder, CORE_VOLATILE_IDS.flying)).toBe(
+      true,
+    );
   });
 
   it("given flying volatile and Hurricane, when checking canHit, then returns true", () => {
     // Source: Bulbapedia -- Hurricane can hit Flying targets (added in Gen 5)
-    expect(
-      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.hurricane, CORE_VOLATILE_IDS.flying),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.hurricane, CORE_VOLATILE_IDS.flying)).toBe(
+      true,
+    );
   });
 
   it("given flying volatile and Smack Down, when checking canHit, then returns true", () => {
     // Source: Bulbapedia -- Smack Down can hit Flying targets (added in Gen 5)
-    expect(
-      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.smackDown, CORE_VOLATILE_IDS.flying),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.smackDown, CORE_VOLATILE_IDS.flying)).toBe(
+      true,
+    );
   });
 
   it("given flying volatile and Surf, when checking canHit, then returns false", () => {
     // Source: Bulbapedia -- Surf cannot hit Flying targets
-    expect(
-      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.surf, CORE_VOLATILE_IDS.flying),
-    ).toBe(false);
+    expect(ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.surf, CORE_VOLATILE_IDS.flying)).toBe(
+      false,
+    );
   });
 
   it("given underground volatile and Earthquake, when checking canHit, then returns true", () => {
     // Source: Bulbapedia -- Earthquake can hit Digging targets
     expect(
-      ruleset.canHitSemiInvulnerable(
-        GEN5_MOVE_IDS.earthquake,
-        CORE_VOLATILE_IDS.underground,
-      ),
+      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.earthquake, CORE_VOLATILE_IDS.underground),
     ).toBe(true);
   });
 
@@ -277,18 +270,15 @@ describe("Gen5Ruleset canHitSemiInvulnerable", () => {
 
   it("given underwater volatile and Surf, when checking canHit, then returns true", () => {
     // Source: Bulbapedia -- Surf can hit Diving targets
-    expect(
-      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.surf, CORE_VOLATILE_IDS.underwater),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.surf, CORE_VOLATILE_IDS.underwater)).toBe(
+      true,
+    );
   });
 
   it("given shadow-force-charging volatile and any move, when checking canHit, then returns false", () => {
     // Source: Bulbapedia -- Nothing bypasses Shadow Force's charging turn
     expect(
-      ruleset.canHitSemiInvulnerable(
-        GEN5_MOVE_IDS.thunder,
-        CORE_VOLATILE_IDS.shadowForceCharging,
-      ),
+      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.thunder, CORE_VOLATILE_IDS.shadowForceCharging),
     ).toBe(false);
     expect(
       ruleset.canHitSemiInvulnerable(
@@ -300,9 +290,9 @@ describe("Gen5Ruleset canHitSemiInvulnerable", () => {
 
   it("given charging volatile and any move, when checking canHit, then returns true", () => {
     // Source: Charging moves (SolarBeam, etc.) are NOT semi-invulnerable
-    expect(
-      ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.tackle, CORE_VOLATILE_IDS.charging),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN5_MOVE_IDS.tackle, CORE_VOLATILE_IDS.charging)).toBe(
+      true,
+    );
   });
 });
 

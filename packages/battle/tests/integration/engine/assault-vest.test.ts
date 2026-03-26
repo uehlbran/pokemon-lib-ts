@@ -172,9 +172,7 @@ describe("Assault Vest -- canExecuteMove runtime enforcement (#623)", () => {
       expect(blockMessages.length).toBe(1);
       const swordsDance = engine.dataManager.getMove(MOVES.swordsDance);
       const assaultVestMessage = `${active!.pokemon.nickname ?? "Pokemon"} can't use ${swordsDance.displayName} because of its Assault Vest!`;
-      expect((blockMessages[0] as { type: "message"; text: string }).text).toBe(
-        assaultVestMessage,
-      );
+      expect((blockMessages[0] as { type: "message"; text: string }).text).toBe(assaultVestMessage);
     },
   );
 

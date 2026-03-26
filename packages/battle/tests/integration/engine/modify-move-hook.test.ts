@@ -21,8 +21,8 @@ import type { BattleEvent } from "../../../src/events";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -1,4 +1,5 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
@@ -11,7 +12,6 @@ import {
   createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -33,20 +33,22 @@ const DEFAULT_NATURE_ID = dataManager.getNature(CORE_NATURE_IDS.adamant).id;
 const FLAMETHROWER_MOVE = dataManager.getMove(GEN8_MOVE_IDS.flamethrower);
 const TOXIC_MOVE = dataManager.getMove(GEN8_MOVE_IDS.toxic);
 
-function createGen8PokemonInstance(overrides: {
-  uid?: string;
-  speciesId?: number;
-  nickname?: string | null;
-  level?: number;
-  currentHp?: number;
-  heldItem?: string | null;
-  ability?: string;
-  status?: PokemonInstance["status"];
-  friendship?: number;
-  gender?: PokemonInstance["gender"];
-  calculatedStats?: StatBlock;
-  dynamaxLevel?: number;
-} = {}): PokemonInstance {
+function createGen8PokemonInstance(
+  overrides: {
+    uid?: string;
+    speciesId?: number;
+    nickname?: string | null;
+    level?: number;
+    currentHp?: number;
+    heldItem?: string | null;
+    ability?: string;
+    status?: PokemonInstance["status"];
+    friendship?: number;
+    gender?: PokemonInstance["gender"];
+    calculatedStats?: StatBlock;
+    dynamaxLevel?: number;
+  } = {},
+): PokemonInstance {
   const species = dataManager.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
   const pokemon = createPokemonInstance(species, overrides.level ?? 50, new SeededRandom(8), {
     nature: DEFAULT_NATURE_ID,
@@ -70,15 +72,14 @@ function createGen8PokemonInstance(overrides: {
   pokemon.currentHp = overrides.currentHp ?? 200;
   pokemon.ability = overrides.ability ?? pokemon.ability;
   pokemon.status = overrides.status ?? null;
-  pokemon.calculatedStats =
-    overrides.calculatedStats ?? {
-      hp: 300,
-      attack: 100,
-      defense: 80,
-      spAttack: 90,
-      spDefense: 70,
-      speed: 110,
-    };
+  pokemon.calculatedStats = overrides.calculatedStats ?? {
+    hp: 300,
+    attack: 100,
+    defense: 80,
+    spAttack: 90,
+    spDefense: 70,
+    speed: 110,
+  };
 
   return pokemon;
 }
@@ -141,8 +142,12 @@ describe("Gen8Dynamax", () => {
     it("given DYNAMAX_IMMUNE_SPECIES, when checking contents, then includes zacian, zamazenta, eternatus", () => {
       // Source: Bulbapedia "Dynamax" -- these three species cannot Dynamax
       const zacian = dataManager.getSpecies(GEN8_SPECIES_IDS.zacian).displayName.toLowerCase();
-      const zamazenta = dataManager.getSpecies(GEN8_SPECIES_IDS.zamazenta).displayName.toLowerCase();
-      const eternatus = dataManager.getSpecies(GEN8_SPECIES_IDS.eternatus).displayName.toLowerCase();
+      const zamazenta = dataManager
+        .getSpecies(GEN8_SPECIES_IDS.zamazenta)
+        .displayName.toLowerCase();
+      const eternatus = dataManager
+        .getSpecies(GEN8_SPECIES_IDS.eternatus)
+        .displayName.toLowerCase();
 
       expect(DYNAMAX_IMMUNE_SPECIES).toContain(zacian);
       expect(DYNAMAX_IMMUNE_SPECIES).toContain(zamazenta);

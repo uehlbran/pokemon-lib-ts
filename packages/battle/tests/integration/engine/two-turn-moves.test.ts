@@ -1,13 +1,13 @@
 import type { PokemonInstance, VolatileStatus } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { CORE_MOVE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -136,7 +136,8 @@ describe("two-turn move engine infrastructure", () => {
 
       // Assert: volatile-start event for "flying" emitted
       const volatileStartEvents = events.filter(
-        (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.flying,
+        (e) =>
+          e.type === "volatile-start" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.flying,
       );
       expect(volatileStartEvents.length).toBe(1);
 
@@ -220,7 +221,8 @@ describe("two-turn move engine infrastructure", () => {
       expect(resolvedAttacker!.volatileStatuses.has(CORE_VOLATILE_IDS.flying)).toBe(false);
 
       const volatileStartEvents = events.filter(
-        (e) => e.type === "volatile-start" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.flying,
+        (e) =>
+          e.type === "volatile-start" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.flying,
       );
       expect(volatileStartEvents.length).toBe(1);
       expect(callCount).toBe(2);

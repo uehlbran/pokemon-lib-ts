@@ -1,8 +1,4 @@
-import {
-  CORE_ITEM_TRIGGER_IDS,
-  CORE_MOVE_IDS,
-  createMoveSlot,
-} from "@pokemon-lib-ts/core";
+import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS, createMoveSlot } from "@pokemon-lib-ts/core";
 import { GEN5_ITEM_IDS } from "@pokemon-lib-ts/gen5";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
@@ -15,9 +11,7 @@ class ForceSwitchItemRuleset extends MockRuleset {
   private activated = false;
 
   constructor(
-    private readonly mode:
-      | typeof GEN5_ITEM_IDS.redCard
-      | typeof GEN5_ITEM_IDS.ejectButton,
+    private readonly mode: typeof GEN5_ITEM_IDS.redCard | typeof GEN5_ITEM_IDS.ejectButton,
     private readonly holderUid: string,
   ) {
     super();

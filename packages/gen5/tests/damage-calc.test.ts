@@ -3,19 +3,19 @@ import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
-  CORE_WEATHER_IDS,
-  CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   type MoveData,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen5DataManager,
@@ -358,7 +358,11 @@ describe("Gen 5 damage calc -- STAB", () => {
     // With min random (85%): floor(24*85/100) = 20, then STAB: pokeRound(20, 8192)
     //   = floor((20 * 8192 + 2047) / 4096) = floor((163840 + 2047)/4096) = floor(165887/4096)
     //   = floor(40.5) = 40
-    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fire], ability: ABILITIES.adaptability });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      types: [TYPES.fire],
+      ability: ABILITIES.adaptability,
+    });
     const defender = makeScenarioActive({ defense: 100, types: [TYPES.normal] });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -512,7 +516,12 @@ describe("Gen 5 damage calc -- burn penalty", () => {
     // Min: pokeRound(27, 2048) = floor((27*2048+2048)/4096) = floor(57344/4096) = 14
     const attacker = makeScenarioActive({ attack: 100, status: STATUSES.burn });
     const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ id: MOVES.facade, type: TYPES.normal, power: 70, category: "physical" });
+    const move = makeScenarioMove({
+      id: MOVES.facade,
+      type: TYPES.normal,
+      power: 70,
+      category: "physical",
+    });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
@@ -779,7 +788,11 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- ability immunities
     // Levitate grants Ground immunity
     const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.levitate, types: [TYPES.psychic] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.levitate,
+      types: [TYPES.psychic],
+    });
     const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -809,7 +822,11 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
   it("given attacker with Mold Breaker and defender with Levitate, when using Ground move, then Levitate is bypassed", () => {
     // Source: Bulbapedia -- Mold Breaker ignores target's defensive abilities
     const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.moldBreaker });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.levitate, types: [TYPES.psychic] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.levitate,
+      types: [TYPES.psychic],
+    });
     const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -824,7 +841,11 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
   it("given attacker with Teravolt and defender with Levitate, when using Ground move, then Levitate is bypassed", () => {
     // Source: Showdown data/abilities.ts -- Teravolt is Mold Breaker equivalent
     const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.teravolt });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.levitate, types: [TYPES.psychic] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.levitate,
+      types: [TYPES.psychic],
+    });
     const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -837,7 +858,11 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
   it("given attacker with Turboblaze and defender with Levitate, when using Ground move, then Levitate is bypassed", () => {
     // Source: Showdown data/abilities.ts -- Turboblaze is Mold Breaker equivalent
     const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.turboblaze });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.levitate, types: [TYPES.psychic] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.levitate,
+      types: [TYPES.psychic],
+    });
     const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -927,7 +952,11 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
 
   it("given Guts attacker with status using physical move, when calculating damage, then Attack is 1.5x and burn penalty is suppressed", () => {
     // Source: Showdown data/abilities.ts -- Guts 1.5x Attack when statused, prevents burn penalty
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.guts, status: STATUSES.burn });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.guts,
+      status: STATUSES.burn,
+    });
     const defender = makeScenarioActive({ defense: 100 });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -944,7 +973,12 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     // Atk=100 -> 50 after Defeatist
     // baseDamage = floor(floor(22*50*50/100)/50)+2 = floor(floor(55000/100)/50)+2
     //   = floor(550/50)+2 = 11+2 = 13
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.defeatist, hp: 200, currentHp: 100 });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.defeatist,
+      hp: 200,
+      currentHp: 100,
+    });
     const defender = makeScenarioActive({ defense: 100 });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -1007,7 +1041,12 @@ describe("Gen 5 damage calc -- base power mods", () => {
     // Power 120 -> 60 in rain
     const attacker = makeScenarioActive({ spAttack: 100 });
     const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({ id: MOVES.solarBeam, type: TYPES.grass, power: 120, category: "special" });
+    const move = makeScenarioMove({
+      id: MOVES.solarBeam,
+      type: TYPES.grass,
+      power: 120,
+      category: "special",
+    });
     const state = createSyntheticBattleState({
       weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
     });
@@ -1064,7 +1103,12 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Pinch ability (Blaze) at low HP with Fire move, when calculating damage, then power is 1.5x", () => {
     // Source: Showdown -- Blaze boosts Fire moves by 1.5x when HP <= floor(maxHP/3)
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.blaze, hp: 300, currentHp: 99 });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.blaze,
+      hp: 300,
+      currentHp: 99,
+    });
     const defender = makeScenarioActive({ defense: 100 });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -1081,7 +1125,12 @@ describe("Gen 5 damage calc -- base power mods", () => {
     // Power 55 * 2 = 110
     const attacker = makeScenarioActive({ attack: 100, heldItem: null });
     const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ id: MOVES.acrobatics, type: TYPES.flying, power: 55, category: "physical" });
+    const move = makeScenarioMove({
+      id: MOVES.acrobatics,
+      type: TYPES.flying,
+      power: 55,
+      category: "physical",
+    });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
@@ -1167,7 +1216,11 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Rivalry ability with same gender, when calculating damage, then power is 1.25x", () => {
     // Source: Showdown data/abilities.ts -- Rivalry same gender = 1.25x
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.rivalry, gender: CORE_GENDERS.male });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.rivalry,
+      gender: CORE_GENDERS.male,
+    });
     const defender = makeScenarioActive({ defense: 100, gender: CORE_GENDERS.male });
     const move = makeScenarioMove({ type: TYPES.fire, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -1181,7 +1234,11 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Rivalry ability with opposite gender, when calculating damage, then power is 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Rivalry opposite gender = 0.75x
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.rivalry, gender: CORE_GENDERS.male });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.rivalry,
+      gender: CORE_GENDERS.male,
+    });
     const defender = makeScenarioActive({ defense: 100, gender: CORE_GENDERS.female });
     const move = makeScenarioMove({ type: TYPES.fire, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -1244,7 +1301,11 @@ describe("Gen 5 damage calc -- defender abilities", () => {
   it("given Wonder Guard defender and non-SE move, when calculating damage, then returns 0", () => {
     // Source: Showdown data/abilities.ts -- Wonder Guard blocks non-SE moves
     const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.wonderGuard, types: [TYPES.normal] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.wonderGuard,
+      types: [TYPES.normal],
+    });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -1275,7 +1336,11 @@ describe("Gen 5 damage calc -- defender abilities", () => {
   it("given Filter defender and SE move, when calculating damage, then damage is reduced by 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Filter/Solid Rock: 0.75x for SE damage
     const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.filter, types: [TYPES.grass] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.filter,
+      types: [TYPES.grass],
+    });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -1291,7 +1356,11 @@ describe("Gen 5 damage calc -- defender abilities", () => {
   it("given Solid Rock defender and SE move, when calculating damage, then damage is reduced by 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Solid Rock = Filter
     const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.solidRock, types: [TYPES.grass] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.solidRock,
+      types: [TYPES.grass],
+    });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -1319,7 +1388,11 @@ describe("Gen 5 damage calc -- defender abilities", () => {
   it("given Marvel Scale defender with status, when using physical move, then defense is 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Marvel Scale 1.5x Def when statused
     const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.marvelScale, status: STATUSES.paralysis });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.marvelScale,
+      status: STATUSES.paralysis,
+    });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
@@ -1380,7 +1453,11 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Klutz attacker with Life Orb, when calculating damage, then Life Orb boost is suppressed", () => {
     // Source: Showdown data/abilities.ts -- Klutz suppresses held item effects
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.klutz, heldItem: ITEMS.lifeOrb });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.klutz,
+      heldItem: ITEMS.lifeOrb,
+    });
     const defender = makeScenarioActive({ defense: 100 });
     const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -1429,7 +1506,11 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Adamant Orb on Dialga (483) using Dragon move, when calculating damage, then power is boosted", () => {
     // Source: Showdown data/items.ts -- Adamant Orb boosts Dragon/Steel for Dialga
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.adamantOrb, speciesId: SPECIES.dialga });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      heldItem: ITEMS.adamantOrb,
+      speciesId: SPECIES.dialga,
+    });
     const defender = makeScenarioActive({ defense: 100 });
     const move = makeScenarioMove({ type: TYPES.dragon, power: 80, category: "physical" });
     const ctx = makeDamageContext({ attacker, defender, move });
@@ -1462,7 +1543,11 @@ describe("Sheer Force power boost in damage calc", () => {
     //   +2 => 53
     //   random(seed=42) = 94 => floor(53 * 94 / 100) = floor(49.82) = 49
     //   No STAB, neutral type, no burn => final damage = 49
-    const attacker = makeScenarioActive({ spAttack: 100, ability: ABILITIES.sheerForce, types: [TYPES.normal] });
+    const attacker = makeScenarioActive({
+      spAttack: 100,
+      ability: ABILITIES.sheerForce,
+      types: [TYPES.normal],
+    });
     const defender = makeScenarioActive({ spDefense: 100, types: [TYPES.normal] });
     const move = makeScenarioMove({
       id: MOVES.flamethrower,
@@ -1493,7 +1578,11 @@ describe("Sheer Force power boost in damage calc", () => {
     //   +2 => 46
     //   random(seed=42) = 94 => floor(46 * 94 / 100) = floor(43.24) = 43
     //   No STAB, neutral type, no burn => final damage = 43
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.sheerForce, types: [TYPES.normal] });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.sheerForce,
+      types: [TYPES.normal],
+    });
     const defender = makeScenarioActive({ defense: 100, types: [TYPES.normal] });
     const move = makeScenarioMove({
       id: MOVES.earthquake,
@@ -1521,7 +1610,11 @@ describe("Sheer Force power boost in damage calc", () => {
     //   +2 => 41
     //   random(seed=42) = 94 => floor(41 * 94 / 100) = floor(38.54) = 38
     //   No STAB, neutral type => final damage = 38
-    const attacker = makeScenarioActive({ spAttack: 100, ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const attacker = makeScenarioActive({
+      spAttack: 100,
+      ability: ABILITIES.blaze,
+      types: [TYPES.normal],
+    });
     const defender = makeScenarioActive({ spDefense: 100, types: [TYPES.normal] });
     const move = makeScenarioMove({
       id: MOVES.flamethrower,
@@ -1557,9 +1650,17 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 100 / 100) = 1100
     //   baseDamage = floor(1100 / 50) + 2 = 22 + 2 = 24
     //   random(seed=42) = 94 → floor(24 * 94 / 100) = floor(22.56) = 22
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.simple,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.unaware, types: [TYPES.water] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.unaware,
+      types: [TYPES.water],
+    });
     const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
@@ -1578,9 +1679,17 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.simple,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.none, types: [TYPES.water] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.none,
+      types: [TYPES.water],
+    });
     const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
@@ -1601,9 +1710,17 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 200 / 100) = 2200
     //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
     //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.teravolt, types: [TYPES.water] });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.teravolt,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.unaware, types: [TYPES.water] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.unaware,
+      types: [TYPES.water],
+    });
     const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
@@ -1624,9 +1741,17 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
+    const attacker = makeScenarioActive({
+      attack: 100,
+      ability: ABILITIES.simple,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.turboblaze, types: [TYPES.water] });
+    const defender = makeScenarioActive({
+      defense: 100,
+      ability: ABILITIES.turboblaze,
+      types: [TYPES.water],
+    });
     const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
     const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(

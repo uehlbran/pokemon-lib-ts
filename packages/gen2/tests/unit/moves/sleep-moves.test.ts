@@ -1,13 +1,14 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
 import {
-  createGen2DataManager,
-  GEN2_MOVE_IDS,
-  GEN2_SPECIES_IDS,
-  Gen2Ruleset,
-} from "../../../src";
+  CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS, Gen2Ruleset } from "../../../src";
 
 // ---------------------------------------------------------------------------
 // Helpers

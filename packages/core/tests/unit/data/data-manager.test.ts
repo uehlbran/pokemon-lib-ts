@@ -1,21 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  ALL_NATURES,
-  DataManager,
-} from "../../../src";
-import type { RawDataObjects } from "../../../src/data/types";
-import type {
-  NatureData,
-  TypeChart,
-} from "../../../src/entities";
-import {
+  createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_ITEM_IDS,
   GEN8_MOVE_IDS,
   GEN8_SPECIES_IDS,
   GEN8_TYPE_CHART,
-  createGen8DataManager,
 } from "../../../../gen8/src";
+import { ALL_NATURES, DataManager } from "../../../src";
+import type { RawDataObjects } from "../../../src/data/types";
+import type { NatureData, TypeChart } from "../../../src/entities";
 
 // --- Canonical test fixtures loaded from Gen 8 owned data ---
 
@@ -186,14 +180,14 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-  it("given a loaded move id, when getMove is called, then it returns the matching move fixture", () => {
+    it("given a loaded move id, when getMove is called, then it returns the matching move fixture", () => {
       const move = dm.getMove(GEN8_MOVE_IDS.tackle);
       expect(move.displayName).toBe("Tackle");
       expect(move.power).toBe(tackle.power);
       expect(move.category).toBe("physical");
     });
 
-  it("returns move with effect data", () => {
+    it("returns move with effect data", () => {
       const move = dm.getMove(GEN8_MOVE_IDS.flamethrower);
       expect(move.effect).not.toBeNull();
       expect(move.effect?.type).toBe("status-chance");
@@ -209,13 +203,13 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-  it("returns correct ability by id", () => {
+    it("returns correct ability by id", () => {
       const ability = dm.getAbility(GEN8_ABILITY_IDS.overgrow);
       expect(ability.displayName).toBe(overgrow.displayName);
       expect(ability.triggers).toEqual(overgrow.triggers);
     });
 
-  it("throws for non-existent ability", () => {
+    it("throws for non-existent ability", () => {
       expect(() => dm.getAbility(GEN8_ABILITY_IDS.levitate)).toThrow(
         `Ability "${GEN8_ABILITY_IDS.levitate}" not found`,
       );
@@ -227,13 +221,13 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-  it("given a loaded item id, when getItem is called, then it returns the matching item fixture", () => {
+    it("given a loaded item id, when getItem is called, then it returns the matching item fixture", () => {
       const item = dm.getItem(loadedItem.id);
       expect(item.displayName).toBe(loadedItem.displayName);
       expect(item.price).toBe(loadedItem.price);
     });
 
-  it("given an unknown item id, when getItem is called, then it throws a not-found error", () => {
+    it("given an unknown item id, when getItem is called, then it throws a not-found error", () => {
       expect(() => dm.getItem(GEN8_ITEM_IDS.masterBall)).toThrow(
         `Item "${GEN8_ITEM_IDS.masterBall}" not found`,
       );
@@ -245,22 +239,20 @@ describe("DataManager", () => {
       dm.loadFromObjects(createFullData());
     });
 
-  it("given a loaded nature id, when getNature is called, then it returns the matching nature fixture", () => {
+    it("given a loaded nature id, when getNature is called, then it returns the matching nature fixture", () => {
       const nature = dm.getNature(ADAMANT_NATURE.id);
       expect(nature.displayName).toBe("Adamant");
       expect(nature.increased).toBe("attack");
       expect(nature.decreased).toBe("spAttack");
     });
 
-  it("given a neutral nature id, when getNature is called, then both modified stats are null", () => {
+    it("given a neutral nature id, when getNature is called, then both modified stats are null", () => {
       const nature = dm.getNature(HARDY_NATURE.id);
       expect(nature).toEqual(hardy);
     });
 
-  it("given an unknown nature id, when getNature is called, then it throws a not-found error", () => {
-      expect(() => dm.getNature(TIMID_NATURE.id)).toThrow(
-        `Nature "${TIMID_NATURE.id}" not found`,
-      );
+    it("given an unknown nature id, when getNature is called, then it throws a not-found error", () => {
+      expect(() => dm.getNature(TIMID_NATURE.id)).toThrow(`Nature "${TIMID_NATURE.id}" not found`);
     });
   });
 
@@ -295,7 +287,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllMoves()", () => {
-  it("returns all loaded moves", () => {
+    it("returns all loaded moves", () => {
       dm.loadFromObjects(createFullData());
       const all = dm.getAllMoves();
       expect(all).toHaveLength(2);
@@ -306,7 +298,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllAbilities()", () => {
-  it("given loaded ability data, when getAllAbilities is called, then it returns every loaded ability", () => {
+    it("given loaded ability data, when getAllAbilities is called, then it returns every loaded ability", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllAbilities()).toHaveLength(1);
       expect(dm.getAllAbilities()[0].id).toBe(GEN8_ABILITY_IDS.overgrow);
@@ -314,7 +306,7 @@ describe("DataManager", () => {
   });
 
   describe("getAllItems()", () => {
-  it("given loaded item data, when getAllItems is called, then it returns every loaded item", () => {
+    it("given loaded item data, when getAllItems is called, then it returns every loaded item", () => {
       dm.loadFromObjects(createFullData());
       expect(dm.getAllItems()).toHaveLength(1);
       expect(dm.getAllItems()[0].id).toBe(loadedItem.id);

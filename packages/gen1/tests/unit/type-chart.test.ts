@@ -3,7 +3,11 @@ import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen1DataManager, GEN1_TYPES } from "../../src";
 
-function getEffectiveness(chart: TypeChart, attackType: PokemonType, defenderType: PokemonType): number {
+function getEffectiveness(
+  chart: TypeChart,
+  attackType: PokemonType,
+  defenderType: PokemonType,
+): number {
   return chart[attackType]?.[defenderType] ?? 1;
 }
 

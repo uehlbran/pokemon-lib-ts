@@ -11,7 +11,6 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createEvs,
   createFriendship,
   createIvs,
@@ -19,16 +18,17 @@ import {
   type MoveData,
   type PokemonType,
   type PrimaryStatus,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen6HeldItem,
   createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_ITEM_IDS,
   GEN6_MOVE_IDS,
   GEN6_NATURE_IDS,
   GEN6_SPECIES_IDS,
-  applyGen6HeldItem,
   getPinchBerryThreshold,
   isGen6PowderBlocked,
   isMegaStone,
@@ -108,11 +108,7 @@ function createOnFieldPokemon(overrides: {
     spDefense: overrides.spDefense ?? DEFAULT_SYNTHETIC_STATS.spDefense,
     speed: overrides.speed ?? DEFAULT_SYNTHETIC_STATS.speed,
   };
-  const activePokemon = createBattleOnFieldPokemon(
-    pokemon,
-    0,
-    overrides.types ?? [typeIds.normal],
-  );
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, overrides.types ?? [typeIds.normal]);
   activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
   activePokemon.ability = overrides.ability ?? abilityIds.none;
   activePokemon.suppressedAbility = null;
@@ -323,7 +319,9 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
     const ctx = createItemContext({
       pokemon: defender,
       state,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { flags: { contact: true } }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
+        flags: { contact: true },
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onContact, ctx);
     expect(result.activated).toBe(true);
@@ -339,7 +337,9 @@ describe("Gen 6 Items -- Rocky Helmet", () => {
     });
     const ctx = createItemContext({
       pokemon: defender,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { flags: { contact: false } }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
+        flags: { contact: false },
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onContact, ctx);
     expectNoActivation(result);
@@ -442,7 +442,9 @@ describe("Gen 6 Items -- Kee Berry", () => {
     const ctx = createItemContext({
       pokemon,
       damage: 50,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { category: moveCategories.physical }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
+        category: moveCategories.physical,
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -462,7 +464,9 @@ describe("Gen 6 Items -- Kee Berry", () => {
     const ctx = createItemContext({
       pokemon,
       damage: 50,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), { category: moveCategories.special }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), {
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
@@ -485,7 +489,9 @@ describe("Gen 6 Items -- Maranga Berry", () => {
     const ctx = createItemContext({
       pokemon,
       damage: 50,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), { category: moveCategories.special }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.flamethrower), {
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -505,7 +511,9 @@ describe("Gen 6 Items -- Maranga Berry", () => {
     const ctx = createItemContext({
       pokemon,
       damage: 50,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), { category: moveCategories.physical }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.tackle), {
+        category: moveCategories.physical,
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expectNoActivation(result);
@@ -556,7 +564,10 @@ describe("Gen 6 Items -- Luminous Moss", () => {
     const ctx = createItemContext({
       pokemon,
       damage: 50,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.surf), { type: typeIds.water, category: moveCategories.special }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.surf), {
+        type: typeIds.water,
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -602,7 +613,10 @@ describe("Gen 6 Items -- Snowball", () => {
     const ctx = createItemContext({
       pokemon,
       damage: 50,
-      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.iceBeam), { type: typeIds.ice, category: moveCategories.special }),
+      move: createSyntheticMoveFrom(dataManager.getMove(moveIds.iceBeam), {
+        type: typeIds.ice,
+        category: moveCategories.special,
+      }),
     });
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -715,7 +729,9 @@ describe("Gen 6 Items -- Status Orbs", () => {
     const ctx = createItemContext({ pokemon });
     const result = applyGen6HeldItem(triggerIds.endOfTurn, ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: statusIds.burn }]);
+    expect(result.effects).toEqual([
+      { type: "inflict-status", target: "self", status: statusIds.burn },
+    ]);
   });
 
   it("given a Fire-type Pokemon holding Flame Orb, when end-of-turn triggers, then burn is NOT inflicted (Fire immunity)", () => {
@@ -911,9 +927,7 @@ describe("Gen 6 Items -- getPinchBerryThreshold", () => {
 // ---------------------------------------------------------------------------
 
 describe("Gen 6 Items -- Unburden volatile on consume", () => {
-  it(
-    `given a Pokemon with Unburden holding Sitrus Berry, when Sitrus Berry is consumed on damage, then "${volatileIds.unburden}" volatile is set`,
-    () => {
+  it(`given a Pokemon with Unburden holding Sitrus Berry, when Sitrus Berry is consumed on damage, then "${volatileIds.unburden}" volatile is set`, () => {
     // Source: Bulbapedia -- Unburden: doubles Speed when held item is consumed
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem
     // Note: Focus Sash was moved to capLethalDamage (#784), so we use Sitrus Berry instead
@@ -932,8 +946,7 @@ describe("Gen 6 Items -- Unburden volatile on consume", () => {
     const result = applyGen6HeldItem(triggerIds.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
     expect(pokemon.volatileStatuses.has(volatileIds.unburden)).toBe(true);
-  },
-  );
+  });
 });
 
 // ---------------------------------------------------------------------------

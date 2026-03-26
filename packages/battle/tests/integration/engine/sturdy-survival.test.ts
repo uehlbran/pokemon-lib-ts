@@ -1,12 +1,17 @@
-import { CORE_ABILITY_IDS, CORE_MOVE_IDS, type MoveData, type PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_IDS,
+  type MoveData,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { ActivePokemon, BattleConfig, BattleState } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ---------------------------------------------------------------------------
 // Bug #500: Sturdy Gen 5 survival engine timing

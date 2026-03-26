@@ -10,8 +10,8 @@ import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createEngine(overrides?: {
   seed?: number;
@@ -60,7 +60,9 @@ describe("processBindDamage — end-of-turn bind damage", () => {
     it("given a pokemon with bound volatile, when end of turn processes, then bind damage event is emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.bind];
+      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+        CORE_END_OF_TURN_EFFECT_IDS.bind,
+      ];
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -76,9 +78,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
 
       const bindDamageEvents = events.filter(
         (e) =>
-          e.type === "damage" &&
-          "source" in e &&
-          e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
+          e.type === "damage" && "source" in e && e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
       );
       expect(bindDamageEvents).toHaveLength(1);
 
@@ -96,7 +96,9 @@ describe("processBindDamage — end-of-turn bind damage", () => {
     it("given a bound volatile with turnsLeft=3, when end of turn processes, then damage is dealt and the counter decrements", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.bind];
+      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+        CORE_END_OF_TURN_EFFECT_IDS.bind,
+      ];
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -113,13 +115,13 @@ describe("processBindDamage — end-of-turn bind damage", () => {
 
       const bindDamageEvents = events.filter(
         (e) =>
-          e.type === "damage" &&
-          "source" in e &&
-          e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
+          e.type === "damage" && "source" in e && e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
       );
       expect(bindDamageEvents).toHaveLength(1);
 
-      const boundState = engine.state.sides[1].active[0]?.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
+      const boundState = engine.state.sides[1].active[0]?.volatileStatuses.get(
+        CORE_VOLATILE_IDS.bound,
+      );
       expect(boundState).toEqual({ turnsLeft: 2 });
     });
 
@@ -127,7 +129,9 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       // Arrange — turnsLeft=1: canExecuteMove sees turnsLeft<=1, clears volatile and emits volatile-end,
       // then allows the move. processBindDamage finds no "bound" status → no EOT damage.
       const ruleset = new MockRuleset();
-      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.bind];
+      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+        CORE_END_OF_TURN_EFFECT_IDS.bind,
+      ];
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -142,19 +146,21 @@ describe("processBindDamage — end-of-turn bind damage", () => {
 
       const volatileEndEvents = events.filter(
         (e) =>
-          e.type === "volatile-end" &&
-          "volatile" in e &&
-          e.volatile === CORE_VOLATILE_IDS.bound,
+          e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.bound,
       );
       expect(volatileEndEvents).toHaveLength(1);
 
-      expect(engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.bound)).toBe(false);
+      expect(engine.state.sides[1].active[0]?.volatileStatuses.has(CORE_VOLATILE_IDS.bound)).toBe(
+        false,
+      );
     });
 
     it("given a fainted pokemon with bound volatile, when end of turn processes, then no bind damage event is emitted", () => {
       // Arrange
       const ruleset = new MockRuleset();
-      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_END_OF_TURN_EFFECT_IDS.bind];
+      ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [
+        CORE_END_OF_TURN_EFFECT_IDS.bind,
+      ];
 
       const { engine, events } = createEngine({ ruleset });
       engine.start();
@@ -173,9 +179,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       // Assert — no bind damage events should be emitted for a fainted pokemon
       const bindDamageEvents = events.filter(
         (e) =>
-          e.type === "damage" &&
-          "source" in e &&
-          e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
+          e.type === "damage" && "source" in e && e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
       );
       expect(bindDamageEvents.length).toBe(0);
     });
@@ -202,9 +206,7 @@ describe("processBindDamage — end-of-turn bind damage", () => {
       // Assert — no bind damage events since "bind" is not in EOT order
       const bindDamageEvents = events.filter(
         (e) =>
-          e.type === "damage" &&
-          "source" in e &&
-          e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
+          e.type === "damage" && "source" in e && e.source === CORE_END_OF_TURN_EFFECT_IDS.bind,
       );
       expect(bindDamageEvents.length).toBe(0);
     });

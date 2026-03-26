@@ -5,6 +5,7 @@ import {
   DataManager,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN7_ABILITY_IDS } from "../src/data/reference-ids";
 import {
   GEN7_CRIT_MULTIPLIER,
   GEN7_CRIT_RATE_PROBABILITIES,
@@ -12,7 +13,6 @@ import {
   GEN7_CRIT_RATES,
 } from "../src/Gen7CritCalc";
 import { Gen7Ruleset } from "../src/Gen7Ruleset";
-import { GEN7_ABILITY_IDS } from "../src/data/reference-ids";
 
 const abilityIds = GEN7_ABILITY_IDS;
 const typeIds = CORE_TYPE_IDS;

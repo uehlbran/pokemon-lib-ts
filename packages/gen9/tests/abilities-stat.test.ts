@@ -19,6 +19,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen9DataManager,
   GEN9_ABILITY_IDS,
   GEN9_ITEM_IDS,
   GEN9_NATURE_IDS,
@@ -26,7 +27,6 @@ import {
   GEN9_SPECIES_IDS,
   GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
   GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
-  createGen9DataManager,
   getBoostMultiplier,
   getHadronEngineMultiplier,
   getHighestBaseStat,
@@ -43,7 +43,7 @@ const CORE_ABILITIES = CORE_ABILITY_IDS;
 const ITEMS = GEN9_ITEM_IDS;
 const SPECIES = GEN9_SPECIES_IDS;
 const TERRAINS = CORE_TERRAIN_IDS;
-const TYPES = CORE_TYPE_IDS;
+const _TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const WEATHERS = CORE_WEATHER_IDS;
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
@@ -153,7 +153,9 @@ function createOnFieldPokemon(overrides: {
     calculatedStats: overrides.calculatedStats,
   });
   const species = dataManager.getSpecies(pokemon.speciesId);
-  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, [...(overrides.types ?? species.types)]);
+  const activePokemon = createBattleOnFieldPokemon(pokemon, 0, [
+    ...(overrides.types ?? species.types),
+  ]);
   activePokemon.ability = pokemon.ability;
   activePokemon.volatileStatuses = overrides.volatiles ?? new Map();
   activePokemon.substituteHp = overrides.substituteHp ?? 0;
@@ -363,18 +365,12 @@ describe("getBoostMultiplier", () => {
 
   it("given SpAttack stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("spAttack")).toBeCloseTo(
-      GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
-      10,
-    );
+    expect(getBoostMultiplier("spAttack")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
   });
 
   it("given SpDefense stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("spDefense")).toBeCloseTo(
-      GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
-      10,
-    );
+    expect(getBoostMultiplier("spDefense")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
   });
 });
 
@@ -593,7 +589,10 @@ describe("shouldQuarkDriveActivate", () => {
   it("given no Electric Terrain but holding Booster Energy, when checking activation, then activates and consumes", () => {
     // Source: Showdown data/abilities.ts:3564-3580
     const ctx = createAbilityContext({
-      pokemon: createOnFieldPokemon({ ability: ABILITIES.quarkDrive, heldItem: ITEMS.boosterEnergy }),
+      pokemon: createOnFieldPokemon({
+        ability: ABILITIES.quarkDrive,
+        heldItem: ITEMS.boosterEnergy,
+      }),
       trigger: TRIGGERS.onSwitchIn,
     });
     const result = shouldQuarkDriveActivate(ctx);
@@ -745,9 +744,7 @@ describe("handleGen9StatAbility", () => {
     });
     const result = handleGen9StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(
-      expect.objectContaining({ volatile: VOLATILES.quarkDrive }),
-    );
+    expect(result.effects[0]).toEqual(expect.objectContaining({ volatile: VOLATILES.quarkDrive }));
   });
 
   it("given unrelated ability, when dispatching, then returns inactive", () => {

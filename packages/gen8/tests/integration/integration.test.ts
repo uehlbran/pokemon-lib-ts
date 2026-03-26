@@ -12,19 +12,19 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
+  type AbilityTrigger,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
-  CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
   createMoveSlot,
-  type AbilityTrigger,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -67,25 +67,25 @@ import { GEN8_TYPE_CHART } from "../../src/Gen8TypeChart";
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-const DATA_MANAGER = createGen8DataManager()
-const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const
-const ITEMS = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const
-const MOVES = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const
-const SPECIES = GEN8_SPECIES_IDS
-const TYPES = CORE_TYPE_IDS
-const STATUS = CORE_STATUS_IDS
-const TERRAIN = CORE_TERRAIN_IDS
-const TRIGGERS = CORE_ABILITY_TRIGGER_IDS
-const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur)
-const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN8_NATURE_IDS.hardy).id
+const DATA_MANAGER = createGen8DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
+const SPECIES = GEN8_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const STATUS = CORE_STATUS_IDS;
+const TERRAIN = CORE_TERRAIN_IDS;
+const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
+const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN8_NATURE_IDS.hardy).id;
 
 // Internal Gulp Missile form markers are not exported from gen8 today.
-const GULP_MISSILE_GULPING = "gulp-missile-gulping" as const
-const GULP_MISSILE_GORGING = "gulp-missile-gorging" as const
-const GULPING_FORM = "gulping" as const
-const GORGING_FORM = "gorging" as const
+const GULP_MISSILE_GULPING = "gulp-missile-gulping" as const;
+const GULP_MISSILE_GORGING = "gulp-missile-gorging" as const;
+const GULPING_FORM = "gulping" as const;
+const GORGING_FORM = "gorging" as const;
 // G-Max Steelsurge is a hazard id used by entry hazards but is not exported in the Gen 8 reference ids.
-const GMAX_STEELSURGE_HAZARD = "gmax-steelsurge" as const
+const GMAX_STEELSURGE_HAZARD = "gmax-steelsurge" as const;
 
 let nextTestUid = 0;
 function createTestUid() {
@@ -253,7 +253,7 @@ function createBattleState(opts?: {
     },
     ended: false,
     winner: null,
-    } as unknown as BattleState;
+  } as unknown as BattleState;
 }
 
 function createMove(

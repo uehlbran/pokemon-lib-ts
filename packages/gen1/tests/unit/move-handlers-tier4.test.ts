@@ -9,7 +9,6 @@ import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   ALL_NATURES,
-  CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,

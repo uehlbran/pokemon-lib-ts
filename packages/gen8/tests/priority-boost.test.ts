@@ -1,6 +1,6 @@
 import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -38,31 +38,31 @@ import { Gen8Ruleset } from "../src/Gen8Ruleset";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const dataManager = createGen8DataManager()
-const abilityIds = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const
-const itemIds = CORE_ITEM_IDS
-const moveIds = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const
-const natureIds = GEN8_NATURE_IDS
-const speciesIds = GEN8_SPECIES_IDS
-const typeIds = CORE_TYPE_IDS
-const defaultSpecies = dataManager.getSpecies(speciesIds.pikachu)
-const defaultNature = dataManager.getNature(natureIds.hardy).id
-const defaultTackle = dataManager.getMove(moveIds.tackle)
+const dataManager = createGen8DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
+const itemIds = CORE_ITEM_IDS;
+const moveIds = { ...CORE_MOVE_IDS, ...GEN8_MOVE_IDS } as const;
+const natureIds = GEN8_NATURE_IDS;
+const speciesIds = GEN8_SPECIES_IDS;
+const typeIds = CORE_TYPE_IDS;
+const defaultSpecies = dataManager.getSpecies(speciesIds.pikachu);
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
+const defaultTackle = dataManager.getMove(moveIds.tackle);
 
 function createCanonicalMoveSlot(moveId: (typeof moveIds)[keyof typeof moveIds]) {
-  const move = dataManager.getMove(moveId)
-  return createMoveSlot(move.id, move.pp)
+  const move = dataManager.getMove(moveId);
+  return createMoveSlot(move.id, move.pp);
 }
 
 function createScenarioMoveSlot(
   moveId: (typeof moveIds)[keyof typeof moveIds],
   currentPP?: number,
 ) {
-  const canonicalSlot = createCanonicalMoveSlot(moveId)
+  const canonicalSlot = createCanonicalMoveSlot(moveId);
   return {
     ...canonicalSlot,
     currentPP: currentPP ?? canonicalSlot.currentPP,
-  }
+  };
 }
 
 function createOnFieldPokemon(
@@ -72,13 +72,13 @@ function createOnFieldPokemon(
     status?: string | null;
     heldItem?: string | null;
     speedStage?: number;
-    moves?: Array<ReturnType<typeof createScenarioMoveSlot>>;
+    moves?: ReturnType<typeof createScenarioMoveSlot>[];
     types?: PokemonType[];
     currentHp?: number;
     maxHp?: number;
   } = {},
 ): ActivePokemon {
-  const maxHp = overrides.maxHp ?? 200
+  const maxHp = overrides.maxHp ?? 200;
   const pokemon = createPokemonInstance(defaultSpecies, 50, makeRng(), {
     nature: defaultNature,
     ivs: createIvs(),
@@ -93,28 +93,27 @@ function createOnFieldPokemon(
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: itemIds.pokeBall,
-  })
+  });
 
-  pokemon.moves =
-    overrides.moves?.map((move) =>
-      createMoveSlot(
-        move.moveId,
-        move.maxPP,
-        move.maxPP > move.currentPP ? Math.round((move.maxPP / move.currentPP - 1) / 0.2) : 0,
-      ),
-    ) ?? [createCanonicalMoveSlot(moveIds.tackle)]
+  pokemon.moves = overrides.moves?.map((move) =>
+    createMoveSlot(
+      move.moveId,
+      move.maxPP,
+      move.maxPP > move.currentPP ? Math.round((move.maxPP / move.currentPP - 1) / 0.2) : 0,
+    ),
+  ) ?? [createCanonicalMoveSlot(moveIds.tackle)];
   if (overrides.moves) {
     pokemon.moves = overrides.moves.map((move) => ({
       moveId: move.moveId,
       currentPP: move.currentPP,
       maxPP: move.maxPP,
       ppUps: 0,
-    }))
+    }));
   }
-  pokemon.ability = overrides.ability ?? CORE_ABILITY_IDS.none
-  pokemon.currentHp = overrides.currentHp ?? maxHp
-  pokemon.status = overrides.status ?? null
-  pokemon.heldItem = overrides.heldItem ?? null
+  pokemon.ability = overrides.ability ?? CORE_ABILITY_IDS.none;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.status = overrides.status ?? null;
+  pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.calculatedStats = {
     hp: maxHp,
     speed: overrides.speed ?? 100,
@@ -122,16 +121,16 @@ function createOnFieldPokemon(
     defense: 100,
     spAttack: 100,
     spDefense: 100,
-  }
+  };
 
   const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     overrides.types ?? [...(defaultSpecies.types as PokemonType[])],
-  )
-  active.ability = overrides.ability ?? CORE_ABILITY_IDS.none
-  active.statStages.speed = overrides.speedStage ?? 0
-  return active
+  );
+  active.ability = overrides.ability ?? CORE_ABILITY_IDS.none;
+  active.statStages.speed = overrides.speedStage ?? 0;
+  return active;
 }
 
 function createBattleSide(index: 0 | 1, active: ActivePokemon[] = []): BattleSide {

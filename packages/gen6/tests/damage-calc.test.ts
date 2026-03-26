@@ -10,11 +10,11 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -143,7 +143,9 @@ function createSyntheticMove(overrides: {
   target?: string;
 }): MoveData {
   const requestedId = overrides.id ?? DEFAULT_MOVE.id;
-  const baseMove = CANONICAL_MOVE_IDS.has(requestedId) ? GEN6_DATA.getMove(requestedId) : DEFAULT_MOVE;
+  const baseMove = CANONICAL_MOVE_IDS.has(requestedId)
+    ? GEN6_DATA.getMove(requestedId)
+    : DEFAULT_MOVE;
 
   return {
     ...baseMove,
@@ -370,7 +372,11 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     // Source: Bulbapedia "Gem" Gen 6 -- gem boost nerfed from 1.5x to 1.3x
     // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
     const gemCtx = createDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.normal], heldItem: ITEMS.normalGem }),
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: [TYPES.normal],
+        heldItem: ITEMS.normalGem,
+      }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.fighting] }),
       move: createSyntheticMove({ id: MOVES.tackle }),
       seed: 42,
@@ -393,7 +399,11 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
 
   it("given a Pokemon holding Normal Gem uses a non-Normal move, then the gem is not consumed", () => {
     // Source: packages/gen6/data/items.json -- only Normal Gem exists in Gen 6
-    const attacker = createOnFieldPokemon({ attack: 100, types: [TYPES.fire], heldItem: ITEMS.normalGem });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      types: [TYPES.fire],
+      heldItem: ITEMS.normalGem,
+    });
     const ctx = createDamageContext({
       attacker,
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal] }),
@@ -408,7 +418,11 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
 
   it("given a Pokemon holding Charcoal uses a Fire move, then 1.2x boost (not consumed)", () => {
     // Source: Showdown data/items.ts -- Charcoal: onBasePower chainModify([4915, 4096]) ~= 1.2x
-    const attacker = createOnFieldPokemon({ attack: 100, types: [TYPES.fire], heldItem: ITEMS.charcoal });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      types: [TYPES.fire],
+      heldItem: ITEMS.charcoal,
+    });
     const charcoalCtx = createDamageContext({
       attacker,
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal] }),
@@ -442,7 +456,11 @@ describe("Gen 6 Knock Off damage boost", () => {
     // Source: Showdown data/moves.ts -- knockoff onBasePower: chainModify(1.5)
     const knockOffCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.dark] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], heldItem: ITEMS.leftovers }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        heldItem: ITEMS.leftovers,
+      }),
       move: createSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
@@ -491,7 +509,11 @@ describe("Gen 6 Knock Off damage boost", () => {
     // Source: Showdown data/items.ts -- mega stones have megaStone property
     const megaStoneCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.dark] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], heldItem: ITEMS.venusaurite }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        heldItem: ITEMS.venusaurite,
+      }),
       move: createSyntheticMove({ id: MOVES.knockOff }),
       seed: 42,
     });
@@ -541,13 +563,21 @@ describe("Gen 6 STAB", () => {
   it("given Adaptability attacker using same-type move, then ~2.0x STAB", () => {
     // Source: Showdown data/abilities.ts -- Adaptability: STAB = 2.0x
     const adaptCtx = createDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.water], ability: ABILITIES.adaptability }),
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: [TYPES.water],
+        ability: ABILITIES.adaptability,
+      }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal] }),
       move: createSyntheticMove({ power: 80, type: TYPES.water }),
       seed: 42,
     });
     const normalStabCtx = createDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.water], ability: ABILITIES.none }),
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: [TYPES.water],
+        ability: ABILITIES.none,
+      }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal] }),
       move: createSyntheticMove({ power: 80, type: TYPES.water }),
       seed: 42,
@@ -626,7 +656,9 @@ describe("Gen 6 weather modifiers", () => {
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.water] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
       move: createSyntheticMove({ power: 80, type: TYPES.water, category: "special" }),
-      state: createBattleState({ weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance } }),
+      state: createBattleState({
+        weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance },
+      }),
       seed: 42,
     });
     const noWeatherCtx = createDamageContext({
@@ -651,7 +683,9 @@ describe("Gen 6 weather modifiers", () => {
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
       move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
-      state: createBattleState({ weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance } }),
+      state: createBattleState({
+        weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance },
+      }),
       seed: 42,
     });
     const noWeatherCtx = createDamageContext({
@@ -763,7 +797,11 @@ describe("Gen 6 Assault Vest", () => {
     // Source: Bulbapedia "Assault Vest" -- raises SpDef by 50%
     const vestCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
-      defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal], heldItem: ITEMS.assaultVest }),
+      defender: createOnFieldPokemon({
+        spDefense: 100,
+        types: [TYPES.normal],
+        heldItem: ITEMS.assaultVest,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
@@ -785,7 +823,11 @@ describe("Gen 6 Assault Vest", () => {
     // Source: Showdown data/items.ts -- Assault Vest only boosts SpDef, not Def
     const vestCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], heldItem: ITEMS.assaultVest }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        heldItem: ITEMS.assaultVest,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
@@ -814,13 +856,21 @@ describe("Gen 6 Fur Coat", () => {
     // Source: Bulbapedia "Fur Coat" -- doubles Defense stat
     const furCoatCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], ability: ABILITIES.furCoat }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        ability: ABILITIES.furCoat,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
     const noAbilityCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], ability: ABILITIES.none }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        ability: ABILITIES.none,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
       seed: 42,
     });
@@ -838,13 +888,21 @@ describe("Gen 6 Fur Coat", () => {
     // Source: Showdown data/abilities.ts -- Fur Coat only affects physical Defense
     const furCoatCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
-      defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal], ability: ABILITIES.furCoat }),
+      defender: createOnFieldPokemon({
+        spDefense: 100,
+        types: [TYPES.normal],
+        ability: ABILITIES.furCoat,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
     const noAbilityCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
-      defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal], ability: ABILITIES.none }),
+      defender: createOnFieldPokemon({
+        spDefense: 100,
+        types: [TYPES.normal],
+        ability: ABILITIES.none,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
       seed: 42,
     });
@@ -865,7 +923,11 @@ describe("Gen 6 Life Orb", () => {
   it("given attacker holding Life Orb, then damage is boosted by ~1.3x", () => {
     // Source: Showdown data/items.ts -- Life Orb: pokeRound(baseDamage, 5324) ~= 1.3x
     const lifeOrbCtx = createDamageContext({
-      attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting], heldItem: ITEMS.lifeOrb }),
+      attacker: createOnFieldPokemon({
+        attack: 100,
+        types: [TYPES.fighting],
+        heldItem: ITEMS.lifeOrb,
+      }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal] }),
       move: createSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
@@ -895,7 +957,11 @@ describe("Gen 6 Pixie Plate", () => {
     // Source: Showdown data/items.ts -- Pixie Plate: onBasePower chainModify([4915, 4096])
     // Source: Bulbapedia "Pixie Plate" -- introduced in Gen 6 with Fairy type
     const plateCtx = createDamageContext({
-      attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fairy], heldItem: ITEMS.pixiePlate }),
+      attacker: createOnFieldPokemon({
+        spAttack: 100,
+        types: [TYPES.fairy],
+        heldItem: ITEMS.pixiePlate,
+      }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
       move: createSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
       seed: 42,
@@ -925,13 +991,21 @@ describe("Gen 6 Filter / Solid Rock", () => {
     // Source: Showdown data/abilities.ts -- Filter: pokeRound(baseDamage, 3072) = 0.75x
     const filterCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], ability: ABILITIES.filter }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        ability: ABILITIES.filter,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
     });
     const noAbilityCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting] }),
-      defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], ability: ABILITIES.none }),
+      defender: createOnFieldPokemon({
+        defense: 100,
+        types: [TYPES.normal],
+        ability: ABILITIES.none,
+      }),
       move: createSyntheticMove({ power: 80, type: TYPES.fighting }),
       seed: 42,
     });
@@ -987,9 +1061,17 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 100 / 100) = 1100
     //   baseDamage = floor(1100 / 50) + 2 = 22 + 2 = 24
     //   random(seed=42) = 94 → floor(24 * 94 / 100) = floor(22.56) = 22
-    const attacker = createOnFieldPokemon({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: ABILITIES.simple,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: ABILITIES.unaware, types: [TYPES.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: ABILITIES.unaware,
+      types: [TYPES.water],
+    });
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
@@ -1005,9 +1087,17 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = createOnFieldPokemon({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: ABILITIES.simple,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: ABILITIES.none, types: [TYPES.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: ABILITIES.none,
+      types: [TYPES.water],
+    });
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
@@ -1025,9 +1115,17 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 200 / 100) = 2200
     //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
     //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
-    const attacker = createOnFieldPokemon({ attack: 100, ability: ABILITIES.moldBreaker, types: [TYPES.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: ABILITIES.moldBreaker,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: ABILITIES.unaware, types: [TYPES.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: ABILITIES.unaware,
+      types: [TYPES.water],
+    });
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
@@ -1045,9 +1143,17 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = createOnFieldPokemon({ attack: 100, ability: ABILITIES.simple, types: [TYPES.water] });
+    const attacker = createOnFieldPokemon({
+      attack: 100,
+      ability: ABILITIES.simple,
+      types: [TYPES.water],
+    });
     attacker.statStages.attack = 2;
-    const defender = createOnFieldPokemon({ defense: 100, ability: ABILITIES.teravolt, types: [TYPES.water] });
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      ability: ABILITIES.teravolt,
+      types: [TYPES.water],
+    });
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);

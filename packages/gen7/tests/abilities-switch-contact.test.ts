@@ -1,32 +1,31 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import type { Gender, MoveData, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
-  CORE_ABILITY_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
-  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen7DataManager,
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
   GEN7_MOVE_IDS,
   GEN7_SPECIES_IDS,
-  createGen7DataManager,
 } from "../src";
 import {
   getWeatherDuration,
@@ -49,14 +48,14 @@ const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const STATUS_IDS = CORE_STATUS_IDS;
 const TRIGGER_IDS = CORE_ABILITY_TRIGGER_IDS;
 const TYPE_IDS = CORE_TYPE_IDS;
-const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const _VOLATILE_IDS = CORE_VOLATILE_IDS;
 const WEATHER_IDS = {
   rain: CORE_WEATHER_IDS.rain,
   sun: CORE_WEATHER_IDS.sun,
   hail: CORE_WEATHER_IDS.hail,
   sand: CORE_WEATHER_IDS.sand as WeatherType,
 } as const;
-const moveCategories = CORE_MOVE_CATEGORIES;
+const _moveCategories = CORE_MOVE_CATEGORIES;
 const dataManager = createGen7DataManager();
 const defaultSpecies = dataManager.getSpecies(GEN7_SPECIES_IDS.pikachu);
 const defaultNatureId = CORE_NATURE_IDS.hardy;
@@ -241,7 +240,7 @@ function createBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-function createSyntheticMoveFrom(
+function _createSyntheticMoveFrom(
   baseMove: MoveData,
   opts: {
     id?: string;
@@ -311,7 +310,10 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Intimidate", () => {
     it("given Intimidate user, when switching in with opponent, then lowers opponent Attack by 1 stage", () => {
       // Source: Showdown data/abilities.ts -- Intimidate: -1 Atk to foe on switch-in
-      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.innerFocus, nickname: "Metagross" });
+      const opponent = createOnFieldPokemon({
+        ability: ABILITY_IDS.innerFocus,
+        nickname: "Metagross",
+      });
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.intimidate,
         trigger: TRIGGER_IDS.onSwitchIn,
@@ -365,7 +367,10 @@ describe("Gen 7 Switch-in Abilities", () => {
   describe("Trace", () => {
     it("given Trace user, when opponent has a copyable ability, then copies opponent ability", () => {
       // Source: Showdown data/abilities.ts -- Trace: copies opponent's ability
-      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.levitate, nickname: "Garchomp" });
+      const opponent = createOnFieldPokemon({
+        ability: ABILITY_IDS.levitate,
+        nickname: "Garchomp",
+      });
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.trace,
         trigger: TRIGGER_IDS.onSwitchIn,
@@ -834,7 +839,10 @@ describe("Gen 7 Contact Abilities", () => {
 
     it("given Flame Body defender, when attacker already has a status, then does not burn", () => {
       // Source: Showdown -- cannot inflict if already statused
-      const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.none, status: STATUS_IDS.paralysis });
+      const opponent = createOnFieldPokemon({
+        ability: ABILITY_IDS.none,
+        status: STATUS_IDS.paralysis,
+      });
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.flameBody,
         trigger: TRIGGER_IDS.onContact,

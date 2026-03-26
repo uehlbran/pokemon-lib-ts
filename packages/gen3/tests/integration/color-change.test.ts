@@ -1,7 +1,7 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,

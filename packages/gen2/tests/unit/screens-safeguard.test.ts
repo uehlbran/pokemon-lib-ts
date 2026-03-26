@@ -9,16 +9,15 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createPokemonInstance,
+  type MoveData,
   NEUTRAL_NATURES,
   type PokemonCreationOptions,
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  SeededRandom,
-  ScreenType,
-  StatBlock,
-  TypeChart,
-  createPokemonInstance,
+  type PokemonType,
+  type ScreenType,
+  type SeededRandom,
+  type StatBlock,
+  type TypeChart,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";

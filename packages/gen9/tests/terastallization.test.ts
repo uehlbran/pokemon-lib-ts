@@ -5,8 +5,8 @@ import {
   CORE_ABILITY_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
-  SeededRandom,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -441,7 +441,9 @@ describe("Gen9Terastallization persistence through switches", () => {
     });
 
     // Simulate switch-in
-    const active1 = createBattleOnFieldPokemon(pokemon, 0, [...dataManager.getSpecies(SP.gyarados).types]);
+    const active1 = createBattleOnFieldPokemon(pokemon, 0, [
+      ...dataManager.getSpecies(SP.gyarados).types,
+    ]);
     expect(active1.isTerastallized).toBe(false);
 
     // Terastallize
@@ -453,7 +455,9 @@ describe("Gen9Terastallization persistence through switches", () => {
     expect(active1.types).toEqual([T.water]);
 
     // Simulate switch-out and switch back in
-    const active2 = createBattleOnFieldPokemon(pokemon, 0, [...dataManager.getSpecies(SP.gyarados).types]);
+    const active2 = createBattleOnFieldPokemon(pokemon, 0, [
+      ...dataManager.getSpecies(SP.gyarados).types,
+    ]);
 
     // Tera state should be restored
     expect(active2.isTerastallized).toBe(true);
@@ -469,7 +473,9 @@ describe("Gen9Terastallization persistence through switches", () => {
       teraType: STELLAR_TERA_TYPE,
     });
 
-    const active1 = createBattleOnFieldPokemon(pokemon, 0, [...dataManager.getSpecies(SP.charizard).types]);
+    const active1 = createBattleOnFieldPokemon(pokemon, 0, [
+      ...dataManager.getSpecies(SP.charizard).types,
+    ]);
     const side = createBattleSide();
     const state = createBattleState();
     tera.activate(active1, side, state);
@@ -479,7 +485,9 @@ describe("Gen9Terastallization persistence through switches", () => {
     expect(active1.stellarBoostedTypes).toContain(T.fire);
 
     // Switch out and back in
-    const active2 = createBattleOnFieldPokemon(pokemon, 0, [...dataManager.getSpecies(SP.charizard).types]);
+    const active2 = createBattleOnFieldPokemon(pokemon, 0, [
+      ...dataManager.getSpecies(SP.charizard).types,
+    ]);
 
     // Stellar boost tracking should be preserved
     expect(active2.stellarBoostedTypes).toContain(T.fire);
@@ -505,13 +513,21 @@ describe("calculateTeraStab non-Tera (standard STAB)", () => {
 
   it("given a non-Tera Pokemon with Adaptability using a STAB move, when calculating STAB, then returns 2.0", () => {
     // Source: Showdown data/abilities.ts:43-56 -- Adaptability: 1.5x -> 2.0x
-    const pokemon = createOnFieldPokemon({ speciesId: SP.charizard, ability: C.adaptability, types: [T.fire, T.flying] });
+    const pokemon = createOnFieldPokemon({
+      speciesId: SP.charizard,
+      ability: C.adaptability,
+      types: [T.fire, T.flying],
+    });
     expect(calculateTeraStab(pokemon, T.fire, [T.fire, T.flying], true)).toBe(2.0);
   });
 
   it("given a non-Tera Pokemon with Adaptability using a non-STAB move, when calculating STAB, then returns 1.0", () => {
     // Source: Showdown data/abilities.ts -- Adaptability only modifies existing STAB
-    const pokemon = createOnFieldPokemon({ speciesId: SP.charizard, ability: C.adaptability, types: [T.fire, T.flying] });
+    const pokemon = createOnFieldPokemon({
+      speciesId: SP.charizard,
+      ability: C.adaptability,
+      types: [T.fire, T.flying],
+    });
     expect(calculateTeraStab(pokemon, T.ghost, [T.fire, T.flying], true)).toBe(1.0);
   });
 });

@@ -19,6 +19,14 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  GEN7_ABILITY_IDS,
+  GEN7_ITEM_IDS,
+  GEN7_MOVE_IDS,
+  GEN7_NATURE_IDS,
+  GEN7_SPECIES_IDS,
+} from "../src";
+import { createGen7DataManager } from "../src/data";
+import {
   applyGen7HeldItem,
   getPinchBerryThreshold,
   getSpeciesZMoves,
@@ -30,8 +38,6 @@ import {
   isZCrystal,
   TERRAIN_EXTENDER_ITEM_ID,
 } from "../src/Gen7Items";
-import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS, GEN7_NATURE_IDS, GEN7_SPECIES_IDS } from "../src";
-import { createGen7DataManager } from "../src/data";
 
 const GEN7_DATA = createGen7DataManager();
 const ITEM_IDS = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
@@ -121,11 +127,7 @@ function createOnFieldPokemon(overrides: {
 }): ActivePokemon {
   const pokemon = createSyntheticPokemonInstance(overrides);
   const species = GEN7_DATA.getSpecies(overrides.speciesId ?? DEFAULT_SPECIES.id);
-  const active = createBattleOnFieldPokemon(
-    pokemon,
-    0,
-    [...(overrides.types ?? species.types)],
-  );
+  const active = createBattleOnFieldPokemon(pokemon, 0, [...(overrides.types ?? species.types)]);
   active.ability = pokemon.ability;
   active.volatileStatuses = overrides.volatiles ?? new Map();
   return active;
@@ -296,7 +298,7 @@ describe("Z-Crystal Identification", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("Terrain Extender", () => {
-    it("given a Pokemon holding the terrain-duration extender item, when checking hasTerrainExtender, then returns true", () => {
+  it("given a Pokemon holding the terrain-duration extender item, when checking hasTerrainExtender, then returns true", () => {
     // Source: Showdown data/items.ts -- terrainextender: extends terrain from 5 to 8 turns
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.terrainExtender });
     expect(hasTerrainExtender(pokemon)).toBe(true);
@@ -340,7 +342,11 @@ describe("isMegaStone", () => {
 describe("Item Suppression", () => {
   it("given a Pokemon with Klutz holding Leftovers, when end of turn fires, then item does not activate", () => {
     // Source: Bulbapedia -- Klutz: "The Pokemon can't use any held items"
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, ability: ABILITY_IDS.klutz, currentHp: 100 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.leftovers,
+      ability: ABILITY_IDS.klutz,
+      currentHp: 100,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
@@ -349,7 +355,11 @@ describe("Item Suppression", () => {
   it("given a Pokemon under Embargo holding Leftovers, when end of turn fires, then item does not activate", () => {
     // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
     const volatiles = new Map([[VOLATILE_IDS.embargo, { turnsLeft: 3 }]]);
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, currentHp: 100, volatiles });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.leftovers,
+      currentHp: 100,
+      volatiles,
+    });
     const ctx = createItemContext({ pokemon });
     const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);
@@ -365,7 +375,11 @@ describe("End-of-Turn Items", () => {
     it("given a Pokemon with 400 max HP holding Leftovers, when end of turn fires, then heals 25 HP (floor(400/16))", () => {
       // Source: Showdown data/items.ts -- Leftovers: floor(maxHP / 16)
       // 400 / 16 = 25
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, hp: 400, currentHp: 300 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.leftovers,
+        hp: 400,
+        currentHp: 300,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -375,7 +389,11 @@ describe("End-of-Turn Items", () => {
     it("given a Pokemon with 100 max HP holding Leftovers, when end of turn fires, then heals 6 HP (floor(100/16))", () => {
       // Source: Showdown data/items.ts -- Leftovers: floor(maxHP / 16)
       // 100 / 16 = 6.25, floor = 6
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.leftovers, hp: 100, currentHp: 50 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.leftovers,
+        hp: 100,
+        currentHp: 50,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -418,7 +436,10 @@ describe("End-of-Turn Items", () => {
   describe("Toxic Orb", () => {
     it("given a healthy Pokemon holding Toxic Orb, when end of turn fires, then inflicts the owned badly poisoned status", () => {
       // Source: Showdown data/items.ts -- Toxic Orb: inflicts badly-poisoned at end of turn
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.toxicOrb, types: [TYPE_IDS.normal] });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.toxicOrb,
+        types: [TYPE_IDS.normal],
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -429,7 +450,10 @@ describe("End-of-Turn Items", () => {
 
     it("given a Poison-type holding Toxic Orb, when end of turn fires, then does not activate (type immunity)", () => {
       // Source: Showdown -- type immunity prevents Orb activation
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.toxicOrb, types: [TYPE_IDS.poison] });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.toxicOrb,
+        types: [TYPE_IDS.poison],
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
@@ -439,11 +463,16 @@ describe("End-of-Turn Items", () => {
   describe("Flame Orb", () => {
     it("given a healthy Pokemon holding Flame Orb, when end of turn fires, then inflicts burn", () => {
       // Source: Showdown data/items.ts -- Flame Orb: inflicts burn at end of turn
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.flameOrb, types: [TYPE_IDS.normal] });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.flameOrb,
+        types: [TYPE_IDS.normal],
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects).toEqual([{ type: "inflict-status", target: "self", status: STATUS_IDS.burn }]);
+      expect(result.effects).toEqual([
+        { type: "inflict-status", target: "self", status: STATUS_IDS.burn },
+      ]);
     });
 
     it("given a Fire-type holding Flame Orb, when end of turn fires, then does not activate (type immunity)", () => {
@@ -459,7 +488,11 @@ describe("End-of-Turn Items", () => {
     it("given a Pokemon at 50% HP holding Sitrus Berry, when end of turn fires, then heals 25% max HP and is consumed", () => {
       // Source: Showdown data/items.ts -- Sitrus Berry: heals 1/4 max HP at <= 50%
       // 400 / 4 = 100
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 400, currentHp: 200 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.sitrusBerry,
+        hp: 400,
+        currentHp: 200,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -473,7 +506,11 @@ describe("End-of-Turn Items", () => {
 
     it("given a Pokemon above 50% HP holding Sitrus Berry, when end of turn fires, then does not activate", () => {
       // Source: Showdown data/items.ts -- Sitrus Berry threshold: <= 50%
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.sitrusBerry, hp: 400, currentHp: 201 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.sitrusBerry,
+        hp: 400,
+        currentHp: 201,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
@@ -483,7 +520,10 @@ describe("End-of-Turn Items", () => {
   describe("Lum Berry", () => {
     it("given a paralyzed Pokemon holding Lum Berry, when end of turn fires, then cures status and is consumed", () => {
       // Source: Showdown data/items.ts -- Lum Berry: cures any status + confusion
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.lumBerry, status: STATUS_IDS.paralysis });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.lumBerry,
+        status: STATUS_IDS.paralysis,
+      });
       const ctx = createItemContext({ pokemon });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
@@ -510,7 +550,11 @@ describe("On-Damage-Taken Items", () => {
       // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook)
       // because handleOnDamageTaken fires post-damage, making currentHp === maxHp always false.
       // See: Gen7Ruleset.capLethalDamage and GitHub issue #784
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.focusSash, hp: 200, currentHp: 200 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.focusSash,
+        hp: 200,
+        currentHp: 200,
+      });
       const ctx = createItemContext({ pokemon, damage: 300 });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
@@ -518,7 +562,11 @@ describe("On-Damage-Taken Items", () => {
 
     it("given a non-full-HP Pokemon holding Focus Sash taking a KO hit, when damage taken fires, then does not activate", () => {
       // Source: Showdown data/items.ts -- Focus Sash only works at full HP
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.focusSash, hp: 200, currentHp: 199 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.focusSash,
+        hp: 200,
+        currentHp: 199,
+      });
       const ctx = createItemContext({ pokemon, damage: 300 });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
@@ -530,7 +578,11 @@ describe("On-Damage-Taken Items", () => {
       // Source: Showdown data/items.ts -- Assault Vest: +50% SpDef is in damage calc;
       // status move block is in move validation, not item trigger. No damage taken effect.
       // This test just confirms the item handler does not crash for Assault Vest.
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.assaultVest, hp: 200, currentHp: 100 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.assaultVest,
+        hp: 200,
+        currentHp: 100,
+      });
       const ctx = createItemContext({ pokemon, damage: 50 });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       // Assault Vest does not have an damage taken trigger
@@ -542,7 +594,11 @@ describe("On-Damage-Taken Items", () => {
     it("given a Pokemon at 25% HP holding Liechi Berry, when damage taken fires, then boosts Attack and is consumed", () => {
       // Source: Showdown data/items.ts -- Liechi Berry: +1 Atk at <= 25% HP
       // 400 * 0.25 = 100, currentHp 100 <= 100 triggers
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.liechiBerry, hp: 400, currentHp: 100 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.liechiBerry,
+        hp: 400,
+        currentHp: 100,
+      });
       const ctx = createItemContext({ pokemon, damage: 100 });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
@@ -560,7 +616,11 @@ describe("On-Damage-Taken Items", () => {
 
     it("given a Pokemon at 26% HP holding Liechi Berry, when damage taken fires, then does not activate", () => {
       // 400 * 0.25 = 100, currentHp 101 > 100, no trigger
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.liechiBerry, hp: 400, currentHp: 101 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.liechiBerry,
+        hp: 400,
+        currentHp: 101,
+      });
       const ctx = createItemContext({ pokemon, damage: 50 });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
@@ -577,7 +637,11 @@ describe("On-Contact Items", () => {
     it("given a defender holding Rocky Helmet hit by a contact move, when contact fires, then deals 1/6 attacker's max HP", () => {
       // Source: Showdown data/items.ts -- Rocky Helmet: floor(attacker.baseMaxhp / 6)
       // Attacker max HP = 300, 300 / 6 = 50
-      const defender = createOnFieldPokemon({ heldItem: ITEM_IDS.rockyHelmet, hp: 200, currentHp: 200 });
+      const defender = createOnFieldPokemon({
+        heldItem: ITEM_IDS.rockyHelmet,
+        hp: 200,
+        currentHp: 200,
+      });
       const attacker = createOnFieldPokemon({ hp: 300, currentHp: 300 });
       const state = createBattleState({
         sides: [
@@ -631,7 +695,11 @@ describe("On-Hit Items", () => {
 
     it("given a Pokemon with Sheer Force using a move with secondary effect, when hit fires with Life Orb, then no recoil", () => {
       // Source: Showdown scripts.ts -- Sheer Force suppresses Life Orb recoil
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.lifeOrb, hp: 200, ability: ABILITY_IDS.sheerForce });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.lifeOrb,
+        hp: 200,
+        ability: ABILITY_IDS.sheerForce,
+      });
       const move = NON_CONTACT_MOVE;
       const ctx = createItemContext({ pokemon, damage: 80, move });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
@@ -643,7 +711,11 @@ describe("On-Hit Items", () => {
     it("given a Pokemon holding Shell Bell dealing 80 damage, when hit fires, then heals 10 HP (floor(80/8))", () => {
       // Source: Showdown data/items.ts -- Shell Bell: heals floor(damageDealt / 8)
       // 80 / 8 = 10
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.shellBell, hp: 200, currentHp: 150 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.shellBell,
+        hp: 200,
+        currentHp: 150,
+      });
       const ctx = createItemContext({ pokemon, damage: 80, move: DEFAULT_MOVE });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
@@ -653,7 +725,11 @@ describe("On-Hit Items", () => {
     it("given a Pokemon holding Shell Bell dealing 160 damage, when hit fires, then heals 20 HP (floor(160/8))", () => {
       // Source: Showdown data/items.ts -- Shell Bell: floor(damageDealt / 8)
       // 160 / 8 = 20
-      const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.shellBell, hp: 200, currentHp: 100 });
+      const pokemon = createOnFieldPokemon({
+        heldItem: ITEM_IDS.shellBell,
+        hp: 200,
+        currentHp: 100,
+      });
       const ctx = createItemContext({ pokemon, damage: 160, move: DEFAULT_MOVE });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
@@ -669,9 +745,9 @@ describe("On-Hit Items", () => {
 describe("getPinchBerryThreshold", () => {
   it("given a Pokemon with Gluttony, when checking the base pinch berry threshold, then returns the Gluttony threshold", () => {
     // Source: Bulbapedia -- Gluttony changes pinch berry threshold from 25% to 50%
-    expect(getPinchBerryThreshold({ ability: ABILITY_IDS.gluttony }, BASE_PINCH_BERRY_THRESHOLD)).toBe(
-      GLUTTONY_PINCH_BERRY_THRESHOLD,
-    );
+    expect(
+      getPinchBerryThreshold({ ability: ABILITY_IDS.gluttony }, BASE_PINCH_BERRY_THRESHOLD),
+    ).toBe(GLUTTONY_PINCH_BERRY_THRESHOLD);
   });
 
   it("given a Pokemon without Gluttony, when checking the base pinch berry threshold, then returns the unchanged threshold", () => {
@@ -887,7 +963,11 @@ describe("Weakness Policy", () => {
 describe("Air Balloon", () => {
   it("given a Pokemon holding Air Balloon hit by any damaging move, when damage taken fires, then balloon pops (consumed)", () => {
     // Source: Showdown data/items.ts -- Air Balloon: pops on any damaging hit
-    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.airBalloon, hp: 200, currentHp: 150 });
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.airBalloon,
+      hp: 200,
+      currentHp: 150,
+    });
     const ctx = createItemContext({ pokemon, damage: 50 });
     const result = applyGen7HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);

@@ -1,6 +1,7 @@
 import type { AbilityContext, ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
+  type AbilityTrigger,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
@@ -8,7 +9,6 @@ import {
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
-  type AbilityTrigger,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -34,7 +34,7 @@ import { applyGen3Ability } from "../../src/Gen3Abilities";
 
 const DATA_MANAGER = createGen3DataManager();
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
-const TYPES = CORE_TYPE_IDS;
+const _TYPES = CORE_TYPE_IDS;
 const SLAKING = DATA_MANAGER.getSpecies(GEN3_SPECIES_IDS.slaking);
 const HARDY_NATURE = DATA_MANAGER.getNature(GEN3_NATURE_IDS.hardy).id;
 const TACKLE = DATA_MANAGER.getMove(GEN3_MOVE_IDS.tackle);
@@ -157,10 +157,7 @@ function createBattleState(): AbilityContext["state"] {
   } as AbilityContext["state"];
 }
 
-function createAbilityContext(
-  pokemon: ActivePokemon,
-  trigger: AbilityTrigger,
-): AbilityContext {
+function createAbilityContext(pokemon: ActivePokemon, trigger: AbilityTrigger): AbilityContext {
   return {
     pokemon,
     state: createBattleState(),
@@ -240,19 +237,28 @@ describe("Gen 3 Truant -- end-of-turn toggle (#307)", () => {
       types: [...SLAKING.types],
     });
 
-    const beforeMove1 = applyGen3Ability(TRIGGERS.onBeforeMove, createAbilityContext(pokemon, TRIGGERS.onBeforeMove));
+    const beforeMove1 = applyGen3Ability(
+      TRIGGERS.onBeforeMove,
+      createAbilityContext(pokemon, TRIGGERS.onBeforeMove),
+    );
     expect(beforeMove1.movePrevented).toBeUndefined();
 
     applyGen3Ability(TRIGGERS.onTurnEnd, createAbilityContext(pokemon, TRIGGERS.onTurnEnd));
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(true);
 
-    const beforeMove2 = applyGen3Ability(TRIGGERS.onBeforeMove, createAbilityContext(pokemon, TRIGGERS.onBeforeMove));
+    const beforeMove2 = applyGen3Ability(
+      TRIGGERS.onBeforeMove,
+      createAbilityContext(pokemon, TRIGGERS.onBeforeMove),
+    );
     expect(beforeMove2.movePrevented).toBe(true);
 
     applyGen3Ability(TRIGGERS.onTurnEnd, createAbilityContext(pokemon, TRIGGERS.onTurnEnd));
     expect(pokemon.volatileStatuses.has("truant-turn")).toBe(false);
 
-    const beforeMove3 = applyGen3Ability(TRIGGERS.onBeforeMove, createAbilityContext(pokemon, TRIGGERS.onBeforeMove));
+    const beforeMove3 = applyGen3Ability(
+      TRIGGERS.onBeforeMove,
+      createAbilityContext(pokemon, TRIGGERS.onBeforeMove),
+    );
     expect(beforeMove3.movePrevented).toBeUndefined();
   });
 });

@@ -1,5 +1,10 @@
 import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
@@ -88,7 +93,11 @@ describe("BaseRuleset — additional branches", () => {
       const active = createOnFieldPokemon(pokemon, 0, [CORE_TYPE_IDS.fire]);
 
       // Act
-      const damage = ruleset.applyStatusDamage(active, CORE_STATUS_IDS.burn, {} as unknown as BattleState);
+      const damage = ruleset.applyStatusDamage(
+        active,
+        CORE_STATUS_IDS.burn,
+        {} as unknown as BattleState,
+      );
 
       // Assert — min(1, floor(10/16)=0) → max(1, 0) = 1
       expect(damage).toBe(1);

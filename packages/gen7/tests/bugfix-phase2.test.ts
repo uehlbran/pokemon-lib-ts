@@ -8,27 +8,27 @@ import type {
 import type { MoveData, MoveSlot, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
-  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen7DataManager,
   GEN7_ABILITY_IDS,
   GEN7_ITEM_IDS,
   GEN7_MOVE_IDS,
   GEN7_NATURE_IDS,
   GEN7_SPECIES_IDS,
-  createGen7DataManager,
 } from "../src";
 import { handleGen7NewAbility } from "../src/Gen7AbilitiesNew";
 import { handleGen7StatAbility } from "../src/Gen7AbilitiesStat";

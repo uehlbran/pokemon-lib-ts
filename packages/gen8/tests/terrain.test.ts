@@ -10,10 +10,10 @@ import {
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -39,25 +39,25 @@ import {
 // Helper factories
 // ---------------------------------------------------------------------------
 
-const dataManager = createGen8DataManager()
-const abilityIds = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const
-const abilityTriggerIds = CORE_ABILITY_TRIGGER_IDS
-const itemIds = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const
-const natureIds = GEN8_NATURE_IDS
-const speciesIds = GEN8_SPECIES_IDS
-const statusIds = CORE_STATUS_IDS
-const terrainIds = CORE_TERRAIN_IDS
-const typeIds = CORE_TYPE_IDS
+const dataManager = createGen8DataManager();
+const abilityIds = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;
+const abilityTriggerIds = CORE_ABILITY_TRIGGER_IDS;
+const itemIds = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS } as const;
+const natureIds = GEN8_NATURE_IDS;
+const speciesIds = GEN8_SPECIES_IDS;
+const statusIds = CORE_STATUS_IDS;
+const terrainIds = CORE_TERRAIN_IDS;
+const typeIds = CORE_TYPE_IDS;
 const surgeSpeciesIds = {
   pincurchin: speciesIds.pincurchin,
   rillaboom: speciesIds.rillaboom,
   indeedee: speciesIds.indeedee,
   weezing: speciesIds.weezing,
-} as const
-const defaultSpecies = dataManager.getSpecies(speciesIds.pikachu)
-const defaultNature = dataManager.getNature(natureIds.hardy).id
+} as const;
+const defaultSpecies = dataManager.getSpecies(speciesIds.pikachu);
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
 
-function createSyntheticBattleStats(maxHp = 200, statValue = 100) {
+function _createSyntheticBattleStats(maxHp = 200, statValue = 100) {
   return {
     hp: maxHp,
     attack: statValue,
@@ -65,7 +65,7 @@ function createSyntheticBattleStats(maxHp = 200, statValue = 100) {
     spAttack: statValue,
     spDefense: statValue,
     speed: statValue,
-  }
+  };
 }
 
 function createOnFieldPokemon(overrides: {
@@ -85,9 +85,9 @@ function createOnFieldPokemon(overrides: {
   nickname?: string | null;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
 }): ActivePokemon {
-  const level = overrides.level ?? 50
-  const maxHp = overrides.hp ?? 200
-  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id)
+  const level = overrides.level ?? 50;
+  const maxHp = overrides.hp ?? 200;
+  const species = dataManager.getSpecies(overrides.speciesId ?? defaultSpecies.id);
   const pokemon = createPokemonInstance(species, level, new SeededRandom(7), {
     nature: defaultNature,
     ivs: createIvs(),
@@ -102,13 +102,13 @@ function createOnFieldPokemon(overrides: {
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: itemIds.pokeBall,
-  })
+  });
 
-  pokemon.nickname = overrides.nickname ?? null
-  pokemon.currentHp = overrides.currentHp ?? maxHp
-  pokemon.ability = overrides.ability ?? abilityIds.none
-  pokemon.heldItem = overrides.heldItem ?? null
-  pokemon.status = overrides.status ?? null
+  pokemon.nickname = overrides.nickname ?? null;
+  pokemon.currentHp = overrides.currentHp ?? maxHp;
+  pokemon.ability = overrides.ability ?? abilityIds.none;
+  pokemon.heldItem = overrides.heldItem ?? null;
+  pokemon.status = overrides.status ?? null;
   pokemon.calculatedStats = {
     hp: maxHp,
     attack: overrides.attack ?? 100,
@@ -116,15 +116,15 @@ function createOnFieldPokemon(overrides: {
     spAttack: overrides.spAttack ?? 100,
     spDefense: overrides.spDefense ?? 100,
     speed: overrides.speed ?? 100,
-  }
+  };
 
   const active = createBattleOnFieldPokemon(
     pokemon,
     0,
     overrides.types ?? [...(species.types as PokemonType[])],
-  )
-  active.ability = overrides.ability ?? abilityIds.none
-  active.volatileStatuses = overrides.volatiles ?? new Map()
+  );
+  active.ability = overrides.ability ?? abilityIds.none;
+  active.volatileStatuses = overrides.volatiles ?? new Map();
   active.statStages = {
     attack: 0,
     defense: 0,
@@ -133,8 +133,8 @@ function createOnFieldPokemon(overrides: {
     speed: 0,
     accuracy: 0,
     evasion: 0,
-  }
-  return active
+  };
+  return active;
 }
 
 function createBattleState(overrides?: {
@@ -161,7 +161,7 @@ function createBattleState(overrides?: {
       { index: 0, active: [] },
       { index: 1, active: [] },
     ],
-  } as unknown as BattleState
+  } as unknown as BattleState;
 }
 
 function createAbilityContext(overrides: {
@@ -175,7 +175,7 @@ function createAbilityContext(overrides: {
     state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
     trigger: abilityTriggerIds.onSwitchIn,
-  }
+  };
 }
 
 // ===========================================================================
@@ -447,7 +447,10 @@ describe("Psychic Terrain", () => {
 
     it("given Psychic Terrain and a Levitate Pokemon, when checking priority block with +1 priority, then returns false", () => {
       // Source: Showdown data/conditions.ts -- Levitate = not grounded = not protected
-      const target = createOnFieldPokemon({ types: [typeIds.normal], ability: abilityIds.levitate });
+      const target = createOnFieldPokemon({
+        types: [typeIds.normal],
+        ability: abilityIds.levitate,
+      });
       const state = createBattleState();
 
       const blocked = checkPsychicTerrainPriorityBlock(terrainIds.psychic, 1, target, state);
@@ -551,7 +554,11 @@ describe("Grassy Terrain", () => {
       // Source: Showdown data/conditions.ts -- Math.max(1, floor(maxhp/16))
       // For maxHp=1: floor(1/16) = 0, clamped to 1
       // This tests the min-1 clamp for Shedinja-like edge cases
-      const _pokemon = createOnFieldPokemon({ hp: 1, currentHp: 0, types: [typeIds.bug, typeIds.ghost] });
+      const _pokemon = createOnFieldPokemon({
+        hp: 1,
+        currentHp: 0,
+        types: [typeIds.bug, typeIds.ghost],
+      });
       // Shedinja can't be at 0 HP and receive heal... use a 15 HP mon where floor(15/16)=0
       const pokemon2 = createOnFieldPokemon({ hp: 15, currentHp: 10, types: [typeIds.normal] });
       const state = createBattleState({

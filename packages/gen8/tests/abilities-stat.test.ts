@@ -9,10 +9,10 @@ import {
   CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -341,31 +341,19 @@ describe("Gen 8 Stat Abilities", () => {
       // Source: Showdown data/abilities.ts -- prankster: Dark targets block
       // Source: Bulbapedia "Prankster" Gen 7+ -- "status moves fail against Dark-type targets"
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.status,
-          [typeIds.dark],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.dark]),
       ).toBe(true);
     });
 
     it("given Prankster and a status move targeting non-Dark type, when checking block, then returns false", () => {
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.status,
-          [typeIds.fire],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.fire]),
       ).toBe(false);
     });
 
     it("given Prankster and a physical move targeting Dark type, when checking block, then returns false", () => {
       expect(
-        isPranksterBlockedByDarkType(
-          abilityIds.prankster,
-          moveCategories.physical,
-          [typeIds.dark],
-        ),
+        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.physical, [typeIds.dark]),
       ).toBe(false);
     });
 
@@ -762,7 +750,11 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
   it("given Moody in Gen 8, when on-turn-end fires with all stats at 0, then raises one of the 5 eligible stats by 2", () => {
     // Source: Showdown data/abilities.ts -- Moody onResidual: boost one of [atk,def,spa,spd,spe] by +2
     // Source: Bulbapedia "Moody" -- Gen 8 pool is exactly these 5 stats
-    const ctx = createAbilityContext({ ability: abilityIds.moody, trigger: triggerIds.onTurnEnd, seed: 42 });
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
+      seed: 42,
+    });
     const result = handleGen8StatAbility(ctx);
 
     expect(result.activated).toBe(true);
@@ -779,7 +771,11 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
   it("given Moody in Gen 8, when on-turn-end fires, then lowers one of the 5 eligible stats by 1", () => {
     // Source: Showdown data/abilities.ts -- Moody onResidual: lower a different stat by -1
-    const ctx = createAbilityContext({ ability: abilityIds.moody, trigger: triggerIds.onTurnEnd, seed: 42 });
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
+      seed: 42,
+    });
     const result = handleGen8StatAbility(ctx);
 
     expect(result.activated).toBe(true);
@@ -796,7 +792,11 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
   it("given Moody in Gen 8, when on-turn-end fires, then raised stat and lowered stat are different", () => {
     // Source: Showdown data/abilities.ts -- Moody raises one stat and lowers a DIFFERENT one
-    const ctx = createAbilityContext({ ability: abilityIds.moody, trigger: triggerIds.onTurnEnd, seed: 42 });
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
+      seed: 42,
+    });
     const result = handleGen8StatAbility(ctx);
 
     const raiseEffect = result.effects.find(
@@ -812,7 +812,11 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
   it("given Moody in Gen 8, when a stat is already at +6, then that stat is excluded from the raise pool", () => {
     // Source: Showdown data/abilities.ts -- Moody plusPool excludes stats already at +6
-    const ctx = createAbilityContext({ ability: abilityIds.moody, trigger: triggerIds.onTurnEnd, seed: 99 });
+    const ctx = createAbilityContext({
+      ability: abilityIds.moody,
+      trigger: triggerIds.onTurnEnd,
+      seed: 99,
+    });
     // Set attack to +6 (maxed) — should not be raised further
     ctx.pokemon.statStages.attack = 6;
     ctx.pokemon.statStages.defense = 6;
@@ -840,7 +844,11 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     // This test runs 100 seeds to confirm accuracy/evasion never appear in Gen 8 Moody pool.
     const INELIGIBLE_STATS = ["accuracy", "evasion"];
     for (let seed = 0; seed < 100; seed++) {
-      const ctx = createAbilityContext({ ability: abilityIds.moody, trigger: triggerIds.onTurnEnd, seed });
+      const ctx = createAbilityContext({
+        ability: abilityIds.moody,
+        trigger: triggerIds.onTurnEnd,
+        seed,
+      });
       const result = handleGen8StatAbility(ctx);
       for (const effect of result.effects) {
         if (effect.effectType === "stat-change") {

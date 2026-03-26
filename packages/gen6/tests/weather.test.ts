@@ -18,7 +18,7 @@ import {
  */
 const A = GEN6_ABILITY_IDS;
 const SP = GEN6_SPECIES_IDS;
-const C = CORE_ABILITY_IDS;
+const _C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
 const W = CORE_WEATHER_IDS;
 

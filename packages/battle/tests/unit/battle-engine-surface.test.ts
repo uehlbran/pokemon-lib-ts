@@ -1,12 +1,17 @@
-import { CORE_MOVE_IDS, type DataManager, type PokemonInstance, type PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  type DataManager,
+  type PokemonInstance,
+  type PokemonSpeciesData,
+} from "@pokemon-lib-ts/core";
 import { GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import type { BattleEvent } from "../../src/events";
 import { createTestPokemon } from "../../src/utils";
 import { createMockDataManager } from "../helpers/mock-data-manager";
-import { createMockMoveSlot } from "../helpers/move-slot";
 import { MockRuleset } from "../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../helpers/move-slot";
 
 class TrappedSwitchRuleset extends MockRuleset {
   override canSwitch(): boolean {
@@ -160,7 +165,9 @@ describe("BattleEngine surface", () => {
       // Source: createTestPokemon recalculates current HP from the cloned engine-owned stats.
       expect(enginePokemon.currentHp).toBe(enginePokemon.calculatedStats.hp);
       // Source: createMockMoveSlot(CORE_MOVE_IDS.tackle) derives Tackle PP from canonical move data.
-      expect(enginePokemon.moves[0]!.currentPP).toBe(createMockMoveSlot(CORE_MOVE_IDS.tackle).currentPP);
+      expect(enginePokemon.moves[0]!.currentPP).toBe(
+        createMockMoveSlot(CORE_MOVE_IDS.tackle).currentPP,
+      );
       expect(enginePokemon.evs.hp).toBe(0);
     });
 
@@ -172,7 +179,10 @@ describe("BattleEngine surface", () => {
       const config: BattleConfig = {
         generation: 1,
         format: "singles",
-        teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)], [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)]],
+        teams: [
+          [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)],
+          [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+        ],
         seed: 12345,
       };
 
@@ -186,7 +196,10 @@ describe("BattleEngine surface", () => {
       const config: BattleConfig = {
         generation: 1,
         format: "doubles",
-        teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)], [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)]],
+        teams: [
+          [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)],
+          [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+        ],
         seed: 12345,
       };
 

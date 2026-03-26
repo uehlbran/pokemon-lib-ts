@@ -4,6 +4,7 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
@@ -11,7 +12,6 @@ import {
   CORE_SCREEN_IDS,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager } from "../../src/data";
 import { GEN3_MOVE_IDS } from "../../src/data/reference-ids";
@@ -170,7 +170,10 @@ function createMove(
 function createBattleStateWithScreens(
   attacker: ActivePokemon,
   defender: ActivePokemon,
-  defenderScreens: Array<{ type: typeof CORE_SCREEN_IDS.reflect | typeof CORE_SCREEN_IDS.lightScreen; turnsLeft: number }>,
+  defenderScreens: Array<{
+    type: typeof CORE_SCREEN_IDS.reflect | typeof CORE_SCREEN_IDS.lightScreen;
+    turnsLeft: number;
+  }>,
 ): BattleState {
   return {
     sides: [

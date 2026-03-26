@@ -125,9 +125,7 @@ describe("getTypeEffectiveness", () => {
   it("given a Fire-type move and Water/Dragon dual-type defender, when calculating effectiveness, then returns 0.25", () => {
     // Derived from the chart: the dual-type result multiplies the two canonical single-type entries.
     const doubleResistedMultiplier = TYPE_CHART[fire][water] * TYPE_CHART[fire][dragon];
-    expect(getTypeEffectiveness(fire, [water, dragon], TYPE_CHART)).toBe(
-      doubleResistedMultiplier,
-    );
+    expect(getTypeEffectiveness(fire, [water, dragon], TYPE_CHART)).toBe(doubleResistedMultiplier);
   });
 
   it("given a Normal-type move and Normal-type defender, when calculating effectiveness, then returns 1.0", () => {

@@ -7,17 +7,12 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createGen5DataManager,
-  GEN5_MOVE_IDS,
-  GEN5_NATURE_IDS,
-  GEN5_SPECIES_IDS,
-} from "../src";
+import { createGen5DataManager, GEN5_MOVE_IDS, GEN5_NATURE_IDS, GEN5_SPECIES_IDS } from "../src";
 import {
   getGen5PriorityOverride,
   handleGen5FieldMove,
@@ -29,14 +24,14 @@ import {
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-const gen5DataManager = createGen5DataManager()
-const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS } as const
-const DEFAULT_SPECIES = gen5DataManager.getSpecies(GEN5_SPECIES_IDS.bulbasaur)
-const DEFAULT_NATURE = gen5DataManager.getNature(GEN5_NATURE_IDS.hardy).id
+const gen5DataManager = createGen5DataManager();
+const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN5_MOVE_IDS } as const;
+const DEFAULT_SPECIES = gen5DataManager.getSpecies(GEN5_SPECIES_IDS.bulbasaur);
+const DEFAULT_NATURE = gen5DataManager.getNature(GEN5_NATURE_IDS.hardy).id;
 
 function getCanonicalGen5Move(moveId: (typeof MOVE_IDS)[keyof typeof MOVE_IDS]): MoveData {
-  const move = gen5DataManager.getMove(moveId)
-  return { ...move, flags: { ...move.flags } }
+  const move = gen5DataManager.getMove(moveId);
+  return { ...move, flags: { ...move.flags } };
 }
 
 function createFieldTestPokemon(overrides: {
@@ -356,7 +351,7 @@ describe("Gen5 Quick Guard", () => {
     const ctx = createFieldMoveContext(MOVE_IDS.quickGuard, {}, { consecutiveProtects: 2 });
     const rng = new SeededRandom(42);
 
-    const captureProtectRoll = vi.fn((count: number, _rng: SeededRandom): boolean => true);
+    const captureProtectRoll = vi.fn((_count: number, _rng: SeededRandom): boolean => true);
 
     const result = handleGen5FieldMove(ctx, rng, captureProtectRoll);
     expect(result).toEqual({

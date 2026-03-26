@@ -13,8 +13,7 @@ const DISALLOWED_HELPERS = [
   },
   {
     name: "makeSide",
-    suggestion:
-      "Rename this to createBattleSide(...) so the fixture intent is explicit",
+    suggestion: "Rename this to createBattleSide(...) so the fixture intent is explicit",
   },
   {
     name: "makePokemonInstance",

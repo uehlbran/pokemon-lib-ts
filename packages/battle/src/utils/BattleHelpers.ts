@@ -1,6 +1,7 @@
+import type { BattleStat, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
@@ -9,7 +10,6 @@ import {
   createIvs,
   createMoveSlot,
 } from "@pokemon-lib-ts/core";
-import type { BattleStat, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import type { PokemonSnapshot } from "../events";
 import type { ActivePokemon } from "../state";
 

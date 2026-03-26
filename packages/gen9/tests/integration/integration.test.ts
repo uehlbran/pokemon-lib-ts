@@ -33,11 +33,11 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
   createMoveSlot,
   createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -101,7 +101,7 @@ const HARSH_SUN_WEATHER = weatherIds.harshSun;
 const SNOW_WEATHER = weatherIds.snow;
 const ELECTRIC_TERRAIN = terrainIds.electric;
 const GRASSY_TERRAIN = terrainIds.grassy;
-const HEAVY_RAIN_WEATHER = weatherIds.heavyRain;
+const _HEAVY_RAIN_WEATHER = weatherIds.heavyRain;
 const SALT_CURE_VOLATILE = volatileIds.saltCure;
 const STELLAR_TERA = "stellar" as PokemonType;
 
@@ -533,13 +533,19 @@ describe("Gen 9 integration tests", () => {
 
     it("given no Sun weather and Orichalcum Pulse ability, when checking modifier, then returns 4096 (neutral)", () => {
       // Source: Showdown data/abilities.ts:3016-3035 -- only activates in sun/desolateland
-      const modifier = getOrichalcumPulseAtkModifier(GEN9_ABILITY_IDS.orichalcumPulse, RAIN_WEATHER);
+      const modifier = getOrichalcumPulseAtkModifier(
+        GEN9_ABILITY_IDS.orichalcumPulse,
+        RAIN_WEATHER,
+      );
       expect(modifier).toBe(CORE_FIXED_POINT.identity);
     });
 
     it("given harsh-sun (Desolate Land) and Orichalcum Pulse, when checking modifier, then returns 5461", () => {
       // Source: Showdown data/abilities.ts:3016-3035 -- desolateland triggers too
-      const modifier = getOrichalcumPulseAtkModifier(GEN9_ABILITY_IDS.orichalcumPulse, HARSH_SUN_WEATHER);
+      const modifier = getOrichalcumPulseAtkModifier(
+        GEN9_ABILITY_IDS.orichalcumPulse,
+        HARSH_SUN_WEATHER,
+      );
       expect(modifier).toBe(5461);
     });
   });
@@ -798,7 +804,12 @@ describe("Gen 9 integration tests", () => {
       });
 
       // Ground is not a base type for Fire/Flying
-      const stab = calculateTeraStab(pokemon, typeIds.ground, [typeIds.fire, typeIds.flying], false);
+      const stab = calculateTeraStab(
+        pokemon,
+        typeIds.ground,
+        [typeIds.fire, typeIds.flying],
+        false,
+      );
       expect(stab).toBeCloseTo(CORE_FIXED_POINT.typeBoost / CORE_FIXED_POINT.identity, 6);
     });
 
@@ -813,17 +824,32 @@ describe("Gen 9 integration tests", () => {
       });
 
       // Fire: first use -> 2x
-      const stabFire = calculateTeraStab(pokemon, typeIds.fire, [typeIds.fire, typeIds.flying], false);
+      const stabFire = calculateTeraStab(
+        pokemon,
+        typeIds.fire,
+        [typeIds.fire, typeIds.flying],
+        false,
+      );
       expect(stabFire).toBe(2.0);
       expect(pokemon.stellarBoostedTypes).toEqual([typeIds.fire]);
 
       // Flying: first use -> 2x (independent)
-      const stabFlying = calculateTeraStab(pokemon, typeIds.flying, [typeIds.fire, typeIds.flying], false);
+      const stabFlying = calculateTeraStab(
+        pokemon,
+        typeIds.flying,
+        [typeIds.fire, typeIds.flying],
+        false,
+      );
       expect(stabFlying).toBe(2.0);
       expect(pokemon.stellarBoostedTypes).toEqual([typeIds.fire, typeIds.flying]);
 
       // Fire again: already consumed -> 1.5x
-      const stabFireAgain = calculateTeraStab(pokemon, typeIds.fire, [typeIds.fire, typeIds.flying], false);
+      const stabFireAgain = calculateTeraStab(
+        pokemon,
+        typeIds.fire,
+        [typeIds.fire, typeIds.flying],
+        false,
+      );
       expect(stabFireAgain).toBe(1.5);
     });
   });

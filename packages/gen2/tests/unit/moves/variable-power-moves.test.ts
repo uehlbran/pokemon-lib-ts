@@ -1,19 +1,15 @@
 import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
+  createMoveSlot,
   NEUTRAL_NATURES,
   SeededRandom,
-  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen2DataManager,
-  GEN2_MOVE_IDS,
-  GEN2_SPECIES_IDS,
-} from "../../../src";
+import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../../src";
 import { getFuryCutterPower, getRolloutPower } from "../../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../../src/Gen2Ruleset";
 

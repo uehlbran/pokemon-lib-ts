@@ -9,14 +9,14 @@ import { describe, expect, it } from "vitest";
 import {
   createGen4DataManager,
   GEN4_ABILITY_IDS,
-  GEN4_ITEM_IDS,
-  GEN4_MOVE_IDS,
-  GEN4_SPECIES_IDS,
   GEN4_CRIT_MULTIPLIER,
   GEN4_CRIT_RATE_DENOMINATORS,
   GEN4_CRIT_RATE_PROBABILITIES,
   GEN4_CRIT_RATE_TABLE,
   GEN4_CRIT_RATES,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_SPECIES_IDS,
 } from "../src";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 

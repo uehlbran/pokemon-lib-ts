@@ -5,11 +5,10 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
-import { describe, expect, it } from "vitest";
 import {
   createGen5DataManager,
   GEN5_ITEM_IDS,
@@ -17,6 +16,7 @@ import {
   GEN5_NATURE_IDS,
   GEN5_SPECIES_IDS,
 } from "@pokemon-lib-ts/gen5";
+import { describe, expect, it } from "vitest";
 import { calculateGen5Damage } from "../src/Gen5DamageCalc";
 import { GEM_TYPES } from "../src/Gen5Items";
 import { GEN5_TYPE_CHART } from "../src/Gen5TypeChart";

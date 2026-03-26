@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveTarget } from "@pokemon-lib-ts/core";
+import type { MoveData } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
@@ -10,6 +10,13 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen6DataManager,
+  GEN6_ABILITY_IDS,
+  GEN6_MOVE_IDS,
+  GEN6_NATURE_IDS,
+  GEN6_SPECIES_IDS,
+} from "../src";
+import {
   calculateSpikyShieldDamage,
   executeGen6MoveEffect,
   isBlockedByCraftyShield,
@@ -17,13 +24,12 @@ import {
   isBlockedByMatBlock,
   isBlockedBySpikyShield,
 } from "../src/Gen6MoveEffects";
-import { createGen6DataManager, GEN6_ABILITY_IDS, GEN6_MOVE_IDS, GEN6_NATURE_IDS, GEN6_SPECIES_IDS } from "../src";
 
 const TYPES = CORE_TYPE_IDS;
 const CORE_ABILITIES = CORE_ABILITY_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const dataManager = createGen6DataManager();
-const ABILITIES = GEN6_ABILITY_IDS;
+const _ABILITIES = GEN6_ABILITY_IDS;
 const MOVES = GEN6_MOVE_IDS;
 const SPECIES = GEN6_SPECIES_IDS;
 const NATURES = GEN6_NATURE_IDS;
@@ -121,7 +127,9 @@ function createMoveEffectContext(
   return {
     attacker: createOnFieldPokemon(options?.attacker ?? {}),
     defender: createOnFieldPokemon(options?.defender ?? {}),
-    move: options?.moveOverrides ? createSyntheticMoveFrom(moveId, options.moveOverrides) : getCanonicalMove(moveId),
+    move: options?.moveOverrides
+      ? createSyntheticMoveFrom(moveId, options.moveOverrides)
+      : getCanonicalMove(moveId),
     damage: 0,
     state: createBattleState(options?.state),
     rng: new SeededRandom(42),
@@ -171,7 +179,9 @@ describe("Gen6 King's Shield — executeGen6MoveEffect", () => {
   it("given attacker has consecutiveProtects set, when King's Shield is used, then passes correct count to rollProtectSuccess", () => {
     // Source: BattleEngine.ts -- consecutiveProtects tracked on ActivePokemon
     // Source: Showdown -- King's Shield shares stall counter with Protect
-    const ctx = createMoveEffectContext(MOVES.kingsShield, { attacker: { consecutiveProtects: 3 } });
+    const ctx = createMoveEffectContext(MOVES.kingsShield, {
+      attacker: { consecutiveProtects: 3 },
+    });
     const rng = new SeededRandom(42);
 
     const captureProtectRoll = (count: number, _rng: SeededRandom): boolean => {

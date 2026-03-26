@@ -1,5 +1,10 @@
 import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
-import { CORE_ABILITY_IDS, CORE_ITEM_TRIGGER_IDS, type PokemonType, type SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  type PokemonType,
+  type SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { hasHeavyDutyBoots } from "../src/Gen8EntryHazards";
 import {
@@ -33,7 +38,6 @@ import { GEN8_TEST_VALUES } from "./helpers/reference-data";
 // ---------------------------------------------------------------------------
 
 const {
-  abilities: ABILITIES,
   battle: BATTLE,
   categories: CATEGORIES,
   expectedAmounts: EXPECTED,
@@ -524,7 +528,11 @@ describe("getFocusSashTrigger", () => {
   //   if (pokemon.hp === pokemon.maxhp && damage >= pokemon.hp)
   it("given full HP and lethal damage, when checking trigger, then returns true", () => {
     expect(
-      getFocusSashTrigger({ currentHp: HP.lifeOrbRecoil, maxHp: HP.lifeOrbRecoil, damage: HP.lifeOrbRecoil }),
+      getFocusSashTrigger({
+        currentHp: HP.lifeOrbRecoil,
+        maxHp: HP.lifeOrbRecoil,
+        damage: HP.lifeOrbRecoil,
+      }),
     ).toBe(true);
   });
 
@@ -535,11 +543,15 @@ describe("getFocusSashTrigger", () => {
   });
 
   it("given not full HP and lethal damage, when checking trigger, then returns false", () => {
-    expect(getFocusSashTrigger({ currentHp: 150, maxHp: HP.lifeOrbRecoil, damage: HP.lifeOrbRecoil })).toBe(false);
+    expect(
+      getFocusSashTrigger({ currentHp: 150, maxHp: HP.lifeOrbRecoil, damage: HP.lifeOrbRecoil }),
+    ).toBe(false);
   });
 
   it("given full HP and non-lethal damage, when checking trigger, then returns false", () => {
-    expect(getFocusSashTrigger({ currentHp: HP.lifeOrbRecoil, maxHp: HP.lifeOrbRecoil, damage: 100 })).toBe(false);
+    expect(
+      getFocusSashTrigger({ currentHp: HP.lifeOrbRecoil, maxHp: HP.lifeOrbRecoil, damage: 100 }),
+    ).toBe(false);
   });
 });
 
@@ -790,7 +802,11 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 16) = 20
-      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.leftoversHeal320 });
+      expect(result.effects[0]).toEqual({
+        type: "heal",
+        target: "self",
+        value: EXPECTED.leftoversHeal320,
+      });
     });
 
     // Source: Showdown data/items.ts -- Black Sludge: heal Poison 1/16, damage non-Poison 1/8
@@ -805,7 +821,11 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 16) = 20
-      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.blackSludgeHeal320 });
+      expect(result.effects[0]).toEqual({
+        type: "heal",
+        target: "self",
+        value: EXPECTED.blackSludgeHeal320,
+      });
     });
 
     it("given Normal-type with Black Sludge at end-of-turn, when applying item, then damages 1/8 max HP", () => {
@@ -819,7 +839,11 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(true);
       // floor(320 / 8) = 40
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.blackSludgeDamage320 });
+      expect(result.effects[0]).toEqual({
+        type: "chip-damage",
+        target: "self",
+        value: EXPECTED.blackSludgeDamage320,
+      });
     });
   });
 
@@ -838,7 +862,11 @@ describe("applyGen8HeldItem", () => {
     });
 
     it("given Focus Sash holder NOT at full HP taking lethal damage, when on-damage-taken fires, then does not activate", () => {
-      const pokemon = makeActive({ heldItem: ITEMS.focusSash, hp: HP.lifeOrbRecoil, currentHp: 150 });
+      const pokemon = makeActive({
+        heldItem: ITEMS.focusSash,
+        hp: HP.lifeOrbRecoil,
+        currentHp: 150,
+      });
       const ctx = makeContext({ pokemon, damage: HP.lifeOrbRecoil });
       const result = applyGen8HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
@@ -951,7 +979,11 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
       // floor(200 / 10) = 20
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.lifeOrbRecoil200 });
+      expect(result.effects[0]).toEqual({
+        type: "chip-damage",
+        target: "self",
+        value: EXPECTED.lifeOrbRecoil200,
+      });
     });
 
     // Source: Showdown data/items.ts -- Life Orb: floor(baseMaxhp / 10)
@@ -970,7 +1002,11 @@ describe("applyGen8HeldItem", () => {
       const result = applyGen8HeldItem(ITEM_TRIGGERS.onHit, ctx);
       expect(result.activated).toBe(true);
       // floor(300 / 10) = 30
-      expect(result.effects[0]).toEqual({ type: "chip-damage", target: "self", value: EXPECTED.lifeOrbRecoil300 });
+      expect(result.effects[0]).toEqual({
+        type: "chip-damage",
+        target: "self",
+        value: EXPECTED.lifeOrbRecoil300,
+      });
     });
   });
 
@@ -1034,19 +1070,23 @@ describe("applyGen8HeldItem", () => {
 describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
   // Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP each end-of-turn
   // Verifies Gen8Ruleset.applyHeldItem delegates to applyGen8HeldItem (not a no-op)
-    it("given Gen8Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen8 item handler", () => {
-      const ruleset = new Gen8Ruleset();
-      const pokemon = makeActive({
-        heldItem: ITEMS.leftovers,
-        hp: HP.leftOversRecoil,
-        currentHp: 120,
-      });
-      const ctx = makeContext({ pokemon });
-      const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
-      expect(result.activated).toBe(true);
-      // floor(160 / 16) = 10 HP healed
-      expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: EXPECTED.leftoversHeal160 });
+  it("given Gen8Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen8 item handler", () => {
+    const ruleset = new Gen8Ruleset();
+    const pokemon = makeActive({
+      heldItem: ITEMS.leftovers,
+      hp: HP.leftOversRecoil,
+      currentHp: 120,
     });
+    const ctx = makeContext({ pokemon });
+    const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
+    expect(result.activated).toBe(true);
+    // floor(160 / 16) = 10 HP healed
+    expect(result.effects[0]).toEqual({
+      type: "heal",
+      target: "self",
+      value: EXPECTED.leftoversHeal160,
+    });
+  });
 
   it("given Gen8Ruleset, when calling applyHeldItem with no item, then returns inactive result", () => {
     const ruleset = new Gen8Ruleset();

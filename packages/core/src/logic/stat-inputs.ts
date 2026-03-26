@@ -108,10 +108,7 @@ function normalizeEvs(overrides: EvOverrides = {}): Evs {
 
 function deriveHpDv(dvs: Omit<Dvs, "hp">): number {
   return (
-    ((dvs.attack & 1) << 3) |
-    ((dvs.defense & 1) << 2) |
-    ((dvs.speed & 1) << 1) |
-    (dvs.spAttack & 1)
+    ((dvs.attack & 1) << 3) | ((dvs.defense & 1) << 2) | ((dvs.speed & 1) << 1) | (dvs.spAttack & 1)
   );
 }
 
