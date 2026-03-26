@@ -27,6 +27,7 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
@@ -44,6 +45,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   calculateExpGainClassic,
   gen1to2FullParalysisCheck,
   gen1to4MultiHitRoll,
@@ -353,7 +355,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Exception: self-targeting moves get +1 to their threshold, making
     // 100% accuracy moves always hit (256/256). (Showdown scripts.ts:408)
     let threshold = acc;
-    if (move.target === "self") {
+    if (move.target === BATTLE_EFFECT_TARGETS.self) {
       threshold = Math.min(256, threshold + 1);
     }
     const roll = rng.int(0, 255);
@@ -563,15 +565,18 @@ export class Gen1Ruleset implements GenerationRuleset {
         }
 
         for (const change of effect.changes) {
-          const resolvedTarget = effect.target === "self" ? "attacker" : "defender";
+          const resolvedTarget =
+            effect.target === BATTLE_EFFECT_TARGETS.self
+              ? BATTLE_EFFECT_TARGETS.attacker
+              : BATTLE_EFFECT_TARGETS.defender;
 
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Mist
           // Mist blocks all foe-targeted stat drops. If the defender has Mist active,
           // skip any stat changes targeting the defender with negative stages.
           if (
-            resolvedTarget === "defender" &&
+            resolvedTarget === BATTLE_EFFECT_TARGETS.defender &&
             change.stages < 0 &&
-            defender.volatileStatuses.has("mist")
+            defender.volatileStatuses.has(CORE_VOLATILE_IDS.mist)
           ) {
             const defenderName = defender.pokemon.nickname ?? "The target";
             result.messages.push(`${defenderName} is protected by the mist!`);
@@ -677,7 +682,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Fissure, Guillotine, Horn Drill: instant KO if it hits
         // The move only hits if user is faster than target (handled in accuracy check)
         result.customDamage = {
-          target: "defender",
+          target: BATTLE_EFFECT_TARGETS.defender,
           amount: defender.pokemon.currentHp, // Deal exactly current HP to KO
           source: move.id,
           type: move.type,
@@ -692,11 +697,11 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
           const confThreshold = Math.floor((effect.chance * 256) / 100);
           if (rng.int(0, 255) < confThreshold) {
-            if (!defender.volatileStatuses.has("confusion")) {
+            if (!defender.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
               // Confusion lasts 2-5 turns in Gen 1
               // Source: pokered effects.asm:1143-1147 — `and $3; inc a; inc a` = random(0-3)+2 = [2,5]
               const turns = rng.int(2, 5);
-              result.volatileInflicted = "confusion";
+              result.volatileInflicted = CORE_VOLATILE_IDS.confusion;
               result.volatileData = { turnsLeft: turns };
             }
           }
@@ -707,9 +712,9 @@ export class Gen1Ruleset implements GenerationRuleset {
           // (Showdown conditions.ts:225, same as multi-hit distribution)
           // Source: gen1-ground-truth.md §7 — Trapping Moves
           // The volatile key must be "bound" — the engine checks "bound" to determine immobilization.
-          if (!defender.volatileStatuses.has("bound")) {
+          if (!defender.volatileStatuses.has(CORE_VOLATILE_IDS.bound)) {
             const turns = rng.pick([2, 2, 2, 3, 3, 3, 4, 5] as const);
-            result.volatileInflicted = "bound";
+            result.volatileInflicted = CORE_VOLATILE_IDS.bound;
             result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
             result.messages.push(`${defender.pokemon.nickname ?? "The target"} was trapped!`);
           }
@@ -717,8 +722,8 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered — Focus Energy sets SUBSTATUS_FOCUS_ENERGY
           // Self-targeting volatile: permanent until switch-out or Haze.
           // Fails silently if already active (no duplicate volatile).
-          if (!attacker.volatileStatuses.has("focus-energy")) {
-            result.selfVolatileInflicted = "focus-energy";
+          if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.focusEnergy)) {
+            result.selfVolatileInflicted = CORE_VOLATILE_IDS.focusEnergy;
             result.selfVolatileData = { turnsLeft: -1 };
           }
         } else if (effect.status === "leech-seed") {
@@ -726,10 +731,10 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Defender-targeting volatile: permanent until switch-out or Haze.
           if (defender.types.includes("grass")) {
             result.messages.push(`It doesn't affect ${defender.pokemon.nickname ?? "the target"}!`);
-          } else if (defender.volatileStatuses.has("leech-seed")) {
+          } else if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.leechSeed)) {
             result.messages.push("But it failed!");
           } else {
-            result.volatileInflicted = "leech-seed";
+            result.volatileInflicted = CORE_VOLATILE_IDS.leechSeed;
             result.volatileData = { turnsLeft: -1 };
           }
         }
@@ -793,19 +798,19 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Non-volatile status (burn/paralysis/etc.) is only cured for the target,
           // NOT the user. Stat stage reset applies to both (separate operation).
           // statusCured: resets defender's stat stages AND cures status (engine contract — BattleEngine processEffectResult)
-          result.statusCured = { target: "defender" };
+          result.statusCured = { target: BATTLE_EFFECT_TARGETS.defender };
           // statStagesReset: resets attacker's stages only — attacker's status is NOT cured by Haze
-          result.statStagesReset = { target: "attacker" };
+          result.statStagesReset = { target: BATTLE_EFFECT_TARGETS.attacker };
           result.screensCleared = "both";
           // Build volatilesToClear from all current volatile statuses on both Pokemon.
           // The engine will delete each and emit volatile-end events via processEffectResult.
           const hazeClears: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }> =
             [];
           for (const volatile of attacker.volatileStatuses.keys()) {
-            hazeClears.push({ target: "attacker", volatile });
+            hazeClears.push({ target: BATTLE_EFFECT_TARGETS.attacker, volatile });
           }
           for (const volatile of defender.volatileStatuses.keys()) {
-            hazeClears.push({ target: "defender", volatile });
+            hazeClears.push({ target: BATTLE_EFFECT_TARGETS.defender, volatile });
           }
           result.volatilesToClear = hazeClears;
           result.messages.push("All stat changes were eliminated!");
@@ -823,7 +828,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           if (isFullHp && !hasStatus) {
             result.messages.push("But it failed!");
           } else {
-            result.statusCuredOnly = { target: "attacker" };
+            result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
             result.healAmount = maxHp;
             result.selfStatusInflicted = "sleep";
             result.selfVolatileData = { turnsLeft: 2 };
@@ -832,16 +837,19 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered — Mist is SUBSTATUS_MIST, a permanent bit with no turn counter (lasts until switch-out or Haze)
           // Gen 2+ introduced the 5-turn timer; Gen 1 uses -1 (permanent sentinel).
           // Fails if user already has Mist active.
-          if (attacker.volatileStatuses.has("mist")) {
+          if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.mist)) {
             result.messages.push("But it failed!");
           } else {
-            result.selfVolatileInflicted = "mist";
+            result.selfVolatileInflicted = CORE_VOLATILE_IDS.mist;
             result.selfVolatileData = { turnsLeft: -1 };
           }
         } else if (effect.handler === "conversion") {
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Conversion
           // Gen 1 Conversion copies the DEFENDER's types (not based on moves like Gen 2+).
-          result.typeChange = { target: "attacker", types: [...defender.types] };
+          result.typeChange = {
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            types: [...defender.types],
+          };
         } else if (effect.handler === "counter") {
           // Counter in Gen 1: only reflects Normal and Fighting type moves
           const lastDamage = attacker.lastDamageTaken ?? 0;
@@ -864,7 +872,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Duration: random 1-8 turns (pokered `and 7; inc a` = 0-7 + 1 = 1-8).
           // Fails if target already disabled or all moves have 0 PP.
           // NOTE: Gen 1 Disable targets a random move, NOT the last-used move (Gen 2+).
-          if (defender.volatileStatuses.has("disable")) {
+          if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.disable)) {
             result.messages.push("But it failed!");
           } else {
             // Pick a random move slot with PP > 0 (pokered loops until non-zero)
@@ -877,7 +885,7 @@ export class Gen1Ruleset implements GenerationRuleset {
               const pickedIndex = rng.int(0, validMoves.length - 1);
               const picked = validMoves[pickedIndex];
               const duration = rng.int(1, 8);
-              result.volatileInflicted = "disable";
+              result.volatileInflicted = CORE_VOLATILE_IDS.disable;
               result.volatileData = {
                 turnsLeft: duration,
                 data: { moveId: picked?.moveId ?? "" },
@@ -899,11 +907,11 @@ export class Gen1Ruleset implements GenerationRuleset {
             // engine emits a proper damage event for the hp-delta tracker.
             attacker.substituteHp = subHp;
             result.customDamage = {
-              target: "attacker",
+              target: BATTLE_EFFECT_TARGETS.attacker,
               amount: subHp,
               source: GEN1_MOVE_IDS.substitute,
             };
-            result.selfVolatileInflicted = "substitute";
+            result.selfVolatileInflicted = CORE_VOLATILE_IDS.substitute;
             result.selfVolatileData = { turnsLeft: -1 };
             result.messages.push(`${attacker.pokemon.nickname ?? "The user"} put in a substitute!`);
           }
@@ -912,16 +920,16 @@ export class Gen1Ruleset implements GenerationRuleset {
           // First use: sets rage volatile and locks user into repeating Rage.
           // Subsequent uses: re-locks the forced move (volatile already set by onDamageReceived boosts).
           const moveIndex = attacker.pokemon.moves.findIndex((m) => m.moveId === move.id);
-          if (!attacker.volatileStatuses.has("rage")) {
+          if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.rage)) {
             // First activation: set volatile and force repeat
-            result.selfVolatileInflicted = "rage";
+            result.selfVolatileInflicted = CORE_VOLATILE_IDS.rage;
             result.selfVolatileData = { turnsLeft: -1, data: { moveIndex } };
           }
           // Always re-lock into Rage so it repeats next turn
           result.forcedMoveSet = {
             moveIndex: moveIndex >= 0 ? moveIndex : 0,
             moveId: move.id,
-            volatileStatus: "rage",
+            volatileStatus: CORE_VOLATILE_IDS.rage,
           };
         } else if (effect.handler === "mimic") {
           // Source: pret/pokered src/engine/battle/move_effects.asm MimicEffect
@@ -993,7 +1001,10 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered src/engine/battle/move_effects.asm TransformEffect
           // Copies the defender's types, stat stages, calculated stats (except HP), and moves.
           // Copy types
-          result.typeChange = { target: "attacker", types: [...defender.types] };
+          result.typeChange = {
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            types: [...defender.types],
+          };
           // Copy stat stages (direct mutation — same pattern as Haze)
           for (const stat of [
             "attack",
@@ -1112,8 +1123,8 @@ export class Gen1Ruleset implements GenerationRuleset {
             } else {
               // turns=1 edge (shouldn't happen with int(2,3), but defensive)
               attacker.volatileStatuses.delete("thrash-lock");
-              if (!attacker.volatileStatuses.has("confusion")) {
-                result.selfVolatileInflicted = "confusion";
+              if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
+                result.selfVolatileInflicted = CORE_VOLATILE_IDS.confusion;
                 result.selfVolatileData = { turnsLeft: rng.int(2, 5) };
               }
             }
@@ -1129,8 +1140,8 @@ export class Gen1Ruleset implements GenerationRuleset {
             } else {
               // Last forced turn: damage was already dealt, now remove lock and confuse
               attacker.volatileStatuses.delete("thrash-lock");
-              if (!attacker.volatileStatuses.has("confusion")) {
-                result.selfVolatileInflicted = "confusion";
+              if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
+                result.selfVolatileInflicted = CORE_VOLATILE_IDS.confusion;
                 result.selfVolatileData = { turnsLeft: rng.int(2, 5) };
               }
             }
@@ -1569,7 +1580,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Rage miss-lock: Gen 1 only
     // When Rage misses while the user has the rage volatile, set a miss-lock
     // that causes all subsequent Rage uses to auto-miss (cartridge infinite loop).
-    if (actor.volatileStatuses.has("rage")) {
+    if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.rage)) {
       actor.volatileStatuses.set("rage-miss-lock", { turnsLeft: -1 });
     }
   }
@@ -1841,7 +1852,7 @@ export class Gen1Ruleset implements GenerationRuleset {
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 1: trapping moves (Wrap, Bind, Fire Spin, Clamp) prevent switching
     // Source: gen1-ground-truth.md §7 — Trapping Moves; volatile key is "bound"
-    return !pokemon.volatileStatuses.has("bound");
+    return !pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.bound);
   }
 
   // --- End-of-Turn Formulas ---
