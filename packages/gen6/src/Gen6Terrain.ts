@@ -17,6 +17,8 @@
 
 import type { ActivePokemon, BattleState, TerrainEffectResult } from "@pokemon-lib-ts/battle";
 import type { PrimaryStatus } from "@pokemon-lib-ts/core";
+import { CORE_STATUS_IDS, CORE_TERRAIN_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { GEN6_MOVE_IDS } from "./data/reference-ids.js";
 import { isGen6Grounded } from "./Gen6EntryHazards.js";
 
 /**
@@ -35,7 +37,7 @@ export function applyGen6TerrainEffects(state: BattleState): TerrainEffectResult
 
   const results: TerrainEffectResult[] = [];
 
-  if (state.terrain.type === "grassy") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.grassy) {
     const gravityActive = state.gravity?.active ?? false;
 
     for (const side of state.sides) {
@@ -92,12 +94,13 @@ export function canInflictStatusWithTerrain(
   // Electric Terrain: prevents sleep for grounded Pokemon
   // Source: Showdown data/conditions.ts -- electricterrain.onSetStatus:
   //   if (status.id === 'slp') { ... return false; }
-  if (state.terrain.type === "electric" && status === "sleep") return false;
+  if (state.terrain.type === CORE_TERRAIN_IDS.electric && status === CORE_STATUS_IDS.sleep)
+    return false;
 
   // Misty Terrain: prevents all primary status for grounded Pokemon
   // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus:
   //   return false; (blocks all status)
-  if (state.terrain.type === "misty") return false;
+  if (state.terrain.type === CORE_TERRAIN_IDS.misty) return false;
 
   return true;
 }
@@ -140,7 +143,11 @@ export interface TerrainDamageModifier {
  * Source: Showdown data/conditions.ts -- grassyterrain.onModifyDamage:
  *   if (['earthquake', 'bulldoze', 'magnitude'].includes(move.id))
  */
-const GRASSY_HALVED_MOVES: ReadonlySet<string> = new Set(["earthquake", "bulldoze", "magnitude"]);
+const GRASSY_HALVED_MOVES: ReadonlySet<string> = new Set([
+  GEN6_MOVE_IDS.earthquake,
+  GEN6_MOVE_IDS.bulldoze,
+  GEN6_MOVE_IDS.magnitude,
+]);
 
 export function getTerrainDamageModifier(
   terrainType: string,
@@ -155,27 +162,43 @@ export function getTerrainDamageModifier(
   // Electric Terrain: 1.5x for Electric moves when attacker is grounded
   // Source: Showdown data/conditions.ts -- electricterrain.onBasePower:
   //   chainModify(1.5) when type === 'Electric' and source.isGrounded()
-  if (terrainType === "electric" && moveType === "electric" && attackerGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.electric &&
+    moveType === CORE_TYPE_IDS.electric &&
+    attackerGrounded
+  ) {
     powerModifier = 6144; // 1.5x in 4096-based math
   }
 
   // Grassy Terrain: 1.5x for Grass moves when attacker is grounded
   // Source: Showdown data/conditions.ts -- grassyterrain.onBasePower:
   //   chainModify(1.5) when type === 'Grass' and source.isGrounded()
-  if (terrainType === "grassy" && moveType === "grass" && attackerGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.grassy &&
+    moveType === CORE_TYPE_IDS.grass &&
+    attackerGrounded
+  ) {
     powerModifier = 6144; // 1.5x in 4096-based math
   }
 
   // Misty Terrain: 0.5x for Dragon moves when defender is grounded
   // Source: Showdown data/conditions.ts -- mistyterrain.onBasePower:
   //   chainModify(0.5) when type === 'Dragon' and target.isGrounded()
-  if (terrainType === "misty" && moveType === "dragon" && defenderGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.misty &&
+    moveType === CORE_TYPE_IDS.dragon &&
+    defenderGrounded
+  ) {
     powerModifier = 2048; // 0.5x in 4096-based math
   }
 
   // Grassy Terrain: halve damage from Earthquake/Bulldoze/Magnitude vs grounded
   // Source: Showdown data/conditions.ts -- grassyterrain.onModifyDamage
-  if (terrainType === "grassy" && defenderGrounded && GRASSY_HALVED_MOVES.has(moveId)) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.grassy &&
+    defenderGrounded &&
+    GRASSY_HALVED_MOVES.has(moveId)
+  ) {
     grassyGroundHalved = true;
   }
 

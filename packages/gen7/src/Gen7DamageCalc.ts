@@ -53,6 +53,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_EFFECT_TARGETS,
+  CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   getStabModifier,
@@ -237,7 +238,7 @@ export function isGen7Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
     pokemon.ability === CORE_ABILITY_IDS.klutz ||
     pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
-  if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
   if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
   if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
@@ -249,7 +250,7 @@ export function isGen7Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
     return false;
   }
   if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
-  if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis as VolatileStatus)) return false;
 
   return true;
 }
@@ -270,7 +271,11 @@ interface TerrainDamageModifier {
   readonly grassyGroundHalved: boolean;
 }
 
-const GRASSY_HALVED_MOVES: ReadonlySet<string> = new Set(["earthquake", "bulldoze", "magnitude"]);
+const GRASSY_HALVED_MOVES: ReadonlySet<string> = new Set([
+  GEN7_MOVE_IDS.earthquake,
+  GEN7_MOVE_IDS.bulldoze,
+  GEN7_MOVE_IDS.magnitude,
+]);
 
 function getTerrainDamageModifier(
   terrainType: string,
@@ -284,19 +289,31 @@ function getTerrainDamageModifier(
 
   // Electric Terrain: 1.5x for Electric moves when attacker is grounded
   // Source: Showdown data/conditions.ts -- electricterrain.onBasePower
-  if (terrainType === "electric" && moveType === "electric" && attackerGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.electric &&
+    moveType === CORE_TYPE_IDS.electric &&
+    attackerGrounded
+  ) {
     powerModifier = 6144;
   }
 
   // Grassy Terrain: 1.5x for Grass moves when attacker is grounded
   // Source: Showdown data/conditions.ts -- grassyterrain.onBasePower
-  if (terrainType === "grassy" && moveType === "grass" && attackerGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.grassy &&
+    moveType === CORE_TYPE_IDS.grass &&
+    attackerGrounded
+  ) {
     powerModifier = 6144;
   }
 
   // Misty Terrain: 0.5x for Dragon moves when defender is grounded
   // Source: Showdown data/conditions.ts -- mistyterrain.onBasePower
-  if (terrainType === "misty" && moveType === "dragon" && defenderGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.misty &&
+    moveType === CORE_TYPE_IDS.dragon &&
+    defenderGrounded
+  ) {
     powerModifier = 2048;
   }
 
@@ -304,13 +321,21 @@ function getTerrainDamageModifier(
   // Source: Bulbapedia "Psychic Terrain" Gen 7 -- "increases the power of Psychic-type
   //   moves used by grounded Pokemon by 50%"
   // Source: Showdown data/conditions.ts -- psychicterrain.onBasePower
-  if (terrainType === "psychic" && moveType === "psychic" && attackerGrounded) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.psychic &&
+    moveType === CORE_TYPE_IDS.psychic &&
+    attackerGrounded
+  ) {
     powerModifier = 6144;
   }
 
   // Grassy Terrain: halve damage from Earthquake/Bulldoze/Magnitude vs grounded
   // Source: Showdown data/conditions.ts -- grassyterrain.onModifyDamage
-  if (terrainType === "grassy" && defenderGrounded && GRASSY_HALVED_MOVES.has(moveId)) {
+  if (
+    terrainType === CORE_TERRAIN_IDS.grassy &&
+    defenderGrounded &&
+    GRASSY_HALVED_MOVES.has(moveId)
+  ) {
     grassyGroundHalved = true;
   }
 
@@ -345,16 +370,19 @@ function getAttackStat(
 
   // Huge Power / Pure Power: doubles physical attack
   // Source: Showdown -- Huge Power / Pure Power
-  if (isPhysical && (ability === "huge-power" || ability === "pure-power")) {
+  if (
+    isPhysical &&
+    (ability === CORE_ABILITY_IDS.hugePower || ability === CORE_ABILITY_IDS.purePower)
+  ) {
     rawStat = rawStat * 2;
   }
 
   // Choice Band (physical) / Choice Specs (special): 1.5x raw stat
   // Source: Showdown data/items.ts -- Choice Band / Choice Specs
-  if (!attackerHasKlutz && isPhysical && attackerItem === "choice-band") {
+  if (!attackerHasKlutz && isPhysical && attackerItem === CORE_ITEM_IDS.choiceBand) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
-  if (!attackerHasKlutz && !isPhysical && attackerItem === "choice-specs") {
+  if (!attackerHasKlutz && !isPhysical && attackerItem === CORE_ITEM_IDS.choiceSpecs) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 

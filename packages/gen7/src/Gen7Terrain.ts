@@ -26,7 +26,13 @@ import type {
   BattleState,
   TerrainEffectResult,
 } from "@pokemon-lib-ts/battle";
-import type { PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
+import {
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  type PrimaryStatus,
+  type TerrainType,
+} from "@pokemon-lib-ts/core";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS } from "./data/reference-ids.js";
 import { isGen7Grounded } from "./Gen7DamageCalc.js";
 
 // ---- Terrain Status Immunity ----
@@ -65,7 +71,7 @@ export function checkGen7TerrainStatusImmunity(
   // Electric Terrain: prevents sleep for grounded Pokemon
   // Source: Showdown data/conditions.ts -- electricterrain.onSetStatus:
   //   if (status.id === 'slp') { ... return false; }
-  if (state.terrain.type === "electric" && status === "sleep") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.electric && status === CORE_STATUS_IDS.sleep) {
     return {
       immune: true,
       message: `${pokemonName} is protected by Electric Terrain!`,
@@ -75,7 +81,7 @@ export function checkGen7TerrainStatusImmunity(
   // Misty Terrain: prevents all primary status for grounded Pokemon
   // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus:
   //   return false; (blocks all status)
-  if (state.terrain.type === "misty") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.misty) {
     return {
       immune: true,
       message: `${pokemonName} is protected by Misty Terrain!`,
@@ -99,7 +105,7 @@ export function checkMistyTerrainConfusionImmunity(
   target: ActivePokemon,
   state: BattleState,
 ): boolean {
-  if (!state.terrain || state.terrain.type !== "misty") return false;
+  if (!state.terrain || state.terrain.type !== CORE_TERRAIN_IDS.misty) return false;
 
   const gravityActive = state.gravity?.active ?? false;
   return isGen7Grounded(target, gravityActive);
@@ -133,7 +139,7 @@ export function checkPsychicTerrainPriorityBlock(
   target: ActivePokemon,
   state: BattleState,
 ): boolean {
-  if (terrainType !== "psychic") return false;
+  if (terrainType !== CORE_TERRAIN_IDS.psychic) return false;
   if (movePriority <= 0) return false;
 
   const gravityActive = state.gravity?.active ?? false;
@@ -158,7 +164,7 @@ export function applyGen7TerrainEffects(state: BattleState): TerrainEffectResult
 
   const results: TerrainEffectResult[] = [];
 
-  if (state.terrain.type === "grassy") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.grassy) {
     const gravityActive = state.gravity?.active ?? false;
 
     for (const side of state.sides) {
@@ -212,10 +218,10 @@ export const TERRAIN_EXTENDED_TURNS = 8;
  * Source: Bulbapedia -- Surge abilities set terrain on switch-in
  */
 const SURGE_ABILITIES: Readonly<Record<string, TerrainType>> = {
-  "electric-surge": "electric",
-  "grassy-surge": "grassy",
-  "psychic-surge": "psychic",
-  "misty-surge": "misty",
+  [GEN7_ABILITY_IDS.electricSurge]: CORE_TERRAIN_IDS.electric,
+  [GEN7_ABILITY_IDS.grassySurge]: CORE_TERRAIN_IDS.grassy,
+  [GEN7_ABILITY_IDS.psychicSurge]: CORE_TERRAIN_IDS.psychic,
+  [GEN7_ABILITY_IDS.mistySurge]: CORE_TERRAIN_IDS.misty,
 };
 
 /**
@@ -251,7 +257,7 @@ export function handleSurgeAbility(context: AbilityContext): AbilityResult {
   // Source: Showdown data/items.ts -- terrainextender: terrain duration + 3
   // Source: Bulbapedia "Terrain Extender" -- "extends terrain to 8 turns"
   const heldItem = context.pokemon.pokemon.heldItem;
-  const hasTerrainExtender = heldItem === "terrain-extender";
+  const hasTerrainExtender = heldItem === GEN7_ITEM_IDS.terrainExtender;
   const duration = hasTerrainExtender ? TERRAIN_EXTENDED_TURNS : TERRAIN_DEFAULT_TURNS;
 
   // Directly set terrain on state (AbilityEffect lacks "terrain-set" variant)
@@ -266,10 +272,10 @@ export function handleSurgeAbility(context: AbilityContext): AbilityResult {
   const pokemonName = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
 
   const terrainDisplayNames: Record<TerrainType, string> = {
-    electric: "Electric Terrain",
-    grassy: "Grassy Terrain",
-    psychic: "Psychic Terrain",
-    misty: "Misty Terrain",
+    [CORE_TERRAIN_IDS.electric]: "Electric Terrain",
+    [CORE_TERRAIN_IDS.grassy]: "Grassy Terrain",
+    [CORE_TERRAIN_IDS.psychic]: "Psychic Terrain",
+    [CORE_TERRAIN_IDS.misty]: "Misty Terrain",
   };
 
   return {
