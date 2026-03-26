@@ -1,7 +1,12 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_GENDERS,
+  CORE_STAT_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN5_ABILITY_IDS } from "./data/reference-ids";
 
 /**
@@ -573,8 +578,8 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (
         !defenderGender ||
         !attackerGender ||
-        defenderGender === "genderless" ||
-        attackerGender === "genderless" ||
+        defenderGender === CORE_GENDERS.genderless ||
+        attackerGender === CORE_GENDERS.genderless ||
         defenderGender === attackerGender
       ) {
         return NO_EFFECT;

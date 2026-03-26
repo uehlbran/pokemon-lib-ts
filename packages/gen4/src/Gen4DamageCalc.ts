@@ -9,6 +9,7 @@ import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  CORE_GENDERS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
@@ -704,8 +705,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     if (
       attackerGender &&
       defenderGender &&
-      attackerGender !== "genderless" &&
-      defenderGender !== "genderless"
+      attackerGender !== CORE_GENDERS.genderless &&
+      defenderGender !== CORE_GENDERS.genderless
     ) {
       if (attackerGender === defenderGender) {
         power = Math.floor(power * 1.25);

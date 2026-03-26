@@ -7,6 +7,7 @@ import type {
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
+  CORE_GENDERS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -900,8 +901,8 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       if (
         !defenderGender ||
         !attackerGender ||
-        defenderGender === "genderless" ||
-        attackerGender === "genderless" ||
+        defenderGender === CORE_GENDERS.genderless ||
+        attackerGender === CORE_GENDERS.genderless ||
         defenderGender === attackerGender
       ) {
         return { activated: false, effects: [], messages: [] };

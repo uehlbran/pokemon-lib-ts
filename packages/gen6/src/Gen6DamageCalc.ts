@@ -12,6 +12,7 @@ import {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
   BASE_TYPE_RESIST_BERRIES,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -757,8 +758,8 @@ export function calculateGen6Damage(
     if (
       attackerGender &&
       defenderGender &&
-      attackerGender !== "genderless" &&
-      defenderGender !== "genderless"
+      attackerGender !== CORE_GENDERS.genderless &&
+      defenderGender !== CORE_GENDERS.genderless
     ) {
       if (attackerGender === defenderGender) {
         power = Math.floor(power * 1.25);

@@ -41,6 +41,7 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   calculateExpGainClassic,
@@ -1465,7 +1466,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       errors.push(`Nature "${pokemon.nature}" is not supported in Gen 1`);
     }
 
-    if (pokemon.abilitySlot !== "normal1") {
+    if (pokemon.abilitySlot !== CORE_ABILITY_SLOTS.normal1) {
       errors.push(`Ability slot "${pokemon.abilitySlot}" is not supported in Gen 1`);
     }
 

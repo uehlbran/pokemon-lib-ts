@@ -13,6 +13,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_GENDERS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
@@ -654,8 +655,8 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       if (
         !defenderGender ||
         !attackerGender ||
-        defenderGender === "genderless" ||
-        attackerGender === "genderless" ||
+        defenderGender === CORE_GENDERS.genderless ||
+        attackerGender === CORE_GENDERS.genderless ||
         defenderGender === attackerGender
       ) {
         return { activated: false, effects: [], messages: [] };

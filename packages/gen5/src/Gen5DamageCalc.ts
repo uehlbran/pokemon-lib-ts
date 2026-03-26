@@ -12,6 +12,7 @@ import {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
   BASE_TYPE_RESIST_BERRIES,
+  CORE_GENDERS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   getStabModifier,
@@ -621,8 +622,8 @@ export function calculateGen5Damage(
     if (
       attackerGender &&
       defenderGender &&
-      attackerGender !== "genderless" &&
-      defenderGender !== "genderless"
+      attackerGender !== CORE_GENDERS.genderless &&
+      defenderGender !== CORE_GENDERS.genderless
     ) {
       if (attackerGender === defenderGender) {
         // Source: Showdown data/abilities.ts — rivalry: chainModify(1.25) = 5120/4096
