@@ -7,6 +7,7 @@ import {
 } from "@pokemon-lib-ts/battle";
 import {
   type BattleStat,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
@@ -102,13 +103,13 @@ export function applyGen3HeldItem(trigger: string, context: ItemContext): ItemRe
   }
 
   switch (trigger) {
-    case "end-of-turn":
+    case CORE_ITEM_TRIGGER_IDS.endOfTurn:
       return handleEndOfTurn(item, context);
-    case "on-damage-taken":
+    case CORE_ITEM_TRIGGER_IDS.onDamageTaken:
       return handleOnDamageTaken(item, context);
-    case "on-hit":
+    case CORE_ITEM_TRIGGER_IDS.onHit:
       return handleOnHit(item, context);
-    case "stat-boost-between-turns":
+    case CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns:
       return handleStatBoostBetweenTurns(item, context);
     default:
       return NO_ACTIVATION;
@@ -202,7 +203,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Cheri Berry: Cures paralysis (consumed)
     // Source: pret/pokeemerald HOLD_EFFECT_CURE_PAR
     case "cheri-berry": {
-      if (status === "paralysis") {
+      if (status === CORE_STATUS_IDS.paralysis) {
         return {
           activated: true,
           effects: [
@@ -218,7 +219,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Chesto Berry: Cures sleep (consumed)
     // Source: pret/pokeemerald HOLD_EFFECT_CURE_SLP
     case "chesto-berry": {
-      if (status === "sleep") {
+      if (status === CORE_STATUS_IDS.sleep) {
         return {
           activated: true,
           effects: [
@@ -250,7 +251,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Rawst Berry: Cures burn (consumed)
     // Source: pret/pokeemerald HOLD_EFFECT_CURE_BRN
     case "rawst-berry": {
-      if (status === "burn") {
+      if (status === CORE_STATUS_IDS.burn) {
         return {
           activated: true,
           effects: [
@@ -266,7 +267,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Aspear Berry: Cures freeze (consumed)
     // Source: pret/pokeemerald HOLD_EFFECT_CURE_FRZ
     case "aspear-berry": {
-      if (status === "freeze") {
+      if (status === CORE_STATUS_IDS.freeze) {
         return {
           activated: true,
           effects: [
@@ -476,7 +477,7 @@ function moveHasInherentFlinch(move: MoveData): boolean {
  * Recursively check a MoveEffect for a flinch volatile status.
  */
 function checkEffectForFlinch(effect: NonNullable<MoveData["effect"]>): boolean {
-  if (effect.type === "volatile-status" && effect.status === "flinch") {
+  if (effect.type === "volatile-status" && effect.status === CORE_VOLATILE_IDS.flinch) {
     return true;
   }
   if (effect.type === "multi") {
@@ -581,7 +582,7 @@ function activateLansatBerry(
     return NO_ACTIVATION;
   }
 
-  pokemon.volatileStatuses.set("focus-energy", { turnsLeft: -1 });
+  pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.focusEnergy, { turnsLeft: -1 });
   return {
     activated: true,
     effects: [{ type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "lansat-berry" }],

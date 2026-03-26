@@ -402,6 +402,7 @@ export const CORE_END_OF_TURN_EFFECT_IDS = {
   leechSeed: "leech-seed",
   leftovers: "leftovers",
   magnetRiseCountdown: "magnet-rise-countdown",
+  magicRoomCountdown: "magic-room-countdown",
   mysteryBerry: "mystery-berry",
   nightmare: "nightmare",
   perishSong: "perish-song",
@@ -419,6 +420,7 @@ export const CORE_END_OF_TURN_EFFECT_IDS = {
   weatherCountdown: "weather-countdown",
   weatherDamage: "weather-damage",
   weatherHealing: "weather-healing",
+  wonderRoomCountdown: "wonder-room-countdown",
   wish: "wish",
   yawnCountdown: "yawn-countdown",
 } as const;

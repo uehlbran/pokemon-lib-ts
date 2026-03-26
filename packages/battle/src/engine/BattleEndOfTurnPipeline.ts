@@ -1,10 +1,12 @@
 import type { DataManager, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
@@ -249,14 +251,14 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
       case CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown:
         host.processEncoreCountdown();
         break;
-      case "weather-healing":
-      case "shed-skin":
-      case "poison-heal":
-      case "bad-dreams":
-      case "speed-boost":
-      case "moody":
-      case "harvest":
-      case "pickup":
+      case CORE_END_OF_TURN_EFFECT_IDS.weatherHealing:
+      case CORE_ABILITY_IDS.shedSkin:
+      case CORE_ABILITY_IDS.poisonHeal:
+      case CORE_ABILITY_IDS.badDreams:
+      case CORE_ABILITY_IDS.speedBoost:
+      case CORE_ABILITY_IDS.moody:
+      case CORE_ABILITY_IDS.harvest:
+      case CORE_ABILITY_IDS.pickup:
         processOnTurnEndAbilities(host, abilityEndOfTurnFired);
         break;
       case CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown:
@@ -268,7 +270,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
         // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
         // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns
-        processSimpleVolatileCountdown(host, "slow-start", (active) => {
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.slowStart, (active) => {
           const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
           host.emit({
             type: "message",
@@ -418,27 +420,27 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           }
         }
         break;
-      case "taunt-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown:
         // Taunt volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — "Taunt lasts for 3 turns in Gen 4"
-        processSimpleVolatileCountdown(host, "taunt");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.taunt);
         break;
-      case "disable-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.disableCountdown:
         // Disable volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — "Disable lasts for 4-7 turns in Gen 4"
-        processSimpleVolatileCountdown(host, "disable");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.disable);
         break;
-      case "gravity-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown:
         // Gravity field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown Gen 4 mod — Gravity lasts 5 turns
         processFieldCountdown(host, "gravity", "Gravity returned to normal!");
         break;
-      case "magic-room-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.magicRoomCountdown:
         // Magic Room field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown magicroom condition — duration: 5
         processFieldCountdown(host, "magicRoom", "The area returned to normal!");
         break;
-      case "wonder-room-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.wonderRoomCountdown:
         // Wonder Room field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown wonderroom condition — duration: 5
         processFieldCountdown(
@@ -447,32 +449,32 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
         );
         break;
-      case "yawn-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown:
         // Yawn volatile countdown — inflict sleep when turnsLeft reaches 0
         // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at
         //   the end of the next turn"
         // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
         processYawnCountdown(host);
         break;
-      case "heal-block-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown:
         // Heal Block volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
         // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
-        processSimpleVolatileCountdown(host, "heal-block");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.healBlock);
         break;
-      case "embargo-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown:
         // Embargo volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
         // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
-        processSimpleVolatileCountdown(host, "embargo");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.embargo);
         break;
-      case "magnet-rise-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown:
         // Magnet Rise volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Magnet Rise: "The user levitates for five turns."
         // Source: Showdown Gen 4 mod — Magnet Rise lasts 5 turns
-        processSimpleVolatileCountdown(host, "magnet-rise");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.magnetRise);
         break;
-      case "uproar": {
+      case CORE_VOLATILE_IDS.uproar: {
         // Source: pret/pokeemerald -- Uproar: countdown duration, wake sleeping Pokemon
         // Source: Bulbapedia — Uproar prevents sleep while the user is in uproar
         // Note: "uproar" is added to VolatileStatus in core/entities/status.ts
@@ -481,7 +483,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         // still has the uproar volatile. Only wake sleepers if uproar is still active.
         // Previously, the wake check ran inside the same loop as the decrement, so
         // sleepers were woken even when the uproar expired on that turn.
-        const uproarVolatile = "uproar" as import("@pokemon-lib-ts/core").VolatileStatus;
+        const uproarVolatile = CORE_VOLATILE_IDS.uproar;
 
         // Step 1: Decrement uproar counters for all active Pokemon
         for (const side of host.state.sides) {
@@ -522,11 +524,11 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           for (const side of host.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
-            if (active.pokemon.status === "sleep") {
+            if (active.pokemon.status === CORE_STATUS_IDS.sleep) {
               // Soundproof blocks Uproar wake-up (Uproar is a sound-based move/effect)
               // Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
               // Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
-              if (host.ruleset.hasAbilities() && active.ability === "soundproof") {
+              if (host.ruleset.hasAbilities() && active.ability === CORE_ABILITY_IDS.soundproof) {
                 continue;
               }
               active.pokemon.status = null;
@@ -534,7 +536,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                 type: "status-cure",
                 side: side.index,
                 pokemon: getPokemonName(active),
-                status: "sleep",
+                status: CORE_STATUS_IDS.sleep,
               });
               host.emit({
                 type: "message",
@@ -545,10 +547,10 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         }
         break;
       }
-      case "grassy-terrain-heal": {
+      case CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal: {
         // Gen 6+ terrain: heals grounded Pokemon for 1/16 max HP at EoT.
         // Source: Showdown sim/field.ts — Grassy Terrain heals at residual phase
-        if (host.state.terrain?.type === "grassy") {
+        if (host.state.terrain?.type === CORE_TERRAIN_IDS.grassy) {
           const terrainResults = host.ruleset.applyTerrainEffects(host.state);
           for (const result of terrainResults) {
             const active = host.state.sides[result.side].active[0];

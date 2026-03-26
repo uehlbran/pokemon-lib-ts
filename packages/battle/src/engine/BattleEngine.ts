@@ -11,7 +11,9 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STAT_IDS,
@@ -361,21 +363,24 @@ export class BattleEngine implements BattleEventEmitter {
     this.ruleset.onDamageReceived(target, damage, moveData, this.state);
 
     if (this.ruleset.hasHeldItems()) {
-      const damageTakenItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
-        pokemon: target,
-        state: this.state,
-        rng: this.state.rng,
-        damage,
-        move: moveData,
-        opponent: sourcePokemon,
-      });
+      const damageTakenItemResult = this.ruleset.applyHeldItem(
+        CORE_ITEM_TRIGGER_IDS.onDamageTaken,
+        {
+          pokemon: target,
+          state: this.state,
+          rng: this.state.rng,
+          damage,
+          move: moveData,
+          opponent: sourcePokemon,
+        },
+      );
       if (damageTakenItemResult.activated) {
         this.processItemResult(damageTakenItemResult, target, sourcePokemon, targetSide);
       }
     }
 
     if (this.ruleset.hasHeldItems() && moveData.flags.contact && target.pokemon.currentHp > 0) {
-      const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+      const contactItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onContact, {
         pokemon: target,
         opponent: sourcePokemon,
         state: this.state,
@@ -389,27 +394,30 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     if (this.ruleset.hasAbilities() && target.pokemon.currentHp > 0) {
-      const damageTakenAbilityResult = this.ruleset.applyAbility("on-damage-taken", {
-        pokemon: target,
-        opponent: sourcePokemon,
-        state: this.state,
-        rng: this.state.rng,
-        trigger: "on-damage-taken",
-        move: moveData,
-        damage,
-      });
+      const damageTakenAbilityResult = this.ruleset.applyAbility(
+        CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+        {
+          pokemon: target,
+          opponent: sourcePokemon,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+          move: moveData,
+          damage,
+        },
+      );
       if (damageTakenAbilityResult.activated) {
         this.processAbilityResult(damageTakenAbilityResult, target, sourcePokemon, targetSide);
       }
     }
 
     if (this.ruleset.hasAbilities() && moveData.flags.contact && target.pokemon.currentHp > 0) {
-      const contactAbilityResult = this.ruleset.applyAbility("on-contact", {
+      const contactAbilityResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onContact, {
         pokemon: target,
         opponent: sourcePokemon,
         state: this.state,
         rng: this.state.rng,
-        trigger: "on-contact",
+        trigger: CORE_ABILITY_TRIGGER_IDS.onContact,
         move: moveData,
         damage,
       });
@@ -686,12 +694,12 @@ export class BattleEngine implements BattleEventEmitter {
         for (const entry of order) {
           const opponent = this.getOpponentActive(entry.side);
           if (opponent) {
-            const result = this.ruleset.applyAbility("on-switch-in", {
+            const result = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, {
               pokemon: entry.pokemon,
               opponent,
               state: this.state,
               rng: this.state.rng,
-              trigger: "on-switch-in",
+              trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
             });
             this.processAbilityResult(result, entry.pokemon, opponent, entry.side);
           }
@@ -846,12 +854,12 @@ export class BattleEngine implements BattleEventEmitter {
         for (const entry of orderedEntries) {
           const opponent = this.getOpponentActive(entry.side);
           if (opponent) {
-            const abilityResult = this.ruleset.applyAbility("on-switch-in", {
+            const abilityResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, {
               pokemon: entry.pokemon,
               opponent,
               state: this.state,
               rng: this.state.rng,
-              trigger: "on-switch-in",
+              trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
             });
             this.processAbilityResult(abilityResult, entry.pokemon, opponent, entry.side);
           }
@@ -1497,12 +1505,12 @@ export class BattleEngine implements BattleEventEmitter {
     if (!skipAbility && this.ruleset.hasAbilities() && active.pokemon.currentHp > 0) {
       const opponent = this.getOpponentActive(side.index);
       if (opponent) {
-        const abilityResult = this.ruleset.applyAbility("on-switch-in", {
+        const abilityResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, {
           pokemon: active,
           opponent,
           state: this.state,
           rng: this.state.rng,
-          trigger: "on-switch-in",
+          trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
         });
         this.processAbilityResult(abilityResult, active, opponent, side.index);
       }
@@ -1790,13 +1798,16 @@ export class BattleEngine implements BattleEventEmitter {
         if (this.ruleset.hasAbilities() && actor.pokemon.currentHp > 0 && actor.isMega) {
           const opponent = this.getOpponentActive(action.side);
           if (opponent) {
-            const megaAbilityResult = this.ruleset.applyAbility("on-switch-in", {
-              pokemon: actor,
-              opponent,
-              state: this.state,
-              rng: this.state.rng,
-              trigger: "on-switch-in",
-            });
+            const megaAbilityResult = this.ruleset.applyAbility(
+              CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
+              {
+                pokemon: actor,
+                opponent,
+                state: this.state,
+                rng: this.state.rng,
+                trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
+              },
+            );
             this.processAbilityResult(megaAbilityResult, actor, opponent, action.side);
           }
         }
@@ -1955,7 +1966,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Held item: before-move trigger (e.g., Metronome consecutive-use tracking)
     // Called before accuracy check so item-dependent state is available for damage calc.
     if (this.ruleset.hasHeldItems()) {
-      const beforeMoveResult = this.ruleset.applyHeldItem("before-move", {
+      const beforeMoveResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.beforeMove, {
         pokemon: actor,
         state: this.state,
         rng: this.state.rng,
@@ -1969,14 +1980,17 @@ export class BattleEngine implements BattleEventEmitter {
     // Ability: on-before-move trigger (e.g., Truant — skip every other turn)
     // Source: Showdown sim/battle-actions.ts — beforeMove ability hook
     if (this.ruleset.hasAbilities()) {
-      const beforeMoveAbilityResult = this.ruleset.applyAbility("on-before-move", {
-        pokemon: actor,
-        opponent: defender,
-        state: this.state,
-        rng: this.state.rng,
-        trigger: "on-before-move",
-        move: effectiveMoveData,
-      });
+      const beforeMoveAbilityResult = this.ruleset.applyAbility(
+        CORE_ABILITY_TRIGGER_IDS.onBeforeMove,
+        {
+          pokemon: actor,
+          opponent: defender,
+          state: this.state,
+          rng: this.state.rng,
+          trigger: CORE_ABILITY_TRIGGER_IDS.onBeforeMove,
+          move: effectiveMoveData,
+        },
+      );
       if (beforeMoveAbilityResult.activated) {
         this.processAbilityResult(beforeMoveAbilityResult, actor, defender, action.side);
         if (beforeMoveAbilityResult.movePrevented) {
@@ -2211,12 +2225,12 @@ export class BattleEngine implements BattleEventEmitter {
       // Passive immunity ability (Water Absorb, Volt Absorb, Motor Drive, Flash Fire, Dry Skin, Levitate)
       // Source: Showdown sim/battle-actions.ts — ability immunities checked after damage calc returns 0
       if (this.ruleset.hasAbilities() && result.damage === 0 && result.effectiveness === 0) {
-        const immunityResult = this.ruleset.applyAbility("passive-immunity", {
+        const immunityResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.passiveImmunity, {
           pokemon: defender,
           opponent: actor,
           state: this.state,
           rng: this.state.rng,
-          trigger: "passive-immunity",
+          trigger: CORE_ABILITY_TRIGGER_IDS.passiveImmunity,
           move: effectiveMoveData,
         });
         if (immunityResult.activated) {
@@ -2309,7 +2323,7 @@ export class BattleEngine implements BattleEventEmitter {
       // Held item: on-damage-taken trigger for defender
       // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks (Absorb Bulb, Cell Battery, etc.)
       if (this.ruleset.hasHeldItems() && damage > 0) {
-        const defItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
+        const defItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onDamageTaken, {
           pokemon: defender,
           state: this.state,
           rng: this.state.rng,
@@ -2331,7 +2345,7 @@ export class BattleEngine implements BattleEventEmitter {
         !hitSubstitute
       ) {
         if (defender.pokemon.currentHp > 0) {
-          const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+          const contactItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onContact, {
             pokemon: defender,
             opponent: actor,
             state: this.state,
@@ -2348,15 +2362,18 @@ export class BattleEngine implements BattleEventEmitter {
       // Ability: on-damage-taken trigger (e.g., Color Change — type changes to match move type)
       // Source: Showdown sim/battle-actions.ts — onDamagingHit ability hook (fires after damage dealt)
       if (this.ruleset.hasAbilities() && damage > 0 && defender.pokemon.currentHp > 0) {
-        const damageTakenAbilityResult = this.ruleset.applyAbility("on-damage-taken", {
-          pokemon: defender,
-          opponent: actor,
-          state: this.state,
-          rng: this.state.rng,
-          trigger: "on-damage-taken",
-          move: effectiveMoveData,
-          damage,
-        });
+        const damageTakenAbilityResult = this.ruleset.applyAbility(
+          CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+          {
+            pokemon: defender,
+            opponent: actor,
+            state: this.state,
+            rng: this.state.rng,
+            trigger: CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+            move: effectiveMoveData,
+            damage,
+          },
+        );
         if (damageTakenAbilityResult.activated) {
           this.processAbilityResult(
             damageTakenAbilityResult,
@@ -2376,12 +2393,12 @@ export class BattleEngine implements BattleEventEmitter {
         !hitSubstitute
       ) {
         if (defender.pokemon.currentHp > 0) {
-          const contactResult = this.ruleset.applyAbility("on-contact", {
+          const contactResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onContact, {
             pokemon: defender,
             opponent: actor,
             state: this.state,
             rng: this.state.rng,
-            trigger: "on-contact",
+            trigger: CORE_ABILITY_TRIGGER_IDS.onContact,
             move: effectiveMoveData,
             damage,
           });
@@ -2593,7 +2610,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Pass `damage` so item handlers (Life Orb recoil, Shell Bell heal) can gate on actual damage dealt.
     // Source: ItemContext.damage?: number in packages/battle/src/context/types.ts
     if (this.ruleset.hasHeldItems() && damage > 0) {
-      const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
+      const atkItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onHit, {
         pokemon: actor,
         state: this.state,
         rng: this.state.rng,
@@ -2614,12 +2631,12 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown sim/battle-actions.ts — onSourceAfterFaint
     // Source: Showdown data/abilities.ts -- moxie.onSourceAfterFaint, beastboost.onSourceAfterFaint
     if (this.ruleset.hasAbilities() && defender.pokemon.currentHp <= 0) {
-      const afterMoveResult = this.ruleset.applyAbility("on-after-move-used", {
+      const afterMoveResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onAfterMoveUsed, {
         pokemon: actor,
         opponent: defender,
         state: this.state,
         rng: this.state.rng,
-        trigger: "on-after-move-used",
+        trigger: CORE_ABILITY_TRIGGER_IDS.onAfterMoveUsed,
         move: effectiveMoveData,
       });
       if (afterMoveResult.activated) {
@@ -2705,12 +2722,12 @@ export class BattleEngine implements BattleEventEmitter {
       // Passive immunity ability (Water Absorb, Volt Absorb, Motor Drive, Flash Fire, Dry Skin, Levitate)
       // Source: Showdown sim/battle-actions.ts — ability immunities checked after damage calc returns 0
       if (this.ruleset.hasAbilities() && result.damage === 0 && result.effectiveness === 0) {
-        const immunityResult = this.ruleset.applyAbility("passive-immunity", {
+        const immunityResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.passiveImmunity, {
           pokemon: defender,
           opponent: actor,
           state: this.state,
           rng: this.state.rng,
-          trigger: "passive-immunity",
+          trigger: CORE_ABILITY_TRIGGER_IDS.passiveImmunity,
           move: moveData,
         });
         if (immunityResult.activated) {
@@ -2791,7 +2808,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Held item: on-damage-taken trigger for defender
         // Source: Showdown sim/battle-actions.ts — onDamagingHit item hooks (Absorb Bulb, Cell Battery, etc.)
         if (this.ruleset.hasHeldItems() && damage > 0) {
-          const defItemResult = this.ruleset.applyHeldItem("on-damage-taken", {
+          const defItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onDamageTaken, {
             pokemon: defender,
             state: this.state,
             rng: this.state.rng,
@@ -2808,7 +2825,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: Showdown sim/battle-actions.ts — onDamagingHit contact item hooks
         if (this.ruleset.hasHeldItems() && damage > 0 && moveData.flags.contact && !hitSubstitute) {
           if (defender.pokemon.currentHp > 0) {
-            const contactItemResult = this.ruleset.applyHeldItem("on-contact", {
+            const contactItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onContact, {
               pokemon: defender,
               opponent: actor,
               state: this.state,
@@ -2825,15 +2842,18 @@ export class BattleEngine implements BattleEventEmitter {
         // Ability: on-damage-taken trigger (e.g., Color Change — type changes to match move type)
         // Source: Showdown sim/battle-actions.ts — onDamagingHit ability hook (fires after damage dealt)
         if (this.ruleset.hasAbilities() && damage > 0 && defender.pokemon.currentHp > 0) {
-          const damageTakenAbilityResult = this.ruleset.applyAbility("on-damage-taken", {
-            pokemon: defender,
-            opponent: actor,
-            state: this.state,
-            rng: this.state.rng,
-            trigger: "on-damage-taken",
-            move: moveData,
-            damage,
-          });
+          const damageTakenAbilityResult = this.ruleset.applyAbility(
+            CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+            {
+              pokemon: defender,
+              opponent: actor,
+              state: this.state,
+              rng: this.state.rng,
+              trigger: CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
+              move: moveData,
+              damage,
+            },
+          );
           if (damageTakenAbilityResult.activated) {
             this.processAbilityResult(damageTakenAbilityResult, defender, actor, defenderSide);
           }
@@ -2843,12 +2863,12 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: Showdown sim/battle-actions.ts — contact abilities checked after damage
         if (this.ruleset.hasAbilities() && damage > 0 && moveData.flags.contact && !hitSubstitute) {
           if (defender.pokemon.currentHp > 0) {
-            const contactResult = this.ruleset.applyAbility("on-contact", {
+            const contactResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onContact, {
               pokemon: defender,
               opponent: actor,
               state: this.state,
               rng: this.state.rng,
-              trigger: "on-contact",
+              trigger: CORE_ABILITY_TRIGGER_IDS.onContact,
               move: moveData,
               damage,
             });
@@ -2887,7 +2907,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Held item: on-hit trigger for attacker
     // Recursive move execution should preserve the same attacker item hook parity as executeMove().
     if (this.ruleset.hasHeldItems() && damage > 0) {
-      const atkItemResult = this.ruleset.applyHeldItem("on-hit", {
+      const atkItemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onHit, {
         pokemon: actor,
         opponent: defender,
         state: this.state,
@@ -3445,12 +3465,12 @@ export class BattleEngine implements BattleEventEmitter {
       if (this.ruleset.hasAbilities()) {
         const opponent = this.getOpponentActive(side);
         if (opponent) {
-          const flinchResult = this.ruleset.applyAbility("on-flinch", {
+          const flinchResult = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onFlinch, {
             pokemon: actor,
             opponent,
             state: this.state,
             rng: this.state.rng,
-            trigger: "on-flinch",
+            trigger: CORE_ABILITY_TRIGGER_IDS.onFlinch,
           });
           if (flinchResult.activated) {
             this.processAbilityResult(flinchResult, actor, opponent, side);
@@ -3783,13 +3803,16 @@ export class BattleEngine implements BattleEventEmitter {
       const opponentSideIdx = (side === 0 ? 1 : 0) as 0 | 1;
       const opponent = this.getActiveMutable(opponentSideIdx);
       if (opponent && opponent.pokemon.currentHp > 0) {
-        const statusInflictedResult = this.ruleset.applyAbility("on-status-inflicted", {
-          pokemon: target,
-          opponent,
-          state: this.state,
-          rng: this.state.rng,
-          trigger: "on-status-inflicted",
-        });
+        const statusInflictedResult = this.ruleset.applyAbility(
+          CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
+          {
+            pokemon: target,
+            opponent,
+            state: this.state,
+            rng: this.state.rng,
+            trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
+          },
+        );
         if (statusInflictedResult.activated) {
           this.processAbilityResult(statusInflictedResult, target, opponent, side);
         }
@@ -4838,7 +4861,7 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       const opponent = this.getOpponentActive(action.side) ?? undefined;
-      const itemResult = this.ruleset.applyHeldItem("before-turn-order", {
+      const itemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.beforeTurnOrder, {
         pokemon: active,
         opponent,
         state: this.state,
@@ -5088,7 +5111,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      const itemResult = this.ruleset.applyHeldItem("end-of-turn", {
+      const itemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
         pokemon: active,
         state: this.state,
         rng: this.state.rng,
@@ -5579,12 +5602,12 @@ export class BattleEngine implements BattleEventEmitter {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
       const opponent = this.getOpponentActive(side.index);
-      const result = this.ruleset.applyAbility("on-weather-change", {
+      const result = this.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onWeatherChange, {
         pokemon: active,
         opponent: opponent ?? undefined,
         state: this.state,
         rng: this.state.rng,
-        trigger: "on-weather-change",
+        trigger: CORE_ABILITY_TRIGGER_IDS.onWeatherChange,
       });
       if (result.activated) {
         this.processAbilityResult(result, active, opponent ?? active, side.index);
@@ -5870,7 +5893,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      const itemResult = this.ruleset.applyHeldItem("stat-boost-between-turns", {
+      const itemResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns, {
         pokemon: active,
         state: this.state,
         rng: this.state.rng,

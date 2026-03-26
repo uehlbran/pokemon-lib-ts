@@ -13,6 +13,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -252,21 +253,21 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
   const abilityId = context.pokemon.ability;
 
   switch (trigger) {
-    case "on-switch-in":
+    case CORE_ABILITY_TRIGGER_IDS.onSwitchIn:
       return handleSwitchIn(abilityId, context);
-    case "on-contact":
+    case CORE_ABILITY_TRIGGER_IDS.onContact:
       return handleOnContact(abilityId, context);
-    case "on-turn-end":
+    case CORE_ABILITY_TRIGGER_IDS.onTurnEnd:
       return handleTurnEnd(abilityId, context);
-    case "passive-immunity":
+    case CORE_ABILITY_TRIGGER_IDS.passiveImmunity:
       return handlePassiveImmunity(abilityId, context);
-    case "on-before-move":
+    case CORE_ABILITY_TRIGGER_IDS.onBeforeMove:
       return handleBeforeMove(abilityId, context);
-    case "on-damage-taken":
+    case CORE_ABILITY_TRIGGER_IDS.onDamageTaken:
       return handleDamageTaken(abilityId, context);
-    case "on-status-inflicted":
+    case CORE_ABILITY_TRIGGER_IDS.onStatusInflicted:
       return handleStatusInflicted(abilityId, context);
-    case "on-weather-change":
+    case CORE_ABILITY_TRIGGER_IDS.onWeatherChange:
       return handleWeatherChange(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };

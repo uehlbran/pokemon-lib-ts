@@ -34,8 +34,10 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
   CORE_SPECIES_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -317,7 +319,7 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
-    if (status === "burn") {
+    if (status === CORE_STATUS_IDS.burn) {
       // Gen 3-6: burn = 1/8 max HP (not 1/16 like Gen 7+)
       // Source: pret/pokeemerald src/battle_util.c
       return Math.max(1, Math.floor(maxHp / 8));
@@ -469,26 +471,26 @@ export class Gen3Ruleset extends BaseRuleset {
     // "uproar" added between perish-song and speed-boost per pokeemerald end-of-turn order.
     // Source: Spec 04-gen3.md line 1038 — "13. Uproar wake-up check"
     return [
-      "weather-damage",
-      "future-attack",
-      "wish",
-      "weather-healing",
-      "leftovers",
-      "ingrain",
-      "status-damage",
-      "leech-seed",
-      "curse",
-      "nightmare",
-      "bind",
-      "stat-boosting-items",
-      "encore-countdown",
-      "disable-countdown",
-      "taunt-countdown",
-      "perish-song",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
       "uproar" as EndOfTurnEffect, // "uproar" added in battle source but not yet in installed package types
       "speed-boost",
       "shed-skin",
-      "weather-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
     ];
   }
 
@@ -581,8 +583,8 @@ export class Gen3Ruleset extends BaseRuleset {
     // Source: pret/pokeemerald — Thunder bypasses accuracy in rain
     // Source: Showdown data/moves.ts — Thunder: move.accuracy = true in raindance
     if (context.move.id === "thunder") {
-      if (weather === "rain") return true;
-      if (weather === "sun") {
+      if (weather === CORE_WEATHER_IDS.rain) return true;
+      if (weather === CORE_WEATHER_IDS.sun) {
         // Override accuracy to 50 and continue with normal check
         const accStage = context.attacker.statStages.accuracy;
         const evaStage = context.defender.statStages.evasion;
@@ -708,7 +710,7 @@ export class Gen3Ruleset extends BaseRuleset {
       effective = Math.floor(effective / 2);
     }
 
-    if (active.pokemon.status === "paralysis") {
+    if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       // Gen 3-6: paralysis quarters speed (×0.25)
       // Source: pret/pokeemerald src/battle_util.c
       effective = Math.floor(effective * 0.25);
@@ -970,10 +972,10 @@ const GEN3_ACCURACY_STAGE_RATIOS: ReadonlyArray<{ dividend: number; divisor: num
  *   Electric-type Pokemon are immune to paralysis."
  */
 const GEN3_STATUS_IMMUNITIES: Record<string, readonly PokemonType[]> = {
-  burn: ["fire"],
-  poison: ["poison", "steel"],
-  "badly-poisoned": ["poison", "steel"],
-  freeze: ["ice"],
+  [CORE_STATUS_IDS.burn]: [CORE_TYPE_IDS.fire],
+  [CORE_STATUS_IDS.poison]: [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel],
+  [CORE_STATUS_IDS.badlyPoisoned]: [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel],
+  [CORE_STATUS_IDS.freeze]: [CORE_TYPE_IDS.ice],
   // No paralysis immunity for Electric types in Gen 3
   // Source: pret/pokeemerald src/battle_util.c — no such check exists
 };

@@ -7,9 +7,11 @@ import {
 } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 
@@ -88,16 +90,16 @@ export function applyGen4HeldItem(trigger: string, context: ItemContext): ItemRe
 
   let result: ItemResult;
   switch (trigger) {
-    case "before-move":
+    case CORE_ITEM_TRIGGER_IDS.beforeMove:
       result = handleBeforeMove(item, context);
       break;
-    case "end-of-turn":
+    case CORE_ITEM_TRIGGER_IDS.endOfTurn:
       result = handleEndOfTurn(item, context);
       break;
-    case "on-damage-taken":
+    case CORE_ITEM_TRIGGER_IDS.onDamageTaken:
       result = handleOnDamageTaken(item, context);
       break;
-    case "on-hit":
+    case CORE_ITEM_TRIGGER_IDS.onHit:
       result = handleOnHit(item, context);
       break;
     default:
@@ -144,20 +146,20 @@ function handleBeforeMove(item: string, context: ItemContext): ItemResult {
   const moveId = context.move?.id;
   if (!moveId) return NO_ACTIVATION;
 
-  const existing = pokemon.volatileStatuses.get("metronome-count");
+  const existing = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
   const previousMoveId = existing?.data?.moveId as string | undefined;
   const previousCount = (existing?.data?.count as number) ?? 0;
 
   if (previousMoveId === moveId) {
     // Same move used consecutively — increment count
     const newCount = previousCount + 1;
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: newCount, moveId },
     });
   } else {
     // Different move (or first use) — reset to count 1
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 1, moveId },
     });
@@ -213,7 +215,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
   const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
   const status = pokemon.pokemon.status;
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
-  const isPoison = pokemon.types.includes("poison");
+  const isPoison = pokemon.types.includes(CORE_TYPE_IDS.poison);
 
   switch (item) {
     // Leftovers: Heal 1/16 max HP each turn, NOT consumed
@@ -243,7 +245,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         };
       }
       // Non-Poison: take 1/8 max HP damage — blocked by Magic Guard
-      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
+      if (pokemon.ability === CORE_ABILITY_IDS.magicGuard) return NO_ACTIVATION;
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
@@ -260,7 +262,10 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       if (status) return NO_ACTIVATION; // Already has a status
       // Poison and Steel types are immune to poisoning
       // Source: Showdown Gen 4 — type immunity prevents Orb activation
-      if (context.pokemon.types.includes("poison") || context.pokemon.types.includes("steel")) {
+      if (
+        context.pokemon.types.includes(CORE_TYPE_IDS.poison) ||
+        context.pokemon.types.includes(CORE_TYPE_IDS.steel)
+      ) {
         return NO_ACTIVATION;
       }
       return {
@@ -284,7 +289,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       if (status) return NO_ACTIVATION; // Already has a status
       // Fire types are immune to burns
       // Source: Showdown Gen 4 — type immunity prevents Orb activation
-      if (context.pokemon.types.includes("fire")) {
+      if (context.pokemon.types.includes(CORE_TYPE_IDS.fire)) {
         return NO_ACTIVATION;
       }
       return {
@@ -365,7 +370,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Cheri Berry: Cures paralysis (consumed)
     // Source: Showdown Gen 4 mod — Cheri Berry (same as Gen 3)
     case "cheri-berry": {
-      if (status === "paralysis") {
+      if (status === CORE_STATUS_IDS.paralysis) {
         return {
           activated: true,
           effects: [
@@ -381,7 +386,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Chesto Berry: Cures sleep (consumed)
     // Source: Showdown Gen 4 mod — Chesto Berry (same as Gen 3)
     case "chesto-berry": {
-      if (status === "sleep") {
+      if (status === CORE_STATUS_IDS.sleep) {
         return {
           activated: true,
           effects: [
@@ -413,7 +418,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Rawst Berry: Cures burn (consumed)
     // Source: Showdown Gen 4 mod — Rawst Berry (same as Gen 3)
     case "rawst-berry": {
-      if (status === "burn") {
+      if (status === CORE_STATUS_IDS.burn) {
         return {
           activated: true,
           effects: [
@@ -429,7 +434,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Aspear Berry: Cures freeze (consumed)
     // Source: Showdown Gen 4 mod — Aspear Berry (same as Gen 3)
     case "aspear-berry": {
-      if (status === "freeze") {
+      if (status === CORE_STATUS_IDS.freeze) {
         return {
           activated: true,
           effects: [
@@ -490,7 +495,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
     // Source: Showdown Gen 4 — Magic Guard blocks Sticky Barb chip
     case "sticky-barb": {
-      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
+      if (pokemon.ability === CORE_ABILITY_IDS.magicGuard) return NO_ACTIVATION;
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
@@ -1093,7 +1098,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
     // Source: Showdown Gen 4 — Magic Guard prevents Life Orb self-damage
     // Fix for issue #549: previous code emitted chip-damage even for Magic Guard holders.
     case "life-orb": {
-      if (pokemon.ability === "magic-guard") return NO_ACTIVATION;
+      if (pokemon.ability === CORE_ABILITY_IDS.magicGuard) return NO_ACTIVATION;
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         const recoil = Math.max(1, Math.floor(maxHp / 10));

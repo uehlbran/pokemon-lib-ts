@@ -7,6 +7,7 @@ import type {
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -144,17 +145,17 @@ export function applyGen4Ability(
   const abilityId = context.pokemon.ability;
 
   switch (trigger) {
-    case "on-switch-in":
+    case CORE_ABILITY_TRIGGER_IDS.onSwitchIn:
       return handleSwitchIn(abilityId, context, dataManager);
-    case "on-turn-end":
+    case CORE_ABILITY_TRIGGER_IDS.onTurnEnd:
       return handleTurnEnd(abilityId, context);
-    case "on-contact":
+    case CORE_ABILITY_TRIGGER_IDS.onContact:
       return handleOnContact(abilityId, context);
-    case "passive-immunity":
+    case CORE_ABILITY_TRIGGER_IDS.passiveImmunity:
       return handlePassiveImmunity(abilityId, context);
-    case "on-flinch":
+    case CORE_ABILITY_TRIGGER_IDS.onFlinch:
       return handleOnFlinch(abilityId, context);
-    case "on-after-move-hit":
+    case CORE_ABILITY_TRIGGER_IDS.onAfterMoveHit:
       return handleOnAfterMoveHit(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };

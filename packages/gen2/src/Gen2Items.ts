@@ -5,7 +5,7 @@ import {
   type ItemEffect,
   type ItemResult,
 } from "@pokemon-lib-ts/battle";
-import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_TRIGGER_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 
 const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
 const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
@@ -48,11 +48,11 @@ export function applyGen2HeldItem(trigger: string, context: ItemContext): ItemRe
   }
 
   switch (trigger) {
-    case "end-of-turn":
+    case CORE_ITEM_TRIGGER_IDS.endOfTurn:
       return handleEndOfTurn(item, context);
-    case "on-damage-taken":
+    case CORE_ITEM_TRIGGER_IDS.onDamageTaken:
       return handleOnDamageTaken(item, context);
-    case "on-hit":
+    case CORE_ITEM_TRIGGER_IDS.onHit:
       return handleOnHit(item, context);
     default:
       return NO_ACTIVATION;
@@ -97,7 +97,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // PRZCureBerry: Cures paralysis (consumed)
     case "prz-cure-berry": {
-      if (status === "paralysis") {
+      if (status === CORE_STATUS_IDS.paralysis) {
         return {
           activated: true,
           effects: [
@@ -127,7 +127,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Ice Berry: Cures burn (consumed)
     case "ice-berry": {
-      if (status === "burn") {
+      if (status === CORE_STATUS_IDS.burn) {
         return {
           activated: true,
           effects: [
@@ -142,7 +142,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Mint Berry: Cures sleep (consumed)
     case "mint-berry": {
-      if (status === "sleep") {
+      if (status === CORE_STATUS_IDS.sleep) {
         return {
           activated: true,
           effects: [
@@ -157,7 +157,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Burnt Berry: Cures freeze (consumed)
     case "burnt-berry": {
-      if (status === "freeze") {
+      if (status === CORE_STATUS_IDS.freeze) {
         return {
           activated: true,
           effects: [
@@ -172,7 +172,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // PSNCureBerry: Cures poison and badly-poisoned (consumed)
     case "psn-cure-berry": {
-      if (status === "poison" || status === "badly-poisoned") {
+      if (status === CORE_STATUS_IDS.poison || status === CORE_STATUS_IDS.badlyPoisoned) {
         return {
           activated: true,
           effects: [
@@ -187,7 +187,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Bitter Berry: Cures confusion volatile status (consumed)
     case "bitter-berry": {
-      if (pokemon.volatileStatuses.has("confusion")) {
+      if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
         return {
           activated: true,
           effects: [
@@ -206,7 +206,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Miracle Berry: Cures any primary status OR confusion (consumed)
     case "miracle-berry": {
-      const hasConfusion = pokemon.volatileStatuses.has("confusion");
+      const hasConfusion = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion);
       const hasPrimaryStatus = status != null;
       if (!hasPrimaryStatus && !hasConfusion) {
         return NO_ACTIVATION;

@@ -42,8 +42,11 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
   gen1to2FullParalysisCheck,
@@ -295,7 +298,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
     // Paralysis reduces speed to 25%
-    if (active.pokemon.status === "paralysis") {
+    if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       effective = Math.floor(effective * 0.25);
     }
 
@@ -336,7 +339,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:1286-1290
     // "ld a, BATTLE_WEATHER_RAIN ; cp [wBattleWeather] ; ret z" — if rain, skip accuracy check
     const weather = context.state.weather?.type ?? null;
-    if (move.id === "thunder" && weather === "rain") {
+    if (move.id === "thunder" && weather === CORE_WEATHER_IDS.rain) {
       return true;
     }
 
@@ -346,7 +349,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Thunder base accuracy = 70% → 178 on 0-255 scale → halved to 89.
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
-    if (move.id === "thunder" && weather === "sun") {
+    if (move.id === "thunder" && weather === CORE_WEATHER_IDS.sun) {
       accuracy = Math.max(1, Math.floor(accuracy / 2));
     }
 
@@ -916,8 +919,8 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Gen 2: clear non-persistent volatiles on switch
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
     // Zeros wPlayerSubStatus1-5 (including SUBSTATUS_TOXIC), reverting badly-poisoned to regular poison
-    if (pokemon.pokemon.status === "badly-poisoned") {
-      pokemon.pokemon.status = "poison";
+    if (pokemon.pokemon.status === CORE_STATUS_IDS.badlyPoisoned) {
+      pokemon.pokemon.status = CORE_STATUS_IDS.poison;
     }
 
     // Baton Pass: preserve stat stages and certain volatiles for the incoming Pokemon
@@ -1046,7 +1049,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: decomp lines 340-352 — BUG: only FRZ and SLP add +10; BRN/PSN/PAR have NO effect
     // This is a known bug in pokecrystal — we replicate it for cartridge accuracy.
     let statusBonus = 0;
-    if (status === "freeze" || status === "sleep") {
+    if (status === CORE_STATUS_IDS.freeze || status === CORE_STATUS_IDS.sleep) {
       statusBonus = 10;
     }
     // BRN/PSN/PAR intentionally do NOT add a bonus — decomp bug replicated for accuracy
@@ -1187,23 +1190,23 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
     // Disable countdown fires before Encore (jp HandleEncore is the final call)
     return [
-      "future-attack",
-      "weather-damage",
-      "weather-countdown",
-      "bind",
-      "perish-song",
-      "leftovers",
-      "mystery-berry",
-      "defrost",
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.mysteryBerry,
+      CORE_END_OF_TURN_EFFECT_IDS.defrost,
       // Note: safeguard-countdown removed — Safeguard is stored as a ScreenType screen
       // and is now decremented by screen-countdown below. Two separate handlers would
       // double-decrement turnsLeft, halving the effective duration.
       // Source: pret/pokecrystal engine/battle/core.asm — single per-turn countdown
-      "screen-countdown",
-      "stat-boosting-items",
-      "healing-items",
-      "disable-countdown",
-      "encore-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems,
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
     ] as const;
   }
 
@@ -1211,6 +1214,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage
     // Phase 1: runs per-Pokemon after each attack resolves
     // Order: status-damage → leech-seed → nightmare → curse
-    return ["status-damage", "leech-seed", "nightmare", "curse"] as const;
+    return [
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
+    ] as const;
   }
 }
