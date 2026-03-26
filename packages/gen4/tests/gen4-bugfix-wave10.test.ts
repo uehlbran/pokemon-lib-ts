@@ -8,6 +8,9 @@ import type {
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
@@ -53,15 +56,18 @@ import { GEN4_TYPE_CHART } from "../src/Gen4TypeChart";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const DATA_MANAGER = createGen4DataManager()
-const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const
-const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const
-const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const
-const SPECIES = GEN4_SPECIES_IDS
-const STATUSES = CORE_STATUS_IDS
-const TYPES = CORE_TYPE_IDS
-const VOLATILES = CORE_VOLATILE_IDS
-const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy
+const DATA_MANAGER = createGen4DataManager();
+const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
+const ITEMS = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
+const MOVES = { ...CORE_MOVE_IDS, ...GEN4_MOVE_IDS } as const;
+const SPECIES = GEN4_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
+const DEFAULT_NATURE = NEUTRAL_NATURES[0] ?? GEN4_NATURE_IDS.hardy;
 
 function createMockRng(intReturnValue: number, nextValue = 0) {
   return {
@@ -114,11 +120,11 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -698,7 +704,7 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
     const state = createMinimalBattleState(holder, opponent);
     const rng = createMockRng(0);
 
-    const result = applyGen4HeldItem("on-damage-taken", {
+    const result = applyGen4HeldItem(ABILITY_TRIGGERS.onDamageTaken, {
       pokemon: holder,
       state,
       rng,
@@ -731,7 +737,7 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
     const state = createMinimalBattleState(holder, opponent);
     const rng = createMockRng(0);
 
-    const result = applyGen4HeldItem("on-damage-taken", {
+    const result = applyGen4HeldItem(ABILITY_TRIGGERS.onDamageTaken, {
       pokemon: holder,
       state,
       rng,
