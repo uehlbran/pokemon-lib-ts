@@ -4,13 +4,22 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   PokemonType,
   PrimaryStatus,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+
+const ABILITY_EFFECT = BATTLE_ABILITY_EFFECT_TYPES;
+const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 
 /**
  * Gen 3 Abilities — applyAbility dispatch.
@@ -306,8 +315,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       }
 
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "opponent",
+        effectType: ABILITY_EFFECT.statChange,
+        target: EFFECT_TARGET.opponent,
         stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
@@ -322,8 +331,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // Source: pret/pokeemerald ABILITY_DRIZZLE — sets permanent rain on switch-in
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "rain",
         weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite)
       };
@@ -338,8 +347,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // Source: pret/pokeemerald ABILITY_DROUGHT — sets permanent sun on switch-in
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "sun",
         weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite)
       };
@@ -354,8 +363,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // Source: pret/pokeemerald ABILITY_SAND_STREAM — sets permanent sandstorm on switch-in
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "sand",
         weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite)
       };
@@ -386,8 +395,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "ability-change",
-        target: "self",
+        effectType: ABILITY_EFFECT.abilityChange,
+        target: EFFECT_TARGET.self,
         newAbility: opponentAbility,
       };
       return {
@@ -463,7 +472,9 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [newType] }],
+        effects: [
+          { effectType: ABILITY_EFFECT.typeChange, target: EFFECT_TARGET.self, types: [newType] },
+        ],
         messages: [`${name} transformed into the ${newType} type!`],
       };
     }
@@ -505,7 +516,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [],
       };
     }
@@ -519,7 +536,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [],
       };
     }
@@ -533,7 +556,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [],
       };
     }
@@ -546,7 +575,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.chipDamage,
+            target: EFFECT_TARGET.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [],
       };
     }
@@ -568,7 +603,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.sleep,
+            },
+          ],
           messages: [],
         };
       }
@@ -578,7 +619,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.poison,
+            },
+          ],
           messages: [],
         };
       }
@@ -587,7 +634,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [],
       };
     }
@@ -613,7 +666,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       }
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.volatileInflict,
+            target: EFFECT_TARGET.opponent,
+            volatile: CORE_VOLATILE_IDS.infatuation,
+          },
+        ],
         messages: [],
       };
     }
@@ -670,7 +729,12 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       return {
         activated: true,
         effects: [
-          { effectType: "stat-change", target: "self", stat: CORE_STAT_IDS.speed, stages: 1 },
+          {
+            effectType: ABILITY_EFFECT.statChange,
+            target: EFFECT_TARGET.self,
+            stat: CORE_STAT_IDS.speed,
+            stages: 1,
+          },
         ],
         messages: [`${name}'s Speed Boost raised its Speed!`],
       };
@@ -689,7 +753,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmt = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [`${name}'s Rain Dish restored some HP!`],
       };
     }
@@ -701,7 +765,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-cure", target: "self" }],
+        effects: [{ effectType: ABILITY_EFFECT.statusCure, target: EFFECT_TARGET.self }],
         messages: [`${name}'s Shed Skin cured its status!`],
       };
     }
@@ -750,7 +814,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [`${name}'s Volt Absorb restored HP!`],
       };
     }
@@ -762,7 +826,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [`${name}'s Water Absorb restored HP!`],
       };
     }
@@ -774,7 +838,11 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const hasBoost = context.pokemon.volatileStatuses.has("flash-fire");
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {
-        effects.push({ effectType: "volatile-inflict", target: "self", volatile: "flash-fire" });
+        effects.push({
+          effectType: ABILITY_EFFECT.volatileInflict,
+          target: EFFECT_TARGET.self,
+          volatile: CORE_VOLATILE_IDS.flashFire,
+        });
       }
       return {
         activated: true,
@@ -909,7 +977,13 @@ function handleDamageTaken(abilityId: string, context: AbilityContext): AbilityR
     }
     return {
       activated: true,
-      effects: [{ effectType: "type-change", target: "self", types: [moveType as PokemonType] }],
+      effects: [
+        {
+          effectType: ABILITY_EFFECT.typeChange,
+          target: EFFECT_TARGET.self,
+          types: [moveType as PokemonType],
+        },
+      ],
       messages: [`${name}'s Color Change made it the ${moveType} type!`],
     };
   }
@@ -960,7 +1034,13 @@ function handleStatusInflicted(abilityId: string, context: AbilityContext): Abil
     const mirroredStatus = status === "badly-poisoned" ? "poison" : status;
     return {
       activated: true,
-      effects: [{ effectType: "status-inflict", target: "opponent", status: mirroredStatus }],
+      effects: [
+        {
+          effectType: ABILITY_EFFECT.statusInflict,
+          target: EFFECT_TARGET.opponent,
+          status: mirroredStatus,
+        },
+      ],
       messages: [`${name}'s Synchronize shared its ${mirroredStatus} with ${oppName}!`],
     };
   }
@@ -1005,7 +1085,9 @@ function handleWeatherChange(abilityId: string, context: AbilityContext): Abilit
 
   return {
     activated: true,
-    effects: [{ effectType: "type-change", target: "self", types: [newType] }],
+    effects: [
+      { effectType: ABILITY_EFFECT.typeChange, target: EFFECT_TARGET.self, types: [newType] },
+    ],
     messages: [`${name} transformed into the ${newType} type!`],
   };
 }

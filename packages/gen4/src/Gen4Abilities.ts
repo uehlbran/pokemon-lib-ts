@@ -4,10 +4,14 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
 import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
+
+const ABILITY_EFFECT = BATTLE_ABILITY_EFFECT_TYPES;
+const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 
 // ─── Weather Suppression ────────────────────────────────────────────────────
 
@@ -177,8 +181,8 @@ function handleSwitchIn(
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "opponent",
+        effectType: ABILITY_EFFECT.statChange,
+        target: EFFECT_TARGET.opponent,
         stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
@@ -195,7 +199,10 @@ function handleSwitchIn(
       // Source: Showdown data/abilities.ts — Pressure onStart message
       // Source: Bulbapedia — "When a Pokémon with Pressure enters battle, the message
       //   '<Pokémon> is exerting its Pressure!' is displayed."
-      const noneEffect: AbilityEffect = { effectType: "none", target: "self" };
+      const noneEffect: AbilityEffect = {
+        effectType: ABILITY_EFFECT.none,
+        target: EFFECT_TARGET.self,
+      };
       return {
         activated: true,
         effects: [noneEffect],
@@ -207,8 +214,8 @@ function handleSwitchIn(
       // Source: Showdown Gen 4 mod — Drizzle sets permanent rain on switch-in
       // Gen 4: weather from abilities is permanent (-1 turns sentinel)
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "rain",
         weatherTurns: -1,
       };
@@ -222,8 +229,8 @@ function handleSwitchIn(
     case "drought": {
       // Source: Showdown Gen 4 mod — Drought sets permanent sun on switch-in
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "sun",
         weatherTurns: -1,
       };
@@ -237,8 +244,8 @@ function handleSwitchIn(
     case "sand-stream": {
       // Source: Showdown Gen 4 mod — Sand Stream sets permanent sandstorm on switch-in
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "sand",
         weatherTurns: -1,
       };
@@ -255,8 +262,8 @@ function handleSwitchIn(
       // Source: Bulbapedia — Snow Warning: summons hail on switch-in (Gen 4: permanent)
       // Source: Showdown Gen 4 mod — Snow Warning trigger
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
         weather: "hail",
         weatherTurns: -1,
       };
@@ -281,8 +288,8 @@ function handleSwitchIn(
       const stat = raisesAtk ? ("attack" as const) : ("spAttack" as const);
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "self",
+        effectType: ABILITY_EFFECT.statChange,
+        target: EFFECT_TARGET.self,
         stat,
         stages: 1,
       };
@@ -336,7 +343,7 @@ function handleSwitchIn(
       }
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [{ effectType: ABILITY_EFFECT.none, target: EFFECT_TARGET.self }],
         messages: [`${name}'s Anticipation made it shudder!`],
       };
     }
@@ -387,7 +394,7 @@ function handleSwitchIn(
       }
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [{ effectType: ABILITY_EFFECT.none, target: EFFECT_TARGET.self }],
         messages: [`${name}'s Forewarn alerted it to ${strongestMove}!`],
       };
     }
@@ -403,7 +410,7 @@ function handleSwitchIn(
       const itemName = context.opponent.pokemon.heldItem ?? "nothing";
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [{ effectType: ABILITY_EFFECT.none, target: EFFECT_TARGET.self }],
         messages: [`${name} frisked ${oppName} and found ${itemName}!`],
       };
     }
@@ -418,9 +425,9 @@ function handleSwitchIn(
         activated: true,
         effects: [
           {
-            effectType: "volatile-inflict",
-            target: "self",
-            volatile: "slow-start",
+            effectType: ABILITY_EFFECT.volatileInflict,
+            target: EFFECT_TARGET.self,
+            volatile: CORE_VOLATILE_IDS.slowStart,
             data: { turnsLeft: 5 },
           },
         ],
@@ -443,8 +450,8 @@ function handleSwitchIn(
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "ability-change",
-        target: "self",
+        effectType: ABILITY_EFFECT.abilityChange,
+        target: EFFECT_TARGET.self,
         newAbility: opponentAbility,
       };
       return {
@@ -462,7 +469,7 @@ function handleSwitchIn(
       //   Ability are unaffected by the target's Ability."
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [{ effectType: ABILITY_EFFECT.none, target: EFFECT_TARGET.self }],
         messages: [`${name} breaks the mold!`],
       };
     }
@@ -477,8 +484,8 @@ function handleSwitchIn(
       const newType: PokemonType = plateType ?? "normal";
       const typeName = newType.charAt(0).toUpperCase() + newType.slice(1);
       const effect: AbilityEffect = {
-        effectType: "type-change",
-        target: "self",
+        effectType: ABILITY_EFFECT.typeChange,
+        target: EFFECT_TARGET.self,
         types: [newType],
       };
       return {
@@ -521,8 +528,8 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         return { activated: false, effects: [], messages: [] };
       }
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "self",
+        effectType: ABILITY_EFFECT.statChange,
+        target: EFFECT_TARGET.self,
         stat: CORE_STAT_IDS.speed,
         stages: 1,
       };
@@ -545,7 +552,9 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          { effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount },
+        ],
         messages: [`${name}'s Rain Dish restored its HP!`],
       };
     }
@@ -562,7 +571,9 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          { effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount },
+        ],
         messages: [`${name}'s Ice Body restored its HP!`],
       };
     }
@@ -579,7 +590,9 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         const healAmount = Math.max(1, Math.floor(maxHp / 8));
         return {
           activated: true,
-          effects: [{ effectType: "heal", target: "self", value: healAmount }],
+          effects: [
+            { effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount },
+          ],
           messages: [`${name}'s Dry Skin restored its HP!`],
         };
       }
@@ -587,7 +600,13 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         const chipDamage = Math.max(1, Math.floor(maxHp / 8));
         return {
           activated: true,
-          effects: [{ effectType: "chip-damage", target: "self", value: chipDamage }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.chipDamage,
+              target: EFFECT_TARGET.self,
+              value: chipDamage,
+            },
+          ],
           messages: [`${name}'s Dry Skin was hurt by the harsh sunlight!`],
         };
       }
@@ -606,7 +625,9 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "self", value: chipDamage }],
+        effects: [
+          { effectType: ABILITY_EFFECT.chipDamage, target: EFFECT_TARGET.self, value: chipDamage },
+        ],
         messages: [`${name} was hurt by Solar Power!`],
       };
     }
@@ -621,7 +642,10 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         : weather;
       if (effectiveWeatherHY !== "rain") return { activated: false, effects: [], messages: [] };
       if (!status) return { activated: false, effects: [], messages: [] };
-      const effect: AbilityEffect = { effectType: "status-cure", target: "self" };
+      const effect: AbilityEffect = {
+        effectType: ABILITY_EFFECT.statusCure,
+        target: EFFECT_TARGET.self,
+      };
       return {
         activated: true,
         effects: [effect],
@@ -635,7 +659,10 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       // Source: Showdown Gen 4 mod — Shed Skin trigger (uses 33% = 1/3)
       if (!status) return { activated: false, effects: [], messages: [] };
       if (!context.rng.chance(1 / 3)) return { activated: false, effects: [], messages: [] };
-      const effect: AbilityEffect = { effectType: "status-cure", target: "self" };
+      const effect: AbilityEffect = {
+        effectType: ABILITY_EFFECT.statusCure,
+        target: EFFECT_TARGET.self,
+      };
       return {
         activated: true,
         effects: [effect],
@@ -657,7 +684,13 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.chipDamage,
+            target: EFFECT_TARGET.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${oppName} is tormented by ${name}'s Bad Dreams!`],
       };
     }
@@ -676,7 +709,9 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const healAmount = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          { effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount },
+        ],
         messages: [`${name}'s Poison Heal restored its HP!`],
       };
     }
@@ -718,7 +753,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [],
       };
     }
@@ -733,7 +774,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [],
       };
     }
@@ -748,7 +795,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [],
       };
     }
@@ -759,7 +812,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.chipDamage,
+            target: EFFECT_TARGET.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [],
       };
     }
@@ -779,7 +838,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.sleep,
+            },
+          ],
           messages: [],
         };
       }
@@ -789,7 +854,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.paralysis,
+            },
+          ],
           messages: [],
         };
       }
@@ -799,7 +870,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.poison,
+            },
+          ],
           messages: [],
         };
       }
@@ -828,7 +905,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.volatileInflict,
+            target: EFFECT_TARGET.opponent,
+            volatile: CORE_VOLATILE_IDS.infatuation,
+          },
+        ],
         messages: [],
       };
     }
@@ -845,7 +928,13 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.chipDamage,
+            target: EFFECT_TARGET.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s Aftermath hurt the attacker!`],
       };
     }
@@ -887,7 +976,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [],
       };
     }
@@ -899,7 +988,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [],
       };
     }
@@ -911,7 +1000,12 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       return {
         activated: true,
         effects: [
-          { effectType: "stat-change", target: "self", stat: CORE_STAT_IDS.speed, stages: 1 },
+          {
+            effectType: ABILITY_EFFECT.statChange,
+            target: EFFECT_TARGET.self,
+            stat: CORE_STAT_IDS.speed,
+            stages: 1,
+          },
         ],
         messages: [],
       };
@@ -925,7 +1019,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [],
       };
     }
@@ -943,7 +1037,11 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       const hasBoost = context.pokemon.volatileStatuses.has("flash-fire");
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {
-        effects.push({ effectType: "volatile-inflict", target: "self", volatile: "flash-fire" });
+        effects.push({
+          effectType: ABILITY_EFFECT.volatileInflict,
+          target: EFFECT_TARGET.self,
+          volatile: CORE_VOLATILE_IDS.flashFire,
+        });
       }
       return {
         activated: true,
@@ -1011,8 +1109,8 @@ function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResu
   // Source: Bulbapedia — Steadfast: raises Speed by 1 stage when the holder flinches
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
+    effectType: ABILITY_EFFECT.statChange,
+    target: EFFECT_TARGET.self,
     stat: CORE_STAT_IDS.speed,
     stages: 1,
   };

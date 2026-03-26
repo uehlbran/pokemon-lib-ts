@@ -447,6 +447,7 @@ export const CORE_VOLATILE_IDS = {
   nightmare: "nightmare",
   shadowForceCharging: "shadow-force-charging",
   silkTrap: "silk-trap",
+  slowStart: "slow-start",
   embodyAspectUsed: "embody-aspect-used",
   intrepidSwordUsed: "intrepid-sword-used",
   dauntlessShieldUsed: "dauntless-shield-used",
