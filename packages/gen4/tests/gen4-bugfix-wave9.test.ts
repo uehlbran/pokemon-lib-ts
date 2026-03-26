@@ -2,6 +2,9 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
@@ -43,6 +46,9 @@ const ITEMS = GEN4_ITEM_IDS;
 const MOVES = GEN4_MOVE_IDS;
 const SPECIES = GEN4_SPECIES_IDS;
 const NATURES = GEN4_NATURE_IDS;
+const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const GENDERS = CORE_GENDERS;
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -89,11 +95,11 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? maxHp,
     moves: [],
     ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -270,12 +276,12 @@ describe("Bug #259 -- Pressure ability", () => {
     const state = createMinimalBattleState(pokemon, opponent);
     const rng = createMockRng(0);
 
-    const result = applyGen4Ability("on-switch-in", {
+    const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, {
       pokemon,
       opponent,
       state,
       rng,
-      trigger: "on-switch-in",
+      trigger: ABILITY_TRIGGERS.onSwitchIn,
     });
 
     expect(result.activated).toBe(true);
@@ -317,7 +323,10 @@ describe("Bug #254 -- Gastro Acid suppressedAbility", () => {
     // Simulate that Gastro Acid was used: ability="" and suppressedAbility=intimidate
     pokemon.suppressedAbility = ABILITIES.intimidate;
     pokemon.ability = "";
-    const state = createMinimalBattleState(pokemon, createActivePokemon({ types: [CORE_TYPE_IDS.normal] }));
+    const state = createMinimalBattleState(
+      pokemon,
+      createActivePokemon({ types: [CORE_TYPE_IDS.normal] }),
+    );
 
     ruleset.onSwitchOut(pokemon, state);
 
