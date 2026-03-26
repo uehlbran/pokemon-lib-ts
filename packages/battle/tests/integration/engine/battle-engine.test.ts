@@ -1,4 +1,5 @@
 import {
+  CORE_GENDERS,
   CORE_HAZARD_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
@@ -13,13 +14,14 @@ import type { BattleEvent } from "../../../src/events";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 const { stickyWeb } = CORE_HAZARD_IDS;
 const { confusion, struggle, tackle } = CORE_MOVE_IDS;
 const { burn, poison } = CORE_STATUS_IDS;
 const { substitute } = CORE_VOLATILE_IDS;
+const { male } = CORE_GENDERS;
 
 class TrappedSwitchRuleset extends MockRuleset {
   override canSwitch(): boolean {
@@ -180,7 +182,7 @@ describe("BattleEngine", () => {
             currentHp: 153,
             maxHp: 153,
             status: null,
-            gender: "male",
+            gender: male,
             isShiny: false,
           },
         },
@@ -195,7 +197,7 @@ describe("BattleEngine", () => {
             currentHp: 154,
             maxHp: 154,
             status: null,
-            gender: "male",
+            gender: male,
             isShiny: false,
           },
         },
@@ -551,7 +553,7 @@ describe("BattleEngine", () => {
             currentHp: 153,
             maxHp: 153,
             status: null,
-            gender: "male",
+            gender: male,
             isShiny: false,
           },
         },
@@ -620,7 +622,7 @@ describe("BattleEngine", () => {
             currentHp: 153,
             maxHp: 153,
             status: null,
-            gender: "male",
+            gender: male,
             isShiny: false,
           },
         },

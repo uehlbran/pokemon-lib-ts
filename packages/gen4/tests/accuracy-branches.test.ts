@@ -1,18 +1,15 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonType,
-  PrimaryStatus,
-} from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createEvs,
   createIvs,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -25,33 +22,33 @@ import {
 } from "../src";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
-const dataManager = createGen4DataManager()
-const coreAbilityIds = CORE_ABILITY_IDS
-const abilityIds = GEN4_ABILITY_IDS
-const itemIds = GEN4_ITEM_IDS
-const moveCategories = CORE_MOVE_CATEGORIES
-const moveIds = GEN4_MOVE_IDS
-const natureIds = GEN4_NATURE_IDS
-const speciesIds = GEN4_SPECIES_IDS
-const typeIds = CORE_TYPE_IDS
-const weatherIds = CORE_WEATHER_IDS
-const defaultSpeciesId = speciesIds.bulbasaur
-const defaultNature = dataManager.getNature(natureIds.hardy).id
+const dataManager = createGen4DataManager();
+const coreAbilityIds = CORE_ABILITY_IDS;
+const abilityIds = GEN4_ABILITY_IDS;
+const itemIds = GEN4_ITEM_IDS;
+const moveCategories = CORE_MOVE_CATEGORIES;
+const moveIds = GEN4_MOVE_IDS;
+const natureIds = GEN4_NATURE_IDS;
+const speciesIds = GEN4_SPECIES_IDS;
+const typeIds = CORE_TYPE_IDS;
+const weatherIds = CORE_WEATHER_IDS;
+const defaultSpeciesId = speciesIds.bulbasaur;
+const defaultNature = dataManager.getNature(natureIds.hardy).id;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRuleset(): Gen4Ruleset {
+function createRuleset(): Gen4Ruleset {
   return new Gen4Ruleset(dataManager);
 }
 
-function makePokemonInstance(overrides: {
+function createSyntheticPokemonInstance(overrides: {
   maxHp?: number;
   status?: PrimaryStatus | null;
   heldItem?: string | null;
 }): PokemonInstance {
-  const maxHp = overrides.maxHp ?? 200
+  const maxHp = overrides.maxHp ?? 200;
   return {
     uid: "test",
     speciesId: defaultSpeciesId,
@@ -64,11 +61,11 @@ function makePokemonInstance(overrides: {
     currentHp: maxHp,
     moves: [],
     ability: coreAbilityIds.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -86,7 +83,7 @@ function makePokemonInstance(overrides: {
   } as PokemonInstance;
 }
 
-function makeActivePokemon(overrides: {
+function createOnFieldPokemon(overrides: {
   maxHp?: number;
   status?: PrimaryStatus | null;
   types?: PokemonType[];
@@ -94,7 +91,7 @@ function makeActivePokemon(overrides: {
   heldItem?: string | null;
 }): ActivePokemon {
   return {
-    pokemon: makePokemonInstance({
+    pokemon: createSyntheticPokemonInstance({
       maxHp: overrides.maxHp,
       status: overrides.status,
       heldItem: overrides.heldItem,
@@ -133,7 +130,7 @@ function makeActivePokemon(overrides: {
 
 type AccuracyContext = Parameters<Gen4Ruleset["doesMoveHit"]>[0];
 
-function makeCtx(overrides: {
+function createAccuracyContext(overrides: {
   moveAccuracy?: number | null;
   attackerAbility?: string;
   defenderAbility?: string;
@@ -144,8 +141,12 @@ function makeCtx(overrides: {
   moveCategory?: MoveData["category"];
   seed?: number;
 }): AccuracyContext {
-  const attacker = makeActivePokemon({ ability: overrides.attackerAbility ?? coreAbilityIds.none });
-  const defender = makeActivePokemon({ ability: overrides.defenderAbility ?? coreAbilityIds.none });
+  const attacker = createOnFieldPokemon({
+    ability: overrides.attackerAbility ?? coreAbilityIds.none,
+  });
+  const defender = createOnFieldPokemon({
+    ability: overrides.defenderAbility ?? coreAbilityIds.none,
+  });
 
   if (overrides.attackerItem !== undefined) {
     (attacker.pokemon as { heldItem: string | null }).heldItem = overrides.attackerItem;
@@ -176,14 +177,18 @@ describe("Gen4Ruleset doesMoveHit — weather ability branches", () => {
   it("given defender with Sand Veil in sandstorm and a 100% accuracy move, when checking hit for seed 4, then Sand Veil causes the miss while no ability still hits", () => {
     // Source: pret/pokeplatinum — Sand Veil: evasion +20% in sandstorm
     // Derivation: base calc = 100; Sand Veil: floor(100 * 80 / 100) = 80
-    const ruleset = makeRuleset();
-    const sandVeilCtx = makeCtx({
+    const ruleset = createRuleset();
+    const sandVeilCtx = createAccuracyContext({
       moveAccuracy: 100,
       defenderAbility: abilityIds.sandVeil,
       weather: weatherIds.sand,
       seed: 4,
     });
-    const noAbilityCtx = makeCtx({ moveAccuracy: 100, weather: weatherIds.sand, seed: 4 });
+    const noAbilityCtx = createAccuracyContext({
+      moveAccuracy: 100,
+      weather: weatherIds.sand,
+      seed: 4,
+    });
 
     // Source: deterministic seed 4 exercises the Sand Veil miss branch.
     expect(ruleset.doesMoveHit(sandVeilCtx)).toBe(false);
@@ -193,14 +198,18 @@ describe("Gen4Ruleset doesMoveHit — weather ability branches", () => {
   it("given defender with Snow Cloak in hail and a 100% accuracy move, when checking hit for seed 4, then Snow Cloak causes the miss while no ability still hits", () => {
     // Source: Bulbapedia — Snow Cloak: evasion +20% in hail (analogous to Sand Veil in sandstorm)
     // Derivation: base calc = 100; Snow Cloak: floor(100 * 80 / 100) = 80
-    const ruleset = makeRuleset();
-    const snowCloakCtx = makeCtx({
+    const ruleset = createRuleset();
+    const snowCloakCtx = createAccuracyContext({
       moveAccuracy: 100,
       defenderAbility: abilityIds.snowCloak,
       weather: weatherIds.hail,
       seed: 4,
     });
-    const noAbilityCtx = makeCtx({ moveAccuracy: 100, weather: weatherIds.hail, seed: 4 });
+    const noAbilityCtx = createAccuracyContext({
+      moveAccuracy: 100,
+      weather: weatherIds.hail,
+      seed: 4,
+    });
 
     // Source: deterministic seed 4 exercises the Snow Cloak miss branch.
     expect(ruleset.doesMoveHit(snowCloakCtx)).toBe(false);
@@ -209,8 +218,8 @@ describe("Gen4Ruleset doesMoveHit — weather ability branches", () => {
 
   it("given Sand Veil in non-sandstorm weather, when doesMoveHit, then Sand Veil branch is NOT applied", () => {
     // Source: pret/pokeplatinum — Sand Veil only activates in sandstorm, not other weather
-    const ruleset = makeRuleset();
-    const ctx = makeCtx({
+    const ruleset = createRuleset();
+    const ctx = createAccuracyContext({
       moveAccuracy: 100,
       defenderAbility: abilityIds.sandVeil,
       weather: weatherIds.rain, // not sandstorm
@@ -222,8 +231,8 @@ describe("Gen4Ruleset doesMoveHit — weather ability branches", () => {
 
   it("given Snow Cloak outside hail, when doesMoveHit, then Snow Cloak branch is NOT applied", () => {
     // Source: Bulbapedia — Snow Cloak only activates in hail
-    const ruleset = makeRuleset();
-    const ctx = makeCtx({
+    const ruleset = createRuleset();
+    const ctx = createAccuracyContext({
       moveAccuracy: 100,
       defenderAbility: abilityIds.snowCloak,
       weather: weatherIds.sand, // not hail
@@ -243,14 +252,14 @@ describe("Gen4Ruleset doesMoveHit — Hustle accuracy penalty", () => {
     // Source: pret/pokeplatinum — Hustle accuracy penalty on physical moves: 0.8x
     // Gen 4 uses per-move category (physical/special split)
     // Derivation: base 100% accuracy; Hustle: floor(100 * 80/100) = 80
-    const ruleset = makeRuleset();
-    const hustleCtx = makeCtx({
+    const ruleset = createRuleset();
+    const hustleCtx = createAccuracyContext({
       moveAccuracy: 100,
       attackerAbility: abilityIds.hustle,
       moveCategory: moveCategories.physical,
       seed: 4,
     });
-    const noHustleCtx = makeCtx({
+    const noHustleCtx = createAccuracyContext({
       moveAccuracy: 100,
       moveCategory: moveCategories.physical,
       seed: 4,
@@ -263,8 +272,8 @@ describe("Gen4Ruleset doesMoveHit — Hustle accuracy penalty", () => {
 
   it("given attacker with Hustle using a special move, when accuracy is checked, then accuracy is NOT reduced", () => {
     // Source: pret/pokeplatinum — Hustle only penalizes physical moves
-    const ruleset = makeRuleset();
-    const ctx = makeCtx({
+    const ruleset = createRuleset();
+    const ctx = createAccuracyContext({
       moveAccuracy: 100,
       attackerAbility: abilityIds.hustle,
       moveCategory: moveCategories.special, // special move — not penalized
@@ -283,19 +292,19 @@ describe("Gen4Ruleset doesMoveHit — Wide Lens accuracy bonus", () => {
   it("given attacker with Wide Lens and a 70% accuracy move, when doesMoveHit, then calc is boosted to 77", () => {
     // Source: Bulbapedia — Wide Lens: accuracy * 1.1 (introduced in Gen 4)
     // Derivation: base calc = 70; Wide Lens: floor(70 * 110/100) = floor(77) = 77
-    const ruleset = makeRuleset();
+    const ruleset = createRuleset();
 
     let wideLensMisses = 0;
     let noItemMisses = 0;
     const trials = 200;
 
     for (let seed = 1; seed <= trials; seed++) {
-      const ctxWideLens = makeCtx({
+      const ctxWideLens = createAccuracyContext({
         moveAccuracy: 70,
         attackerItem: itemIds.wideLens,
         seed,
       });
-      const ctxNoItem = makeCtx({ moveAccuracy: 70, seed });
+      const ctxNoItem = createAccuracyContext({ moveAccuracy: 70, seed });
 
       if (!ruleset.doesMoveHit(ctxWideLens)) wideLensMisses++;
       if (!ruleset.doesMoveHit(ctxNoItem)) noItemMisses++;

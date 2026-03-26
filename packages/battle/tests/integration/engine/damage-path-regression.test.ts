@@ -1,5 +1,6 @@
 import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
@@ -29,6 +30,7 @@ const MOVES = CORE_MOVE_IDS;
 const ITEMS = CORE_ITEM_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const MOVE_SLOT_DATA_MANAGER = createMockDataManager();
 
 function createMoveSlot(moveId: string) {
@@ -169,7 +171,7 @@ class CustomDamageHookMockRuleset extends MockRuleset {
   }
 
   override applyAbility(trigger: AbilityTrigger, _context: AbilityContext): AbilityResult {
-    if (trigger === "on-damage-taken" || trigger === "on-contact") {
+    if (trigger === ABILITY_TRIGGERS.onDamageTaken || trigger === ABILITY_TRIGGERS.onContact) {
       this.abilityTriggerCalls.push(trigger);
     }
     return { activated: false, effects: [], messages: [] };
@@ -180,7 +182,7 @@ class CustomDamageHookMockRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string, _context: ItemContext): ItemResult {
-    if (trigger === "on-damage-taken" || trigger === "on-contact") {
+    if (trigger === ABILITY_TRIGGERS.onDamageTaken || trigger === ABILITY_TRIGGERS.onContact) {
       this.heldItemTriggerCalls.push(trigger);
     }
     return { activated: false, effects: [], messages: [] };
