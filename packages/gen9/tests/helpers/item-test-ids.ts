@@ -1,5 +1,9 @@
 import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -28,13 +32,13 @@ function requireAbilityId(displayName: string): string {
 }
 
 export const TEST_DEFAULTS = {
-  ability: "none",
-  abilitySlot: "normal1" as const,
+  ability: CORE_ABILITY_IDS.none,
+  abilitySlot: CORE_ABILITY_SLOTS.normal1,
   battleType: "singles",
-  defaultType: "normal",
-  gender: "male",
+  defaultType: CORE_TYPE_IDS.normal,
+  gender: CORE_GENDERS.male,
   nature: "hardy",
-  pokeball: "pokeball",
+  pokeball: CORE_ITEM_IDS.pokeBall,
   uid: "test",
 } as const;
 

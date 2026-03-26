@@ -1,6 +1,6 @@
 import type { ActivePokemon, ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
-import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import { CORE_WEATHER_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { GEN9_TYPE_CHART } from "./Gen9TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -511,10 +511,10 @@ export function hasTerrainExtender(pokemon: ActivePokemon): boolean {
  * Source: Bulbapedia -- weather rocks extend weather to 8 turns
  */
 const WEATHER_ROCKS: Readonly<Record<string, string>> = {
-  "heat-rock": "sun",
-  "damp-rock": "rain",
-  "smooth-rock": "sandstorm",
-  "icy-rock": "snow",
+  "heat-rock": CORE_WEATHER_IDS.sun,
+  "damp-rock": CORE_WEATHER_IDS.rain,
+  "smooth-rock": CORE_WEATHER_IDS.sand,
+  "icy-rock": CORE_WEATHER_IDS.snow,
 };
 
 /**

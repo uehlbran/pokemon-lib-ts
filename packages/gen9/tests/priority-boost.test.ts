@@ -3,6 +3,8 @@ import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib
 import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   createEvs,
   createIvs,
@@ -68,12 +70,12 @@ function createOnFieldPokemon(
   const speciesRecord = overrides.speciesId
     ? dataManager.getSpecies(overrides.speciesId)
     : defaultSpecies;
-  const pokemon = createPokemonInstance(speciesRecord, 50, makeRng(), {
+  const pokemon = createPokemonInstance(speciesRecord, 50, createDeterministicRng(), {
     nature: defaultNature,
     ivs: createIvs(),
     evs: createEvs(),
-    abilitySlot: "normal1",
-    gender: "male",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     moves: [moveIds.tackle],
     heldItem: overrides.heldItem ?? null,
@@ -153,7 +155,7 @@ function createBattleState(sideA: BattleSide, sideB: BattleSide): BattleState {
   } as unknown as BattleState;
 }
 
-function makeRng(nextVal = 0.5): SeededRandom {
+function createDeterministicRng(nextVal = 0.5): SeededRandom {
   return {
     next: () => nextVal,
     int: () => 1,
@@ -200,7 +202,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         { type: "move", side: 1, moveIndex: 0, target: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, makeRng());
+      const ordered = ruleset.resolveTurnOrder(actions, state, createDeterministicRng());
 
       // Prankster user (side 0) should move first
       expect(ordered[0].type).toBe("move");
@@ -235,7 +237,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         { type: "move", side: 1, moveIndex: 0, target: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, makeRng());
+      const ordered = ruleset.resolveTurnOrder(actions, state, createDeterministicRng());
 
       // Opponent (side 1) should go first since Prankster doesn't boost physical
       expect(ordered[0].type).toBe("move");
@@ -280,7 +282,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Gale Wings priority boost (#783)", () 
         { type: "move", side: 1, moveIndex: 0, target: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, makeRng());
+      const ordered = ruleset.resolveTurnOrder(actions, state, createDeterministicRng());
 
       // Gale Wings user (side 0) should move first
       expect(ordered[0].type).toBe("move");
@@ -317,7 +319,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Gale Wings priority boost (#783)", () 
         { type: "move", side: 1, moveIndex: 0, target: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, makeRng());
+      const ordered = ruleset.resolveTurnOrder(actions, state, createDeterministicRng());
 
       // Opponent (side 1) should go first since Gale Wings is inactive
       expect(ordered[0].type).toBe("move");
@@ -361,7 +363,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
         { type: "move", side: 1, moveIndex: 0, target: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, makeRng());
+      const ordered = ruleset.resolveTurnOrder(actions, state, createDeterministicRng());
 
       // Triage user (side 0) should move first (priority 3 > 1)
       expect(ordered[0].type).toBe("move");
@@ -395,7 +397,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
         { type: "move", side: 1, moveIndex: 0, target: 0 },
       ];
 
-      const ordered = ruleset.resolveTurnOrder(actions, state, makeRng());
+      const ordered = ruleset.resolveTurnOrder(actions, state, createDeterministicRng());
 
       // Opponent (side 1) should go first since Triage doesn't boost non-healing
       expect(ordered[0].type).toBe("move");

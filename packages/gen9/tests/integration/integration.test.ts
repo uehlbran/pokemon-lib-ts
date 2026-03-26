@@ -25,7 +25,9 @@ import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib
 import type { MoveData, PokemonType, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_FIXED_POINT,
+  CORE_GENDERS,
   CORE_HAZARD_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -173,8 +175,8 @@ function createOnFieldPokemon(overrides: {
     nature: defaultNature,
     ivs: createIvs(),
     evs: createEvs(),
-    abilitySlot: "normal1",
-    gender: "male",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     moves: [defaultMove.id],
     heldItem: overrides.heldItem ?? null,

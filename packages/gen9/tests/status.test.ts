@@ -37,7 +37,7 @@ const DEFAULT_NATURE = DATA.getNature(NATURES.hardy).id;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeActive(
+function createOnFieldPokemon(
   overrides: {
     hp?: number;
     currentHp?: number;
@@ -106,7 +106,7 @@ function makeActive(
   } as unknown as ActivePokemon;
 }
 
-function makeSide(
+function createBattleSide(
   index: 0 | 1,
   overrides?: {
     active?: ActivePokemon[];
@@ -128,7 +128,7 @@ function makeSide(
   } as unknown as BattleSide;
 }
 
-function makeRng(): SeededRandom {
+function createDeterministicRng(): SeededRandom {
   return {
     next: () => 0.5,
     int: (min: number, _max: number) => min,
@@ -140,13 +140,13 @@ function makeRng(): SeededRandom {
   } as unknown as SeededRandom;
 }
 
-function makeState(overrides?: { sides?: BattleSide[]; rng?: SeededRandom }): BattleState {
+function createBattleState(overrides?: { sides?: BattleSide[]; rng?: SeededRandom }): BattleState {
   return {
     phase: "turn-resolve",
     generation: 9,
     format: "singles",
     turnNumber: 1,
-    sides: overrides?.sides ?? [makeSide(0), makeSide(1)],
+    sides: overrides?.sides ?? [createBattleSide(0), createBattleSide(1)],
     weather: null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
@@ -154,7 +154,7 @@ function makeState(overrides?: { sides?: BattleSide[]; rng?: SeededRandom }): Ba
     wonderRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },
     turnHistory: [],
-    rng: overrides?.rng ?? makeRng(),
+    rng: overrides?.rng ?? createDeterministicRng(),
     ended: false,
     winner: null,
   } as unknown as BattleState;
@@ -171,7 +171,7 @@ describe("Gen9Ruleset -- applyStatusDamage (burn)", () => {
     // Source: Showdown data/conditions.ts:17 -- Gen 7+ burn damage is 1/16 max HP
     // Source: Bulbapedia -- Burn: "From Generation VII onwards, 1/16 of maximum HP"
     // 160 / 16 = 10
-    const pokemon = makeActive({ hp: 160, status: STATUSES.burn });
+    const pokemon = createOnFieldPokemon({ hp: 160, status: STATUSES.burn });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.burn as never, {} as BattleState);
     expect(result).toBe(10);
   });
@@ -179,7 +179,7 @@ describe("Gen9Ruleset -- applyStatusDamage (burn)", () => {
   it("given burned Pokemon with 400 max HP, when applying status damage, then takes 25 HP (400/16)", () => {
     // Source: Showdown data/conditions.ts:17 -- Gen 7+ burn damage is floor(maxHp/16)
     // 400 / 16 = 25
-    const pokemon = makeActive({ hp: 400, status: STATUSES.burn });
+    const pokemon = createOnFieldPokemon({ hp: 400, status: STATUSES.burn });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.burn as never, {} as BattleState);
     expect(result).toBe(25);
   });
@@ -187,7 +187,7 @@ describe("Gen9Ruleset -- applyStatusDamage (burn)", () => {
   it("given burned Pokemon with 15 max HP, when applying status damage, then takes minimum 1 HP", () => {
     // Source: Showdown -- damage is max(1, floor(maxHp/16))
     // 15 / 16 = 0.9375, floor = 0, max(1, 0) = 1
-    const pokemon = makeActive({ hp: 15, status: STATUSES.burn });
+    const pokemon = createOnFieldPokemon({ hp: 15, status: STATUSES.burn });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.burn as never, {} as BattleState);
     expect(result).toBe(1);
   });
@@ -201,7 +201,7 @@ describe("Gen9Ruleset -- applyStatusDamage (poison)", () => {
   it("given poisoned Pokemon with 200 max HP, when applying status damage, then takes 25 HP (200/8)", () => {
     // Source: Showdown data/conditions.ts -- Poison damage is 1/8 max HP in all gens from Gen 3+
     // 200 / 8 = 25
-    const pokemon = makeActive({ hp: 200, status: STATUSES.poison });
+    const pokemon = createOnFieldPokemon({ hp: 200, status: STATUSES.poison });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.poison as never, {} as BattleState);
     expect(result).toBe(25);
   });
@@ -209,7 +209,7 @@ describe("Gen9Ruleset -- applyStatusDamage (poison)", () => {
   it("given poisoned Pokemon with 160 max HP, when applying status damage, then takes 20 HP (160/8)", () => {
     // Source: Showdown data/conditions.ts -- Poison damage is 1/8 max HP
     // 160 / 8 = 20
-    const pokemon = makeActive({ hp: 160, status: STATUSES.poison });
+    const pokemon = createOnFieldPokemon({ hp: 160, status: STATUSES.poison });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.poison as never, {} as BattleState);
     expect(result).toBe(20);
   });
@@ -223,7 +223,7 @@ describe("Gen9Ruleset -- applyStatusDamage (badly-poisoned)", () => {
   it("given badly-poisoned Pokemon with toxic counter at 1 and 160 max HP, when applying status damage, then takes 10 HP (160*1/16)", () => {
     // Source: Showdown data/conditions.ts -- Toxic damage starts at 1/16, then 2/16, 3/16...
     // 160 * 1 / 16 = 10
-    const pokemon = makeActive({
+    const pokemon = createOnFieldPokemon({
       hp: 160,
       status: STATUSES.badlyPoisoned,
       volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 1 } }]],
@@ -235,7 +235,7 @@ describe("Gen9Ruleset -- applyStatusDamage (badly-poisoned)", () => {
   it("given badly-poisoned Pokemon with toxic counter at 3 and 160 max HP, when applying status damage, then takes 30 HP (160*3/16)", () => {
     // Source: Showdown data/conditions.ts -- Toxic damage at counter=3 is 3/16 max HP
     // 160 * 3 / 16 = 30
-    const pokemon = makeActive({
+    const pokemon = createOnFieldPokemon({
       hp: 160,
       status: STATUSES.badlyPoisoned,
       volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } }]],
@@ -252,21 +252,21 @@ describe("Gen9Ruleset -- applyStatusDamage (badly-poisoned)", () => {
 describe("Gen9Ruleset -- applyStatusDamage (no-damage statuses)", () => {
   it("given sleeping Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- sleep has no per-turn chip damage
-    const pokemon = makeActive({ status: STATUSES.sleep });
+    const pokemon = createOnFieldPokemon({ status: STATUSES.sleep });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.sleep as never, {} as BattleState);
     expect(result).toBe(0);
   });
 
   it("given frozen Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- freeze has no per-turn chip damage
-    const pokemon = makeActive({ status: STATUSES.freeze });
+    const pokemon = createOnFieldPokemon({ status: STATUSES.freeze });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.freeze as never, {} as BattleState);
     expect(result).toBe(0);
   });
 
   it("given paralyzed Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- paralysis has no per-turn chip damage
-    const pokemon = makeActive({ status: STATUSES.paralysis });
+    const pokemon = createOnFieldPokemon({ status: STATUSES.paralysis });
     const result = ruleset.applyStatusDamage(pokemon, STATUSES.paralysis as never, {} as BattleState);
     expect(result).toBe(0);
   });
@@ -281,9 +281,9 @@ describe("Gen9Ruleset -- paralysis speed via resolveTurnOrder", () => {
    * Helper: resolves two move actions and returns the side index that goes first.
    */
   function whoGoesFirst(activeA: ActivePokemon, activeB: ActivePokemon): number {
-    const side0 = makeSide(0, { active: [activeA] });
-    const side1 = makeSide(1, { active: [activeB] });
-    const state = makeState({ sides: [side0, side1] });
+    const side0 = createBattleSide(0, { active: [activeA] });
+    const side1 = createBattleSide(1, { active: [activeB] });
+    const state = createBattleState({ sides: [side0, side1] });
     const actions: BattleAction[] = [
       { type: "move", side: 0, moveIndex: 0 } as BattleAction,
       { type: "move", side: 1, moveIndex: 0 } as BattleAction,
@@ -295,16 +295,16 @@ describe("Gen9Ruleset -- paralysis speed via resolveTurnOrder", () => {
   it("given paralyzed Pokemon with 200 base speed vs 120 base speed, when resolving turn order, then paralyzed goes second (200*0.5=100 < 120)", () => {
     // Source: Showdown data/conditions.ts:35 -- Gen 7+ paralysis reduces speed to 50%
     // 200 * 0.5 = 100 < 120 => paralyzed goes second
-    const paralyzed = makeActive({ speed: 200, status: STATUSES.paralysis });
-    const normal = makeActive({ speed: 120 });
+    const paralyzed = createOnFieldPokemon({ speed: 200, status: STATUSES.paralysis });
+    const normal = createOnFieldPokemon({ speed: 120 });
     expect(whoGoesFirst(paralyzed, normal)).toBe(1);
   });
 
   it("given paralyzed Pokemon with 100 base speed vs 40 base speed, when resolving turn order, then paralyzed goes first (100*0.5=50 > 40)", () => {
     // Source: Showdown data/conditions.ts:35 -- Gen 7+ paralysis reduces speed to 50%
     // 100 * 0.5 = 50 > 40 => paralyzed still faster
-    const paralyzed = makeActive({ speed: 100, status: STATUSES.paralysis });
-    const slower = makeActive({ speed: 40 });
+    const paralyzed = createOnFieldPokemon({ speed: 100, status: STATUSES.paralysis });
+    const slower = createOnFieldPokemon({ speed: 40 });
     expect(whoGoesFirst(paralyzed, slower)).toBe(0);
   });
 });
