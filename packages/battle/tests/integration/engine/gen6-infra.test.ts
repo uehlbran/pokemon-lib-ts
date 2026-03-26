@@ -12,10 +12,10 @@
  * Source: Showdown sim/battle-actions.ts — gimmick activation, terrain setting
  * Source: Showdown sim/field.ts — Grassy Terrain residual healing
  */
-import { CORE_TERRAIN_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_TERRAIN_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type {
   BattleConfig,
   BattleGimmick,
@@ -30,6 +30,9 @@ import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state"
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
+
+const TERRAIN_IDS = CORE_TERRAIN_IDS;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -381,7 +384,8 @@ describe("grassy terrain heal end-of-turn", () => {
 
     // Assert — heal events should be present
     const healEvents = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
+      (e) =>
+        e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -431,7 +435,8 @@ describe("grassy terrain heal end-of-turn", () => {
     // Depending on turn resolution order, side 0 might be damaged.
     // To truly test no-overheal, check that no heal event has amount > max missing HP.
     const healEvents = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
+      (e) =>
+        e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     for (const heal of healEvents) {
       if (heal.type === "heal") {
@@ -474,7 +479,8 @@ describe("grassy terrain heal end-of-turn", () => {
 
     // Assert — no grassy-terrain heal event
     const grassyHeals = events.filter(
-      (e) => e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
+      (e) =>
+        e.type === "heal" && (e as { source: string }).source === CORE_TERRAIN_IDS.grassyTerrain,
     );
     expect(grassyHeals.length).toBe(0);
   });
@@ -520,9 +526,9 @@ describe("terrain-setting from move effect results", () => {
         switchOut: false,
         messages: [],
         terrainSet: {
-          terrain: "grassy",
+          terrain: TERRAIN_IDS.grassy,
           turns: 5,
-          source: CORE_TERRAIN_IDS.grassyTerrain,
+          source: TERRAIN_IDS.grassyTerrain,
         },
       };
     });
@@ -537,17 +543,17 @@ describe("terrain-setting from move effect results", () => {
     // Assert — terrain should be set
     expect(executeMoveEffectSpy).toHaveBeenCalledTimes(2);
     expect(engine.getState().terrain).toEqual({
-      type: "grassy",
+      type: TERRAIN_IDS.grassy,
       turnsLeft: 5,
-      source: CORE_TERRAIN_IDS.grassyTerrain,
+      source: TERRAIN_IDS.grassyTerrain,
     });
 
     const terrainEvent = events.find((e) => e.type === "terrain-set");
     expect(terrainEvent).toBeDefined();
     expect(terrainEvent).toEqual({
       type: "terrain-set",
-      terrain: "grassy",
-      source: CORE_TERRAIN_IDS.grassyTerrain,
+      terrain: TERRAIN_IDS.grassy,
+      source: TERRAIN_IDS.grassyTerrain,
     });
   });
 
@@ -576,9 +582,9 @@ describe("terrain-setting from move effect results", () => {
 
     // Pre-set terrain
     engine.getState().terrain = {
-      type: CORE_TERRAIN_IDS.electric,
+      type: TERRAIN_IDS.electric,
       turnsLeft: 3,
-      source: CORE_TERRAIN_IDS.electricTerrain,
+      source: TERRAIN_IDS.electricTerrain,
     };
     events.length = 0;
 
@@ -592,7 +598,7 @@ describe("terrain-setting from move effect results", () => {
     const terrainEndEvent = events.find((e) => e.type === "terrain-end");
     expect(terrainEndEvent).toEqual({
       type: "terrain-end",
-      terrain: CORE_TERRAIN_IDS.electric,
+      terrain: TERRAIN_IDS.electric,
     });
   });
 
@@ -613,9 +619,9 @@ describe("terrain-setting from move effect results", () => {
         switchOut: false,
         messages: [],
         terrainSet: {
-          terrain: "grassy",
+          terrain: TERRAIN_IDS.grassy,
           turns: 5,
-          source: CORE_TERRAIN_IDS.grassyTerrain,
+          source: TERRAIN_IDS.grassyTerrain,
         },
       };
     });
@@ -638,9 +644,9 @@ describe("terrain-setting from move effect results", () => {
       switchOut: false,
       messages: [],
       terrainSet: {
-        terrain: "grassy",
+        terrain: TERRAIN_IDS.grassy,
         turns: 5,
-        source: CORE_TERRAIN_IDS.grassyTerrain,
+        source: TERRAIN_IDS.grassyTerrain,
       },
     });
     expect(engine.getState().terrain).toBeNull();
