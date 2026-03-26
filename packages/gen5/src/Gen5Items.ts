@@ -9,6 +9,7 @@ import {
 import type { MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -683,7 +684,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "attack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.attack,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
@@ -702,7 +707,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "defense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.defense,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
@@ -721,7 +730,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "speed" },
+            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: CORE_STAT_IDS.speed },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
@@ -740,7 +749,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spAttack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spAttack,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
@@ -759,7 +772,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spDefense" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spDefense,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
@@ -931,7 +948,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "spAttack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spAttack,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
@@ -952,7 +973,11 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: "attack" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.attack,
+            },
             {
               type: ITEM_EFFECT.consume,
               target: EFFECT_TARGET.self,
