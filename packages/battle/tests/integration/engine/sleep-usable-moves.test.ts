@@ -1,19 +1,16 @@
 import {
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  type DataManager,
-  type MoveData,
+  createMoveSlot,
   type PokemonInstance,
 } from "@pokemon-lib-ts/core";
+import { createGen2DataManager, GEN2_SPECIES_IDS } from "@pokemon-lib-ts/gen2";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
 /**
@@ -25,80 +22,15 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
  * Source: Bulbapedia — "Snore: This move can only be used while the user is asleep."
  */
 
-/** Standard MoveFlags with all false */
-const defaultFlags: MoveData["flags"] = {
-  contact: false,
-  sound: false,
-  bullet: false,
-  pulse: false,
-  punch: false,
-  bite: false,
-  wind: false,
-  slicing: false,
-  powder: false,
-  protect: true,
-  mirror: true,
-  snatch: false,
-  gravity: false,
-  defrost: false,
-  recharge: false,
-  charge: false,
-  bypassSubstitute: false,
-};
+const DATA_MANAGER = createGen2DataManager();
+const SPECIES_IDS = GEN2_SPECIES_IDS;
+const SLEEP_TALK = DATA_MANAGER.getMove(CORE_MOVE_IDS.sleepTalk);
+const SNORE = DATA_MANAGER.getMove(CORE_MOVE_IDS.snore);
+const TACKLE = DATA_MANAGER.getMove(CORE_MOVE_IDS.tackle);
 
-function createSleepTestDataManager(): DataManager {
-  const dm = createMockDataManager();
-  const existingSpecies = dm.getAllSpecies();
-  const existingMoves = dm.getAllMoves();
-  const existingTypeChart = dm.getTypeChart();
-
-  // Sleep Talk — status move usable while asleep
-  // Source: Showdown data/moves.ts — sleepUsable: true, handler calls randomMove
-  const sleepTalkData: MoveData = {
-    id: CORE_MOVE_IDS.sleepTalk,
-    displayName: "Sleep Talk",
-    type: CORE_TYPE_IDS.normal,
-    category: "status",
-    power: null,
-    accuracy: null,
-    pp: 10,
-    priority: 0,
-    target: "self",
-    flags: { ...defaultFlags, protect: false, mirror: false, snatch: false },
-    effect: { type: "custom", handler: CORE_MOVE_IDS.sleepTalk },
-    description: "While it is asleep, the user randomly uses one of the moves it knows.",
-    generation: 2,
-  };
-
-  // Snore — damaging move usable while asleep
-  // Source: Showdown data/moves.ts — sleepUsable: true
-  const snoreData: MoveData = {
-    id: CORE_MOVE_IDS.snore,
-    displayName: "Snore",
-    type: CORE_TYPE_IDS.normal,
-    category: "special",
-    power: 50,
-    accuracy: 100,
-    pp: 15,
-    priority: 0,
-    target: "adjacent-foe",
-    flags: { ...defaultFlags, sound: true },
-    effect: null,
-    description:
-      "This attack can be used only if the user is asleep. The harsh noise may also make the target flinch.",
-    generation: 2,
-  };
-
-  // Reload the full fixture snapshot so the helper stays compatible with
-  // DataManager.loadFromObjects replacing all entity maps atomically.
-  dm.loadFromObjects({
-    pokemon: existingSpecies,
-    moves: [...existingMoves, sleepTalkData, snoreData],
-    items: [],
-    typeChart: existingTypeChart,
-  });
-
-  return dm;
+function createCanonicalMoveSlot(moveId: string) {
+  const move = DATA_MANAGER.getMove(moveId);
+  return createMoveSlot(move.id, move.pp);
 }
 
 function createSleepTestEngine(overrides?: {
@@ -106,20 +38,19 @@ function createSleepTestEngine(overrides?: {
   team1?: PokemonInstance[];
   team2?: PokemonInstance[];
   ruleset?: MockRuleset;
-  dataManager?: DataManager;
 }): { engine: BattleEngine; ruleset: MockRuleset; events: BattleEvent[] } {
   const ruleset = overrides?.ruleset ?? new MockRuleset();
-  const dataManager = overrides?.dataManager ?? createSleepTestDataManager();
+  ruleset.setGenerationForTest(2);
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
-    createTestPokemon(6, 50, {
+    createTestPokemon(SPECIES_IDS.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [
-        createMockMoveSlot(CORE_MOVE_IDS.sleepTalk),
-        createMockMoveSlot(CORE_MOVE_IDS.snore),
-        createMockMoveSlot(CORE_MOVE_IDS.tackle),
+        createCanonicalMoveSlot(SLEEP_TALK.id),
+        createCanonicalMoveSlot(SNORE.id),
+        createCanonicalMoveSlot(TACKLE.id),
       ],
       calculatedStats: {
         hp: 200,
@@ -135,10 +66,10 @@ function createSleepTestEngine(overrides?: {
   ];
 
   const team2 = overrides?.team2 ?? [
-    createTestPokemon(9, 50, {
+    createTestPokemon(SPECIES_IDS.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+      moves: [createCanonicalMoveSlot(TACKLE.id)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -152,13 +83,13 @@ function createSleepTestEngine(overrides?: {
   ];
 
   const config: BattleConfig = {
-    generation: 1,
+    generation: 2,
     format: "singles",
     teams: [team1, team2],
     seed: overrides?.seed ?? 12345,
   };
 
-  const engine = new BattleEngine(config, ruleset, dataManager);
+  const engine = new BattleEngine(config, ruleset, DATA_MANAGER);
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events };
@@ -184,10 +115,14 @@ describe("Sleep-usable moves (issue #524)", () => {
 
     // Assert — sleep talk reaches the move-start stage even though the user remains asleep.
     expect(
-      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk),
+      events.some(
+        (e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk,
+      ),
     ).toBe(true);
     expect(
-      events.some((e) => e.type === "move-fail" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk),
+      events.some(
+        (e) => e.type === "move-fail" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk,
+      ),
     ).toBe(false);
   });
 
@@ -208,9 +143,9 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert
-    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.snore)).toBe(
-      true,
-    );
+    expect(
+      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.snore),
+    ).toBe(true);
     expect(
       events.some((e) => e.type === "damage" && e.side === 1 && e.source === CORE_MOVE_IDS.snore),
     ).toBe(true);
@@ -236,17 +171,17 @@ describe("Sleep-usable moves (issue #524)", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — Tackle never reaches move-start and the battle reports the sleep block.
-    expect(events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.tackle)).toBe(
-      false,
-    );
     expect(
       events.some(
-        (e) => e.type === "message" && "text" in e && e.text.includes("fast asleep"),
+        (e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.tackle,
       ),
+    ).toBe(false);
+    expect(
+      events.some((e) => e.type === "message" && "text" in e && e.text.includes("fast asleep")),
     ).toBe(true);
-    expect(events.some((e) => e.type === "damage" && e.side === 1 && e.source === CORE_MOVE_IDS.tackle)).toBe(
-      false,
-    );
+    expect(
+      events.some((e) => e.type === "damage" && e.side === 1 && e.source === CORE_MOVE_IDS.tackle),
+    ).toBe(false);
   });
 
   it("given a Pokemon that wakes up, when using Sleep Talk, then the move proceeds normally (wake-up still allows move)", () => {
@@ -269,10 +204,14 @@ describe("Sleep-usable moves (issue #524)", () => {
 
     // Assert — waking up clears the sleep status and allows the move to execute.
     expect(
-      events.some((e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.sleep),
+      events.some(
+        (e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.sleep,
+      ),
     ).toBe(true);
     expect(
-      events.some((e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk),
+      events.some(
+        (e) => e.type === "move-start" && e.side === 0 && e.move === CORE_MOVE_IDS.sleepTalk,
+      ),
     ).toBe(true);
   });
 });
