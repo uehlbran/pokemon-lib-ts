@@ -50,7 +50,7 @@ const {
   types: TYPES,
 } = GEN8_TEST_VALUES;
 
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -177,7 +177,7 @@ function makeContext(overrides: {
   damage?: number;
 }): ItemContext {
   return {
-    pokemon: overrides.pokemon ?? makeActive({}),
+    pokemon: overrides.pokemon ?? createOnFieldPokemon({}),
     state: overrides.state ?? createSyntheticBattleState(),
     rng: overrides.rng ?? makeRng(),
     move: overrides.move,
@@ -217,34 +217,34 @@ describe("Choice Items", () => {
 
   describe("isChoiceLocked", () => {
     it("given Pokemon with Choice Band and not Dynamaxed, when checking lock, then returns true", () => {
-      const pokemon = makeActive({ heldItem: ITEMS.choiceBand, isDynamaxed: false });
+      const pokemon = createOnFieldPokemon({ heldItem: ITEMS.choiceBand, isDynamaxed: false });
       expect(isChoiceLocked(pokemon)).toBe(true);
     });
 
     it("given Pokemon with Choice Specs and not Dynamaxed, when checking lock, then returns true", () => {
-      const pokemon = makeActive({ heldItem: ITEMS.choiceSpecs, isDynamaxed: false });
+      const pokemon = createOnFieldPokemon({ heldItem: ITEMS.choiceSpecs, isDynamaxed: false });
       expect(isChoiceLocked(pokemon)).toBe(true);
     });
 
     // Source: Bulbapedia "Dynamax" -- Choice items do not lock during Dynamax
     // Source: Showdown sim/battle-actions.ts Gen 8 -- Dynamax suppresses Choice lock
     it("given Pokemon with Choice Band and isDynamaxed=true, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: ITEMS.choiceBand, isDynamaxed: true });
+      const pokemon = createOnFieldPokemon({ heldItem: ITEMS.choiceBand, isDynamaxed: true });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
 
     it("given Pokemon with Choice Scarf and isDynamaxed=true, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: ITEMS.choiceScarf, isDynamaxed: true });
+      const pokemon = createOnFieldPokemon({ heldItem: ITEMS.choiceScarf, isDynamaxed: true });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
 
     it("given Pokemon with no held item, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: null });
+      const pokemon = createOnFieldPokemon({ heldItem: null });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
 
     it("given Pokemon with non-choice item, when checking lock, then returns false", () => {
-      const pokemon = makeActive({ heldItem: ITEMS.lifeOrb });
+      const pokemon = createOnFieldPokemon({ heldItem: ITEMS.lifeOrb });
       expect(isChoiceLocked(pokemon)).toBe(false);
     });
   });
@@ -579,17 +579,17 @@ describe("hasHeavyDutyBoots", () => {
   // Source: Showdown data/items.ts -- heavydutyboots: immunity to entry hazards
   // Source: Bulbapedia "Heavy-Duty Boots" -- protects from effects of entry hazards
   it("given Pokemon holding Heavy-Duty Boots, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.heavyDutyBoots });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.heavyDutyBoots });
     expect(hasHeavyDutyBoots(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Leftovers, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.leftovers });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.leftovers });
     expect(hasHeavyDutyBoots(pokemon)).toBe(false);
   });
 
   it("given Pokemon with no held item, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: null });
+    const pokemon = createOnFieldPokemon({ heldItem: null });
     expect(hasHeavyDutyBoots(pokemon)).toBe(false);
   });
 });
@@ -602,12 +602,12 @@ describe("hasUtilityUmbrella", () => {
   // Source: Showdown data/items.ts -- utilityumbrella: weather immunity for holder
   // Source: Bulbapedia "Utility Umbrella" -- negates weather effects
   it("given Pokemon holding Utility Umbrella, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.utilityUmbrella });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.utilityUmbrella });
     expect(hasUtilityUmbrella(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Life Orb, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.lifeOrb });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.lifeOrb });
     expect(hasUtilityUmbrella(pokemon)).toBe(false);
   });
 });
@@ -619,12 +619,12 @@ describe("hasUtilityUmbrella", () => {
 describe("isAssaultVestHolder", () => {
   // Source: Showdown data/items.ts -- Assault Vest onModifySpD/onDisableMove
   it("given Pokemon holding Assault Vest, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.assaultVest });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.assaultVest });
     expect(isAssaultVestHolder(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Leftovers, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.leftovers });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.leftovers });
     expect(isAssaultVestHolder(pokemon)).toBe(false);
   });
 });
@@ -637,12 +637,12 @@ describe("hasAirBalloon", () => {
   // Source: Showdown data/items.ts -- Air Balloon: immunity to Ground
   // Source: Bulbapedia "Air Balloon" -- immune to Ground-type moves while held
   it("given Pokemon holding Air Balloon, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.airBalloon });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.airBalloon });
     expect(hasAirBalloon(pokemon)).toBe(true);
   });
 
   it("given Pokemon with no item, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: null });
+    const pokemon = createOnFieldPokemon({ heldItem: null });
     expect(hasAirBalloon(pokemon)).toBe(false);
   });
 });
@@ -654,12 +654,12 @@ describe("hasAirBalloon", () => {
 describe("hasIronBall", () => {
   // Source: Showdown data/items.ts -- Iron Ball: onModifySpe 0.5x, grounds holder
   it("given Pokemon holding Iron Ball, when checking, then returns true", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.ironBall });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ironBall });
     expect(hasIronBall(pokemon)).toBe(true);
   });
 
   it("given Pokemon holding Leftovers, when checking, then returns false", () => {
-    const pokemon = makeActive({ heldItem: ITEMS.leftovers });
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.leftovers });
     expect(hasIronBall(pokemon)).toBe(false);
   });
 });
@@ -793,7 +793,7 @@ describe("applyGen8HeldItem", () => {
   describe("end-of-turn triggers", () => {
     // Source: Showdown data/items.ts -- Leftovers onResidual: heal 1/16 max HP
     it("given Leftovers holder at end-of-turn, when applying item, then heals 1/16 max HP", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.leftovers,
         hp: HP.blackSludgeHeal,
         currentHp: HP.lifeOrbRecoil,
@@ -811,7 +811,7 @@ describe("applyGen8HeldItem", () => {
 
     // Source: Showdown data/items.ts -- Black Sludge: heal Poison 1/16, damage non-Poison 1/8
     it("given Poison-type with Black Sludge at end-of-turn, when applying item, then heals 1/16 max HP", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.blackSludge,
         hp: HP.blackSludgeHeal,
         currentHp: HP.lifeOrbRecoil,
@@ -829,7 +829,7 @@ describe("applyGen8HeldItem", () => {
     });
 
     it("given Normal-type with Black Sludge at end-of-turn, when applying item, then damages 1/8 max HP", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.blackSludge,
         hp: HP.blackSludgeHeal,
         currentHp: HP.lifeOrbRecoil,
@@ -851,7 +851,7 @@ describe("applyGen8HeldItem", () => {
     // Focus Sash was moved from handleOnDamageTaken to capLethalDamage (pre-damage hook).
     // See: Gen8Ruleset.capLethalDamage and GitHub issue #784
     it("given Focus Sash holder at full HP taking lethal damage, when on-damage-taken fires, then does NOT activate (handled by capLethalDamage now)", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.focusSash,
         hp: HP.lifeOrbRecoil,
         currentHp: HP.lifeOrbRecoil,
@@ -862,7 +862,7 @@ describe("applyGen8HeldItem", () => {
     });
 
     it("given Focus Sash holder NOT at full HP taking lethal damage, when on-damage-taken fires, then does not activate", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.focusSash,
         hp: HP.lifeOrbRecoil,
         currentHp: 150,
@@ -874,7 +874,7 @@ describe("applyGen8HeldItem", () => {
 
     // Source: Showdown data/items.ts -- Air Balloon: pops on hit
     it("given Air Balloon holder taking damage, when applying item, then balloon pops (consumed)", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.airBalloon,
         hp: HP.lifeOrbRecoil,
         currentHp: HP.lifeOrbRecoil,
@@ -892,7 +892,7 @@ describe("applyGen8HeldItem", () => {
     // Source: Showdown data/items.ts -- Air Balloon: pops on hit regardless of damage amount
     it("given Air Balloon holder taking 1 damage (minimum), when applying item, then balloon pops (consumed)", () => {
       // Triangulation: different damage value confirms balloon always pops when hit
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.airBalloon,
         hp: HP.airBalloonPop,
         currentHp: HP.airBalloonPop,
@@ -911,14 +911,17 @@ describe("applyGen8HeldItem", () => {
   describe("on-contact triggers", () => {
     // Source: Showdown data/items.ts -- Rocky Helmet: 1/6 attacker max HP on contact
     it("given Rocky Helmet holder hit by contact move, when applying item, then deals 1/6 of opponent max HP", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.rockyHelmet,
         hp: HP.lifeOrbRecoil,
         currentHp: HP.lifeOrbRecoil,
       });
       const state = createSyntheticBattleState();
       // Set up sides with the holder and an opponent
-      const opponent = makeActive({ hp: HP.rockyHelmetDamage, currentHp: HP.rockyHelmetDamage });
+      const opponent = createOnFieldPokemon({
+        hp: HP.rockyHelmetDamage,
+        currentHp: HP.rockyHelmetDamage,
+      });
       state.sides[0].active = [pokemon] as any;
       state.sides[1].active = [opponent] as any;
       const ctx = makeContext({
@@ -943,7 +946,7 @@ describe("applyGen8HeldItem", () => {
     });
 
     it("given Rocky Helmet holder hit by non-contact move, when applying item, then does not activate", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.rockyHelmet,
         hp: HP.lifeOrbRecoil,
         currentHp: HP.lifeOrbRecoil,
@@ -966,7 +969,7 @@ describe("applyGen8HeldItem", () => {
   describe("on-hit triggers (attacker perspective)", () => {
     // Source: Showdown data/items.ts -- Life Orb: recoil floor(maxHP/10)
     it("given Life Orb holder dealing damage, when applying item, then takes 1/10 max HP recoil", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.lifeOrb,
         hp: HP.lifeOrbRecoil,
         currentHp: HP.lifeOrbRecoil,
@@ -989,7 +992,7 @@ describe("applyGen8HeldItem", () => {
     // Source: Showdown data/items.ts -- Life Orb: floor(baseMaxhp / 10)
     it("given Life Orb holder with 300 max HP dealing a special move, when applying item, then takes 30 recoil", () => {
       // Triangulation: different HP value confirms it's not a constant return
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.lifeOrb,
         hp: HP.rockyHelmetDamage,
         currentHp: HP.rockyHelmetDamage,
@@ -1013,7 +1016,7 @@ describe("applyGen8HeldItem", () => {
   describe("suppression mechanics", () => {
     // Source: Showdown data/abilities.ts -- Klutz: suppress all item effects
     it("given Klutz holder with Leftovers at end-of-turn, when applying item, then does not activate", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.leftovers,
         hp: HP.lifeOrbRecoil,
         currentHp: 100,
@@ -1028,7 +1031,7 @@ describe("applyGen8HeldItem", () => {
     it("given embargoed holder with Leftovers at end-of-turn, when applying item, then does not activate", () => {
       const volatiles = new Map<string, { turnsLeft: number }>();
       volatiles.set(VOLATILES.embargo, { turnsLeft: 3 });
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.leftovers,
         hp: HP.lifeOrbRecoil,
         currentHp: 100,
@@ -1041,7 +1044,7 @@ describe("applyGen8HeldItem", () => {
 
     // Source: Showdown -- Magic Room suppresses all held item effects
     it("given Magic Room active with Leftovers holder at end-of-turn, when applying item, then does not activate", () => {
-      const pokemon = makeActive({
+      const pokemon = createOnFieldPokemon({
         heldItem: ITEMS.leftovers,
         hp: HP.lifeOrbRecoil,
         currentHp: 100,
@@ -1055,7 +1058,7 @@ describe("applyGen8HeldItem", () => {
 
   describe("no item", () => {
     it("given Pokemon with no held item, when applying any trigger, then does not activate", () => {
-      const pokemon = makeActive({ heldItem: null });
+      const pokemon = createOnFieldPokemon({ heldItem: null });
       const ctx = makeContext({ pokemon });
       const result = applyGen8HeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
       expect(result.activated).toBe(false);
@@ -1072,7 +1075,7 @@ describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
   // Verifies Gen8Ruleset.applyHeldItem delegates to applyGen8HeldItem (not a no-op)
   it("given Gen8Ruleset, when calling applyHeldItem with Leftovers at end-of-turn, then delegates to Gen8 item handler", () => {
     const ruleset = new Gen8Ruleset();
-    const pokemon = makeActive({
+    const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.leftovers,
       hp: HP.leftOversRecoil,
       currentHp: 120,
@@ -1090,7 +1093,7 @@ describe("Gen 8 Ruleset -- applyHeldItem wiring", () => {
 
   it("given Gen8Ruleset, when calling applyHeldItem with no item, then returns inactive result", () => {
     const ruleset = new Gen8Ruleset();
-    const pokemon = makeActive({ heldItem: null });
+    const pokemon = createOnFieldPokemon({ heldItem: null });
     const ctx = makeContext({ pokemon });
     const result = ruleset.applyHeldItem(ITEM_TRIGGERS.endOfTurn, ctx);
     expect(result.activated).toBe(false);

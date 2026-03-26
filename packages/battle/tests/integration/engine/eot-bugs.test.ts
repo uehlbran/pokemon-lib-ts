@@ -336,11 +336,17 @@ describe("Bug #494 — Uproar wake condition", () => {
 
     // Filter for uproar-specific wake messages (not general sleep processing)
     const uproarWakeMessages = events.filter(
-      (e) => e.type === "message" && typeof e.text === "string" && e.text.includes("uproar"),
+      (e) =>
+        e.type === "message" &&
+        typeof e.text === "string" &&
+        e.text ===
+          `${side0Active.pokemon.nickname ?? "The Pokemon"}'s ${CORE_VOLATILE_IDS.uproar} ended!`,
     );
     // The only uproar message should be "uproar ended", not "woke up due to the uproar"
     const wakeMessages = uproarWakeMessages.filter(
-      (e) => e.type === "message" && e.text.includes("woke up"),
+      (e) =>
+        e.type === "message" &&
+        e.text === `${side1Active.pokemon.nickname ?? "The Pokemon"} woke up due to the uproar!`,
     );
     expect(wakeMessages.length).toBe(0);
 
@@ -380,7 +386,7 @@ describe("Bug #494 — Uproar wake condition", () => {
       (e) =>
         e.type === "message" &&
         typeof e.text === "string" &&
-        e.text.includes("woke up due to the uproar"),
+        e.text === `${side1Active.pokemon.nickname ?? "The Pokemon"} woke up due to the uproar!`,
     );
     expect(uproarWakeMessages.length).toBe(1);
 
@@ -595,8 +601,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
       (e) =>
         e.type === "message" &&
         typeof e.text === "string" &&
-        e.text.includes("Blastoise") &&
-        e.text.includes("woke up due to the uproar"),
+        e.text === `${side1Active.pokemon.nickname ?? "The Pokemon"} woke up due to the uproar!`,
     );
     expect(uproarWakeMessages.length).toBe(0);
   });
@@ -627,8 +632,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
       (e) =>
         e.type === "message" &&
         typeof e.text === "string" &&
-        e.text.includes("Blastoise") &&
-        e.text.includes("woke up due to the uproar"),
+        e.text === `${side1Active.pokemon.nickname ?? "The Pokemon"} woke up due to the uproar!`,
     );
     expect(uproarWakeMessages.length).toBe(1);
   });
@@ -660,8 +664,7 @@ describe("Bug #514 — Uproar + Soundproof", () => {
       (e) =>
         e.type === "message" &&
         typeof e.text === "string" &&
-        e.text.includes("Blastoise") &&
-        e.text.includes("woke up due to the uproar"),
+        e.text === `${side1Active.pokemon.nickname ?? "The Pokemon"} woke up due to the uproar!`,
     );
     expect(uproarWakeMessages.length).toBe(1);
   });

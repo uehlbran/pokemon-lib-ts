@@ -831,7 +831,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
       // Engine should be in switch-prompt (Charizard fainted, Pikachu backup available)
       // Source: Showdown — after a KO, the engine requests a forced switch for that side.
       const phase = engine.getPhase();
-      expect(["switch-prompt", "battle-end"].includes(phase)).toBe(true);
+      expect(["switch-prompt", "battle-end"]).toContain(phase);
     });
 
     it("when both Pokemon are at 1 HP with the same speed, then the RNG-determined first mover KOs the other", () => {
@@ -894,7 +894,7 @@ describe("Faint handling — Pokemon faints, engine transitions to switch-prompt
 
       // Engine in switch-prompt or battle-end (both have backups)
       const phase = engine.getPhase();
-      expect(["switch-prompt", "battle-end"].includes(phase)).toBe(true);
+      expect(["switch-prompt", "battle-end"]).toContain(phase);
     });
   });
 });

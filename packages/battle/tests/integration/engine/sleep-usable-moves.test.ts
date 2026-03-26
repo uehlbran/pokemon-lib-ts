@@ -177,7 +177,9 @@ describe("Sleep-usable moves (issue #524)", () => {
       ),
     ).toBe(false);
     expect(
-      events.some((e) => e.type === "message" && "text" in e && e.text.includes("fast asleep")),
+      events.some(
+        (e) => e.type === "message" && "text" in e && e.text === "Charizard is fast asleep!",
+      ),
     ).toBe(true);
     expect(
       events.some((e) => e.type === "damage" && e.side === 1 && e.source === CORE_MOVE_IDS.tackle),

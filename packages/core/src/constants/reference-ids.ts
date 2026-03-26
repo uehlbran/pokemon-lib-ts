@@ -58,6 +58,7 @@ export const CORE_ABILITY_IDS = {
 
 export const CORE_ITEM_IDS = {
   adamantOrb: "adamant-orb",
+  antidote: "antidote",
   airBalloon: "air-balloon",
   blackSludge: "black-sludge",
   chilanBerry: "chilan-berry",
@@ -67,6 +68,7 @@ export const CORE_ITEM_IDS = {
   deepSeaTooth: "deep-sea-tooth",
   focusSash: "focus-sash",
   flameOrb: "flame-orb",
+  fullRestore: "full-restore",
   griseousOrb: "griseous-orb",
   heatRock: "heat-rock",
   icyRock: "icy-rock",
@@ -74,13 +76,17 @@ export const CORE_ITEM_IDS = {
   leftovers: "leftovers",
   lightBall: "light-ball",
   lustrousOrb: "lustrous-orb",
+  maxRevive: "max-revive",
   normalGem: "normal-gem",
   occaBerry: "occa-berry",
   pokeBall: "poke-ball",
+  potion: "potion",
+  revive: "revive",
   smoothRock: "smooth-rock",
   toxicOrb: "toxic-orb",
   soulDew: "soul-dew",
   thickClub: "thick-club",
+  xAttack: "x-attack",
   yacheBerry: "yache-berry",
 } as const;
 
@@ -292,6 +298,7 @@ export const CORE_SCREEN_IDS = {
   lightScreen: "light-screen",
   luckyChant: "lucky-chant",
   reflect: "reflect",
+  safeguard: "safeguard",
 } as const;
 
 export const CORE_STATUS_IDS = {

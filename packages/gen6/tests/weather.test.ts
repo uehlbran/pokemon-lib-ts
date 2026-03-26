@@ -21,6 +21,12 @@ const SP = GEN6_SPECIES_IDS;
 const _C = CORE_ABILITY_IDS;
 const T = CORE_TYPE_IDS;
 const W = CORE_WEATHER_IDS;
+const WEATHER_SOURCES = {
+  rain: A.drizzle,
+  sun: A.drought,
+  sand: A.sandStream,
+  hail: A.snowWarning,
+} as const;
 
 function createOnFieldPokemon(overrides: {
   maxHp?: number;
@@ -75,7 +81,9 @@ function createBattleState(
   sides: [BattleSide, BattleSide],
 ): BattleState {
   return {
-    weather: weatherType ? { type: weatherType, turnsLeft, source: "test" } : null,
+    weather: weatherType
+      ? { type: weatherType, turnsLeft, source: WEATHER_SOURCES[weatherType] }
+      : null,
     sides,
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },

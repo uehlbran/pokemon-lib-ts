@@ -1906,7 +1906,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.protect,
-        effect: { type: "protect" },
+        effect: { type: CORE_VOLATILE_IDS.protect },
       } as unknown as MoveData;
 
       // Act

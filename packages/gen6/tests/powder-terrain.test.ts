@@ -415,9 +415,9 @@ describe("Gen6Ruleset.executeMoveEffect — powder immunity integration", () => 
     });
     const result = ruleset.executeMoveEffect(ctx);
 
-    // Not blocked -- falls through to BaseRuleset default (no immunity message)
-    const hasImmunityMessage = result.messages.some((m) => m.includes("doesn't affect"));
-    expect(hasImmunityMessage).toBe(false);
+    // Not blocked -- falls through to BaseRuleset default with no immunity message.
+    expect(result.statusInflicted).toBeNull();
+    expect(result.messages).toEqual([]);
   });
 
   it("given Grass-type defender and powder move with no nickname, when blocked, then uses speciesId in message", async () => {

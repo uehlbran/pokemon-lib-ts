@@ -12,6 +12,12 @@ import type {
   TwoTurnMoveVolatile,
   TypeChart,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_HAZARD_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
   AbilityResult,
@@ -94,21 +100,21 @@ export class MockRuleset implements GenerationRuleset {
 
   getAvailableTypes(): readonly PokemonType[] {
     return [
-      "normal",
-      "fire",
-      "water",
-      "electric",
-      "grass",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
+      CORE_TYPE_IDS.normal,
+      CORE_TYPE_IDS.fire,
+      CORE_TYPE_IDS.water,
+      CORE_TYPE_IDS.electric,
+      CORE_TYPE_IDS.grass,
+      CORE_TYPE_IDS.ice,
+      CORE_TYPE_IDS.fighting,
+      CORE_TYPE_IDS.poison,
+      CORE_TYPE_IDS.ground,
+      CORE_TYPE_IDS.flying,
+      CORE_TYPE_IDS.psychic,
+      CORE_TYPE_IDS.bug,
+      CORE_TYPE_IDS.rock,
+      CORE_TYPE_IDS.ghost,
+      CORE_TYPE_IDS.dragon,
     ];
   }
 
@@ -246,11 +252,11 @@ export class MockRuleset implements GenerationRuleset {
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     switch (status) {
-      case "burn":
+      case CORE_STATUS_IDS.burn:
         return Math.max(1, Math.floor(maxHp / 16));
-      case "poison":
+      case CORE_STATUS_IDS.poison:
         return Math.max(1, Math.floor(maxHp / 8));
-      case "badly-poisoned":
+      case CORE_STATUS_IDS.badlyPoisoned:
         return Math.max(1, Math.floor(maxHp / 16));
       default:
         return 0;
@@ -274,16 +280,16 @@ export class MockRuleset implements GenerationRuleset {
   }
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     return false;
@@ -360,8 +366,8 @@ export class MockRuleset implements GenerationRuleset {
   getMaxHazardLayers(hazardType: EntryHazardType): number {
     // Mock defaults match Gen 3+ behavior (spikes=3, toxic-spikes=2, others=1).
     // Tests that override hazard layer limits should use a custom ruleset.
-    if (hazardType === "spikes") return 3;
-    if (hazardType === "toxic-spikes") return 2;
+    if (hazardType === CORE_HAZARD_IDS.spikes) return 3;
+    if (hazardType === CORE_HAZARD_IDS.toxicSpikes) return 2;
     return 1;
   }
 
@@ -436,14 +442,14 @@ export class MockRuleset implements GenerationRuleset {
   }
 
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const conf = active.volatileStatuses.get("confusion");
+    const conf = active.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
     if (!conf) return false;
     conf.turnsLeft--;
     return conf.turnsLeft > 0;
   }
 
   processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const bound = active.volatileStatuses.get("bound");
+    const bound = active.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
     if (!bound) return false;
     bound.turnsLeft--;
     return bound.turnsLeft > 0;
@@ -523,7 +529,7 @@ export class MockRuleset implements GenerationRuleset {
     readonly newCount: number;
     readonly fainted: boolean;
   } {
-    const perishState = pokemon.volatileStatuses.get("perish-song");
+    const perishState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.perishSong);
     if (!perishState) return { newCount: 0, fainted: false };
     const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
     if (counter <= 1) return { newCount: 0, fainted: true };

@@ -3,6 +3,8 @@ import { checkAmbiguousTestHelperNames } from "./ambiguous-test-helper-name.ts";
 import { checkAssertionStrength } from "./assertion-strength.ts";
 import { checkCanonicalPayloadDuplication } from "./canonical-payload-duplication.ts";
 import { checkInternalDomainMocking } from "./internal-domain-mock.ts";
+import { checkMessageProxyAssertions } from "./message-proxy-assertion.ts";
+import { checkPlaceholderSources } from "./placeholder-source.ts";
 import { checkProvenance } from "./provenance.ts";
 import { checkRawReferenceIds } from "./raw-reference-id.ts";
 import { checkStaleTestComments } from "./stale-comments.ts";
@@ -21,4 +23,6 @@ export const ALL_CHECKS: readonly Check[] = [
   { name: "internal-domain-mock", run: checkInternalDomainMocking },
   { name: "stale-test-comments", run: checkStaleTestComments },
   { name: "raw-reference-id", run: checkRawReferenceIds },
+  { name: "placeholder-source", run: checkPlaceholderSources },
+  { name: "message-proxy-assertion", run: checkMessageProxyAssertions },
 ];

@@ -617,11 +617,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
         153,
       );
 
-      // Verify Sturdy message was emitted
-      const sturdyMessage = events.find(
-        (e) => e.type === "message" && e.text.includes("endured the hit"),
-      );
-      expect(sturdyMessage).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Blastoise endured the hit!",
+      });
 
       // Defender should survive at 1 HP
       const state = engine.getState();
@@ -668,10 +667,10 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       );
 
       // No Sturdy message
-      const sturdyMessage = events.find(
-        (e) => e.type === "message" && e.text.includes("endured the hit"),
-      );
-      expect(sturdyMessage).toBeUndefined();
+      expect(events).not.toContainEqual({
+        type: "message",
+        text: "Blastoise endured the hit!",
+      });
     });
   });
 
@@ -804,7 +803,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       let endureCountForDefender = 0;
       for (let i = 0; i < events.length; i++) {
         const ev = events[i];
-        if (ev.type === "message" && ev.text.includes("Endured the hit")) {
+        if (ev.type === "message" && ev.text === "Endured the hit!") {
           // Check if the next damage event is for side 1
           for (let j = i + 1; j < events.length; j++) {
             if (events[j].type === "damage") {
@@ -854,7 +853,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
 
       // No endure messages since neither hit was lethal
       const endureMessages = events.filter(
-        (e) => e.type === "message" && e.text.includes("Endured the hit"),
+        (e) => e.type === "message" && e.text === "Endured the hit!",
       );
       expect(endureMessages.length).toBe(0);
     });

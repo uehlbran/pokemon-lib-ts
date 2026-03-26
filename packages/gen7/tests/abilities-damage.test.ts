@@ -191,7 +191,9 @@ function createAbilityContext(overrides: {
     }),
     opponent: overrides.opponent ?? createOnFieldPokemon({}),
     state: createBattleState(
-      overrides.weather ? { weather: { type: overrides.weather, turnsLeft: 5, source: "" } } : {},
+      overrides.weather
+        ? { weather: { type: overrides.weather, turnsLeft: 5, source: CORE_ABILITY_IDS.none } }
+        : {},
     ),
     rng: new SeededRandom(42),
     trigger: triggerIds.onDamageCalc,
@@ -507,24 +509,30 @@ describe("Gen 7 Damage Abilities", () => {
       // Source: Showdown data/abilities.ts -- Gen 7 pixilate: chainModify([4915, 4096])
       // 4915 / 4096 = 1.19995117... (the Gen 7 nerf from 1.3x)
       const override = getAteAbilityOverride(abilityIds.pixilate, typeIds.normal);
-      expect(override).not.toBeNull();
-      expect(override!.type).toBe(typeIds.fairy);
-      expect(override!.multiplier).toBe(4915 / 4096);
+      expect(override).toEqual({
+        type: typeIds.fairy,
+        multiplier: 4915 / 4096,
+      });
     });
 
     it("given getAteAbilityOverride for Galvanize (new Gen 7), then Normal -> Electric + 1.2x", () => {
       // Source: Showdown data/abilities.ts -- galvanize: Normal -> Electric + 1.2x
       // Source: Bulbapedia "Galvanize" -- introduced in Gen 7
       const override = getAteAbilityOverride(abilityIds.galvanize, typeIds.normal);
-      expect(override).not.toBeNull();
-      expect(override!.type).toBe(typeIds.electric);
-      expect(override!.multiplier).toBe(4915 / 4096);
+      expect(override).toEqual({
+        type: typeIds.electric,
+        multiplier: 4915 / 4096,
+      });
     });
 
     it("given getAteAbilityOverride with non-Normal move, then returns null", () => {
       // -ate abilities only convert Normal-type moves
       const override = getAteAbilityOverride(abilityIds.pixilate, typeIds.fire);
       expect(override).toBeNull();
+      expect(getAteAbilityOverride(abilityIds.pixilate, typeIds.normal)).toEqual({
+        type: typeIds.fairy,
+        multiplier: 4915 / 4096,
+      });
     });
 
     it("given getAteAbilityOverride for Aerilate, then Normal -> Flying + 1.2x", () => {

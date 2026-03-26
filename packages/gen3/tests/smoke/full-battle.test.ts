@@ -901,7 +901,7 @@ describe("Gen 3 Weather Integration", () => {
     engine.start();
     // Sand Stream sets sandstorm on Tyranitar's switch-in
     const state = engine.getState();
-    expect(state.weather?.type).toBe("sand");
+    expect(state.weather?.type).toBe(CORE_WEATHER_IDS.sand);
 
     // Execute one turn
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // rock-slide

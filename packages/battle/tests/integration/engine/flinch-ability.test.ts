@@ -144,8 +144,10 @@ describe("On-flinch ability dispatch", () => {
     expect(tyrogue!.statStages.speed).toBe(1);
 
     // Verify the flinch message was emitted
-    const flinchMsg = events.find((e) => e.type === "message" && e.text.includes("flinched"));
-    expect(flinchMsg).toBeDefined();
+    expect(events).toContainEqual({
+      type: "message",
+      text: "Tyrogue flinched and couldn't move!",
+    });
   });
 
   it("given a Pokemon with abilities that does NOT flinch, when it moves normally, then on-flinch does NOT trigger", () => {

@@ -52,7 +52,7 @@ const W = CORE_WEATHER_IDS;
 /**
  * Creates a minimal ActivePokemon mock for behavioral override tests.
  */
-function makeActive(overrides: {
+function createOnFieldPokemon(overrides: {
   nickname?: string;
   status?: PrimaryStatus | null;
   types?: PokemonType[];
@@ -113,14 +113,14 @@ function makeActive(overrides: {
  */
 function makeCtx(overrides: {
   moveId: string;
-  attacker?: Partial<Parameters<typeof makeActive>[0]>;
-  defender?: Partial<Parameters<typeof makeActive>[0]>;
+  attacker?: Partial<Parameters<typeof createOnFieldPokemon>[0]>;
+  defender?: Partial<Parameters<typeof createOnFieldPokemon>[0]>;
   weather?: { type: WeatherType; turnsLeft: number; source: string } | null;
   damage?: number;
 }): MoveEffectContext {
   return {
-    attacker: makeActive(overrides.attacker ?? {}),
-    defender: makeActive(overrides.defender ?? {}),
+    attacker: createOnFieldPokemon(overrides.attacker ?? {}),
+    defender: createOnFieldPokemon(overrides.defender ?? {}),
     move: dataManager.getMove(overrides.moveId),
     damage: overrides.damage ?? 0,
     state: {

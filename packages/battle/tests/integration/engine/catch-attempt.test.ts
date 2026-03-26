@@ -148,10 +148,10 @@ describe("BattleEngine - Catch Attempt mechanics", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     // Assert — should get a blocking message, no catch event
-    const blockedMsg = events.find(
-      (e) => e.type === "message" && "text" in e && e.text.includes("trainer"),
-    );
-    expect(blockedMsg).toEqual(expect.objectContaining({ type: "message" }));
+    expect(events).toContainEqual({
+      type: "message",
+      text: "You can't throw a Poke Ball at a trainer's Pokemon!",
+    });
 
     const catchEvent = events.find((e) => e.type === "catch-attempt");
     expect(catchEvent).toBeUndefined();

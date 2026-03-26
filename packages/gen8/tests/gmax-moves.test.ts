@@ -1,4 +1,4 @@
-import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -12,22 +12,67 @@ const TYPE_IDS = CORE_TYPE_IDS;
 
 describe("Gen8GMaxMoves", () => {
   describe("GMAX_MOVES table", () => {
-    it("given the GMAX_MOVES table, when counting entries, then has exactly 32 entries", () => {
+    it("given the GMAX_MOVES table, when reading keys, then exact canonical ids are present in order", () => {
       // Source: Showdown data/moves.ts lines 6955-7760 -- 32 G-Max moves total
-      expect(Object.keys(GMAX_MOVES).length).toBe(32);
+      expect(Object.keys(GMAX_MOVES)).toEqual([
+        "gmax-befuddle",
+        "gmax-cannonade",
+        "gmax-centiferno",
+        "gmax-chi-strike",
+        "gmax-cuddle",
+        "gmax-depletion",
+        "gmax-drum-solo",
+        "gmax-finale",
+        "gmax-fireball",
+        "gmax-foam-burst",
+        "gmax-gold-rush",
+        "gmax-gravitas",
+        "gmax-hydrosnipe",
+        "gmax-malodor",
+        "gmax-meltdown",
+        "gmax-one-blow",
+        "gmax-rapid-flow",
+        "gmax-replenish",
+        "gmax-resonance",
+        "gmax-sandblast",
+        "gmax-smite",
+        "gmax-snooze",
+        "gmax-steelsurge",
+        "gmax-stonesurge",
+        "gmax-stun-shock",
+        "gmax-sweetness",
+        "gmax-tartness",
+        "gmax-terror",
+        "gmax-vine-lash",
+        "gmax-volcalith",
+        "gmax-volt-crash",
+        "gmax-wildfire",
+      ]);
     });
 
-    it("given GMAX_MOVES, when checking all entries, then each has species, moveType, and effect", () => {
-      // Source: Showdown data/moves.ts -- all G-Max entries have these fields
-      for (const [_id, data] of Object.entries(GMAX_MOVES)) {
-        expect(data).toEqual(
-          expect.objectContaining({
-            species: expect.any(String),
-            moveType: expect.any(String),
-            effect: expect.any(Object),
-          }),
-        );
-      }
+    it("given GMAX_MOVES, when checking representative entries, then exact canonical payloads are present", () => {
+      // Source: Showdown data/moves.ts -- G-Max move payloads are canonical and fixed
+      expect(GMAX_MOVES["gmax-wildfire"]).toEqual({
+        species: "Charizard",
+        moveType: "fire",
+        effect: { type: "residual", duration: 4, damage: "1/6", immunity: ["fire"] },
+      });
+      expect(GMAX_MOVES["gmax-steelsurge"]).toEqual({
+        species: "Copperajah",
+        moveType: "steel",
+        effect: { type: "hazard", hazard: "gmax-steelsurge" },
+      });
+      expect(GMAX_MOVES["gmax-drum-solo"]).toEqual({
+        species: "Rillaboom",
+        moveType: "grass",
+        effect: { type: "ignore-ability" },
+        basePower: 160,
+      });
+      expect(GMAX_MOVES["gmax-volt-crash"]).toEqual({
+        species: "Pikachu",
+        moveType: "electric",
+        effect: { type: "status", status: "par" },
+      });
     });
   });
 
@@ -35,26 +80,26 @@ describe("Gen8GMaxMoves", () => {
     it("given Charizard species name, when looking up G-Max move, then returns G-Max Wildfire (Fire type)", () => {
       // Source: Showdown data/moves.ts -- gmaxWildfire for Charizard
       const result = getGMaxMove("Charizard");
-      expect(result).not.toBeNull();
-      expect(result!.species).toBe("Charizard");
-      expect(result!.moveType).toBe(TYPE_IDS.fire);
-      expect(result!.effect.type).toBe("residual");
+      expect(result).toEqual({
+        species: "Charizard",
+        moveType: TYPE_IDS.fire,
+        effect: { type: "residual", duration: 4, damage: "1/6", immunity: [TYPE_IDS.fire] },
+      });
     });
 
     it("given Pikachu species name, when looking up G-Max move, then returns G-Max Volt Crash (Electric)", () => {
       // Source: Showdown data/moves.ts -- gmaxVoltCrash for Pikachu
       const result = getGMaxMove("Pikachu");
-      expect(result).not.toBeNull();
-      expect(result!.species).toBe("Pikachu");
-      expect(result!.moveType).toBe(TYPE_IDS.electric);
-      expect(result!.effect.type).toBe("status");
+      expect(result).toEqual({
+        species: "Pikachu",
+        moveType: TYPE_IDS.electric,
+        effect: { type: CORE_MOVE_CATEGORIES.status, status: "par" },
+      });
     });
 
     it("given species name in lowercase, when looking up G-Max move, then finds it case-insensitively", () => {
       // Source: Implementation -- species lookup is case-insensitive
-      const result = getGMaxMove("charizard");
-      expect(result).not.toBeNull();
-      expect(result!.species).toBe("Charizard");
+      expect(getGMaxMove("charizard")).toEqual(getGMaxMove("Charizard"));
     });
 
     it("given non-Gigantamax species name, when looking up G-Max move, then returns null", () => {
@@ -71,9 +116,12 @@ describe("Gen8GMaxMoves", () => {
     it("given Rillaboom species, when looking up G-Max move, then returns 160 base power override", () => {
       // Source: Showdown data/moves.ts -- G-Max Drum Solo has basePower: 160
       const result = getGMaxMove("Rillaboom");
-      expect(result).not.toBeNull();
-      expect(result!.basePower).toBe(160);
-      expect(result!.effect.type).toBe("ignore-ability");
+      expect(result).toEqual({
+        species: "Rillaboom",
+        moveType: TYPE_IDS.grass,
+        effect: { type: "ignore-ability" },
+        basePower: 160,
+      });
     });
   });
 
@@ -81,20 +129,25 @@ describe("Gen8GMaxMoves", () => {
     it("given gmax-steelsurge ID, when looking up effect, then returns Steel type with hazard effect", () => {
       // Source: Showdown data/moves.ts -- gmaxSteelsurge sets Steel-type hazard
       const result = getGMaxMoveEffect("gmax-steelsurge");
-      expect(result).not.toBeNull();
-      expect(result!.moveType).toBe(TYPE_IDS.steel);
-      expect(result!.effect).toEqual({ type: "hazard", hazard: "gmax-steelsurge" });
+      expect(result).toEqual({
+        species: "Copperajah",
+        moveType: TYPE_IDS.steel,
+        effect: { type: "hazard", hazard: "gmax-steelsurge" },
+      });
     });
 
     it("given gmax-wildfire ID, when looking up effect, then returns residual damage with fire immunity", () => {
       // Source: Showdown data/moves.ts -- gmaxWildfire: 1/6 residual, 4 turns, fire immune
       const result = getGMaxMoveEffect("gmax-wildfire");
-      expect(result).not.toBeNull();
-      expect(result!.effect).toEqual({
-        type: "residual",
-        duration: 4,
-        damage: "1/6",
-        immunity: [TYPE_IDS.fire],
+      expect(result).toEqual({
+        species: "Charizard",
+        moveType: TYPE_IDS.fire,
+        effect: {
+          type: "residual",
+          duration: 4,
+          damage: "1/6",
+          immunity: [TYPE_IDS.fire],
+        },
       });
     });
 

@@ -287,9 +287,8 @@ describe("Gen 2 King's Rock: flinch applies on-hit trigger", () => {
     expect(result.activated).toBe(true);
     // Flinch effect should be in the effects list
     const hasFlinch = result.effects.some((e) => e.type === VOLATILES.flinch);
-    expect(
-      hasFlinch || result.messages.some((m) => m.toLowerCase().includes(VOLATILES.flinch)),
-    ).toBe(true);
+    expect(hasFlinch).toBe(true);
+    expect(result.messages).toEqual(["Pokemon #132's King's Rock caused flinching!"]);
   });
 
   it("given a pokemon holds King's Rock and rng.chance returns false, when on-hit check runs, then no flinch", () => {
@@ -375,7 +374,7 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     category: SPECIAL_MOVE_CATEGORY,
     power: 80,
     accuracy: 100,
-    effect: { type: "custom" as const, handler: "future-sight" },
+    effect: { type: "custom" as const, handler: MOVES.futureSight },
   });
 
   it("given Future Sight is used, when executeMoveEffect runs, then futureAttack is scheduled for 2 turns", () => {
@@ -389,6 +388,7 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     expect(result.futureAttack).toBeDefined();
     expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
     expect(result.futureAttack?.turnsLeft).toBe(2);
+    expect(result.messages).toEqual(["The Pokemon foresaw an attack!"]);
   });
 
   it("given Future Sight targets a Dark-type (immune to Psychic), when Future Sight effect handler runs, then the attack is still scheduled (typeless)", () => {
@@ -409,6 +409,7 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     // Future Sight schedules even vs Dark-type
     expect(result.futureAttack).toBeDefined();
     expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
+    expect(result.messages).toEqual(["The Pokemon foresaw an attack!"]);
   });
 
   it("given Future Sight is already pending on the target's side, when Future Sight is used again, then it fails", () => {
@@ -422,7 +423,7 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     const context = createMoveEffectContext({ attacker, defender, move: futureSightMove, state });
     const result = ruleset.executeMoveEffect(context);
     expect(result.futureAttack).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 });
 
@@ -440,7 +441,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     category: dataManager.getMove(MOVES.sleepTalk).category,
     power: null,
     accuracy: null,
-    effect: { type: "custom" as const, handler: "sleep-talk" },
+    effect: { type: "custom" as const, handler: MOVES.sleepTalk },
   });
 
   it("given the attacker is asleep and has usable moves, when Sleep Talk runs, then a recursive move is chosen", () => {
@@ -467,6 +468,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     });
     const result = ruleset.executeMoveEffect(context);
     expect(result.recursiveMove).toBe(MOVES.thunderbolt);
+    expect(result.messages).toEqual(["The Pokemon used Sleep Talk!"]);
   });
 
   it("given the attacker is NOT asleep, when Sleep Talk runs, then it fails", () => {
@@ -476,7 +478,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     const context = createMoveEffectContext({ attacker, move: sleepTalkMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.recursiveMove).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given the attacker is asleep with only banned moves (sleep-talk, bide, fly), when Sleep Talk runs, then it fails (no usable moves)", () => {
@@ -493,7 +495,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     const context = createMoveEffectContext({ attacker, move: sleepTalkMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.recursiveMove).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given the attacker is asleep with only 0-PP moves (non-banned), when Sleep Talk runs, then it fails", () => {
@@ -504,7 +506,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     const context = createMoveEffectContext({ attacker, move: sleepTalkMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.recursiveMove).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 });
 
@@ -628,7 +630,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
       type: TYPES.rock,
       category: PHYSICAL_MOVE_CATEGORY,
       power: 30,
-      effect: { type: "custom" as const, handler: "rollout" },
+      effect: { type: "custom" as const, handler: MOVES.rollout },
     });
     const attacker = createOnFieldPokemon({
       moves: [createResolvedMoveSlot(MOVES.rollout), createResolvedMoveSlot(MOVES.tackle)],
@@ -674,7 +676,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
   const counterMove = createSyntheticMove(MOVES.counter, {
     category: PHYSICAL_MOVE_CATEGORY,
     power: null,
-    effect: { type: "custom" as const, handler: "counter" },
+    effect: { type: "custom" as const, handler: MOVES.counter },
   });
 
   it("given a Normal-type move dealt 40 damage last turn, when Counter is used, then deals 80 damage", () => {
@@ -712,7 +714,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
     const context = createMoveEffectContext({ attacker, move: counterMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.customDamage).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given special-category damage last turn, when Counter is used, then Counter fails", () => {
@@ -742,7 +744,7 @@ describe("Gen 2 Disable mechanic", () => {
     category: dataManager.getMove(MOVES.disable).category,
     power: null,
     accuracy: 55,
-    effect: { type: "custom" as const, handler: "disable" },
+    effect: { type: "custom" as const, handler: MOVES.disable },
   });
 
   it("given the defender's last used move was Tackle, when Disable is used, then Tackle is disabled", () => {
@@ -764,7 +766,7 @@ describe("Gen 2 Disable mechanic", () => {
     const context = createMoveEffectContext({ defender, move: disableMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given defender is already disabled, when Disable is used, then it fails (no stacking)", () => {
@@ -774,7 +776,7 @@ describe("Gen 2 Disable mechanic", () => {
     const context = createMoveEffectContext({ defender, move: disableMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given Disable duration is sampled 500 times, then all durations are in range [1, 7]", () => {

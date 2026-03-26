@@ -143,6 +143,8 @@ export type {
 
 // Utils
 export {
+  createBattleSide,
+  createBattleState,
   createPokemonSnapshot,
   getEffectiveStatStage,
   getPokemonName,

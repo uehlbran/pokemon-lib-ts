@@ -528,8 +528,7 @@ describe("Entry hazard edge cases", () => {
 
       const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
       expect(result.statusInflicted).toBeNull();
-      // The poison message should NOT appear since terrain blocks the status
-      expect(result.messages.some((m) => m.includes("poisoned"))).toBe(false);
+      expect(result.messages).toEqual([]);
     });
 
     it("given Misty Terrain active and Toxic Spikes with 2 layers, when grounded non-Poison Pokemon switches in, then badly-poisoned is suppressed", () => {
@@ -559,8 +558,7 @@ describe("Entry hazard edge cases", () => {
       const result = applyGen8EntryHazards(mon, side, state, GEN8_TYPE_CHART);
       // Poison-type absorbs regardless of terrain
       expect(result.hazardsToRemove).toEqual([MOVES.toxicSpikes]);
-      // Absorption message should still be emitted
-      expect(result.messages.some((m) => m.includes("absorbed"))).toBe(true);
+      expect(result.messages).toEqual([`${mon.pokemon.speciesId} absorbed the poison spikes!`]);
     });
   });
 });

@@ -20,6 +20,12 @@ const SPECIES = GEN5_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
 const WEATHER = CORE_WEATHER_IDS;
 const DEFAULT_POKEMON_NAME = "TestMon";
+const WEATHER_SOURCES = {
+  rain: ABILITIES.drizzle,
+  sun: ABILITIES.drought,
+  sand: ABILITIES.sandStream,
+  hail: ABILITIES.snowWarning,
+} as const;
 
 function getExpectedWeatherChip(maxHp: number): number {
   return Math.max(1, Math.floor(maxHp / 16));
@@ -81,7 +87,9 @@ function createBattleState(
   sides: [BattleSide, BattleSide],
 ): BattleState {
   return {
-    weather: weatherType ? { type: weatherType, turnsLeft, source: "test" } : null,
+    weather: weatherType
+      ? { type: weatherType, turnsLeft, source: WEATHER_SOURCES[weatherType] }
+      : null,
     sides,
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },

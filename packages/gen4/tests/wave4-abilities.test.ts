@@ -547,7 +547,11 @@ describe("Suction Cups — prevent forced switching", () => {
     // Source: Bulbapedia — Suction Cups: "Prevents the Pokemon from being forced to switch out"
     // Source: Showdown data/abilities.ts — Suction Cups onDragOut
     const attacker = createOnFieldPokemon({ types: DEFAULT_TYPES });
-    const defender = createOnFieldPokemon({ ability: abilityIds.suctionCups, types: ROCK_TYPES });
+    const defender = createOnFieldPokemon({
+      ability: abilityIds.suctionCups,
+      types: ROCK_TYPES,
+      nickname: "Bulba",
+    });
     const move = createCanonicalMove(moveIds.whirlwind);
     const state = createBattleState();
     state.sides[0].active = [attacker as any];
@@ -564,8 +568,7 @@ describe("Suction Cups — prevent forced switching", () => {
 
     // Switch should NOT happen
     expect(result.switchOut).toBe(false);
-    // Message should mention Suction Cups
-    expect(result.messages.some((m) => m.includes("Suction Cups"))).toBe(true);
+    expect(result.messages).toEqual(["Bulba anchored itself with Suction Cups!"]);
   });
 
   it("given no Suction Cups, when Whirlwind is used, then forced switch succeeds", () => {
@@ -593,7 +596,11 @@ describe("Suction Cups — prevent forced switching", () => {
   it("given Suction Cups defender, when Roar is used, then forced switch is also prevented", () => {
     // Source: Showdown — Suction Cups blocks both Whirlwind and Roar
     const attacker = createOnFieldPokemon({ types: DEFAULT_TYPES });
-    const defender = createOnFieldPokemon({ ability: abilityIds.suctionCups, types: ROCK_TYPES });
+    const defender = createOnFieldPokemon({
+      ability: abilityIds.suctionCups,
+      types: ROCK_TYPES,
+      nickname: "Bulba",
+    });
     const move = createCanonicalMove(moveIds.roar);
     const state = createBattleState();
     state.sides[0].active = [attacker as any];
@@ -609,7 +616,7 @@ describe("Suction Cups — prevent forced switching", () => {
     } as MoveEffectContext);
 
     expect(result.switchOut).toBe(false);
-    expect(result.messages.some((m) => m.includes("Suction Cups"))).toBe(true);
+    expect(result.messages).toEqual(["Bulba anchored itself with Suction Cups!"]);
   });
 });
 

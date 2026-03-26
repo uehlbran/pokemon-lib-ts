@@ -7,7 +7,7 @@ import {
   GEN8_SPECIES_IDS,
   GEN8_TYPE_CHART,
 } from "../../../../gen8/src";
-import { ALL_NATURES, DataManager } from "../../../src";
+import { ALL_NATURES, CORE_MOVE_CATEGORIES, CORE_TYPE_IDS, DataManager } from "../../../src";
 import type { RawDataObjects } from "../../../src/data/types";
 import type { NatureData, TypeChart } from "../../../src/entities";
 
@@ -137,7 +137,7 @@ describe("DataManager", () => {
       const species = dm.getSpecies(1);
       expect(species.name).toBe("bulbasaur");
       expect(species.displayName).toBe("Bulbasaur");
-      expect(species.types).toEqual(["grass", "poison"]);
+      expect(species.types).toEqual([CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison]);
     });
 
     it("given Charmander's species id, when getSpecies is called, then it returns Charmander's fixture stats", () => {
@@ -184,7 +184,7 @@ describe("DataManager", () => {
       const move = dm.getMove(GEN8_MOVE_IDS.tackle);
       expect(move.displayName).toBe("Tackle");
       expect(move.power).toBe(tackle.power);
-      expect(move.category).toBe("physical");
+      expect(move.category).toBe(CORE_MOVE_CATEGORIES.physical);
     });
 
     it("returns move with effect data", () => {

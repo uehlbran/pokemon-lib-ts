@@ -585,6 +585,7 @@ describe("Orichalcum Pulse", () => {
       );
       const state = createBattleStateFixture({
         weather: { type: WEATHER_IDS.sun, turnsLeft: 5, source: ABILITY_IDS.orichalcumPulse },
+        weatherSource: ABILITY_IDS.orichalcumPulse,
       });
       const ctx = createDamageContextFixture({ attacker, defender, move, state, seed: 100 });
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
@@ -695,6 +696,7 @@ describe("Hadron Engine", () => {
       );
       const state = createBattleStateFixture({
         terrain: { type: TERRAIN_IDS.electric, turnsLeft: 5, source: ABILITY_IDS.hadronEngine },
+        terrainSource: ABILITY_IDS.hadronEngine,
       });
       const ctx = createDamageContextFixture({ attacker, defender, move, state, seed: 100 });
       const resultBoosted = calculateGen9Damage(ctx, typeChart);
@@ -1576,6 +1578,8 @@ describe("handleGen9DamageCalcAbility handler", () => {
     status?: string | null;
     weather?: string | null;
     terrain?: string | null;
+    weatherSource?: string;
+    terrainSource?: string;
     opponentMovedThisTurn?: boolean;
     types?: PokemonType[];
     attackerFaintCount?: number;
@@ -1608,10 +1612,18 @@ describe("handleGen9DamageCalcAbility handler", () => {
         : undefined;
     const state = createBattleStateFixture({
       weather: overrides.weather
-        ? { type: overrides.weather, turnsLeft: 5, source: TERRAIN_IDS.testSource }
+        ? {
+            type: overrides.weather,
+            turnsLeft: 5,
+            source: overrides.weatherSource ?? ABILITY_IDS.none,
+          }
         : null,
       terrain: overrides.terrain
-        ? { type: overrides.terrain, turnsLeft: 5, source: TERRAIN_IDS.testSource }
+        ? {
+            type: overrides.terrain,
+            turnsLeft: 5,
+            source: overrides.terrainSource ?? ABILITY_IDS.none,
+          }
         : null,
       sides,
     });

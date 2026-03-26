@@ -1,4 +1,4 @@
-import { CORE_ITEM_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_IDS, CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen8DataManager,
@@ -12,6 +12,7 @@ const SPECIES = GEN8_SPECIES_IDS;
 const MOVES = GEN8_MOVE_IDS;
 const ABILITIES = GEN8_ABILITY_IDS;
 const ITEMS = GEN8_ITEM_IDS;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const TYPES = CORE_TYPE_IDS;
 const GEN8_TYPE_NAMES = [
   TYPES.normal,
@@ -232,7 +233,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     const move = dm.getMove(MOVES.behemothBlade);
     expect(move.power).toBe(100);
     expect(move.type).toBe(TYPES.steel);
-    expect(move.category).toBe("physical");
+    expect(move.category).toBe(MOVE_CATEGORIES.physical);
   });
 
   it("given gen8 moves, when looking up Pyro Ball, then power is 120 and type is Fire", () => {
@@ -242,7 +243,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     const move = dm.getMove(MOVES.pyroBall);
     expect(move.power).toBe(120);
     expect(move.type).toBe(TYPES.fire);
-    expect(move.category).toBe("physical");
+    expect(move.category).toBe(MOVE_CATEGORIES.physical);
   });
 
   it("given gen8 moves, when looking up Grassy Glide, then power is 55 and type is Grass", () => {
@@ -251,7 +252,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     const dm = createGen8DataManager();
     const move = dm.getMove(MOVES.grassyGlide);
     expect(move.type).toBe(TYPES.grass);
-    expect(move.category).toBe("physical");
+    expect(move.category).toBe(MOVE_CATEGORIES.physical);
     expect(move.power).toBe(70);
   });
 
@@ -263,7 +264,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     const move = dm.getMove(MOVES.wickedBlow);
     expect(move.power).toBe(80);
     expect(move.type).toBe(TYPES.dark);
-    expect(move.category).toBe("physical");
+    expect(move.category).toBe(MOVE_CATEGORIES.physical);
   });
 
   // ---------------------------------------------------------------------------
@@ -369,7 +370,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     for (const move of moves) {
       expect(move.id.length).toBeGreaterThan(0);
       expect(GEN8_TYPE_NAMES).toContain(move.type);
-      expect(["physical", "special", "status"]).toContain(move.category);
+      expect(Object.values(MOVE_CATEGORIES)).toContain(move.category);
       expect(move.pp).toBeGreaterThan(0);
       expect(typeof move.priority).toBe("number");
     }

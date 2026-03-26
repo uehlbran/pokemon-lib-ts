@@ -1,4 +1,6 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN4_SPECIES_IDS } from "../src";
 import { createGen4DataManager } from "../src/data";
 
 describe("Gen 4 DataManager -- data loading", () => {
@@ -58,14 +60,14 @@ describe("Gen 4 DataManager -- data loading", () => {
   it("given gen4 data, when looking up Garchomp, then base Speed is 102", () => {
     // Source: Bulbapedia -- Garchomp (#445) base Speed = 102
     const dm = createGen4DataManager();
-    const garchomp = dm.getSpeciesByName("garchomp");
+    const garchomp = dm.getSpecies(GEN4_SPECIES_IDS.garchomp);
     expect(garchomp.baseStats.speed).toBe(102);
   });
 
   it("given gen4 data, when looking up Lucario, then has Fighting/Steel types", () => {
     // Source: Bulbapedia -- Lucario (#448) is Fighting/Steel
     const dm = createGen4DataManager();
-    const lucario = dm.getSpeciesByName("lucario");
-    expect(lucario.types).toEqual(["fighting", "steel"]);
+    const lucario = dm.getSpecies(GEN4_SPECIES_IDS.lucario);
+    expect(lucario.types).toEqual([CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.steel]);
   });
 });

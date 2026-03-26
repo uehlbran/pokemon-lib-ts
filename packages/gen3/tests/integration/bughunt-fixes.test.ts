@@ -223,11 +223,11 @@ function createDamageContext(opts: {
 // ---------------------------------------------------------------------------
 
 describe("Bug #706: Charge doubles Electric-type move power", () => {
-  it('given an attacker with the "charged" volatile, when using an Electric-type move, then power is doubled', () => {
+  it(`given an attacker with the "${VOLATILES.charged}" volatile, when using an Electric-type move, then power is doubled`, () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE doubles electric power
     // Source: Bulbapedia "Charge" — "doubles the power of the next Electric-type move"
     //
-    // Strategy: compare damage with "charged" volatile vs without.
+    // Strategy: compare damage with charged volatile vs without.
     // Doubling power should roughly double the damage (all else equal).
     const chargedVolatiles = new Map([[VOLATILES.charged, { turnsLeft: 2 }]]);
     const attackerCharged = createActivePokemon({
@@ -260,7 +260,7 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
     expect(attackerCharged.volatileStatuses.has(VOLATILES.charged)).toBe(false);
   });
 
-  it('given an attacker with the "charged" volatile, when using a non-Electric-type move, then power is NOT doubled', () => {
+  it(`given an attacker with the "${VOLATILES.charged}" volatile, when using a non-Electric-type move, then power is NOT doubled`, () => {
     // Source: pret/pokeemerald — Charge only affects Electric-type moves
     // Source: Bulbapedia "Charge" — "doubles the power of the next Electric-type move"
     const chargedVolatiles = new Map([[VOLATILES.charged, { turnsLeft: 2 }]]);
@@ -279,7 +279,7 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
       typeChart,
     );
 
-    // The "charged" volatile should still be present (not consumed for non-Electric moves)
+    // The charged volatile should still be present (not consumed for non-Electric moves)
     expect(attacker.volatileStatuses.has(VOLATILES.charged)).toBe(true);
 
     // Damage should be the same as without Charge (power=80, not doubled)
@@ -312,7 +312,7 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
 
     const result = executeGen3MoveEffect(ctx);
 
-    // The handler should set the "charged" volatile on the attacker
+    // The handler should set the charged volatile on the attacker
     expect(result).not.toBeNull();
     if (result) {
       expect(result.selfVolatileInflicted).toBe(VOLATILES.charged);

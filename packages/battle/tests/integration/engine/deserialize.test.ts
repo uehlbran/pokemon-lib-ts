@@ -1,6 +1,7 @@
 import type { DataManager } from "@pokemon-lib-ts/core";
 import { CORE_MOVE_IDS, CORE_VOLATILE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { BATTLE_GIMMICK_IDS } from "../../../src";
 import type { BattleConfig, BattleGimmick } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, ExpGainEvent } from "../../../src/events";
@@ -211,7 +212,7 @@ class SerializableTrackingRuleset extends MockRuleset {
   private readonly gimmick = new SerializableTrackingGimmick();
 
   override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
-    return type === "zmove" ? this.gimmick : null;
+    return type === BATTLE_GIMMICK_IDS.zMove ? this.gimmick : null;
   }
 
   canUseZMove(sideIndex: 0 | 1): boolean {

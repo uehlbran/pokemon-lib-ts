@@ -152,11 +152,10 @@ describe("#468 — Uproar end-of-turn handler", () => {
         e.type === "volatile-end" && "volatile" in e && e.volatile === CORE_VOLATILE_IDS.uproar,
     );
     expect(volatileEndEvents.length).toBeGreaterThan(0);
-
-    const uproarEndMessages = events.filter(
-      (e) => e.type === "message" && "text" in e && (e.text as string).includes("uproar ended"),
-    );
-    expect(uproarEndMessages.length).toBeGreaterThan(0);
+    expect(events).toContainEqual({
+      type: "message",
+      text: "Blastoise's uproar ended!",
+    });
   });
 
   it("given an active Pokemon with uproar volatile and opponent is sleeping, when end-of-turn processes, then sleeping Pokemon wakes up", () => {
@@ -191,15 +190,10 @@ describe("#468 — Uproar end-of-turn handler", () => {
       (e) => e.type === "status-cure" && "status" in e && e.status === CORE_STATUS_IDS.sleep,
     );
     expect(statusCureEvents.length).toBeGreaterThan(0);
-
-    // Should emit a message about waking up due to uproar
-    const wakeMessages = events.filter(
-      (e) =>
-        e.type === "message" &&
-        "text" in e &&
-        (e.text as string).includes(CORE_VOLATILE_IDS.uproar),
-    );
-    expect(wakeMessages.length).toBeGreaterThan(0);
+    expect(events).toContainEqual({
+      type: "message",
+      text: "Charizard woke up due to the uproar!",
+    });
   });
 });
 

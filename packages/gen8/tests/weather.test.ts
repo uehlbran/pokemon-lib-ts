@@ -23,6 +23,12 @@ const ITEMS = { ...CORE_ITEM_IDS, ...GEN8_ITEM_IDS };
 const TYPES = CORE_TYPE_IDS;
 const WEATHER = CORE_WEATHER_IDS;
 const SPECIES = GEN8_SPECIES_IDS;
+const WEATHER_SOURCES = {
+  rain: ABILITIES.drizzle,
+  sun: ABILITIES.drought,
+  sand: ABILITIES.sandStream,
+  hail: ABILITIES.snowWarning,
+} as const;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -83,7 +89,9 @@ function createBattleState(
   sides: [BattleSide, BattleSide],
 ): BattleState {
   return {
-    weather: weatherType ? { type: weatherType, turnsLeft, source: "test" } : null,
+    weather: weatherType
+      ? { type: weatherType, turnsLeft, source: WEATHER_SOURCES[weatherType] }
+      : null,
     sides,
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },

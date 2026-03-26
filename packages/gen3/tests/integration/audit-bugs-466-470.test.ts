@@ -287,14 +287,14 @@ describe("Gen 3 Brick Break — #466 screenTypesToRemove", () => {
     const screens = [
       { type: SCREEN_IDS.reflect, turnsLeft: 3 },
       { type: SCREEN_IDS.lightScreen, turnsLeft: 4 },
-      { type: "safeguard" as const, turnsLeft: 5 },
+      { type: SCREEN_IDS.safeguard, turnsLeft: 5 },
     ];
 
     // Simulate the engine's filtering logic
     const screenTypesToRemove = [SCREEN_IDS.reflect, SCREEN_IDS.lightScreen];
     const remaining = screens.filter((s) => !screenTypesToRemove.includes(s.type));
 
-    expect(remaining).toEqual([{ type: "safeguard", turnsLeft: 5 }]);
+    expect(remaining).toEqual([{ type: SCREEN_IDS.safeguard, turnsLeft: 5 }]);
   });
 });
 

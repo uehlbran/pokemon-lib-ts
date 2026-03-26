@@ -126,10 +126,10 @@ describe("Destiny Bond faint check", () => {
     expect(faintEvents[1]!.type === "faint" && faintEvents[1]!.pokemon).toBe("Blastoise");
 
     // Verify the Destiny Bond message was emitted
-    const destinyBondMsg = events.find(
-      (e) => e.type === "message" && e.text.includes("took its attacker down with it"),
-    );
-    expect(destinyBondMsg).toBeDefined();
+    expect(events).toContainEqual({
+      type: "message",
+      text: "Charizard took its attacker down with it!",
+    });
   });
 
   it("given a Pokemon with destiny-bond that faints from weather damage, when the faint is processed, then Destiny Bond does NOT trigger", () => {

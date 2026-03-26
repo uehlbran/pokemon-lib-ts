@@ -195,7 +195,7 @@ describe("RandomAI", () => {
       const action = ai.chooseAction(0, state, ruleset, rng, createAvailableMoves(state, 0));
 
       // Assert
-      expect(action.type).toBe("struggle");
+      expect(action.type).toBe(CORE_MOVE_IDS.struggle);
       expect(action.side).toBe(0);
     });
 

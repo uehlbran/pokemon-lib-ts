@@ -13,8 +13,9 @@ const PROPERTY_VALUE_RE = /^\s+[A-Za-z0-9_]+:\s*"([^"]+)",?$/gm;
 const RAW_STRING_RE = /(['"`])([a-z0-9]+(?:-[a-z0-9]+)*)\1/g;
 const IMPORT_LINE_RE = /^\s*import\b/;
 const COMMENT_LINE_RE = /^\s*(?:\/\/|\/\*|\*)/;
-const IGNORED_CONTEXT_RE =
-  /\b(?:displayName|name|category|target|nature|pokeball|type|types|spriteKey|metLocation)\b/;
+const TYPE_LITERAL_UNION_CONTEXT_RE =
+  /:\s*(?:"[a-z0-9]+(?:-[a-z0-9]+)*"(?:\s*\|\s*"[^"]+")*)\s*[,);=>]/;
+const IGNORED_CONTEXT_RE = /\b(?:displayName|name|target|spriteKey|metLocation)\b/;
 const IGNORED_VALUES = new Set(["test"]);
 
 function readReferenceValues(filePath: string): Set<string> {
@@ -57,6 +58,7 @@ export function checkRawReferenceIds(ctx: FileContext): Finding[] {
     const line = ctx.lines[index] ?? "";
     if (IMPORT_LINE_RE.test(line) || COMMENT_LINE_RE.test(line)) continue;
     if (IGNORED_CONTEXT_RE.test(line)) continue;
+    if (TYPE_LITERAL_UNION_CONTEXT_RE.test(line)) continue;
 
     for (const match of line.matchAll(RAW_STRING_RE)) {
       const value = match[2] ?? "";
@@ -68,9 +70,11 @@ export function checkRawReferenceIds(ctx: FileContext): Finding[] {
       const matchEnd = matchIndex + fullMatch.length;
       const previousChar = matchIndex > 0 ? line[matchIndex - 1] : "";
       const nextChar = matchEnd < line.length ? line[matchEnd] : "";
+      const trailingContext = line.slice(matchEnd);
       if ((previousChar === "[" && nextChar === "]") || (previousChar === "." && quote === "`")) {
         continue;
       }
+      if (/^\s+in\b/.test(trailingContext)) continue;
 
       const owningSurface = getOwningSurface(ctx.relativePath, value);
       if (!owningSurface) continue;

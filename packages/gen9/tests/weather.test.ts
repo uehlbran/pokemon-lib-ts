@@ -68,6 +68,15 @@ const SAND_FORCE = GEN9_ABILITY_IDS.sandForce;
 const SAND_VEIL = GEN9_ABILITY_IDS.sandVeil;
 const BLAZE = CORE_ABILITY_IDS.blaze;
 const SAFETY_GOGGLES = GEN9_ITEM_IDS.safetyGoggles;
+const WEATHER_SOURCES = {
+  rain: GEN9_ABILITY_IDS.drizzle,
+  sun: GEN9_ABILITY_IDS.drought,
+  sand: GEN9_ABILITY_IDS.sandStream,
+  snow: GEN9_ABILITY_IDS.snowWarning,
+  harshSun: GEN9_ABILITY_IDS.desolateLand,
+  hail: GEN9_ABILITY_IDS.snowWarning,
+  heavyRain: GEN9_ABILITY_IDS.primordialSea,
+} as const;
 
 function createOnFieldPokemon(overrides: {
   maxHp?: number;
@@ -123,7 +132,13 @@ function createBattleState(
   sides: [BattleSide, BattleSide],
 ): BattleState {
   return {
-    weather: weatherType ? { type: weatherType, turnsLeft, source: "test" } : null,
+    weather: weatherType
+      ? {
+          type: weatherType,
+          turnsLeft,
+          source: WEATHER_SOURCES[weatherType as keyof typeof WEATHER_SOURCES],
+        }
+      : null,
     sides,
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },

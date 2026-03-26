@@ -32,7 +32,7 @@ const GEN7_DATA_MANAGER = createGen7DataManager();
 const TACKLE = GEN7_DATA_MANAGER.getMove(GEN7_MOVE_IDS.tackle);
 const VOLATILES = CORE_VOLATILE_IDS;
 
-function makeActive(
+function createOnFieldPokemon(
   overrides: {
     hp?: number;
     currentHp?: number;
@@ -115,7 +115,7 @@ describe("Gen7Ruleset — applyStatusDamage (burn)", () => {
     // Source: Bulbapedia -- Burn: "From Generation VII onwards, a burned Pokemon loses 1/16 of
     //   its maximum HP at the end of each turn"
     // 160 / 16 = 10
-    const pokemon = makeActive({ hp: 160, status: CORE_STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({ hp: 160, status: CORE_STATUS_IDS.burn });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.burn as never,
@@ -127,7 +127,7 @@ describe("Gen7Ruleset — applyStatusDamage (burn)", () => {
   it("given burned Pokemon with 200 max HP, when applying status damage, then takes 12 HP (floor(200/16)=12)", () => {
     // Source: Showdown sim/battle-actions.ts -- Gen 7+ burn damage is floor(maxHp/16)
     // 200 / 16 = 12.5, floor = 12
-    const pokemon = makeActive({ hp: 200, status: CORE_STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({ hp: 200, status: CORE_STATUS_IDS.burn });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.burn as never,
@@ -139,7 +139,7 @@ describe("Gen7Ruleset — applyStatusDamage (burn)", () => {
   it("given burned Pokemon with 15 max HP, when applying status damage, then takes minimum 1 HP", () => {
     // Source: Showdown -- damage is max(1, floor(maxHp/16))
     // 15 / 16 = 0.9375, floor = 0, max(1, 0) = 1
-    const pokemon = makeActive({ hp: 15, status: CORE_STATUS_IDS.burn });
+    const pokemon = createOnFieldPokemon({ hp: 15, status: CORE_STATUS_IDS.burn });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.burn as never,
@@ -157,7 +157,7 @@ describe("Gen7Ruleset — applyStatusDamage (poison)", () => {
   it("given poisoned Pokemon with 200 max HP, when applying status damage, then takes 25 HP (200/8)", () => {
     // Source: Showdown -- Poison damage is 1/8 max HP in all gens
     // 200 / 8 = 25
-    const pokemon = makeActive({ hp: 200, status: CORE_STATUS_IDS.poison });
+    const pokemon = createOnFieldPokemon({ hp: 200, status: CORE_STATUS_IDS.poison });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.poison as never,
@@ -169,7 +169,7 @@ describe("Gen7Ruleset — applyStatusDamage (poison)", () => {
   it("given poisoned Pokemon with 160 max HP, when applying status damage, then takes 20 HP (160/8)", () => {
     // Source: Showdown -- Poison damage is 1/8 max HP
     // 160 / 8 = 20
-    const pokemon = makeActive({ hp: 160, status: CORE_STATUS_IDS.poison });
+    const pokemon = createOnFieldPokemon({ hp: 160, status: CORE_STATUS_IDS.poison });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.poison as never,
@@ -181,7 +181,7 @@ describe("Gen7Ruleset — applyStatusDamage (poison)", () => {
   it("given poisoned Pokemon with 7 max HP, when applying status damage, then takes minimum 1 HP", () => {
     // Source: Showdown -- damage is max(1, floor(maxHp/8))
     // 7 / 8 = 0.875, floor = 0, max(1, 0) = 1
-    const pokemon = makeActive({ hp: 7, status: CORE_STATUS_IDS.poison });
+    const pokemon = createOnFieldPokemon({ hp: 7, status: CORE_STATUS_IDS.poison });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.poison as never,
@@ -199,7 +199,7 @@ describe("Gen7Ruleset — applyStatusDamage (badly-poisoned)", () => {
   it("given badly-poisoned Pokemon with toxic counter at 1 and 160 max HP, when applying status damage, then takes 10 HP (160*1/16)", () => {
     // Source: Showdown -- Toxic damage starts at 1/16, then 2/16, 3/16...
     // 160 * 1 / 16 = 10
-    const pokemon = makeActive({
+    const pokemon = createOnFieldPokemon({
       hp: 160,
       status: CORE_STATUS_IDS.badlyPoisoned,
       volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 1 } }]],
@@ -215,7 +215,7 @@ describe("Gen7Ruleset — applyStatusDamage (badly-poisoned)", () => {
   it("given badly-poisoned Pokemon with toxic counter at 3 and 160 max HP, when applying status damage, then takes 30 HP (160*3/16)", () => {
     // Source: Showdown -- Toxic damage at counter=3 is 3/16 max HP
     // 160 * 3 / 16 = 30
-    const pokemon = makeActive({
+    const pokemon = createOnFieldPokemon({
       hp: 160,
       status: CORE_STATUS_IDS.badlyPoisoned,
       volatiles: [[VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } }]],
@@ -236,7 +236,7 @@ describe("Gen7Ruleset — applyStatusDamage (badly-poisoned)", () => {
 describe("Gen7Ruleset — applyStatusDamage (no-damage statuses)", () => {
   it("given sleeping Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- sleep has no per-turn chip damage
-    const pokemon = makeActive({ status: CORE_STATUS_IDS.sleep });
+    const pokemon = createOnFieldPokemon({ status: CORE_STATUS_IDS.sleep });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.sleep as never,
@@ -247,7 +247,7 @@ describe("Gen7Ruleset — applyStatusDamage (no-damage statuses)", () => {
 
   it("given frozen Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- freeze has no per-turn chip damage
-    const pokemon = makeActive({ status: CORE_STATUS_IDS.freeze });
+    const pokemon = createOnFieldPokemon({ status: CORE_STATUS_IDS.freeze });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.freeze as never,
@@ -258,7 +258,7 @@ describe("Gen7Ruleset — applyStatusDamage (no-damage statuses)", () => {
 
   it("given paralyzed Pokemon, when applying status damage, then takes 0 HP", () => {
     // Source: Showdown -- paralysis has no per-turn chip damage
-    const pokemon = makeActive({ status: CORE_STATUS_IDS.paralysis });
+    const pokemon = createOnFieldPokemon({ status: CORE_STATUS_IDS.paralysis });
     const result = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.paralysis as never,
@@ -276,7 +276,7 @@ describe("Gen7Ruleset — burn damage differs from Gen 6", () => {
   it("given Pokemon with 160 max HP, when comparing Gen 7 burn damage to expected Gen 6 value, then Gen 7 is exactly half", () => {
     // Source: Showdown -- Gen 6 burn = 1/8 = 20, Gen 7 burn = 1/16 = 10
     // This confirms the Gen 7 change
-    const pokemon = makeActive({ hp: 160 });
+    const pokemon = createOnFieldPokemon({ hp: 160 });
     const gen7Damage = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.burn as never,
@@ -290,7 +290,7 @@ describe("Gen7Ruleset — burn damage differs from Gen 6", () => {
 
   it("given Pokemon with 200 max HP, when comparing Gen 7 burn damage to Gen 6, then Gen 7 is less", () => {
     // Source: Showdown -- Gen 7 burn = floor(200/16)=12, Gen 6 burn = floor(200/8)=25
-    const pokemon = makeActive({ hp: 200 });
+    const pokemon = createOnFieldPokemon({ hp: 200 });
     const gen7Damage = ruleset.applyStatusDamage(
       pokemon,
       CORE_STATUS_IDS.burn as never,

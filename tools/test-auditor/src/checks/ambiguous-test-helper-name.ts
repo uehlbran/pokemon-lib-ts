@@ -2,6 +2,11 @@ import type { FileContext, Finding } from "../types.ts";
 
 const DISALLOWED_HELPERS = [
   {
+    name: "makeActive",
+    suggestion:
+      "Rename this to createOnFieldPokemon(...) or createSyntheticOnFieldPokemon(...) so the on-field fixture intent is explicit",
+  },
+  {
     name: "makeMove",
     suggestion:
       "Use dataManager.getMove(...) for canonical moves or createSyntheticMoveFrom(...) for explicit synthetic variants",

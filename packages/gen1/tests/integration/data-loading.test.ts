@@ -1,4 +1,4 @@
-import { CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen1DataManager,
@@ -10,6 +10,7 @@ import {
 
 const SPECIES_IDS = GEN1_SPECIES_IDS;
 const MOVE_IDS = { ...CORE_MOVE_IDS, ...GEN1_MOVE_IDS } as const;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const TYPE_IDS = CORE_TYPE_IDS;
 
 const GEN1_DATA_BOUNDS = {
@@ -80,7 +81,7 @@ describe("Gen 1 Data Integration", () => {
     const flamethrower = dataManager.getMove(MOVE_IDS.flamethrower);
 
     expect(flamethrower.type).toBe(TYPE_IDS.fire);
-    expect(flamethrower.category).toBe("special");
+    expect(flamethrower.category).toBe(MOVE_CATEGORIES.special);
     expect(flamethrower.power).toBe(95); // Source: Gen 1 Flamethrower base power is 95.
     expect(flamethrower.accuracy).toBe(100);
     expect(flamethrower.pp).toBe(15); // Source: Gen 1 Flamethrower PP is 15 before PP Ups.
@@ -209,11 +210,11 @@ describe("Gen 1 Data Integration", () => {
     const surf = dataManager.getMove(MOVE_IDS.surf);
 
     // Assert
-    expect(tackle.category).toBe("physical");
-    expect(thunderbolt.category).toBe("special");
-    expect(earthquake.category).toBe("physical");
-    expect(iceBeam.category).toBe("special");
-    expect(surf.category).toBe("special");
+    expect(tackle.category).toBe(MOVE_CATEGORIES.physical);
+    expect(thunderbolt.category).toBe(MOVE_CATEGORIES.special);
+    expect(earthquake.category).toBe(MOVE_CATEGORIES.physical);
+    expect(iceBeam.category).toBe(MOVE_CATEGORIES.special);
+    expect(surf.category).toBe(MOVE_CATEGORIES.special);
   });
 
   it("given Gen 1 data, when checking moves, then all damaging moves have valid power values", () => {
@@ -223,7 +224,7 @@ describe("Gen 1 Data Integration", () => {
 
     // Source: base-game move power is a finite integer on the 1-255 scale for damaging moves.
     const invalidDamagingMoves = allMoves
-      .filter((move) => move.category !== "status" && move.power !== null)
+      .filter((move) => move.category !== MOVE_CATEGORIES.status && move.power !== null)
       .filter(
         (move) =>
           !Number.isInteger(move.power) ||

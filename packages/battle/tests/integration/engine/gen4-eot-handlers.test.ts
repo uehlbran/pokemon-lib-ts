@@ -207,16 +207,14 @@ describe("tailwindSet move effect", () => {
     // The side that got tailwind should have turnsLeft = 3
     const activeSide = side0Tailwind.active ? side0Tailwind : side1Tailwind;
     expect(activeSide.turnsLeft).toBe(3);
+    const tailwindSideIndex = side0Tailwind.active ? 0 : 1;
 
     // Neither side's screens array should be populated
     expect(state.sides[0].screens).toHaveLength(0);
     expect(state.sides[1].screens).toHaveLength(0);
 
-    // A "message" event about tailwind should be emitted
-    const tailwindMessages = events.filter(
-      (e) => e.type === "message" && "text" in e && e.text.includes("tailwind"),
-    );
-    expect(tailwindMessages.length).toBeGreaterThan(0);
+    const expectedTailwindMessage = `Side ${tailwindSideIndex}'s tailwind began!`;
+    expect(events).toContainEqual({ type: "message", text: expectedTailwindMessage });
   });
 
   it("given a move that returns tailwindSet for the defender side, when processed, then defender's side gets tailwind set", () => {
@@ -262,10 +260,7 @@ describe("trickRoomSet move effect", () => {
     expect(state.trickRoom.active).toBe(true);
     expect(state.trickRoom.turnsLeft).toBe(5);
 
-    const trickRoomMessages = events.filter(
-      (e) => e.type === "message" && "text" in e && e.text.includes("dimensions"),
-    );
-    expect(trickRoomMessages.length).toBeGreaterThan(0);
+    expect(events).toContainEqual({ type: "message", text: "The dimensions were twisted!" });
   });
 
   it("given two moves that both return trickRoomSet, when both are processed, then state.trickRoom reflects the last set", () => {
@@ -849,11 +844,8 @@ describe("slow-start-countdown EoT slot", () => {
     );
     expect(volatileEndEvents.length).toBe(1);
 
-    // A message about Slow Start wearing off should have been emitted
-    const slowStartMessages = events.filter(
-      (e) => e.type === "message" && "text" in e && e.text.includes("Slow Start wore off"),
-    );
-    expect(slowStartMessages.length).toBe(1);
+    const expectedSlowStartMessage = `${active0?.pokemon.nickname ?? "Charizard"}'s Slow Start wore off!`;
+    expect(events).toContainEqual({ type: "message", text: expectedSlowStartMessage });
   });
 
   it("given a Pokemon with slow-start volatile (turnsLeft=2), when 1 turn of EoT ticks passes, then slow-start volatile still present with turnsLeft=1", () => {

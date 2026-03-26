@@ -9,6 +9,7 @@ import type {
 import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -180,7 +181,7 @@ function createSyntheticMoveData(overrides: {
     id: overrides.id ?? tackle,
     displayName: canonical?.displayName ?? overrides.id ?? "Tackle",
     type: overrides.type ?? canonical?.type ?? normal,
-    category: overrides.category ?? canonical?.category ?? "physical",
+    category: overrides.category ?? canonical?.category ?? CORE_MOVE_CATEGORIES.physical,
     power: overrides.power ?? canonical?.power ?? 50,
     accuracy: canonical?.accuracy ?? 100,
     pp: canonical?.pp ?? 35,
@@ -1212,9 +1213,8 @@ describe("Rivalry in damage calc", () => {
       typeChart,
     );
 
-    // Integer rounding means ratio won't be exact
-    const ratio = rivalryResult.damage / baseResult.damage;
-    expect(ratio).toBeCloseTo(1.25, 0);
+    expect(baseResult.breakdown).toMatchObject({ baseDamage: 24, finalDamage: 31 });
+    expect(rivalryResult.breakdown).toMatchObject({ baseDamage: 29, finalDamage: 37 });
   });
 
   it("given Rivalry + opposite gender, when calculating damage, then 0.75x reduction", () => {
@@ -1242,8 +1242,8 @@ describe("Rivalry in damage calc", () => {
       typeChart,
     );
 
-    const ratio = rivalryResult.damage / baseResult.damage;
-    expect(ratio).toBeCloseTo(0.75, 1);
+    expect(baseResult.breakdown).toMatchObject({ baseDamage: 24, finalDamage: 31 });
+    expect(rivalryResult.breakdown).toMatchObject({ baseDamage: 18, finalDamage: 22 });
   });
 
   it("given Rivalry + genderless target, when calculating damage, then no modifier", () => {
@@ -1313,9 +1313,8 @@ describe("Legend orbs in damage calc", () => {
       typeChart,
     );
 
-    // 4915/4096 = ~1.2x
-    const ratio = orbResult.damage / baseResult.damage;
-    expect(ratio).toBeCloseTo(1.2, 1);
+    expect(baseResult.breakdown).toMatchObject({ baseDamage: 39, finalDamage: 51 });
+    expect(orbResult.breakdown).toMatchObject({ baseDamage: 46, finalDamage: 60 });
   });
 
   it("given Palkia (484) + Lustrous Orb + Water move, when calculating damage, then ~1.2x boost", () => {
@@ -1348,8 +1347,8 @@ describe("Legend orbs in damage calc", () => {
       typeChart,
     );
 
-    const ratio = orbResult.damage / baseResult.damage;
-    expect(ratio).toBeCloseTo(1.2, 1);
+    expect(baseResult.breakdown).toMatchObject({ baseDamage: 41, finalDamage: 54 });
+    expect(orbResult.breakdown).toMatchObject({ baseDamage: 49, finalDamage: 64 });
   });
 
   it("given Giratina (487) + Griseous Orb + Ghost move, when calculating damage, then ~1.2x boost", () => {
@@ -1417,8 +1416,8 @@ describe("Legend orbs in damage calc", () => {
       typeChart,
     );
 
-    const ratio = orbResult.damage / baseResult.damage;
-    expect(ratio).toBeCloseTo(1.2, 1);
+    expect(baseResult.breakdown).toMatchObject({ baseDamage: 37, finalDamage: 96 });
+    expect(orbResult.breakdown).toMatchObject({ baseDamage: 44, finalDamage: 114 });
   });
 });
 
@@ -2555,7 +2554,7 @@ describe("Defense stat modifiers in damage calc", () => {
     );
 
     const ratio = fgResult.damage / baseResult.damage;
-    expect(ratio).toBeCloseTo(0.67, 1);
+    expect(ratio).toBe(2 / 3);
   });
 
   it("given Marvel Scale + status + physical move, when calculating damage, then defense boosted 1.5x", () => {
@@ -2882,9 +2881,8 @@ describe("Sniper in damage calc", () => {
       typeChart,
     );
 
-    // Sniper crit = 2.25x, normal crit = 1.5x, ratio = 2.25/1.5 = 1.5
-    const ratio = sniperCrit.damage / baseCrit.damage;
-    expect(ratio).toBeCloseTo(1.5, 1);
+    expect(baseCrit.breakdown?.critMultiplier).toBe(1.5);
+    expect(sniperCrit.breakdown?.critMultiplier).toBe(2.25);
   });
 });
 

@@ -9,6 +9,13 @@
 
 import type { BattleStat, PokemonType } from "@pokemon-lib-ts/core";
 
+export const GEN8_MAX_MOVE_EFFECT_TYPES = {
+  statBoost: "stat-boost",
+  weather: "weather",
+  terrain: "terrain",
+  protect: "protect",
+} as const;
+
 /**
  * Describes the secondary effect of a Max Move.
  *
@@ -21,14 +28,14 @@ import type { BattleStat, PokemonType } from "@pokemon-lib-ts/core";
  */
 export type MaxMoveEffect =
   | {
-      type: "stat-boost";
+      type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["statBoost"];
       stat: BattleStat;
       stages: number;
       target: "user-side" | "opponent" | "opponent-side";
     }
-  | { type: "weather"; weather: string }
-  | { type: "terrain"; terrain: string }
-  | { type: "protect" };
+  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["weather"]; weather: string }
+  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["terrain"]; terrain: string }
+  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["protect"] };
 
 /**
  * Mapping from Pokemon type to Max Move name.

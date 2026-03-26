@@ -14,7 +14,7 @@ import {
   parsePokemonIdent,
   parseReplay,
 } from "../src/parser.js";
-import type { ShowdownEvent } from "../src/replay-types.js";
+import type { ShowdownEvent, StatusEvent } from "../src/replay-types.js";
 
 // ---------------------------------------------------------------------------
 // parsePokemonIdent
@@ -266,8 +266,7 @@ describe("parseLine", () => {
     const result = parseLine(line);
 
     // Assert
-    expect(result?.type).toBe("status");
-    const ev = result as Extract<ShowdownEvent, { type: "status" }>;
+    const ev = result as StatusEvent;
     expect(ev.statusId).toBe("par");
     expect(ev.statusName).toBe(CORE_STATUS_IDS.paralysis);
   });
@@ -732,7 +731,12 @@ describe("parseReplay", () => {
 
     // Assert
     const turn1 = result.turns.find((t) => t.turnNumber === 1);
-    expect(turn1?.events.some((e) => e.type === "status")).toBe(true);
+    expect(turn1?.events).toContainEqual(
+      expect.objectContaining({
+        statusId: "par",
+        statusName: CORE_STATUS_IDS.paralysis,
+      }),
+    );
   });
 
   it("given log with tie event, then TieEvent players are populated from replay metadata", () => {

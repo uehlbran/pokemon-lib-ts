@@ -410,15 +410,12 @@ describe("Future attack integrity warnings", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(
-      events.some(
-        (event) =>
-          event.type === "engine-warning" &&
-          event.message.includes(
-            `Future attack move "${SYNTHETIC_MISSING_FUTURE_MOVE_ID}" data missing while scheduling.`,
-          ),
-      ),
-    ).toBe(true);
+    expect(events).toContainEqual({
+      type: "engine-warning",
+      message:
+        `Future attack move "${SYNTHETIC_MISSING_FUTURE_MOVE_ID}" data missing while scheduling. ` +
+        "Storing 0 damage fallback.",
+    });
     expect(engine.state.sides[1].futureAttack?.damage).toBe(0);
   });
 
@@ -439,15 +436,12 @@ describe("Future attack integrity warnings", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(
-      events.some(
-        (event) =>
-          event.type === "engine-warning" &&
-          event.message.includes(
-            `Future attack move "${SYNTHETIC_MISSING_FUTURE_MOVE_ID}" data missing while resolving.`,
-          ),
-      ),
-    ).toBe(true);
+    expect(events).toContainEqual({
+      type: "engine-warning",
+      message:
+        `Future attack move "${SYNTHETIC_MISSING_FUTURE_MOVE_ID}" data missing while resolving. ` +
+        "Using stored fallback damage.",
+    });
 
     const futureSightDamage = events.filter(
       (event) =>

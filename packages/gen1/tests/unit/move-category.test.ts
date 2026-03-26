@@ -1,10 +1,13 @@
 import type { PokemonType } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN1_MOVE_IDS } from "../../src";
 import { createGen1DataManager } from "../../src/data";
 import { isGen1PhysicalType } from "../../src/Gen1DamageCalc";
 import { GEN1_TYPE_CHART } from "../../src/Gen1TypeChart";
+
+const moveCategories = CORE_MOVE_CATEGORIES;
+const typeIds = CORE_TYPE_IDS;
 
 /**
  * Gen 1 Move Category and Type Interaction Tests
@@ -29,9 +32,9 @@ describe("Gen 1 Move Category by Type", () => {
     const pound = dm.getMove(GEN1_MOVE_IDS.pound);
     const hyperBeam = dm.getMove(GEN1_MOVE_IDS.hyperBeam);
     // Assert
-    expect(tackle.category).toBe("physical");
-    expect(pound.category).toBe("physical");
-    expect(hyperBeam.category).toBe("physical"); // Hyper Beam is Normal-type, so physical in Gen 1!
+    expect(tackle.category).toBe(moveCategories.physical);
+    expect(pound.category).toBe(moveCategories.physical);
+    expect(hyperBeam.category).toBe(moveCategories.physical); // Hyper Beam is Normal-type, so physical in Gen 1!
   });
 
   it("given a Fighting-type move, when checking category, then is physical or status", () => {
@@ -42,7 +45,7 @@ describe("Gen 1 Move Category by Type", () => {
     const counter = dm.getMove(GEN1_MOVE_IDS.counter);
     // Assert
     // Counter is classified as status since it does reflected damage
-    expect(["physical", "status"]).toContain(counter.category);
+    expect([moveCategories.physical, moveCategories.status]).toContain(counter.category);
   });
 
   it("given a Ground-type move, when checking category, then is physical", () => {
@@ -52,8 +55,8 @@ describe("Gen 1 Move Category by Type", () => {
     const earthquake = dm.getMove(GEN1_MOVE_IDS.earthquake);
     const dig = dm.getMove(GEN1_MOVE_IDS.dig);
     // Assert
-    expect(earthquake.category).toBe("physical");
-    expect(dig.category).toBe("physical");
+    expect(earthquake.category).toBe(moveCategories.physical);
+    expect(dig.category).toBe(moveCategories.physical);
   });
 
   it("given a Rock-type move, when checking category, then is physical", () => {
@@ -62,7 +65,7 @@ describe("Gen 1 Move Category by Type", () => {
     // Act
     const rockSlide = dm.getMove(GEN1_MOVE_IDS.rockSlide);
     // Assert
-    expect(rockSlide.category).toBe("physical");
+    expect(rockSlide.category).toBe(moveCategories.physical);
   });
 
   it("given a Flying-type move, when checking category, then is physical", () => {
@@ -71,7 +74,7 @@ describe("Gen 1 Move Category by Type", () => {
     // Act
     const fly = dm.getMove(GEN1_MOVE_IDS.fly);
     // Assert
-    expect(fly.category).toBe("physical");
+    expect(fly.category).toBe(moveCategories.physical);
   });
 
   // --- Special Types ---
@@ -83,8 +86,8 @@ describe("Gen 1 Move Category by Type", () => {
     const flamethrower = dm.getMove(GEN1_MOVE_IDS.flamethrower);
     const fireBlast = dm.getMove(GEN1_MOVE_IDS.fireBlast);
     // Assert
-    expect(flamethrower.category).toBe("special");
-    expect(fireBlast.category).toBe("special");
+    expect(flamethrower.category).toBe(moveCategories.special);
+    expect(fireBlast.category).toBe(moveCategories.special);
   });
 
   it("given a Water-type move, when checking category, then is special", () => {
@@ -94,8 +97,8 @@ describe("Gen 1 Move Category by Type", () => {
     const surf = dm.getMove(GEN1_MOVE_IDS.surf);
     const hydroPump = dm.getMove(GEN1_MOVE_IDS.hydroPump);
     // Assert
-    expect(surf.category).toBe("special");
-    expect(hydroPump.category).toBe("special");
+    expect(surf.category).toBe(moveCategories.special);
+    expect(hydroPump.category).toBe(moveCategories.special);
   });
 
   it("given an Electric-type move, when checking category, then is special", () => {
@@ -105,8 +108,8 @@ describe("Gen 1 Move Category by Type", () => {
     const thunderbolt = dm.getMove(GEN1_MOVE_IDS.thunderbolt);
     const thunder = dm.getMove(GEN1_MOVE_IDS.thunder);
     // Assert
-    expect(thunderbolt.category).toBe("special");
-    expect(thunder.category).toBe("special");
+    expect(thunderbolt.category).toBe(moveCategories.special);
+    expect(thunder.category).toBe(moveCategories.special);
   });
 
   it("given a Grass-type move, when checking category, then is special", () => {
@@ -115,7 +118,7 @@ describe("Gen 1 Move Category by Type", () => {
     // Act
     const solarBeam = dm.getMove(GEN1_MOVE_IDS.solarBeam);
     // Assert
-    expect(solarBeam.category).toBe("special");
+    expect(solarBeam.category).toBe(moveCategories.special);
   });
 
   it("given an Ice-type move, when checking category, then is special", () => {
@@ -125,8 +128,8 @@ describe("Gen 1 Move Category by Type", () => {
     const iceBeam = dm.getMove(GEN1_MOVE_IDS.iceBeam);
     const blizzard = dm.getMove(GEN1_MOVE_IDS.blizzard);
     // Assert
-    expect(iceBeam.category).toBe("special");
-    expect(blizzard.category).toBe("special");
+    expect(iceBeam.category).toBe(moveCategories.special);
+    expect(blizzard.category).toBe(moveCategories.special);
   });
 
   it("given a Psychic-type move, when checking category, then is special", () => {
@@ -136,8 +139,8 @@ describe("Gen 1 Move Category by Type", () => {
     const psychic = dm.getMove(GEN1_MOVE_IDS.psychic);
     const confusion = dm.getMove(GEN1_MOVE_IDS.confusion);
     // Assert
-    expect(psychic.category).toBe("special");
-    expect(confusion.category).toBe("special");
+    expect(psychic.category).toBe(moveCategories.special);
+    expect(confusion.category).toBe(moveCategories.special);
   });
 
   // --- Category Consistency Across All Moves ---
@@ -166,11 +169,11 @@ describe("Gen 1 Move Category by Type", () => {
     ]);
     // Act / Assert
     for (const move of allMoves) {
-      if (move.category === "status") continue; // Skip status moves
+      if (move.category === moveCategories.status) continue; // Skip status moves
       if (physicalTypes.has(move.type)) {
-        expect(move.category).toBe("physical");
+        expect(move.category).toBe(moveCategories.physical);
       } else if (specialTypes.has(move.type)) {
-        expect(move.category).toBe("special");
+        expect(move.category).toBe(moveCategories.special);
       }
       // Poison-type moves could be either (historically varies in interpretation)
     }
@@ -182,44 +185,28 @@ describe("Gen 1 Type Chart Utilities", () => {
 
   it("given Gen1TypeChart, when getting effectiveness of Fire vs Grass, then returns 2", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.fire,
-      [CORE_TYPE_IDS.grass],
-      GEN1_TYPE_CHART,
-    );
+    const multiplier = getTypeEffectiveness(typeIds.fire, [typeIds.grass], GEN1_TYPE_CHART);
     // Assert
     expect(multiplier).toBe(2);
   });
 
   it("given Gen1TypeChart, when getting effectiveness of Water vs Fire, then returns 2", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.water,
-      [CORE_TYPE_IDS.fire],
-      GEN1_TYPE_CHART,
-    );
+    const multiplier = getTypeEffectiveness(typeIds.water, [typeIds.fire], GEN1_TYPE_CHART);
     // Assert
     expect(multiplier).toBe(2);
   });
 
   it("given Gen1TypeChart, when getting effectiveness of Normal vs Ghost, then returns 0", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.normal,
-      [CORE_TYPE_IDS.ghost],
-      GEN1_TYPE_CHART,
-    );
+    const multiplier = getTypeEffectiveness(typeIds.normal, [typeIds.ghost], GEN1_TYPE_CHART);
     // Assert
     expect(multiplier).toBe(0);
   });
 
   it("given Gen1TypeChart, when getting effectiveness of Ghost vs Psychic, then returns 0 (Gen 1 bug)", () => {
     // Arrange / Act
-    const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.ghost,
-      [CORE_TYPE_IDS.psychic],
-      GEN1_TYPE_CHART,
-    );
+    const multiplier = getTypeEffectiveness(typeIds.ghost, [typeIds.psychic], GEN1_TYPE_CHART);
     // Assert
     expect(multiplier).toBe(0);
   });
@@ -229,8 +216,8 @@ describe("Gen 1 Type Chart Utilities", () => {
     // Source: Gen 1 type chart — Ice is super-effective against both Dragon and Flying, so 2 × 2 = 4.
     // Act
     const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.ice,
-      [CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.flying],
+      typeIds.ice,
+      [typeIds.dragon, typeIds.flying],
       GEN1_TYPE_CHART,
     );
     // Assert
@@ -242,8 +229,8 @@ describe("Gen 1 Type Chart Utilities", () => {
     // Combined: 0.5 * 2 = 1
     // Act
     const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.ground,
-      [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.poison],
+      typeIds.ground,
+      [typeIds.grass, typeIds.poison],
       GEN1_TYPE_CHART,
     );
     // Assert
@@ -254,8 +241,8 @@ describe("Gen 1 Type Chart Utilities", () => {
     // Arrange: Electric vs Ground = 0 (immunity), so the product is 0
     // Act
     const multiplier = getTypeEffectiveness(
-      CORE_TYPE_IDS.electric,
-      [CORE_TYPE_IDS.ground, CORE_TYPE_IDS.rock],
+      typeIds.electric,
+      [typeIds.ground, typeIds.rock],
       GEN1_TYPE_CHART,
     );
     // Assert

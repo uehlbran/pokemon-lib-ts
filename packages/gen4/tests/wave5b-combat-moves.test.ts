@@ -5,6 +5,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -213,7 +214,8 @@ describe("Sucker Punch", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: TACKLE.id, category: "physical" },
+        // Source: Sucker Punch checks damaging move category, not exact move id
+        defenderSelectedMove: { id: TACKLE.id, category: CORE_MOVE_CATEGORIES.physical },
       },
     );
 
@@ -245,7 +247,8 @@ describe("Sucker Punch", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: TOXIC.id, category: "status" },
+        // Source: Sucker Punch fails against status moves
+        defenderSelectedMove: { id: TOXIC.id, category: CORE_MOVE_CATEGORIES.status },
       },
     );
 

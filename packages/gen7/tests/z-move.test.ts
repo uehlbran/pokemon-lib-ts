@@ -5,6 +5,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   createEvs,
@@ -59,7 +60,7 @@ function createCanonicalMove(
 function createSyntheticZPowerMove(overrides?: {
   id?: string;
   type?: PokemonType;
-  category?: "physical" | "special" | "status";
+  category?: (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES];
   power?: number | null;
   effect?: MoveData["effect"];
   zMoveEffect?: string;
@@ -70,7 +71,7 @@ function createSyntheticZPowerMove(overrides?: {
     id: overrides?.id ?? "synthetic-z-power-probe",
     displayName: overrides?.id ?? "Synthetic Z Power Probe",
     type: overrides?.type ?? TYPE_IDS.normal,
-    category: overrides?.category ?? "physical",
+    category: overrides?.category ?? CORE_MOVE_CATEGORIES.physical,
     power: overrides?.power ?? 50,
     effect: overrides?.effect ?? null,
     flags: { ...move.flags },
@@ -661,7 +662,7 @@ describe("Gen7ZMove.modifyMove (damaging)", () => {
     const thunderbolt = createCanonicalMove(MOVE_IDS.thunderbolt);
     const result = zMove.modifyMove(thunderbolt, pokemon);
 
-    expect(result.category).toBe("special");
+    expect(result.category).toBe(CORE_MOVE_CATEGORIES.special);
   });
 
   it("given a physical move converted to Z-Move, when checking category, then preserves physical", () => {
@@ -675,7 +676,7 @@ describe("Gen7ZMove.modifyMove (damaging)", () => {
     const wildCharge = createCanonicalMove(MOVE_IDS.wildCharge);
     const result = zMove.modifyMove(wildCharge, pokemon);
 
-    expect(result.category).toBe("physical");
+    expect(result.category).toBe(CORE_MOVE_CATEGORIES.physical);
   });
 });
 

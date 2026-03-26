@@ -1369,22 +1369,22 @@ describe("Utility Items", () => {
 
 describe("Weather Rocks", () => {
   // Source: Showdown data/items.ts -- Heat Rock extends Sun to 8 turns
-  it("given Heat Rock, when checking weather type, then returns 'sun'", () => {
+  it(`given Heat Rock, when checking weather type, then returns ${TEST_WEATHER_IDS.sun}`, () => {
     expect(getWeatherRockType(TEST_ITEM_IDS.heatRock)).toBe(TEST_WEATHER_IDS.sun);
   });
 
   // Source: Showdown data/items.ts -- Damp Rock extends Rain to 8 turns
-  it("given Damp Rock, when checking weather type, then returns 'rain'", () => {
+  it(`given Damp Rock, when checking weather type, then returns ${TEST_WEATHER_IDS.rain}`, () => {
     expect(getWeatherRockType(TEST_ITEM_IDS.dampRock)).toBe(TEST_WEATHER_IDS.rain);
   });
 
   // Source: Showdown data/items.ts -- Smooth Rock extends Sandstorm to 8 turns
-  it("given Smooth Rock, when checking weather type, then returns 'sandstorm'", () => {
+  it(`given Smooth Rock, when checking weather type, then returns ${TEST_WEATHER_IDS.sandstorm}`, () => {
     expect(getWeatherRockType(TEST_ITEM_IDS.smoothRock)).toBe(TEST_WEATHER_IDS.sandstorm);
   });
 
   // Source: Showdown data/items.ts -- Icy Rock extends Snow to 8 turns (Gen 9: Hail->Snow)
-  it("given Icy Rock, when checking weather type, then returns 'snow'", () => {
+  it(`given Icy Rock, when checking weather type, then returns ${TEST_WEATHER_IDS.snow}`, () => {
     expect(getWeatherRockType(TEST_ITEM_IDS.icyRock)).toBe(TEST_WEATHER_IDS.snow);
   });
 

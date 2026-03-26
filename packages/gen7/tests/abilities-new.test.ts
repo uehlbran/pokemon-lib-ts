@@ -11,6 +11,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
@@ -243,8 +244,8 @@ function createSyntheticMoveFrom(
 ): MoveData {
   return {
     ...canonicalMove,
-    category: opts.category ?? "physical",
-    power: opts.category === "status" ? 0 : 80,
+    category: opts.category ?? CORE_MOVE_CATEGORIES.physical,
+    power: opts.category === CORE_MOVE_CATEGORIES.status ? 0 : 80,
     flags: opts.flags ?? canonicalMove.flags,
   } as unknown as MoveData;
 }
@@ -349,7 +350,7 @@ describe("Disguise (Mimikyu)", () => {
       trigger: TRIGGERS.onDamageTaken,
       nickname: "Mimikyu",
       speciesId: SPECIES.mimikyu,
-      move: createSyntheticMoveFrom(CONTACT_MOVE, { category: "status" }),
+      move: createSyntheticMoveFrom(CONTACT_MOVE, { category: CORE_MOVE_CATEGORIES.status }),
     });
 
     const result = handleGen7NewAbility(ctx);
@@ -815,18 +816,18 @@ describe("Comatose (Komala)", () => {
 
 describe("RKS System (Silvally)", () => {
   describe("getRKSType", () => {
-    it("given Fire Memory held item, when checking RKS type, then returns 'fire'", () => {
+    it("given Fire Memory held item, when checking RKS type, then returns the Fire type", () => {
       // Source: Showdown data/items.ts -- Fire Memory -> Fire type
       // Source: Bulbapedia "RKS System" -- type determined by Memory item
       expect(getRKSType(ITEMS.fireMemory)).toBe(TYPES.fire);
     });
 
-    it("given Water Memory held item, when checking RKS type, then returns 'water'", () => {
+    it("given Water Memory held item, when checking RKS type, then returns the Water type", () => {
       // Source: Showdown data/items.ts -- Water Memory -> Water type
       expect(getRKSType(ITEMS.waterMemory)).toBe(TYPES.water);
     });
 
-    it("given Fairy Memory held item, when checking RKS type, then returns 'fairy'", () => {
+    it("given Fairy Memory held item, when checking RKS type, then returns the Fairy type", () => {
       // Source: Showdown data/items.ts -- Fairy Memory -> Fairy type
       expect(getRKSType(ITEMS.fairyMemory)).toBe(TYPES.fairy);
     });

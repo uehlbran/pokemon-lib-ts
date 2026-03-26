@@ -883,7 +883,7 @@ describe("Gen 1 Damage Calculation", () => {
       defense: 100,
       spAttack: 200,
       spDefense: 100,
-      types: [TYPES.fire], // non-STAB for "normal"-type move
+      types: [TYPES.fire], // non-STAB for a Normal-type move
     });
     const defender = createActivePokemon({
       level: 50,

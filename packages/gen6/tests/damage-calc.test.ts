@@ -6,6 +6,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MECHANIC_MULTIPLIERS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -286,7 +287,7 @@ describe("Gen 6 base damage formula", () => {
   it("given status move, when calculating damage, then returns 0 damage", () => {
     // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
     const ctx = createDamageContext({
-      move: createSyntheticMove({ category: "status", power: null }),
+      move: createSyntheticMove({ category: CORE_MOVE_CATEGORIES.status, power: null }),
     });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.damage).toBe(0);
@@ -655,7 +656,11 @@ describe("Gen 6 weather modifiers", () => {
     const rainCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.water] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.water, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.water,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       state: createBattleState({
         weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance },
       }),
@@ -664,7 +669,11 @@ describe("Gen 6 weather modifiers", () => {
     const noWeatherCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.water] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.water, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.water,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       state: createBattleState({ weather: null }),
       seed: 42,
     });
@@ -682,7 +691,11 @@ describe("Gen 6 weather modifiers", () => {
     const rainCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fire,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       state: createBattleState({
         weather: { type: WEATHERS.rain, turnsLeft: 5, source: MOVES.rainDance },
       }),
@@ -691,7 +704,11 @@ describe("Gen 6 weather modifiers", () => {
     const noWeatherCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fire,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       state: createBattleState({ weather: null }),
       seed: 42,
     });
@@ -715,7 +732,11 @@ describe("Gen 6 Fairy type effectiveness", () => {
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fairy] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.dragon] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fairy,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
 
@@ -728,7 +749,11 @@ describe("Gen 6 Fairy type effectiveness", () => {
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.dragon] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.fairy] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.dragon, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.dragon,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
 
@@ -742,7 +767,11 @@ describe("Gen 6 Fairy type effectiveness", () => {
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fairy] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.fire] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fairy,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
 
@@ -802,13 +831,21 @@ describe("Gen 6 Assault Vest", () => {
         types: [TYPES.normal],
         heldItem: ITEMS.assaultVest,
       }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fire,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
     const noVestCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fire] }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal], heldItem: null }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fire,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
 
@@ -828,13 +865,21 @@ describe("Gen 6 Assault Vest", () => {
         types: [TYPES.normal],
         heldItem: ITEMS.assaultVest,
       }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fighting,
+        category: CORE_MOVE_CATEGORIES.physical,
+      }),
       seed: 42,
     });
     const noVestCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPES.fighting] }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPES.normal], heldItem: null }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fighting,
+        category: CORE_MOVE_CATEGORIES.physical,
+      }),
       seed: 42,
     });
 
@@ -861,7 +906,11 @@ describe("Gen 6 Fur Coat", () => {
         types: [TYPES.normal],
         ability: ABILITIES.furCoat,
       }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fighting,
+        category: CORE_MOVE_CATEGORIES.physical,
+      }),
       seed: 42,
     });
     const noAbilityCtx = createDamageContext({
@@ -871,7 +920,11 @@ describe("Gen 6 Fur Coat", () => {
         types: [TYPES.normal],
         ability: ABILITIES.none,
       }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fighting, category: "physical" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fighting,
+        category: CORE_MOVE_CATEGORIES.physical,
+      }),
       seed: 42,
     });
 
@@ -893,7 +946,11 @@ describe("Gen 6 Fur Coat", () => {
         types: [TYPES.normal],
         ability: ABILITIES.furCoat,
       }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fire,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
     const noAbilityCtx = createDamageContext({
@@ -903,7 +960,11 @@ describe("Gen 6 Fur Coat", () => {
         types: [TYPES.normal],
         ability: ABILITIES.none,
       }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fire, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fire,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
 
@@ -963,13 +1024,21 @@ describe("Gen 6 Pixie Plate", () => {
         heldItem: ITEMS.pixiePlate,
       }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fairy,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
     const noItemCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 100, types: [TYPES.fairy], heldItem: null }),
       defender: createOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] }),
-      move: createSyntheticMove({ power: 80, type: TYPES.fairy, category: "special" }),
+      move: createSyntheticMove({
+        power: 80,
+        type: TYPES.fairy,
+        category: CORE_MOVE_CATEGORIES.special,
+      }),
       seed: 42,
     });
 

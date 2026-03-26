@@ -318,7 +318,9 @@ describe("SolarBeam half power in non-sun weather", () => {
     const solarBeam = createCanonicalMove(MOVES.solarBeam);
     const inRain = dmg({
       move: solarBeam,
-      state: createBattleState({ weather: { type: WEATHER.rain, turnsLeft: 5, source: "" } }),
+      state: createBattleState({
+        weather: { type: WEATHER.rain, turnsLeft: 5, source: ABILITIES.drizzle },
+      }),
       seed: 42,
     });
     const noWeather = dmg({
@@ -336,7 +338,9 @@ describe("SolarBeam half power in non-sun weather", () => {
     const solarBeam = createCanonicalMove(MOVES.solarBeam);
     const inSand = dmg({
       move: solarBeam,
-      state: createBattleState({ weather: { type: WEATHER.sand, turnsLeft: 5, source: "" } }),
+      state: createBattleState({
+        weather: { type: WEATHER.sand, turnsLeft: 5, source: ABILITIES.sandStream },
+      }),
       seed: 42,
     });
     const noWeather = dmg({
@@ -1132,7 +1136,9 @@ describe("Terrain power modifiers", () => {
     const withTerrain = dmg({
       attacker,
       move: electricMove,
-      state: createBattleState({ terrain: { type: TYPES.electric, turnsLeft: 5, source: "" } }),
+      state: createBattleState({
+        terrain: { type: TYPES.electric, turnsLeft: 5, source: ABILITIES.electricSurge },
+      }),
       seed: 42,
     });
     const noTerrain = dmg({
@@ -1154,7 +1160,9 @@ describe("Terrain power modifiers", () => {
       attacker: createOnFieldPokemon({ types: [TYPES.normal], attack: 100 }),
       defender: createOnFieldPokemon({ types: [TYPES.normal], defense: 100 }),
       move: earthquake,
-      state: createBattleState({ terrain: { type: TERRAIN.grassy, turnsLeft: 5, source: "" } }),
+      state: createBattleState({
+        terrain: { type: TERRAIN.grassy, turnsLeft: 5, source: ABILITIES.grassySurge },
+      }),
       seed: 42,
     });
     const noTerrain = dmg({
@@ -1180,7 +1188,7 @@ describe("Heavy-rain and Harsh-sun weather extremes", () => {
     const result = dmg({
       move: fireMove,
       state: createBattleState({
-        weather: { type: WEATHER.heavyRain, turnsLeft: 255, source: "" },
+        weather: { type: WEATHER.heavyRain, turnsLeft: 255, source: ABILITIES.drizzle },
       }),
     });
     expect(result).toBe(0);
@@ -1191,7 +1199,9 @@ describe("Heavy-rain and Harsh-sun weather extremes", () => {
     const waterMove = createCanonicalMove(MOVES.surf);
     const result = dmg({
       move: waterMove,
-      state: createBattleState({ weather: { type: WEATHER.harshSun, turnsLeft: 255, source: "" } }),
+      state: createBattleState({
+        weather: { type: WEATHER.harshSun, turnsLeft: 255, source: ABILITIES.drought },
+      }),
     });
     expect(result).toBe(0);
   });

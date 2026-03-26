@@ -286,16 +286,16 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.types).toEqual([CORE_TYPE_IDS.water]);
 
         // Assert — message event emitted with type-changed text
-        const messageEvent = events.find(
-          (e) => e.type === "message" && e.text.includes("type changed"),
-        );
-        expect(messageEvent).toBeDefined();
+        expect(events).toContainEqual({
+          type: "message",
+          text: "Charizard's type changed!",
+        });
       },
     );
 
     it(
-      "given typeChange target=defender types=['fire','flying']," +
-        " when move is used, then defender.types=['fire','flying']",
+      `given typeChange target=defender types=['${CORE_TYPE_IDS.fire}','${CORE_TYPE_IDS.flying}'],` +
+        ` when move is used, then defender.types=['${CORE_TYPE_IDS.fire}','${CORE_TYPE_IDS.flying}']`,
       () => {
         // Arrange
         const ruleset = new MockRuleset();
@@ -325,10 +325,10 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(defenderActive?.types).toEqual([CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]);
 
         // Assert — message event emitted
-        const messageEvent = events.find(
-          (e) => e.type === "message" && e.text.includes("type changed"),
-        );
-        expect(messageEvent).toBeDefined();
+        expect(events).toContainEqual({
+          type: "message",
+          text: "Blastoise's type changed!",
+        });
       },
     );
   });

@@ -1,4 +1,4 @@
-import { CORE_HAZARD_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_HAZARD_IDS, CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager, GEN3_MOVE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 
@@ -40,9 +40,9 @@ describe("Gen 3 Smoke Tests", () => {
     const earthquake = dm.getMove(GEN3_MOVE_IDS.earthquake);
 
     expect(earthquake).toBeDefined();
-    expect(earthquake.type).toBe("ground");
+    expect(earthquake.type).toBe(CORE_TYPE_IDS.ground);
     expect(earthquake.power).toBe(100);
-    expect(earthquake.category).toBe("physical");
+    expect(earthquake.category).toBe(CORE_MOVE_CATEGORIES.physical);
   });
 
   it("given Gen3Ruleset, when getAvailableTypes called, then returns 17 types (no Fairy)", () => {

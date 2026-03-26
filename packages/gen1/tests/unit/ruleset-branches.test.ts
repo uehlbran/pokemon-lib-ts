@@ -25,6 +25,7 @@ import {
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
@@ -68,6 +69,7 @@ const THUNDERBOLT = gen1DataManager.getMove(GEN1_MOVE_IDS.thunderbolt);
 const THUNDER = gen1DataManager.getMove(GEN1_MOVE_IDS.thunder);
 const HYPER_BEAM = gen1DataManager.getMove(GEN1_MOVE_IDS.hyperBeam);
 const FISSURE = gen1DataManager.getMove(GEN1_MOVE_IDS.fissure);
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const NORMAL_TYPES: PokemonType[] = [CORE_TYPE_IDS.normal];
 const FIRE_TYPES: PokemonType[] = [CORE_TYPE_IDS.fire];
 const _WATER_TYPES: PokemonType[] = [CORE_TYPE_IDS.water];
@@ -2112,7 +2114,7 @@ describe("Gen 1 Quirks", () => {
       } as PokemonInstance,
       volatileStatuses: focusEnergyVolatiles,
     });
-    const move = createScenarioMove({ category: "physical" });
+    const move = createScenarioMove({ category: MOVE_CATEGORIES.physical });
     const state = makeBattleState();
 
     // Act: Roll many times to compare rates
@@ -2200,7 +2202,7 @@ describe("Gen 1 Quirks", () => {
         speciesId: GEN1_SPECIES_IDS.pikachu,
       } as PokemonInstance,
     });
-    const statusMove = createScenarioMove({ category: "status" });
+    const statusMove = createScenarioMove({ category: MOVE_CATEGORIES.status });
     const state = makeBattleState();
     // Act / Assert
     for (let seed = 0; seed < 100; seed++) {
@@ -2239,9 +2241,9 @@ describe("Gen 1 Quirks", () => {
     const types = ruleset.getAvailableTypes();
     // Assert
     expect(types).toHaveLength(15);
-    expect(types).not.toContain("dark");
-    expect(types).not.toContain("steel");
-    expect(types).not.toContain("fairy");
+    expect(types).not.toContain(CORE_TYPE_IDS.dark);
+    expect(types).not.toContain(CORE_TYPE_IDS.steel);
+    expect(types).not.toContain(CORE_TYPE_IDS.fairy);
   });
 
   // --- Badge Stat Boosts ---
@@ -2525,7 +2527,7 @@ describe("Gen1Ruleset rollCritical", () => {
         speciesId: GEN1_SPECIES_IDS.pikachu, // Pikachu
       } as PokemonInstance,
     });
-    const move = createScenarioMove({ category: "physical" });
+    const move = createScenarioMove({ category: MOVE_CATEGORIES.physical });
     const state = makeBattleState();
 
     // Act: Run many trials, crit rate should be roughly baseSpeed/512

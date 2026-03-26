@@ -18,6 +18,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -186,7 +187,7 @@ function createSyntheticMoveFrom(opts: {
     id: "synthetic-move",
     displayName: "Synthetic Move",
     type: opts.type,
-    category: opts.category ?? "physical",
+    category: opts.category ?? CORE_MOVE_CATEGORIES.physical,
     power: opts.power ?? 80,
     flags: { ...DEFAULT_MOVE.flags },
     effect: null,
@@ -546,7 +547,11 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
         spDefense: 100,
         types: [TYPES.normal],
       });
-      const move = createSyntheticMoveFrom({ type: TYPES.water, power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({
+        type: TYPES.water,
+        power: 80,
+        category: CORE_MOVE_CATEGORIES.special,
+      });
       // Use neutral type chart — no type effectiveness
       const typeChart = createNeutralTypeChart();
       const state = createSyntheticDamageState({
@@ -597,7 +602,11 @@ describe("Bug #97 — STAB applied before weather modifier (correct order)", () 
         spDefense: 100,
         types: [TYPES.normal],
       });
-      const move = createSyntheticMoveFrom({ type: TYPES.water, power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({
+        type: TYPES.water,
+        power: 80,
+        category: CORE_MOVE_CATEGORIES.special,
+      });
       const typeChart = createNeutralTypeChart();
       const state = createSyntheticDamageState({
         type: WEATHERS.rain,
@@ -753,7 +762,11 @@ describe("Bug #98 — Type effectiveness applied sequentially with floor per typ
         spAttack: 100,
         types: [TYPES.fire, TYPES.rock], // water 2x vs fire, 0.5x vs rock → net 1x
       });
-      const move = createSyntheticMoveFrom({ type: TYPES.water, power: 80, category: "special" });
+      const move = createSyntheticMoveFrom({
+        type: TYPES.water,
+        power: 80,
+        category: CORE_MOVE_CATEGORIES.special,
+      });
       const typeChart = createTypeChart({
         [TYPES.water]: { [TYPES.fire]: 2, [TYPES.rock]: 0.5 },
       });

@@ -5,6 +5,7 @@ import {
   CORE_FIXED_POINT,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -36,6 +37,7 @@ const STATUSES = CORE_STATUS_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const TYPES = CORE_TYPE_IDS;
 type PokemonGender = (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 // ---------------------------------------------------------------------------
 // Scenario helpers
 // ---------------------------------------------------------------------------
@@ -48,7 +50,7 @@ const DEFAULT_NATURE = dataManager.getNature(GEN5_NATURE_IDS.hardy).id;
  * Scenario helper: start from a loaded Gen 5 species record and only override
  * the synthetic combat fields needed for the specific test case.
  */
-function makeScenarioActive(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -74,7 +76,7 @@ function makeScenarioActive(overrides: {
   const speed = overrides.speed ?? 100;
   return {
     pokemon: {
-      uid: "test",
+      uid: "gen5-damage-calc",
       speciesId: overrides.speciesId ?? BASE_SPECIES.id,
       nickname: null,
       level: overrides.level ?? 50,
@@ -138,10 +140,10 @@ function makeScenarioActive(overrides: {
  * Scenario helper: clone a Gen 5 move record and override only the explicitly
  * synthetic fields needed for the test.
  */
-function makeScenarioMove(overrides: {
+function createSyntheticMove(overrides: {
   id?: string;
   type?: PokemonType;
-  category?: "physical" | "special" | "status";
+  category?: (typeof MOVE_CATEGORIES)[keyof typeof MOVE_CATEGORIES];
   power?: number | null;
   flags?: Partial<MoveData["flags"]>;
   effect?: MoveData["effect"];
@@ -188,7 +190,7 @@ function createSyntheticBattleState(overrides?: {
   } as unknown as BattleState;
 }
 
-function makeDamageContext(overrides: {
+function createDamageContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -197,9 +199,9 @@ function makeDamageContext(overrides: {
   seed?: number;
 }): DamageContext {
   return {
-    attacker: overrides.attacker ?? makeScenarioActive({}),
-    defender: overrides.defender ?? makeScenarioActive({}),
-    move: overrides.move ?? makeScenarioMove({}),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? createSyntheticMove({}),
     state: overrides.state ?? createSyntheticBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
@@ -244,8 +246,8 @@ describe("pokeRound function", () => {
 describe("Gen 5 damage calc -- status moves", () => {
   it("given status move, when calculating damage, then returns 0", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- status moves skip damage calc
-    const ctx = makeDamageContext({
-      move: makeScenarioMove({ id: MOVES.toxic, category: "status", power: null }),
+    const ctx = createDamageContext({
+      move: createSyntheticMove({ id: MOVES.toxic, category: MOVE_CATEGORIES.status, power: null }),
     });
     const result = calculateGen5Damage(
       ctx,
@@ -258,8 +260,8 @@ describe("Gen 5 damage calc -- status moves", () => {
 
   it("given move with power=0, when calculating damage, then returns 0", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- power 0 moves skip damage calc
-    const ctx = makeDamageContext({
-      move: makeScenarioMove({ power: 0 }),
+    const ctx = createDamageContext({
+      move: createSyntheticMove({ power: 0 }),
     });
     const result = calculateGen5Damage(
       ctx,
@@ -287,10 +289,14 @@ describe("Gen 5 damage calc -- base formula", () => {
     // With r=100: damage = floor(24 * 100 / 100) = 24
     // With r=85:  damage = floor(24 * 85 / 100)  = floor(20.4) = 20
     // Result depends on the seed's random roll.
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -306,10 +312,14 @@ describe("Gen 5 damage calc -- base formula", () => {
     //   = floor(floor(1008000 / 150) / 50) + 2
     //   = floor(6720 / 50) + 2 = floor(134.4) + 2 = 134 + 2 = 136
     // Random range: floor(136 * 85/100) to floor(136 * 100/100) = 115 to 136
-    const attacker = makeScenarioActive({ level: 100, attack: 200 });
-    const defender = makeScenarioActive({ defense: 150 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 120, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ level: 100, attack: 200 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 150 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 120,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -336,10 +346,14 @@ describe("Gen 5 damage calc -- STAB", () => {
     // With min random (85%): floor(24*85/100) = floor(20.4) = 20, then STAB: pokeRound(20, 6144)
     //   = floor((20 * 6144 + 2047) / 4096) = floor((122880 + 2047)/4096) = floor(124927/4096)
     //   = floor(30.5) = 30
-    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fire] });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.normal] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, types: [TYPES.fire] });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.normal] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -358,14 +372,18 @@ describe("Gen 5 damage calc -- STAB", () => {
     // With min random (85%): floor(24*85/100) = 20, then STAB: pokeRound(20, 8192)
     //   = floor((20 * 8192 + 2047) / 4096) = floor((163840 + 2047)/4096) = floor(165887/4096)
     //   = floor(40.5) = 40
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       types: [TYPES.fire],
       ability: ABILITIES.adaptability,
     });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.normal] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.normal] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -385,10 +403,14 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
     // Source: Showdown type effectiveness chain
     // Fire (attacker) using Fire move vs Grass (defender) = 2x
     // baseDamage = 24, random range 20-24, STAB 30-36, then 2x = 60-72
-    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fire] });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.grass] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, types: [TYPES.fire] });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.grass] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -404,10 +426,14 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
     // Source: Showdown type effectiveness chain
     // Fire (attacker) using Fire move vs Water (defender) = 0.5x
     // baseDamage = 24, random range 20-24, STAB 30-36, then 0.5x = 15-18
-    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fire] });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.water] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, types: [TYPES.fire] });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.water] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -420,10 +446,14 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
 
   it("given type-immune matchup (0x), when calculating damage, then returns 0", () => {
     // Source: Showdown type effectiveness -- Normal attacks Ghost = 0x (immune)
-    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.normal] });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.ghost] });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, types: [TYPES.normal] });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.ghost] });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -446,10 +476,14 @@ describe("Gen 5 damage calc -- critical hit", () => {
     // Base damage: L50, Atk=100, Def=100, Power=50 -> 24
     // With crit: 24 * 2 = 48, random 85-100% -> floor(48 * r / 100)
     // Range: floor(48 * 85/100)=40 to floor(48 * 100/100)=48
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move, isCrit: true });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -467,10 +501,14 @@ describe("Gen 5 damage calc -- critical hit", () => {
     //   = floor((294912+2048)/4096) = floor(296960/4096) = floor(72.5) = 72
     // With min random: 40, STAB = pokeRound(40, 6144) = floor((40*6144+2048)/4096)
     //   = floor((245760+2048)/4096) = floor(247808/4096) = floor(60.5) = 60
-    const attacker = makeScenarioActive({ attack: 100, types: [TYPES.fire] });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move, isCrit: true });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, types: [TYPES.fire] });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -491,10 +529,14 @@ describe("Gen 5 damage calc -- burn penalty", () => {
     // Base: 24, random 20-24, burn -> pokeRound(val, 2048)
     // With max random: pokeRound(24, 2048) = floor((24*2048+2048)/4096) = floor(51200/4096) = 12
     // With min random: pokeRound(20, 2048) = floor((20*2048+2048)/4096) = floor(43008/4096) = 10
-    const attacker = makeScenarioActive({ attack: 100, status: STATUSES.burn });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, status: STATUSES.burn });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -514,15 +556,15 @@ describe("Gen 5 damage calc -- burn penalty", () => {
     // Burn: pokeRound(val, 2048)
     // Max: pokeRound(32, 2048) = floor((32*2048+2048)/4096) = floor(67584/4096) = 16
     // Min: pokeRound(27, 2048) = floor((27*2048+2048)/4096) = floor(57344/4096) = 14
-    const attacker = makeScenarioActive({ attack: 100, status: STATUSES.burn });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, status: STATUSES.burn });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
       id: MOVES.facade,
       type: TYPES.normal,
       power: 70,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
     });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -534,10 +576,14 @@ describe("Gen 5 damage calc -- burn penalty", () => {
   it("given burned special attacker, when calculating damage, then burn penalty does NOT apply", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- burn only affects physical moves
     // Burn only halves damage for physical category moves
-    const attacker = makeScenarioActive({ spAttack: 100, status: STATUSES.burn });
-    const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "special" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100, status: STATUSES.burn });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -578,10 +624,14 @@ describe("Gen 5 damage calc -- Gen 5 damage floor", () => {
     // In practice, the Gen 5 floor is needed for edge cases with modifier chains.
     // Let's just test with a minimal case: burn with very low power.
     // The floor guarantees damage >= 1 when not immune.
-    const attacker = makeScenarioActive({ level: 1, attack: 1, status: STATUSES.burn });
-    const defender = makeScenarioActive({ defense: 200 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 1, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ level: 1, attack: 1, status: STATUSES.burn });
+    const defender = createSyntheticOnFieldPokemon({ defense: 200 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 1,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -607,13 +657,17 @@ describe("Gen 5 damage calc -- weather", () => {
     // spread, weather, crit, random, STAB, type, burn
     // With rain + water: pokeRound(24, 6144) = 36
     // random: floor(36 * r/100). Range: 30-36
-    const attacker = makeScenarioActive({ spAttack: 100 });
-    const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({ type: TYPES.water, power: 50, category: "special" });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.water,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
     const state = createSyntheticBattleState({
       weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, state });
+    const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -625,13 +679,17 @@ describe("Gen 5 damage calc -- weather", () => {
   it("given Fire move in Sun, when applying weather boost, then applies pokeRound(damage, 6144) = 1.5x", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts weather modifier section
     // Same formula as rain+water but for sun+fire
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
     const state = createSyntheticBattleState({
       weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, state });
+    const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -644,13 +702,17 @@ describe("Gen 5 damage calc -- weather", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts weather modifier section
     // Sun nerfs Water: pokeRound(24, 2048) = floor((24*2048+2048)/4096) = floor(51200/4096) = 12
     // Random: floor(12*r/100). Range: floor(12*85/100)=10 to 12
-    const attacker = makeScenarioActive({ spAttack: 100 });
-    const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({ type: TYPES.water, power: 50, category: "special" });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.water,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
     const state = createSyntheticBattleState({
       weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, state });
+    const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -672,10 +734,14 @@ describe("Gen 5 damage calc -- Life Orb", () => {
     //   = floor(129824/4096) = floor(31.7) = 31
     // With min random: pokeRound(20, 5324) = floor((20*5324+2048)/4096) = floor((106480+2048)/4096)
     //   = floor(108528/4096) = floor(26.5) = 26
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.lifeOrb });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.lifeOrb });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -696,29 +762,29 @@ describe("Gen 5 damage calc -- spread modifier", () => {
     // Base: 24. Spread: pokeRound(24, 3072) = floor((24*3072+2048)/4096) = floor((73728+2048)/4096)
     //   = floor(75776/4096) = floor(18.5) = 18
     // Random: floor(18*r/100). Range: floor(18*85/100)=15 to 18
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
       type: TYPES.normal,
       power: 50,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
       flags: { contact: false },
     });
     // isSpread is determined by the context. We need to signal spread somehow.
     // Let's check how the damage calc detects spread moves...
     // For now, spread moves are a doubles format detail. We'll test via the format.
     const state = createSyntheticBattleState({ format: "doubles" });
-    const _ctx = makeDamageContext({ attacker, defender, move, state });
+    const _ctx = createDamageContext({ attacker, defender, move, state });
     // The spread modifier is only applied when move.target is "all-adjacent-foes" or similar
     // and format is doubles. Let's make a spread move.
-    const spreadMove = makeScenarioMove({
+    const spreadMove = createSyntheticMove({
       type: TYPES.normal,
       power: 50,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
     });
     // Override target to make it a spread move
     const spreadMoveWithTarget = { ...spreadMove, target: "all-adjacent-foes" } as MoveData;
-    const ctx2 = makeDamageContext({ attacker, defender, move: spreadMoveWithTarget, state });
+    const ctx2 = createDamageContext({ attacker, defender, move: spreadMoveWithTarget, state });
     const result = calculateGen5Damage(
       ctx2,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -741,10 +807,14 @@ describe("Gen 5 damage calc -- Gem boost", () => {
     // baseDamage with power 75: floor(floor(22*75*100/100)/50) + 2
     //   = floor(1650/50) + 2 = 33 + 2 = 35
     // Random: floor(35*r/100). Range: floor(35*85/100)=29 to 35
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.normalGem });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.normalGem });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -766,10 +836,14 @@ describe("Gen 5 damage calc -- special moves", () => {
     // baseDamage = floor(floor(22*50*150/100)/50) + 2 = floor(floor(165000/100)/50) + 2
     //   = floor(1650/50) + 2 = 33 + 2 = 35
     // Random: floor(35*r/100). Range: 29-35
-    const attacker = makeScenarioActive({ attack: 50, spAttack: 150 });
-    const defender = makeScenarioActive({ defense: 200, spDefense: 100 });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "special" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 50, spAttack: 150 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 200, spDefense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -787,14 +861,18 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
   it("given defender with Levitate and Ground move, when calculating damage, then returns 0 (immune)", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- ability immunities
     // Levitate grants Ground immunity
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.levitate,
       types: [TYPES.psychic],
     });
-    const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.ground,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -806,10 +884,17 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
 
   it("given defender with Water Absorb and Water move, when calculating damage, then returns 0 (immune)", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- Water Absorb immunity
-    const attacker = makeScenarioActive({ spAttack: 100 });
-    const defender = makeScenarioActive({ spDefense: 100, ability: ABILITIES.waterAbsorb });
-    const move = makeScenarioMove({ type: TYPES.water, power: 80, category: "special" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
+      spDefense: 100,
+      ability: ABILITIES.waterAbsorb,
+    });
+    const move = createSyntheticMove({
+      type: TYPES.water,
+      power: 80,
+      category: MOVE_CATEGORIES.special,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -821,14 +906,18 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
 
   it("given attacker with Mold Breaker and defender with Levitate, when using Ground move, then Levitate is bypassed", () => {
     // Source: Bulbapedia -- Mold Breaker ignores target's defensive abilities
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.moldBreaker });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.moldBreaker });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.levitate,
       types: [TYPES.psychic],
     });
-    const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.ground,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -840,14 +929,18 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
 
   it("given attacker with Teravolt and defender with Levitate, when using Ground move, then Levitate is bypassed", () => {
     // Source: Showdown data/abilities.ts -- Teravolt is Mold Breaker equivalent
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.teravolt });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.teravolt });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.levitate,
       types: [TYPES.psychic],
     });
-    const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.ground,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -857,14 +950,18 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
 
   it("given attacker with Turboblaze and defender with Levitate, when using Ground move, then Levitate is bypassed", () => {
     // Source: Showdown data/abilities.ts -- Turboblaze is Mold Breaker equivalent
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.turboblaze });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.turboblaze });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.levitate,
       types: [TYPES.psychic],
     });
-    const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.ground,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -884,10 +981,14 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     // With Huge Power: Atk*2=200 -> baseDamage = floor(floor(22*50*200/100)/50)+2
     //   = floor(floor(220000/100)/50)+2 = floor(2200/50)+2 = 44+2 = 46
     // Random range: floor(46*85/100) to 46 = 39 to 46
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.hugePower });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.hugePower });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -897,10 +998,14 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
 
   it("given Pure Power attacker using physical move, when calculating damage, then Attack is doubled", () => {
     // Source: Showdown data/abilities.ts -- Pure Power doubles Attack (same as Huge Power)
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.purePower });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.purePower });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -913,10 +1018,14 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     // Atk=100 -> 150 after Choice Band
     // baseDamage = floor(floor(22*50*150/100)/50)+2 = floor(floor(165000/100)/50)+2
     //   = floor(1650/50)+2 = 33+2 = 35
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.choiceBand });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.choiceBand });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -926,10 +1035,14 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
 
   it("given Choice Specs attacker using special move, when calculating damage, then SpAttack is 1.5x", () => {
     // Source: Showdown data/items.ts -- Choice Specs 1.5x SpAttack
-    const attacker = makeScenarioActive({ spAttack: 100, heldItem: ITEMS.choiceSpecs });
-    const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "special" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100, heldItem: ITEMS.choiceSpecs });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -939,10 +1052,14 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
 
   it("given Hustle attacker using physical move, when calculating damage, then Attack is 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Hustle 1.5x Attack
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.hustle });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.hustle });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -952,14 +1069,18 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
 
   it("given Guts attacker with status using physical move, when calculating damage, then Attack is 1.5x and burn penalty is suppressed", () => {
     // Source: Showdown data/abilities.ts -- Guts 1.5x Attack when statused, prevents burn penalty
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.guts,
       status: STATUSES.burn,
     });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -973,15 +1094,19 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     // Atk=100 -> 50 after Defeatist
     // baseDamage = floor(floor(22*50*50/100)/50)+2 = floor(floor(55000/100)/50)+2
     //   = floor(550/50)+2 = 11+2 = 13
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.defeatist,
       hp: 200,
       currentHp: 100,
     });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1000,10 +1125,14 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
     // Base with Def=100: baseDamage=24
     // With Eviolite Def=150: baseDamage = floor(floor(22*50*100/150)/50)+2
     //   = floor(floor(110000/150)/50)+2 = floor(733/50)+2 = 14+2 = 16
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, heldItem: ITEMS.eviolite });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, heldItem: ITEMS.eviolite });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1013,13 +1142,17 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
 
   it("given Sandstorm and Rock-type defender, when using special move, then SpDef is 1.5x", () => {
     // Source: Bulbapedia -- Sandstorm boosts Rock-type SpDef by 50%
-    const attacker = makeScenarioActive({ spAttack: 100 });
-    const defender = makeScenarioActive({ spDefense: 100, types: [TYPES.rock] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "special" });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100, types: [TYPES.rock] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
     const state = createSyntheticBattleState({
       weather: { type: CORE_WEATHER_IDS.sand, turnsLeft: 5, source: ABILITIES.sandStream },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, state });
+    const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1039,18 +1172,18 @@ describe("Gen 5 damage calc -- base power mods", () => {
   it("given SolarBeam in rain, when calculating damage, then power is halved", () => {
     // Source: Showdown -- SolarBeam power halved in non-sun weather
     // Power 120 -> 60 in rain
-    const attacker = makeScenarioActive({ spAttack: 100 });
-    const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove({
       id: MOVES.solarBeam,
       type: TYPES.grass,
       power: 120,
-      category: "special",
+      category: MOVE_CATEGORIES.special,
     });
     const state = createSyntheticBattleState({
       weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, state });
+    const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1063,10 +1196,14 @@ describe("Gen 5 damage calc -- base power mods", () => {
     // Source: Showdown data/abilities.ts -- Technician: 1.5x for moves <= 60 BP
     // Power 50 * 1.5 = 75
     // baseDamage = floor(floor(22*75*100/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.technician });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.technician });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1076,10 +1213,14 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given type-boost item (Charcoal) matching move type, when calculating damage, then power is boosted", () => {
     // Source: Showdown data/items.ts -- Charcoal boosts Fire moves by ~1.2x (4915/4096)
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.charcoal });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.charcoal });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1090,10 +1231,14 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Plate item (Flame Plate) matching move type, when calculating damage, then power is boosted", () => {
     // Source: Showdown data/items.ts -- Flame Plate boosts Fire moves by ~1.2x (4915/4096)
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.flamePlate });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.flamePlate });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1103,15 +1248,19 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Pinch ability (Blaze) at low HP with Fire move, when calculating damage, then power is 1.5x", () => {
     // Source: Showdown -- Blaze boosts Fire moves by 1.5x when HP <= floor(maxHP/3)
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.blaze,
       hp: 300,
       currentHp: 99,
     });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1123,15 +1272,15 @@ describe("Gen 5 damage calc -- base power mods", () => {
   it("given Acrobatics with no held item, when calculating damage, then power doubles", () => {
     // Source: Showdown data/moves.ts -- Acrobatics doubles power with no item
     // Power 55 * 2 = 110
-    const attacker = makeScenarioActive({ attack: 100, heldItem: null });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: null });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
       id: MOVES.acrobatics,
       type: TYPES.flying,
       power: 55,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
     });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1142,15 +1291,15 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Iron Fist with punching move, when calculating damage, then power is 1.2x", () => {
     // Source: Showdown data/abilities.ts -- Iron Fist 1.2x for punch moves
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.ironFist });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.ironFist });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
       type: TYPES.fire,
       power: 75,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
       flags: { punch: true },
     });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1161,15 +1310,15 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Reckless with recoil move, when calculating damage, then power is 1.2x", () => {
     // Source: Showdown data/abilities.ts -- Reckless 1.2x for recoil moves
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.reckless });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.reckless });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
       type: TYPES.fire,
       power: 80,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
       effect: { type: "recoil", percent: 33 },
     });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1184,13 +1333,17 @@ describe("Gen 5 damage calc -- base power mods", () => {
     // boostedAttack = floor(100 * 150 / 100) = 150
     // baseDamage = floor(floor(22 * 50 * 150 / 100) / 50) + 2 = 35
     // finalDamage = floor(35 * 94 / 100) = 32
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       volatiles: new Map([[VOLATILES.flashFire, { turnsLeft: -1 }]]),
     });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1201,10 +1354,14 @@ describe("Gen 5 damage calc -- base power mods", () => {
   it("given Normalize ability, when using any move, then move type becomes Normal", () => {
     // Source: Showdown data/abilities.ts -- Normalize changes all moves to Normal type
     // Fire move becomes Normal, so Fire-type defender takes neutral damage
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.normalize });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.fire] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.normalize });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.fire] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1216,14 +1373,18 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Rivalry ability with same gender, when calculating damage, then power is 1.25x", () => {
     // Source: Showdown data/abilities.ts -- Rivalry same gender = 1.25x
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.rivalry,
       gender: CORE_GENDERS.male,
     });
-    const defender = makeScenarioActive({ defense: 100, gender: CORE_GENDERS.male });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, gender: CORE_GENDERS.male });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1234,14 +1395,18 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Rivalry ability with opposite gender, when calculating damage, then power is 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Rivalry opposite gender = 0.75x
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.rivalry,
       gender: CORE_GENDERS.male,
     });
-    const defender = makeScenarioActive({ defense: 100, gender: CORE_GENDERS.female });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, gender: CORE_GENDERS.female });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1252,10 +1417,14 @@ describe("Gen 5 damage calc -- base power mods", () => {
 
   it("given Dry Skin defender and Fire move, when calculating damage, then base power is boosted 1.25x", () => {
     // Source: Showdown data/abilities.ts -- Dry Skin increases Fire damage by 1.25x
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.drySkin });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, ability: ABILITIES.drySkin });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1272,10 +1441,14 @@ describe("Gen 5 damage calc -- base power mods", () => {
 describe("Gen 5 damage calc -- defender abilities", () => {
   it("given Thick Fat defender and Fire move, when calculating damage, then attack is halved", () => {
     // Source: Showdown data/abilities.ts -- Thick Fat halves Fire/Ice damage
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.thickFat });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, ability: ABILITIES.thickFat });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1286,10 +1459,14 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Heatproof defender and Fire move, when calculating damage, then power is halved", () => {
     // Source: Showdown data/abilities.ts -- Heatproof halves Fire damage
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({ defense: 100, ability: ABILITIES.heatproof });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, ability: ABILITIES.heatproof });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1300,14 +1477,18 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Wonder Guard defender and non-SE move, when calculating damage, then returns 0", () => {
     // Source: Showdown data/abilities.ts -- Wonder Guard blocks non-SE moves
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.wonderGuard,
       types: [TYPES.normal],
     });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1319,10 +1500,14 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Tinted Lens attacker and NVE matchup, when calculating damage, then damage is doubled", () => {
     // Source: Showdown data/abilities.ts -- Tinted Lens doubles NVE damage
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.tintedLens });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.water] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.tintedLens });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.water] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1335,14 +1520,18 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Filter defender and SE move, when calculating damage, then damage is reduced by 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Filter/Solid Rock: 0.75x for SE damage
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.filter,
       types: [TYPES.grass],
     });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1355,14 +1544,18 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Solid Rock defender and SE move, when calculating damage, then damage is reduced by 0.75x", () => {
     // Source: Showdown data/abilities.ts -- Solid Rock = Filter
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.solidRock,
       types: [TYPES.grass],
     });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1374,10 +1567,14 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Scrappy attacker and Ghost defender using Normal move, when calculating damage, then Normal hits Ghost", () => {
     // Source: Showdown data/abilities.ts -- Scrappy: Normal/Fighting hit Ghost
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.scrappy });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.ghost] });
-    const move = makeScenarioMove({ type: TYPES.normal, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.scrappy });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.ghost] });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1387,14 +1584,18 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 
   it("given Marvel Scale defender with status, when using physical move, then defense is 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Marvel Scale 1.5x Def when statused
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.marvelScale,
       status: STATUSES.paralysis,
     });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1411,10 +1612,14 @@ describe("Gen 5 damage calc -- defender abilities", () => {
 describe("Gen 5 damage calc -- final modifier items", () => {
   it("given Expert Belt with SE move, when calculating damage, then applies ~1.2x via pokeRound(damage, 4915)", () => {
     // Source: Showdown data/items.ts -- Expert Belt 1.2x for SE moves
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.expertBelt });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.grass] });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.expertBelt });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.grass] });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1427,10 +1632,14 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Muscle Band with physical move, when calculating damage, then applies ~1.1x via pokeRound(damage, 4505)", () => {
     // Source: Showdown data/items.ts -- Muscle Band 1.1x for physical moves
-    const attacker = makeScenarioActive({ attack: 100, heldItem: ITEMS.muscleBand });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, heldItem: ITEMS.muscleBand });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1440,10 +1649,14 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Wise Glasses with special move, when calculating damage, then applies ~1.1x via pokeRound(damage, 4505)", () => {
     // Source: Showdown data/items.ts -- Wise Glasses 1.1x for special moves
-    const attacker = makeScenarioActive({ spAttack: 100, heldItem: ITEMS.wiseGlasses });
-    const defender = makeScenarioActive({ spDefense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "special" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const attacker = createSyntheticOnFieldPokemon({ spAttack: 100, heldItem: ITEMS.wiseGlasses });
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.special,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1453,14 +1666,18 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Klutz attacker with Life Orb, when calculating damage, then Life Orb boost is suppressed", () => {
     // Source: Showdown data/abilities.ts -- Klutz suppresses held item effects
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.klutz,
       heldItem: ITEMS.lifeOrb,
     });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1472,10 +1689,14 @@ describe("Gen 5 damage calc -- final modifier items", () => {
   it("given Sniper ability with critical hit, when calculating damage, then crit multiplier is 3x", () => {
     // Source: Showdown data/abilities.ts -- Sniper: 3x crit instead of 2x
     // Base 24, crit 3x = 72, random range: floor(72*85/100)=61 to 72
-    const attacker = makeScenarioActive({ attack: 100, ability: ABILITIES.sniper });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.fire, power: 50, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move, isCrit: true });
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100, ability: ABILITIES.sniper });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.fire,
+      power: 50,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1487,14 +1708,18 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Magnet Rise volatile, when using Ground move, then returns 0 (immune)", () => {
     // Source: Showdown -- Magnet Rise grants Ground immunity
-    const attacker = makeScenarioActive({ attack: 100 });
-    const defender = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({ attack: 100 });
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       types: [TYPES.psychic],
       volatiles: new Map([[VOLATILES.magnetRise, { turnsLeft: 5 }]]),
     });
-    const move = makeScenarioMove({ type: TYPES.ground, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const move = createSyntheticMove({
+      type: TYPES.ground,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1506,14 +1731,18 @@ describe("Gen 5 damage calc -- final modifier items", () => {
 
   it("given Adamant Orb on Dialga (483) using Dragon move, when calculating damage, then power is boosted", () => {
     // Source: Showdown data/items.ts -- Adamant Orb boosts Dragon/Steel for Dialga
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       heldItem: ITEMS.adamantOrb,
       speciesId: SPECIES.dialga,
     });
-    const defender = makeScenarioActive({ defense: 100 });
-    const move = makeScenarioMove({ type: TYPES.dragon, power: 80, category: "physical" });
-    const ctx = makeDamageContext({ attacker, defender, move });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = createSyntheticMove({
+      type: TYPES.dragon,
+      power: 80,
+      category: MOVE_CATEGORIES.physical,
+    });
+    const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1543,21 +1772,21 @@ describe("Sheer Force power boost in damage calc", () => {
     //   +2 => 53
     //   random(seed=42) = 94 => floor(53 * 94 / 100) = floor(49.82) = 49
     //   No STAB, neutral type, no burn => final damage = 49
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       spAttack: 100,
       ability: ABILITIES.sheerForce,
       types: [TYPES.normal],
     });
-    const defender = makeScenarioActive({ spDefense: 100, types: [TYPES.normal] });
-    const move = makeScenarioMove({
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] });
+    const move = createSyntheticMove({
       id: MOVES.flamethrower,
       type: TYPES.fire,
-      category: "special",
+      category: MOVE_CATEGORIES.special,
       power: 90,
       flags: { contact: false },
       effect: { type: "status-chance", status: STATUSES.burn, chance: 10 },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1578,20 +1807,20 @@ describe("Sheer Force power boost in damage calc", () => {
     //   +2 => 46
     //   random(seed=42) = 94 => floor(46 * 94 / 100) = floor(43.24) = 43
     //   No STAB, neutral type, no burn => final damage = 43
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.sheerForce,
       types: [TYPES.normal],
     });
-    const defender = makeScenarioActive({ defense: 100, types: [TYPES.normal] });
-    const move = makeScenarioMove({
+    const defender = createSyntheticOnFieldPokemon({ defense: 100, types: [TYPES.normal] });
+    const move = createSyntheticMove({
       id: MOVES.earthquake,
       type: TYPES.ground,
-      category: "physical",
+      category: MOVE_CATEGORIES.physical,
       power: 100,
       effect: null,
     });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1610,21 +1839,21 @@ describe("Sheer Force power boost in damage calc", () => {
     //   +2 => 41
     //   random(seed=42) = 94 => floor(41 * 94 / 100) = floor(38.54) = 38
     //   No STAB, neutral type => final damage = 38
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       spAttack: 100,
       ability: ABILITIES.blaze,
       types: [TYPES.normal],
     });
-    const defender = makeScenarioActive({ spDefense: 100, types: [TYPES.normal] });
-    const move = makeScenarioMove({
+    const defender = createSyntheticOnFieldPokemon({ spDefense: 100, types: [TYPES.normal] });
+    const move = createSyntheticMove({
       id: MOVES.flamethrower,
       type: TYPES.fire,
-      category: "special",
+      category: MOVE_CATEGORIES.special,
       power: 90,
       flags: { contact: false },
       effect: { type: "status-chance", status: STATUSES.burn, chance: 10 },
     });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1650,19 +1879,23 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 100 / 100) = 1100
     //   baseDamage = floor(1100 / 50) + 2 = 22 + 2 = 24
     //   random(seed=42) = 94 → floor(24 * 94 / 100) = floor(22.56) = 22
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.simple,
       types: [TYPES.water],
     });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.unaware,
       types: [TYPES.water],
     });
-    const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      category: MOVE_CATEGORIES.physical,
+      power: 50,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1679,19 +1912,23 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.simple,
       types: [TYPES.water],
     });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.none,
       types: [TYPES.water],
     });
-    const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      category: MOVE_CATEGORIES.physical,
+      power: 50,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1710,19 +1947,23 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 200 / 100) = 2200
     //   baseDamage = floor(2200 / 50) + 2 = 44 + 2 = 46
     //   random(seed=42) = 94 → floor(46 * 94 / 100) = floor(43.24) = 43
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.teravolt,
       types: [TYPES.water],
     });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.unaware,
       types: [TYPES.water],
     });
-    const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      category: MOVE_CATEGORIES.physical,
+      power: 50,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,
@@ -1741,19 +1982,23 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     //   step1 = floor(22 * 50 * 300 / 100) = 3300
     //   baseDamage = floor(3300 / 50) + 2 = 66 + 2 = 68
     //   random(seed=42) = 94 → floor(68 * 94 / 100) = floor(63.92) = 63
-    const attacker = makeScenarioActive({
+    const attacker = createSyntheticOnFieldPokemon({
       attack: 100,
       ability: ABILITIES.simple,
       types: [TYPES.water],
     });
     attacker.statStages.attack = 2;
-    const defender = makeScenarioActive({
+    const defender = createSyntheticOnFieldPokemon({
       defense: 100,
       ability: ABILITIES.turboblaze,
       types: [TYPES.water],
     });
-    const move = makeScenarioMove({ type: TYPES.normal, category: "physical", power: 50 });
-    const ctx = makeDamageContext({ attacker, defender, move, seed: 42 });
+    const move = createSyntheticMove({
+      type: TYPES.normal,
+      category: MOVE_CATEGORIES.physical,
+      power: 50,
+    });
+    const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(
       ctx,
       GEN5_TYPE_CHART as Record<string, Record<string, number>>,

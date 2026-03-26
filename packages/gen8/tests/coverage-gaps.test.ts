@@ -333,7 +333,7 @@ function createAbilityContext(overrides: {
     opponent: overrides.opponent ?? createOnFieldPokemon({}),
     state: createDamageBattleState(
       overrides.weather
-        ? { weather: { type: overrides.weather, turnsLeft: 5, source: "" } }
+        ? { weather: { type: overrides.weather, turnsLeft: 5, source: CORE_ABILITY_IDS.none } }
         : undefined,
     ),
     rng: new SeededRandom(42),
@@ -1797,7 +1797,11 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
         move: createCanonicalMove(MOVES.rockSlide),
       });
       const result = handleGen8DamageCalcAbility(ctx);
-      expect(result.activated).toBe(false);
+      expect(result).toEqual({
+        activated: false,
+        effects: [],
+        messages: [],
+      });
     });
 
     it(`given Sand Force in ${CORE_WEATHER_IDS.sand} with non-Rock/Ground/Steel move, when handling, then returns no activation`, () => {
@@ -1866,8 +1870,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       expect(getMultiscaleMultiplier(CORE_ABILITY_IDS.blaze, 200, 200)).toBe(1);
     });
 
-    // Chosen to exceed the defender HP inputs so the non-Sturdy branch returns the original damage unchanged.
-    const originalDamage = 300;
+    const originalDamage = 300; // Source: chosen to exceed the defender HP inputs for the non-Sturdy branch.
 
     it(`given non-Sturdy ability, when getting damage cap, then ${GEN7_MOVE_IDS.return}s original damage`, () => {
       expect(getSturdyDamageCap(CORE_ABILITY_IDS.blaze, originalDamage, 200, 200)).toBe(
