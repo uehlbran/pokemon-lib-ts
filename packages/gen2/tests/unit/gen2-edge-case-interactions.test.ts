@@ -27,17 +27,24 @@ import type {
   ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveSlot, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  MoveSlot,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_SLOTS,
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_HAZARD_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  SeededRandom,
   createMoveSlot,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -109,9 +116,11 @@ function createOnFieldPokemon(
 ): ActivePokemon {
   const maxHp = 200;
   const species = dataManager.getSpecies(overrides.speciesId ?? SPECIES.ditto);
-  const moves =
-    overrides.moves ??
-    [createResolvedMoveSlot(MOVES.tackle), createResolvedMoveSlot(MOVES.growl), createResolvedMoveSlot(MOVES.sleepTalk)];
+  const moves = overrides.moves ?? [
+    createResolvedMoveSlot(MOVES.tackle),
+    createResolvedMoveSlot(MOVES.growl),
+    createResolvedMoveSlot(MOVES.sleepTalk),
+  ];
   return {
     pokemon: {
       uid: "test-uid",
@@ -251,7 +260,7 @@ function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Mo
 describe("Gen 2 King's Rock: flinch applies on-hit trigger", () => {
   // Source: pret/pokecrystal engine/battle/items.asm — King's Rock triggers on-hit.
   // It gives a flinch chance (30/256 ≈ 11.72%) on the hit it's called for.
-  // For multi-hit moves, the engine calls applyGen2HeldItem("on-hit") once per hit.
+  // For multi-hit moves, the engine calls applyGen2HeldItem(CORE_ITEM_TRIGGER_IDS.onHit) once per hit.
   // This test verifies the per-hit item check works correctly.
 
   it("given a pokemon holds King's Rock and rng.chance returns true, when on-hit check runs, then flinch is inflicted", () => {
@@ -274,11 +283,13 @@ describe("Gen 2 King's Rock: flinch applies on-hit trigger", () => {
       move: createSyntheticMove(MOVES.tackle),
       damage: 50,
     } as unknown as ItemContext;
-    const result = applyGen2HeldItem("on-hit", context);
+    const result = applyGen2HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
     expect(result.activated).toBe(true);
     // Flinch effect should be in the effects list
     const hasFlinch = result.effects.some((e) => e.type === VOLATILES.flinch);
-    expect(hasFlinch || result.messages.some((m) => m.toLowerCase().includes(VOLATILES.flinch))).toBe(true);
+    expect(
+      hasFlinch || result.messages.some((m) => m.toLowerCase().includes(VOLATILES.flinch)),
+    ).toBe(true);
   });
 
   it("given a pokemon holds King's Rock and rng.chance returns false, when on-hit check runs, then no flinch", () => {
@@ -301,7 +312,7 @@ describe("Gen 2 King's Rock: flinch applies on-hit trigger", () => {
       move: createSyntheticMove(MOVES.tackle),
       damage: 50,
     } as unknown as ItemContext;
-    const result = applyGen2HeldItem("on-hit", context);
+    const result = applyGen2HeldItem(CORE_ITEM_TRIGGER_IDS.onHit, context);
     expect(result.activated).toBe(false);
   });
 });

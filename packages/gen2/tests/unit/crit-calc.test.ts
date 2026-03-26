@@ -1,12 +1,10 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
   CORE_VOLATILE_IDS,
   CRIT_RATE_PROBABILITIES_GEN2,
-  SeededRandom,
   createMoveSlot,
-  createPokemonInstance,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -19,11 +17,12 @@ import {
   getGen2CritStage,
   rollGen2Critical,
 } from "../../src";
+import { createSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 const DATA = createGen2DataManager();
 const ITEMS = GEN2_ITEM_IDS;
 const MOVES = GEN2_MOVE_IDS;
-const NATURES = GEN2_NATURE_IDS;
+const _NATURES = GEN2_NATURE_IDS;
 const SPECIES = GEN2_SPECIES_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const DEFAULT_SPECIES = DATA.getSpecies(SPECIES.bulbasaur);
@@ -53,34 +52,18 @@ function expectRateWithinTolerance(rate: number, stage: number, tolerance: numbe
   expect(rate).toBeLessThan(expectedRate + tolerance);
 }
 
-/**
- * Helper to create a minimal ActivePokemon for crit calc testing using Gen 2 data-backed defaults.
- */
-function createMockActivePokemon(
+function createCritTestPokemon(
   overrides: { volatileStatuses?: Map<string, unknown>; heldItem?: string | null } = {},
 ): ActivePokemon {
-  const pokemon = createPokemonInstance(DEFAULT_SPECIES, DEFAULT_LEVEL, new SeededRandom(7), {
-    nature: NATURES.hardy,
-    abilitySlot: "normal1",
-    gender: "male",
-    isShiny: false,
-    moves: [],
+  return createSyntheticOnFieldPokemon({
+    speciesId: DEFAULT_SPECIES.id,
+    level: DEFAULT_LEVEL,
+    moveSlots: [createMoveSlot(MOVES.tackle, DEFAULT_MOVE.pp, NO_PP_UPS)],
     heldItem: overrides.heldItem ?? null,
-    friendship: 70,
-    metLocation: "test",
-    originalTrainer: "Test",
-    originalTrainerId: 12345,
-    pokeball: ITEMS.pokeBall,
-  });
-
-  pokemon.moves = [createMoveSlot(MOVES.tackle, DEFAULT_MOVE.pp, NO_PP_UPS)];
-  pokemon.currentHp = DEFAULT_CALCULATED_STATS.hp;
-  pokemon.calculatedStats = DEFAULT_CALCULATED_STATS;
-  pokemon.ability = CORE_ABILITY_IDS.none;
-
-  return {
-    pokemon,
-    teamSlot: 0,
+    volatileStatuses: overrides.volatileStatuses,
+    calculatedStats: DEFAULT_CALCULATED_STATS,
+    currentHp: DEFAULT_CALCULATED_STATS.hp,
+    turnsOnField: 1,
     statStages: {
       hp: NEUTRAL_STAGE,
       attack: NEUTRAL_STAGE,
@@ -91,23 +74,7 @@ function createMockActivePokemon(
       accuracy: NEUTRAL_STAGE,
       evasion: NEUTRAL_STAGE,
     },
-    volatileStatuses: (overrides.volatileStatuses ?? new Map()) as Map<never, never>,
-    types: DEFAULT_SPECIES.types,
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    turnsOnField: 1,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+  });
 }
 
 /**
@@ -116,9 +83,7 @@ function createMockActivePokemon(
  */
 function createMockMove(overrides: Partial<MoveData> = {}): MoveData {
   const requestedId = overrides.id ?? MOVES.tackle;
-  const baseMove = AVAILABLE_MOVE_IDS.has(requestedId)
-    ? DATA.getMove(requestedId)
-    : DEFAULT_MOVE;
+  const baseMove = AVAILABLE_MOVE_IDS.has(requestedId) ? DATA.getMove(requestedId) : DEFAULT_MOVE;
 
   return {
     ...baseMove,
@@ -159,7 +124,7 @@ describe("Gen2CritCalc", () => {
   describe("Given a Pokemon with no crit modifiers", () => {
     it("should have base crit stage 0 (17/256 rate)", () => {
       // Arrange
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove();
 
       // Act
@@ -171,7 +136,7 @@ describe("Gen2CritCalc", () => {
 
     it("should correctly roll crit at stage 0", () => {
       // Arrange
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove();
       const trials = 10000;
 
@@ -188,7 +153,7 @@ describe("Gen2CritCalc", () => {
   describe("Given a high crit move", () => {
     it("given Slash with no other crit modifiers, when computing crit stage, then stage is 2", () => {
       // Arrange
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove({ id: MOVES.slash });
 
       // Act
@@ -201,7 +166,7 @@ describe("Gen2CritCalc", () => {
     it("given Karate Chop with no other crit modifiers, when computing crit stage, then stage is 2", () => {
       // Arrange
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — CriticalHitMoves gets +2
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove({ id: MOVES.karateChop });
 
       // Act
@@ -214,7 +179,7 @@ describe("Gen2CritCalc", () => {
     it("given Cross Chop with no other crit modifiers, when computing crit stage, then stage is 2", () => {
       // Arrange
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — CriticalHitMoves gets +2
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove({ id: MOVES.crossChop });
 
       // Act
@@ -227,7 +192,7 @@ describe("Gen2CritCalc", () => {
     it("given Aeroblast with no other crit modifiers, when computing crit stage, then stage is 2", () => {
       // Arrange
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — CriticalHitMoves gets +2
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove({ id: MOVES.aeroblast });
 
       // Act
@@ -243,7 +208,7 @@ describe("Gen2CritCalc", () => {
       // Arrange
       // Source: pret/pokecrystal effect_commands.asm:1182-1184 — BattleCommand_RazorWind
       // Razor Wind sets a +2 crit stage bonus via its effect command
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const razorWindMove = createMockMove({ id: MOVES.razorWind });
 
       // Act
@@ -256,7 +221,7 @@ describe("Gen2CritCalc", () => {
     it("given a synthetic move with critRatio 1, when computing crit stage, then stage is 1", () => {
       // Arrange
       // Source: pret/pokecrystal — standard high-crit moves have critRatio equivalent to 1
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       // Synthetic scenario: Gen 2 data does not expose a canonical move with critRatio 1.
       const highCritMove = createMockMove({
         id: "custom-high-crit",
@@ -275,7 +240,7 @@ describe("Gen2CritCalc", () => {
     it("should increase crit stage by 1 (FIXED, not bugged)", () => {
       // Arrange
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
+      const attacker = createCritTestPokemon({ volatileStatuses: volatiles });
       const move = createMockMove();
 
       // Act
@@ -291,7 +256,7 @@ describe("Gen2CritCalc", () => {
       // Arrange
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — high crit = +2; L1170 — Focus Energy = +1
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
+      const attacker = createCritTestPokemon({ volatileStatuses: volatiles });
       const move = createMockMove({ id: MOVES.slash });
 
       // Act
@@ -308,7 +273,7 @@ describe("Gen2CritCalc", () => {
       // Source: pret/pokecrystal effect_commands.asm — high crit = +2; Focus Energy = +1; Scope Lens = +1
       // 2 + 1 + 1 = 4, which is the max clamped stage (128/256 = 50%)
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({
+      const attacker = createCritTestPokemon({
         volatileStatuses: volatiles,
         heldItem: ITEMS.scopeLens,
       });
@@ -326,7 +291,7 @@ describe("Gen2CritCalc", () => {
     it("should cap at 128/256 rate", () => {
       // Arrange — even if we somehow get past stage 4, cap at the max stage index
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({
+      const attacker = createCritTestPokemon({
         volatileStatuses: volatiles,
         heldItem: ITEMS.scopeLens,
       });
@@ -347,7 +312,7 @@ describe("Gen2CritCalc", () => {
   describe("Given edge cases", () => {
     it("should return a boolean from rollGen2Critical", () => {
       // Arrange
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove();
       const rng = new SeededRandom(42);
 
@@ -360,7 +325,7 @@ describe("Gen2CritCalc", () => {
 
     it("given the same RNG seed, when rolling crit twice for the same attacker and move, then both results match", () => {
       // Arrange
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const move = createMockMove();
 
       // Act
@@ -378,7 +343,7 @@ describe("Gen2CritCalc", () => {
     it("given base crit stage (0), when rolling 10000 times, then crit rate is approximately 6.64%", () => {
       // Arrange
       const rng = new SeededRandom(1001);
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const normalMove = createMockMove();
       const trials = 10000;
 
@@ -396,7 +361,7 @@ describe("Gen2CritCalc", () => {
       // Arrange — high crit move adds +2, landing at stage 2 = 64/256 = 25%
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2
       const rng = new SeededRandom(2002);
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const highCritMove = createMockMove({ id: MOVES.slash });
       const trials = 10000;
 
@@ -415,7 +380,7 @@ describe("Gen2CritCalc", () => {
       // Source: pret/pokecrystal effect_commands.asm — high crit = +2; Focus Energy = +1
       const rng = new SeededRandom(3003);
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
+      const attacker = createCritTestPokemon({ volatileStatuses: volatiles });
       const highCritMove = createMockMove({ id: MOVES.slash });
       const trials = 10000;
 
@@ -434,7 +399,7 @@ describe("Gen2CritCalc", () => {
       // Source: pret/pokecrystal effect_commands.asm — high crit = +2; Focus Energy = +1; Scope Lens = +1
       const rng = new SeededRandom(4004);
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({
+      const attacker = createCritTestPokemon({
         volatileStatuses: volatiles,
         heldItem: ITEMS.scopeLens,
       });
@@ -454,7 +419,7 @@ describe("Gen2CritCalc", () => {
     it("given Focus Energy active with no high-crit move, when querying crit stage, then stage is 1 (not 5)", () => {
       // Arrange
       const volatiles = createFocusEnergyVolatiles();
-      const attacker = createMockActivePokemon({ volatileStatuses: volatiles });
+      const attacker = createCritTestPokemon({ volatileStatuses: volatiles });
       const normalMove = createMockMove();
 
       // Act
@@ -467,7 +432,7 @@ describe("Gen2CritCalc", () => {
     it("given a high crit move with no Focus Energy, when querying crit stage, then stage is 2", () => {
       // Arrange
       // Source: pret/pokecrystal effect_commands.asm L1183-1184 — CriticalHitMoves gets +2 ("inc c; inc c")
-      const attacker = createMockActivePokemon();
+      const attacker = createCritTestPokemon();
       const highCritMove = createMockMove({ id: MOVES.crossChop });
 
       // Act

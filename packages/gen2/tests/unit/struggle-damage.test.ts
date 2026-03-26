@@ -1,8 +1,9 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
-import { SeededRandom } from "@pokemon-lib-ts/core";
+import type { PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_TYPE_IDS, createMoveSlot, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 2 Struggle Damage Tests
@@ -12,8 +13,9 @@ import { Gen2Ruleset } from "../../src/Gen2Ruleset";
  */
 
 const ruleset = new Gen2Ruleset();
+const TYPE_IDS = CORE_TYPE_IDS;
 
-function makeActivePokemon(
+function createSyntheticOnFieldPokemon(
   overrides: Partial<{
     level: number;
     attack: number;
@@ -23,57 +25,25 @@ function makeActivePokemon(
 ): ActivePokemon {
   const attack = overrides.attack ?? 80;
   const defense = overrides.defense ?? 60;
-  return {
-    pokemon: {
-      speciesId: 1,
-      level: overrides.level ?? 50,
-      currentHp: 100,
-      status: null,
-      heldItem: null,
-      nickname: null,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      moves: [{ moveId: "struggle", pp: 1, maxPp: 1 }],
-      calculatedStats: {
-        hp: 100,
-        attack,
-        defense,
-        spAttack: 80,
-        spDefense: 60,
-        speed: 100,
-      },
-    } as unknown as PokemonInstance,
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
+  const pokemon = createSharedSyntheticOnFieldPokemon({
+    level: overrides.level ?? 50,
+    currentHp: 100,
+    calculatedStats: {
+      hp: 100,
+      attack,
+      defense,
+      spAttack: 80,
+      spDefense: 60,
+      speed: 100,
     },
-    volatileStatuses: new Map(),
-    types: overrides.types ?? (["normal"] as PokemonType[]),
-    ability: "",
-    lastMoveUsed: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+    moveSlots: [createMoveSlot(CORE_MOVE_IDS.struggle, 1)],
+    types: overrides.types ?? [TYPE_IDS.normal],
+  });
+  pokemon.ability = "";
+  return pokemon;
 }
 
-function makeBattleState(): BattleState {
+function createBattleState(): BattleState {
   const rng = new SeededRandom(42);
   return {
     sides: [
@@ -119,9 +89,13 @@ describe("Gen2Ruleset.calculateStruggleDamage", () => {
   describe("Given a Ghost-type defender", () => {
     it("should return positive damage (Struggle is typeless — Ghost immunity does NOT apply in Gen 2)", () => {
       // Arrange
-      const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
-      const defender = makeActivePokemon({ types: ["ghost"], defense: 60 });
-      const state = makeBattleState();
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.normal],
+        level: 50,
+        attack: 80,
+      });
+      const defender = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.ghost], defense: 60 });
+      const state = createBattleState();
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
@@ -136,9 +110,13 @@ describe("Gen2Ruleset.calculateStruggleDamage", () => {
   describe("Given a non-Ghost-type defender", () => {
     it("should return positive damage against a Normal-type defender", () => {
       // Arrange
-      const attacker = makeActivePokemon({ types: ["normal"], level: 50, attack: 80 });
-      const defender = makeActivePokemon({ types: ["normal"], defense: 60 });
-      const state = makeBattleState();
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.normal],
+        level: 50,
+        attack: 80,
+      });
+      const defender = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.normal], defense: 60 });
+      const state = createBattleState();
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
@@ -151,9 +129,13 @@ describe("Gen2Ruleset.calculateStruggleDamage", () => {
 
     it("should return at least 1 damage even against high-defense defenders", () => {
       // Arrange — extremely high defense, very low attack
-      const attacker = makeActivePokemon({ types: ["normal"], level: 1, attack: 5 });
-      const defender = makeActivePokemon({ types: ["rock"], defense: 999 });
-      const state = makeBattleState();
+      const attacker = createSyntheticOnFieldPokemon({
+        types: [TYPE_IDS.normal],
+        level: 1,
+        attack: 5,
+      });
+      const defender = createSyntheticOnFieldPokemon({ types: [TYPE_IDS.rock], defense: 999 });
+      const state = createBattleState();
 
       // Act
       const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
@@ -164,10 +146,14 @@ describe("Gen2Ruleset.calculateStruggleDamage", () => {
 
     it("should scale with attacker level and stats", () => {
       // Arrange — two attackers with different levels
-      const weakAttacker = makeActivePokemon({ level: 5, attack: 20, defense: 30 });
-      const strongAttacker = makeActivePokemon({ level: 100, attack: 200, defense: 30 });
-      const defender = makeActivePokemon({ defense: 100 });
-      const state = makeBattleState();
+      const weakAttacker = createSyntheticOnFieldPokemon({ level: 5, attack: 20, defense: 30 });
+      const strongAttacker = createSyntheticOnFieldPokemon({
+        level: 100,
+        attack: 200,
+        defense: 30,
+      });
+      const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+      const state = createBattleState();
 
       // Act
       const weakDamage = ruleset.calculateStruggleDamage(weakAttacker, defender, state);

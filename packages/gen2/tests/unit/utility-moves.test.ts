@@ -5,7 +5,6 @@ import type {
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
-  PokemonInstance,
   PokemonType,
   PrimaryStatus,
   SeededRandom,
@@ -13,36 +12,42 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
-  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createMoveSlot,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen2DataManager } from "../../src";
+import {
+  createGen2DataManager,
+  GEN2_ITEM_IDS,
+  GEN2_MOVE_IDS,
+  GEN2_NATURE_IDS,
+  GEN2_SPECIES_IDS,
+  GEN2_TYPES,
+} from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { applyMoveEffect, type MutableResult } from "../../src/Gen2MoveEffects";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
-import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_NATURE_IDS, GEN2_SPECIES_IDS, GEN2_TYPES } from "../../src";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 const NORMAL = CORE_TYPE_IDS.normal;
-const FIRE = CORE_TYPE_IDS.fire;
-const WATER = CORE_TYPE_IDS.water;
-const ELECTRIC = CORE_TYPE_IDS.electric;
-const GRASS = CORE_TYPE_IDS.grass;
-const ICE = CORE_TYPE_IDS.ice;
+const _FIRE = CORE_TYPE_IDS.fire;
+const _WATER = CORE_TYPE_IDS.water;
+const _ELECTRIC = CORE_TYPE_IDS.electric;
+const _GRASS = CORE_TYPE_IDS.grass;
+const _ICE = CORE_TYPE_IDS.ice;
 const FIGHTING = CORE_TYPE_IDS.fighting;
-const POISON = CORE_TYPE_IDS.poison;
-const GROUND = CORE_TYPE_IDS.ground;
-const FLYING = CORE_TYPE_IDS.flying;
-const PSYCHIC = CORE_TYPE_IDS.psychic;
-const BUG = CORE_TYPE_IDS.bug;
-const ROCK = CORE_TYPE_IDS.rock;
-const GHOST = CORE_TYPE_IDS.ghost;
-const DRAGON = CORE_TYPE_IDS.dragon;
-const DARK = CORE_TYPE_IDS.dark;
-const STEEL = CORE_TYPE_IDS.steel;
+const _POISON = CORE_TYPE_IDS.poison;
+const _GROUND = CORE_TYPE_IDS.ground;
+const _FLYING = CORE_TYPE_IDS.flying;
+const _PSYCHIC = CORE_TYPE_IDS.psychic;
+const _BUG = CORE_TYPE_IDS.bug;
+const _ROCK = CORE_TYPE_IDS.rock;
+const _GHOST = CORE_TYPE_IDS.ghost;
+const _DRAGON = CORE_TYPE_IDS.dragon;
+const _DARK = CORE_TYPE_IDS.dark;
+const _STEEL = CORE_TYPE_IDS.steel;
 
 const TACKLE = GEN2_MOVE_IDS.tackle;
 const GROWL = GEN2_MOVE_IDS.growl;
@@ -52,14 +57,14 @@ const BATON_PASS = GEN2_MOVE_IDS.batonPass;
 const RETURN = GEN2_MOVE_IDS.return;
 const FRUSTRATION = GEN2_MOVE_IDS.frustration;
 const FIRE_BLAST = GEN2_MOVE_IDS.fireBlast;
-const WATER_GUN = GEN2_MOVE_IDS.waterGun;
-const HYPER_BEAM = GEN2_MOVE_IDS.hyperBeam;
-const EXPLOSION = GEN2_MOVE_IDS.explosion;
-const SELF_DESTRUCT = GEN2_MOVE_IDS.selfDestruct;
-const MYSTIC_WATER = GEN2_ITEM_IDS.mysticWater;
-const LIGHT_BALL = GEN2_ITEM_IDS.lightBall;
-const METAL_POWDER = GEN2_ITEM_IDS.metalPowder;
-const THICK_CLUB = GEN2_ITEM_IDS.thickClub;
+const _WATER_GUN = GEN2_MOVE_IDS.waterGun;
+const _HYPER_BEAM = GEN2_MOVE_IDS.hyperBeam;
+const _EXPLOSION = GEN2_MOVE_IDS.explosion;
+const _SELF_DESTRUCT = GEN2_MOVE_IDS.selfDestruct;
+const _MYSTIC_WATER = GEN2_ITEM_IDS.mysticWater;
+const _LIGHT_BALL = GEN2_ITEM_IDS.lightBall;
+const _METAL_POWDER = GEN2_ITEM_IDS.metalPowder;
+const _THICK_CLUB = GEN2_ITEM_IDS.thickClub;
 const POKE_BALL = GEN2_ITEM_IDS.pokeBall;
 const ENCORE_COUNTDOWN = CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown;
 const DISABLE_COUNTDOWN = CORE_END_OF_TURN_EFFECT_IDS.disableCountdown;
@@ -94,8 +99,7 @@ function createMockRng(intReturnValue: number): SeededRandom {
   } as SeededRandom;
 }
 
-/** Minimal ActivePokemon mock. */
-function createActivePokemon(opts: {
+function createSyntheticOnFieldPokemon(opts: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -121,35 +125,24 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "test",
+  const moveSlots = opts.moves?.map((move) => ({
+    moveId: move.moveId,
+    currentPP: move.currentPP,
+    maxPP: move.maxPP,
+    ppUps: 0,
+  })) ?? [createMoveSlot(TACKLE, DATA_MANAGER.getMove(TACKLE).pp)];
+  const pokemon = createSharedSyntheticOnFieldPokemon({
     speciesId: opts.speciesId ?? GENERIC_SPECIES.id,
-    nickname: opts.nickname ?? null,
     level: opts.level ?? 50,
-    experience: 0,
-    nature: DEFAULT_NATURE,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.currentHp ?? 200,
-    moves: opts.moves ?? [],
-    ability: CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: opts.friendship ?? 70,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: POKE_BALL,
+    moveSlots,
+    nickname: opts.nickname ?? null,
+    lastMoveUsed: opts.lastMoveUsed ?? null,
     calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
+    types: opts.types ?? [NORMAL],
     statStages: {
       hp: 0,
       attack: opts.statStages?.attack ?? 0,
@@ -160,27 +153,11 @@ function createActivePokemon(opts: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: new Map(),
-    types: opts.types ?? [NORMAL],
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: opts.lastMoveUsed ?? null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    lastDamageCategory: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-    forcedMove: null,
-  } as ActivePokemon;
+  });
+  pokemon.pokemon.nature = DEFAULT_NATURE;
+  pokemon.pokemon.pokeball = POKE_BALL;
+  pokemon.forcedMove = null;
+  return pokemon;
 }
 
 function createMockState(attacker: ActivePokemon, defender: ActivePokemon): BattleState {
@@ -248,8 +225,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given defender has used a move with PP remaining, when Encore is used, then volatile is set with moveIndex", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect
       // Encore forces the target to repeat its last used move for 2-6 turns
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: TACKLE,
         moves: [
           { moveId: TACKLE, currentPP: 35, maxPP: 35 },
@@ -281,8 +258,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given defender has not used a move yet, when Encore is used, then it fails", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect
       // Encore fails if the target has not yet used a move
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: null,
         moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
@@ -309,8 +286,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given defender's last move has 0 PP, when Encore is used, then it fails", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect
       // Encore fails if the encored move has 0 PP
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: TACKLE,
         moves: [{ moveId: TACKLE, currentPP: 0, maxPP: 35 }],
       });
@@ -336,8 +313,8 @@ describe("Gen 2 Utility Moves", () => {
 
     it("given defender's last move is not in its current moveset, when Encore is used, then it fails", () => {
       // Source: pret/pokecrystal — Encore fails if the target no longer knows the move
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: FIRE_BLAST,
         moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
@@ -370,8 +347,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given defender has used a move with PP remaining, when Disable is used, then volatile is set with moveId", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm DisableEffect
       // Disable prevents the target from using its last-used move for 1-7 turns
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: TACKLE,
         moves: [
           { moveId: TACKLE, currentPP: 35, maxPP: 35 },
@@ -403,8 +380,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given defender has not used a move yet, when Disable is used, then it fails", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm DisableEffect
       // Disable fails if the target has not yet used a move
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: null,
         moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
@@ -430,8 +407,8 @@ describe("Gen 2 Utility Moves", () => {
 
     it("given defender already has Disable volatile, when Disable is used, then it fails", () => {
       // Source: pret/pokecrystal — Disable fails if the target already has a disabled move
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: TACKLE,
         moves: [{ moveId: TACKLE, currentPP: 35, maxPP: 35 }],
       });
@@ -458,8 +435,8 @@ describe("Gen 2 Utility Moves", () => {
 
     it("given defender's last move has 0 PP, when Disable is used, then it fails", () => {
       // Source: pret/pokecrystal — Disable fails if the move has 0 PP
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({
         lastMoveUsed: TACKLE,
         moves: [{ moveId: TACKLE, currentPP: 0, maxPP: 35 }],
       });
@@ -492,8 +469,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given switch-out effect with baton-pass id, when used, then switchOut and batonPass are true", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
       // Baton Pass sets switchOut and batonPass flags for the engine
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({});
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({});
       const state = createMockState(attacker, defender);
       const rng = createMockRng(0);
 
@@ -517,8 +494,8 @@ describe("Gen 2 Utility Moves", () => {
     it("given custom-effect baton-pass, when used, then switchOut and batonPass are true", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
       // The custom handler also sets both flags
-      const attacker = createActivePokemon({});
-      const defender = createActivePokemon({});
+      const attacker = createSyntheticOnFieldPokemon({});
+      const defender = createSyntheticOnFieldPokemon({});
       const state = createMockState(attacker, defender);
       const rng = createMockRng(0);
 
@@ -543,12 +520,12 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
       // Baton Pass preserves confusion, focus-energy, leech-seed for the incoming Pokemon
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: BATON_PASS });
+      const pokemon = createSyntheticOnFieldPokemon({ lastMoveUsed: BATON_PASS });
       pokemon.volatileStatuses.set(CONFUSION, { turnsLeft: 3 });
       pokemon.volatileStatuses.set(FOCUS_ENERGY, { turnsLeft: -1 });
       pokemon.volatileStatuses.set(LEECH_SEED, { turnsLeft: -1 });
 
-      const state = createMockState(pokemon, createActivePokemon({}));
+      const state = createMockState(pokemon, createSyntheticOnFieldPokemon({}));
 
       // Act
       ruleset.onSwitchOut(pokemon, state);
@@ -563,12 +540,12 @@ describe("Gen 2 Utility Moves", () => {
       // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
       // Normal switch clears all non-persistent volatiles
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
+      const pokemon = createSyntheticOnFieldPokemon({ lastMoveUsed: TACKLE });
       pokemon.volatileStatuses.set(CONFUSION, { turnsLeft: 3 });
       pokemon.volatileStatuses.set(FOCUS_ENERGY, { turnsLeft: -1 });
       pokemon.volatileStatuses.set(LEECH_SEED, { turnsLeft: -1 });
 
-      const state = createMockState(pokemon, createActivePokemon({}));
+      const state = createMockState(pokemon, createSyntheticOnFieldPokemon({}));
 
       // Act
       ruleset.onSwitchOut(pokemon, state);
@@ -582,11 +559,11 @@ describe("Gen 2 Utility Moves", () => {
     it("given Baton Pass switch, when onSwitchOut is called, then encore/disable are still cleared", () => {
       // Source: pret/pokecrystal — encore and disable are tied to the user, not baton-passable
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: BATON_PASS });
+      const pokemon = createSyntheticOnFieldPokemon({ lastMoveUsed: BATON_PASS });
       pokemon.volatileStatuses.set(ENCORE_VOLATILE, { turnsLeft: 3, data: { moveIndex: 0 } });
       pokemon.volatileStatuses.set(DISABLE_VOLATILE, { turnsLeft: 5, data: { moveId: TACKLE } });
 
-      const state = createMockState(pokemon, createActivePokemon({}));
+      const state = createMockState(pokemon, createSyntheticOnFieldPokemon({}));
 
       // Act
       ruleset.onSwitchOut(pokemon, state);
@@ -606,13 +583,13 @@ describe("Gen 2 Utility Moves", () => {
       // Source: Bulbapedia — "Return does damage, and its base power is friendship / 2.5 (rounded down)"
       // floor(255 / 2.5) = floor(102) = 102
       // Use Fighting-type attacker to avoid Normal STAB
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         friendship: 255,
         types: [FIGHTING],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         defense: 100,
       });
@@ -650,13 +627,13 @@ describe("Gen 2 Utility Moves", () => {
       // Source: Bulbapedia — "Return: base power = friendship / 2.5, minimum 1"
       // floor(0 / 2.5) = 0, minimum 1
       // Use Fighting-type attacker to avoid Normal STAB
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         friendship: 0,
         types: [FIGHTING],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         defense: 100,
       });
@@ -692,13 +669,13 @@ describe("Gen 2 Utility Moves", () => {
       // Source: Bulbapedia — "Return: base power = friendship / 2.5 (rounded down)"
       // floor(100 / 2.5) = floor(40) = 40
       // Use Fighting-type attacker to avoid Normal STAB
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         friendship: 100,
         types: [FIGHTING],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         defense: 100,
       });
@@ -735,13 +712,13 @@ describe("Gen 2 Utility Moves", () => {
       // Source: Bulbapedia — "Frustration: base power = (255 - friendship) / 2.5, rounded down"
       // floor(255 / 2.5) = 102
       // Use Fighting-type attacker to avoid Normal STAB
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         friendship: 0,
         types: [FIGHTING],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         defense: 100,
       });
@@ -776,13 +753,13 @@ describe("Gen 2 Utility Moves", () => {
       // Source: Bulbapedia — "Frustration: base power = (255 - friendship) / 2.5, minimum 1"
       // (255-255) / 2.5 = 0, minimum 1
       // Use Fighting-type attacker to avoid Normal STAB
-      const attacker = createActivePokemon({
+      const attacker = createSyntheticOnFieldPokemon({
         level: 50,
         attack: 100,
         friendship: 255,
         types: [FIGHTING],
       });
-      const defender = createActivePokemon({
+      const defender = createSyntheticOnFieldPokemon({
         level: 50,
         defense: 100,
       });
@@ -835,7 +812,10 @@ describe("Gen 2 Utility Moves", () => {
       const encoreIdx = eotOrder.indexOf(ENCORE_COUNTDOWN);
       const disableIdx = eotOrder.indexOf(DISABLE_COUNTDOWN);
       expect(eotOrder).toEqual(expect.arrayContaining([DISABLE_COUNTDOWN, ENCORE_COUNTDOWN]));
-      expect(eotOrder.slice(disableIdx, encoreIdx + 1)).toEqual([DISABLE_COUNTDOWN, ENCORE_COUNTDOWN]);
+      expect(eotOrder.slice(disableIdx, encoreIdx + 1)).toEqual([
+        DISABLE_COUNTDOWN,
+        ENCORE_COUNTDOWN,
+      ]);
     });
 
     it("given Gen2Ruleset, when getEndOfTurnOrder is called, then encore-countdown is the last effect", () => {
@@ -854,9 +834,9 @@ describe("Gen 2 Utility Moves", () => {
     it("given Pokemon has encore volatile, when switching out normally, then encore is cleared", () => {
       // Source: pret/pokecrystal — volatile statuses are cleared on switch-out
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
+      const pokemon = createSyntheticOnFieldPokemon({ lastMoveUsed: TACKLE });
       pokemon.volatileStatuses.set(ENCORE_VOLATILE, { turnsLeft: 3, data: { moveIndex: 0 } });
-      const state = createMockState(pokemon, createActivePokemon({}));
+      const state = createMockState(pokemon, createSyntheticOnFieldPokemon({}));
 
       ruleset.onSwitchOut(pokemon, state);
 
@@ -866,9 +846,9 @@ describe("Gen 2 Utility Moves", () => {
     it("given Pokemon has disable volatile, when switching out normally, then disable is cleared", () => {
       // Source: pret/pokecrystal — volatile statuses are cleared on switch-out
       const ruleset = new Gen2Ruleset();
-      const pokemon = createActivePokemon({ lastMoveUsed: TACKLE });
+      const pokemon = createSyntheticOnFieldPokemon({ lastMoveUsed: TACKLE });
       pokemon.volatileStatuses.set(DISABLE_VOLATILE, { turnsLeft: 5, data: { moveId: GROWL } });
-      const state = createMockState(pokemon, createActivePokemon({}));
+      const state = createMockState(pokemon, createSyntheticOnFieldPokemon({}));
 
       ruleset.onSwitchOut(pokemon, state);
 

@@ -1,6 +1,5 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ABILITY_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   NEUTRAL_NATURES,
@@ -9,18 +8,19 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  applyGen2WeatherEffects,
   GEN2_ITEM_IDS,
   GEN2_SPECIES_IDS,
   GEN2_TYPES,
-  applyGen2WeatherEffects,
   getWeatherDamageModifier,
 } from "../../src";
 import { isWeatherImmune } from "../../src/Gen2Weather";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Helper to create a minimal ActivePokemon for weather tests.
  */
-function createMockActivePokemon(
+function createWeatherTestPokemon(
   overrides: {
     types?: PokemonType[];
     currentHp?: number;
@@ -30,67 +30,25 @@ function createMockActivePokemon(
   } = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    pokemon: {
-      uid: overrides.uid ?? "test-pokemon",
-      speciesId: GEN2_SPECIES_IDS.ditto,
-      nickname: overrides.nickname ?? null,
-      level: 50,
-      experience: 0,
-      nature: NEUTRAL_NATURES[0],
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? maxHp,
-      moves: [],
-      ability: CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1",
-      heldItem: null,
-      status: null,
-      friendship: 70,
-      gender: "male",
-      isShiny: false,
-      metLocation: "test",
-      metLevel: 5,
-      originalTrainer: "Test",
-      originalTrainerId: 12345,
-      pokeball: GEN2_ITEM_IDS.pokeBall,
-      calculatedStats: {
-        hp: maxHp,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 100,
-      },
-    },
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
+  const pokemon = createSharedSyntheticOnFieldPokemon({
+    speciesId: GEN2_SPECIES_IDS.ditto,
+    currentHp: overrides.currentHp ?? maxHp,
+    nickname: overrides.nickname ?? null,
     types: overrides.types ?? [CORE_TYPE_IDS.normal],
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
     turnsOnField: 1,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+    calculatedStats: {
+      hp: maxHp,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    },
+  });
+  pokemon.pokemon.uid = overrides.uid ?? "test-pokemon";
+  pokemon.pokemon.nature = NEUTRAL_NATURES[0];
+  pokemon.pokemon.pokeball = GEN2_ITEM_IDS.pokeBall;
+  return pokemon;
 }
 
 /**
@@ -106,7 +64,7 @@ function createMockBattleState(
     index,
     trainer: null,
     team: [],
-    active: [createMockActivePokemon()],
+    active: [createWeatherTestPokemon()],
     hazards: [],
     screens: [],
     tailwind: { active: false, turnsLeft: 0 },
@@ -232,7 +190,7 @@ describe("Gen2Weather", () => {
   describe("Given Sandstorm", () => {
     it("should deal 1/8 max HP to non-Rock/Ground/Steel", () => {
       // Arrange
-      const normalPokemon = createMockActivePokemon({
+      const normalPokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.normal],
         maxHp: 200,
         uid: "p1",
@@ -255,7 +213,9 @@ describe("Gen2Weather", () => {
         index: 1,
         trainer: null,
         team: [],
-        active: [createMockActivePokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 200, uid: "p2" })],
+        active: [
+          createWeatherTestPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 200, uid: "p2" }),
+        ],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -287,7 +247,7 @@ describe("Gen2Weather", () => {
 
     it("should not damage Rock types", () => {
       // Arrange
-      const rockPokemon = createMockActivePokemon({
+      const rockPokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.rock],
         maxHp: 200,
         uid: "rock-mon",
@@ -302,7 +262,7 @@ describe("Gen2Weather", () => {
 
     it("should not damage Ground types", () => {
       // Arrange
-      const groundPokemon = createMockActivePokemon({ types: [CORE_TYPE_IDS.ground], maxHp: 200 });
+      const groundPokemon = createWeatherTestPokemon({ types: [CORE_TYPE_IDS.ground], maxHp: 200 });
 
       // Act
       const immune = isWeatherImmune(groundPokemon.types, CORE_WEATHER_IDS.sand);
@@ -313,7 +273,7 @@ describe("Gen2Weather", () => {
 
     it("should not damage Steel types", () => {
       // Arrange
-      const steelPokemon = createMockActivePokemon({ types: [CORE_TYPE_IDS.steel], maxHp: 200 });
+      const steelPokemon = createWeatherTestPokemon({ types: [CORE_TYPE_IDS.steel], maxHp: 200 });
 
       // Act
       const immune = isWeatherImmune(steelPokemon.types, CORE_WEATHER_IDS.sand);
@@ -324,7 +284,7 @@ describe("Gen2Weather", () => {
 
     it("should not damage dual-type Pokemon with one immune type", () => {
       // Arrange — Rock/Fire is immune because it has Rock
-      const rockFirePokemon = createMockActivePokemon({
+      const rockFirePokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.rock, CORE_TYPE_IDS.fire],
         maxHp: 200,
       });
@@ -338,7 +298,7 @@ describe("Gen2Weather", () => {
 
     it("should not boost SpDef (that is Gen 4+)", () => {
       // Arrange — This test documents the behavior: sandstorm ONLY does damage in Gen 2
-      const normalPokemon = createMockActivePokemon({
+      const normalPokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.normal],
         maxHp: 200,
         uid: "p1",
@@ -361,7 +321,7 @@ describe("Gen2Weather", () => {
         index: 1,
         trainer: null,
         team: [],
-        active: [createMockActivePokemon({ types: [CORE_TYPE_IDS.rock], maxHp: 200, uid: "p2" })],
+        active: [createWeatherTestPokemon({ types: [CORE_TYPE_IDS.rock], maxHp: 200, uid: "p2" })],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },
@@ -395,12 +355,12 @@ describe("Gen2Weather", () => {
 
     it("should return no results when sandstorm is active but all Pokemon are immune", () => {
       // Arrange
-      const rockPokemon = createMockActivePokemon({
+      const rockPokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.rock],
         maxHp: 200,
         uid: "p1",
       });
-      const steelPokemon = createMockActivePokemon({
+      const steelPokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.steel],
         maxHp: 200,
         uid: "p2",
@@ -489,7 +449,7 @@ describe("Gen2Weather", () => {
         faintCount: 0,
         gimmickUsed: false,
       };
-      const normalPokemon = createMockActivePokemon({
+      const normalPokemon = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.normal],
         maxHp: 200,
         uid: "p2",
@@ -530,7 +490,7 @@ describe("Gen2Weather", () => {
   describe("Given sandstorm with Pokemon missing calculatedStats", () => {
     it("should fall back to currentHp for damage calculation", () => {
       // Arrange: Pokemon with no calculatedStats
-      const pokemonNoStats = createMockActivePokemon({
+      const pokemonNoStats = createWeatherTestPokemon({
         types: [CORE_TYPE_IDS.fire],
         maxHp: 160,
         uid: "p1",
@@ -557,7 +517,7 @@ describe("Gen2Weather", () => {
         index: 1,
         trainer: null,
         team: [],
-        active: [createMockActivePokemon({ types: [CORE_TYPE_IDS.rock], maxHp: 200, uid: "p2" })],
+        active: [createWeatherTestPokemon({ types: [CORE_TYPE_IDS.rock], maxHp: 200, uid: "p2" })],
         hazards: [],
         screens: [],
         tailwind: { active: false, turnsLeft: 0 },

@@ -16,21 +16,14 @@
  */
 
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
-import {
-  ALL_NATURES,
-  CORE_ABILITY_IDS,
-  CORE_ITEM_IDS,
-  CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
-  SeededRandom,
-} from "@pokemon-lib-ts/core";
+import type { PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
+import { ALL_NATURES, CORE_STATUS_IDS, CORE_TYPE_IDS, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen2DataManager } from "../../src";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { getGen2CritStage } from "../../src/Gen2CritCalc";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
-import { GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 const DATA_MANAGER = createGen2DataManager();
 const BASE_SPECIES = DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.bulbasaur);
@@ -38,7 +31,7 @@ const MOVE_IDS = GEN2_MOVE_IDS;
 const ITEM_IDS = GEN2_ITEM_IDS;
 // Gen 2 battles still require a nature field in the shared Pokemon model.
 // Use a core-owned neutral nature id because Gen 2 does not own a separate nature bundle.
-const DEFAULT_NATURE = ALL_NATURES[0].id;
+const _DEFAULT_NATURE = ALL_NATURES[0].id;
 const NORMAL = CORE_TYPE_IDS.normal;
 const FIRE = CORE_TYPE_IDS.fire;
 const WATER = CORE_TYPE_IDS.water;
@@ -74,8 +67,7 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-/** Create a minimal ActivePokemon. */
-function createActivePokemon(opts: {
+function createSyntheticOnFieldPokemon(opts: {
   speciesId?: number;
   level?: number;
   maxHp?: number;
@@ -99,60 +91,18 @@ function createActivePokemon(opts: {
     speed: opts.speed ?? 100,
   };
 
-  return {
-    pokemon: {
-      uid: "test",
-      speciesId: opts.speciesId ?? BASE_SPECIES.id,
-      nickname: null,
-      level: opts.level ?? 50,
-      experience: 0,
-      nature: DEFAULT_NATURE,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: maxHp,
-      moves: [],
-      ability: CORE_ABILITY_IDS.none,
-      abilitySlot: "normal1" as const,
-      heldItem: opts.heldItem ?? null,
-      status: opts.status ?? null,
-      friendship: 70,
-      gender: "male" as const,
-      isShiny: false,
-      metLocation: "test",
-      metLevel: 5,
-      originalTrainer: "Test",
-      originalTrainerId: 12345,
-      pokeball: CORE_ITEM_IDS.pokeBall,
-      calculatedStats: stats,
-    } as PokemonInstance,
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: (opts.volatileStatuses ?? new Map()) as Map<never, never>,
+  return createSharedSyntheticOnFieldPokemon({
+    speciesId: opts.speciesId ?? BASE_SPECIES.id,
+    level: opts.level ?? 50,
+    currentHp: maxHp,
+    calculatedStats: stats,
+    heldItem: opts.heldItem ?? null,
+    status: (opts.status as typeof CORE_STATUS_IDS.burn | null | undefined) ?? null,
+    friendship: 70,
     types: opts.types ?? [NORMAL],
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
+    volatileStatuses: opts.volatileStatuses,
     turnsOnField: 1,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+  });
 }
 
 /** Create a neutral type chart (all interactions = 1). */
@@ -207,13 +157,13 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
     //   Item modifier applied first (line 2983), then .CriticalMultiplier (sla = *2)
     // L50, 80 power Normal-type physical move, attacker holds Pink Bow (1.1x Normal boost)
     // Attack=100, Defense=100, no weather, no STAB, neutral type chart
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       types: [FIRE], // Not normal — no STAB
       heldItem: ITEM_IDS.pinkBow, // 1.1x boost for Normal moves in Gen 2
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
       types: [NORMAL],
@@ -252,13 +202,13 @@ describe("Bug 4A regression: damage modifier order — item applied in modifier 
 
   it("given no item + crit, when calculating damage, then result differs from item+crit (triangulation)", () => {
     // Arrange — same setup but no item
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       types: [FIRE],
       heldItem: null, // No item
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       defense: 100,
       types: [NORMAL],
@@ -303,7 +253,7 @@ describe("Bug #324 regression: high-crit moves add +2 to crit stage (pokecrystal
     //   BattleCommand_Critical .CheckCritical: "inc c; inc c" = +2 for CriticalHitMoves
     // NOTE: This corrects the earlier bug #324 "fix" which incorrectly changed +2 to +1.
     // The cartridge assembly uses two increments; the correct value is +2.
-    const attacker = createActivePokemon({});
+    const attacker = createSyntheticOnFieldPokemon({});
     const move = DATA_MANAGER.getMove(MOVE_IDS.slash);
 
     // Act
@@ -316,7 +266,7 @@ describe("Bug #324 regression: high-crit moves add +2 to crit stage (pokecrystal
   it("given Cross Chop (high-crit move) with no other modifiers, when getting crit stage, then stage is 2", () => {
     // Arrange
     // Source: pret/pokecrystal effect_commands.asm L1183-1184 — "inc c; inc c" = +2
-    const attacker = createActivePokemon({});
+    const attacker = createSyntheticOnFieldPokemon({});
     const move = DATA_MANAGER.getMove(MOVE_IDS.crossChop);
 
     // Act
@@ -437,11 +387,11 @@ describe("Bug 4F regression: badly-poisoned reverts to regular poison on switch-
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104
     //   NewBattleMonStatus zeros SUBSTATUS_TOXIC on switch, reverting to regular poison
     const ruleset = new Gen2Ruleset();
-    const pokemon = createActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       types: [POISON],
       status: CORE_STATUS_IDS.badlyPoisoned,
     });
-    const opponent = createActivePokemon({ types: [NORMAL] });
+    const opponent = createSyntheticOnFieldPokemon({ types: [NORMAL] });
 
     const state: BattleState = {
       sides: [
@@ -495,11 +445,11 @@ describe("Bug 4F regression: badly-poisoned reverts to regular poison on switch-
   it("given a regularly-poisoned Pokemon, when it switches out, then status remains poison (no change)", () => {
     // Arrange — triangulation: regular poison should not be cleared
     const ruleset = new Gen2Ruleset();
-    const pokemon = createActivePokemon({
+    const pokemon = createSyntheticOnFieldPokemon({
       types: [NORMAL],
       status: CORE_STATUS_IDS.poison,
     });
-    const opponent = createActivePokemon({ types: [NORMAL] });
+    const opponent = createSyntheticOnFieldPokemon({ types: [NORMAL] });
 
     const state: BattleState = {
       sides: [
@@ -558,7 +508,7 @@ describe("Bug #317 regression: Struggle recoil is floor(maxHp / 4), not floor(da
   it("given maxHp=200 and 60 damage dealt, when calculating struggle recoil, then recoil is 50 (floor(200/4))", () => {
     // Arrange
     // Source: bug #317 fix — uses maxHp, not damageDealt
-    const attacker = createActivePokemon({ maxHp: 200 });
+    const attacker = createSyntheticOnFieldPokemon({ maxHp: 200 });
     const damageDealt = 60;
 
     // Act
@@ -572,7 +522,7 @@ describe("Bug #317 regression: Struggle recoil is floor(maxHp / 4), not floor(da
   it("given maxHp=300 and 100 damage dealt, when calculating struggle recoil, then recoil is 75 (not 25)", () => {
     // Arrange — triangulation with different maxHp to prove it's HP-based not damage-based
     // Source: bug #317 fix
-    const attacker = createActivePokemon({ maxHp: 300 });
+    const attacker = createSyntheticOnFieldPokemon({ maxHp: 300 });
     const damageDealt = 100;
 
     // Act

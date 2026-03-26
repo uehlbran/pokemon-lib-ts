@@ -1,26 +1,10 @@
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type {
-  MoveData,
-  PokemonInstance,
-  PokemonSpeciesData,
-  PokemonType,
-  StatBlock,
-  TypeChart,
-} from "@pokemon-lib-ts/core";
-import {
-  CORE_ABILITY_IDS,
-  CORE_ITEM_IDS,
-  CORE_STATUS_IDS,
-  CORE_TYPE_IDS,
-} from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, type CORE_STATUS_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
-import {
-  createGen2DataManager,
-  GEN2_MOVE_IDS,
-  GEN2_NATURE_IDS,
-  GEN2_SPECIES_IDS,
-} from "../../src";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Regression tests for the Gen 2 random factor multiplication.
@@ -55,8 +39,7 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-/** Minimal ActivePokemon mock. */
-function createActivePokemon(opts: {
+function createSyntheticOnFieldPokemon(opts: {
   level: number;
   attack: number;
   defense: number;
@@ -76,35 +59,15 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "test",
+  return createSharedSyntheticOnFieldPokemon({
     speciesId: TEST_SPECIES.id,
-    nickname: null,
     level: opts.level,
-    experience: 0,
-    nature: GEN2_NATURE_IDS.hardy,
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: 200,
-    moves: [],
-    ability: CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
+    types: opts.types,
     statStages: {
       hp: 0,
       attack: opts.statStages?.attack ?? 0,
@@ -115,23 +78,7 @@ function createActivePokemon(opts: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: new Map(),
-    types: opts.types,
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 function createSyntheticMove(type: PokemonType, power: number): MoveData {
@@ -139,7 +86,7 @@ function createSyntheticMove(type: PokemonType, power: number): MoveData {
   move.id = `synthetic-${type}-${power}`;
   move.displayName = `Synthetic ${type} ${power}`;
   move.type = type;
-  move.category = "physical";
+  move.category = CORE_MOVE_CATEGORIES.physical;
   move.power = power;
   move.generation = 2;
   return move;
@@ -207,7 +154,7 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
    * Source: pret/pokecrystal engine/battle/core.asm — integer multiply then divide by 255
    */
   it("given baseDamage=595 and roll=219 (P=150 A=245 D=52), when calculating damage, then uses integer arithmetic yielding 511 not 510", () => {
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 100,
       attack: 245,
       defense: 100,
@@ -215,7 +162,7 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 100,
       attack: 100,
       defense: 52,
@@ -258,7 +205,7 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
    * Source: pret/pokecrystal engine/battle/core.asm — integer multiply then divide by 255
    */
   it("given baseDamage=595 and roll=219 (P=200 A=219 D=62), when calculating damage, then uses integer arithmetic yielding 511 not 510", () => {
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 100,
       attack: 219,
       defense: 100,
@@ -266,7 +213,7 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 100,
       attack: 100,
       defense: 62,
@@ -307,7 +254,7 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
    * Source: pret/pokecrystal engine/battle/core.asm — integer formula at max roll
    */
   it("given baseDamage=37 and max roll 255, when calculating damage, then returns 37", () => {
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       defense: 100,
@@ -315,7 +262,7 @@ describe("Gen 2 random factor — integer-only arithmetic (issue #542)", () => {
       spDefense: 100,
       types: [CORE_TYPE_IDS.fire],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       level: 50,
       attack: 100,
       defense: 100,

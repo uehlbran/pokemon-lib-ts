@@ -23,6 +23,7 @@ import type {
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -30,16 +31,11 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
 import { Gen2Ruleset } from "../../src/Gen2Ruleset";
 import { checkIsShinyByDVs } from "../../src/Gen2StatCalc";
 import { GEN2_TYPE_CHART } from "../../src/Gen2TypeChart";
-import {
-  createGen2DataManager,
-  GEN2_ITEM_IDS,
-  GEN2_MOVE_IDS,
-  GEN2_SPECIES_IDS,
-} from "../../src";
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
@@ -855,7 +851,10 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, sunny weather, when using Moonlight, then heals floor(100 * 2/3) = 66 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Sunny Day: heals 2/3 max HP (floor). floor(100 * 2/3) = floor(66.67) = 66
-    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, { type: WEATHER.sun, turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, {
+      type: WEATHER.sun,
+      turnsLeft: 4,
+    });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(66);
   });
@@ -863,7 +862,10 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=150, sunny weather, when using Moonlight, then heals floor(150 * 2/3) = 100 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Triangulation: floor(150 * 2/3) = floor(100) = 100
-    const context = createHealingMoveContext(MOVE_IDS.moonlight, 150, { type: WEATHER.sun, turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 150, {
+      type: WEATHER.sun,
+      turnsLeft: 4,
+    });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(100);
   });
@@ -871,7 +873,10 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, rain weather, when using Moonlight, then heals floor(100 * 1/4) = 25 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Rain Dance: heals 1/4 max HP (floor). floor(100 / 4) = 25
-    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, { type: WEATHER.rain, turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, {
+      type: WEATHER.rain,
+      turnsLeft: 4,
+    });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(25);
   });
@@ -879,7 +884,10 @@ describe("Issue #367 — Moonlight/Morning Sun/Synthesis weather healing", () =>
   it("given maxHP=100, sandstorm weather, when using Moonlight, then heals floor(100 * 1/4) = 25 HP", () => {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm MoonlightEffect
     // Sandstorm: also heals 1/4 max HP (floor)
-    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, { type: WEATHER.sand, turnsLeft: 4 });
+    const context = createHealingMoveContext(MOVE_IDS.moonlight, 100, {
+      type: WEATHER.sand,
+      turnsLeft: 4,
+    });
     const result = ruleset.executeMoveEffect(context);
     expect(result.healAmount).toBe(25);
   });
@@ -1066,14 +1074,14 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
     );
 
     // Assert: Fighting-type Hidden Power is physical in Gen 2 and its damage is deterministic here.
-    expect(dmgLowDef.effectiveCategory).toBe("physical");
+    expect(dmgLowDef.effectiveCategory).toBe(CORE_MOVE_CATEGORIES.physical);
     expect(dmgLowDef.damage).toBe(112);
     expect(dmgHighDef.damage).toBe(30);
     // Physical move uses Defense stat: low defense → more damage, high defense → less damage
     expect(dmgLowDef.damage).toBeGreaterThan(dmgHighDef.damage);
   });
 
-  it("given attacker with DVs that produce a special HP type (Fire), when calculating Hidden Power, then effectiveCategory is 'special'", () => {
+  it("given attacker with DVs that produce a special HP type (Fire), when calculating Hidden Power, then effectiveCategory is CORE_MOVE_CATEGORIES.special", () => {
     // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
     // HP_TYPES[8] = "fire" (special type in Gen 2)
     // typeIndex = (atkDv & 3) * 4 + (defDv & 3)
@@ -1100,11 +1108,11 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
     );
 
     // Assert: Fire type → special category, with deterministic damage.
-    expect(result.effectiveCategory).toBe("special");
+    expect(result.effectiveCategory).toBe(CORE_MOVE_CATEGORIES.special);
     expect(result.damage).toBe(43);
   });
 
-  it("given all Gen 2 physical HP types, when checking effectiveCategory, then all return 'physical'", () => {
+  it("given all Gen 2 physical HP types, when checking effectiveCategory, then all return CORE_MOVE_CATEGORIES.physical", () => {
     // Source: pret/pokecrystal engine/battle/hidden_power.asm — HiddenPowerDamage
     // Gen 2 physical types: normal, fighting, flying, ground, rock, bug, ghost, poison, steel
     // From HP_TYPES list (indices 0-7): fighting, flying, poison, ground, rock, bug, ghost, steel — ALL physical
@@ -1160,7 +1168,7 @@ describe("Issue #373 — Hidden Power physical-type category path", () => {
       );
 
       // Assert: indices 0-7 are all physical types
-      expect(result.effectiveCategory).toBe("physical");
+      expect(result.effectiveCategory).toBe(CORE_MOVE_CATEGORIES.physical);
     }
   });
 });

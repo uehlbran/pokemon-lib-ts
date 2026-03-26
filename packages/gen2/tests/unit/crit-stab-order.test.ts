@@ -7,13 +7,11 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
-  CORE_STATUS_IDS,
+  CORE_MOVE_CATEGORIES,
+  type CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
-  SeededRandom,
   createMoveSlot,
-  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -24,41 +22,42 @@ import {
   GEN2_TYPES,
 } from "../../src";
 import { calculateGen2Damage } from "../../src/Gen2DamageCalc";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 // ---------------------------------------------------------------------------
 // Test helpers (adapted from damage-calc.test.ts)
 // ---------------------------------------------------------------------------
 
-const DATA = createGen2DataManager()
-const MOVE_IDS = GEN2_MOVE_IDS
-const NATURE_IDS = GEN2_NATURE_IDS
-const SPECIES_IDS = GEN2_SPECIES_IDS
-const TYPES = CORE_TYPE_IDS
-const WEATHER_IDS = CORE_WEATHER_IDS
-const DEFAULT_MOVE = DATA.getMove(MOVE_IDS.tackle)
-const NORMAL_SPECIES = DATA.getSpecies(SPECIES_IDS.snorlax)
-const FIRE_SPECIES = DATA.getSpecies(SPECIES_IDS.magmar)
-const WATER_SPECIES = DATA.getSpecies(SPECIES_IDS.feraligatr)
-const DEFAULT_HP = 200
-const DEFAULT_SPEED = 100
-const MAX_RANDOM_ROLL = 255
+const DATA = createGen2DataManager();
+const MOVE_IDS = GEN2_MOVE_IDS;
+const _NATURE_IDS = GEN2_NATURE_IDS;
+const SPECIES_IDS = GEN2_SPECIES_IDS;
+const TYPES = CORE_TYPE_IDS;
+const WEATHER_IDS = CORE_WEATHER_IDS;
+const DEFAULT_MOVE = DATA.getMove(MOVE_IDS.tackle);
+const NORMAL_SPECIES = DATA.getSpecies(SPECIES_IDS.snorlax);
+const FIRE_SPECIES = DATA.getSpecies(SPECIES_IDS.magmar);
+const WATER_SPECIES = DATA.getSpecies(SPECIES_IDS.feraligatr);
+const DEFAULT_HP = 200;
+const DEFAULT_SPEED = 100;
+const MAX_RANDOM_ROLL = 255;
 
 function createCanonicalMove(moveId: string): MoveData {
-  return DATA.getMove(moveId) as MoveData
+  return DATA.getMove(moveId) as MoveData;
 }
 
 function createSyntheticMove(opts: {
-  id: string
-  displayName: string
-  type: PokemonType
-  power: number
-  category: "physical" | "special"
+  id: string;
+  displayName: string;
+  type: PokemonType;
+  power: number;
+  category: (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES];
 }): MoveData {
   return {
     ...DEFAULT_MOVE,
     ...opts,
     generation: 2,
-  } as MoveData
+  } as MoveData;
 }
 
 // Synthetic probes isolate exact arithmetic branches that do not have a canonical
@@ -68,24 +67,24 @@ const SYNTHETIC_FIGHTING_POWER_80 = createSyntheticMove({
   displayName: "Synthetic Fighting Power 80",
   type: TYPES.fighting,
   power: 80,
-  category: "physical",
-})
+  category: CORE_MOVE_CATEGORIES.physical,
+});
 
 const SYNTHETIC_FIRE_POWER_85 = createSyntheticMove({
   id: "synthetic-fire-power-85",
   displayName: "Synthetic Fire Power 85",
   type: TYPES.fire,
   power: 85,
-  category: "special",
-})
+  category: CORE_MOVE_CATEGORIES.special,
+});
 
 const SYNTHETIC_WATER_POWER_80 = createSyntheticMove({
   id: "synthetic-water-power-80",
   displayName: "Synthetic Water Power 80",
   type: TYPES.water,
   power: 80,
-  category: "special",
-})
+  category: CORE_MOVE_CATEGORIES.special,
+});
 
 /** A mock RNG whose int() always returns a fixed value. */
 function createMockRng(intReturnValue: number) {
@@ -100,8 +99,7 @@ function createMockRng(intReturnValue: number) {
   };
 }
 
-/** Minimal ActivePokemon mock. */
-function createActivePokemon(opts: {
+function createSyntheticOnFieldPokemon(opts: {
   species?: PokemonSpeciesData;
   level: number;
   attack: number;
@@ -122,29 +120,15 @@ function createActivePokemon(opts: {
     spDefense: opts.spDefense,
     speed: DEFAULT_SPEED,
   };
-
-  const pokemon = createPokemonInstance(species, opts.level, new SeededRandom(7), {
-    nature: NATURE_IDS.hardy,
-    abilitySlot: "normal1",
-    gender: "male",
-    isShiny: false,
-    moves: [],
+  return createSharedSyntheticOnFieldPokemon({
+    speciesId: species.id,
+    level: opts.level,
+    moveSlots: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
     heldItem: opts.heldItem ?? null,
-    friendship: species.baseFriendship,
-    metLocation: "test",
-    originalTrainer: "Test",
-    originalTrainerId: 12345,
-  });
-
-  pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
-  pokemon.currentHp = DEFAULT_HP;
-  pokemon.calculatedStats = stats;
-  pokemon.ability = CORE_ABILITY_IDS.none;
-  pokemon.status = opts.status ?? null;
-
-  return {
-    pokemon,
-    teamSlot: 0,
+    status: opts.status ?? null,
+    calculatedStats: stats,
+    currentHp: DEFAULT_HP,
+    types: opts.types ?? species.types,
     statStages: {
       hp: 0,
       attack: opts.statStages?.attack ?? 0,
@@ -155,23 +139,7 @@ function createActivePokemon(opts: {
       accuracy: 0,
       evasion: 0,
     },
-    volatileStatuses: new Map(),
-    types: opts.types ?? species.types,
-    ability: CORE_ABILITY_IDS.none,
-    lastMoveUsed: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 /** All-neutral type chart for 17 Gen 2 types. */
@@ -213,7 +181,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
     //   Clamp [1,997]: 67
     //   +2 → 69
 
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       species: NORMAL_SPECIES,
       level: 50,
       attack: 100,
@@ -222,7 +190,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
       spDefense: 100,
       types: [TYPES.normal],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       species: NORMAL_SPECIES,
       level: 50,
       attack: 100,
@@ -231,7 +199,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
       spDefense: 100,
       types: [TYPES.normal],
     });
-    const move = SYNTHETIC_FIGHTING_POWER_80
+    const move = SYNTHETIC_FIGHTING_POWER_80;
     const typeChart = createNeutralTypeChart();
 
     // Max random (255) for deterministic assertion
@@ -274,7 +242,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
     //   base  = floor(15375/50) = 307
     //   +2 → 309
 
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       species: NORMAL_SPECIES,
       level: 100,
       attack: 150,
@@ -283,7 +251,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
       spDefense: 100,
       types: [TYPES.normal],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       species: NORMAL_SPECIES,
       level: 100,
       attack: 100,
@@ -392,7 +360,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
     // 22*P*A/D in [1850, 1900). With A=D=100: 22*P in [1850,1900) → P in [84.09,86.36)
     // P=85: 22*85=1870, floor(1870/50)=37. YES!
 
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       species: FIRE_SPECIES,
       level: 50,
       attack: 100,
@@ -401,7 +369,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
       spDefense: 100,
       types: [TYPES.fire],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       species: NORMAL_SPECIES,
       level: 50,
       attack: 100,
@@ -410,7 +378,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
       spDefense: 100,
       types: [TYPES.normal],
     });
-    const move = SYNTHETIC_FIRE_POWER_85
+    const move = SYNTHETIC_FIRE_POWER_85;
     const typeChart = createNeutralTypeChart();
 
     // Rain weather to get 0.5x for fire + 1.5x STAB
@@ -464,7 +432,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
     //   STAB(1.5x): floor(55*1.5) = 82
     //   max random → 82
 
-    const attacker = createActivePokemon({
+    const attacker = createSyntheticOnFieldPokemon({
       species: WATER_SPECIES,
       level: 50,
       attack: 100,
@@ -473,7 +441,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
       spDefense: 100,
       types: [TYPES.water],
     });
-    const defender = createActivePokemon({
+    const defender = createSyntheticOnFieldPokemon({
       species: NORMAL_SPECIES,
       level: 50,
       attack: 100,
@@ -483,7 +451,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
       types: [TYPES.normal],
     });
     // Water is special in Gen 2, so spAttack is used
-    const move = SYNTHETIC_WATER_POWER_80
+    const move = SYNTHETIC_WATER_POWER_80;
     const typeChart = createNeutralTypeChart();
 
     const context: DamageContext = {

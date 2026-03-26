@@ -1,7 +1,6 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -9,26 +8,26 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  calculateGen2StatusDamage,
+  canInflictGen2Status,
   GEN2_ITEM_IDS,
   GEN2_NATURE_IDS,
   GEN2_SPECIES_IDS,
   Gen2Ruleset,
-  calculateGen2StatusDamage,
-  canInflictGen2Status,
 } from "../../src";
+import { createSyntheticOnFieldPokemon as createSharedSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
-const ABILITIES = CORE_ABILITY_IDS
-const ITEMS = GEN2_ITEM_IDS
-const SPECIES = GEN2_SPECIES_IDS
-const STATUSES = CORE_STATUS_IDS
-const TYPES = CORE_TYPE_IDS
-const VOLATILES = CORE_VOLATILE_IDS
-const DEFAULT_NATURE = GEN2_NATURE_IDS.hardy
+const _ITEMS = GEN2_ITEM_IDS;
+const SPECIES = GEN2_SPECIES_IDS;
+const STATUSES = CORE_STATUS_IDS;
+const TYPES = CORE_TYPE_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const _DEFAULT_NATURE = GEN2_NATURE_IDS.hardy;
 
 /**
  * Helper to create a minimal ActivePokemon for status tests.
  */
-function createMockActivePokemon(
+function createStatusTestPokemon(
   overrides: {
     types?: PokemonType[];
     currentHp?: number;
@@ -38,67 +37,24 @@ function createMockActivePokemon(
   } = {},
 ): ActivePokemon {
   const maxHp = overrides.maxHp ?? 200;
-  return {
-    pokemon: {
-      uid: "test-pokemon",
-      speciesId: SPECIES.bulbasaur,
-      nickname: null,
-      level: 50,
-      experience: 0,
-      nature: DEFAULT_NATURE,
-      ivs: { hp: 15, attack: 15, defense: 15, spAttack: 15, spDefense: 15, speed: 15 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-      currentHp: overrides.currentHp ?? maxHp,
-      moves: [],
-      ability: ABILITIES.none,
-      abilitySlot: "normal1",
-      heldItem: null,
-      status: overrides.status ?? null,
-      friendship: 70,
-      gender: "male",
-      isShiny: false,
-      metLocation: "test",
-      metLevel: 5,
-      originalTrainer: "Test",
-      originalTrainerId: 12345,
-      pokeball: ITEMS.pokeBall,
-      calculatedStats: {
-        hp: maxHp,
-        attack: 100,
-        defense: 100,
-        spAttack: 100,
-        spDefense: 100,
-        speed: 100,
-      },
-    },
-    teamSlot: 0,
-    statStages: {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: (overrides.volatileStatuses ?? new Map()) as Map<never, never>,
+  return createSharedSyntheticOnFieldPokemon({
+    speciesId: SPECIES.bulbasaur,
+    level: 50,
+    currentHp: overrides.currentHp ?? maxHp,
+    status: overrides.status ?? null,
     types: overrides.types ?? [TYPES.normal],
-    ability: ABILITIES.none,
-    lastMoveUsed: null,
+    volatileStatuses: overrides.volatileStatuses,
+    friendship: 70,
     turnsOnField: 1,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as unknown as ActivePokemon;
+    calculatedStats: {
+      hp: maxHp,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      speed: 100,
+    },
+  });
 }
 
 /**
@@ -183,7 +139,7 @@ describe("Gen2Status", () => {
   describe("Given burn status", () => {
     it("should deal 1/8 max HP per turn", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 200, status: STATUSES.burn });
+      const pokemon = createStatusTestPokemon({ maxHp: 200, status: STATUSES.burn });
       const state = createMockBattleState();
 
       // Act
@@ -196,7 +152,7 @@ describe("Gen2Status", () => {
 
     it("should floor the damage for non-divisible HP", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 100, status: STATUSES.burn });
+      const pokemon = createStatusTestPokemon({ maxHp: 100, status: STATUSES.burn });
       const state = createMockBattleState();
 
       // Act
@@ -208,7 +164,7 @@ describe("Gen2Status", () => {
 
     it("should deal at least 1 damage", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 1, status: STATUSES.burn });
+      const pokemon = createStatusTestPokemon({ maxHp: 1, status: STATUSES.burn });
       const state = createMockBattleState();
 
       // Act
@@ -220,7 +176,7 @@ describe("Gen2Status", () => {
 
     it("should not affect Fire types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.fire] });
+      const target = createStatusTestPokemon({ types: [TYPES.fire] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.burn, target);
@@ -231,7 +187,7 @@ describe("Gen2Status", () => {
 
     it("should affect non-Fire types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.normal] });
+      const target = createStatusTestPokemon({ types: [TYPES.normal] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.burn, target);
@@ -244,7 +200,7 @@ describe("Gen2Status", () => {
   describe("Given poison status", () => {
     it("should deal 1/8 max HP per turn", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 200, status: STATUSES.poison });
+      const pokemon = createStatusTestPokemon({ maxHp: 200, status: STATUSES.poison });
       const state = createMockBattleState();
 
       // Act
@@ -257,7 +213,7 @@ describe("Gen2Status", () => {
 
     it("should not affect Poison types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.poison] });
+      const target = createStatusTestPokemon({ types: [TYPES.poison] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.poison, target);
@@ -268,7 +224,7 @@ describe("Gen2Status", () => {
 
     it("should not affect Steel types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.steel] });
+      const target = createStatusTestPokemon({ types: [TYPES.steel] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.poison, target);
@@ -279,7 +235,7 @@ describe("Gen2Status", () => {
 
     it("should not affect dual-type Poison/Flying", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.poison, TYPES.flying] });
+      const target = createStatusTestPokemon({ types: [TYPES.poison, TYPES.flying] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.poison, target);
@@ -292,7 +248,7 @@ describe("Gen2Status", () => {
   describe("Given badly-poisoned (toxic)", () => {
     it("should start at 1/16 max HP", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 160, status: STATUSES.badlyPoisoned });
+      const pokemon = createStatusTestPokemon({ maxHp: 160, status: STATUSES.badlyPoisoned });
       const state = createMockBattleState();
 
       // Act — first turn (toxicCounter = 1)
@@ -307,7 +263,7 @@ describe("Gen2Status", () => {
       // Arrange
       const toxicCounter = new Map();
       toxicCounter.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 3 } });
-      const pokemon = createMockActivePokemon({
+      const pokemon = createStatusTestPokemon({
         maxHp: 160,
         status: STATUSES.badlyPoisoned,
         volatileStatuses: toxicCounter,
@@ -326,7 +282,7 @@ describe("Gen2Status", () => {
       // Arrange
       const toxicCounter = new Map();
       toxicCounter.set(VOLATILES.toxicCounter, { turnsLeft: -1, data: { counter: 2 } });
-      const pokemon = createMockActivePokemon({
+      const pokemon = createStatusTestPokemon({
         maxHp: 100,
         status: STATUSES.badlyPoisoned,
         volatileStatuses: toxicCounter,
@@ -343,7 +299,7 @@ describe("Gen2Status", () => {
 
     it("should deal at least 1 damage", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({
+      const pokemon = createStatusTestPokemon({
         maxHp: 1,
         status: STATUSES.badlyPoisoned,
       });
@@ -358,7 +314,7 @@ describe("Gen2Status", () => {
 
     it("should not affect Poison types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.poison] });
+      const target = createStatusTestPokemon({ types: [TYPES.poison] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.badlyPoisoned, target);
@@ -369,7 +325,7 @@ describe("Gen2Status", () => {
 
     it("should not affect Steel types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.steel] });
+      const target = createStatusTestPokemon({ types: [TYPES.steel] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.badlyPoisoned, target);
@@ -382,7 +338,7 @@ describe("Gen2Status", () => {
   describe("Given paralysis", () => {
     it("given an Electric-type Pokemon, when checking if paralysis can be inflicted, then returns true (Electric not immune in Gen 2)", () => {
       // Arrange
-      const electricPokemon = createMockActivePokemon({ types: [TYPES.electric] });
+      const electricPokemon = createStatusTestPokemon({ types: [TYPES.electric] });
       // Act
       const result = canInflictGen2Status(STATUSES.paralysis, electricPokemon);
       // Assert
@@ -391,7 +347,7 @@ describe("Gen2Status", () => {
 
     it("should affect non-Electric types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.normal] });
+      const target = createStatusTestPokemon({ types: [TYPES.normal] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.paralysis, target);
@@ -402,7 +358,7 @@ describe("Gen2Status", () => {
 
     it("should not deal residual damage", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 200, status: STATUSES.paralysis });
+      const pokemon = createStatusTestPokemon({ maxHp: 200, status: STATUSES.paralysis });
       const state = createMockBattleState();
 
       // Act
@@ -416,7 +372,7 @@ describe("Gen2Status", () => {
   describe("Given freeze status", () => {
     it("should not affect Ice types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.ice] });
+      const target = createStatusTestPokemon({ types: [TYPES.ice] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.freeze, target);
@@ -427,7 +383,7 @@ describe("Gen2Status", () => {
 
     it("should affect non-Ice types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.water] });
+      const target = createStatusTestPokemon({ types: [TYPES.water] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.freeze, target);
@@ -438,7 +394,7 @@ describe("Gen2Status", () => {
 
     it("should not deal residual damage", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 200, status: STATUSES.freeze });
+      const pokemon = createStatusTestPokemon({ maxHp: 200, status: STATUSES.freeze });
       const state = createMockBattleState();
 
       // Act
@@ -452,7 +408,7 @@ describe("Gen2Status", () => {
   describe("Given sleep status", () => {
     it("should affect all types", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.normal] });
+      const target = createStatusTestPokemon({ types: [TYPES.normal] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.sleep, target);
@@ -463,7 +419,7 @@ describe("Gen2Status", () => {
 
     it("should not deal residual damage", () => {
       // Arrange
-      const pokemon = createMockActivePokemon({ maxHp: 200, status: STATUSES.sleep });
+      const pokemon = createStatusTestPokemon({ maxHp: 200, status: STATUSES.sleep });
       const state = createMockBattleState();
 
       // Act
@@ -477,7 +433,7 @@ describe("Gen2Status", () => {
   describe("Given a Pokemon that already has a status", () => {
     it("should not allow inflicting a status on an already-statused Pokemon", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.normal], status: STATUSES.burn });
+      const target = createStatusTestPokemon({ types: [TYPES.normal], status: STATUSES.burn });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.poison, target);
@@ -490,7 +446,7 @@ describe("Gen2Status", () => {
   describe("Given dual-type immunities", () => {
     it("should prevent burn on Fire/Flying", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.fire, TYPES.flying] });
+      const target = createStatusTestPokemon({ types: [TYPES.fire, TYPES.flying] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.burn, target);
@@ -501,7 +457,7 @@ describe("Gen2Status", () => {
 
     it("should allow paralysis on Electric/Steel (no paralysis immunity by type in Gen 2)", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.electric, TYPES.steel] });
+      const target = createStatusTestPokemon({ types: [TYPES.electric, TYPES.steel] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.paralysis, target);
@@ -512,7 +468,7 @@ describe("Gen2Status", () => {
 
     it("should prevent poison on Poison/Ground", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.poison, TYPES.ground] });
+      const target = createStatusTestPokemon({ types: [TYPES.poison, TYPES.ground] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.poison, target);
@@ -523,7 +479,7 @@ describe("Gen2Status", () => {
 
     it("should prevent freeze on Ice/Water", () => {
       // Arrange
-      const target = createMockActivePokemon({ types: [TYPES.ice, TYPES.water] });
+      const target = createStatusTestPokemon({ types: [TYPES.ice, TYPES.water] });
 
       // Act
       const canInflict = canInflictGen2Status(STATUSES.freeze, target);
@@ -544,7 +500,7 @@ describe("Comprehensive status mechanics", () => {
     // Arrange
     const rng = new SeededRandom(12345);
     const ruleset = new Gen2Ruleset();
-    const pokemon = createMockActivePokemon({ status: STATUSES.freeze });
+    const pokemon = createStatusTestPokemon({ status: STATUSES.freeze });
     // Act
     const thawCount = Array.from({ length: 100 }).reduce(
       (count) => count + (ruleset.checkFreezeThaw(pokemon, rng) ? 1 : 0),
@@ -556,7 +512,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given a burned Pokemon with 200 max HP, when calculating status damage, then takes 25 damage per turn", () => {
     // Arrange
-    const pokemon = createMockActivePokemon({ maxHp: 200, status: STATUSES.burn });
+    const pokemon = createStatusTestPokemon({ maxHp: 200, status: STATUSES.burn });
     const mockState = {} as BattleState;
     // Act
     const damage = calculateGen2StatusDamage(pokemon, STATUSES.burn, mockState);
@@ -566,7 +522,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given a burned Pokemon with 1 max HP, when calculating status damage, then takes minimum 1 damage", () => {
     // Arrange
-    const pokemon = createMockActivePokemon({ maxHp: 1, status: STATUSES.burn });
+    const pokemon = createStatusTestPokemon({ maxHp: 1, status: STATUSES.burn });
     // Act
     const damage = calculateGen2StatusDamage(pokemon, STATUSES.burn, {} as BattleState);
     // Assert
@@ -575,7 +531,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given an Electric-type Pokemon, when checking if burn can be inflicted, then returns true", () => {
     // Arrange
-    const electricPokemon = createMockActivePokemon({ types: [TYPES.electric] });
+    const electricPokemon = createStatusTestPokemon({ types: [TYPES.electric] });
     // Act
     const result = canInflictGen2Status(STATUSES.burn, electricPokemon);
     // Assert
@@ -584,7 +540,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given a Fire-type Pokemon, when checking if burn can be inflicted, then returns false", () => {
     // Arrange
-    const firePokemon = createMockActivePokemon({ types: [TYPES.fire] });
+    const firePokemon = createStatusTestPokemon({ types: [TYPES.fire] });
     // Act
     const result = canInflictGen2Status(STATUSES.burn, firePokemon);
     // Assert
@@ -593,7 +549,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given an Ice-type Pokemon, when checking if freeze can be inflicted, then returns false", () => {
     // Arrange
-    const icePokemon = createMockActivePokemon({ types: [TYPES.ice] });
+    const icePokemon = createStatusTestPokemon({ types: [TYPES.ice] });
     // Act
     const result = canInflictGen2Status(STATUSES.freeze, icePokemon);
     // Assert
@@ -602,7 +558,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given a Steel-type Pokemon, when checking if poison can be inflicted, then returns false", () => {
     // Arrange
-    const steelPokemon = createMockActivePokemon({ types: [TYPES.steel] });
+    const steelPokemon = createStatusTestPokemon({ types: [TYPES.steel] });
     // Act
     const result = canInflictGen2Status(STATUSES.poison, steelPokemon);
     // Assert
@@ -611,7 +567,7 @@ describe("Comprehensive status mechanics", () => {
 
   it("given a Pokemon already burned, when checking if paralysis can be inflicted, then returns false", () => {
     // Arrange
-    const pokemon = createMockActivePokemon({ status: STATUSES.burn });
+    const pokemon = createStatusTestPokemon({ status: STATUSES.burn });
     // Act
     const result = canInflictGen2Status(STATUSES.paralysis, pokemon);
     // Assert
@@ -631,7 +587,7 @@ describe("Gen 2 processEndOfTurnDefrost", () => {
 
     // Act
     for (let i = 0; i < iterations; i++) {
-      const pokemon = createMockActivePokemon({ status: STATUSES.freeze });
+      const pokemon = createStatusTestPokemon({ status: STATUSES.freeze });
       if (ruleset.processEndOfTurnDefrost(pokemon, rng)) thawCount++;
     }
     const rate = thawCount / iterations;
@@ -648,7 +604,10 @@ describe("Gen 2 processEndOfTurnDefrost", () => {
     const ruleset = new Gen2Ruleset();
     const rng = new SeededRandom(1); // seed that would thaw otherwise
     const volatiles = new Map<string, unknown>([[VOLATILES.justFrozen, { turnsLeft: 1 }]]);
-    const pokemon = createMockActivePokemon({ status: STATUSES.freeze, volatileStatuses: volatiles });
+    const pokemon = createStatusTestPokemon({
+      status: STATUSES.freeze,
+      volatileStatuses: volatiles,
+    });
 
     // Act
     const thawed = ruleset.processEndOfTurnDefrost(pokemon, rng);
@@ -656,7 +615,9 @@ describe("Gen 2 processEndOfTurnDefrost", () => {
     // Assert — should NOT thaw when just-frozen guard is active
     expect(thawed).toBe(false);
     // Assert — just-frozen volatile should be cleared so next EoT allows the thaw roll
-    expect((pokemon.volatileStatuses as Map<string, unknown>).has(VOLATILES.justFrozen)).toBe(false);
+    expect((pokemon.volatileStatuses as Map<string, unknown>).has(VOLATILES.justFrozen)).toBe(
+      false,
+    );
   });
 
   it("given a frozen Pokemon where the RNG rolls >= 25, when processEndOfTurnDefrost is called, then returns false", () => {
@@ -669,7 +630,7 @@ describe("Gen 2 processEndOfTurnDefrost", () => {
     // We'll run 256 deterministic seeds and find at least one that does NOT thaw.
     const foundNoThaw = Array.from({ length: 300 }, (_, index) => index + 100).some((seed) => {
       const rng = new SeededRandom(seed);
-      const pokemon = createMockActivePokemon({ status: STATUSES.freeze });
+      const pokemon = createStatusTestPokemon({ status: STATUSES.freeze });
       return !ruleset.processEndOfTurnDefrost(pokemon, rng);
     });
 
@@ -686,7 +647,7 @@ describe("Gen2Status calculateGen2StatusDamage default branch", () => {
     // (e.g., future status additions or unexpected runtime values).
     // We cast to PrimaryStatus to compile but pass a value not handled by any case.
     // Arrange
-    const pokemon = createMockActivePokemon({ maxHp: 200 });
+    const pokemon = createStatusTestPokemon({ maxHp: 200 });
     const state = createMockBattleState();
     const unknownStatus = "frostbite" as PrimaryStatus;
 
