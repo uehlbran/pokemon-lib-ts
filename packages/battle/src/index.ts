@@ -4,6 +4,11 @@
 export type { AIController } from "./ai";
 export { RandomAI } from "./ai";
 export {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+} from "./constants/effect-protocol";
+export {
   BATTLE_GIMMICK_IDS,
   BATTLE_SOURCE_IDS,
   type BattleSourceId,

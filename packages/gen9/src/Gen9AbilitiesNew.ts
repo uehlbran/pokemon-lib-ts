@@ -1,4 +1,5 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
   CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
@@ -83,8 +84,8 @@ export function handleToxicChain(ctx: AbilityContext): AbilityResult {
     activated: true,
     effects: [
       {
-        effectType: "status-inflict",
-        target: "opponent",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+        target: BATTLE_EFFECT_TARGETS.opponent,
         status: CORE_STATUS_IDS.badlyPoisoned,
       },
     ],
@@ -215,13 +216,13 @@ export function handleEmbodyAspect(ctx: AbilityContext): AbilityResult {
     activated: true,
     effects: [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.embodyAspectUsed,
       },
       {
-        effectType: "stat-change",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
         stat: boostStat,
         stages: 1,
       },
@@ -344,11 +345,16 @@ export function handleGen9IntrepidSwordTrigger(ctx: AbilityContext): AbilityResu
     activated: true,
     effects: [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.intrepidSwordUsed,
       },
-      { effectType: "stat-change", target: "self", stat: "attack", stages: 1 },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        stat: "attack",
+        stages: 1,
+      },
     ],
     messages: [`${name}'s Intrepid Sword raised its Attack!`],
   };
@@ -382,11 +388,16 @@ export function handleGen9DauntlessShieldTrigger(ctx: AbilityContext): AbilityRe
     activated: true,
     effects: [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.dauntlessShieldUsed,
       },
-      { effectType: "stat-change", target: "self", stat: "defense", stages: 1 },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        stat: "defense",
+        stages: 1,
+      },
     ],
     messages: [`${name}'s Dauntless Shield raised its Defense!`],
   };
@@ -424,11 +435,15 @@ export function handleGen9ProteanTrigger(ctx: AbilityContext): AbilityResult {
     activated: true,
     effects: [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.proteanUsed,
       },
-      { effectType: "type-change", target: "self", types: [moveType] },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        types: [moveType],
+      },
     ],
     messages: [
       `${name}'s ${ctx.pokemon.ability === GEN9_ABILITY_IDS.protean ? "Protean" : "Libero"} changed its type to ${moveType}!`,

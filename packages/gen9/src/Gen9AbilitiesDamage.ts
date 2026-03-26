@@ -18,6 +18,7 @@
  */
 
 import type { AbilityContext, AbilityResult, ActivePokemon } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveCategory, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -452,7 +453,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!isSheerForceEligibleMove(ctx.move.effect, ctx.move.id)) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -462,7 +465,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.opponent.movedThisTurn) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -479,7 +484,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!sandForceTypes.includes(ctx.move.type)) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -489,7 +496,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.power === null || ctx.move.power > 60) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -499,7 +508,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.move.flags.punch) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -509,7 +520,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!hasRecoilEffect(ctx.move.effect) && !ctx.move.hasCrashDamage) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -519,7 +532,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.pokemon.types.includes(ctx.move.type)) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -529,7 +544,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -540,7 +557,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -551,7 +570,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -568,7 +589,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.pokemon.pokemon.currentHp > threshold) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -576,7 +599,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case GEN9_ABILITY_IDS.sniper: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -584,7 +609,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case GEN9_ABILITY_IDS.tintedLens: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -602,7 +629,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (faintedCount === 0) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Supreme Overlord boosted the attack!`],
       };
     }
@@ -616,7 +645,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       }
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Orichalcum Pulse boosted its Attack!`],
       };
     }
@@ -628,7 +659,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (terrainType !== CORE_TERRAIN_IDS.electric) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Hadron Engine boosted its Sp. Atk!`],
       };
     }
@@ -640,7 +673,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.move.flags.contact) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Tough Claws boosted the attack!`],
       };
     }
@@ -650,7 +685,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.move.flags.bite) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Strong Jaw boosted the attack!`],
       };
     }
@@ -660,7 +697,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.move.flags.pulse) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Mega Launcher boosted the attack!`],
       };
     }
@@ -672,7 +711,13 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.fairy] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [CORE_TYPE_IDS.fairy],
+          },
+        ],
         messages: [`${name}'s Pixilate transformed the move into Fairy type!`],
       };
     }
@@ -682,7 +727,13 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.flying] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [CORE_TYPE_IDS.flying],
+          },
+        ],
         messages: [`${name}'s Aerilate transformed the move into Flying type!`],
       };
     }
@@ -692,7 +743,13 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.ice] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [CORE_TYPE_IDS.ice],
+          },
+        ],
         messages: [`${name}'s Refrigerate transformed the move into Ice type!`],
       };
     }
@@ -702,7 +759,13 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.type !== CORE_TYPE_IDS.normal) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.electric] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [CORE_TYPE_IDS.electric],
+          },
+        ],
         messages: [`${name}'s Galvanize transformed the move into Electric type!`],
       };
     }
@@ -713,7 +776,9 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.move.power || ctx.move.power <= 0) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Parental Bond lets it attack twice!`],
       };
     }
@@ -728,7 +793,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
         abilityId === GEN9_ABILITY_IDS.multiscale ? "Multiscale" : "Shadow Shield";
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s ${abilityName} weakened the attack!`],
       };
     }
@@ -737,7 +807,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case GEN9_ABILITY_IDS.filter: {
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -745,7 +820,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
     case GEN9_ABILITY_IDS.prismArmor: {
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Prism Armor weakened the attack!`],
       };
     }
@@ -757,7 +837,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       }
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -766,7 +851,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -776,7 +866,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Fur Coat halved the damage!`],
       };
     }
@@ -790,7 +885,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!isFire && !isContact) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -802,7 +902,12 @@ export function handleGen9DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.move.category !== CORE_MOVE_CATEGORIES.special) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -828,7 +933,12 @@ export function handleGen9DamageImmunityAbility(ctx: AbilityContext): AbilityRes
       if (ctx.move?.effect?.type === "ohko") {
         return {
           activated: true,
-          effects: [{ effectType: "damage-reduction", target: "self" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+              target: BATTLE_EFFECT_TARGETS.self,
+            },
+          ],
           messages: [`${name} held on thanks to Sturdy!`],
           movePrevented: true,
         };
