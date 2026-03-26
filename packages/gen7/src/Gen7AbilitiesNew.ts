@@ -1,4 +1,9 @@
-import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
+import {
+  type AbilityContext,
+  type AbilityResult,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+} from "@pokemon-lib-ts/battle";
 import type { PokemonType } from "@pokemon-lib-ts/core";
 
 /**
@@ -150,8 +155,15 @@ function handleDisguise(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "volatile-inflict", target: "self", volatile: "disguise-broken" },
-          { effectType: "damage-reduction", target: "self" },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: "disguise-broken",
+          },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
         ],
         messages: [`${name}'s Disguise was busted!`],
         movePrevented: false,
@@ -224,7 +236,9 @@ function handleSchooling(ctx: AbilityContext): AbilityResult {
       // Return the form state for the engine to apply stat recalculation
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: isSchoolForm ? [`${name} formed a school!`] : [`${name} stopped schooling!`],
       };
     }
@@ -278,7 +292,11 @@ function handleBattleBond(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "volatile-inflict", target: "self", volatile: "battle-bond-transformed" },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: "battle-bond-transformed",
+          },
         ],
         messages: [`${name} became Ash-Greninja!`],
       };
@@ -328,7 +346,9 @@ function handleShieldsDown(ctx: AbilityContext): AbilityResult {
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: isMeteorForm
           ? [] // Meteor Form is the default, no message
           : [`${name}'s shields went down!`],
@@ -400,8 +420,8 @@ function handlePowerConstruct(ctx: AbilityContext): AbilityResult {
         activated: true,
         effects: [
           {
-            effectType: "volatile-inflict",
-            target: "self",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
             volatile: "power-construct-transformed",
           },
         ],
@@ -451,7 +471,13 @@ function handleRKSSystem(ctx: AbilityContext): AbilityResult {
       const name = getName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [type] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [type],
+          },
+        ],
         messages: [`${name}'s RKS System changed its type to ${type}!`],
       };
     }
@@ -491,7 +517,9 @@ function handleComatose(ctx: AbilityContext): AbilityResult {
     case "on-switch-in": {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is drowsing!`],
       };
     }

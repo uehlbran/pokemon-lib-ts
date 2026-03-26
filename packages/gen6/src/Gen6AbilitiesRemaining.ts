@@ -1,4 +1,5 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 
 /**
  * Gen 6 remaining ability handlers.
@@ -99,8 +100,8 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
 
   if (currentHp <= Math.floor(maxHp / 2) && !isZenForm) {
     const effect: AbilityEffect = {
-      effectType: "volatile-inflict",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+      target: BATTLE_EFFECT_TARGETS.self,
       volatile: "zen-mode" as never,
     };
     return {
@@ -114,8 +115,8 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
     // Source: Showdown data/abilities.ts -- zenmode onResidual:
     //   pokemon.hp > pokemon.maxhp / 2 && Zen form => formeChange back to standard
     const effect: AbilityEffect = {
-      effectType: "volatile-remove",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileRemove,
+      target: BATTLE_EFFECT_TARGETS.self,
       volatile: "zen-mode" as never,
     };
     return {
@@ -157,8 +158,8 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
   }
 
   const effect: AbilityEffect = {
-    effectType: "item-restore",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.itemRestore,
+    target: BATTLE_EFFECT_TARGETS.self,
     item: berryId,
   };
   return {
@@ -202,8 +203,8 @@ function handleHealer(ctx: AbilityContext): AbilityResult {
   const statusName = ally.pokemon.status;
 
   const effect: AbilityEffect = {
-    effectType: "status-cure",
-    target: "ally",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statusCure,
+    target: BATTLE_EFFECT_TARGETS.ally,
   };
   return {
     activated: true,
@@ -248,7 +249,7 @@ function handleFrisk(ctx: AbilityContext): AbilityResult {
 
   return {
     activated: true,
-    effects: [{ effectType: "none", target: "self" }],
+    effects: [{ effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self }],
     messages: [`${name} frisked ${foeName} and found its ${foeItem}!`],
   };
 }
@@ -295,7 +296,7 @@ function handleTelepathy(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
   return {
     activated: true,
-    effects: [{ effectType: "none", target: "self" }],
+    effects: [{ effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self }],
     messages: [`${name} avoided the attack with Telepathy!`],
     movePrevented: true,
   };
@@ -316,7 +317,9 @@ function handleOblivious(ctx: AbilityContext): AbilityResult {
   if (moveId === "attract") {
     return {
       activated: true,
-      effects: [{ effectType: "none", target: "self" }],
+      effects: [
+        { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+      ],
       messages: [`${name}'s Oblivious prevents infatuation!`],
       movePrevented: true,
     };
@@ -325,7 +328,9 @@ function handleOblivious(ctx: AbilityContext): AbilityResult {
   if (moveId === "captivate") {
     return {
       activated: true,
-      effects: [{ effectType: "none", target: "self" }],
+      effects: [
+        { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+      ],
       messages: [`${name}'s Oblivious prevents Captivate!`],
       movePrevented: true,
     };
@@ -382,7 +387,12 @@ function handleFriendGuard(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
   return {
     activated: true,
-    effects: [{ effectType: "damage-reduction", target: "self" }],
+    effects: [
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+        target: BATTLE_EFFECT_TARGETS.self,
+      },
+    ],
     messages: [`${name}'s Friend Guard reduced the damage!`],
   };
 }
@@ -403,7 +413,7 @@ function handleSereneGrace(ctx: AbilityContext): AbilityResult {
   // but the mechanic exclusion was Gen 5 specific)
   return {
     activated: true,
-    effects: [{ effectType: "none", target: "self" }],
+    effects: [{ effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self }],
     messages: [],
   };
 }

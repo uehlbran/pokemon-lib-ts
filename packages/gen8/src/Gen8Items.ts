@@ -1,4 +1,5 @@
 import type { ActivePokemon, ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { GEN8_TYPE_CHART } from "./Gen8TypeChart.js";
@@ -816,7 +817,13 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ type: "heal", target: "self", value: healAmount }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmount,
+          },
+        ],
         messages: [`${pokemonName}'s Leftovers restored its HP!`],
       };
     }
@@ -828,14 +835,26 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         const healAmount = Math.max(1, Math.floor(maxHp / 16));
         return {
           activated: true,
-          effects: [{ type: "heal", target: "self", value: healAmount }],
+          effects: [
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.heal,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: healAmount,
+            },
+          ],
           messages: [`${pokemonName}'s Black Sludge restored its HP!`],
         };
       }
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ type: "chip-damage", target: "self", value: chipDamage }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: chipDamage,
+          },
+        ],
         messages: [`${pokemonName} was hurt by its Black Sludge!`],
       };
     }
@@ -850,7 +869,13 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       return {
         activated: true,
-        effects: [{ type: "inflict-status", target: "self", status: "badly-poisoned" }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.inflictStatus,
+            target: BATTLE_EFFECT_TARGETS.self,
+            status: "badly-poisoned",
+          },
+        ],
         messages: [`${pokemonName} was badly poisoned by its Toxic Orb!`],
       };
     }
@@ -865,7 +890,13 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       return {
         activated: true,
-        effects: [{ type: "inflict-status", target: "self", status: "burn" }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.inflictStatus,
+            target: BATTLE_EFFECT_TARGETS.self,
+            status: "burn",
+          },
+        ],
         messages: [`${pokemonName} was burned by its Flame Orb!`],
       };
     }
@@ -878,8 +909,16 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: healAmount },
-            { type: "consume", target: "self", value: "sitrus-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.heal,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: healAmount,
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "sitrus-berry",
+            },
           ],
           messages: [`${pokemonName}'s Sitrus Berry restored its HP!`],
         };
@@ -894,8 +933,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 10 },
-            { type: "consume", target: "self", value: "oran-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.heal, target: BATTLE_EFFECT_TARGETS.self, value: 10 },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "oran-berry",
+            },
           ],
           messages: [`${pokemonName}'s Oran Berry restored 10 HP!`],
         };
@@ -913,12 +956,23 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       }
       const effects: ItemEffect[] = [];
       if (hasPrimaryStatus) {
-        effects.push({ type: "status-cure", target: "self" });
+        effects.push({
+          type: BATTLE_ITEM_EFFECT_TYPES.statusCure,
+          target: BATTLE_EFFECT_TARGETS.self,
+        });
       }
       if (hasConfusion) {
-        effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
+        effects.push({
+          type: BATTLE_ITEM_EFFECT_TYPES.volatileCure,
+          target: BATTLE_EFFECT_TARGETS.self,
+          value: "confusion",
+        });
       }
-      effects.push({ type: "consume", target: "self", value: "lum-berry" });
+      effects.push({
+        type: BATTLE_ITEM_EFFECT_TYPES.consume,
+        target: BATTLE_EFFECT_TARGETS.self,
+        value: "lum-berry",
+      });
       return {
         activated: true,
         effects,
@@ -932,8 +986,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "cheri-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.statusCure, target: BATTLE_EFFECT_TARGETS.self },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "cheri-berry",
+            },
           ],
           messages: [`${pokemonName}'s Cheri Berry cured its paralysis!`],
         };
@@ -947,8 +1005,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "chesto-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.statusCure, target: BATTLE_EFFECT_TARGETS.self },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "chesto-berry",
+            },
           ],
           messages: [`${pokemonName}'s Chesto Berry woke it up!`],
         };
@@ -962,8 +1024,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "pecha-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.statusCure, target: BATTLE_EFFECT_TARGETS.self },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "pecha-berry",
+            },
           ],
           messages: [`${pokemonName}'s Pecha Berry cured its poisoning!`],
         };
@@ -977,8 +1043,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "rawst-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.statusCure, target: BATTLE_EFFECT_TARGETS.self },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "rawst-berry",
+            },
           ],
           messages: [`${pokemonName}'s Rawst Berry cured its burn!`],
         };
@@ -992,8 +1062,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "aspear-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.statusCure, target: BATTLE_EFFECT_TARGETS.self },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "aspear-berry",
+            },
           ],
           messages: [`${pokemonName}'s Aspear Berry thawed it out!`],
         };
@@ -1007,8 +1081,16 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "volatile-cure", target: "self", value: "confusion" },
-            { type: "consume", target: "self", value: "persim-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.volatileCure,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "confusion",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "persim-berry",
+            },
           ],
           messages: [`${pokemonName}'s Persim Berry snapped it out of confusion!`],
         };
@@ -1034,10 +1116,18 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const effects: ItemEffect[] = [];
       for (const v of mentalVolatiles) {
         if (pokemon.volatileStatuses.has(v)) {
-          effects.push({ type: "volatile-cure", target: "self", value: v });
+          effects.push({
+            type: BATTLE_ITEM_EFFECT_TYPES.volatileCure,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: v,
+          });
         }
       }
-      effects.push({ type: "consume", target: "self", value: "mental-herb" });
+      effects.push({
+        type: BATTLE_ITEM_EFFECT_TYPES.consume,
+        target: BATTLE_EFFECT_TARGETS.self,
+        value: "mental-herb",
+      });
       return {
         activated: true,
         effects,
@@ -1051,7 +1141,13 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ type: "chip-damage", target: "self", value: chipDamage }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: chipDamage,
+          },
+        ],
         messages: [`${pokemonName} was hurt by its Sticky Barb!`],
       };
     }
@@ -1063,8 +1159,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 20 },
-            { type: "consume", target: "self", value: "berry-juice" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.heal, target: BATTLE_EFFECT_TARGETS.self, value: 20 },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "berry-juice",
+            },
           ],
           messages: [`${pokemonName}'s Berry Juice restored 20 HP!`],
         };
@@ -1106,8 +1206,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: healAmount },
-            { type: "consume", target: "self", value: "sitrus-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.heal,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: healAmount,
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "sitrus-berry",
+            },
           ],
           messages: [`${pokemonName}'s Sitrus Berry restored its HP!`],
         };
@@ -1121,8 +1229,12 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 10 },
-            { type: "consume", target: "self", value: "oran-berry" },
+            { type: BATTLE_ITEM_EFFECT_TYPES.heal, target: BATTLE_EFFECT_TARGETS.self, value: 10 },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "oran-berry",
+            },
           ],
           messages: [`${pokemonName}'s Oran Berry restored 10 HP!`],
         };
@@ -1137,8 +1249,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "attack" },
-            { type: "consume", target: "self", value: "liechi-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "attack",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "liechi-berry",
+            },
           ],
           messages: [`${pokemonName}'s Liechi Berry raised its Attack!`],
         };
@@ -1152,8 +1272,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "defense" },
-            { type: "consume", target: "self", value: "ganlon-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "defense",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "ganlon-berry",
+            },
           ],
           messages: [`${pokemonName}'s Ganlon Berry raised its Defense!`],
         };
@@ -1167,8 +1295,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "speed" },
-            { type: "consume", target: "self", value: "salac-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "speed",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "salac-berry",
+            },
           ],
           messages: [`${pokemonName}'s Salac Berry raised its Speed!`],
         };
@@ -1182,8 +1318,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "spAttack" },
-            { type: "consume", target: "self", value: "petaya-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "spAttack",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "petaya-berry",
+            },
           ],
           messages: [`${pokemonName}'s Petaya Berry raised its Sp. Atk!`],
         };
@@ -1197,8 +1341,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "spDefense" },
-            { type: "consume", target: "self", value: "apicot-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "spDefense",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "apicot-berry",
+            },
           ],
           messages: [`${pokemonName}'s Apicot Berry raised its Sp. Def!`],
         };
@@ -1217,8 +1369,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "chip-damage", target: "opponent", value: retaliationDamage },
-            { type: "consume", target: "self", value: "jaboca-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              value: retaliationDamage,
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "jaboca-berry",
+            },
           ],
           messages: [`${pokemonName}'s Jaboca Berry hurt the attacker!`],
         };
@@ -1237,8 +1397,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "chip-damage", target: "opponent", value: retaliationDamage },
-            { type: "consume", target: "self", value: "rowap-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              value: retaliationDamage,
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "rowap-berry",
+            },
           ],
           messages: [`${pokemonName}'s Rowap Berry hurt the attacker!`],
         };
@@ -1268,7 +1436,13 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       opponent.pokemon.heldItem = "sticky-barb";
       return {
         activated: true,
-        effects: [{ type: "consume", target: "self", value: "sticky-barb" }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: "sticky-barb",
+          },
+        ],
         messages: [
           `${pokemonName}'s Sticky Barb latched onto ${opponent.pokemon.nickname ?? "the attacker"}!`,
         ],
@@ -1281,7 +1455,13 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
       if (damage > 0) {
         return {
           activated: true,
-          effects: [{ type: "consume", target: "self", value: "air-balloon" }],
+          effects: [
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "air-balloon",
+            },
+          ],
           messages: [`${pokemonName}'s Air Balloon popped!`],
         };
       }
@@ -1295,8 +1475,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "none", target: "opponent", value: "force-switch" },
-            { type: "consume", target: "self", value: "red-card" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.none,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              value: "force-switch",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "red-card",
+            },
           ],
           messages: [`${pokemonName} held up its Red Card against the attacker!`],
         };
@@ -1311,8 +1499,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "none", target: "self", value: "force-switch" },
-            { type: "consume", target: "self", value: "eject-button" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.none,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "force-switch",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "eject-button",
+            },
           ],
           messages: [`${pokemonName}'s Eject Button activated!`],
         };
@@ -1327,8 +1523,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "spAttack" },
-            { type: "consume", target: "self", value: "absorb-bulb" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "spAttack",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "absorb-bulb",
+            },
           ],
           messages: [`${pokemonName}'s Absorb Bulb raised its Sp. Atk!`],
         };
@@ -1343,8 +1547,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "attack" },
-            { type: "consume", target: "self", value: "cell-battery" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "attack",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "cell-battery",
+            },
           ],
           messages: [`${pokemonName}'s Cell Battery raised its Attack!`],
         };
@@ -1365,9 +1577,23 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
           return {
             activated: true,
             effects: [
-              { type: "stat-boost", target: "self", value: "attack", stages: 2 },
-              { type: "stat-boost", target: "self", value: "spAttack", stages: 2 },
-              { type: "consume", target: "self", value: "weakness-policy" },
+              {
+                type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+                target: BATTLE_EFFECT_TARGETS.self,
+                value: "attack",
+                stages: 2,
+              },
+              {
+                type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+                target: BATTLE_EFFECT_TARGETS.self,
+                value: "spAttack",
+                stages: 2,
+              },
+              {
+                type: BATTLE_ITEM_EFFECT_TYPES.consume,
+                target: BATTLE_EFFECT_TARGETS.self,
+                value: "weakness-policy",
+              },
             ],
             messages: [`${pokemonName}'s Weakness Policy sharply raised its Attack and Sp. Atk!`],
           };
@@ -1383,8 +1609,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "defense" },
-            { type: "consume", target: "self", value: "kee-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "defense",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "kee-berry",
+            },
           ],
           messages: [`${pokemonName}'s Kee Berry raised its Defense!`],
         };
@@ -1399,8 +1633,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "spDefense" },
-            { type: "consume", target: "self", value: "maranga-berry" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "spDefense",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "maranga-berry",
+            },
           ],
           messages: [`${pokemonName}'s Maranga Berry raised its Sp. Def!`],
         };
@@ -1415,8 +1657,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "spDefense" },
-            { type: "consume", target: "self", value: "luminous-moss" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "spDefense",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "luminous-moss",
+            },
           ],
           messages: [`${pokemonName}'s Luminous Moss raised its Sp. Def!`],
         };
@@ -1431,8 +1681,16 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "attack" },
-            { type: "consume", target: "self", value: "snowball" },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "attack",
+            },
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.consume,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: "snowball",
+            },
           ],
           messages: [`${pokemonName}'s Snowball raised its Attack!`],
         };
@@ -1473,7 +1731,13 @@ function handleOnContact(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 6));
       return {
         activated: true,
-        effects: [{ type: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${pokemonName}'s Rocky Helmet hurt the attacker!`],
       };
     }
@@ -1506,7 +1770,9 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         if (context.rng.chance(0.1)) {
           return {
             activated: true,
-            effects: [{ type: "flinch", target: "opponent" }],
+            effects: [
+              { type: BATTLE_ITEM_EFFECT_TYPES.flinch, target: BATTLE_EFFECT_TARGETS.opponent },
+            ],
             messages: [`${pokemonName}'s King's Rock caused flinching!`],
           };
         }
@@ -1522,7 +1788,9 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         if (context.rng.chance(0.1)) {
           return {
             activated: true,
-            effects: [{ type: "flinch", target: "opponent" }],
+            effects: [
+              { type: BATTLE_ITEM_EFFECT_TYPES.flinch, target: BATTLE_EFFECT_TARGETS.opponent },
+            ],
             messages: [`${pokemonName}'s Razor Fang caused flinching!`],
           };
         }
@@ -1538,7 +1806,13 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         const healAmount = Math.max(1, Math.floor(damageDealt / 8));
         return {
           activated: true,
-          effects: [{ type: "heal", target: "self", value: healAmount }],
+          effects: [
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.heal,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: healAmount,
+            },
+          ],
           messages: [`${pokemonName}'s Shell Bell restored HP!`],
         };
       }
@@ -1561,7 +1835,13 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         const recoil = Math.max(1, Math.floor(maxHp / 10));
         return {
           activated: true,
-          effects: [{ type: "chip-damage", target: "self", value: recoil }],
+          effects: [
+            {
+              type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+              target: BATTLE_EFFECT_TARGETS.self,
+              value: recoil,
+            },
+          ],
           messages: [`${pokemonName} is hurt by its Life Orb!`],
         };
       }

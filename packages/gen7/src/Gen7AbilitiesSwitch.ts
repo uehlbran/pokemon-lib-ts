@@ -1,4 +1,5 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, WeatherType } from "@pokemon-lib-ts/core";
 import { CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS } from "./data/reference-ids";
@@ -159,8 +160,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       if (ctx.opponent.substituteHp > 0) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "opponent",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.opponent,
         stat: "attack",
         stages: -1,
       };
@@ -175,7 +176,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Pressure onStart message
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is exerting its Pressure!`],
       };
     }
@@ -188,8 +191,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
         activated: true,
         effects: [
           {
-            effectType: "weather-set",
-            target: "field",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
             weather: CORE_WEATHER_IDS.rain,
             weatherTurns: turns,
           },
@@ -205,8 +208,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
         activated: true,
         effects: [
           {
-            effectType: "weather-set",
-            target: "field",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
             weather: CORE_WEATHER_IDS.sun,
             weatherTurns: turns,
           },
@@ -222,8 +225,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
         activated: true,
         effects: [
           {
-            effectType: "weather-set",
-            target: "field",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
             weather: CORE_WEATHER_IDS.sand,
             weatherTurns: turns,
           },
@@ -239,8 +242,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
         activated: true,
         effects: [
           {
-            effectType: "weather-set",
-            target: "field",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
             weather: CORE_WEATHER_IDS.hail,
             weatherTurns: turns,
           },
@@ -262,7 +265,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat, stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Download raised its ${statName}!`],
       };
     }
@@ -278,7 +288,13 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "self", newAbility: opponentAbility }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            newAbility: opponentAbility,
+          },
+        ],
         messages: [`${name} traced ${oppName}'s ${opponentAbility}!`],
       };
     }
@@ -287,7 +303,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Mold Breaker onStart announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} breaks the mold!`],
       };
     }
@@ -296,7 +314,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Teravolt onStart announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a bursting aura!`],
       };
     }
@@ -305,7 +325,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Turboblaze onStart announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a blazing aura!`],
       };
     }
@@ -316,7 +338,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} transformed into ${oppName}!`],
       };
     }
@@ -325,7 +349,13 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts -- Illusion: sets volatile on switch-in
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "self", volatile: "illusion" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: "illusion",
+          },
+        ],
         messages: [],
       };
     }
@@ -337,7 +367,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       if (ctx.pokemon.pokemon.speciesId !== 681) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -376,7 +408,13 @@ function handleSwitchOut(ctx: AbilityContext): AbilityResult {
       const healAmount = Math.max(1, Math.floor(maxHp / 3));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmount,
+          },
+        ],
         messages: [`${name}'s Regenerator restored its HP!`],
       };
     }
@@ -387,7 +425,12 @@ function handleSwitchOut(ctx: AbilityContext): AbilityResult {
       if (!ctx.pokemon.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-cure", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusCure,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Natural Cure cured its status!`],
       };
     }
@@ -430,7 +473,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: "paralysis",
+          },
+        ],
         messages: [`${name}'s Static paralyzed the attacker!`],
       };
     }
@@ -442,7 +491,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: "burn",
+          },
+        ],
         messages: [`${name}'s Flame Body burned the attacker!`],
       };
     }
@@ -454,7 +509,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: "poison",
+          },
+        ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
       };
     }
@@ -468,7 +529,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const abilityName = abilityId === "rough-skin" ? "Rough Skin" : "Iron Barbs";
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s ${abilityName} hurt the attacker!`],
       };
     }
@@ -484,21 +551,39 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (roll < 10) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: "sleep",
+            },
+          ],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
         };
       }
       if (roll < 20) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: "paralysis",
+            },
+          ],
           messages: [`${name}'s Effect Spore paralyzed the attacker!`],
         };
       }
       if (roll < 30) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: "poison",
+            },
+          ],
           messages: [`${name}'s Effect Spore poisoned the attacker!`],
         };
       }
@@ -522,7 +607,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       }
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            volatile: "infatuation",
+          },
+        ],
         messages: [`${name}'s Cute Charm infatuated the attacker!`],
       };
     }
@@ -535,7 +626,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const chipDamage = Math.max(1, Math.floor(otherMaxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s Aftermath hurt the attacker!`],
       };
     }
@@ -550,7 +647,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "opponent", newAbility: "mummy" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            newAbility: "mummy",
+          },
+        ],
         messages: [`${oppName}'s ability became Mummy!`],
       };
     }
@@ -564,7 +667,14 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const abilityName = abilityId === "gooey" ? "Gooey" : "Tangling Hair";
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "opponent", stat: "speed", stages: -1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            stat: "speed",
+            stages: -1,
+          },
+        ],
         messages: [`${name}'s ${abilityName} lowered the attacker's Speed!`],
       };
     }
@@ -576,7 +686,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: "poison",
+          },
+        ],
         messages: [`${name}'s Poison Touch poisoned the target!`],
       };
     }
@@ -588,7 +704,9 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Pickpocket stole ${oppName}'s ${other.pokemon.heldItem}!`],
       };
     }
@@ -624,7 +742,13 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status,
+          },
+        ],
         messages: [`${name}'s Synchronize spread ${status}!`],
       };
     }
