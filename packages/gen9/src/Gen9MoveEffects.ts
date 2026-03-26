@@ -22,7 +22,13 @@ import type {
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { CORE_TYPE_IDS, CORE_VOLATILE_IDS, type VolatileStatus } from "@pokemon-lib-ts/core";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import {
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
 import { GEN9_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
@@ -124,7 +130,9 @@ export function handleMakeItRain(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
-    statChanges: [{ target: "attacker", stat: "spAttack", stages: -1 }],
+    statChanges: [
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: -1 },
+    ],
     messages: [`${attackerName}'s Special Attack fell!`],
   };
 }
@@ -451,8 +459,8 @@ export function handleTidyUp(ctx: MoveEffectContext): MoveEffectResult {
   return {
     ...base,
     statChanges: [
-      { target: "attacker", stat: "attack", stages: 1 },
-      { target: "attacker", stat: "speed", stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.speed, stages: 1 },
     ],
     messages,
   };
@@ -565,8 +573,8 @@ export function handleTeraBlast(ctx: MoveEffectContext): MoveEffectResult {
   return {
     ...base,
     statChanges: [
-      { target: "attacker", stat: "attack", stages: -1 },
-      { target: "attacker", stat: "spAttack", stages: -1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: -1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: -1 },
     ],
     messages: [`${attackerName}'s Attack fell!`, `${attackerName}'s Sp. Atk fell!`],
   };

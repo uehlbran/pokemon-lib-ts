@@ -13,7 +13,12 @@
  * Source: Showdown data/mods/gen6/abilities.ts
  */
 
-import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
+import {
+  type AbilityContext,
+  type AbilityResult,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+} from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
 import {
   handleGen6DamageCalcAbility,
@@ -217,7 +222,12 @@ export function applyGen6Ability(trigger: AbilityTrigger, ctx: AbilityContext): 
         const name = ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
         return {
           activated: true,
-          effects: [{ effectType: "none", target: "self" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.none,
+              target: BATTLE_EFFECT_TARGETS.self,
+            },
+          ],
           messages: [`${name}'s ${ctx.pokemon.ability} made ${ctx.move.displayName} miss!`],
         };
       }

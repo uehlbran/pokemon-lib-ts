@@ -20,8 +20,13 @@
  * Source: references/pokemon-showdown/data/moves.ts (base definitions)
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
+import { CORE_TYPE_IDS, type PokemonType } from "@pokemon-lib-ts/core";
+import { GEN5_ABILITY_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -182,7 +187,7 @@ function handleHealPulse(ctx: MoveEffectContext): MoveEffectResult {
  */
 function handleAromatherapy(_ctx: MoveEffectContext): MoveEffectResult {
   return makeResult({
-    teamStatusCure: { side: "attacker" },
+    teamStatusCure: { side: BATTLE_EFFECT_TARGETS.attacker },
     messages: ["A soothing aroma wafted through the area!"],
   });
 }
@@ -197,7 +202,7 @@ function handleAromatherapy(_ctx: MoveEffectContext): MoveEffectResult {
  */
 function handleHealBell(_ctx: MoveEffectContext): MoveEffectResult {
   return makeResult({
-    teamStatusCure: { side: "attacker" },
+    teamStatusCure: { side: BATTLE_EFFECT_TARGETS.attacker },
     messages: ["A bell chimed!"],
   });
 }
@@ -217,7 +222,10 @@ function handleSoak(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   return makeResult({
-    typeChange: { target: "defender", types: ["water"] as readonly PokemonType[] },
+    typeChange: {
+      target: BATTLE_EFFECT_TARGETS.defender,
+      types: [CORE_TYPE_IDS.water] as readonly PokemonType[],
+    },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"} transformed into the Water type!`],
   });
 }
@@ -317,7 +325,7 @@ function handleEntrainment(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   return makeResult({
-    abilityChange: { target: "defender", ability: sourceAbility },
+    abilityChange: { target: BATTLE_EFFECT_TARGETS.defender, ability: sourceAbility },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"} acquired ${sourceAbility}!`],
   });
 }
@@ -342,12 +350,12 @@ function handleSimpleBeam(ctx: MoveEffectContext): MoveEffectResult {
   const targetAbility = ctx.defender.ability;
 
   // Source: Showdown data/moves.ts simplebeam.onTryHit -- target.ability === 'simple'
-  if (targetAbility === "simple") {
+  if (targetAbility === GEN5_ABILITY_IDS.simple) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
   // Source: Showdown data/moves.ts simplebeam.onTryHit -- target.ability === 'truant'
-  if (targetAbility === "truant") {
+  if (targetAbility === GEN5_ABILITY_IDS.truant) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
@@ -358,7 +366,7 @@ function handleSimpleBeam(ctx: MoveEffectContext): MoveEffectResult {
 
   // Source: Showdown data/moves.ts simplebeam.onHit -- target.setAbility('simple')
   return makeResult({
-    abilityChange: { target: "defender", ability: "simple" },
+    abilityChange: { target: BATTLE_EFFECT_TARGETS.defender, ability: GEN5_ABILITY_IDS.simple },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"} acquired Simple!`],
   });
 }
@@ -388,12 +396,12 @@ function handleWorrySeed(ctx: MoveEffectContext): MoveEffectResult {
   const targetAbility = ctx.defender.ability;
 
   // Source: Showdown data/moves.ts worryseed -- target.ability === 'insomnia'
-  if (targetAbility === "insomnia") {
+  if (targetAbility === GEN5_ABILITY_IDS.insomnia) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
   // Source: Showdown data/moves.ts worryseed -- target.ability === 'truant'
-  if (targetAbility === "truant") {
+  if (targetAbility === GEN5_ABILITY_IDS.truant) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
@@ -414,7 +422,10 @@ function handleWorrySeed(ctx: MoveEffectContext): MoveEffectResult {
   messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} acquired Insomnia!`);
 
   return makeResult({
-    abilityChange: { target: "defender", ability: "insomnia" },
+    abilityChange: {
+      target: BATTLE_EFFECT_TARGETS.defender,
+      ability: GEN5_ABILITY_IDS.insomnia,
+    },
     messages,
   });
 }
@@ -495,9 +506,9 @@ function handleRolePlay(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   // Source: Showdown data/moves.ts roleplay.onHit -- source.setAbility(target.ability)
-  // Uses abilityChange with target: "attacker" since only the user's ability changes.
+  // Uses abilityChange with target: attacker since only the user's ability changes.
   return makeResult({
-    abilityChange: { target: "attacker", ability: targetAbility },
+    abilityChange: { target: BATTLE_EFFECT_TARGETS.attacker, ability: targetAbility },
     messages: [`${ctx.attacker.pokemon.nickname ?? "The user"} copied ${targetAbility}!`],
   });
 }

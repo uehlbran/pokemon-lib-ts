@@ -29,8 +29,12 @@
  * Source: Bulbapedia -- individual move pages
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
-import type { SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
+import { CORE_STAT_IDS, type SeededRandom, type VolatileStatus } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -669,11 +673,11 @@ export function handleNoRetreat(hasNoRetreatAlready: boolean): MoveEffectResult 
     selfVolatileInflicted: "no-retreat",
     selfVolatileData: { turnsLeft: -1 }, // Permanent until switch
     statChanges: [
-      { target: "attacker", stat: "attack", stages: 1 },
-      { target: "attacker", stat: "defense", stages: 1 },
-      { target: "attacker", stat: "spAttack", stages: 1 },
-      { target: "attacker", stat: "spDefense", stages: 1 },
-      { target: "attacker", stat: "speed", stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.speed, stages: 1 },
     ],
     messages: ["The Pokemon boosted all its stats and can no longer switch out!"],
   };
@@ -708,7 +712,9 @@ export function handleTarShot(targetHasTarShot: boolean): MoveEffectResult {
   // Source: Showdown -- boosts always apply; volatileStatus set separately
   const result: MoveEffectResult = {
     ...base,
-    statChanges: [{ target: "defender", stat: "speed", stages: -1 }],
+    statChanges: [
+      { target: BATTLE_EFFECT_TARGETS.defender, stat: CORE_STAT_IDS.speed, stages: -1 },
+    ],
     messages: [],
   };
 
@@ -1072,11 +1078,11 @@ export function executeGen8MoveEffect(
         ...base,
         recoilDamage: cost,
         statChanges: [
-          { target: "attacker", stat: "attack", stages: 1 },
-          { target: "attacker", stat: "defense", stages: 1 },
-          { target: "attacker", stat: "spAttack", stages: 1 },
-          { target: "attacker", stat: "spDefense", stages: 1 },
-          { target: "attacker", stat: "speed", stages: 1 },
+          { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+          { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 },
+          { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 1 },
+          { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: 1 },
+          { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.speed, stages: 1 },
         ],
         messages: ["The Pokemon boosted all its stats!"],
       };

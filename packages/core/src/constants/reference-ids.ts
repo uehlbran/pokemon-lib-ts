@@ -382,6 +382,17 @@ export const CORE_TYPE_IDS = {
   water: "water",
 } as const;
 
+export const CORE_STAT_IDS = {
+  hp: "hp",
+  attack: "attack",
+  defense: "defense",
+  spAttack: "spAttack",
+  spDefense: "spDefense",
+  speed: "speed",
+  accuracy: "accuracy",
+  evasion: "evasion",
+} as const;
+
 export const CORE_SCREEN_IDS = {
   auroraVeil: "aurora-veil",
   lightScreen: "light-screen",

@@ -22,8 +22,23 @@
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
-import type { BattleStat, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
+import {
+  type BattleStat,
+  CORE_STAT_IDS,
+  type PrimaryStatus,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
+
+type MoveEffectBehaviorTarget =
+  | typeof BATTLE_EFFECT_TARGETS.attacker
+  | typeof BATTLE_EFFECT_TARGETS.defender;
+
+type MoveEffectBehaviorMultiTarget = MoveEffectBehaviorTarget | typeof BATTLE_EFFECT_TARGETS.both;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -136,11 +151,13 @@ function handleDefog(_ctx: MoveEffectContext): MoveEffectResult {
   return makeResult({
     // Evasion -1 on target
     // Source: Showdown gen5/moves.ts -- `this.boost({evasion: -1})` on target
-    statChanges: [{ target: "defender", stat: "evasion", stages: -1 }],
+    statChanges: [
+      { target: BATTLE_EFFECT_TARGETS.defender, stat: CORE_STAT_IDS.evasion, stages: -1 },
+    ],
     // Clear hazards and screens from TARGET side only
     // Source: Showdown gen5/moves.ts -- removes from `pokemon.side` (target)
-    clearSideHazards: "defender",
-    screensCleared: "defender",
+    clearSideHazards: BATTLE_EFFECT_TARGETS.defender,
+    screensCleared: BATTLE_EFFECT_TARGETS.defender,
     messages: [],
   });
 }
@@ -159,9 +176,9 @@ function handleDefog(_ctx: MoveEffectContext): MoveEffectResult {
 function handleScald(ctx: MoveEffectContext): MoveEffectResult {
   const result: {
     statusInflicted: PrimaryStatus | null;
-    statusCuredOnly: { target: "attacker" | "defender" | "both" } | null;
+    statusCuredOnly: { target: MoveEffectBehaviorMultiTarget } | null;
     messages: string[];
-    statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+    statChanges: Array<{ target: MoveEffectBehaviorTarget; stat: BattleStat; stages: number }>;
   } = {
     statusInflicted: null,
     statusCuredOnly: null,
@@ -172,7 +189,7 @@ function handleScald(ctx: MoveEffectContext): MoveEffectResult {
   // Thaw the USER if frozen (the defrost flag handles this in the engine,
   // but we also produce the result here for completeness)
   if (ctx.attacker.pokemon.status === "freeze") {
-    result.statusCuredOnly = { target: "attacker" };
+    result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
     result.messages.push(`${ctx.attacker.pokemon.nickname ?? "The attacker"} thawed out!`);
   }
 
@@ -203,8 +220,8 @@ function handleGrowth(ctx: MoveEffectContext): MoveEffectResult {
 
   return makeResult({
     statChanges: [
-      { target: "attacker", stat: "attack", stages },
-      { target: "attacker", stat: "spAttack", stages },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages },
     ],
     messages: [],
   });
@@ -349,19 +366,22 @@ function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
   // Clear Leech Seed from the user
   // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('leechseed')
   const volatilesToClear: Array<{
-    target: "attacker" | "defender";
+    target: MoveEffectBehaviorTarget;
     volatile: VolatileStatus;
   }> = [];
 
   if (ctx.attacker.volatileStatuses.has("leech-seed")) {
-    volatilesToClear.push({ target: "attacker", volatile: "leech-seed" });
+    volatilesToClear.push({
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      volatile: "leech-seed",
+    });
     messages.push("The Leech Seed was removed!");
   }
 
   // Clear binding/trapping from the user
   // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('partiallytrapped')
   if (ctx.attacker.volatileStatuses.has("bound")) {
-    volatilesToClear.push({ target: "attacker", volatile: "bound" });
+    volatilesToClear.push({ target: BATTLE_EFFECT_TARGETS.attacker, volatile: "bound" });
     messages.push("The binding was removed!");
   }
 
