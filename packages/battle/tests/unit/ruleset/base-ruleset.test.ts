@@ -8,9 +8,11 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -18,6 +20,7 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { beforeEach, describe, expect, it } from "vitest";
+import { BATTLE_GIMMICK_IDS } from "../../../src";
 import type {
   AbilityContext,
   DamageContext,
@@ -27,8 +30,7 @@ import type {
 } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
-import { createActivePokemon, createTestPokemon } from "../../../src/utils";
-import { BATTLE_GIMMICK_IDS } from "../../../src";
+import { createOnFieldPokemon, createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { createMockMoveSlot } from "../../helpers/move-slot";
 
@@ -51,7 +53,7 @@ const {
   steel,
   water,
 } = CORE_TYPE_IDS;
-const { blaze, skillLink, solarPower } = CORE_ABILITY_IDS;
+const { skillLink } = CORE_ABILITY_IDS;
 const {
   encoreCountdown,
   futureAttack,
@@ -65,39 +67,28 @@ const {
 } = CORE_END_OF_TURN_EFFECT_IDS;
 const { spikes, stealthRock, toxicSpikes } = CORE_HAZARD_IDS;
 const { blackSludge, leftovers } = CORE_ITEM_IDS;
-const { bind, focusBlast, leechSeed, perishSong, quickAttack, swift, tackle, wish } =
-  CORE_MOVE_IDS;
+const { bind, leechSeed, perishSong, quickAttack, tackle, wish } = CORE_MOVE_IDS;
 const { badlyPoisoned, burn, paralysis, poison, sleep } = CORE_STATUS_IDS;
 const { curse, ingrain, nightmare, sleepCounter, toxicCounter } = CORE_VOLATILE_IDS;
 const TEST_DATA_MANAGER = createMockDataManager();
-const TACKLE_MOVE_DATA = TEST_DATA_MANAGER.getMove(tackle);
 
-function makeMove(moveId: string, overrides: Partial<MoveData> = {}): MoveData {
-  const base = (() => {
-    try {
-      return TEST_DATA_MANAGER.getMove(moveId);
-    } catch {
-      return TACKLE_MOVE_DATA;
-    }
-  })();
-  const move = { ...base, flags: { ...base.flags } } as MoveData;
-  move.id = moveId;
-  move.displayName = overrides.displayName ?? move.displayName;
-  move.type = overrides.type ?? move.type;
-  move.category = overrides.category ?? move.category;
-  move.power = overrides.power ?? move.power;
-  move.accuracy = overrides.accuracy ?? move.accuracy;
-  move.pp = overrides.pp ?? move.pp;
-  move.priority = overrides.priority ?? move.priority;
-  move.target = overrides.target ?? move.target;
-  move.flags = {
-    ...move.flags,
-    ...overrides.flags,
-  };
-  move.effect = overrides.effect ?? move.effect;
-  move.description = overrides.description ?? move.description;
-  move.generation = overrides.generation ?? move.generation;
-  return move;
+function createCanonicalMove(moveId: string): MoveData {
+  const baseMove = TEST_DATA_MANAGER.getMove(moveId);
+  return {
+    ...baseMove,
+    flags: { ...baseMove.flags },
+  } as MoveData;
+}
+
+function createSyntheticMoveFrom(baseMove: MoveData, overrides: Partial<MoveData> = {}): MoveData {
+  return {
+    ...baseMove,
+    ...overrides,
+    flags: {
+      ...baseMove.flags,
+      ...overrides.flags,
+    },
+  } as MoveData;
 }
 
 // Concrete implementation of BaseRuleset for testing
@@ -198,12 +189,12 @@ describe("BaseRuleset", () => {
       // Attack = floor(((2*84 + 31 + 0) * 50) / 100) + 5 = 104; floor(104 * 1.1) = 114
       // Defense = floor(((2*78 + 31 + 0) * 50) / 100) + 5 = 98
       // SpAttack = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129; floor(129 * 0.9) = 116
-      // SpDefense = floor(((2*85 + 31 + 0) * 50) / 100) + 5 = 105
+      // SpDefense = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129
       // Speed = floor(((2*100 + 31 + 0) * 50) / 100) + 5 = 120
       expect(stats.attack).toBe(114);
       expect(stats.defense).toBe(98);
       expect(stats.spAttack).toBe(116);
-      expect(stats.spDefense).toBe(105);
+      expect(stats.spDefense).toBe(129);
       expect(stats.speed).toBe(120);
     });
 
@@ -220,7 +211,7 @@ describe("BaseRuleset", () => {
       expect(stats.attack).toBe(224);
       expect(stats.defense).toBe(192);
       expect(stats.spAttack).toBe(228);
-      expect(stats.spDefense).toBe(206);
+      expect(stats.spDefense).toBe(254);
       expect(stats.speed).toBe(236);
     });
 
@@ -261,9 +252,9 @@ describe("BaseRuleset", () => {
     it("given a normal pokemon, when rollCritical is called, then crit probability is based on stage 0", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, [fire, flying]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       const rng = new SeededRandom(42);
-      const move = makeMove(tackle);
+      const move = createCanonicalMove(tackle);
 
       // Act — run many times and check distribution
       let crits = 0;
@@ -304,8 +295,8 @@ describe("BaseRuleset", () => {
           speed: 80,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -348,8 +339,8 @@ describe("BaseRuleset", () => {
           speed: 120,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -391,8 +382,8 @@ describe("BaseRuleset", () => {
           speed: 80,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
 
       const state = {
@@ -419,11 +410,10 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-      const move = makeMove(swift);
-      move.accuracy = null;
+      const move = createSyntheticMoveFrom(createCanonicalMove(tackle), { accuracy: null });
 
       // Act
       const hits = ruleset.doesMoveHit({
@@ -442,10 +432,10 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
-      const move = makeMove(tackle);
+      const move = createSyntheticMoveFrom(createCanonicalMove(tackle), { accuracy: 100 });
 
       // Act & Assert — 100% accuracy at neutral stages should always hit
       for (let i = 0; i < 100; i++) {
@@ -465,12 +455,11 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       active1.statStages.accuracy = 6;
       const rng = new SeededRandom(42);
-      const move = makeMove(tackle);
-      move.accuracy = 70;
+      const move = createSyntheticMoveFrom(createCanonicalMove(tackle), { accuracy: 70 });
 
       // Act
       let hits = 0;
@@ -496,11 +485,11 @@ describe("BaseRuleset", () => {
       // Arrange
       const pokemon1 = createTestPokemon(6, 50);
       const pokemon2 = createTestPokemon(9, 50);
-      const active1 = createActivePokemon(pokemon1, 0, [fire]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [fire]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       active2.statStages.evasion = 6;
       const rng = new SeededRandom(42);
-      const move = makeMove(tackle);
+      const move = createCanonicalMove(tackle);
 
       // Act
       let hits = 0;
@@ -553,7 +542,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act
       const damage = ruleset.applyStatusDamage(active, burn, {} as unknown as BattleState);
@@ -574,7 +563,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act
       const damage = ruleset.applyStatusDamage(active, poison, {} as unknown as BattleState);
@@ -586,7 +575,7 @@ describe("BaseRuleset", () => {
     it("given a sleeping pokemon, when applyStatusDamage is called, then 0 damage is returned", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act
       const damage = ruleset.applyStatusDamage(active, sleep, {} as unknown as BattleState);
@@ -600,7 +589,7 @@ describe("BaseRuleset", () => {
     it("given a frozen pokemon, when checkFreezeThaw is called many times, then thaw rate is ~20%", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       const rng = new SeededRandom(42);
 
       // Act
@@ -641,7 +630,7 @@ describe("BaseRuleset", () => {
     it("given a paralyzed pokemon and a deterministic-true RNG, when called, then returns true (fully paralyzed)", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: paralysis });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       // Mock RNG: next() always returns 0 → chance(0.25) → 0 < 0.25 → true
       const rng = { next: () => 0, int: () => 0, chance: () => true } as unknown as SeededRandom;
 
@@ -655,7 +644,7 @@ describe("BaseRuleset", () => {
     it("given a paralyzed pokemon and a deterministic-false RNG, when called, then returns false (can move)", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: paralysis });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       // Mock RNG: next() always returns 0.9999 → chance(0.25) → 0.9999 < 0.25 → false
       const rng = {
         next: () => 0.9999,
@@ -673,7 +662,7 @@ describe("BaseRuleset", () => {
     it("given a seeded RNG, when checkFullParalysis is called many times, then paralysis rate is ~25%", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: paralysis });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       const rng = new SeededRandom(42);
 
       // Act
@@ -735,7 +724,7 @@ describe("BaseRuleset", () => {
     it("given a pokemon with turnsLeft > 1, when called, then decrements counter and returns false (still sleeping)", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: sleep });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       active.volatileStatuses.set(sleepCounter, { turnsLeft: 3 });
 
       // Act
@@ -750,7 +739,7 @@ describe("BaseRuleset", () => {
     it("given a pokemon with turnsLeft = 1, when called, then wakes up, clears status, and returns true (can act)", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: sleep });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       active.volatileStatuses.set(sleepCounter, { turnsLeft: 1 });
 
       // Act
@@ -765,7 +754,7 @@ describe("BaseRuleset", () => {
     it("given a pokemon with turnsLeft = 0, when called, then wakes up, clears status, and returns true (can act)", () => {
       // Arrange
       const pokemon = createTestPokemon(6, 50, { status: sleep });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       active.volatileStatuses.set(sleepCounter, { turnsLeft: 0 });
 
       // Act
@@ -798,14 +787,20 @@ describe("BaseRuleset", () => {
 
   describe("applyAbility", () => {
     it("given any trigger, when applyAbility is called, then no-op result is returned", () => {
-      const result = ruleset.applyAbility("on-switch-in", {} as unknown as AbilityContext);
+      const result = ruleset.applyAbility(
+        CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
+        {} as unknown as AbilityContext,
+      );
       expect(result.activated).toBe(false);
     });
   });
 
   describe("applyHeldItem", () => {
     it("given any trigger, when applyHeldItem is called, then no-op result is returned", () => {
-      const result = ruleset.applyHeldItem("on-after-attack", {} as unknown as ItemContext);
+      const result = ruleset.applyHeldItem(
+        CORE_ITEM_TRIGGER_IDS.onAfterAttack,
+        {} as unknown as ItemContext,
+      );
       expect(result.activated).toBe(false);
     });
   });
@@ -958,7 +953,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
       // Set up toxic-counter volatile with counter=1
       active.volatileStatuses.set(toxicCounter, {
         turnsLeft: -1,
@@ -966,23 +961,11 @@ describe("BaseRuleset", () => {
       });
 
       // Act — first call (counter=1): floor(160*1/16) = 10
-      const dmg1 = ruleset.applyStatusDamage(
-        active,
-        badlyPoisoned,
-        {} as unknown as BattleState,
-      );
+      const dmg1 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
       // Act — second call (counter=2): floor(160*2/16) = 20
-      const dmg2 = ruleset.applyStatusDamage(
-        active,
-        badlyPoisoned,
-        {} as unknown as BattleState,
-      );
+      const dmg2 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
       // Act — third call (counter=3): floor(160*3/16) = 30
-      const dmg3 = ruleset.applyStatusDamage(
-        active,
-        badlyPoisoned,
-        {} as unknown as BattleState,
-      );
+      const dmg3 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
 
       // Assert
       expect(dmg1).toBe(10);
@@ -1016,8 +999,8 @@ describe("BaseRuleset", () => {
           speed: 200,
         },
       });
-      const active1 = createActivePokemon(pokemon1, 0, [normal]);
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active1 = createOnFieldPokemon(pokemon1, 0, [normal]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
       const rulesetWithDm = new TestRuleset(TEST_DATA_MANAGER);
 
@@ -1054,7 +1037,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire]);
 
       // Act — access via resolveTurnOrder (getEffectiveSpeed is protected)
       // We test it indirectly: paralyzed side 0 (base 100) vs healthy side 1 (base 49)
@@ -1070,7 +1053,7 @@ describe("BaseRuleset", () => {
           speed: 49,
         },
       });
-      const active2 = createActivePokemon(pokemon2, 0, [water]);
+      const active2 = createOnFieldPokemon(pokemon2, 0, [water]);
       const rng = new SeededRandom(42);
       const state = {
         sides: [{ active: [active] }, { active: [active2] }],
@@ -1097,7 +1080,7 @@ describe("BaseRuleset", () => {
           speed: 51,
         },
       });
-      const active3 = createActivePokemon(pokemon3, 0, [water]);
+      const active3 = createOnFieldPokemon(pokemon3, 0, [water]);
       const state2 = {
         sides: [{ active: [active] }, { active: [active3] }],
         trickRoom: { active: false, turnsLeft: 0 },
@@ -1123,7 +1106,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire, flying]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: floor(100 / 4) = 25
@@ -1143,7 +1126,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire, flying]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: max(1, floor(1/4)) = max(1, 0) = 1
@@ -1163,7 +1146,7 @@ describe("BaseRuleset", () => {
           speed: 100,
         },
       });
-      const active = createActivePokemon(pokemon, 0, [fire, flying]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act: pass 0 for damageDealt — BaseRuleset ignores it
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: floor(200 / 4) = 50, not 0
@@ -1176,7 +1159,7 @@ describe("BaseRuleset", () => {
       // Arrange
       const rng = new SeededRandom(42);
       const pokemon = createTestPokemon(6, 50);
-      const active = createActivePokemon(pokemon, 0, [fire, flying]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act / Assert
       for (let i = 0; i < 1000; i++) {
         const count = ruleset.rollMultiHitCount(active, rng);
@@ -1188,7 +1171,7 @@ describe("BaseRuleset", () => {
       // Arrange
       const rng = new SeededRandom(42);
       const pokemon = createTestPokemon(6, 50, { ability: skillLink });
-      const active = createActivePokemon(pokemon, 0, [fire, flying]);
+      const active = createOnFieldPokemon(pokemon, 0, [fire, flying]);
       // Act / Assert
       for (let i = 0; i < 20; i++) {
         const count = ruleset.rollMultiHitCount(active, rng);

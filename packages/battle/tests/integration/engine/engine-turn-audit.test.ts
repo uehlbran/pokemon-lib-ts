@@ -24,11 +24,11 @@ import type { MoveData, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type {
   ActivePokemon,
   BattleConfig,
@@ -41,6 +41,7 @@ import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -636,7 +637,7 @@ class ContactItemTrackingRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string): import("../../../src/context").ItemResult {
-    if (trigger === "on-contact") {
+    if (trigger === CORE_ITEM_TRIGGER_IDS.onContact) {
       this.contactItemTriggerCount++;
       return {
         activated: true,

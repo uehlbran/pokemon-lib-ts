@@ -1,12 +1,17 @@
-import { CORE_ITEM_IDS, CORE_MOVE_IDS, type PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createMockMoveSlot } from "../../helpers/move-slot";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+import { createMockMoveSlot } from "../../helpers/move-slot";
 
 function createTestEngine(overrides?: {
   team1?: PokemonInstance[];
@@ -73,7 +78,7 @@ class ConsumeEffectMockRuleset extends MockRuleset {
   }
 
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
-    if (trigger !== "on-damage-taken") {
+    if (trigger !== CORE_ITEM_TRIGGER_IDS.onDamageTaken) {
       return { activated: false, effects: [], messages: [] };
     }
 

@@ -1,5 +1,5 @@
-import { CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import type { PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_GENDERS, CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createDefaultStatStages,
@@ -10,8 +10,8 @@ import {
 } from "../../../src/utils";
 
 describe("BattleHelpers", () => {
-  const fireFlyingTypes: PokemonType[] = [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying]
-  const fireMonotype: PokemonType[] = [CORE_TYPE_IDS.fire]
+  const fireFlyingTypes: PokemonType[] = [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.flying];
+  const fireMonotype: PokemonType[] = [CORE_TYPE_IDS.fire];
 
   describe("createDefaultStatStages", () => {
     it("given no arguments, when createDefaultStatStages is called, then all stages are 0", () => {
@@ -145,7 +145,7 @@ describe("BattleHelpers", () => {
       expect(snapshot.currentHp).toBe(currentHp);
       expect(snapshot.maxHp).toBe(maxHp);
       expect(snapshot.status).toBeNull();
-      expect(snapshot.gender).toBe("male");
+      expect(snapshot.gender).toBe(CORE_GENDERS.male);
       expect(snapshot.isShiny).toBe(false);
     });
   });
