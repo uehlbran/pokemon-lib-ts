@@ -1,5 +1,6 @@
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
@@ -17,11 +18,11 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const ABILITIES = CORE_ABILITY_IDS
-const MOVES = CORE_MOVE_IDS
-const STATUS = CORE_STATUS_IDS
-const VOLATILES = CORE_VOLATILE_IDS
-const SPECIES = GEN3_SPECIES_IDS
+const ABILITIES = CORE_ABILITY_IDS;
+const MOVES = CORE_MOVE_IDS;
+const STATUS = CORE_STATUS_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const SPECIES = GEN3_SPECIES_IDS;
 
 function createEngine(overrides?: {
   seed?: number;
@@ -307,7 +308,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     // Now verify: the switch-in ability calls should target the REPLACEMENT Pokemon,
     // not the fainted ones
     const switchInAbilityCalls = applyAbilitySpy.mock.calls.filter(
-      (call) => call[0] === "on-switch-in",
+      (call) => call[0] === CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
     );
 
     // Both replacements should have had their switch-in abilities fired
@@ -344,7 +345,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     ruleset.setFixedDamage(0);
     const origApplyAbility = ruleset.applyAbility.bind(ruleset);
     ruleset.applyAbility = (trigger, context) => {
-      if (trigger === "on-switch-in") {
+      if (trigger === CORE_ABILITY_TRIGGER_IDS.onSwitchIn) {
         abilityOrder.push(context.pokemon.pokemon.uid);
       }
       return origApplyAbility(trigger, context);
@@ -454,7 +455,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
     ruleset.setFixedDamage(0);
     const origApplyAbility = ruleset.applyAbility.bind(ruleset);
     ruleset.applyAbility = (trigger, context) => {
-      if (trigger === "on-switch-in") {
+      if (trigger === CORE_ABILITY_TRIGGER_IDS.onSwitchIn) {
         abilityOrder.push(context.pokemon.pokemon.uid);
       }
       return origApplyAbility(trigger, context);
