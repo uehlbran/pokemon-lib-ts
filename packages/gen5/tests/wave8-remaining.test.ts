@@ -664,11 +664,7 @@ describe("Nature Power in Gen 5", () => {
 
     expect(result).not.toBeNull();
     expect(result!.recursiveMove).toBe(moveIds.triAttack);
-    expect(
-      result!.messages.some((m: string) =>
-        m.includes(dataManager.getMove(moveIds.triAttack).displayName),
-      ),
-    ).toBe(true);
+    expect(result!.messages).toContain("Nature Power turned into Tri Attack!");
   });
 
   it(`given Nature Power calls ${moveIds.triAttack}, when resolved, then the recursive move ID matches the owned move constant`, () => {

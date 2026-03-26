@@ -6,6 +6,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -49,6 +50,7 @@ const NATURES = GEN4_NATURE_IDS;
 const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
 const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const GENDERS = CORE_GENDERS;
+const DATA = createGen4DataManager();
 
 function createMockRng(intReturnValue: number) {
   return {
@@ -74,6 +76,7 @@ function createActivePokemon(opts: {
   itemKnockedOff?: boolean;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
+  const level = 50;
   const stats: StatBlock = {
     hp: maxHp,
     attack: 100,
@@ -82,10 +85,11 @@ function createActivePokemon(opts: {
     spDefense: 100,
     speed: 100,
   };
+  const species = DATA.getSpecies(SPECIES.bulbasaur);
 
   const pokemon = {
-    uid: `test-${Math.random().toString(36).slice(2, 8)}`,
-    speciesId: SPECIES.bulbasaur,
+    uid: `gen4-${species.id}-${level}`,
+    speciesId: species.id,
     nickname: opts.nickname ?? null,
     level: 50,
     experience: 0,
@@ -232,7 +236,7 @@ describe("Bug #259 -- Pressure ability", () => {
     //   one additional PP is deducted."
     const ruleset = new Gen4Ruleset(createGen4DataManager());
     const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["psychic"], ability: "pressure" });
+    const defender = createActivePokemon({ types: ["psychic"], ability: ABILITIES.pressure });
     const state = createMinimalBattleState(attacker, defender);
 
     const cost = ruleset.getPPCost(attacker, defender, state);
@@ -244,7 +248,7 @@ describe("Bug #259 -- Pressure ability", () => {
     // Source: Showdown sim/battle.ts Gen 4 -- default PP cost is 1
     const ruleset = new Gen4Ruleset(createGen4DataManager());
     const attacker = createActivePokemon({ types: ["normal"] });
-    const defender = createActivePokemon({ types: ["normal"], ability: "blaze" });
+    const defender = createActivePokemon({ types: ["normal"], ability: ABILITIES.blaze });
     const state = createMinimalBattleState(attacker, defender);
 
     const cost = ruleset.getPPCost(attacker, defender, state);
@@ -577,13 +581,13 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: MOVES.earthquake, category: "physical" },
+        defenderSelectedMove: { id: MOVES.earthquake, category: CORE_MOVE_CATEGORIES.physical },
       },
     );
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).not.toContain("But it failed!");
+    expect(result.messages).toEqual([]);
   });
 
   it("given defender selected a special move, when Sucker Punch used, then it succeeds", () => {
@@ -599,13 +603,13 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: MOVES.flamethrower, category: "special" },
+        defenderSelectedMove: { id: MOVES.flamethrower, category: CORE_MOVE_CATEGORIES.special },
       },
     );
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).not.toContain("But it failed!");
+    expect(result.messages).toEqual([]);
   });
 
   it("given defender selected a status move, when Sucker Punch used, then it fails", () => {
@@ -624,13 +628,13 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: MOVES.toxic, category: "status" },
+        defenderSelectedMove: { id: MOVES.toxic, category: CORE_MOVE_CATEGORIES.status },
       },
     );
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).toContain("But it failed!");
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given defender is not using a move (switching), when Sucker Punch used, then it fails", () => {
@@ -671,12 +675,12 @@ describe("Bug #256 -- Sucker Punch vs status moves", () => {
       rng,
       {},
       {
-        defenderSelectedMove: { id: MOVES.tackle, category: "physical" },
+        defenderSelectedMove: { id: MOVES.tackle, category: CORE_MOVE_CATEGORIES.physical },
       },
     );
 
     const result = executeGen4MoveEffect(ctx);
 
-    expect(result.messages).toContain("But it failed!");
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 });

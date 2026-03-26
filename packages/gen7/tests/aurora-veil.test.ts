@@ -131,7 +131,7 @@ function createBattleState(
   attackerScreens: Array<{ type: string; turnsLeft: number }> = [],
 ): BattleState {
   return {
-    weather: weatherType ? { type: weatherType, turnsLeft: 5, source: "test" } : null,
+    weather: weatherType ? { type: weatherType, turnsLeft: 5, source: DEFAULT_ABILITY } : null,
     sides: [createBattleSide(attacker, 0, attackerScreens), createBattleSide(defender, 1)],
     trickRoom: { active: false, turnsLeft: 0 },
     gravity: { active: false, turnsLeft: 0 },

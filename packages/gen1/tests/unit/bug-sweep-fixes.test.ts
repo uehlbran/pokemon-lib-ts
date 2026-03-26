@@ -26,6 +26,7 @@ import {
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -901,7 +902,7 @@ describe(`Bug #105 — ${GEN1_MOVE_IDS.sharpen} move exists in move data`, () =>
     expect(sharpen).toBeDefined();
     expect(sharpen.id).toBe(GEN1_MOVE_IDS.sharpen);
     expect(sharpen.displayName).toBe("Sharpen");
-    expect(sharpen.category).toBe("status");
+    expect(sharpen.category).toBe(CORE_MOVE_CATEGORIES.status);
     expect(sharpen.type).toBe(CORE_TYPE_IDS.normal);
     expect(sharpen.pp).toBe(30);
     expect(sharpen.target).toBe("self");

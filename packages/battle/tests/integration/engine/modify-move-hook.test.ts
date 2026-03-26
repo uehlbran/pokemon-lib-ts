@@ -8,7 +8,12 @@
  * Source: Showdown sim/battle-actions.ts — Z-Move base power override happens in useMove,
  *   after the gimmick is activated but before the damage step.
  */
-import { CORE_MOVE_IDS, type MoveData, type PokemonInstance } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  type MoveData,
+  type PokemonInstance,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type {
   BattleConfig,
@@ -288,7 +293,7 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     // Source: canonical mock Tackle is normal-type; after modifyMove it should be fire/160
     expect(capturedContexts.length).toBeGreaterThanOrEqual(1);
     const zMoveContext = capturedContexts[0];
-    expect(zMoveContext.move.type).toBe("fire");
+    expect(zMoveContext.move.type).toBe(CORE_TYPE_IDS.fire);
     expect(zMoveContext.move.power).toBe(160);
   });
 

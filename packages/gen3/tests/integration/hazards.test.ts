@@ -6,6 +6,7 @@ import {
   CORE_GENDERS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
   createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
@@ -161,7 +162,7 @@ describe("Gen3 entry hazards — spikes damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage
     // 1 layer = 1/8 max HP. Derivation: floor(160 / 8) = 20
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 160 });
     const side = createSideWithSpikes(1, 1);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -173,7 +174,7 @@ describe("Gen3 entry hazards — spikes damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage
     // 2 layers = 1/6 max HP. Derivation: floor(160 * (1/6)) = floor(26.67) = 26
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 160 });
     const side = createSideWithSpikes(1, 2);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -185,7 +186,7 @@ describe("Gen3 entry hazards — spikes damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage
     // 3 layers = 1/4 max HP. Derivation: floor(160 / 4) = 40
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 160 });
     const side = createSideWithSpikes(1, 3);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -197,7 +198,7 @@ describe("Gen3 entry hazards — spikes damage", () => {
     // Source: pret/pokeemerald src/battle_util.c — SetSpikesDamage
     // 1 layer = 1/8 max HP. Derivation: floor(200 / 8) = 25
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 200 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 200 });
     const side = createSideWithSpikes(1, 1);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -214,7 +215,7 @@ describe("Gen3 entry hazards — spikes immunities", () => {
   it("given spikes, when a Flying-type switches in, then no damage is taken", () => {
     // Source: pret/pokeemerald — Flying types don't touch the ground, immune to Spikes
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["flying"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.flying], maxHp: 160 });
     const side = createSideWithSpikes(1, 3);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -225,7 +226,10 @@ describe("Gen3 entry hazards — spikes immunities", () => {
   it("given spikes, when a Normal/Flying dual-type switches in, then no damage is taken", () => {
     // Source: pret/pokeemerald — even dual-types with Flying are immune to Spikes
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal", "flying"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({
+      types: [CORE_TYPE_IDS.normal, CORE_TYPE_IDS.flying],
+      maxHp: 160,
+    });
     const side = createSideWithSpikes(1, 3);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -257,7 +261,7 @@ describe("Gen3 entry hazards — no spikes", () => {
   it("given no spikes, when any Pokemon switches in, then no damage is taken", () => {
     // Source: pret/pokeemerald — hazard check returns immediately if no spikes present
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 160 });
     const side = createEmptySide(1);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -277,7 +281,7 @@ describe("Gen3 entry hazards — 0-layer spikes guard", () => {
     // Source: defensive guard — engine should never create 0-layer hazards, but we guard anyway
     // Derivation: fractions[0] === 0, so Math.max(1, 0) would incorrectly return 1 without the guard
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 200 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 200 });
     const side: BattleSide = {
       ...createSideWithSpikes(1, 1),
       hazards: [{ type: CORE_HAZARD_IDS.spikes as EntryHazardType, layers: 0 }],
@@ -361,7 +365,7 @@ describe("Gen3 entry hazards — result structure", () => {
   it("given 1 layer of spikes and a Normal-type Pokemon, when switching in, then result has correct message", () => {
     // Source: pret/pokeemerald — spikes message text
     const ruleset = createRuleset();
-    const mon = createSyntheticOnFieldPokemon({ types: ["normal"], maxHp: 160 });
+    const mon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], maxHp: 160 });
     const side = createSideWithSpikes(1, 1);
 
     const result = ruleset.applyEntryHazards(mon, side);
@@ -376,7 +380,7 @@ describe("Gen3 entry hazards — result structure", () => {
     // Source: battle message formatting — Pokemon names appear in hazard messages
     const ruleset = createRuleset();
     const mon = createSyntheticOnFieldPokemon({
-      types: ["normal"],
+      types: [CORE_TYPE_IDS.normal],
       maxHp: 160,
       nickname: "Fluffy",
     });

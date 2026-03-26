@@ -20,6 +20,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -201,7 +202,7 @@ function createSyntheticMove(opts: {
   const baseMove = createCanonicalMove(CORE_MOVES.tackle);
   return {
     ...baseMove,
-    id: opts.id ?? "test-move",
+    id: opts.id ?? `synthetic-${baseMove.id}`,
     displayName: baseMove.displayName,
     type: opts.type,
     category: opts.category ?? baseMove.category,
@@ -356,7 +357,11 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.charcoal,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const fireMove = createSyntheticMove({ type: TYPES.fire, power: 80, category: "physical" });
+    const fireMove = createSyntheticMove({
+      type: TYPES.fire,
+      power: 80,
+      category: CORE_MOVE_CATEGORIES.physical,
+    });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -383,7 +388,11 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.silkScarf,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.fire] });
-    const normalMove = createSyntheticMove({ type: TYPES.normal, power: 80, category: "physical" });
+    const normalMove = createSyntheticMove({
+      type: TYPES.normal,
+      power: 80,
+      category: CORE_MOVE_CATEGORIES.physical,
+    });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -408,7 +417,11 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.flamePlate,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const fireMove = createSyntheticMove({ type: TYPES.fire, power: 80, category: "physical" });
+    const fireMove = createSyntheticMove({
+      type: TYPES.fire,
+      power: 80,
+      category: CORE_MOVE_CATEGORIES.physical,
+    });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -431,7 +444,11 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       heldItem: ITEMS.charcoal,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const waterMove = createSyntheticMove({ type: TYPES.water, power: 80, category: "physical" });
+    const waterMove = createSyntheticMove({
+      type: TYPES.water,
+      power: 80,
+      category: CORE_MOVE_CATEGORIES.physical,
+    });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -455,7 +472,11 @@ describe("Bug #265 + #269: Type-boost items use 4915/4096 multiplier on base pow
       ability: ABILITIES.klutz,
     });
     const defender = createActivePokemon({ defense: 100, types: [TYPES.normal] });
-    const fireMove = createSyntheticMove({ type: TYPES.fire, power: 80, category: "physical" });
+    const fireMove = createSyntheticMove({
+      type: TYPES.fire,
+      power: 80,
+      category: CORE_MOVE_CATEGORIES.physical,
+    });
     const chart = createNeutralTypeChart();
 
     const result = calculateGen4Damage(
@@ -565,11 +586,7 @@ describe("Bug #257: Natural Gift does not set customDamage (damage goes through 
 
     const result = executeGen4MoveEffect(context);
 
-    const fireDisplayName = `${TYPES.fire[0].toUpperCase()}${TYPES.fire.slice(1)}`;
-    expect(result.messages.some((m) => m.includes(TYPES.fire) || m.includes(fireDisplayName))).toBe(
-      true,
-    );
-    expect(result.messages.some((m) => m.includes("60"))).toBe(true);
+    expect(result.messages).toEqual(["The Pokemon used Natural Gift! (fire / 60 BP)"]);
   });
 });
 
@@ -633,7 +650,9 @@ describe("Bug #262: Sticky Barb contact transfer on hit", () => {
 
     expect(result.activated).toBe(true);
     // Should signal a transfer effect
-    expect(result.messages.some((m) => m.includes("Sticky Barb"))).toBe(true);
+    expect(result.messages).toEqual([
+      `Pokemon #${defender.pokemon.speciesId}'s Sticky Barb latched onto the attacker!`,
+    ]);
   });
 
   it("given defender holds Sticky Barb and is hit by a non-contact move, when attacker has no item, then no transfer", () => {

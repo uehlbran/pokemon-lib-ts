@@ -565,7 +565,7 @@ describe("handleProtosynthesis", () => {
       weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
     });
     const result = handleProtosynthesis(ctx);
-    expect(result.messages.some((m) => m.includes("SunnyBoy"))).toBe(true);
+    expect(result.messages).toEqual(["SunnyBoy's Protosynthesis boosted its Attack!"]);
   });
 });
 

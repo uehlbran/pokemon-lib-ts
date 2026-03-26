@@ -20,6 +20,7 @@ import {
   applyGen6StealthRock,
   applyGen6StickyWeb,
   applyGen6ToxicSpikes,
+  createGen6DataManager,
   GEN6_ABILITY_IDS,
   GEN6_MOVE_IDS,
   GEN6_SPECIES_IDS,
@@ -36,6 +37,7 @@ const STATUSES = CORE_STATUS_IDS;
 const TERRAINS = CORE_TERRAIN_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
+const GEN6_DATA = createGen6DataManager();
 const TERRAIN_SOURCES = {
   electricTerrain: MOVES.electricTerrain,
   mistyTerrain: MOVES.mistyTerrain,
@@ -61,12 +63,14 @@ function createOnFieldPokemon(overrides: {
     pokemon: {
       calculatedStats: { hp: maxHp },
       currentHp: overrides.currentHp ?? maxHp,
-      nickname: overrides.nickname ?? "TestMon",
+      nickname:
+        overrides.nickname ??
+        GEN6_DATA.getSpecies(overrides.speciesId ?? SPECIES.bulbasaur).displayName,
       speciesId: overrides.speciesId ?? SPECIES.bulbasaur,
       heldItem: overrides.heldItem ?? null,
       status: overrides.status ?? null,
     },
-    ability: overrides.ability ?? ABILITIES.blaze,
+    ability: overrides.ability ?? ABILITIES.none,
     types: overrides.types ?? [TYPES.normal],
     statStages: {
       attack: 0,
@@ -81,7 +85,7 @@ function createOnFieldPokemon(overrides: {
   } as unknown as ActivePokemon;
 }
 
-function makeVolatiles(
+function createVolatiles(
   entries: ReadonlyArray<readonly [VolatileStatus, number]>,
 ): Map<VolatileStatus, { turnsLeft: number }> {
   return new Map(entries.map(([id, turnsLeft]) => [id, { turnsLeft }]));
@@ -157,7 +161,7 @@ describe("Gen6 isGen6Grounded", () => {
 
   it("given a Pokemon with Magnet Rise, when checking grounding, then is NOT grounded", () => {
     // Source: Bulbapedia -- Magnet Rise: makes the user immune to Ground-type moves
-    const volatiles = makeVolatiles([[VOLATILES.magnetRise, 5]]);
+    const volatiles = createVolatiles([[VOLATILES.magnetRise, 5]]);
     const pokemon = createOnFieldPokemon({ volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
@@ -166,7 +170,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: checks telekinesis volatile
     // Source: Bulbapedia -- Telekinesis: target is raised into the air
     // This is the key Gen 6 difference from Gen 5's grounding check
-    const volatiles = makeVolatiles([[VOLATILES.telekinesis, 3]]);
+    const volatiles = createVolatiles([[VOLATILES.telekinesis, 3]]);
     const pokemon = createOnFieldPokemon({ volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
@@ -185,7 +189,7 @@ describe("Gen6 isGen6Grounded", () => {
 
   it("given a Telekinesis Pokemon under Gravity, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Gravity overrides Telekinesis for grounding
-    const volatiles = makeVolatiles([[VOLATILES.telekinesis, 3]]);
+    const volatiles = createVolatiles([[VOLATILES.telekinesis, 3]]);
     const pokemon = createOnFieldPokemon({ volatiles });
     expect(isGen6Grounded(pokemon, true)).toBe(true);
   });
@@ -199,7 +203,7 @@ describe("Gen6 isGen6Grounded", () => {
 
   it("given a Pokemon hit by Smack Down (smackdown volatile), when checking grounding, then IS grounded", () => {
     // Source: Showdown data/moves.ts -- smackdown volatile grounds the target
-    const volatiles = makeVolatiles([[VOLATILES.smackDown, -1]]);
+    const volatiles = createVolatiles([[VOLATILES.smackDown, -1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.flying], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(true);
   });
@@ -207,14 +211,14 @@ describe("Gen6 isGen6Grounded", () => {
   it("given a Flying-type Pokemon with Ingrain, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Ingrain: "The user is affected by hazards on the ground,
     //   even if it is a Flying-type or has the Levitate ability."
-    const volatiles = makeVolatiles([[VOLATILES.ingrain, -1]]);
+    const volatiles = createVolatiles([[VOLATILES.ingrain, -1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.flying], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(true);
   });
 
   it("given a Levitate Pokemon with Ingrain, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Ingrain: "even if it ... has the Levitate ability"
-    const volatiles = makeVolatiles([[VOLATILES.ingrain, -1]]);
+    const volatiles = createVolatiles([[VOLATILES.ingrain, -1]]);
     const pokemon = createOnFieldPokemon({ ability: ABILITIES.levitate, volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(true);
   });
@@ -227,7 +231,7 @@ describe("Gen6 isGen6Grounded", () => {
 
   it("given an Air Balloon holder under Embargo, when checking grounding, then IS grounded (item suppressed)", () => {
     // Source: Bulbapedia -- Embargo: "The target cannot use its held item" -- suppresses Air Balloon
-    const volatiles = makeVolatiles([[VOLATILES.embargo, 5]]);
+    const volatiles = createVolatiles([[VOLATILES.embargo, 5]]);
     const pokemon = createOnFieldPokemon({ heldItem: ITEMS.airBalloon, volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(true);
   });
@@ -244,7 +248,7 @@ describe("Gen6 isGen6Grounded", () => {
 
   it("given a Flying-type Iron Ball holder under Embargo, when checking grounding, then is NOT grounded (item suppressed)", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded: Iron Ball grounding is suppressed by Embargo
-    const volatiles = makeVolatiles([[VOLATILES.embargo, 5]]);
+    const volatiles = createVolatiles([[VOLATILES.embargo, 5]]);
     const pokemon = createOnFieldPokemon({
       types: [TYPES.flying],
       heldItem: ITEMS.ironBall,
@@ -260,7 +264,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Source: Showdown sim/pokemon.ts -- that volatile makes Pokemon airborne
     // Source: Bulbapedia "Fly" -- "The user flies up high on the first turn"
     // Bug #667: previously used the move id instead of the engine airborne volatile id.
-    const volatiles = makeVolatiles([[VOLATILES.flying, 1]]);
+    const volatiles = createVolatiles([[VOLATILES.flying, 1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
@@ -272,7 +276,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Bug #665: previously used the move id instead of the engine airborne volatile id.
     // Note: Bounce and Fly share the same airborne volatile, so this test is equivalent
     // to the Fly test above.
-    const volatiles = makeVolatiles([[VOLATILES.flying, 1]]);
+    const volatiles = createVolatiles([[VOLATILES.flying, 1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
@@ -284,7 +288,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Bug #664: Only airborne semi-invulnerable states (Fly, Bounce, Shadow Force, Phantom Force)
     // should unground; Dig/Dive stay grounded.
     // Verifies the underground volatile is NOT in AIRBORNE_SEMI_INVULNERABLE.
-    const volatiles = makeVolatiles([[VOLATILES.underground, 1]]);
+    const volatiles = createVolatiles([[VOLATILES.underground, 1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(true);
   });
@@ -294,7 +298,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Source: Gen4MoveEffects.ts TWO_TURN_VOLATILE_MAP -- the move maps to that volatile
     // Source: Bulbapedia "Shadow Force" -- Giratina vanishes and strikes next turn
     // Bug #794: previously used the move id instead of the engine disappearing volatile id.
-    const volatiles = makeVolatiles([[VOLATILES.shadowForceCharging, 1]]);
+    const volatiles = createVolatiles([[VOLATILES.shadowForceCharging, 1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.ghost], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
@@ -305,7 +309,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Source: Bulbapedia "Phantom Force" -- user vanishes on first turn
     // Bug #794: previously used the move id instead of the engine disappearing volatile id.
     // Note: Phantom Force and Shadow Force share the same disappearing volatile.
-    const volatiles = makeVolatiles([[VOLATILES.shadowForceCharging, 1]]);
+    const volatiles = createVolatiles([[VOLATILES.shadowForceCharging, 1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.ghost], volatiles });
     expect(isGen6Grounded(pokemon, false)).toBe(false);
   });
@@ -314,7 +318,7 @@ describe("Gen6 isGen6Grounded", () => {
     // Source: Showdown sim/pokemon.ts -- Gravity overrides all airborne states
     // Source: Bulbapedia "Gravity" -- "All Pokemon are grounded"
     // Source: BattleEngine.ts:1191 -- Fly sets the shared airborne charge-turn volatile
-    const volatiles = makeVolatiles([[VOLATILES.flying, 1]]);
+    const volatiles = createVolatiles([[VOLATILES.flying, 1]]);
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
     expect(isGen6Grounded(pokemon, true)).toBe(true);
   });
@@ -375,7 +379,7 @@ describe("Gen6 Spikes", () => {
 
   it("given Spikes, when a Telekinesis Pokemon switches in, then takes no damage (not grounded)", () => {
     // Source: Showdown sim/pokemon.ts -- Telekinesis grants levitation
-    const volatiles = makeVolatiles([[VOLATILES.telekinesis, 3]]);
+    const volatiles = createVolatiles([[VOLATILES.telekinesis, 3]]);
     const pokemon = createOnFieldPokemon({ maxHp: 200, volatiles });
     const result = applyGen6SpikesHazard(pokemon, 1, false);
     expect(result).toBeNull();
@@ -492,7 +496,7 @@ describe("Gen6 Toxic Spikes", () => {
     const result = applyGen6ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBe(STATUSES.poison);
-    expect(result.message).toBe("TestMon was poisoned by the toxic spikes!");
+    expect(result.message).toBe("Bulbasaur was poisoned by the toxic spikes!");
   });
 
   it("given 2 layers of Toxic Spikes, when a grounded non-Poison/Steel Pokemon switches in, then becomes badly poisoned", () => {
@@ -501,7 +505,7 @@ describe("Gen6 Toxic Spikes", () => {
     const result = applyGen6ToxicSpikes(pokemon, 2, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBe(STATUSES.badlyPoisoned);
-    expect(result.message).toBe("TestMon was badly poisoned by the toxic spikes!");
+    expect(result.message).toBe("Bulbasaur was badly poisoned by the toxic spikes!");
   });
 
   it("given Toxic Spikes, when a Poison-type switches in, then absorbs the hazard (removes it)", () => {
@@ -510,7 +514,7 @@ describe("Gen6 Toxic Spikes", () => {
     const result = applyGen6ToxicSpikes(pokemon, 1, false);
     expect(result.absorbed).toBe(true);
     expect(result.status).toBeNull();
-    expect(result.message).toBe("TestMon absorbed the poison spikes!");
+    expect(result.message).toBe("Bulbasaur absorbed the poison spikes!");
   });
 
   it("given Toxic Spikes, when a Poison/Flying-type switches in, then does NOT absorb (not grounded)", () => {
@@ -586,7 +590,7 @@ describe("Gen6 Sticky Web", () => {
     expect(result.applied).toBe(true);
     expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
     expect(result.messages).toHaveLength(1);
-    expect(result.messages[0]).toBe("TestMon was caught in a sticky web!");
+    expect(result.messages[0]).toBe("Bulbasaur was caught in a sticky web!");
   });
 
   it("given Sticky Web set, when a Water-type Pokemon switches in, then Speed stage drops by 1", () => {
@@ -596,7 +600,7 @@ describe("Gen6 Sticky Web", () => {
     const result = applyGen6StickyWeb(pokemon, false);
     expect(result.applied).toBe(true);
     expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
-    expect(result.messages[0]).toContain("Vaporeon");
+    expect(result.messages).toEqual(["Vaporeon was caught in a sticky web!"]);
   });
 
   it("given Sticky Web set, when a Flying-type Pokemon switches in, then no effect (not grounded)", () => {
@@ -622,7 +626,7 @@ describe("Gen6 Sticky Web", () => {
 
   it("given Sticky Web set, when a Telekinesis Pokemon switches in, then no effect (not grounded)", () => {
     // Source: Showdown sim/pokemon.ts -- Telekinesis grants levitation
-    const volatiles = makeVolatiles([[VOLATILES.telekinesis, 3]]);
+    const volatiles = createVolatiles([[VOLATILES.telekinesis, 3]]);
     const pokemon = createOnFieldPokemon({ volatiles });
     const result = applyGen6StickyWeb(pokemon, false);
     expect(result.applied).toBe(false);
@@ -639,8 +643,7 @@ describe("Gen6 Sticky Web", () => {
     expect(result.applied).toBe(false);
     expect(result.statChange).toBeNull();
     expect(result.followupStatChanges).toEqual([]);
-    expect(result.messages.length).toBe(1);
-    expect(result.messages[0]).toContain("Clear Body");
+    expect(result.messages).toEqual(["Bulbasaur's Clear Body prevents stat loss!"]);
   });
 
   it("given Sticky Web set, when a White Smoke Pokemon switches in, then Speed NOT dropped", () => {
@@ -651,8 +654,7 @@ describe("Gen6 Sticky Web", () => {
     expect(result.applied).toBe(false);
     expect(result.statChange).toBeNull();
     expect(result.followupStatChanges).toEqual([]);
-    expect(result.messages.length).toBe(1);
-    expect(result.messages[0]).toContain("White Smoke");
+    expect(result.messages).toEqual(["Bulbasaur's White Smoke prevents stat loss!"]);
   });
 
   it("given Sticky Web set, when a Defiant Pokemon switches in, then -1 Speed AND triggers +2 Attack", () => {
@@ -664,8 +666,10 @@ describe("Gen6 Sticky Web", () => {
     expect(result.applied).toBe(true);
     expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
     expect(result.followupStatChanges).toEqual([{ stat: "attack", stages: 2 }]);
-    expect(result.messages.some((m) => m.includes("Defiant"))).toBe(true);
-    expect(result.messages.some((m) => m.includes("Attack"))).toBe(true);
+    expect(result.messages).toEqual([
+      "Bulbasaur was caught in a sticky web!",
+      "Bulbasaur's Defiant sharply raised its Attack!",
+    ]);
   });
 
   it("given Sticky Web set, when a Competitive Pokemon switches in, then -1 Speed AND triggers +2 SpAtk", () => {
@@ -677,8 +681,10 @@ describe("Gen6 Sticky Web", () => {
     expect(result.applied).toBe(true);
     expect(result.statChange).toEqual({ stat: "speed", stages: -1 });
     expect(result.followupStatChanges).toEqual([{ stat: "spAttack", stages: 2 }]);
-    expect(result.messages.some((m) => m.includes("Competitive"))).toBe(true);
-    expect(result.messages.some((m) => m.includes("Sp. Atk"))).toBe(true);
+    expect(result.messages).toEqual([
+      "Bulbasaur was caught in a sticky web!",
+      "Bulbasaur's Competitive sharply raised its Sp. Atk!",
+    ]);
   });
 
   it("given Sticky Web + Gravity, when a Flying-type switches in, then Speed IS dropped (Gravity grounds)", () => {
@@ -816,8 +822,7 @@ describe("Gen6 applyGen6EntryHazards (combined)", () => {
     const state = createBattleState();
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.damage).toBe(50);
-    expect(result.messages).toHaveLength(1);
-    expect(result.messages[0]).toContain("Pointed stones");
+    expect(result.messages).toEqual(["Pointed stones dug into Bulbasaur!"]);
   });
 
   it("given Sticky Web + Spikes, when a Flying-type switches in, then no Spikes damage and no Sticky Web", () => {
@@ -856,8 +861,7 @@ describe("Gen6 applyGen6EntryHazards (combined)", () => {
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.damage).toBe(0);
     expect(result.statChanges).toEqual([]);
-    expect(result.messages.length).toBe(1);
-    expect(result.messages[0]).toContain("Clear Body");
+    expect(result.messages).toEqual(["Bulbasaur's Clear Body prevents stat loss!"]);
   });
 
   it("given Sticky Web, when a Defiant Pokemon switches in via combined hazards, then statChanges includes speed -1", () => {
@@ -880,7 +884,11 @@ describe("Gen6 applyGen6EntryHazards (combined)", () => {
       { stat: "attack", stages: 2 },
     ]);
     // Messages: SR + sticky web + Defiant trigger
-    expect(result.messages.some((m) => m.includes("Defiant"))).toBe(true);
+    expect(result.messages).toEqual([
+      "Pointed stones dug into Bulbasaur!",
+      "Bulbasaur was caught in a sticky web!",
+      "Bulbasaur's Defiant sharply raised its Attack!",
+    ]);
   });
 });
 
@@ -904,7 +912,7 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.statusInflicted).toBeNull();
     // No "was poisoned" message should appear
-    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+    expect(result.messages).toEqual([]);
   });
 
   it("given Misty Terrain active and 2 layers of Toxic Spikes, when a grounded Normal-type switches in, then no badly-poisoned status and no poison message", () => {
@@ -919,7 +927,7 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     });
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.statusInflicted).toBeNull();
-    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+    expect(result.messages).toEqual([]);
   });
 
   it("given no terrain active and Toxic Spikes on the field, when a grounded Normal-type switches in, then poison IS applied normally", () => {
@@ -930,7 +938,7 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     const state = createBattleState();
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.statusInflicted).toBe(STATUSES.poison);
-    expect(result.messages.some((m) => m.includes("poisoned"))).toBe(true);
+    expect(result.messages).toEqual(["Bulbasaur was poisoned by the toxic spikes!"]);
   });
 
   it("given Electric Terrain active and Toxic Spikes, when a grounded Normal-type switches in, then poison IS applied (Electric Terrain only blocks sleep)", () => {
@@ -945,7 +953,7 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     });
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.statusInflicted).toBe(STATUSES.poison);
-    expect(result.messages.some((m) => m.includes("poisoned"))).toBe(true);
+    expect(result.messages).toEqual(["Bulbasaur was poisoned by the toxic spikes!"]);
   });
 
   it("given Misty Terrain active and Toxic Spikes, when a Flying-type switches in, then no status (not grounded, immune to spikes anyway)", () => {
@@ -960,7 +968,7 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     });
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.statusInflicted).toBeNull();
-    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+    expect(result.messages).toEqual([]);
   });
 
   it("given Misty Terrain + Toxic Spikes + Stealth Rock, when grounded Normal-type switches in, then takes SR damage but no poison", () => {
@@ -981,8 +989,7 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     expect(result.damage).toBe(25);
     expect(result.statusInflicted).toBeNull();
     // Should have SR message but no poison message
-    expect(result.messages.some((m) => m.includes("Pointed stones"))).toBe(true);
-    expect(result.messages.every((m) => !m.includes("poisoned"))).toBe(true);
+    expect(result.messages).toEqual(["Pointed stones dug into Bulbasaur!"]);
   });
 
   it("given Misty Terrain + Toxic Spikes, when a Poison-type switches in, then absorbs Toxic Spikes normally", () => {
@@ -998,6 +1005,6 @@ describe("Gen6 applyGen6EntryHazards -- terrain blocks Toxic Spikes status", () 
     const result = applyGen6EntryHazards(pokemon, side, state, GEN6_TYPE_CHART);
     expect(result.statusInflicted).toBeNull();
     expect(result.hazardsToRemove).toEqual([HAZARDS.toxicSpikes]);
-    expect(result.messages.some((m) => m.includes("absorbed"))).toBe(true);
+    expect(result.messages).toEqual(["Bulbasaur absorbed the poison spikes!"]);
   });
 });

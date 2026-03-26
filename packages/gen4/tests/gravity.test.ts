@@ -12,6 +12,7 @@ import {
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -189,7 +190,7 @@ describe("Gen 4 Gravity Move Effect", () => {
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = getGen4Move(GEN4_MOVE_IDS.gravity);
     move.type = CORE_TYPE_IDS.psychic;
-    move.category = "status";
+    move.category = CORE_MOVE_CATEGORIES.status;
     move.power = null;
     move.accuracy = null;
     const gravityMove = move;
@@ -229,7 +230,7 @@ describe("Gen 4 Gravity — Accuracy Boost", () => {
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = getGen4Move(GEN4_MOVE_IDS.thunder);
     move.type = CORE_TYPE_IDS.electric;
-    move.category = "special";
+    move.category = CORE_MOVE_CATEGORIES.special;
     move.power = 120;
     move.accuracy = 80;
 
@@ -271,7 +272,7 @@ describe("Gen 4 Gravity — Accuracy Boost", () => {
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = getGen4Move(GEN4_MOVE_IDS.blizzard);
     move.type = CORE_TYPE_IDS.ice;
-    move.category = "special";
+    move.category = CORE_MOVE_CATEGORIES.special;
     move.power = 120;
     move.accuracy = 70;
 
@@ -428,7 +429,7 @@ describe("Gen 4 Gravity — Type Immunity Suppression", () => {
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.flying] });
     const move = getGen4Move(GEN4_MOVE_IDS.flamethrower);
     move.type = CORE_TYPE_IDS.fire;
-    move.category = "special";
+    move.category = CORE_MOVE_CATEGORIES.special;
     move.power = 95;
 
     const stateGravity = createMinimalBattleState(attacker, defender, {

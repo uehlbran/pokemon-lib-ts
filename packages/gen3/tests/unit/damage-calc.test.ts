@@ -4,6 +4,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_MECHANIC_MULTIPLIERS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
@@ -68,7 +69,7 @@ function createActivePokemon(opts: {
   spAttack: number;
   spDefense: number;
   types: PokemonType[];
-  status?: (typeof S)[keyof typeof S] | null;
+  status?: (typeof statusIds)[keyof typeof statusIds] | null;
   heldItem?: string | null;
   statStages?: Partial<Record<string, number>>;
 }): ActivePokemon {
@@ -136,7 +137,9 @@ function createTypeChart(overrides: [PokemonType, PokemonType, number][]): TypeC
 }
 
 /** Create a BattleState mock with optional weather. */
-function createMockState(weather?: { type: string; turnsLeft: number; source: string } | null) {
+function createSyntheticBattleState(
+  weather?: { type: string; turnsLeft: number; source: string } | null,
+) {
   return {
     weather: weather ?? null,
   } as DamageContext["state"];
@@ -157,7 +160,7 @@ function createDamageContext(opts: {
     move: opts.move,
     isCrit: opts.isCrit ?? false,
     rng: opts.rng ?? createMockRng(100), // max random roll = no random penalty
-    state: createMockState(opts.weather),
+    state: createSyntheticBattleState(opts.weather),
   } as DamageContext;
 }
 
@@ -321,7 +324,7 @@ describe("Gen 3 Damage Calculation", () => {
         types: [typeIds.normal],
       });
       const move = createMove(GEN3_MOVE_IDS.growl);
-      move.category = "status" as any;
+      move.category = CORE_MOVE_CATEGORIES.status as any;
       const chart = createNeutralTypeChart();
       const ctx = createDamageContext({ attacker, defender, move });
 
@@ -1138,7 +1141,7 @@ describe("Gen 3 Damage Calculation", () => {
           defender,
           move,
           rng: createMockRng(100),
-          weather: { type: weatherIds.rain, turnsLeft: 3, source: "rain-dance" },
+          weather: { type: weatherIds.rain, turnsLeft: 3, source: GEN3_MOVE_IDS.rainDance },
         }),
         chart,
       );
@@ -1184,7 +1187,7 @@ describe("Gen 3 Damage Calculation", () => {
           defender,
           move,
           rng: createMockRng(100),
-          weather: { type: weatherIds.rain, turnsLeft: 3, source: "rain-dance" },
+          weather: { type: weatherIds.rain, turnsLeft: 3, source: GEN3_MOVE_IDS.rainDance },
         }),
         chart,
       );
@@ -1230,7 +1233,7 @@ describe("Gen 3 Damage Calculation", () => {
           defender,
           move,
           rng: createMockRng(100),
-          weather: { type: weatherIds.sun, turnsLeft: 3, source: "sunny-day" },
+          weather: { type: weatherIds.sun, turnsLeft: 3, source: GEN3_MOVE_IDS.sunnyDay },
         }),
         chart,
       );
@@ -1530,7 +1533,7 @@ describe("Gen 3 Damage Calculation", () => {
         move,
         isCrit: true,
         rng: createMockRng(100),
-        weather: { type: weatherIds.rain, turnsLeft: 3, source: "rain-dance" },
+        weather: { type: weatherIds.rain, turnsLeft: 3, source: GEN3_MOVE_IDS.rainDance },
       });
 
       const result = calculateGen3Damage(ctx, chart);

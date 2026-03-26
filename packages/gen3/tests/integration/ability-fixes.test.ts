@@ -14,6 +14,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
   type CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -393,8 +394,10 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
       expect(result.activated).toBe(true);
       // Effects should be empty (no stat drop applied)
       expect(result.effects).toEqual([]);
-      expect(result.messages.length).toBeGreaterThan(0);
-      expect(result.messages.some((m) => m.includes("Clear Body"))).toBe(true);
+      expect(result.messages).toEqual([
+        "Mightyena's Intimidate!",
+        "Metagross's Clear Body prevents stat loss!",
+      ]);
     });
 
     it("given opponent has Hyper Cutter, when Intimidate triggers, then Attack drop is blocked", () => {
@@ -416,7 +419,10 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
 
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([]);
-      expect(result.messages.some((m) => m.includes("Hyper Cutter"))).toBe(true);
+      expect(result.messages).toEqual([
+        "Mightyena's Intimidate!",
+        "Kingler's Hyper Cutter prevents stat loss!",
+      ]);
     });
 
     it("given opponent has White Smoke, when Intimidate triggers, then Attack drop is blocked", () => {
@@ -437,7 +443,10 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
 
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([]);
-      expect(result.messages.some((m) => m.includes("White Smoke"))).toBe(true);
+      expect(result.messages).toEqual([
+        "Mightyena's Intimidate!",
+        "Torkoal's White Smoke prevents stat loss!",
+      ]);
     });
 
     it("given opponent has no blocking ability, when Intimidate triggers, then Attack drops normally", () => {
@@ -914,7 +923,7 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
-      expect(result.messages.some((m) => m.includes("Cloud Nine"))).toBe(true);
+      expect(result.messages).toEqual(["Golduck's Cloud Nine negates the weather!"]);
     });
 
     it("given Air Lock holder switches in, then announces weather negation", () => {
@@ -929,7 +938,7 @@ describe("Gen 3 Cloud Nine / Air Lock Weather Suppression (#342)", () => {
       const result = applyGen3Ability(TRIGGERS.onSwitchIn, ctx);
 
       expect(result.activated).toBe(true);
-      expect(result.messages.some((m) => m.includes("Air Lock"))).toBe(true);
+      expect(result.messages).toEqual(["Rayquaza's Air Lock negates the weather!"]);
     });
   });
 });
@@ -1116,7 +1125,7 @@ describe("Gen 3 Baton Pass batonPass flag (#347)", () => {
     const defender = createSyntheticActivePokemon({ types: [CORE_TYPE_IDS.normal], ability: "" });
     const move = {
       ...createSyntheticMove(CORE_TYPE_IDS.normal, 0, MOVES.tackle),
-      category: "status" as const,
+      category: CORE_MOVE_CATEGORIES.status,
       accuracy: null,
       power: null,
       effect: { type: "switch-out", target: "self" },

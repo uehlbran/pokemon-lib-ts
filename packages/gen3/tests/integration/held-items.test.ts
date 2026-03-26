@@ -779,8 +779,10 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.onHit, context);
 
       expect(result.activated).toBe(true);
-      const flinchEffect = result.effects.find((e) => e.type === "flinch");
-      expect(flinchEffect?.target).toBe("opponent");
+      expect(result.effects).toContainEqual({
+        type: CORE_VOLATILE_IDS.flinch,
+        target: "opponent",
+      });
     });
 
     it("given a Pokemon holding King's Rock and RNG fails, when on-hit triggers, then no activation", () => {

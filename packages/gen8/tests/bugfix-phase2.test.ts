@@ -4,6 +4,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
@@ -164,6 +165,7 @@ const MOVES = GEN8_MOVE_IDS;
 const NATURES = GEN8_NATURE_IDS;
 const SPECIES = GEN8_SPECIES_IDS;
 const TYPES = CORE_TYPE_IDS;
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const GEN8_DATA = createGen8DataManager();
 const TACKLE_MOVE = GEN8_DATA.getMove(MOVES.tackle);
 // Synthetic volatile used by the bugfix harness; no owned Gen 8 id exists for this internal state.
@@ -188,8 +190,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     });
     const attacker = createOnFieldPokemon({});
     // Synthetic probe: a deliberately weak physical hit to exercise Disguise chip damage.
-    const move = createCanonicalMove(MOVES.tackle);
-    move.category = "physical";
+    const move = createCanonicalMove(MOVES.tackle, { category: MOVE_CATEGORIES.physical });
     move.power = 10;
     const state = createBattleState();
 
@@ -215,8 +216,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     });
     const attacker = createOnFieldPokemon({});
     // Synthetic probe: an overkill physical hit should still be converted into chip damage.
-    const move = createCanonicalMove(MOVES.tackle);
-    move.category = "physical";
+    const move = createCanonicalMove(MOVES.tackle, { category: MOVE_CATEGORIES.physical });
     move.power = 250;
     const state = createBattleState();
 
@@ -241,8 +241,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     });
     const attacker = createOnFieldPokemon({});
     // Synthetic probe: once Disguise is busted, the same physical move should pass through unchanged.
-    const move = createCanonicalMove(MOVES.tackle);
-    move.category = "physical";
+    const move = createCanonicalMove(MOVES.tackle, { category: MOVE_CATEGORIES.physical });
     move.power = 50;
     const state = createBattleState();
 
@@ -265,8 +264,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     });
     const attacker = createOnFieldPokemon({});
     // Synthetic probe: a non-lethal physical hit ensures the rounded chip damage stays correct.
-    const move = createCanonicalMove(MOVES.tackle);
-    move.category = "physical";
+    const move = createCanonicalMove(MOVES.tackle, { category: MOVE_CATEGORIES.physical });
     move.power = 80;
     const state = createBattleState();
 
@@ -287,8 +285,7 @@ describe("#738 — Gen8 Disguise blocks non-lethal damage with 1/8 chip on bust"
     });
     const attacker = createOnFieldPokemon({});
     // Synthetic probe: a status move should not trigger the damage-capping branch.
-    const move = createCanonicalMove(MOVES.tackle);
-    move.category = "status";
+    const move = createCanonicalMove(MOVES.tackle, { category: MOVE_CATEGORIES.status });
     move.power = 0;
     const state = createBattleState();
 
@@ -360,10 +357,6 @@ describe("#713 — Choice lock suppression during Dynamax", () => {
 
 describe("#694 — Gen8 package.json data exports", () => {
   it("given gen8 package.json, when checking exports, then ./data/*.json pattern exists for raw data access", () => {
-    // This is a structural test — verify the JSON files exist
-    // The package.json exports are fixed to use wildcard pattern for JSON files
-    // Source: Node.js ESM subpath patterns documentation
-    // We verify the actual JSON files are loadable
-    expect(true).toBe(true); // Structural assertion — the fix is in package.json
+    expect(true).toBe(true);
   });
 });

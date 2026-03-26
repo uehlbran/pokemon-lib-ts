@@ -18,6 +18,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   createEvs,
@@ -258,6 +259,7 @@ function createItemContext(opts: {
 }
 
 const dataManager = createGen4DataManager();
+const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const ruleset = new Gen4Ruleset(dataManager);
 const ROOM_SUFFIX = GEN4_MOVE_IDS.trickRoom.slice(5);
 const ZERO_IVS = createIvs({
@@ -285,7 +287,7 @@ function createSyntheticScenarioMove(
     displayName: string;
     type: PokemonType;
     power: number;
-    category?: "physical" | "special" | "status";
+    category?: (typeof MOVE_CATEGORIES)[keyof typeof MOVE_CATEGORIES];
     effect?: MoveEffect | null;
     accuracy?: number | null;
     pp?: number;
@@ -304,7 +306,7 @@ function createSyntheticScenarioMove(
     id: opts.id,
     displayName: opts.displayName,
     type: opts.type,
-    category: opts.category ?? "physical",
+    category: opts.category ?? MOVE_CATEGORIES.physical,
     power: opts.power,
     accuracy: opts.accuracy ?? 100,
     pp: opts.pp ?? baseMove.pp,
@@ -767,7 +769,7 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
         id: `wonder${ROOM_SUFFIX}`,
         displayName: "Wonder Room",
         type: CORE_TYPE_IDS.psychic,
-        category: "status",
+        category: MOVE_CATEGORIES.status,
         power: 0,
         accuracy: null,
         pp: 10,
@@ -791,8 +793,8 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
 
     // Wonder Room should not set any special field state in Gen 4
     expect(result.trickRoomSet).toBeUndefined();
-    // No special messages about swapping defense/sp defense should appear
-    expect(result.messages.every((m) => !m.toLowerCase().includes("wonder room"))).toBe(true);
+    expect(result.magicRoomSet).toBeUndefined();
+    expect(result.wonderRoomSet).toBeUndefined();
   });
 
   it("given magic-room move ID, when executeMoveEffect is called, then no special field effect is produced", () => {
@@ -806,7 +808,7 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
         id: `magic${ROOM_SUFFIX}`,
         displayName: "Magic Room",
         type: CORE_TYPE_IDS.psychic,
-        category: "status",
+        category: MOVE_CATEGORIES.status,
         power: 0,
         accuracy: null,
         pp: 10,
@@ -830,7 +832,8 @@ describe("Gen4MoveEffects — Wonder Room and Magic Room are Gen 5+ only", () =>
 
     // Magic Room should not set any special field state in Gen 4
     expect(result.trickRoomSet).toBeUndefined();
-    expect(result.messages.every((m) => !m.toLowerCase().includes("magic room"))).toBe(true);
+    expect(result.magicRoomSet).toBeUndefined();
+    expect(result.wonderRoomSet).toBeUndefined();
   });
 });
 

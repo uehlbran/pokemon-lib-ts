@@ -1,4 +1,4 @@
-import type { BattleStat, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
+import type { BattleStat, Generation, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -7,13 +7,26 @@ import {
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   createEvs,
+  createFriendship,
   createIvs,
   createMoveSlot,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import type { PokemonSnapshot } from "../events";
-import type { ActivePokemon } from "../state";
+import type { ActivePokemon, BattleFormat, BattlePhase, BattleSide, BattleState } from "../state";
 
 let testPokemonUidCounter = 0;
+
+const DEFAULT_TEST_POKEMON_CURRENT_HP = 200;
+const DEFAULT_TEST_POKEMON_FRIENDSHIP = createFriendship(70);
+const DEFAULT_TEST_POKEMON_STATS = Object.freeze({
+  hp: 200,
+  attack: 100,
+  defense: 100,
+  spAttack: 100,
+  spDefense: 100,
+  speed: 100,
+});
 
 /** Create a PokemonSnapshot from an ActivePokemon (public-facing info only) */
 export function createPokemonSnapshot(active: ActivePokemon): PokemonSnapshot {
@@ -106,6 +119,78 @@ export function createOnFieldPokemon(
   };
 }
 
+/** Create a battle side fixture with explicit defaults. */
+export function createBattleSide(options: {
+  index: 0 | 1;
+  active?: (ActivePokemon | null)[];
+  team?: PokemonInstance[];
+  hazards?: BattleSide["hazards"];
+  screens?: BattleSide["screens"];
+  tailwind?: BattleSide["tailwind"];
+  luckyChant?: BattleSide["luckyChant"];
+  wish?: BattleSide["wish"];
+  futureAttack?: BattleSide["futureAttack"];
+  faintCount?: number;
+  gimmickUsed?: boolean;
+  trainer?: BattleSide["trainer"];
+}): BattleSide {
+  return {
+    index: options.index,
+    trainer: options.trainer ?? null,
+    team: [...(options.team ?? [])],
+    active: [...(options.active ?? [])],
+    hazards: [...(options.hazards ?? [])],
+    screens: [...(options.screens ?? [])],
+    tailwind: options.tailwind ?? { active: false, turnsLeft: 0 },
+    luckyChant: options.luckyChant ?? { active: false, turnsLeft: 0 },
+    wish: options.wish ?? null,
+    futureAttack: options.futureAttack ?? null,
+    faintCount: options.faintCount ?? 0,
+    gimmickUsed: options.gimmickUsed ?? false,
+  };
+}
+
+/** Create a battle state fixture with explicit defaults. */
+export function createBattleState(options?: {
+  phase?: BattlePhase;
+  generation?: Generation;
+  format?: BattleFormat;
+  turnNumber?: number;
+  sides?: [BattleSide, BattleSide];
+  weather?: BattleState["weather"];
+  terrain?: BattleState["terrain"];
+  trickRoom?: BattleState["trickRoom"];
+  magicRoom?: BattleState["magicRoom"];
+  wonderRoom?: BattleState["wonderRoom"];
+  gravity?: BattleState["gravity"];
+  turnHistory?: BattleState["turnHistory"];
+  rng?: SeededRandom;
+  isWildBattle?: boolean;
+  fleeAttempts?: number;
+  ended?: boolean;
+  winner?: BattleState["winner"];
+}): BattleState {
+  return {
+    phase: options?.phase ?? "turn-end",
+    generation: options?.generation ?? 1,
+    format: options?.format ?? "singles",
+    turnNumber: options?.turnNumber ?? 1,
+    sides: options?.sides ?? [createBattleSide({ index: 0 }), createBattleSide({ index: 1 })],
+    weather: options?.weather ?? null,
+    terrain: options?.terrain ?? null,
+    trickRoom: options?.trickRoom ?? { active: false, turnsLeft: 0 },
+    magicRoom: options?.magicRoom ?? { active: false, turnsLeft: 0 },
+    wonderRoom: options?.wonderRoom ?? { active: false, turnsLeft: 0 },
+    gravity: options?.gravity ?? { active: false, turnsLeft: 0 },
+    turnHistory: options?.turnHistory ?? [],
+    rng: options?.rng ?? new SeededRandom(1),
+    isWildBattle: options?.isWildBattle ?? false,
+    fleeAttempts: options?.fleeAttempts ?? 0,
+    ended: options?.ended ?? false,
+    winner: options?.winner ?? null,
+  };
+}
+
 /** Clone a PokemonInstance so battle state never aliases caller-owned team data. */
 export function clonePokemonInstance(pokemon: PokemonInstance): PokemonInstance {
   return {
@@ -152,13 +237,13 @@ export function createTestPokemon(
     nature: CORE_NATURE_IDS.adamant,
     ivs: createIvs(),
     evs: createEvs(),
-    currentHp: 200,
+    currentHp: DEFAULT_TEST_POKEMON_CURRENT_HP,
     moves: [createMoveSlot(CORE_MOVE_IDS.tackle, 35)],
     ability: CORE_ABILITY_IDS.blaze,
     abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
-    friendship: 70,
+    friendship: DEFAULT_TEST_POKEMON_FRIENDSHIP,
     gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "test",
@@ -166,14 +251,7 @@ export function createTestPokemon(
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: CORE_ITEM_IDS.pokeBall,
-    calculatedStats: {
-      hp: 200,
-      attack: 100,
-      defense: 100,
-      spAttack: 100,
-      spDefense: 100,
-      speed: 100,
-    },
+    calculatedStats: { ...DEFAULT_TEST_POKEMON_STATS },
     ...overrides,
   };
 }

@@ -316,7 +316,7 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
 
     expect(result.switchOut).toBe(false);
     expect(result.forcedSwitch).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("roots"))).toBe(true);
+    expect(result.messages).toContain("The foe anchored itself with its roots!");
   });
 });
 
@@ -371,7 +371,7 @@ describe("#343 — Brick Break", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.screensCleared).toBe("defender");
-    expect(result.messages.some((m) => m.includes("shattered"))).toBe(true);
+    expect(result.messages).toContain("The wall shattered!");
   });
 
   it("given Brick Break used against side with no screens, when executeMoveEffect called, then screensCleared='defender' but no shatter message", () => {
@@ -387,7 +387,7 @@ describe("#343 — Brick Break", () => {
 
     expect(result.screensCleared).toBe("defender");
     // No "shattered" message when no screens present
-    expect(result.messages.some((m) => m.includes("shattered"))).toBe(false);
+    expect(result.messages).not.toContain("The wall shattered!");
   });
 });
 
@@ -417,7 +417,7 @@ describe("#343 — Focus Punch", () => {
 
     const result = ruleset.executeMoveEffect(context);
 
-    expect(result.messages.some((m) => m.includes("lost its focus"))).toBe(true);
+    expect(result.messages).toContain("The Pokemon lost its focus and couldn't move!");
   });
 });
 
@@ -487,7 +487,7 @@ describe("#343 — Torment", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toContain("But it failed!");
   });
 });
 
@@ -505,7 +505,7 @@ describe("#343 — Ingrain", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.selfVolatileInflicted).toBe(volatileIds.ingrain);
-    expect(result.messages.some((m) => m.includes("planted its roots"))).toBe(true);
+    expect(result.messages).toContain("The Pokemon planted its roots!");
   });
 
   it("given Ingrain used when already ingrained, when executeMoveEffect called, then move fails", () => {
@@ -523,7 +523,7 @@ describe("#343 — Ingrain", () => {
     const result = ruleset.executeMoveEffect(context);
 
     expect(result.selfVolatileInflicted).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toContain("But it failed!");
   });
 
   it("given Ingrain is in Gen3Ruleset end-of-turn order, then the rooted residual step appears in the order list", () => {
@@ -651,7 +651,9 @@ describe("#348 — White Herb", () => {
     expect(result.activated).toBe(true);
     expect(pokemon.statStages.attack).toBe(0);
     expect(result.effects.some((e) => e.type === "consume")).toBe(true);
-    expect(result.messages.some((m) => m.includes("White Herb"))).toBe(true);
+    expect(result.messages).toContain(
+      `Pokemon #${speciesIds.bulbasaur}'s White Herb restored its stats!`,
+    );
   });
 
   it("given Pokemon with multiple lowered stats holding White Herb, when stat-boost-between-turns triggers, then all lowered stats restored to 0", () => {

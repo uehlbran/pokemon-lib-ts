@@ -856,7 +856,7 @@ describe("Gen 2 Held Items", () => {
 
       // Assert
       expect(result.activated).toBe(true);
-      const flinchEffect = result.effects.find((e) => e.type === "flinch");
+      const flinchEffect = result.effects.find((e) => e.type === CORE_VOLATILE_IDS.flinch);
       expect(flinchEffect).toBeDefined();
     });
 

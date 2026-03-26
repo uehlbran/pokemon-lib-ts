@@ -2,6 +2,8 @@ import type { DataManager, MoveData, PokemonInstance, SeededRandom } from "@poke
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
@@ -9,7 +11,7 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import { GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9";
+import { GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -328,7 +330,11 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Set weather manually.
-      engine.state.weather = { type: CORE_WEATHER_IDS.rain, turnsLeft: 2, source: "test" };
+      engine.state.weather = {
+        type: CORE_WEATHER_IDS.rain,
+        turnsLeft: 2,
+        source: GEN9_MOVE_IDS.rainDance,
+      };
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -338,7 +344,7 @@ describe("BattleEngine — advanced scenarios", () => {
       expect(engine.state.weather).toEqual({
         type: CORE_WEATHER_IDS.rain,
         turnsLeft: 1,
-        source: "test",
+        source: GEN9_MOVE_IDS.rainDance,
       });
       expect(events.filter((event) => event.type === "weather-end")).toEqual([]);
     });
@@ -354,10 +360,15 @@ describe("BattleEngine — advanced scenarios", () => {
         ...originalOrder,
       ];
 
-      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      patchedRuleset.setGenerationForTest(9);
+      const { engine, events } = createEngine({ generation: 9, ruleset: patchedRuleset });
       engine.start();
 
-      engine.state.weather = { type: CORE_WEATHER_IDS.rain, turnsLeft: 1, source: "test" };
+      engine.state.weather = {
+        type: CORE_WEATHER_IDS.rain,
+        turnsLeft: 1,
+        source: GEN9_MOVE_IDS.rainDance,
+      };
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -379,10 +390,15 @@ describe("BattleEngine — advanced scenarios", () => {
         ...originalOrder,
       ];
 
-      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      patchedRuleset.setGenerationForTest(9);
+      const { engine, events } = createEngine({ generation: 9, ruleset: patchedRuleset });
       engine.start();
 
-      engine.state.terrain = { type: CORE_TERRAIN_IDS.electric, turnsLeft: 1, source: "test" };
+      engine.state.terrain = {
+        type: CORE_TERRAIN_IDS.electric,
+        turnsLeft: 1,
+        source: GEN9_MOVE_IDS.electricTerrain,
+      };
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -431,10 +447,11 @@ describe("BattleEngine — advanced scenarios", () => {
         ...originalOrder,
       ];
 
-      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      patchedRuleset.setGenerationForTest(9);
+      const { engine, events } = createEngine({ generation: 9, ruleset: patchedRuleset });
       engine.start();
 
-      engine.state.sides[0].screens = [{ type: "safeguard", turnsLeft: 1 }];
+      engine.state.sides[0].screens = [{ type: CORE_SCREEN_IDS.safeguard, turnsLeft: 1 }];
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -443,9 +460,16 @@ describe("BattleEngine — advanced scenarios", () => {
       // Assert
       expect(engine.state.sides[0].screens).toHaveLength(0);
       const screenEnd = events.find(
-        (event) => event.type === "screen-end" && event.side === 0 && event.screen === "safeguard",
+        (event) =>
+          event.type === "screen-end" &&
+          event.side === 0 &&
+          event.screen === CORE_SCREEN_IDS.safeguard,
       );
-      expect(screenEnd).toEqual({ type: "screen-end", side: 0, screen: "safeguard" });
+      expect(screenEnd).toEqual({
+        type: "screen-end",
+        side: 0,
+        screen: CORE_SCREEN_IDS.safeguard,
+      });
       const screenEndIndex = events.indexOf(screenEnd);
       const safeguardWearOffMessage = events.find(
         (event) => event.type === "message" && event.text === "Side 0's Safeguard wore off!",
@@ -471,18 +495,21 @@ describe("BattleEngine — advanced scenarios", () => {
         ...originalOrder,
       ];
 
-      const { engine, events } = createEngine({ ruleset: patchedRuleset });
+      patchedRuleset.setGenerationForTest(9);
+      const { engine, events } = createEngine({ generation: 9, ruleset: patchedRuleset });
       engine.start();
 
       // Source: specs/battle/05-gen4.md lists Safeguard as lasting 5 turns in Gen 4.
-      engine.state.sides[0].screens = [{ type: "safeguard", turnsLeft: 5 }];
+      engine.state.sides[0].screens = [{ type: CORE_SCREEN_IDS.safeguard, turnsLeft: 5 }];
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      expect(engine.state.sides[0].screens).toEqual([{ type: "safeguard", turnsLeft: 4 }]);
+      expect(engine.state.sides[0].screens).toEqual([
+        { type: CORE_SCREEN_IDS.safeguard, turnsLeft: 4 },
+      ]);
       const screenEnd = events.find((event) => event.type === "screen-end");
       expect(screenEnd).toBeUndefined();
     });
@@ -523,8 +550,8 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       engine.state.sides[1].hazards = [
-        { type: "spikes", layers: 2 },
-        { type: "stealth-rock", layers: 1 },
+        { type: CORE_HAZARD_IDS.spikes, layers: 2 },
+        { type: CORE_HAZARD_IDS.stealthRock, layers: 1 },
       ];
 
       // Act
@@ -538,8 +565,8 @@ describe("BattleEngine — advanced scenarios", () => {
       );
       // Source: the fixture seeded only Spikes and Stealth Rock on side 1, so those are the hazards cleared.
       expect(hazardClearEvents).toEqual([
-        { type: "hazard-clear", side: 1, hazard: "spikes" },
-        { type: "hazard-clear", side: 1, hazard: "stealth-rock" },
+        { type: "hazard-clear", side: 1, hazard: CORE_HAZARD_IDS.spikes },
+        { type: "hazard-clear", side: 1, hazard: CORE_HAZARD_IDS.stealthRock },
       ]);
       const hazardClearMessageIndex = events.findIndex(
         (event) => event.type === "message" && event.text === "The hazards were cleared!",
@@ -566,7 +593,7 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.state.sides[1].screens = [
         { type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 },
         { type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 5 },
-        { type: "safeguard", turnsLeft: 5 },
+        { type: CORE_SCREEN_IDS.safeguard, turnsLeft: 5 },
       ];
 
       // Act
@@ -575,7 +602,9 @@ describe("BattleEngine — advanced scenarios", () => {
 
       // Assert
       // Source: only Reflect and Light Screen were targeted for removal in the fixture above.
-      expect(engine.state.sides[1].screens).toEqual([{ type: "safeguard", turnsLeft: 5 }]);
+      expect(engine.state.sides[1].screens).toEqual([
+        { type: CORE_SCREEN_IDS.safeguard, turnsLeft: 5 },
+      ]);
       const screenEndEvents = events.filter(
         (event) => event.type === "screen-end" && event.side === 1,
       );
@@ -774,30 +803,30 @@ describe("BattleEngine — advanced scenarios", () => {
 
   describe("paralysis full para", () => {
     it("given a paralyzed pokemon, when full paralysis triggers, then it cannot move", () => {
-      // Arrange — use a seed that triggers the 25% paralysis check
-      // We'll run multiple seeds until we find one that triggers full para
-      let foundFullPara = false;
-
-      for (let seed = 0; seed < 100; seed++) {
-        const { engine, events } = createEngine({ seed });
-        engine.start();
-
-        engine.state.sides[1].active[0]!.pokemon.status = CORE_STATUS_IDS.paralysis;
-
-        engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
-
-        const paraMsg = events.find(
-          (e) => e.type === "message" && "text" in e && e.text.includes("fully paralyzed"),
-        );
-        if (paraMsg) {
-          foundFullPara = true;
-          break;
+      class AlwaysFullParalysisRuleset extends MockRuleset {
+        override checkFullParalysis(): boolean {
+          return true;
         }
       }
 
-      // Assert — at 25% chance, we should find full para within 100 seeds
-      expect(foundFullPara).toBe(true);
+      const { engine, events } = createEngine({ ruleset: new AlwaysFullParalysisRuleset() });
+      engine.start();
+
+      const blastoise = engine.state.sides[1].active[0] as ActivePokemon;
+      blastoise.pokemon.status = CORE_STATUS_IDS.paralysis;
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Blastoise is fully paralyzed!",
+      });
+      const blastoiseMoves = events.filter(
+        (event) =>
+          event.type === "move-start" && "pokemon" in event && event.pokemon === "Blastoise",
+      );
+      expect(blastoiseMoves).toHaveLength(0);
     });
   });
 
@@ -924,14 +953,14 @@ describe("BattleEngine — advanced scenarios", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.potion });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — the engine emits "Side 0 used potion!" followed by ruleset result messages
-      const itemMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("potion"),
-      );
-      expect(itemMsg).toEqual({ type: "message", text: "Side 0 used potion!" });
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Side 0 used potion!",
+      });
     });
   });
 

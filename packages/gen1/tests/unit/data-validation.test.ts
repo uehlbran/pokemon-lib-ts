@@ -1,13 +1,7 @@
 import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
-import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen1DataManager,
-  GEN1_MOVE_IDS,
-  GEN1_SPECIES_IDS,
-  GEN1_TYPE_CHART,
-  Gen1Ruleset,
-} from "../../src";
+import { createGen1DataManager, GEN1_SPECIES_IDS, GEN1_TYPE_CHART, Gen1Ruleset } from "../../src";
 
 /**
  * Comprehensive data validation tests for Gen 1.
@@ -240,13 +234,13 @@ describe("Gen 1 Moves Data Validation", () => {
     // Act / Assert
     const mismatches: string[] = [];
     for (const move of allMoves) {
-      if (move.category === "status") continue;
-      if (GEN1_PHYSICAL_TYPES.has(move.type) && move.category !== "physical") {
+      if (move.category === CORE_MOVE_CATEGORIES.status) continue;
+      if (GEN1_PHYSICAL_TYPES.has(move.type) && move.category !== CORE_MOVE_CATEGORIES.physical) {
         mismatches.push(
           `${move.displayName} (${move.id}): type=${move.type} should be physical, got ${move.category}`,
         );
       }
-      if (GEN1_SPECIAL_TYPES.has(move.type) && move.category !== "special") {
+      if (GEN1_SPECIAL_TYPES.has(move.type) && move.category !== CORE_MOVE_CATEGORIES.special) {
         mismatches.push(
           `${move.displayName} (${move.id}): type=${move.type} should be special, got ${move.category}`,
         );
@@ -387,13 +381,8 @@ describe("Gen 1 Cross-Reference Validation", () => {
       }
     }
 
-    // Assert: Porygon references "sharpen" which is missing from moves.json — this is a known data gap
-    // If there are missing moves, the list should only contain the known gap(s)
-    if (missingMoves.length > 0) {
-      expect(missingMoves).toEqual([
-        `Porygon (#${GEN1_SPECIES_IDS.porygon}) level-up: "${GEN1_MOVE_IDS.sharpen}" at level 0`,
-      ]);
-    }
+    // Assert: the Gen 1 learnset no longer has unresolved level-up move references.
+    expect(missingMoves).toEqual([]);
   });
 
   it("given Gen 1 data, when checking all learnset TM moves, then every referenced move exists in moves.json", () => {

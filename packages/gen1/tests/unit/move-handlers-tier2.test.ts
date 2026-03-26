@@ -439,7 +439,7 @@ describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
     // Act
     const result = ruleset.executeMoveEffect(context);
     // Assert
-    expect(result.messages.some((m) => m.includes(VOLATILE_IDS.mist))).toBe(true);
+    expect(result.messages).toEqual(["Rattata is protected by the mist!"]);
   });
 
   it("given defender has no mist, when growl is used, then stat drop is applied normally", () => {

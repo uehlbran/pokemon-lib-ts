@@ -1,4 +1,5 @@
 import {
+  CORE_MOVE_CATEGORIES,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
@@ -6,6 +7,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  GEN8_MAX_MOVE_EFFECT_TYPES,
   getMaxMoveName,
   getMaxMovePower,
   getMaxMoveSecondaryEffect,
@@ -150,7 +152,7 @@ describe("Gen8MaxMoves", () => {
     it("given Max Guard, when getting secondary effect, then returns protect", () => {
       // Source: Bulbapedia "Max Guard" -- blocks all moves
       const effect = getMaxMoveSecondaryEffect(getMaxMoveName(CORE_TYPE_IDS.normal, true));
-      expect(effect).toEqual({ type: "protect" });
+      expect(effect).toEqual({ type: GEN8_MAX_MOVE_EFFECT_TYPES.protect });
     });
 
     it("given Max Darkness, when getting secondary effect, then returns -1 SpDef opponent-side", () => {
@@ -190,15 +192,15 @@ describe("Gen8MaxMoves", () => {
   describe("isMaxGuard", () => {
     it("given status category move, when checking isMaxGuard, then returns true", () => {
       // Source: Showdown sim/battle-actions.ts -- status moves become Max Guard
-      expect(isMaxGuard({ category: "status" })).toBe(true);
+      expect(isMaxGuard({ category: CORE_MOVE_CATEGORIES.status })).toBe(true);
     });
 
     it("given physical category move, when checking isMaxGuard, then returns false", () => {
-      expect(isMaxGuard({ category: "physical" })).toBe(false);
+      expect(isMaxGuard({ category: CORE_MOVE_CATEGORIES.physical })).toBe(false);
     });
 
     it("given special category move, when checking isMaxGuard, then returns false", () => {
-      expect(isMaxGuard({ category: "special" })).toBe(false);
+      expect(isMaxGuard({ category: CORE_MOVE_CATEGORIES.special })).toBe(false);
     });
   });
 });

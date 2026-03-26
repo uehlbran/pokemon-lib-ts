@@ -1,11 +1,17 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_SLOTS, CORE_GENDERS, createDvs, createStatExp } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_NATURE_IDS,
+  createDvs,
+  createStatExp,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS, GEN2_SPECIES_IDS } from "../../src";
 import { calculateGen2Stats } from "../../src/Gen2StatCalc";
 
 const GEN2_DATA = createGen2DataManager();
-const DEFAULT_NATURE = "hardy" as PokemonInstance["nature"];
+const DEFAULT_NATURE = CORE_NATURE_IDS.hardy as PokemonInstance["nature"];
 const DEFAULT_POKEBALL = GEN2_ITEM_IDS.pokeBall;
 const DEFAULT_ABILITY = "";
 

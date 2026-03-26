@@ -686,14 +686,14 @@ describe("Surge Abilities", () => {
     expect(isSurgeAbility(null)).toBe(false);
   });
 
-  it("given Electric Surge, when getting terrain type, then returns 'electric'", () => {
+  it("given Electric Surge, when getting terrain type, then returns Electric Terrain", () => {
     // Source: Showdown data/abilities.ts -- electricsurge sets Electric Terrain
-    expect(getSurgeTerrainType(ABILITIES.electricSurge)).toBe(TERRAINS.electric);
+    expect(getSurgeTerrainType(ABILITIES.electricSurge)).toBe(CORE_TERRAIN_IDS.electric);
   });
 
-  it("given Grassy Surge, when getting terrain type, then returns 'grassy'", () => {
+  it("given Grassy Surge, when getting terrain type, then returns Grassy Terrain", () => {
     // Source: Showdown data/abilities.ts -- grassysurge sets Grassy Terrain
-    expect(getSurgeTerrainType(ABILITIES.grassySurge)).toBe(TERRAINS.grassy);
+    expect(getSurgeTerrainType(ABILITIES.grassySurge)).toBe(CORE_TERRAIN_IDS.grassy);
   });
 
   it("given non-surge ability, when getting terrain type, then returns null", () => {

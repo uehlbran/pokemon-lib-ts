@@ -4,6 +4,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   createEvs,
   createIvs,
   createMoveSlot,
@@ -148,7 +149,7 @@ describe("Status Z-Move: modifyMove preserves original move identity", () => {
     expect(result.id).toBe(GEN7_MOVE_IDS.swordsDance);
     expect(result.displayName).toBe(`Z-${swordsDance.displayName}`);
     // Category stays status
-    expect(result.category).toBe("status");
+    expect(result.category).toBe(CORE_MOVE_CATEGORIES.status);
     // Z-Move power is 0 for status moves (they don't deal damage)
     expect(result.zMovePower).toBe(0);
   });
@@ -323,7 +324,7 @@ describe("Status Z-Move: does NOT convert to a damaging move", () => {
 
     const result = zMove.modifyMove(thunderWave, pokemon);
 
-    expect(result.category).toBe("status");
+    expect(result.category).toBe(CORE_MOVE_CATEGORIES.status);
     // Should NOT have power set (it's a status move, not damaging)
     expect(result.power).toBe(null);
   });

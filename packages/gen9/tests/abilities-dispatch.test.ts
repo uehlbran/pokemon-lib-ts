@@ -1,10 +1,9 @@
-import type {
-  AbilityContext,
-  ActivePokemon,
-  BattleSide,
-  BattleState,
-} from "@pokemon-lib-ts/battle";
-import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
+import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  createOnFieldPokemon as createBattleOnFieldPokemon,
+  createBattleSide,
+  createBattleState,
+} from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -157,23 +156,6 @@ function createOnFieldPokemon(overrides: {
   return activePokemon;
 }
 
-function createBattleSide(index: 0 | 1): BattleSide {
-  return {
-    index,
-    trainer: null,
-    team: [],
-    active: [],
-    hazards: [],
-    screens: [],
-    tailwind: { active: false, turnsLeft: 0 },
-    luckyChant: { active: false, turnsLeft: 0 },
-    wish: null,
-    futureAttack: null,
-    faintCount: 0,
-    gimmickUsed: false,
-  };
-}
-
 function createTestRng(overrides?: Partial<SeededRandom>): SeededRandom {
   return {
     next: () => 0,
@@ -187,25 +169,17 @@ function createTestRng(overrides?: Partial<SeededRandom>): SeededRandom {
   };
 }
 
-function createBattleState(overrides?: {
+function createAbilityBattleState(overrides?: {
   weather?: BattleState["weather"];
   terrain?: BattleState["terrain"];
 }): BattleState {
-  return {
-    phase: "turn-end",
+  return createBattleState({
     generation: 9,
-    format: "singles",
-    turnNumber: 1,
-    sides: [createBattleSide(0), createBattleSide(1)],
     weather: overrides?.weather ?? null,
     terrain: overrides?.terrain ?? null,
-    trickRoom: { active: false, turnsLeft: 0 },
-    magicRoom: { active: false, turnsLeft: 0 },
-    wonderRoom: { active: false, turnsLeft: 0 },
-    gravity: { active: false, turnsLeft: 0 },
-    turnHistory: [],
+    sides: [createBattleSide({ index: 0 }), createBattleSide({ index: 1 })],
     rng: createTestRng(),
-  } as BattleState;
+  });
 }
 
 function createAbilityContext(overrides: {
@@ -220,7 +194,7 @@ function createAbilityContext(overrides: {
   return {
     pokemon: overrides.pokemon,
     opponent: overrides.opponent,
-    state: createBattleState({ weather: overrides.weather, terrain: overrides.terrain }),
+    state: createAbilityBattleState({ weather: overrides.weather, terrain: overrides.terrain }),
     rng: createTestRng(overrides.rng),
     trigger: overrides.trigger,
     move: overrides.move,

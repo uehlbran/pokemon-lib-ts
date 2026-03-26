@@ -65,6 +65,14 @@ const defaultSpeciesIdsByAbility = {
   [abilityIds.cloudNine]: speciesIds.golduck,
   [abilityIds.airLock]: speciesIds.rayquaza,
 } as const satisfies Record<string, number>;
+function resolveWeatherSource(weatherType: string): string {
+  if (weatherType === weatherIds.sand) return moveIds.sandstorm;
+  if (weatherType === weatherIds.rain) return moveIds.rainDance;
+  if (weatherType === weatherIds.sun) return moveIds.sunnyDay;
+  if (weatherType === weatherIds.hail) return moveIds.hail;
+
+  return moveIds.sandstorm;
+}
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as gen5/gen6 cloud-nine-suppression tests)
@@ -145,7 +153,9 @@ function createBattleState(overrides?: {
   sides?: [BattleSide, BattleSide];
 }): BattleState {
   return {
-    weather: overrides?.weather ?? null,
+    weather: overrides?.weather
+      ? { ...overrides.weather, source: resolveWeatherSource(overrides.weather.type) }
+      : null,
     terrain: null,
     trickRoom: { active: false, turnsLeft: 0 },
     magicRoom: { active: false, turnsLeft: 0 },
@@ -229,7 +239,7 @@ describe("isWeatherSuppressedOnFieldGen7", () => {
     const cloudNine = createSyntheticOnFieldPokemon({ ability: abilityIds.cloudNine });
     const normal = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
     const state = createBattleState({
-      weather: { type: weatherIds.sand, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.sand, turnsLeft: 5 },
       sides: [createBattleSide(cloudNine, 0), createBattleSide(normal, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen7(state)).toBe(true);
@@ -239,7 +249,7 @@ describe("isWeatherSuppressedOnFieldGen7", () => {
     const normal = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
     const airLock = createSyntheticOnFieldPokemon({ ability: abilityIds.airLock });
     const state = createBattleState({
-      weather: { type: weatherIds.rain, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.rain, turnsLeft: 5 },
       sides: [createBattleSide(normal, 0), createBattleSide(airLock, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen7(state)).toBe(true);
@@ -249,7 +259,7 @@ describe("isWeatherSuppressedOnFieldGen7", () => {
     const a = createSyntheticOnFieldPokemon({ ability: abilityIds.blaze });
     const b = createSyntheticOnFieldPokemon({ ability: abilityIds.torrent });
     const state = createBattleState({
-      weather: { type: weatherIds.sun, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.sun, turnsLeft: 5 },
       sides: [createBattleSide(a, 0), createBattleSide(b, 1)],
     });
     expect(isWeatherSuppressedOnFieldGen7(state)).toBe(false);
@@ -279,7 +289,7 @@ describe("Gen7 Cloud Nine damage calc integration", () => {
     const fireMove = dataManager.getMove(moveIds.flamethrower);
 
     const sunState = createBattleState({
-      weather: { type: weatherIds.sun, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.sun, turnsLeft: 5 },
     });
     const noWeatherState = createBattleState();
 
@@ -320,7 +330,7 @@ describe("Gen7 Cloud Nine damage calc integration", () => {
     const fireMove = dataManager.getMove(moveIds.flamethrower);
 
     const sunState = createBattleState({
-      weather: { type: weatherIds.sun, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.sun, turnsLeft: 5 },
     });
     const noWeatherState = createBattleState();
 
@@ -358,7 +368,7 @@ describe("Gen7 Cloud Nine damage calc integration", () => {
     const waterMove = dataManager.getMove(moveIds.surf);
 
     const rainState = createBattleState({
-      weather: { type: weatherIds.rain, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.rain, turnsLeft: 5 },
     });
     const noWeatherState = createBattleState();
 
@@ -403,7 +413,7 @@ describe("Gen7 Cloud Nine weather chip suppression", () => {
       currentHp: maxHp,
     });
     const state = createBattleState({
-      weather: { type: weatherIds.sand, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.sand, turnsLeft: 5 },
       sides: [createBattleSide(cloudNine, 0), createBattleSide(normalMon, 1)],
     });
 
@@ -427,7 +437,7 @@ describe("Gen7 Cloud Nine weather chip suppression", () => {
       currentHp: maxHp,
     });
     const state = createBattleState({
-      weather: { type: weatherIds.hail, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.hail, turnsLeft: 5 },
       sides: [createBattleSide(normalMon, 0), createBattleSide(airLock, 1)],
     });
 
@@ -452,7 +462,7 @@ describe("Gen7 Cloud Nine weather chip suppression", () => {
       currentHp: secondMaxHp,
     });
     const state = createBattleState({
-      weather: { type: weatherIds.sand, turnsLeft: 5, source: "test" },
+      weather: { type: weatherIds.sand, turnsLeft: 5 },
       sides: [createBattleSide(normalMon1, 0), createBattleSide(normalMon2, 1)],
     });
 

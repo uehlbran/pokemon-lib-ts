@@ -210,7 +210,7 @@ describe("Struggle damage delegation (#80)", () => {
 
       // Assert — find the damage event whose source is "struggle"
       const struggleDamage = events.find(
-        (e) => e.type === "damage" && "source" in e && e.source === "struggle",
+        (e) => e.type === "damage" && "source" in e && e.source === MOVE_IDS.struggle,
       );
       if (!struggleDamage || struggleDamage.type !== "damage") {
         throw new Error("Expected a Struggle damage event");
@@ -233,7 +233,7 @@ describe("Struggle damage delegation (#80)", () => {
 
       // Assert — Struggle damage event amount is 0
       const struggleDamage = events.find(
-        (e) => e.type === "damage" && "source" in e && e.source === "struggle",
+        (e) => e.type === "damage" && "source" in e && e.source === MOVE_IDS.struggle,
       );
       if (!struggleDamage || struggleDamage.type !== "damage") {
         throw new Error("Expected a Struggle damage event");
@@ -255,7 +255,7 @@ describe("Struggle damage delegation (#80)", () => {
 
       // Assert
       const struggleDamage = events.find(
-        (e) => e.type === "damage" && "source" in e && e.source === "struggle",
+        (e) => e.type === "damage" && "source" in e && e.source === MOVE_IDS.struggle,
       );
       if (!struggleDamage || struggleDamage.type !== "damage") {
         throw new Error("Expected a Struggle damage event");

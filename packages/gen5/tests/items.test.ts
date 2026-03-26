@@ -7,6 +7,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
@@ -1257,7 +1258,7 @@ describe("Gen 5 Items -- Absorb Bulb", () => {
       hp: 200,
       currentHp: 150,
     });
-    const waterMove = createSyntheticMoveFrom({ type: "water" });
+    const waterMove = createSyntheticMoveFrom({ type: CORE_TYPE_IDS.water });
     const ctx = createItemContext({ pokemon, move: waterMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1274,7 +1275,7 @@ describe("Gen 5 Items -- Absorb Bulb", () => {
       hp: 200,
       currentHp: 150,
     });
-    const fireMove = createSyntheticMoveFrom({ type: "fire" });
+    const fireMove = createSyntheticMoveFrom({ type: CORE_TYPE_IDS.fire });
     const ctx = createItemContext({ pokemon, move: fireMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -1294,7 +1295,7 @@ describe("Gen 5 Items -- Cell Battery", () => {
       hp: 200,
       currentHp: 150,
     });
-    const electricMove = createSyntheticMoveFrom({ type: "electric" });
+    const electricMove = createSyntheticMoveFrom({ type: CORE_TYPE_IDS.electric });
     const ctx = createItemContext({ pokemon, move: electricMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1311,7 +1312,7 @@ describe("Gen 5 Items -- Cell Battery", () => {
       hp: 200,
       currentHp: 150,
     });
-    const normalMove = createSyntheticMoveFrom({ type: "normal" });
+    const normalMove = createSyntheticMoveFrom({ type: CORE_TYPE_IDS.normal });
     const ctx = createItemContext({ pokemon, move: normalMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);
@@ -1556,7 +1557,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
       { active: [attacker], team: [], format: "singles" },
     ];
     const state = createBattleState({ sides: sides as any });
-    const physicalMove = createSyntheticMoveFrom({ category: "physical" });
+    const physicalMove = createSyntheticMoveFrom({ category: CORE_MOVE_CATEGORIES.physical });
     const ctx = createItemContext({ pokemon: defender, state, move: physicalMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1586,7 +1587,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
       { active: [attacker], team: [], format: "singles" },
     ];
     const state = createBattleState({ sides: sides as any });
-    const specialMove = createSyntheticMoveFrom({ category: "special" });
+    const specialMove = createSyntheticMoveFrom({ category: CORE_MOVE_CATEGORIES.special });
     const ctx = createItemContext({ pokemon: defender, state, move: specialMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
@@ -1605,7 +1606,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
       hp: 200,
       currentHp: 150,
     });
-    const specialMove = createSyntheticMoveFrom({ category: "special" });
+    const specialMove = createSyntheticMoveFrom({ category: CORE_MOVE_CATEGORIES.special });
     const ctx = createItemContext({ pokemon: defender, move: specialMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(false);

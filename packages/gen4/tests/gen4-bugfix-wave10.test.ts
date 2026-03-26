@@ -12,6 +12,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -574,7 +575,7 @@ describe("Bug #417 — Whirlwind/Roar check for Ingrain", () => {
 
     expect(result.switchOut).toBeFalsy();
     expect(result.forcedSwitch).toBeFalsy();
-    expect(result.messages.some((m) => m.includes("roots"))).toBe(true);
+    expect(result.messages).toEqual(["Bulba anchored itself with its roots!"]);
   });
 
   it("given defender has Ingrain volatile, when Roar is used, then forced switch is also blocked", () => {
@@ -594,7 +595,7 @@ describe("Bug #417 — Whirlwind/Roar check for Ingrain", () => {
 
     expect(result.switchOut).toBeFalsy();
     expect(result.forcedSwitch).toBeFalsy();
-    expect(result.messages.some((m) => m.includes("roots"))).toBe(true);
+    expect(result.messages).toEqual(["Torterra anchored itself with its roots!"]);
   });
 });
 
@@ -709,7 +710,7 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
       state,
       rng,
       damage: 50,
-      move: { category: "physical" } as MoveData,
+      move: { category: CORE_MOVE_CATEGORIES.physical } as MoveData,
     });
 
     expect(result.activated).toBe(true);
@@ -742,7 +743,7 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
       state,
       rng,
       damage: 30,
-      move: { category: "physical" } as MoveData,
+      move: { category: CORE_MOVE_CATEGORIES.physical } as MoveData,
     });
 
     expect(result.activated).toBe(true);

@@ -111,7 +111,7 @@ describe("Bug #890 - Gen 8 Ice Face pre-damage blocking", () => {
       (event) =>
         event.type === "message" &&
         typeof event.text === "string" &&
-        event.text.includes("Ice Face"),
+        event.text === "Eiscue's Ice Face absorbed the damage!",
     );
     expect(iceFaceMessages).toHaveLength(1);
   });

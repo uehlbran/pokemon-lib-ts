@@ -1,5 +1,10 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_MOVE_IDS, CORE_STATUS_IDS, createMoveSlot } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
+  createMoveSlot,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -94,7 +99,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       active!.pokemon.currentHp = maxHp - 50; // 103 HP (50 HP missing)
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.potion });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
@@ -103,7 +108,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       // Source: Potion heals 20 HP. Starting HP was 103, so after heal = 123.
       expect(healEvent!.amount).toBe(20);
       expect(healEvent!.currentHp).toBe(123);
-      expect(healEvent!.source).toBe("potion");
+      expect(healEvent!.source).toBe(CORE_ITEM_IDS.potion);
     });
 
     it("given a Potion used on a full-HP pokemon, when item action submitted, then no heal event emitted", () => {
@@ -119,18 +124,17 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.potion });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const healEvent = events.find((e) => e.type === "heal" && e.source === "potion");
+      const healEvent = events.find((e) => e.type === "heal" && e.source === CORE_ITEM_IDS.potion);
       expect(healEvent).toBeUndefined();
 
-      // Verify the failure message was emitted
-      const failMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("already full"),
-      );
-      expect(failMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Charizard's HP is already full!",
+      });
     });
   });
 
@@ -167,7 +171,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "antidote" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.antidote });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
@@ -193,17 +197,17 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "antidote" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.antidote });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
       const cureEvent = events.find((e) => e.type === "status-cure");
       expect(cureEvent).toBeUndefined();
 
-      const noEffectMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("won't have any effect"),
-      );
-      expect(noEffectMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "It won't have any effect.",
+      });
     });
   });
 
@@ -222,7 +226,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "x-attack" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.xAttack });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
@@ -276,7 +280,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       });
 
       // Act — target team slot 1 (the fainted bench pokemon)
-      engine.submitAction(0, { type: "item", side: 0, itemId: "revive", target: 1 });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.revive, target: 1 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
@@ -325,7 +329,12 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       });
 
       // Act — target team slot 1 (the fainted bench pokemon)
-      engine.submitAction(0, { type: "item", side: 0, itemId: "max-revive", target: 1 });
+      engine.submitAction(0, {
+        type: "item",
+        side: 0,
+        itemId: CORE_ITEM_IDS.maxRevive,
+        target: 1,
+      });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
@@ -360,11 +369,13 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       active!.pokemon.currentHp = active!.pokemon.calculatedStats!.hp - 50;
 
       // Act — side 0 uses item, side 1 uses move
-      engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.potion });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — heal event (from item) should appear before damage event (from move)
-      const healIndex = events.findIndex((e) => e.type === "heal" && e.source === "potion");
+      const healIndex = events.findIndex(
+        (e) => e.type === "heal" && e.source === CORE_ITEM_IDS.potion,
+      );
       const moveStartIndex = events.findIndex((e) => e.type === "move-start");
       expect(healIndex).toBeGreaterThan(-1);
       expect(moveStartIndex).toBeGreaterThan(-1);
@@ -383,14 +394,14 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       engine.start();
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "potion" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.potion });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const blockedMsg = events.find(
-        (e) => e.type === "message" && "text" in e && e.text.includes("cannot be used"),
-      );
-      expect(blockedMsg).toBeDefined();
+      expect(events).toContainEqual({
+        type: "message",
+        text: "Items cannot be used here!",
+      });
 
       // No heal event should be emitted
       const healEvent = events.find((e) => e.type === "heal");
@@ -462,7 +473,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       active!.pokemon.status = CORE_STATUS_IDS.poison;
 
       // Act
-      engine.submitAction(0, { type: "item", side: 0, itemId: "full-restore" });
+      engine.submitAction(0, { type: "item", side: 0, itemId: CORE_ITEM_IDS.fullRestore });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert — both heal and status cure should be present

@@ -287,7 +287,7 @@ describe("Gen 1 Leech Seed handler", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert — Grass immunity blocks Leech Seed
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages.some((m) => m.includes("doesn't affect"))).toBe(true);
+    expect(result.messages).toContain("It doesn't affect Bulbasaur!");
   });
 
   it("given defender already has leech-seed, when Leech Seed used again, then fails", () => {
@@ -530,7 +530,7 @@ describe("Gen 1 Substitute handler", () => {
     });
     expect(result.selfVolatileInflicted).toBe(volatileIds.substitute);
     expect(result.selfVolatileData).toEqual({ turnsLeft: -1 });
-    expect(result.messages.some((m) => m.includes("put in a substitute"))).toBe(true);
+    expect(result.messages).toContain("The user put in a substitute!");
   });
 
   it("given attacker with 200 max HP and full HP, when Substitute used, then substituteHp = 50 and customDamage = 50", () => {

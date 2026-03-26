@@ -106,7 +106,7 @@ describe("BattleHelpers", () => {
       expect(active.types).toEqual(fireFlyingTypes);
       expect(active.types).not.toBe(types);
 
-      active.types[0] = "water";
+      active.types[0] = CORE_TYPE_IDS.water;
 
       expect(types).toEqual(fireFlyingTypes);
       expect(active.types).toEqual([CORE_TYPE_IDS.water, CORE_TYPE_IDS.flying]);

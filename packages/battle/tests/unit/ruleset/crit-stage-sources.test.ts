@@ -1,5 +1,5 @@
 import type { Generation, MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS } from "@pokemon-lib-ts/gen4";
 import { GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "@pokemon-lib-ts/gen8";
@@ -42,7 +42,7 @@ function createTestMove(overrides?: Partial<MoveData>): MoveData {
     id: CORE_MOVE_IDS.tackle,
     displayName: "Tackle",
     type: CORE_TYPE_IDS.normal,
-    category: "physical" as const,
+    category: CORE_MOVE_CATEGORIES.physical,
     power: 40,
     accuracy: 100,
     pp: 35,

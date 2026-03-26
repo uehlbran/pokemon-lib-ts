@@ -4,6 +4,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
@@ -796,7 +797,7 @@ describe("on-damage-taken ability hook", () => {
             {
               effectType: "type-change" as const,
               target: "self" as const,
-              types: ["normal" as const],
+              types: [CORE_TYPE_IDS.normal],
             },
           ],
           messages: ["Color Change activated!"],

@@ -1,4 +1,4 @@
-import { CORE_ITEM_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_IDS, CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen7DataManager,
@@ -205,7 +205,7 @@ describe("Gen 7 DataManager -- data loading", () => {
     const move = dm.getMove(GEN7_MOVE_IDS.spiritShackle);
     expect(move.power).toBe(80);
     expect(move.type).toBe(CORE_TYPE_IDS.ghost);
-    expect(move.category).toBe("physical");
+    expect(move.category).toBe(CORE_MOVE_CATEGORIES.physical);
   });
 
   it("given gen7 moves, when looking up First Impression, then power is 90 and priority is 2", () => {
@@ -224,7 +224,7 @@ describe("Gen 7 DataManager -- data loading", () => {
     const dm = createGen7DataManager();
     const move = dm.getMove(GEN7_MOVE_IDS.auroraVeil);
     expect(move.type).toBe(CORE_TYPE_IDS.ice);
-    expect(move.category).toBe("status");
+    expect(move.category).toBe(CORE_MOVE_CATEGORIES.status);
   });
 
   it("given gen7 moves, when looking up Baneful Bunker, then type is Poison and category is status", () => {
@@ -233,7 +233,7 @@ describe("Gen 7 DataManager -- data loading", () => {
     const dm = createGen7DataManager();
     const move = dm.getMove(GEN7_MOVE_IDS.banefulBunker);
     expect(move.type).toBe(CORE_TYPE_IDS.poison);
-    expect(move.category).toBe("status");
+    expect(move.category).toBe(CORE_MOVE_CATEGORIES.status);
   });
 
   it("given gen7 moves, when looking up Psychic Fangs, then power is 85 and type is Psychic", () => {
@@ -243,7 +243,7 @@ describe("Gen 7 DataManager -- data loading", () => {
     const move = dm.getMove(GEN7_MOVE_IDS.psychicFangs);
     expect(move.power).toBe(85);
     expect(move.type).toBe(CORE_TYPE_IDS.psychic);
-    expect(move.category).toBe("physical");
+    expect(move.category).toBe(CORE_MOVE_CATEGORIES.physical);
   });
 
   it("given gen7 moves, when looking up Spectral Thief, then power is 90 and type is Ghost", () => {
@@ -368,7 +368,11 @@ describe("Gen 7 DataManager -- data loading", () => {
       expect(move.id.length).toBeGreaterThan(0);
       expect(typeof move.type).toBe("string");
       expect(move.type.length).toBeGreaterThan(0);
-      expect(["physical", "special", "status"]).toContain(move.category);
+      expect([
+        CORE_MOVE_CATEGORIES.physical,
+        CORE_MOVE_CATEGORIES.special,
+        CORE_MOVE_CATEGORIES.status,
+      ]).toContain(move.category);
       expect(move.pp).toBeGreaterThan(0);
       expect(typeof move.priority).toBe("number");
     }

@@ -22,6 +22,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   createMoveSlot,
@@ -1029,8 +1030,10 @@ describe("Gen7Ruleset — getEndOfTurnOrder", () => {
   it("given Gen7Ruleset, when getting end-of-turn order, then terrain-countdown and weather-countdown are present", () => {
     // Source: Showdown data/conditions.ts -- terrain and weather count down at end of turn
     const order = ruleset.getEndOfTurnOrder();
-    expect(order).toContain(END_OF_TURN_EFFECT_IDS.terrainCountdown);
-    expect(order).toContain(END_OF_TURN_EFFECT_IDS.weatherCountdown);
+    const terrainIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.terrainCountdown);
+    const weatherIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.weatherCountdown);
+    expect(terrainIdx).toBeGreaterThan(-1);
+    expect(weatherIdx).toBe(terrainIdx + 1);
   });
 
   it("given Gen7Ruleset, when getting end-of-turn order, then includes speed-boost and moody", () => {
@@ -1111,7 +1114,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
         pokemon: { heldItem: null },
         ability: ABILITY_IDS.none,
         volatileStatuses: new Map(),
-        types: ["normal"],
+        types: [CORE_TYPE_IDS.normal],
       },
       state: {},
       rng: {},
@@ -1152,7 +1155,7 @@ describe("Gen7Ruleset — type system", () => {
   it("given Gen7Ruleset, when getting available types, then includes fairy (Gen 6+ type)", () => {
     // Source: Bulbapedia -- Fairy type introduced in Gen 6, present in Gen 7
     const types = ruleset.getAvailableTypes();
-    expect(types).toContain("fairy");
+    expect(types).toContain(CORE_TYPE_IDS.fairy);
   });
 
   it("given Gen7Ruleset, when getting available types, then has exactly 18 types", () => {

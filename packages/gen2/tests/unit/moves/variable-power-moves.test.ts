@@ -248,7 +248,7 @@ describe("Gen 2 Magnitude", () => {
 
     // Assert — handler emits generic message and does not set customDamage
     expect(result.customDamage).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("tremor"))).toBe(true);
+    expect(result.messages).toEqual(["A tremor shook the area!"]);
   });
 });
 

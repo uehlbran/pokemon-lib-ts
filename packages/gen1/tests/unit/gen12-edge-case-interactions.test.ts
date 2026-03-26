@@ -475,7 +475,7 @@ describe("Gen 1 Disable mechanic", () => {
     const context = createMoveEffectContext({ defender, move: disableMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.volatileInflicted).toBeNull();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given Disable duration is sampled 500 times, then all durations are in range [1, 8]", () => {
@@ -806,7 +806,7 @@ describe("Gen 1 Mimic mechanic", () => {
     const context = createMoveEffectContext({ attacker, defender, move: mimicMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.moveSlotChange).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 
   it("given the defender last used Transform, when Mimic is used, then Mimic fails (cannot copy Transform)", () => {
@@ -841,7 +841,7 @@ describe("Gen 1 Mimic mechanic", () => {
     const context = createMoveEffectContext({ attacker, defender, move: mimicMove });
     const result = ruleset.executeMoveEffect(context);
     expect(result.moveSlotChange).toBeUndefined();
-    expect(result.messages.some((m) => m.includes("failed"))).toBe(true);
+    expect(result.messages).toEqual(["But it failed!"]);
   });
 });
 

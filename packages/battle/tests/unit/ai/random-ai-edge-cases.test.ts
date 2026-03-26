@@ -178,7 +178,7 @@ describe("RandomAI — edge cases", () => {
       const action = ai.chooseAction(0, state, ruleset, rng, []);
 
       // Assert
-      expect(action.type).toBe("struggle");
+      expect(action.type).toBe(CORE_MOVE_IDS.struggle);
       expect(action.side).toBe(0);
     });
 

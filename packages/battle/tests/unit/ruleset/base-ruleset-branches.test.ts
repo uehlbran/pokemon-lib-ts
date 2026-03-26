@@ -1,5 +1,6 @@
 import type { Generation, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
+  CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -137,7 +138,7 @@ describe("BaseRuleset — additional branches", () => {
       } as unknown as BattleState;
 
       const actions = [
-        { type: "item" as const, side: 0 as const, itemId: "potion" },
+        { type: "item" as const, side: 0 as const, itemId: CORE_ITEM_IDS.potion },
         { type: "move" as const, side: 1 as const, moveIndex: 0 },
       ];
 
