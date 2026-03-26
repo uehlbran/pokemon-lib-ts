@@ -3894,8 +3894,9 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Stat changes
     for (const change of result.statChanges) {
-      const target = change.target === "attacker" ? attacker : defender;
-      const targetSide = change.target === "attacker" ? attackerSide : defenderSide;
+      const target = change.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
+      const targetSide =
+        change.target === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       const currentStage = target.statStages[change.stat];
       const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
       target.statStages[change.stat] = newStage;
@@ -4055,8 +4056,9 @@ export class BattleEngine implements BattleEventEmitter {
     // Clear volatiles from move effects (e.g., Rapid Spin)
     if (result.volatilesToClear) {
       for (const clear of result.volatilesToClear) {
-        const target = clear.target === "attacker" ? attacker : defender;
-        const targetSide = clear.target === "attacker" ? attackerSide : defenderSide;
+        const target = clear.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
+        const targetSide =
+          clear.target === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
         if (target.volatileStatuses.has(clear.volatile)) {
           target.volatileStatuses.delete(clear.volatile);
           this.emit({
@@ -4072,10 +4074,11 @@ export class BattleEngine implements BattleEventEmitter {
     // Clear side hazards (e.g., Rapid Spin)
     if (result.clearSideHazards) {
       const clearSide =
-        result.clearSideHazards === "attacker"
+        result.clearSideHazards === BATTLE_EFFECT_TARGETS.attacker
           ? this.state.sides[attackerSide]
           : this.state.sides[defenderSide];
-      const clearSideIndex = result.clearSideHazards === "attacker" ? attackerSide : defenderSide;
+      const clearSideIndex =
+        result.clearSideHazards === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       if (clearSide.hazards.length > 0) {
         const clearedHazards = [...clearSide.hazards];
         clearSide.hazards = [];
@@ -4095,8 +4098,9 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Item transfer (e.g., Thief)
     if (result.itemTransfer) {
-      const from = result.itemTransfer.from === "attacker" ? attacker : defender;
-      const to = result.itemTransfer.to === "attacker" ? attacker : defender;
+      const from =
+        result.itemTransfer.from === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
+      const to = result.itemTransfer.to === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
       if (from.pokemon.heldItem && !to.pokemon.heldItem) {
         to.pokemon.heldItem = from.pokemon.heldItem;
         from.pokemon.heldItem = null;
@@ -4106,10 +4110,11 @@ export class BattleEngine implements BattleEventEmitter {
     // Screen set (Reflect / Light Screen)
     if (result.screenSet) {
       const screenSide =
-        result.screenSet.side === "attacker"
+        result.screenSet.side === BATTLE_EFFECT_TARGETS.attacker
           ? this.state.sides[attackerSide]
           : this.state.sides[defenderSide];
-      const screenSideIndex = result.screenSet.side === "attacker" ? attackerSide : defenderSide;
+      const screenSideIndex =
+        result.screenSet.side === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       const screenType = result.screenSet.screen as import("@pokemon-lib-ts/core").ScreenType;
       if (!screenSide.screens.some((s) => s.type === screenType)) {
         screenSide.screens.push({ type: screenType, turnsLeft: result.screenSet.turnsLeft });
@@ -4128,10 +4133,16 @@ export class BattleEngine implements BattleEventEmitter {
     // When screenTypesToRemove is set, filter instead of clearing all screens.
     // This prevents Brick Break from incorrectly removing Safeguard.
     if (result.screensCleared) {
-      if (result.screensCleared === "attacker" || result.screensCleared === "both") {
+      if (
+        result.screensCleared === BATTLE_EFFECT_TARGETS.attacker ||
+        result.screensCleared === BATTLE_EFFECT_TARGETS.both
+      ) {
         this.clearScreens(attackerSide, result.screenTypesToRemove);
       }
-      if (result.screensCleared === "defender" || result.screensCleared === "both") {
+      if (
+        result.screensCleared === BATTLE_EFFECT_TARGETS.defender ||
+        result.screensCleared === BATTLE_EFFECT_TARGETS.both
+      ) {
         this.clearScreens(defenderSide, result.screenTypesToRemove);
       }
     }
@@ -4139,11 +4150,11 @@ export class BattleEngine implements BattleEventEmitter {
     // Tailwind set (Gen 4+)
     if (result.tailwindSet) {
       const tailwindSide =
-        result.tailwindSet.side === "attacker"
+        result.tailwindSet.side === BATTLE_EFFECT_TARGETS.attacker
           ? this.state.sides[attackerSide]
           : this.state.sides[defenderSide];
       const tailwindSideIndex =
-        result.tailwindSet.side === "attacker" ? attackerSide : defenderSide;
+        result.tailwindSet.side === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       tailwindSide.tailwind = { active: true, turnsLeft: result.tailwindSet.turnsLeft };
       this.emit({
         type: "message",
@@ -4296,10 +4307,12 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Custom damage (OHKO, fixed damage, Counter)
     if (result.customDamage) {
-      const customTarget = result.customDamage.target === "attacker" ? attacker : defender;
-      const customSource = result.customDamage.target === "attacker" ? defender : attacker;
+      const customTarget =
+        result.customDamage.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
+      const customSource =
+        result.customDamage.target === BATTLE_EFFECT_TARGETS.attacker ? defender : attacker;
       const customTargetSide =
-        result.customDamage.target === "attacker" ? attackerSide : defenderSide;
+        result.customDamage.target === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       this.applyCustomDamage(
         customTarget,
         customSource,
@@ -4336,10 +4349,16 @@ export class BattleEngine implements BattleEventEmitter {
     // statStagesReset: resets stages WITHOUT curing status (e.g. Haze attacker side)
     if (result.statusCured) {
       const targets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
-      if (result.statusCured.target === "attacker" || result.statusCured.target === "both") {
+      if (
+        result.statusCured.target === BATTLE_EFFECT_TARGETS.attacker ||
+        result.statusCured.target === BATTLE_EFFECT_TARGETS.both
+      ) {
         targets.push({ pokemon: attacker, side: attackerSide });
       }
-      if (result.statusCured.target === "defender" || result.statusCured.target === "both") {
+      if (
+        result.statusCured.target === BATTLE_EFFECT_TARGETS.defender ||
+        result.statusCured.target === BATTLE_EFFECT_TARGETS.both
+      ) {
         targets.push({ pokemon: defender, side: defenderSide });
       }
       for (const { pokemon: t, side: tSide } of targets) {
@@ -4362,14 +4381,14 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.statStagesReset) {
       const resetTargets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
       if (
-        result.statStagesReset.target === "attacker" ||
-        result.statStagesReset.target === "both"
+        result.statStagesReset.target === BATTLE_EFFECT_TARGETS.attacker ||
+        result.statStagesReset.target === BATTLE_EFFECT_TARGETS.both
       ) {
         resetTargets.push({ pokemon: attacker, side: attackerSide });
       }
       if (
-        result.statStagesReset.target === "defender" ||
-        result.statStagesReset.target === "both"
+        result.statStagesReset.target === BATTLE_EFFECT_TARGETS.defender ||
+        result.statStagesReset.target === BATTLE_EFFECT_TARGETS.both
       ) {
         resetTargets.push({ pokemon: defender, side: defenderSide });
       }
@@ -4382,14 +4401,14 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.statusCuredOnly) {
       const targets: Array<{ pokemon: ActivePokemon; side: 0 | 1 }> = [];
       if (
-        result.statusCuredOnly.target === "attacker" ||
-        result.statusCuredOnly.target === "both"
+        result.statusCuredOnly.target === BATTLE_EFFECT_TARGETS.attacker ||
+        result.statusCuredOnly.target === BATTLE_EFFECT_TARGETS.both
       ) {
         targets.push({ pokemon: attacker, side: attackerSide });
       }
       if (
-        result.statusCuredOnly.target === "defender" ||
-        result.statusCuredOnly.target === "both"
+        result.statusCuredOnly.target === BATTLE_EFFECT_TARGETS.defender ||
+        result.statusCuredOnly.target === BATTLE_EFFECT_TARGETS.both
       ) {
         targets.push({ pokemon: defender, side: defenderSide });
       }
@@ -4413,7 +4432,8 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
     // Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
     if (result.teamStatusCure) {
-      const cureSideIndex = result.teamStatusCure.side === "attacker" ? attackerSide : defenderSide;
+      const cureSideIndex =
+        result.teamStatusCure.side === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       const cureSide = this.state.sides[cureSideIndex];
 
       // Cure the entire team (bench Pokemon stored in side.team)
@@ -4473,7 +4493,8 @@ export class BattleEngine implements BattleEventEmitter {
 
     // typeChange — update the types of the attacker or defender
     if (result.typeChange) {
-      const typeTarget = result.typeChange.target === "attacker" ? attacker : defender;
+      const typeTarget =
+        result.typeChange.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
       typeTarget.types = [...result.typeChange.types];
       this.emit({
         type: "message",
@@ -4485,9 +4506,12 @@ export class BattleEngine implements BattleEventEmitter {
     // Used by Entrainment (replaces target's ability with user's ability)
     // Source: Showdown data/moves.ts -- entrainment: target.setAbility(source.ability)
     if (result.abilityChange) {
-      const abilityTarget = result.abilityChange.target === "attacker" ? attacker : defender;
+      const abilityTarget =
+        result.abilityChange.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
       const _abilityTargetSide =
-        result.abilityChange.target === "attacker" ? attackerSide : defenderSide;
+        result.abilityChange.target === BATTLE_EFFECT_TARGETS.attacker
+          ? attackerSide
+          : defenderSide;
       const oldAbility = abilityTarget.ability;
       abilityTarget.ability = result.abilityChange.ability;
       this.emit({

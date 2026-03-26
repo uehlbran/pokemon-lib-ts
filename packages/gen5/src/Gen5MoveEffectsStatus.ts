@@ -292,7 +292,10 @@ function handleBestow(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   return makeResult({
-    itemTransfer: { from: "attacker", to: "defender" },
+    itemTransfer: {
+      from: BATTLE_EFFECT_TARGETS.attacker,
+      to: BATTLE_EFFECT_TARGETS.defender,
+    },
     messages: [
       `${ctx.attacker.pokemon.nickname ?? "The user"} gave its ${userItem} to ${ctx.defender.pokemon.nickname ?? "the target"}!`,
     ],

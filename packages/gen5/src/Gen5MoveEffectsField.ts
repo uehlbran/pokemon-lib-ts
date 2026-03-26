@@ -14,7 +14,11 @@
  * Source: references/pokemon-showdown/data/moves.ts (base definitions)
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
@@ -227,7 +231,7 @@ function handleTailwind(_ctx: MoveEffectContext): MoveEffectResult {
   // Source: Showdown Gen 5 -- Tailwind duration is 4 turns (changed from Gen 4's 3)
   return {
     ...base,
-    tailwindSet: { turnsLeft: 4, side: "attacker" },
+    tailwindSet: { turnsLeft: 4, side: BATTLE_EFFECT_TARGETS.attacker },
     messages: ["The tailwind blew from behind the team!"],
   };
 }

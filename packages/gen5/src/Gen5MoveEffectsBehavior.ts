@@ -340,7 +340,10 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   }
 
   return makeResult({
-    itemTransfer: { from: "defender", to: "attacker" },
+    itemTransfer: {
+      from: BATTLE_EFFECT_TARGETS.defender,
+      to: BATTLE_EFFECT_TARGETS.attacker,
+    },
     messages: [`${attackerName} stole ${defenderName}'s ${targetItem}!`],
   });
 }
@@ -396,7 +399,7 @@ function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
   return makeResult({
     // Clear all hazards from the USER's side
     // Source: Showdown data/moves.ts -- rapidspin: removes spikes/toxicspikes/stealthrock
-    clearSideHazards: "attacker",
+    clearSideHazards: BATTLE_EFFECT_TARGETS.attacker,
     volatilesToClear: volatilesToClear.length > 0 ? volatilesToClear : undefined,
     messages,
   });

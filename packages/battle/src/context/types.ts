@@ -177,6 +177,12 @@ export interface MoveEffectContext {
   readonly defenderSelectedMove?: { id: string; category: MoveCategory } | null;
 }
 
+type MoveEffectSideTarget =
+  | typeof BATTLE_EFFECT_TARGETS.attacker
+  | typeof BATTLE_EFFECT_TARGETS.defender;
+
+type MoveEffectSideTargetWithBoth = MoveEffectSideTarget | typeof BATTLE_EFFECT_TARGETS.both;
+
 /**
  * Structured result produced by `GenerationRuleset.executeMoveEffect()`.
  * The engine reads these fields and applies each effect to the battle state,
@@ -202,7 +208,7 @@ export interface MoveEffectResult {
   } | null;
   /** Stat stage changes to apply; empty array means no stat changes */
   readonly statChanges: ReadonlyArray<{
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     stat: BattleStat;
     stages: number;
   }>;
@@ -236,21 +242,25 @@ export interface MoveEffectResult {
   /** Freeform messages to emit as `MessageEvent`s after the move resolves */
   readonly messages: readonly string[];
   /** Wave 1: Set a screen (Reflect/Light Screen) on the attacker's side */
-  readonly screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  readonly screenSet?: {
+    screen: string;
+    turnsLeft: number;
+    side: MoveEffectSideTarget;
+  } | null;
   /** Wave 1: Attacker faints after using the move (Explosion, Self-Destruct) */
   readonly selfFaint?: boolean;
   /** Wave 1: Skip recharge next turn (e.g., Hyper Beam KO'd the target) */
   readonly noRecharge?: boolean;
   /** Wave 1: Custom damage to apply to a target (for OHKO, fixed-damage, Counter) */
   readonly customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     amount: number;
     source: string;
     /** The type of the move dealing this damage, for lastDamageType tracking */
     type?: PokemonType | null;
   } | null;
   /** Cure the target's status AND reset their stat stages (e.g., Haze cures defender's status) */
-  readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
+  readonly statusCured?: { target: MoveEffectSideTargetWithBoth } | null;
   /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   readonly weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
@@ -265,13 +275,13 @@ export interface MoveEffectResult {
   } | null;
   readonly hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
   readonly volatilesToClear?: ReadonlyArray<{
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     volatile: VolatileStatus;
   }>;
-  readonly clearSideHazards?: "attacker" | "defender";
-  readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+  readonly clearSideHazards?: MoveEffectSideTarget;
+  readonly itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
-  readonly screensCleared?: "attacker" | "defender" | "both" | null;
+  readonly screensCleared?: MoveEffectSideTargetWithBoth | null;
   /**
    * When set alongside `screensCleared`, only remove screens whose type is in this list.
    * E.g., Brick Break sets `["reflect", "light-screen"]` to avoid removing Safeguard.
@@ -281,9 +291,9 @@ export interface MoveEffectResult {
    */
   readonly screenTypesToRemove?: readonly string[];
   /** Reset stat stages for target(s) WITHOUT curing status (e.g. Haze resets attacker stages) */
-  readonly statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
+  readonly statStagesReset?: { target: MoveEffectSideTargetWithBoth } | null;
   /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
-  readonly statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+  readonly statusCuredOnly?: { target: MoveEffectSideTargetWithBoth } | null;
   /**
    * Cure primary status on ALL Pokemon on the specified side's team (including bench).
    * Used by Aromatherapy and Heal Bell which cure the entire party, not just the active Pokemon.
@@ -291,7 +301,7 @@ export interface MoveEffectResult {
    * Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
    * Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
    */
-  readonly teamStatusCure?: { side: "attacker" | "defender" } | null;
+  readonly teamStatusCure?: { side: MoveEffectSideTarget } | null;
   /**
    * Change the active ability of the attacker or defender.
    * Used by Entrainment (replaces target's ability with user's ability),
@@ -300,7 +310,7 @@ export interface MoveEffectResult {
    * Source: Showdown data/moves.ts -- entrainment: target.setAbility(source.ability)
    */
   readonly abilityChange?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     ability: string;
   } | null;
   /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */
@@ -310,7 +320,7 @@ export interface MoveEffectResult {
   /** Data for selfVolatileInflicted (turnsLeft, etc.) */
   readonly selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   /** Change the types of the attacker or defender */
-  readonly typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+  readonly typeChange?: { target: MoveEffectSideTarget; types: readonly PokemonType[] } | null;
   /**
    * Move ID to execute immediately after this move resolves (for Mirror Move, Metronome).
    * No PP is deducted for the recursive move.
@@ -330,7 +340,7 @@ export interface MoveEffectResult {
     originalMoveId: string;
   } | null;
   /** Set Tailwind on a side (Gen 4+) */
-  readonly tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
+  readonly tailwindSet?: { turnsLeft: number; side: MoveEffectSideTarget } | null;
   /** Set Trick Room on the field (Gen 4+) */
   readonly trickRoomSet?: { turnsLeft: number } | null;
   /** Schedule a Future Sight / Doom Desire attack on the target side (Gen 2+) */
@@ -494,7 +504,7 @@ export type MoveEffectResultFor<G extends Generation> = Omit<
     blocksAction?: boolean;
   } | null;
   readonly volatilesToClear?: ReadonlyArray<{
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     volatile: VolatileStatusByGeneration<G>;
   }>;
   readonly selfVolatileInflicted?: VolatileStatusByGeneration<G> | null;
