@@ -1,4 +1,5 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
   MoveInstance,
@@ -7,10 +8,18 @@ import type {
   StatBlock,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen3DataManager, GEN3_MOVE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
@@ -42,15 +51,17 @@ function createMoveInstances(move: MoveData, currentPp = move.pp): MoveInstance[
   return [{ moveId: move.id, currentPp, maxPp: move.pp }] as MoveInstance[];
 }
 
-const UNDERWATER_VOLATILE = "underwater" as const;
+type SyntheticDamageCategory =
+  | (typeof CORE_MOVE_CATEGORIES)[keyof typeof CORE_MOVE_CATEGORIES]
+  | null;
 
-function createActivePokemon(opts: {
-  types: PokemonType[];
+function createOnFieldPokemon(options: {
+  types: readonly [PokemonType] | readonly [PokemonType, PokemonType];
   nickname?: string | null;
   speciesId?: number;
   moves?: MoveInstance[];
   lastDamageTaken?: number;
-  lastDamageCategory?: "physical" | "special" | "status" | null;
+  lastDamageCategory?: SyntheticDamageCategory;
   ability?: string;
 }): ActivePokemon {
   const stats: StatBlock = {
@@ -62,51 +73,53 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
+  const speciesId = options.speciesId ?? GEN3_SPECIES_IDS.breloom;
+  const species = dataManager.getSpecies(speciesId);
+  const defaultGender =
+    species.genderRatio === -1
+      ? CORE_GENDERS.genderless
+      : species.genderRatio === 0
+        ? CORE_GENDERS.female
+        : CORE_GENDERS.male;
+  const defaultAbility = options.ability ?? species.abilities.normal[0] ?? "";
+
   const pokemon = {
     uid: "test-mon",
-    speciesId: opts.speciesId ?? GEN3_SPECIES_IDS.breloom,
-    nickname: opts.nickname ?? null,
+    speciesId,
+    nickname: options.nickname ?? null,
     level: 50,
     experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    nature: CORE_NATURE_IDS.hardy,
+    ivs: createIvs(),
+    evs: createEvs(),
     currentHp: 200,
-    moves: opts.moves ?? [],
-    ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    moves: options.moves ?? [],
+    ability: defaultAbility,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
-    friendship: 0,
-    gender: "male" as const,
+    friendship: createFriendship(species.baseFriendship),
+    gender: defaultGender,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: stats,
   } as PokemonInstance;
 
   return {
     pokemon,
     teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
+    statStages: createDefaultStatStages(),
     volatileStatuses: new Map(),
-    types: opts.types,
-    ability: opts.ability ?? "",
+    types: [...options.types],
+    ability: defaultAbility,
     lastMoveUsed: null,
-    lastDamageTaken: opts.lastDamageTaken ?? 0,
+    lastDamageTaken: options.lastDamageTaken ?? 0,
     lastDamageType: null,
-    lastDamageCategory: opts.lastDamageCategory ?? null,
+    lastDamageCategory: options.lastDamageCategory ?? null,
     turnsOnField: 0,
     movedThisTurn: false,
     consecutiveProtects: 0,
@@ -190,11 +203,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
     // Source: pret/pokeemerald — SolarBeam not charging in sunny weather
     // Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
     const move = dataManager.getMove(GEN3_MOVE_IDS.solarBeam);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move, {
       type: CORE_WEATHER_IDS.sun,
       turnsLeft: 3,
@@ -211,11 +224,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
   it("given SolarBeam without sun, when executeMoveEffect is called, then returns forcedMoveSet on the charge turn", () => {
     // Source: pret/pokeemerald — SolarBeam charges for one turn without sun
     const move = dataManager.getMove(GEN3_MOVE_IDS.solarBeam);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move); // no weather
 
     const result = ruleset.executeMoveEffect(context);
@@ -234,11 +247,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
     // Source: Bulbapedia — "Fly allows the user to fly up high on the first turn,
     //   becoming semi-invulnerable, and attack on the second turn."
     const move = dataManager.getMove(GEN3_MOVE_IDS.fly);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.flying],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
@@ -254,11 +267,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
   it("given Dig, when executeMoveEffect is called, then returns forcedMoveSet on the underground turn", () => {
     // Source: pret/pokeemerald — Dig sets "underground" semi-invulnerable volatile
     const move = dataManager.getMove(GEN3_MOVE_IDS.dig);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.ground],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
@@ -274,11 +287,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
   it("given Dive, when executeMoveEffect is called, then returns forcedMoveSet on the underwater turn", () => {
     // Source: pret/pokeemerald — Dive sets "underwater" semi-invulnerable volatile
     const move = dataManager.getMove(GEN3_MOVE_IDS.dive);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.water],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
@@ -286,7 +299,7 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
     expect(result.forcedMoveSet).toEqual({
       moveIndex: 0,
       moveId: GEN3_MOVE_IDS.dive,
-      volatileStatus: UNDERWATER_VOLATILE,
+      volatileStatus: CORE_VOLATILE_IDS.underwater,
     });
     expect(result.messages).toContain("The Pokemon dived underwater!");
   });
@@ -294,11 +307,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
   it("given Skull Bash, when executeMoveEffect is called, then returns forcedMoveSet on the charge turn", () => {
     // Source: pret/pokeemerald — Skull Bash charges with generic "charging" volatile
     const move = dataManager.getMove(GEN3_MOVE_IDS.skullBash);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.normal],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move);
 
     const result = ruleset.executeMoveEffect(context);
@@ -315,11 +328,11 @@ describe("Gen 3 Two-Turn Moves — Move Effects", () => {
     // Source: pret/pokeemerald — SolarBeam only skips charge in sun, not in other weather
     // Triangulation: verify rain does NOT skip the charge
     const move = dataManager.getMove(GEN3_MOVE_IDS.solarBeam);
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.grass],
       moves: createMoveInstances(move),
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const context = createContext(attacker, defender, move, {
       type: CORE_WEATHER_IDS.rain,
       turnsLeft: 3,
@@ -342,13 +355,13 @@ describe("Gen 3 Focus Punch", () => {
   it("given Focus Punch and attacker.lastDamageTaken > 0, when move executes, then fails with 'lost its focus' message", () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — Focus Punch/Bide check
     // Source: Bulbapedia — "Focus Punch fails if the user is hit before it attacks"
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.fighting],
       nickname: "Breloom",
       lastDamageTaken: 50,
-      lastDamageCategory: "physical",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.physical,
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = dataManager.getMove(GEN3_MOVE_IDS.focusPunch);
     const context = createContext(attacker, defender, move);
 
@@ -363,12 +376,12 @@ describe("Gen 3 Focus Punch", () => {
   it("given Focus Punch and attacker.lastDamageTaken === 0, when move executes, then succeeds (no failure message)", () => {
     // Source: pret/pokeemerald — Focus Punch succeeds when user was not hit
     // Source: Bulbapedia — "If the user is not hit, Focus Punch will execute normally."
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.fighting],
       nickname: "Breloom",
       lastDamageTaken: 0,
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = dataManager.getMove(GEN3_MOVE_IDS.focusPunch);
     const context = createContext(attacker, defender, move);
 
@@ -380,13 +393,13 @@ describe("Gen 3 Focus Punch", () => {
   it("given Focus Punch and attacker took special damage, when move executes, then still fails", () => {
     // Source: pret/pokeemerald — Focus Punch checks ANY damage taken, not just physical
     // Triangulation: verify special damage also triggers failure
-    const attacker = createActivePokemon({
+    const attacker = createOnFieldPokemon({
       types: [CORE_TYPE_IDS.fighting],
       nickname: "Machamp",
       lastDamageTaken: 30,
-      lastDamageCategory: "special",
+      lastDamageCategory: CORE_MOVE_CATEGORIES.special,
     });
-    const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
+    const defender = createOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = dataManager.getMove(GEN3_MOVE_IDS.focusPunch);
     const context = createContext(attacker, defender, move);
 
@@ -440,12 +453,16 @@ describe("Gen 3 Semi-Invulnerable Targeting", () => {
 
   it("given Surf vs the Dive volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Surf can hit Dive targets
-    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.surf, UNDERWATER_VOLATILE)).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.surf, CORE_VOLATILE_IDS.underwater)).toBe(
+      true,
+    );
   });
 
   it("given Whirlpool vs the Dive volatile, when canHitSemiInvulnerable is called, then returns true", () => {
     // Source: pret/pokeemerald — Whirlpool can hit Dive targets
-    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.whirlpool, UNDERWATER_VOLATILE)).toBe(true);
+    expect(
+      ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.whirlpool, CORE_VOLATILE_IDS.underwater),
+    ).toBe(true);
   });
 
   it("given Flamethrower vs the Fly volatile, when canHitSemiInvulnerable is called, then returns false", () => {
@@ -465,7 +482,9 @@ describe("Gen 3 Semi-Invulnerable Targeting", () => {
 
   it("given Ice Beam vs the Dive volatile, when canHitSemiInvulnerable is called, then returns false", () => {
     // Source: pret/pokeemerald — Ice Beam cannot hit Dive targets
-    expect(ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.iceBeam, UNDERWATER_VOLATILE)).toBe(false);
+    expect(
+      ruleset.canHitSemiInvulnerable(GEN3_MOVE_IDS.iceBeam, CORE_VOLATILE_IDS.underwater),
+    ).toBe(false);
   });
 
   it("given any move vs the charge volatile, when canHitSemiInvulnerable is called, then returns true", () => {
