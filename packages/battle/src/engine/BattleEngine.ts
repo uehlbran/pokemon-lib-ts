@@ -9,7 +9,15 @@ import type {
   SemiInvulnerableVolatile,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { getExpForLevel, getStatStageMultiplier, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_IDS,
+  CORE_TYPE_IDS,
+  getExpForLevel,
+  getStatStageMultiplier,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
+import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
 import type {
   BattleAction,
@@ -50,7 +58,10 @@ import { processEndOfTurnPipeline } from "./BattleEndOfTurnPipeline";
  * Source: Bulbapedia — "Sleep Talk can only be used while asleep"
  * Source: Bulbapedia — "Snore can only be used while asleep"
  */
-const SLEEP_USABLE_MOVES: ReadonlySet<string> = new Set(["sleep-talk", "snore"]);
+const SLEEP_USABLE_MOVES: ReadonlySet<string> = new Set([
+  CORE_MOVE_IDS.sleepTalk,
+  CORE_MOVE_IDS.snore,
+]);
 
 /**
  * Struggle move data used when a Pokemon has no usable moves.
@@ -60,10 +71,10 @@ const SLEEP_USABLE_MOVES: ReadonlySet<string> = new Set(["sleep-talk", "snore"])
  * passes this to the ruleset which handles gen-specific Struggle behavior.
  */
 const STRUGGLE_MOVE_DATA: MoveData = {
-  id: "struggle",
+  id: CORE_MOVE_IDS.struggle,
   displayName: "Struggle",
-  type: "normal",
-  category: "physical",
+  type: CORE_TYPE_IDS.normal,
+  category: CORE_MOVE_CATEGORIES.physical,
   power: 50,
   accuracy: 100,
   pp: 1,
@@ -1425,7 +1436,7 @@ export class BattleEngine implements BattleEventEmitter {
           amount: hazardResult.damage,
           currentHp: active.pokemon.currentHp,
           maxHp: active.pokemon.calculatedStats?.hp ?? 1,
-          source: "entry-hazard",
+          source: BATTLE_SOURCE_IDS.entryHazard,
         });
       }
       if (hazardResult.statusInflicted && !active.pokemon.status) {
@@ -3289,7 +3300,7 @@ export class BattleEngine implements BattleEventEmitter {
       type: "move-start",
       side: action.side,
       pokemon: getPokemonName(actor),
-      move: "struggle",
+      move: CORE_MOVE_IDS.struggle,
     });
 
     if (!defender) return;
@@ -3309,9 +3320,9 @@ export class BattleEngine implements BattleEventEmitter {
         type: "move-miss",
         side: action.side,
         pokemon: getPokemonName(actor),
-        move: "struggle",
+        move: CORE_MOVE_IDS.struggle,
       });
-      actor.lastMoveUsed = "struggle";
+      actor.lastMoveUsed = CORE_MOVE_IDS.struggle;
       actor.movedThisTurn = true;
       return;
     }
@@ -3330,7 +3341,7 @@ export class BattleEngine implements BattleEventEmitter {
       amount: damage,
       currentHp: defender.pokemon.currentHp,
       maxHp: defender.pokemon.calculatedStats?.hp ?? 1,
-      source: "struggle",
+      source: BATTLE_SOURCE_IDS.struggle,
     });
 
     // Struggle recoil: delegated to ruleset (Gen 1-2: 1/2 damage, Gen 4+: 1/4 max HP)
@@ -3345,10 +3356,10 @@ export class BattleEngine implements BattleEventEmitter {
       amount: recoil,
       currentHp: actor.pokemon.currentHp,
       maxHp: maxHp,
-      source: "struggle-recoil",
+      source: BATTLE_SOURCE_IDS.struggleRecoil,
     });
 
-    actor.lastMoveUsed = "struggle";
+    actor.lastMoveUsed = CORE_MOVE_IDS.struggle;
     actor.movedThisTurn = true;
   }
 
@@ -3580,7 +3591,7 @@ export class BattleEngine implements BattleEventEmitter {
                 amount: selfDamage,
                 currentHp: actor.pokemon.currentHp,
                 maxHp,
-                source: "confusion",
+                source: BATTLE_SOURCE_IDS.confusion,
               });
             }
             return false;
@@ -3863,7 +3874,7 @@ export class BattleEngine implements BattleEventEmitter {
         amount: result.recoilDamage,
         currentHp: attacker.pokemon.currentHp,
         maxHp: attacker.pokemon.calculatedStats?.hp ?? 1,
-        source: "recoil",
+        source: BATTLE_SOURCE_IDS.recoil,
       });
     }
 
@@ -3881,7 +3892,7 @@ export class BattleEngine implements BattleEventEmitter {
           amount: healed,
           currentHp: attacker.pokemon.currentHp,
           maxHp,
-          source: "move-effect",
+          source: BATTLE_SOURCE_IDS.moveEffect,
         });
       }
     }
@@ -3901,7 +3912,7 @@ export class BattleEngine implements BattleEventEmitter {
           amount: defHealed,
           currentHp: defender.pokemon.currentHp,
           maxHp: defMaxHp,
-          source: "move-effect",
+          source: BATTLE_SOURCE_IDS.moveEffect,
         });
       }
     }
@@ -4565,7 +4576,7 @@ export class BattleEngine implements BattleEventEmitter {
             amount: result.damage,
             currentHp: active.pokemon.currentHp,
             maxHp: active.pokemon.calculatedStats?.hp ?? 1,
-            source: `weather-${this.state.weather.type}`,
+            source: `${BATTLE_SOURCE_IDS.weatherPrefix}${this.state.weather.type}`,
           });
         }
       }
@@ -5028,7 +5039,9 @@ export class BattleEngine implements BattleEventEmitter {
     if (!defenderAction) return null;
     // Struggle is a damaging (physical) action — Sucker Punch should succeed against it.
     // Source: Showdown sim — Sucker Punch succeeds when target is using Struggle
-    if (defenderAction.type === "struggle") return { id: "struggle", category: "physical" };
+    if (defenderAction.type === "struggle") {
+      return { id: CORE_MOVE_IDS.struggle, category: CORE_MOVE_CATEGORIES.physical };
+    }
     if (defenderAction.type !== "move") return null;
     const defenderActive = this.getActiveMutable(defenderSide);
     if (!defenderActive) return null;
@@ -5101,7 +5114,7 @@ export class BattleEngine implements BattleEventEmitter {
               amount: healed,
               currentHp: pokemon.pokemon.currentHp,
               maxHp,
-              source: "held-item",
+              source: BATTLE_SOURCE_IDS.heldItem,
             });
           }
           break;
@@ -5202,7 +5215,7 @@ export class BattleEngine implements BattleEventEmitter {
             amount: chipAmount,
             currentHp: damagedPokemon.pokemon.currentHp,
             maxHp: maxHpChip,
-            source: "held-item",
+            source: BATTLE_SOURCE_IDS.heldItem,
           });
           break;
         }
@@ -5245,7 +5258,7 @@ export class BattleEngine implements BattleEventEmitter {
             amount,
             currentHp: damagedPokemon.pokemon.currentHp,
             maxHp,
-            source: "held-item",
+            source: BATTLE_SOURCE_IDS.heldItem,
           });
           break;
         }
@@ -5329,12 +5342,12 @@ export class BattleEngine implements BattleEventEmitter {
             this.state.weather = {
               type: effect.weather,
               turnsLeft: effect.weatherTurns ?? -1,
-              source: pokemon.ability ?? "ability",
+              source: pokemon.ability ?? BATTLE_SOURCE_IDS.ability,
             };
             this.emit({
               type: "weather-set",
               weather: effect.weather,
-              source: pokemon.ability ?? "ability",
+              source: pokemon.ability ?? BATTLE_SOURCE_IDS.ability,
             });
             // Fire on-weather-change triggers (e.g., Forecast changes Castform's type)
             // Source: pret/pokeemerald — ABILITY_FORECAST re-evaluated after weather changes
@@ -5358,7 +5371,7 @@ export class BattleEngine implements BattleEventEmitter {
               amount: healed,
               currentHp: target.pokemon.currentHp,
               maxHp,
-              source: "ability",
+              source: BATTLE_SOURCE_IDS.ability,
             });
           }
           break;
@@ -5376,7 +5389,7 @@ export class BattleEngine implements BattleEventEmitter {
             amount: chipAmount,
             currentHp: target.pokemon.currentHp,
             maxHp,
-            source: "ability",
+            source: BATTLE_SOURCE_IDS.ability,
           });
           break;
         }
@@ -5566,7 +5579,7 @@ export class BattleEngine implements BattleEventEmitter {
       amount: drain,
       currentHp: active.pokemon.currentHp,
       maxHp,
-      source: "leech-seed",
+      source: BATTLE_SOURCE_IDS.leechSeed,
     });
 
     const opponentSide = sideIndex === 0 ? 1 : 0;
@@ -5584,7 +5597,7 @@ export class BattleEngine implements BattleEventEmitter {
           amount: healed,
           currentHp: opponent.pokemon.currentHp,
           maxHp: oppMaxHp,
-          source: "leech-seed",
+          source: BATTLE_SOURCE_IDS.leechSeed,
         });
       }
     }
@@ -5636,7 +5649,7 @@ export class BattleEngine implements BattleEventEmitter {
       amount: damage,
       currentHp: active.pokemon.currentHp,
       maxHp,
-      source: "curse",
+      source: BATTLE_SOURCE_IDS.curse,
     });
   }
 
@@ -5664,7 +5677,7 @@ export class BattleEngine implements BattleEventEmitter {
       amount: damage,
       currentHp: active.pokemon.currentHp,
       maxHp,
-      source: "nightmare",
+      source: BATTLE_SOURCE_IDS.nightmare,
     });
   }
 
@@ -5694,7 +5707,7 @@ export class BattleEngine implements BattleEventEmitter {
         amount: damage,
         currentHp: active.pokemon.currentHp,
         maxHp,
-        source: "salt-cure",
+        source: BATTLE_SOURCE_IDS.saltCure,
       });
     }
   }
@@ -5719,7 +5732,7 @@ export class BattleEngine implements BattleEventEmitter {
         amount: damage,
         currentHp: active.pokemon.currentHp,
         maxHp,
-        source: "bind",
+        source: BATTLE_SOURCE_IDS.bind,
       });
     }
   }

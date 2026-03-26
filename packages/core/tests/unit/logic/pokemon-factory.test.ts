@@ -8,6 +8,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
   CORE_TYPE_IDS,
   NATURES_BY_ID,
 } from "../../../src";
@@ -359,10 +360,10 @@ describe("createPokemonInstance", () => {
     expect(instance.nickname).toBeNull();
     expect(instance.heldItem).toBeNull();
     expect(instance.metLevel).toBe(50);
-    expect(instance.metLocation).toBe("unknown");
-    expect(instance.originalTrainer).toBe("Player");
-    expect(instance.originalTrainerId).toBe(0);
-    expect(instance.pokeball).toBe(GEN2_ITEM_IDS.pokeBall);
+    expect(instance.metLocation).toBe(CORE_POKEMON_DEFAULTS.metLocation);
+    expect(instance.originalTrainer).toBe(CORE_POKEMON_DEFAULTS.originalTrainer);
+    expect(instance.originalTrainerId).toBe(CORE_POKEMON_DEFAULTS.originalTrainerId);
+    expect(instance.pokeball).toBe(CORE_POKEMON_DEFAULTS.pokeball);
     expect(instance.friendship).toBe(canonicalCharizardSpecies.baseFriendship);
     expect(instance.uid).toBe("123456789abcdef0");
     expect(instance.nature).toBe(ADAMANT_NATURE.id);

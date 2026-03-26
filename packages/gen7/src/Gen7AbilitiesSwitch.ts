@@ -1,5 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, WeatherType } from "@pokemon-lib-ts/core";
+import { CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS } from "./data/reference-ids";
 
 /**
  * Gen 7 switch-in, switch-out, contact, and passive ability handlers.
@@ -40,23 +42,23 @@ function getOpponentName(ctx: AbilityContext): string {
  * Source: Bulbapedia "Trace" Gen 7 -- cannot copy these abilities
  */
 export const TRACE_UNCOPYABLE_ABILITIES = new Set([
-  "trace",
-  "multitype",
-  "forecast",
-  "illusion",
-  "flower-gift",
-  "imposter",
-  "zen-mode",
-  "stance-change",
-  "power-construct",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "receiver",
-  "power-of-alchemy",
+  GEN7_ABILITY_IDS.trace,
+  GEN7_ABILITY_IDS.multiType,
+  GEN7_ABILITY_IDS.forecast,
+  GEN7_ABILITY_IDS.illusion,
+  GEN7_ABILITY_IDS.flowerGift,
+  GEN7_ABILITY_IDS.imposter,
+  GEN7_ABILITY_IDS.zenMode,
+  GEN7_ABILITY_IDS.stanceChange,
+  GEN7_ABILITY_IDS.powerConstruct,
+  GEN7_ABILITY_IDS.schooling,
+  GEN7_ABILITY_IDS.comatose,
+  GEN7_ABILITY_IDS.shieldsDown,
+  GEN7_ABILITY_IDS.disguise,
+  GEN7_ABILITY_IDS.rksSystem,
+  GEN7_ABILITY_IDS.battleBond,
+  GEN7_ABILITY_IDS.receiver,
+  GEN7_ABILITY_IDS.powerOfAlchemy,
 ]);
 
 /**
@@ -65,15 +67,15 @@ export const TRACE_UNCOPYABLE_ABILITIES = new Set([
  * Source: Showdown data/abilities.ts -- { isNonstandard: 'Future' } or cantsuppress
  */
 export const UNSUPPRESSABLE_ABILITIES = new Set([
-  "multitype",
-  "stance-change",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "power-construct",
+  GEN7_ABILITY_IDS.multiType,
+  GEN7_ABILITY_IDS.stanceChange,
+  GEN7_ABILITY_IDS.schooling,
+  GEN7_ABILITY_IDS.comatose,
+  GEN7_ABILITY_IDS.shieldsDown,
+  GEN7_ABILITY_IDS.disguise,
+  GEN7_ABILITY_IDS.rksSystem,
+  GEN7_ABILITY_IDS.battleBond,
+  GEN7_ABILITY_IDS.powerConstruct,
 ]);
 
 /**
@@ -81,7 +83,11 @@ export const UNSUPPRESSABLE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- moldbreaker/teravolt/turboblaze
  */
-export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+export const MOLD_BREAKER_ALIASES = new Set([
+  GEN7_ABILITY_IDS.moldBreaker,
+  GEN7_ABILITY_IDS.teravolt,
+  GEN7_ABILITY_IDS.turboblaze,
+]);
 
 /**
  * Weather duration extension by weather rocks: 5 turns base, 8 with rock.
@@ -89,11 +95,11 @@ export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turbob
  * Source: Bulbapedia -- individual rock item pages
  * Source: Showdown data/items.ts -- damprock/heatrock/smoothrock/icyrock
  */
-const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: string; turns: number }>> = {
-  "damp-rock": { weather: "rain", turns: 8 },
-  "heat-rock": { weather: "sun", turns: 8 },
-  "smooth-rock": { weather: "sand", turns: 8 },
-  "icy-rock": { weather: "hail", turns: 8 },
+const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: WeatherType; turns: number }>> = {
+  [GEN7_ITEM_IDS.dampRock]: { weather: CORE_WEATHER_IDS.rain, turns: 8 },
+  [GEN7_ITEM_IDS.heatRock]: { weather: CORE_WEATHER_IDS.sun, turns: 8 },
+  [GEN7_ITEM_IDS.smoothRock]: { weather: CORE_WEATHER_IDS.sand, turns: 8 },
+  [GEN7_ITEM_IDS.icyRock]: { weather: CORE_WEATHER_IDS.hail, turns: 8 },
 };
 
 const BASE_WEATHER_TURNS = 5;
@@ -177,11 +183,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
     case "drizzle": {
       // Source: Showdown data/abilities.ts -- Drizzle sets rain, 5 turns (8 with Damp Rock)
       // Source: Bulbapedia -- Drizzle Gen 6+: 5-turn rain on entry
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "rain");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.rain);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "rain", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
@@ -189,11 +200,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
 
     case "drought": {
       // Source: Showdown data/abilities.ts -- Drought sets sun, 5 turns (8 with Heat Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "sun");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sun);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sun", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
@@ -201,11 +217,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
 
     case "sand-stream": {
       // Source: Showdown data/abilities.ts -- Sand Stream sets sand, 5 turns (8 with Smooth Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "sand");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sand);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sand", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
@@ -213,11 +234,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
 
     case "snow-warning": {
       // Source: Showdown data/abilities.ts -- Snow Warning sets hail, 5 turns (8 with Icy Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "hail");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.hail);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "hail", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.hail,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Snow Warning made it hail!`],
       };
@@ -717,7 +743,7 @@ export function rollHarvest(
 ): boolean {
   if (abilityId !== "harvest") return false;
   if (!hasBerry) return false;
-  if (weatherType === "sun") return true;
+  if (weatherType === CORE_WEATHER_IDS.sun) return true;
   return rngRoll < 0.5;
 }
 
@@ -731,7 +757,7 @@ export function rollHarvest(
  * Source: Showdown data/items.ts -- damprock/heatrock/smoothrock/icyrock
  * Source: Bulbapedia -- each rock extends weather to 8 turns
  */
-function getWeatherTurns(heldItem: string | null, weatherType: string): number {
+function getWeatherTurns(heldItem: string | null, weatherType: WeatherType): number {
   if (!heldItem) return BASE_WEATHER_TURNS;
   const rock = WEATHER_ROCK_MAP[heldItem];
   if (rock && rock.weather === weatherType) return rock.turns;
@@ -741,6 +767,6 @@ function getWeatherTurns(heldItem: string | null, weatherType: string): number {
 /**
  * Exported version for testing.
  */
-export function getWeatherDuration(heldItem: string | null, weatherType: string): number {
+export function getWeatherDuration(heldItem: string | null, weatherType: WeatherType): number {
   return getWeatherTurns(heldItem, weatherType);
 }

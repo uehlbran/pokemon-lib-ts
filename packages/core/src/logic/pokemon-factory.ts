@@ -1,4 +1,4 @@
-import { CORE_ABILITY_SLOTS, CORE_GENDERS, CORE_ITEM_IDS } from "../constants";
+import { ALL_NATURES, CORE_ABILITY_SLOTS, CORE_GENDERS, CORE_POKEMON_DEFAULTS } from "../constants";
 import type { Gender } from "../entities/gender";
 import type { MoveSlot } from "../entities/move";
 import type { NatureId } from "../entities/nature";
@@ -7,35 +7,38 @@ import type { Learnset, PokemonSpeciesData } from "../entities/species";
 import type { MutableStatBlock, StatBlock } from "../entities/stats";
 import type { SeededRandom } from "../prng/seeded-random";
 import { createFriendship } from "./friendship-inputs";
+import { createEvs, createIvs, MAX_IV, MIN_IV } from "./stat-inputs";
 
-/** All 25 nature IDs */
-const ALL_NATURES: readonly NatureId[] = [
-  "hardy",
-  "lonely",
-  "brave",
-  "adamant",
-  "naughty",
-  "bold",
-  "docile",
-  "relaxed",
-  "impish",
-  "lax",
-  "timid",
-  "hasty",
-  "serious",
-  "jolly",
-  "naive",
-  "modest",
-  "mild",
-  "quiet",
-  "bashful",
-  "rash",
-  "calm",
-  "gentle",
-  "sassy",
-  "careful",
-  "quirky",
-] as const;
+const NATURE_IDS: readonly NatureId[] = ALL_NATURES.map((nature) => nature.id);
+function cloneMutableStatBlock(block: StatBlock): MutableStatBlock {
+  return {
+    hp: block.hp,
+    attack: block.attack,
+    defense: block.defense,
+    spAttack: block.spAttack,
+    spDefense: block.spDefense,
+    speed: block.speed,
+  };
+}
+
+function createRandomIvs(rng: SeededRandom): StatBlock {
+  return createIvs({
+    hp: rng.int(MIN_IV, MAX_IV),
+    attack: rng.int(MIN_IV, MAX_IV),
+    defense: rng.int(MIN_IV, MAX_IV),
+    spAttack: rng.int(MIN_IV, MAX_IV),
+    spDefense: rng.int(MIN_IV, MAX_IV),
+    speed: rng.int(MIN_IV, MAX_IV),
+  });
+}
+
+function normalizeIvs(rng: SeededRandom, ivs?: PokemonCreationOptions["ivs"]): StatBlock {
+  return ivs ? createIvs(ivs) : createRandomIvs(rng);
+}
+
+function normalizeEvs(evs?: PokemonCreationOptions["evs"]): MutableStatBlock {
+  return cloneMutableStatBlock(evs ? createEvs(evs) : createEvs());
+}
 
 /**
  * Generate a unique ID from the PRNG.
@@ -118,18 +121,8 @@ export function createPokemonInstance(
   rng: SeededRandom,
   options?: Partial<PokemonCreationOptions>,
 ): PokemonInstance {
-  // Generate IVs
-  const ivs: StatBlock = options?.ivs ?? {
-    hp: rng.int(0, 31),
-    attack: rng.int(0, 31),
-    defense: rng.int(0, 31),
-    spAttack: rng.int(0, 31),
-    spDefense: rng.int(0, 31),
-    speed: rng.int(0, 31),
-  };
-
-  // Pick nature
-  const nature = options?.nature ?? rng.pick(ALL_NATURES);
+  const ivs = normalizeIvs(rng, options?.ivs);
+  const nature = options?.nature ?? rng.pick(NATURE_IDS);
 
   // Determine gender
   const gender = options?.gender ?? determineGender(species.genderRatio, rng);
@@ -139,23 +132,19 @@ export function createPokemonInstance(
     options?.abilitySlot ??
     (species.abilities.normal.length > 1
       ? rng.chance(0.5)
-        ? CORE_ABILITY_SLOTS.normal1
+        ? CORE_POKEMON_DEFAULTS.abilitySlot
         : CORE_ABILITY_SLOTS.normal2
-      : CORE_ABILITY_SLOTS.normal1);
+      : CORE_POKEMON_DEFAULTS.abilitySlot);
   const ability = getAbilityForSlot(species, abilitySlot);
 
   // Determine shininess
-  const isShiny = options?.isShiny ?? rng.chance(1 / 4096);
+  const isShiny = options?.isShiny ?? rng.chance(CORE_POKEMON_DEFAULTS.shinyChance);
 
   // Select moves -- latest 4 level-up moves at or below this level
   const moves = options?.moves
     ? options.moves.map((moveId) => createMoveSlot(moveId))
     : getDefaultMoves(species.learnset, level);
-
-  // EVs default to 0
-  const evs: MutableStatBlock = options?.evs
-    ? { ...options.evs }
-    : { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
+  const evs = normalizeEvs(options?.evs);
 
   const uid = generateUid(rng);
 
@@ -164,11 +153,11 @@ export function createPokemonInstance(
     speciesId: species.id,
     nickname: options?.nickname ?? null,
     level,
-    experience: 0,
+    experience: CORE_POKEMON_DEFAULTS.experience,
     nature,
     ivs,
     evs,
-    currentHp: 0,
+    currentHp: CORE_POKEMON_DEFAULTS.currentHp,
     moves,
     ability,
     abilitySlot,
@@ -177,13 +166,13 @@ export function createPokemonInstance(
     friendship: createFriendship(options?.friendship ?? species.baseFriendship),
     gender,
     isShiny,
-    metLocation: options?.metLocation ?? "unknown",
+    metLocation: options?.metLocation ?? CORE_POKEMON_DEFAULTS.metLocation,
     metLevel: level,
-    originalTrainer: options?.originalTrainer ?? "Player",
-    originalTrainerId: options?.originalTrainerId ?? 0,
-    pokeball: options?.pokeball ?? CORE_ITEM_IDS.pokeBall,
+    originalTrainer: options?.originalTrainer ?? CORE_POKEMON_DEFAULTS.originalTrainer,
+    originalTrainerId: options?.originalTrainerId ?? CORE_POKEMON_DEFAULTS.originalTrainerId,
+    pokeball: options?.pokeball ?? CORE_POKEMON_DEFAULTS.pokeball,
     teraType: options?.teraType ?? species.types[0],
-    dynamaxLevel: options?.dynamaxLevel ?? 0,
+    dynamaxLevel: options?.dynamaxLevel ?? CORE_POKEMON_DEFAULTS.dynamaxLevel,
   };
 
   return instance;

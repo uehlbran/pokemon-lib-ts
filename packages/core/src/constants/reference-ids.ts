@@ -148,6 +148,18 @@ export const CORE_ABILITY_SLOTS = {
   hidden: "hidden",
 } as const;
 
+export const CORE_POKEMON_DEFAULTS = {
+  abilitySlot: CORE_ABILITY_SLOTS.normal1,
+  dynamaxLevel: 0,
+  experience: 0,
+  currentHp: 0,
+  metLocation: "unknown",
+  originalTrainer: "Player",
+  originalTrainerId: 0,
+  pokeball: CORE_ITEM_IDS.pokeBall,
+  shinyChance: 1 / 4096,
+} as const;
+
 export const CORE_ABILITY_TRIGGER_IDS = {
   onSwitchIn: "on-switch-in",
   onSwitchOut: "on-switch-out",

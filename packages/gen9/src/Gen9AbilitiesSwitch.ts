@@ -1,12 +1,12 @@
 import type { AbilityContext, AbilityResult, BattleState } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, ScreenType, TerrainType } from "@pokemon-lib-ts/core";
+import type { AbilityTrigger, ScreenType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
 import {
   CORE_ITEM_IDS,
   CORE_SCREEN_IDS,
   CORE_TERRAIN_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import { GEN9_ABILITY_IDS } from "./data/reference-ids";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS } from "./data/reference-ids";
 
 /**
  * Gen 9 switch-in, switch-out, contact, and passive ability handlers.
@@ -180,7 +180,7 @@ const NO_EFFECT: AbilityResult = { activated: false, effects: [], messages: [] }
  *
  * Source: Showdown data/items.ts -- weather rocks
  */
-export function getWeatherDuration(heldItem: string | null, weather: string): number {
+export function getWeatherDuration(heldItem: string | null, weather: WeatherType): number {
   if (heldItem) {
     const rock = WEATHER_ROCK_MAP[heldItem];
     if (rock && rock.weather === weather) {
@@ -194,7 +194,7 @@ export function getWeatherDuration(heldItem: string | null, weather: string): nu
  * Get terrain duration based on held item.
  */
 function getTerrainDuration(heldItem: string | null): number {
-  if (heldItem === "terrain-extender") return EXTENDED_TERRAIN_TURNS;
+  if (heldItem === GEN9_ITEM_IDS.terrainExtender) return EXTENDED_TERRAIN_TURNS;
   return BASE_TERRAIN_TURNS;
 }
 
@@ -255,33 +255,48 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
     }
 
     case "drizzle": {
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "rain");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.rain);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "rain", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
     }
 
     case "drought": {
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "sun");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sun);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sun", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
     }
 
     case "sand-stream": {
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "sand");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sand);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sand", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
@@ -291,11 +306,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Gen 9: Snow Warning sets Snow instead of Hail
       // Source: Showdown data/abilities.ts -- snowwarning: sets "snow" in Gen 9
       // Source: specs/battle/10-gen9.md -- "Snow replaces Hail"
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "snow");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.snow);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "snow", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.snow,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Snow Warning made it snow!`],
       };
@@ -304,11 +324,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
     case "orichalcum-pulse": {
       // Source: Showdown data/abilities.ts:3016-3035
       // Sets Sun on entry; Attack boost handled as a stat modifier during damage calc
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "sun");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sun);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sun", weatherTurns: turns },
+          {
+            effectType: "weather-set",
+            target: "field",
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Orichalcum Pulse turned the sunlight harsh!`],
       };
@@ -321,9 +346,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Directly set terrain on state
       const mutableState = ctx.state as BattleState;
       mutableState.terrain = {
-        type: "electric",
+        type: CORE_TERRAIN_IDS.electric,
         turnsLeft: turns,
-        source: "hadron-engine",
+        source: GEN9_ABILITY_IDS.hadronEngine,
       };
       return {
         activated: true,

@@ -143,6 +143,12 @@ describe("Gen8MaxMoves", () => {
       expect(effect).toEqual({ type: "weather", weather: CORE_WEATHER_IDS.sun });
     });
 
+    it("given Max Rockfall, when getting secondary effect, then returns weather sand", () => {
+      // Source: Bulbapedia "Max Rockfall" -- sets Sandstorm for 5 turns
+      const effect = getMaxMoveSecondaryEffect(getMaxMoveName(CORE_TYPE_IDS.rock, false));
+      expect(effect).toEqual({ type: "weather", weather: CORE_WEATHER_IDS.sand });
+    });
+
     it("given Max Lightning, when getting secondary effect, then returns terrain electric", () => {
       // Source: Bulbapedia "Max Lightning" -- sets Electric Terrain for 5 turns
       const effect = getMaxMoveSecondaryEffect(getMaxMoveName(CORE_TYPE_IDS.electric, false));

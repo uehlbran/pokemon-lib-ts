@@ -3,7 +3,11 @@
 // AI
 export type { AIController } from "./ai";
 export { RandomAI } from "./ai";
-export { BATTLE_GIMMICK_IDS } from "./constants/reference-ids";
+export {
+  BATTLE_GIMMICK_IDS,
+  BATTLE_SOURCE_IDS,
+  type BattleSourceId,
+} from "./constants/reference-ids";
 // Context
 export type {
   AbilityContext,

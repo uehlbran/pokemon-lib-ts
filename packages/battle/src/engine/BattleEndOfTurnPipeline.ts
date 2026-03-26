@@ -1,4 +1,5 @@
 import type { DataManager, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AbilityResult, EndOfTurnEffect, ItemResult } from "../context";
 import type { BattleEvent } from "../events";
 import type { GenerationRuleset } from "../ruleset";
@@ -281,7 +282,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         for (const side of host.state.sides) {
           const active = side.active[0];
           if (!active || active.pokemon.currentHp <= 0) continue;
-          if (!active.volatileStatuses.has("aqua-ring")) continue;
+          if (!active.volatileStatuses.has(BATTLE_SOURCE_IDS.aquaRing)) continue;
           const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
           const healAmount = Math.max(1, Math.floor(maxHp / 16));
           const oldHp = active.pokemon.currentHp;
@@ -295,7 +296,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               amount: healed,
               currentHp: active.pokemon.currentHp,
               maxHp,
-              source: "aqua-ring",
+              source: BATTLE_SOURCE_IDS.aquaRing,
             });
           }
         }
@@ -305,7 +306,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         for (const side of host.state.sides) {
           const active = side.active[0];
           if (!active || active.pokemon.currentHp <= 0) continue;
-          if (!active.volatileStatuses.has("ingrain")) continue;
+          if (!active.volatileStatuses.has(BATTLE_SOURCE_IDS.ingrain)) continue;
           const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
           const healAmount = Math.max(1, Math.floor(maxHp / 16));
           const oldHp = active.pokemon.currentHp;
@@ -319,7 +320,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               amount: healed,
               currentHp: active.pokemon.currentHp,
               maxHp,
-              source: "ingrain",
+              source: BATTLE_SOURCE_IDS.ingrain,
             });
           }
         }
@@ -342,7 +343,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                   amount: healAmount,
                   currentHp: active.pokemon.currentHp,
                   maxHp,
-                  source: "wish",
+                  source: BATTLE_SOURCE_IDS.wish,
                 });
               }
             }
@@ -557,7 +558,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                     amount: healed,
                     currentHp: active.pokemon.currentHp,
                     maxHp,
-                    source: "grassy-terrain",
+                    source: BATTLE_SOURCE_IDS.grassyTerrain,
                   });
                 }
               }
