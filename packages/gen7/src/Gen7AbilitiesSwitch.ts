@@ -41,9 +41,9 @@ function getOpponentName(ctx: AbilityContext): string {
  * Source: Showdown data/abilities.ts -- trace.onUpdate
  * Source: Bulbapedia "Trace" Gen 7 -- cannot copy these abilities
  */
-export const TRACE_UNCOPYABLE_ABILITIES = new Set([
+export const TRACE_UNCOPYABLE_ABILITIES: ReadonlySet<string> = new Set([
   GEN7_ABILITY_IDS.trace,
-  GEN7_ABILITY_IDS.multiType,
+  GEN7_ABILITY_IDS.multitype,
   GEN7_ABILITY_IDS.forecast,
   GEN7_ABILITY_IDS.illusion,
   GEN7_ABILITY_IDS.flowerGift,
@@ -66,8 +66,8 @@ export const TRACE_UNCOPYABLE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- { isNonstandard: 'Future' } or cantsuppress
  */
-export const UNSUPPRESSABLE_ABILITIES = new Set([
-  GEN7_ABILITY_IDS.multiType,
+export const UNSUPPRESSABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN7_ABILITY_IDS.multitype,
   GEN7_ABILITY_IDS.stanceChange,
   GEN7_ABILITY_IDS.schooling,
   GEN7_ABILITY_IDS.comatose,
@@ -83,7 +83,7 @@ export const UNSUPPRESSABLE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- moldbreaker/teravolt/turboblaze
  */
-export const MOLD_BREAKER_ALIASES = new Set([
+export const MOLD_BREAKER_ALIASES: ReadonlySet<string> = new Set([
   GEN7_ABILITY_IDS.moldBreaker,
   GEN7_ABILITY_IDS.teravolt,
   GEN7_ABILITY_IDS.turboblaze,
