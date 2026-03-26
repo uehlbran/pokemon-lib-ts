@@ -1,22 +1,25 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
-  PrimaryStatus,
   PokemonInstance,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
-  SeededRandom,
   createMoveSlot,
   createPokemonInstance,
+  NEUTRAL_NATURES,
+  SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -107,18 +110,23 @@ function createScenarioPokemonInstance(overrides: {
   level?: number;
 }): PokemonInstance {
   const maxHp = overrides.maxHp ?? 200;
-  const pokemon = createPokemonInstance(DEFAULT_SPECIES, overrides.level ?? DEFAULT_LEVEL, new SeededRandom(0), {
-    nature: DEFAULT_NATURE,
-    abilitySlot: "normal1",
-    moves: [DEFAULT_MOVE.id],
-    heldItem: overrides.heldItem ?? null,
-    gender: "male",
-    isShiny: false,
-    metLocation: "test",
-    originalTrainer: "test",
-    originalTrainerId: 0,
-    pokeball: ITEMS.pokeBall,
-  });
+  const pokemon = createPokemonInstance(
+    DEFAULT_SPECIES,
+    overrides.level ?? DEFAULT_LEVEL,
+    new SeededRandom(0),
+    {
+      nature: DEFAULT_NATURE,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+      moves: [DEFAULT_MOVE.id],
+      heldItem: overrides.heldItem ?? null,
+      gender: CORE_GENDERS.male,
+      isShiny: false,
+      metLocation: "test",
+      originalTrainer: "test",
+      originalTrainerId: 0,
+      pokeball: ITEMS.pokeBall,
+    },
+  );
 
   pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
   pokemon.currentHp = maxHp;
@@ -351,7 +359,7 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
       moveType: TYPES.normal,
     };
 
-    const result = applyGen4Ability("on-after-move-hit", context);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onAfterMoveHit, context);
 
     // Must not apply flinch
     expect(result.activated).toBe(false);
@@ -376,7 +384,7 @@ describe("Gen4Abilities on-after-move-hit Stench — Bug #384 Gen 4 has no flinc
       moveType: TYPES.normal,
     };
 
-    const result = applyGen4Ability("on-after-move-hit", context);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onAfterMoveHit, context);
 
     expect(result.activated).toBe(false);
     expect(result.effects).toHaveLength(0);
@@ -404,7 +412,7 @@ describe("Gen4Abilities passive-immunity Storm Drain — Bug #350/#351 no Water 
       moveType: TYPES.water,
     };
 
-    const result = applyGen4Ability("passive-immunity", context);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.passiveImmunity, context);
 
     // In Gen 4 singles, Storm Drain must NOT grant immunity (activated = false)
     expect(result.activated).toBe(false);
@@ -424,7 +432,7 @@ describe("Gen4Abilities passive-immunity Storm Drain — Bug #350/#351 no Water 
       moveType: TYPES.fire,
     };
 
-    const result = applyGen4Ability("passive-immunity", context);
+    const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.passiveImmunity, context);
 
     expect(result.activated).toBe(false);
   });
