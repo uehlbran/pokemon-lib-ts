@@ -49,8 +49,10 @@ import {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
   BASE_TYPE_RESIST_BERRIES,
+  CORE_ABILITY_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TARGETS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   getStabModifier,
@@ -187,7 +189,8 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
 
     case "stat-change":
       if (effect.target === "foe" && effect.chance > 0) return true;
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
 
     case "volatile-status":
@@ -227,22 +230,24 @@ function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): bo
  */
 export function isGen7Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
   if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
 
-  if (pokemon.types.includes("flying")) return false;
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
   if (
-    pokemon.pokemon.heldItem === "air-balloon" &&
+    pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon &&
     !itemsSuppressed &&
     pokemon.pokemon.currentHp > 0
   ) {
     return false;
   }
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
   if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
 
   return true;
@@ -926,14 +931,15 @@ export function calculateGen7Damage(
 
   const gravityActive = context.state.gravity?.active ?? false;
   const ironBallGrounded =
-    defender.pokemon.heldItem === "iron-ball" && effectiveMoveType === "ground";
+    defender.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+    effectiveMoveType === CORE_TYPE_IDS.ground;
 
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
       const isLevitateGrounded =
-        defenderAbility === "levitate" &&
-        effectiveMoveType === "ground" &&
+        defenderAbility === CORE_ABILITY_IDS.levitate &&
+        effectiveMoveType === CORE_TYPE_IDS.ground &&
         (gravityActive || ironBallGrounded);
       if (!isLevitateGrounded) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
@@ -944,8 +950,8 @@ export function calculateGen7Damage(
   // Magnet Rise: Ground immunity (not ability-based, Mold Breaker does NOT bypass)
   // Source: Showdown -- Magnet Rise
   if (
-    effectiveMoveType === "ground" &&
-    defender.volatileStatuses.has("magnet-rise") &&
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise) &&
     !gravityActive &&
     !ironBallGrounded
   ) {
@@ -1081,11 +1087,11 @@ export function calculateGen7Damage(
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
   if (
     (gravityActive || ironBallGrounded) &&
-    effectiveMoveType === "ground" &&
-    defender.types.includes("flying")
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.types.includes(CORE_TYPE_IDS.flying)
   ) {
-    const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
-    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
+    const nonFlyingTypes = defender.types.filter((t) => t !== CORE_TYPE_IDS.flying);
+    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : [CORE_TYPE_IDS.normal];
   }
   let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
 
