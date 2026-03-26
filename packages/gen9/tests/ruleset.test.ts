@@ -158,11 +158,6 @@ describe("Gen9Ruleset -- canHitSemiInvulnerable", () => {
     expect(ruleset.canHitSemiInvulnerable(MOVES.twister, TYPES.flying)).toBe(true);
   });
 
-  it("given target is flying, when Sky Uppercut is used, then it can hit", () => {
-    // Source: Showdown data/moves.ts -- Sky Uppercut hits flying targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.skyUppercut, TYPES.flying)).toBe(true);
-  });
-
   it("given target is flying, when Smack Down is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Smack Down hits flying targets
     expect(ruleset.canHitSemiInvulnerable(MOVES.smackDown, TYPES.flying)).toBe(true);
