@@ -451,6 +451,7 @@ export const CORE_VOLATILE_IDS = {
   telekinesis: "telekinesis",
   uproar: "uproar",
   taunt: "taunt",
+  torment: "torment",
   unburden: "unburden",
   underwater: "underwater",
 } as const;

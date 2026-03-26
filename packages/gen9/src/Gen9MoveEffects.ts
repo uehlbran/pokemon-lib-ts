@@ -22,7 +22,8 @@ import type {
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import type { VolatileStatus } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, CORE_VOLATILE_IDS, type VolatileStatus } from "@pokemon-lib-ts/core";
+import { GEN9_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -379,7 +380,7 @@ export function handleShedTail(ctx: MoveEffectContext): MoveEffectResult {
   // should check for this volatile and create a Substitute on the switch-in.
   // "shed-tail-sub" is defined in core's VolatileStatus union (added in this wave).
   // Cast required because the worktree build may resolve to an older core dist.
-  ctx.attacker.volatileStatuses.set("shed-tail-sub" as VolatileStatus, {
+  ctx.attacker.volatileStatuses.set(CORE_VOLATILE_IDS.shedTailSub as VolatileStatus, {
     turnsLeft: -1,
     data: { substituteHp: subHp },
   });
@@ -477,7 +478,7 @@ export function handleTidyUp(ctx: MoveEffectContext): MoveEffectResult {
  * @returns Residual damage amount
  */
 export function calculateSaltCureDamage(maxHp: number, types: readonly string[]): number {
-  const isWaterOrSteel = types.includes("water") || types.includes("steel");
+  const isWaterOrSteel = types.includes(CORE_TYPE_IDS.water) || types.includes(CORE_TYPE_IDS.steel);
   const divisor = isWaterOrSteel ? 4 : 8;
   return Math.max(1, Math.floor(maxHp / divisor));
 }
@@ -502,7 +503,7 @@ export function handleSaltCure(ctx: MoveEffectContext): MoveEffectResult {
   // Check if target already has Salt Cure
   // "salt-cure" is defined in core's VolatileStatus union (added in this wave).
   // Cast required because the worktree build may resolve to an older core dist.
-  if (ctx.defender.volatileStatuses.has("salt-cure" as VolatileStatus)) {
+  if (ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.saltCure as VolatileStatus)) {
     // Salt Cure is already applied; the damaging hit still works, just no new volatile
     return base;
   }
@@ -511,7 +512,7 @@ export function handleSaltCure(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
-    volatileInflicted: "salt-cure" as VolatileStatus,
+    volatileInflicted: CORE_VOLATILE_IDS.saltCure as VolatileStatus,
     volatileData: { turnsLeft: -1 }, // Salt Cure has no set expiry
     messages: [`${defenderName} is being salt cured!`],
   };
@@ -608,7 +609,7 @@ export function executeGen9MoveEffect(ctx: MoveEffectContext): MoveEffectResult 
     case "tidy-up":
       return handleTidyUp(ctx);
 
-    case "salt-cure":
+    case GEN9_MOVE_IDS.saltCure:
       return handleSaltCure(ctx);
 
     case "tera-blast":

@@ -1,5 +1,11 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { MoveData } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type MoveData,
+} from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import {
   getSupremeOverlordModifier,
@@ -56,7 +62,7 @@ export function handleToxicChain(ctx: AbilityContext): AbilityResult {
   if (!ctx.opponent) return INACTIVE;
 
   // Only on damage-dealing moves
-  if (ctx.move.category === "status") return INACTIVE;
+  if (ctx.move.category === CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   // 30% chance
   if (!ctx.rng.chance(3 / 10)) return INACTIVE;
@@ -65,14 +71,23 @@ export function handleToxicChain(ctx: AbilityContext): AbilityResult {
   if (ctx.opponent.pokemon.status) return INACTIVE;
 
   // Poison/Steel type immunity
-  if (ctx.opponent.types.includes("poison") || ctx.opponent.types.includes("steel")) {
+  if (
+    ctx.opponent.types.includes(CORE_TYPE_IDS.poison) ||
+    ctx.opponent.types.includes(CORE_TYPE_IDS.steel)
+  ) {
     return INACTIVE;
   }
 
   const name = getName(ctx);
   return {
     activated: true,
-    effects: [{ effectType: "status-inflict", target: "opponent", status: "badly-poisoned" }],
+    effects: [
+      {
+        effectType: "status-inflict",
+        target: "opponent",
+        status: CORE_STATUS_IDS.badlyPoisoned,
+      },
+    ],
     messages: [`${name}'s Toxic Chain badly poisoned the target!`],
   };
 }
@@ -88,9 +103,11 @@ export function canToxicChainApply(
   defenderStatus: string | null,
   defenderTypes: readonly string[],
 ): boolean {
-  if (move.category === "status") return false;
+  if (move.category === CORE_MOVE_CATEGORIES.status) return false;
   if (defenderStatus) return false;
-  if (defenderTypes.includes("poison") || defenderTypes.includes("steel")) return false;
+  if (defenderTypes.includes(CORE_TYPE_IDS.poison) || defenderTypes.includes(CORE_TYPE_IDS.steel)) {
+    return false;
+  }
   return true;
 }
 
@@ -114,7 +131,7 @@ export function handleGoodAsGold(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
 
   // Only blocks Status-category moves
-  if (ctx.move.category !== "status") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   const name = getName(ctx);
   return {
@@ -131,8 +148,8 @@ export function handleGoodAsGold(ctx: AbilityContext): AbilityResult {
  * Source: Showdown data/abilities.ts:1573-1584
  */
 export function isBlockedByGoodAsGold(abilityId: string, moveCategory: string): boolean {
-  if (abilityId !== "good-as-gold") return false;
-  return moveCategory === "status";
+  if (abilityId !== GEN9_ABILITY_IDS.goodAsGold) return false;
+  return moveCategory === CORE_MOVE_CATEGORIES.status;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,7 +190,7 @@ const STAT_NAMES: Record<string, string> = {
  *
  * Activation conditions:
  *   1. Pokemon must be Terastallized
- *   2. Ability hasn't been used yet this battle (tracked via "embody-aspect-used" volatile)
+ *   2. Ability hasn't been used yet this battle (tracked via `CORE_VOLATILE_IDS.embodyAspectUsed`)
  *
  * Source: Showdown data/abilities.ts:1162-1212
  *   "if (!pokemon.terastallized) return" -- must be Tera'd
@@ -186,7 +203,7 @@ export function handleEmbodyAspect(ctx: AbilityContext): AbilityResult {
   if (!ctx.pokemon.isTerastallized) return INACTIVE;
 
   // Once per battle
-  if (ctx.pokemon.volatileStatuses.has("embody-aspect-used")) return INACTIVE;
+  if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embodyAspectUsed)) return INACTIVE;
 
   const boostStat = EMBODY_ASPECT_BOOSTS[ctx.pokemon.ability];
   if (!boostStat) return INACTIVE;
@@ -200,7 +217,7 @@ export function handleEmbodyAspect(ctx: AbilityContext): AbilityResult {
       {
         effectType: "volatile-inflict",
         target: "self",
-        volatile: "embody-aspect-used",
+        volatile: CORE_VOLATILE_IDS.embodyAspectUsed,
       },
       {
         effectType: "stat-change",
@@ -237,7 +254,7 @@ export function isEmbodyAspect(abilityId: string): boolean {
 export function handleMyceliumMight(ctx: AbilityContext): AbilityResult {
   if (ctx.trigger !== "on-priority-check") return INACTIVE;
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category !== "status") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   // Signal that this move has -0.1 fractional priority
   const name = getName(ctx);
@@ -258,8 +275,8 @@ export function hasMyceliumMightPriorityReduction(
   abilityId: string,
   moveCategory: string,
 ): boolean {
-  if (abilityId !== "mycelium-might") return false;
-  return moveCategory === "status";
+  if (abilityId !== GEN9_ABILITY_IDS.myceliumMight) return false;
+  return moveCategory === CORE_MOVE_CATEGORIES.status;
 }
 
 /**
@@ -269,8 +286,8 @@ export function hasMyceliumMightPriorityReduction(
  *   "if (move.category === 'Status') move.ignoreAbility = true"
  */
 export function isMyceliumMightBypassingAbility(abilityId: string, moveCategory: string): boolean {
-  if (abilityId !== "mycelium-might") return false;
-  return moveCategory === "status";
+  if (abilityId !== GEN9_ABILITY_IDS.myceliumMight) return false;
+  return moveCategory === CORE_MOVE_CATEGORIES.status;
 }
 
 // ---------------------------------------------------------------------------
@@ -297,7 +314,7 @@ export const SUPREME_OVERLORD_TABLE = SUPREME_OVERLORD_MODIFIER_TABLE.map(
  * Source: Showdown data/abilities.ts:4634-4658
  */
 export function getSupremeOverlordFloatMultiplier(faintedAllies: number): number {
-  return getSupremeOverlordModifier("supreme-overlord", faintedAllies) / 4096;
+  return getSupremeOverlordModifier(GEN9_ABILITY_IDS.supremeOverlord, faintedAllies) / 4096;
 }
 
 /**
@@ -326,7 +343,11 @@ export function handleGen9IntrepidSwordTrigger(ctx: AbilityContext): AbilityResu
   return {
     activated: true,
     effects: [
-      { effectType: "volatile-inflict", target: "self", volatile: "intrepid-sword-used" },
+      {
+        effectType: "volatile-inflict",
+        target: "self",
+        volatile: CORE_VOLATILE_IDS.intrepidSwordUsed,
+      },
       { effectType: "stat-change", target: "self", stat: "attack", stages: 1 },
     ],
     messages: [`${name}'s Intrepid Sword raised its Attack!`],
@@ -360,7 +381,11 @@ export function handleGen9DauntlessShieldTrigger(ctx: AbilityContext): AbilityRe
   return {
     activated: true,
     effects: [
-      { effectType: "volatile-inflict", target: "self", volatile: "dauntless-shield-used" },
+      {
+        effectType: "volatile-inflict",
+        target: "self",
+        volatile: CORE_VOLATILE_IDS.dauntlessShieldUsed,
+      },
       { effectType: "stat-change", target: "self", stat: "defense", stages: 1 },
     ],
     messages: [`${name}'s Dauntless Shield raised its Defense!`],
@@ -388,7 +413,7 @@ export function handleGen9ProteanTrigger(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
 
   // Once per switch-in
-  if (ctx.pokemon.volatileStatuses.has("protean-used")) return INACTIVE;
+  if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.proteanUsed)) return INACTIVE;
 
   const moveType = ctx.move.type;
   // Don't activate if already the move's type
@@ -398,11 +423,15 @@ export function handleGen9ProteanTrigger(ctx: AbilityContext): AbilityResult {
   return {
     activated: true,
     effects: [
-      { effectType: "volatile-inflict", target: "self", volatile: "protean-used" },
+      {
+        effectType: "volatile-inflict",
+        target: "self",
+        volatile: CORE_VOLATILE_IDS.proteanUsed,
+      },
       { effectType: "type-change", target: "self", types: [moveType] },
     ],
     messages: [
-      `${name}'s ${ctx.pokemon.ability === "protean" ? "Protean" : "Libero"} changed its type to ${moveType}!`,
+      `${name}'s ${ctx.pokemon.ability === GEN9_ABILITY_IDS.protean ? "Protean" : "Libero"} changed its type to ${moveType}!`,
     ],
   };
 }
@@ -428,23 +457,23 @@ export function handleGen9NewAbility(ctx: AbilityContext): AbilityResult {
   const abilityId = ctx.pokemon.ability;
 
   switch (abilityId) {
-    case "toxic-chain":
+    case GEN9_ABILITY_IDS.toxicChain:
       return handleToxicChain(ctx);
-    case "good-as-gold":
+    case GEN9_ABILITY_IDS.goodAsGold:
       return handleGoodAsGold(ctx);
     case GEN9_ABILITY_IDS.embodyAspectTeal:
     case GEN9_ABILITY_IDS.embodyAspectHearthflame:
     case GEN9_ABILITY_IDS.embodyAspectWellspring:
     case GEN9_ABILITY_IDS.embodyAspectCornerstone:
       return handleEmbodyAspect(ctx);
-    case "mycelium-might":
+    case GEN9_ABILITY_IDS.myceliumMight:
       return handleMyceliumMight(ctx);
-    case "intrepid-sword":
+    case GEN9_ABILITY_IDS.intrepidSword:
       return handleGen9IntrepidSwordTrigger(ctx);
-    case "dauntless-shield":
+    case GEN9_ABILITY_IDS.dauntlessShield:
       return handleGen9DauntlessShieldTrigger(ctx);
-    case "protean":
-    case "libero":
+    case GEN9_ABILITY_IDS.protean:
+    case GEN9_ABILITY_IDS.libero:
       return handleGen9ProteanTrigger(ctx);
     default:
       return INACTIVE;
