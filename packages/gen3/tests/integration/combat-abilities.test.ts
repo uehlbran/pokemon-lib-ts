@@ -6,6 +6,8 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -86,11 +88,11 @@ function createScenarioPokemon(opts: {
     currentHp: 200,
     moves: [{ moveId: GEN3_MOVE_IDS.tackle, pp: 35, maxPp: 35 }],
     ability: opts.ability ?? CORE_ABILITY_IDS.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -189,7 +191,10 @@ describe("Gen 3 Serene Grace ability", () => {
     // Mock RNG returns 59 (0-indexed), which is < 60 (doubled) but >= 30 (original).
     // Without Serene Grace: rng.int(0, 99) returns 59, 59 < 30 = false -> no status.
     // With Serene Grace:    rng.int(0, 99) returns 59, 59 < 60 = true  -> status inflicted.
-    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.electric], ability: GEN3_ABILITY_IDS.sereneGrace });
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.electric],
+      ability: GEN3_ABILITY_IDS.sereneGrace,
+    });
     const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState(attacker, defender);
     const thunderMove = DATA_MANAGER.getMove(GEN3_MOVE_IDS.thunder);
@@ -216,7 +221,10 @@ describe("Gen 3 Serene Grace ability", () => {
     // pret/pokeemerald: Math.min(chance * 2, 100) -> 60% * 2 = 120% -> capped at 100%.
     //
     // Any rng value from 0-99 should be < 100 -> always succeeds.
-    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.sereneGrace });
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.sereneGrace,
+    });
     const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState(attacker, defender);
     const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.sacredFire);
@@ -241,7 +249,10 @@ describe("Gen 3 Serene Grace ability", () => {
   it("given attacker without Serene Grace, when move has 30% secondary effect chance and rng is 59, then effect does not trigger", () => {
     // Source: pret/pokeemerald -- without ABILITY_SERENE_GRACE, percentChance stays at 30.
     // rng.int(0, 99) returns 59, 59 < 30 = false -> no status inflicted.
-    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.electric], ability: CORE_ABILITY_IDS.none });
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.electric],
+      ability: CORE_ABILITY_IDS.none,
+    });
     const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState(attacker, defender);
     const thunderMove = DATA_MANAGER.getMove(GEN3_MOVE_IDS.thunder);
@@ -266,7 +277,10 @@ describe("Gen 3 Serene Grace ability", () => {
   it("given attacker with Serene Grace, when move has 10% stat change chance, then chance is doubled to 20%", () => {
     // Source: Bulbapedia -- Serene Grace doubles ALL secondary effect chances.
     // 10% -> 20%. rng.int(0, 99) returns 19 -> 19 < 20 = true.
-    const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.sereneGrace });
+    const attacker = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.sereneGrace,
+    });
     const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
     const state = createMinimalBattleState(attacker, defender);
     const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.acid);
@@ -306,7 +320,10 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
     // Even with rng returning 1 (which normally guarantees a crit), Battle Armor
     // should override and return false.
     const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
-    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.battleArmor });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.battleArmor,
+    });
 
     const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash);
 
@@ -331,7 +348,10 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
     // Source: pret/pokeemerald -- ABILITY_SHELL_ARMOR has the same effect as ABILITY_BATTLE_ARMOR.
     // Both prevent critical hits entirely.
     const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
-    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.water], ability: GEN3_ABILITY_IDS.shellArmor });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.water],
+      ability: GEN3_ABILITY_IDS.shellArmor,
+    });
 
     const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash);
 
@@ -357,7 +377,10 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
     // the normal crit calculation applies.
     // At stage 0, denominator = 16. rng.int(1, 16) returning 1 means 1 === 1 -> crit.
     const attacker = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal] });
-    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal], ability: CORE_ABILITY_IDS.none });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: CORE_ABILITY_IDS.none,
+    });
 
     const move = DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash);
 
@@ -386,7 +409,10 @@ describe("Gen 3 Battle Armor / Shell Armor abilities", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN3_ITEM_IDS.scopeLens,
     });
-    const defender = createScenarioPokemon({ types: [CORE_TYPE_IDS.normal], ability: GEN3_ABILITY_IDS.battleArmor });
+    const defender = createScenarioPokemon({
+      types: [CORE_TYPE_IDS.normal],
+      ability: GEN3_ABILITY_IDS.battleArmor,
+    });
 
     // Slash has critRatio: 1, plus Scope Lens = stage 2
     const move = { ...DATA_MANAGER.getMove(GEN3_MOVE_IDS.slash), critRatio: 1 };

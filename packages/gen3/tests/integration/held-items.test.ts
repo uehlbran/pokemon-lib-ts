@@ -6,7 +6,6 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
-import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveCategory,
   MoveData,
@@ -15,28 +14,24 @@ import type {
   StatBlock,
 } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_TRIGGER_IDS,
   CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createEvs,
   createIvs,
-  createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen3DataManager,
-  GEN3_ITEM_IDS,
-  GEN3_MOVE_IDS,
-  GEN3_SPECIES_IDS,
-} from "../../src";
+import { createGen3DataManager, GEN3_ITEM_IDS, GEN3_MOVE_IDS, GEN3_SPECIES_IDS } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { applyGen3HeldItem } from "../../src/Gen3Items";
 import { Gen3Ruleset } from "../../src/Gen3Ruleset";
 import { GEN3_TYPE_CHART } from "../../src/Gen3TypeChart";
+import { createSyntheticOnFieldPokemon as createBaseSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 3 Held Item Tests
@@ -70,10 +65,10 @@ const DEFAULT_NATURE_ID = dataManager.getNature(CORE_NATURE_IDS.hardy).id;
 const DEFAULT_TACKLE_MOVE = dataManager.getMove(GEN3_MOVE_IDS.tackle);
 const INFATUATION_VOLATILE_ID = CORE_VOLATILE_IDS.infatuation;
 const ITEM_TRIGGERS = {
-  endOfTurn: "end-of-turn",
+  endOfTurn: CORE_ITEM_TRIGGER_IDS.endOfTurn,
   onDamageTaken: CORE_ABILITY_TRIGGER_IDS.onDamageTaken,
-  onHit: "on-hit",
-  statBoostBetweenTurns: "stat-boost-between-turns",
+  onHit: CORE_ITEM_TRIGGER_IDS.onHit,
+  statBoostBetweenTurns: CORE_ITEM_TRIGGER_IDS.statBoostBetweenTurns,
 } as const;
 
 /** Create a minimal PokemonInstance mock for item tests. */
@@ -94,37 +89,24 @@ function createSyntheticOnFieldPokemon(opts: {
   speciesId?: number;
 }): ActivePokemon {
   const maxHp = opts.maxHp ?? 200;
-  const species = dataManager.getSpecies(opts.speciesId ?? DEFAULT_SPECIES.id);
-  const pokemon = createPokemonInstance(species, opts.level ?? 50, {
-    next: () => 0,
-    int: (_min: number, _max: number) => 0,
-    chance: () => false,
-    pick: <T>(arr: readonly T[]) => arr[0] as T,
-    shuffle: <T>(arr: T[]) => arr,
-    getState: () => 0,
-    setState: () => {},
-  }, {
-    nature: DEFAULT_NATURE_ID,
-    ivs: createIvs(),
-    evs: createEvs(),
+  const pokemon = createBaseSyntheticOnFieldPokemon({
+    ability: opts.ability,
     abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    currentHp: opts.currentHp ?? maxHp,
+    evs: createEvs(),
     gender: CORE_GENDERS.male,
-    friendship: species.baseFriendship,
-    metLocation: "test",
-    originalTrainer: "Test",
-    originalTrainerId: 0,
-    pokeball: GEN3_ITEM_IDS.pokeBall,
-    moves: [DEFAULT_TACKLE_MOVE.id],
     heldItem: opts.heldItem ?? null,
+    ivs: createIvs(),
+    level: opts.level ?? 50,
+    moveIds: [DEFAULT_TACKLE_MOVE.id],
+    nature: DEFAULT_NATURE_ID,
+    pokeball: GEN3_ITEM_IDS.pokeBall,
+    speciesId: opts.speciesId ?? DEFAULT_SPECIES.id,
+    status: opts.primaryStatus ?? null,
   });
 
-  pokemon.uid = "test-mon";
-  pokemon.currentHp = opts.currentHp ?? maxHp;
-  pokemon.ability = opts.ability ?? pokemon.ability;
-  pokemon.heldItem = opts.heldItem ?? null;
-  pokemon.gender = CORE_GENDERS.male;
-  pokemon.status = opts.primaryStatus ?? null;
-  pokemon.calculatedStats = {
+  pokemon.pokemon.uid = "test-mon";
+  pokemon.pokemon.calculatedStats = {
     hp: maxHp,
     attack: opts.attack ?? 100,
     defense: opts.defense ?? 100,
@@ -132,15 +114,13 @@ function createSyntheticOnFieldPokemon(opts: {
     spDefense: opts.spDefense ?? 100,
     speed: opts.speed ?? 100,
   } as StatBlock;
-
-  const active = createBattleOnFieldPokemon(pokemon, 0, species.types);
   if (opts.hasConfusion) {
-    active.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: -1 });
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.confusion, { turnsLeft: -1 });
   }
   if (opts.hasInfatuation) {
-    active.volatileStatuses.set(INFATUATION_VOLATILE_ID, { turnsLeft: -1 });
+    pokemon.volatileStatuses.set(INFATUATION_VOLATILE_ID, { turnsLeft: -1 });
   }
-  return active;
+  return pokemon;
 }
 
 /** Create a mock ItemContext. */
@@ -478,7 +458,9 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "volatile-cure")?.value).toBe(CORE_VOLATILE_IDS.confusion);
+      expect(result.effects.find((e) => e.type === "volatile-cure")?.value).toBe(
+        CORE_VOLATILE_IDS.confusion,
+      );
       expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.lumBerry);
     });
 
@@ -496,7 +478,10 @@ describe("Gen 3 Held Items", () => {
 
     it("given a paralyzed Pokemon holding Lum Berry, when on-damage-taken fires, then no activation", () => {
       // Source: pokeemerald ItemBattleEffects — Lum Berry runs at ITEMEFFECT_ON_RESIDUAL (end-of-turn) only
-      const ctx = createHeldItemContext({ heldItem: GEN3_ITEM_IDS.lumBerry, primaryStatus: CORE_STATUS_IDS.paralysis });
+      const ctx = createHeldItemContext({
+        heldItem: GEN3_ITEM_IDS.lumBerry,
+        primaryStatus: CORE_STATUS_IDS.paralysis,
+      });
       const result = applyGen3HeldItem(ITEM_TRIGGERS.onDamageTaken, ctx);
       expect(result.activated).toBe(false);
       expect(result.effects).toHaveLength(0);
@@ -518,7 +503,9 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.cheriBerry);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.cheriBerry,
+      );
     });
 
     it("given a burned Pokemon holding Cheri Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
@@ -544,7 +531,9 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.chestoBerry);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.chestoBerry,
+      );
     });
 
     it("given a paralyzed Pokemon holding Chesto Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
@@ -570,7 +559,9 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.pechaBerry);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.pechaBerry,
+      );
     });
 
     it("given a badly-poisoned Pokemon holding Pecha Berry, when end-of-turn triggers, then cures badly-poisoned and is consumed", () => {
@@ -597,7 +588,9 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.rawstBerry);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.rawstBerry,
+      );
     });
 
     it("given a sleeping Pokemon holding Rawst Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
@@ -623,7 +616,9 @@ describe("Gen 3 Held Items", () => {
       const result = applyGen3HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       expect(result.activated).toBe(true);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.aspearBerry);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.aspearBerry,
+      );
     });
 
     it("given a poisoned Pokemon holding Aspear Berry, when end-of-turn triggers, then no activation (wrong status)", () => {
@@ -651,7 +646,9 @@ describe("Gen 3 Held Items", () => {
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure?.value).toBe(CORE_VOLATILE_IDS.confusion);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.persimBerry);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.persimBerry,
+      );
     });
 
     it("given a non-confused Pokemon holding Persim Berry, when end-of-turn triggers, then no activation", () => {
@@ -679,7 +676,9 @@ describe("Gen 3 Held Items", () => {
       expect(result.activated).toBe(true);
       const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
       expect(volatileCure?.value).toBe(INFATUATION_VOLATILE_ID);
-      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(GEN3_ITEM_IDS.mentalHerb);
+      expect(result.effects.find((e) => e.type === "consume")?.value).toBe(
+        GEN3_ITEM_IDS.mentalHerb,
+      );
     });
 
     it("given a non-infatuated Pokemon holding Mental Herb, when end-of-turn triggers, then no activation", () => {
@@ -1422,7 +1421,9 @@ describe("Gen 3 Held Items", () => {
         effects: [{ type: "consume", target: "self", value: GEN3_ITEM_IDS.lansatBerry }],
         messages: ["Pokemon #1's Lansat Berry raised its critical-hit ratio!"],
       });
-      expect(context.pokemon.volatileStatuses.get(GEN3_MOVE_IDS.focusEnergy)).toEqual({ turnsLeft: -1 });
+      expect(context.pokemon.volatileStatuses.get(GEN3_MOVE_IDS.focusEnergy)).toEqual({
+        turnsLeft: -1,
+      });
     });
   });
 

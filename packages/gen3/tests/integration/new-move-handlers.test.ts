@@ -1,6 +1,18 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock, WeatherType } from "@pokemon-lib-ts/core";
-import { CORE_END_OF_TURN_EFFECT_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonType,
+  StatBlock,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_GENDERS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen3DataManager,
@@ -67,11 +79,11 @@ function createActivePokemon(opts: {
     currentHp: opts.currentHp ?? 300,
     moves: [],
     ability: opts.ability ?? "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -292,7 +304,10 @@ describe("Gen 3 Trick", () => {
 
   it("given attacker has item but defender has none, when Trick used, then itemTransfer succeeds", () => {
     // Source: pret/pokeemerald — Trick works as long as at least one has an item
-    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], heldItem: GEN3_ITEM_IDS.choiceBand });
+    const attacker = createActivePokemon({
+      types: [CORE_TYPE_IDS.psychic],
+      heldItem: GEN3_ITEM_IDS.choiceBand,
+    });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = getGen3Move(GEN3_MOVE_IDS.trick);
     const context = createContext(attacker, defender, move, 0, createMockRng());
@@ -317,7 +332,10 @@ describe("Gen 3 Trick", () => {
 
   it("given defender has Sticky Hold, when Trick used, then it fails", () => {
     // Source: pret/pokeemerald — Sticky Hold blocks item transfer
-    const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.psychic], heldItem: GEN3_ITEM_IDS.choiceBand });
+    const attacker = createActivePokemon({
+      types: [CORE_TYPE_IDS.psychic],
+      heldItem: GEN3_ITEM_IDS.choiceBand,
+    });
     const defender = createActivePokemon({
       types: [CORE_TYPE_IDS.poison],
       ability: GEN3_ABILITY_IDS.stickyHold,

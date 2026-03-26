@@ -173,6 +173,7 @@ export const CORE_ITEM_TRIGGER_IDS = {
   onDamageTaken: "on-damage-taken",
   onContact: "on-contact",
   onHit: "on-hit",
+  statBoostBetweenTurns: "stat-boost-between-turns",
 } as const;
 
 export const CORE_GENDERS = {

@@ -1,8 +1,10 @@
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type { PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen3Ruleset } from "../../src";
 import { createGen3DataManager } from "../../src/data";
+import { createSyntheticOnFieldPokemon } from "../helpers/createSyntheticOnFieldPokemon";
 
 /**
  * Gen 3 Struggle Damage and Recoil Tests
@@ -21,6 +23,7 @@ import { createGen3DataManager } from "../../src/data";
 
 const dataManager = createGen3DataManager();
 const ruleset = new Gen3Ruleset(dataManager);
+const typeIds = CORE_TYPE_IDS;
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -42,63 +45,12 @@ function createActivePokemon(opts: {
     speed: 100,
   };
 
-  const pokemon = {
-    uid: "test",
-    speciesId: 1,
-    nickname: null,
+  return createSyntheticOnFieldPokemon({
     level: opts.level,
-    experience: 0,
-    nature: "hardy",
-    ivs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     currentHp: opts.hp ?? 200,
-    moves: [],
-    ability: "",
-    abilitySlot: "normal1" as const,
-    heldItem: null,
-    status: null,
-    friendship: 0,
-    gender: "male" as const,
-    isShiny: false,
-    metLocation: "",
-    metLevel: 1,
-    originalTrainer: "",
-    originalTrainerId: 0,
-    pokeball: "pokeball",
     calculatedStats: stats,
-  } as PokemonInstance;
-
-  return {
-    pokemon,
-    teamSlot: 0,
-    statStages: {
-      attack: 0,
-      defense: 0,
-      spAttack: 0,
-      spDefense: 0,
-      speed: 0,
-      accuracy: 0,
-      evasion: 0,
-    },
-    volatileStatuses: new Map(),
     types: opts.types,
-    ability: "",
-    lastMoveUsed: null,
-    lastDamageTaken: 0,
-    lastDamageType: null,
-    turnsOnField: 0,
-    movedThisTurn: false,
-    consecutiveProtects: 0,
-    substituteHp: 0,
-    transformed: false,
-    transformedSpecies: null,
-    isMega: false,
-    isDynamaxed: false,
-    dynamaxTurnsLeft: 0,
-    isTerastallized: false,
-    teraType: null,
-    stellarBoostedTypes: [],
-  } as ActivePokemon;
+  });
 }
 
 function createMinimalBattleState(): BattleState {
@@ -149,13 +101,13 @@ describe("Gen 3 Struggle Damage", () => {
       level: 50,
       attack: 100,
       defense: 100,
-      types: ["normal"],
+      types: [typeIds.normal],
     });
     const defender = createActivePokemon({
       level: 50,
       attack: 100,
       defense: 100,
-      types: ["ghost"],
+      types: [typeIds.ghost],
     });
     const state = createMinimalBattleState();
 
@@ -177,13 +129,13 @@ describe("Gen 3 Struggle Damage", () => {
       level: 100,
       attack: 200,
       defense: 100,
-      types: ["normal"],
+      types: [typeIds.normal],
     });
     const defender = createActivePokemon({
       level: 50,
       attack: 100,
       defense: 100,
-      types: ["normal"],
+      types: [typeIds.normal],
     });
     const state = createMinimalBattleState();
 
@@ -201,7 +153,7 @@ describe("Gen 3 Struggle Recoil", () => {
       level: 50,
       attack: 100,
       defense: 100,
-      types: ["normal"],
+      types: [typeIds.normal],
     });
 
     const recoil = ruleset.calculateStruggleRecoil(attacker, 100);
@@ -217,7 +169,7 @@ describe("Gen 3 Struggle Recoil", () => {
       level: 50,
       attack: 100,
       defense: 100,
-      types: ["normal"],
+      types: [typeIds.normal],
     });
 
     const recoil = ruleset.calculateStruggleRecoil(attacker, 1);
@@ -232,7 +184,7 @@ describe("Gen 3 Struggle Recoil", () => {
       level: 50,
       attack: 100,
       defense: 100,
-      types: ["normal"],
+      types: [typeIds.normal],
     });
 
     const recoil = ruleset.calculateStruggleRecoil(attacker, 99);

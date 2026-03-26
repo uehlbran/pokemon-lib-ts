@@ -15,28 +15,29 @@ import type { ActivePokemon, DamageContext, MoveEffectContext } from "@pokemon-l
 import type {
   MoveData,
   PokemonInstance,
-  PrimaryStatus,
   PokemonType,
+  PrimaryStatus,
   StatBlock,
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_MOVE_IDS,
-  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
-  NEUTRAL_NATURES,
   createMoveSlot,
+  NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
+  createGen3DataManager,
   GEN3_ITEM_IDS,
   GEN3_MOVE_IDS,
   GEN3_NATURE_IDS,
   GEN3_SPECIES_IDS,
   GEN3_TYPES,
-  createGen3DataManager,
 } from "../../src";
 import { calculateGen3Damage } from "../../src/Gen3DamageCalc";
 import { executeGen3MoveEffect } from "../../src/Gen3MoveEffects";
@@ -46,7 +47,6 @@ const ABILITIES = CORE_ABILITY_IDS;
 const ITEMS = GEN3_ITEM_IDS;
 const MOVES = { ...CORE_MOVE_IDS, ...GEN3_MOVE_IDS };
 const SPECIES = GEN3_SPECIES_IDS;
-const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;
 const VOLATILES = {
   charged: CORE_VOLATILE_IDS.charged,
@@ -111,11 +111,11 @@ function createActivePokemon(opts: {
     currentHp: 200,
     moves: [createMoveSlot(THUNDERBOLT.id, THUNDERBOLT.pp)],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: opts.heldItem ?? null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -294,9 +294,7 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
     expect(result.damage).toBe(normalResult.damage);
   });
 
-  it(
-    `given the Charge move is used, when the move effect handler runs, then "${VOLATILES.charged}" volatile is set with turnsLeft=2`,
-    () => {
+  it(`given the Charge move is used, when the move effect handler runs, then "${VOLATILES.charged}" volatile is set with turnsLeft=2`, () => {
     // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE
     // Source: Bulbapedia "Charge" — also raises SpDef by 1 stage in Gen 3
     const attacker = createActivePokemon({ types: [TYPES.electric] });
@@ -326,8 +324,7 @@ describe("Bug #706: Charge doubles Electric-type move power", () => {
         ]),
       );
     }
-    },
-  );
+  });
 });
 
 // ---------------------------------------------------------------------------

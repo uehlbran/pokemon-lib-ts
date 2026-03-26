@@ -2,6 +2,8 @@ import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import type { PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -68,11 +70,11 @@ function createMockPokemon(opts: {
     currentHp: opts.hp ?? maxHp,
     moves: [],
     ability: opts.ability ?? ABILITIES.none,
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: opts.status ?? null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -197,7 +199,10 @@ describe("Gen 3 canSwitch (trapping abilities)", () => {
     });
 
     it("given opponent has Arena Trap and Pokemon is Flying-type, when checking switch, then Pokemon CAN switch", () => {
-      const pokemon = createMockPokemon({ types: [TYPES.normal, TYPES.flying], ability: ABILITIES.blaze });
+      const pokemon = createMockPokemon({
+        types: [TYPES.normal, TYPES.flying],
+        ability: ABILITIES.blaze,
+      });
       const opponent = createMockPokemon({ types: [TYPES.ground], ability: ABILITIES.arenaTrap });
       const state = createMinimalBattleState(pokemon, opponent);
 
@@ -206,7 +211,10 @@ describe("Gen 3 canSwitch (trapping abilities)", () => {
 
     it("given opponent has Arena Trap and Pokemon has Levitate, when checking switch, then Pokemon CAN switch", () => {
       // Source: pret/pokeemerald -- Levitate grants immunity to Arena Trap
-      const pokemon = createMockPokemon({ types: [TYPES.ghost, TYPES.poison], ability: ABILITIES.levitate });
+      const pokemon = createMockPokemon({
+        types: [TYPES.ghost, TYPES.poison],
+        ability: ABILITIES.levitate,
+      });
       const opponent = createMockPokemon({ types: [TYPES.ground], ability: ABILITIES.arenaTrap });
       const state = createMinimalBattleState(pokemon, opponent);
 
@@ -265,7 +273,11 @@ describe("Gen 3 canSwitch (trapping abilities)", () => {
 
     it("given opponent is fainted, when checking switch, then Pokemon CAN switch", () => {
       const pokemon = createMockPokemon({ types: [TYPES.normal] });
-      const opponent = createMockPokemon({ types: [TYPES.ghost], ability: ABILITIES.shadowTag, hp: 0 });
+      const opponent = createMockPokemon({
+        types: [TYPES.ghost],
+        ability: ABILITIES.shadowTag,
+        hp: 0,
+      });
       const state = createMinimalBattleState(pokemon, opponent);
 
       expect(ruleset.canSwitch(pokemon, state)).toBe(true);

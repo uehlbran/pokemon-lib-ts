@@ -1,15 +1,9 @@
 import type { NatureId, PokemonInstance, StatBlock } from "@pokemon-lib-ts/core";
-import {
-  CORE_ABILITY_IDS,
-  CORE_ITEM_IDS,
-  SeededRandom,
-  createEvs,
-  createIvs,
-  createPokemonInstance,
-} from "@pokemon-lib-ts/core";
+import { createEvs, createIvs } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { GEN3_NATURE_IDS, GEN3_SPECIES_IDS, Gen3Ruleset } from "../../src";
 import { createGen3DataManager } from "../../src/data";
+import { createGen3TestPokemon } from "../helpers/createGen3TestPokemon";
 
 /**
  * Gen 3 Stat Calculation Tests
@@ -36,21 +30,15 @@ function createScenarioPokemon(
   ivs: StatBlock,
   evs: StatBlock,
 ): PokemonInstance {
-  const species = dataManager.getSpecies(speciesId);
-  const pokemon = createPokemonInstance(species, level, new SeededRandom(speciesId + level), {
+  const pokemon = createGen3TestPokemon({
+    speciesId,
+    level,
     nature,
     ivs: createIvs(ivs),
     evs: createEvs(evs),
-    abilitySlot: "normal1",
-    heldItem: null,
-    gender: "male",
-    isShiny: false,
     metLocation: "test",
     originalTrainer: "test",
-    originalTrainerId: 0,
-    pokeball: CORE_ITEM_IDS.pokeBall,
   });
-  pokemon.ability = species.abilities.normal[0] ?? CORE_ABILITY_IDS.none;
   pokemon.currentHp = 1;
   return pokemon;
 }
@@ -85,7 +73,13 @@ describe("Gen 3 Stat Calculation — HP", () => {
     //        = floor(604 * 0.5) + 60
     //        = 302 + 60 = 362
     const blissey = dataManager.getSpecies(speciesIds.blissey);
-    const pokemon = createScenarioPokemon(speciesIds.blissey, 50, natures.hardy, MAX_IVS, MAX_HP_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.blissey,
+      50,
+      natures.hardy,
+      MAX_IVS,
+      MAX_HP_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, blissey);
 
@@ -97,7 +91,13 @@ describe("Gen 3 Stat Calculation — HP", () => {
     // Formula: floor((2*255 + 31 + 63) * 100 / 100) + 100 + 10
     //        = floor(604) + 110 = 604 + 110 = 714
     const blissey = dataManager.getSpecies(speciesIds.blissey);
-    const pokemon = createScenarioPokemon(speciesIds.blissey, 100, natures.hardy, MAX_IVS, MAX_HP_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.blissey,
+      100,
+      natures.hardy,
+      MAX_IVS,
+      MAX_HP_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, blissey);
 
@@ -109,7 +109,13 @@ describe("Gen 3 Stat Calculation — HP", () => {
     // Formula: floor((2*35 + 0 + 0) * 50 / 100) + 50 + 10
     //        = floor(70 * 0.5) + 60 = 35 + 60 = 95
     const pikachu = dataManager.getSpecies(speciesIds.pikachu);
-    const pokemon = createScenarioPokemon(speciesIds.pikachu, 50, natures.hardy, ZERO_IVS, ZERO_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.pikachu,
+      50,
+      natures.hardy,
+      ZERO_IVS,
+      ZERO_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, pikachu);
 
@@ -155,7 +161,13 @@ describe("Gen 3 Stat Calculation — Non-HP with Nature", () => {
     // Wait, let me recalculate: floor(301 * 50 / 100) = floor(150.5) = 150; 150 + 5 = 155
     // Hmm. Let me check: Showdown says L50 Alakazam 31 IVs 0 EVs Serious = SpAtk 155
     const alakazam = dataManager.getSpecies(speciesIds.alakazam);
-    const pokemon = createScenarioPokemon(speciesIds.alakazam, 50, natures.hardy, MAX_IVS, ZERO_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.alakazam,
+      50,
+      natures.hardy,
+      MAX_IVS,
+      ZERO_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, alakazam);
 
@@ -167,7 +179,13 @@ describe("Gen 3 Stat Calculation — Non-HP with Nature", () => {
     // Source: Bulbapedia — Adamant is +Atk, -SpAtk
     // Alakazam L50 31 IVs 0 EVs Adamant: SpAtk = floor(155 * 0.9) = floor(139.5) = 139
     const alakazam = dataManager.getSpecies(speciesIds.alakazam);
-    const pokemon = createScenarioPokemon(speciesIds.alakazam, 50, natures.adamant, MAX_IVS, ZERO_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.alakazam,
+      50,
+      natures.adamant,
+      MAX_IVS,
+      ZERO_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, alakazam);
 
@@ -182,7 +200,13 @@ describe("Gen 3 Stat Calculation — Zero EVs/IVs", () => {
     // Pikachu base Speed = 90
     // floor((2*90 + 0 + 0) * 50/100) + 5 = floor(180*0.5) + 5 = 90 + 5 = 95
     const pikachu = dataManager.getSpecies(speciesIds.pikachu);
-    const pokemon = createScenarioPokemon(speciesIds.pikachu, 50, natures.hardy, ZERO_IVS, ZERO_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.pikachu,
+      50,
+      natures.hardy,
+      ZERO_IVS,
+      ZERO_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, pikachu);
 
@@ -232,7 +256,13 @@ describe("Gen 3 Stat Calculation — Shedinja HP=1 special case", () => {
     // Source: pret/pokeemerald src/pokemon.c:2845 — SPECIES_SHEDINJA hardcodes maxHP=1
     // Without special case, formula would give: floor((2*1+0+0)*50/100)+50+10 = 61
     const shedinja = dataManager.getSpecies(speciesIds.shedinja);
-    const pokemon = createScenarioPokemon(speciesIds.shedinja, 50, natures.hardy, ZERO_IVS, ZERO_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.shedinja,
+      50,
+      natures.hardy,
+      ZERO_IVS,
+      ZERO_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, shedinja);
 
@@ -243,7 +273,13 @@ describe("Gen 3 Stat Calculation — Shedinja HP=1 special case", () => {
     // Source: pret/pokeemerald src/pokemon.c:2845 — hardcoded regardless of IVs/EVs
     // Without special case, formula would give: floor((2*1+31+63)*50/100)+60 = 108
     const shedinja = dataManager.getSpecies(speciesIds.shedinja);
-    const pokemon = createScenarioPokemon(speciesIds.shedinja, 50, natures.hardy, MAX_IVS, MAX_HP_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.shedinja,
+      50,
+      natures.hardy,
+      MAX_IVS,
+      MAX_HP_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, shedinja);
 
@@ -254,7 +290,13 @@ describe("Gen 3 Stat Calculation — Shedinja HP=1 special case", () => {
     // Source: pret/pokeemerald src/pokemon.c:2845 — level does not affect Shedinja HP
     // Without special case, formula would give: floor((2*1+31+63)*100/100)+110 = 206
     const shedinja = dataManager.getSpecies(speciesIds.shedinja);
-    const pokemon = createScenarioPokemon(speciesIds.shedinja, 100, natures.hardy, MAX_IVS, MAX_HP_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.shedinja,
+      100,
+      natures.hardy,
+      MAX_IVS,
+      MAX_HP_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, shedinja);
 
@@ -330,7 +372,13 @@ describe("Gen 3 Stat Calculation — Nature modifier coverage (Pikachu base stat
     // Atk neutral=75 → floor(75*1.1) = floor(82.5) = 82
     // Source: pret/pokeemerald src/battle_script_commands.c — nature multiplier 1.1/0.9
     const pikachu = dataManager.getSpecies(speciesIds.pikachu);
-    const pokemon = createScenarioPokemon(speciesIds.pikachu, 50, natures.naughty, MAX_IVS, ZERO_EVS);
+    const pokemon = createScenarioPokemon(
+      speciesIds.pikachu,
+      50,
+      natures.naughty,
+      MAX_IVS,
+      ZERO_EVS,
+    );
 
     const stats = ruleset.calculateStats(pokemon, pikachu);
 
