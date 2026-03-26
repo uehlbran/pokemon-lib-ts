@@ -1,5 +1,6 @@
 import type { BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { WEATHER_SUPPRESSING_ABILITIES } from "./Gen3Abilities";
 
 export const GEN3_WEATHER_DAMAGE_MULTIPLIERS = {
@@ -15,7 +16,11 @@ export const GEN3_WEATHER_DAMAGE_MULTIPLIERS = {
  *
  * Source: pret/pokeemerald src/battle_util.c — sandstorm immunity type check
  */
-export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel"];
+export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = [
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.steel,
+];
 
 /**
  * Types immune to hail chip damage in Gen 3.
@@ -23,7 +28,7 @@ export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground",
  *
  * Source: pret/pokeemerald src/battle_util.c — hail immunity type check
  */
-export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
+export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = [CORE_TYPE_IDS.ice];
 
 /**
  * Check whether a Pokemon is immune to the given weather's end-of-turn chip damage.
@@ -40,10 +45,10 @@ export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
  * @returns true if the Pokemon takes no chip damage from this weather
  */
 export function isGen3WeatherImmune(types: readonly PokemonType[], weather: WeatherType): boolean {
-  if (weather === "sand") {
+  if (weather === CORE_WEATHER_IDS.sand) {
     return types.some((type) => SANDSTORM_IMMUNE_TYPES.includes(type));
   }
-  if (weather === "hail") {
+  if (weather === CORE_WEATHER_IDS.hail) {
     return types.some((type) => HAIL_IMMUNE_TYPES.includes(type));
   }
   // Rain and Sun have no chip damage
@@ -73,7 +78,8 @@ export function applyGen3WeatherEffects(state: BattleState): WeatherEffectResult
   // No weather or non-damaging weather (rain/sun have no chip damage)
   if (!state.weather) return results;
   const weatherType = state.weather.type;
-  if (weatherType !== "sand" && weatherType !== "hail") return results;
+  if (weatherType !== CORE_WEATHER_IDS.sand && weatherType !== CORE_WEATHER_IDS.hail)
+    return results;
 
   // Cloud Nine / Air Lock: suppress weather damage while holder is on the field
   // Source: pret/pokeemerald src/battle_util.c — WEATHER_HAS_EFFECT macro
@@ -102,7 +108,7 @@ export function applyGen3WeatherEffects(state: BattleState): WeatherEffectResult
       const pokemonName = active.pokemon.nickname ?? active.pokemon.speciesId.toString();
 
       const message =
-        weatherType === "sand"
+        weatherType === CORE_WEATHER_IDS.sand
           ? `${pokemonName} is buffeted by the sandstorm!`
           : `${pokemonName} is pelted by hail!`;
 

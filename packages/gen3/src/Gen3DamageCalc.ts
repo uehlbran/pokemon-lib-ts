@@ -6,12 +6,20 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type { PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
   getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import { GEN3_ABILITY_IDS, GEN3_ITEM_IDS, GEN3_MOVE_IDS } from "./data/reference-ids";
 import { isWeatherSuppressedGen3 } from "./Gen3Abilities";
 import { TYPE_BOOST_ITEMS } from "./Gen3Items";
 
@@ -34,15 +42,15 @@ const MAROWAK_SPECIES_ID = 105;
  * Source: pret/pokeemerald src/data/battle/type_effectiveness.h — TYPE_IS_PHYSICAL macro
  */
 const GEN3_PHYSICAL_TYPES: ReadonlySet<string> = new Set([
-  "normal",
-  "fighting",
-  "flying",
-  "poison",
-  "ground",
-  "rock",
-  "bug",
-  "ghost",
-  "steel",
+  CORE_TYPE_IDS.normal,
+  CORE_TYPE_IDS.fighting,
+  CORE_TYPE_IDS.flying,
+  CORE_TYPE_IDS.poison,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.bug,
+  CORE_TYPE_IDS.ghost,
+  CORE_TYPE_IDS.steel,
 ]);
 
 /**
@@ -91,7 +99,10 @@ function getAttackStat(
 
   // 1. Huge Power / Pure Power: doubles physical attack (applied to raw stat)
   // Source: pret/pokeemerald src/pokemon.c:3158-3159
-  if (physical && (ability === "huge-power" || ability === "pure-power")) {
+  if (
+    physical &&
+    (ability === CORE_ABILITY_IDS.hugePower || ability === CORE_ABILITY_IDS.purePower)
+  ) {
     rawStat = rawStat * 2;
   }
 
@@ -106,7 +117,7 @@ function getAttackStat(
 
   // 4. Choice Band: 1.5x physical attack (applied to raw stat)
   // Source: pret/pokeemerald src/pokemon.c:3185-3186 — (150 * attack) / 100
-  if (physical && attacker.pokemon.heldItem === "choice-band") {
+  if (physical && attacker.pokemon.heldItem === CORE_ITEM_IDS.choiceBand) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
@@ -120,7 +131,7 @@ function getAttackStat(
   // Source: Bulbapedia — "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
   if (
     !physical &&
-    attackerItem === "soul-dew" &&
+    attackerItem === CORE_ITEM_IDS.soulDew &&
     (attackerSpecies === LATIAS_SPECIES_ID || attackerSpecies === LATIOS_SPECIES_ID)
   ) {
     rawStat = Math.floor((rawStat * 150) / 100);
@@ -129,14 +140,22 @@ function getAttackStat(
   // Deep Sea Tooth: 2x SpAtk for Clamperl (366)
   // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_TOOTH
   // Source: Bulbapedia — "When held by Clamperl, doubles its Special Attack."
-  if (!physical && attackerItem === "deep-sea-tooth" && attackerSpecies === CLAMPERL_SPECIES_ID) {
+  if (
+    !physical &&
+    attackerItem === CORE_ITEM_IDS.deepSeaTooth &&
+    attackerSpecies === CLAMPERL_SPECIES_ID
+  ) {
     rawStat = rawStat * 2;
   }
 
   // Light Ball: 2x SpAtk for Pikachu (25) — Gen 3 is SpAtk ONLY (Attack boost is Gen 4+)
   // Source: pret/pokeemerald HOLD_EFFECT_LIGHT_BALL
   // Source: Bulbapedia — "When held by Pikachu, doubles its Special Attack. (Generation III)"
-  if (!physical && attackerItem === "light-ball" && attackerSpecies === PIKACHU_SPECIES_ID) {
+  if (
+    !physical &&
+    attackerItem === CORE_ITEM_IDS.lightBall &&
+    attackerSpecies === PIKACHU_SPECIES_ID
+  ) {
     rawStat = rawStat * 2;
   }
 
@@ -145,7 +164,7 @@ function getAttackStat(
   // Source: Bulbapedia — "When held by Cubone or Marowak, doubles the holder's Attack."
   if (
     physical &&
-    attackerItem === "thick-club" &&
+    attackerItem === CORE_ITEM_IDS.thickClub &&
     (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
@@ -153,21 +172,24 @@ function getAttackStat(
 
   // 5. Hustle: 1.5x physical attack (accuracy penalty handled by engine)
   // Source: pret/pokeemerald src/pokemon.c:3205-3206 — (150 * attack) / 100
-  if (physical && ability === "hustle") {
+  if (physical && ability === CORE_ABILITY_IDS.hustle) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
   // 6. Guts: 1.5x physical attack when statused (does NOT cancel burn penalty —
   //    burn halving is applied to damage after formula, and Guts negates that separately)
   // Source: pret/pokeemerald src/pokemon.c:3211-3212 — (150 * attack) / 100
-  if (physical && ability === "guts" && attacker.pokemon.status !== null) {
+  if (physical && ability === GEN3_ABILITY_IDS.guts && attacker.pokemon.status !== null) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
   // 6a. Thick Fat: halves the raw attack/spAttack stat for Fire and Ice moves.
   // Applied BEFORE stat stages per pokeemerald modifier order.
   // Source: pret/pokeemerald src/pokemon.c:3203-3204 — spAttack /= 2 (or attack /= 2)
-  if (defenderAbility === "thick-fat" && (moveType === "fire" || moveType === "ice")) {
+  if (
+    defenderAbility === GEN3_ABILITY_IDS.thickFat &&
+    (moveType === CORE_TYPE_IDS.fire || moveType === CORE_TYPE_IDS.ice)
+  ) {
     rawStat = Math.floor(rawStat / 2);
   }
 
@@ -210,7 +232,7 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Source: Bulbapedia — "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
   if (
     !physical &&
-    defenderItem === "soul-dew" &&
+    defenderItem === CORE_ITEM_IDS.soulDew &&
     (defenderSpecies === LATIAS_SPECIES_ID || defenderSpecies === LATIOS_SPECIES_ID)
   ) {
     baseStat = Math.floor((baseStat * 150) / 100);
@@ -219,7 +241,11 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Deep Sea Scale: 2x SpDef for Clamperl (366)
   // Source: pret/pokeemerald HOLD_EFFECT_DEEP_SEA_SCALE
   // Source: Bulbapedia — "When held by Clamperl, doubles its Special Defense."
-  if (!physical && defenderItem === "deep-sea-scale" && defenderSpecies === CLAMPERL_SPECIES_ID) {
+  if (
+    !physical &&
+    defenderItem === CORE_ITEM_IDS.deepSeaScale &&
+    defenderSpecies === CLAMPERL_SPECIES_ID
+  ) {
     baseStat = baseStat * 2;
   }
 
@@ -228,7 +254,11 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Source: pret/pokeemerald src/pokemon.c ABILITY_MARVEL_SCALE
   // Source: Bulbapedia — "Marvel Scale: If the Pokemon has a status condition, its Defense
   //   stat is 1.5x."
-  if (physical && defender.ability === "marvel-scale" && defender.pokemon.status !== null) {
+  if (
+    physical &&
+    defender.ability === CORE_ABILITY_IDS.marvelScale &&
+    defender.pokemon.status !== null
+  ) {
     // Integer arithmetic matching pokeemerald: (defense * 150) / 100
     // Source: pret/pokeemerald src/pokemon.c ABILITY_MARVEL_SCALE
     // Fix: #155 — was Math.floor(baseStat * 1.5) (float), now integer math
@@ -239,7 +269,11 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
   // Source: pret/pokeemerald src/pokemon.c:3197 —
   //   if (defenderHoldEffect == HOLD_EFFECT_METAL_POWDER && defender->species == SPECIES_DITTO) defense *= 2
   // Note: only affects physical Defense; SpDef unaffected. Ditto-specific item.
-  if (physical && defenderItem === "metal-powder" && defenderSpecies === DITTO_SPECIES_ID) {
+  if (
+    physical &&
+    defenderItem === GEN3_ITEM_IDS.metalPowder &&
+    defenderSpecies === DITTO_SPECIES_ID
+  ) {
     baseStat = baseStat * 2;
   }
 
@@ -316,13 +350,13 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_WEATHER_BALL
   // Source: Showdown data/moves.ts — Weather Ball onModifyType/onModifyMove
   // Power doubles from 50 to 100, and type changes to match weather
-  if (move.id === "weather-ball" && weather) {
+  if (move.id === GEN3_MOVE_IDS.weatherBall && weather) {
     power = power * 2;
     const weatherTypeMap: Record<string, PokemonType> = {
-      rain: "water",
-      sun: "fire",
-      sand: "rock",
-      hail: "ice",
+      [CORE_WEATHER_IDS.rain]: CORE_TYPE_IDS.water,
+      [CORE_WEATHER_IDS.sun]: CORE_TYPE_IDS.fire,
+      [CORE_WEATHER_IDS.sand]: CORE_TYPE_IDS.rock,
+      [CORE_WEATHER_IDS.hail]: CORE_TYPE_IDS.ice,
     };
     effectiveMoveType = weatherTypeMap[weather] ?? move.type;
   }
@@ -330,8 +364,12 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // SolarBeam: half power in Rain, Sand, Hail (not Sun)
   // Source: pret/pokeemerald src/battle_script_commands.c — SolarBeam halved in non-sun weather
   // Source: Showdown data/moves.ts — SolarBeam onBasePower: 0.5x in rain/sand/hail
-  if (move.id === "solar-beam") {
-    if (weather === "rain" || weather === "sand" || weather === "hail") {
+  if (move.id === GEN3_MOVE_IDS.solarBeam) {
+    if (
+      weather === CORE_WEATHER_IDS.rain ||
+      weather === CORE_WEATHER_IDS.sand ||
+      weather === CORE_WEATHER_IDS.hail
+    ) {
       power = Math.floor(power / 2);
     }
   }
@@ -345,10 +383,10 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — "When the Pokemon with this Ability has 1/3 or less of its HP
   //   remaining, moves of the same type get a 50% power boost."
   const PINCH_ABILITY_TYPES: Readonly<Record<string, string>> = {
-    overgrow: "grass",
-    blaze: "fire",
-    torrent: "water",
-    swarm: "bug",
+    [CORE_ABILITY_IDS.overgrow]: CORE_TYPE_IDS.grass,
+    [CORE_ABILITY_IDS.blaze]: CORE_TYPE_IDS.fire,
+    [CORE_ABILITY_IDS.torrent]: CORE_TYPE_IDS.water,
+    [CORE_ABILITY_IDS.swarm]: CORE_TYPE_IDS.bug,
   };
   const pinchType = PINCH_ABILITY_TYPES[attacker.ability];
   if (pinchType && effectiveMoveType === pinchType) {
@@ -363,10 +401,13 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // The "charged" volatile is set by the Charge move and consumed here after boosting.
   // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE doubles electric power
   // Source: Bulbapedia "Charge" — "doubles the power of the next Electric-type move"
-  if (effectiveMoveType === "electric" && attacker.volatileStatuses.has("charged")) {
+  if (
+    effectiveMoveType === CORE_TYPE_IDS.electric &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.charged)
+  ) {
     power = power * 2;
     // Consume the charged volatile after use
-    attacker.volatileStatuses.delete("charged");
+    attacker.volatileStatuses.delete(CORE_VOLATILE_IDS.charged);
   }
 
   // --- Mud Sport: halves Electric-type move power if any active Pokemon has it ---
@@ -374,7 +415,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // on the field has the volatile, Electric moves are halved.
   // Source: pret/pokeemerald src/battle_util.c — Mud Sport checks both sides
   // Source: Showdown data/moves.ts -- mudsport: volatileStatus halves Electric power
-  if (effectiveMoveType === "electric" && context.state.sides) {
+  if (effectiveMoveType === CORE_TYPE_IDS.electric && context.state.sides) {
     const hasMudSport = context.state.sides.some((side) =>
       side.active.some((a) => a?.volatileStatuses.has("mud-sport")),
     );
@@ -388,7 +429,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // on the field has the volatile, Fire moves are halved.
   // Source: pret/pokeemerald src/battle_util.c — Water Sport checks both sides
   // Source: Showdown data/moves.ts -- watersport: volatileStatus halves Fire power
-  if (effectiveMoveType === "fire" && context.state.sides) {
+  if (effectiveMoveType === CORE_TYPE_IDS.fire && context.state.sides) {
     const hasWaterSport = context.state.sides.some((side) =>
       side.active.some((a) => a?.volatileStatuses.has("water-sport")),
     );
@@ -404,25 +445,31 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Levitate: immune to ground-type moves
   // Source: pret/pokeemerald ABILITY_LEVITATE
-  if (defenderAbility === "levitate" && effectiveMoveType === "ground") {
+  if (defenderAbility === CORE_ABILITY_IDS.levitate && effectiveMoveType === CORE_TYPE_IDS.ground) {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
   // Volt Absorb: immune to electric-type moves
   // Source: pret/pokeemerald ABILITY_VOLT_ABSORB
-  if (defenderAbility === "volt-absorb" && effectiveMoveType === "electric") {
+  if (
+    defenderAbility === CORE_ABILITY_IDS.voltAbsorb &&
+    effectiveMoveType === CORE_TYPE_IDS.electric
+  ) {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
   // Water Absorb: immune to water-type moves
   // Source: pret/pokeemerald ABILITY_WATER_ABSORB
-  if (defenderAbility === "water-absorb" && effectiveMoveType === "water") {
+  if (
+    defenderAbility === CORE_ABILITY_IDS.waterAbsorb &&
+    effectiveMoveType === CORE_TYPE_IDS.water
+  ) {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
   // Flash Fire: immune to fire-type moves
   // Source: pret/pokeemerald ABILITY_FLASH_FIRE
-  if (defenderAbility === "flash-fire" && effectiveMoveType === "fire") {
+  if (defenderAbility === CORE_ABILITY_IDS.flashFire && effectiveMoveType === CORE_TYPE_IDS.fire) {
     return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
   }
 
@@ -446,7 +493,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Source: pret/pokeemerald src/pokemon.c — EFFECT_EXPLOSION halves defense
   // Source: Bulbapedia — "In Generations I-IV, Explosion and Self-Destruct halve the
   //   target's Defense stat"
-  if (move.id === "explosion" || move.id === "self-destruct") {
+  if (move.id === GEN3_MOVE_IDS.explosion || move.id === GEN3_MOVE_IDS.selfDestruct) {
     defense = Math.max(1, Math.floor(defense / 2));
   }
 
@@ -457,8 +504,8 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Track Thick Fat for breakdown (already applied in getAttackStat)
   if (
-    defenderAbility === "thick-fat" &&
-    (effectiveMoveType === "fire" || effectiveMoveType === "ice")
+    defenderAbility === GEN3_ABILITY_IDS.thickFat &&
+    (effectiveMoveType === CORE_TYPE_IDS.fire || effectiveMoveType === CORE_TYPE_IDS.ice)
   ) {
     abilityMultiplier = 0.5;
   }
@@ -472,8 +519,8 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // Source: pret/pokeemerald src/pokemon.c:3262-3264
   // "if ((attacker->status1 & STATUS1_BURN) && attacker->ability != ABILITY_GUTS) damage /= 2;"
   const attackerAbility = attacker.ability;
-  const hasBurn = physical && attacker.pokemon.status === "burn";
-  const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
+  const hasBurn = physical && attacker.pokemon.status === CORE_STATUS_IDS.burn;
+  const gutsActive = attackerAbility === GEN3_ABILITY_IDS.guts && attacker.pokemon.status !== null;
   const burnApplied = hasBurn && !gutsActive;
   if (burnApplied) {
     baseDamage = Math.floor(baseDamage / 2);
@@ -488,7 +535,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     );
     if (defenderSideIdx !== -1) {
       const defenderScreens = context.state.sides[defenderSideIdx]?.screens ?? [];
-      const screenType = physical ? "reflect" : "light-screen";
+      const screenType = physical ? CORE_SCREEN_IDS.reflect : CORE_SCREEN_IDS.lightScreen;
       const hasScreen = defenderScreens.some((s) => s.type === screenType);
       if (hasScreen) {
         baseDamage = Math.floor(baseDamage / 2);
@@ -514,7 +561,10 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   // but BEFORE the +2 constant — matching pokeemerald's CalculateBaseDamage order.
   // Uses integer arithmetic: damage = damage * 15 / 10 (with floor).
   // Source: pret/pokeemerald src/pokemon.c CalculateBaseDamage — Flash Fire modifies damage, not stat
-  if (attacker.volatileStatuses.has("flash-fire") && effectiveMoveType === "fire") {
+  if (
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire) &&
+    effectiveMoveType === CORE_TYPE_IDS.fire
+  ) {
     baseDamage = Math.floor((baseDamage * 15) / 10);
     abilityMultiplier = abilityMultiplier === 1 ? 1.5 : abilityMultiplier * 1.5;
   }
@@ -587,7 +637,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Wonder Guard — only super-effective moves hit
   // Source: pret/pokeemerald ABILITY_WONDER_GUARD — only 2x and 4x moves land
-  if (defenderAbility === "wonder-guard" && effectiveness < 2) {
+  if (defenderAbility === CORE_ABILITY_IDS.wonderGuard && effectiveness < 2) {
     return {
       damage: 0,
       effectiveness,

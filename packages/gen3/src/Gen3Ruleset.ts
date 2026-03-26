@@ -35,6 +35,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_SPECIES_IDS,
   CORE_STATUS_IDS,
@@ -46,7 +47,7 @@ import {
   gen1to4MultiHitRoll,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
-import { GEN3_ABILITY_IDS } from "./data/reference-ids";
+import { GEN3_ABILITY_IDS, GEN3_ITEM_IDS, GEN3_MOVE_IDS } from "./data/reference-ids";
 import {
   applyGen3Ability,
   isGen3AbilityStatusImmune,
@@ -205,7 +206,10 @@ export class Gen3Ruleset extends BaseRuleset {
    */
   override rollCritical(context: CritContext): boolean {
     const defenderAbility = context.defender?.ability;
-    if (defenderAbility === "battle-armor" || defenderAbility === "shell-armor") {
+    if (
+      defenderAbility === GEN3_ABILITY_IDS.battleArmor ||
+      defenderAbility === GEN3_ABILITY_IDS.shellArmor
+    ) {
       return false;
     }
 
@@ -259,7 +263,7 @@ export class Gen3Ruleset extends BaseRuleset {
    * Source: pret/pokeemerald — only MOVE_SPIKES exists as a hazard-layer move
    */
   getAvailableHazards(): readonly EntryHazardType[] {
-    return ["spikes"];
+    return [CORE_HAZARD_IDS.spikes];
   }
 
   // --- End-of-Turn System ---
@@ -365,7 +369,7 @@ export class Gen3Ruleset extends BaseRuleset {
     _state?: BattleState,
   ): EntryHazardResult {
     // Gen 3: only spikes available — no Stealth Rock (Gen 4) or Toxic Spikes (Gen 4)
-    const spikes = side.hazards.find((h) => h.type === "spikes");
+    const spikes = side.hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
     if (!spikes) return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
 
     // Flying-types are immune to spikes
@@ -518,7 +522,7 @@ export class Gen3Ruleset extends BaseRuleset {
       if (action && action.type === "move") {
         const side = state.sides[action.side];
         const active = side?.active[0];
-        if (active?.pokemon.heldItem === "quick-claw") {
+        if (active?.pokemon.heldItem === GEN3_ITEM_IDS.quickClaw) {
           // 20% chance to activate
           // Source: pret/pokeemerald src/battle_main.c:4653 — (0xFFFF * 20) / 100 = 13107
           // gRandomTurnNumber < 13107 out of 65536 = 20.00%
@@ -582,7 +586,7 @@ export class Gen3Ruleset extends BaseRuleset {
     // Thunder: 100% accuracy in Rain, 50% accuracy in Sun
     // Source: pret/pokeemerald — Thunder bypasses accuracy in rain
     // Source: Showdown data/moves.ts — Thunder: move.accuracy = true in raindance
-    if (context.move.id === "thunder") {
+    if (context.move.id === GEN3_MOVE_IDS.thunder) {
       if (weather === CORE_WEATHER_IDS.rain) return true;
       if (weather === CORE_WEATHER_IDS.sun) {
         // Override accuracy to 50 and continue with normal check
@@ -639,7 +643,7 @@ export class Gen3Ruleset extends BaseRuleset {
     // holdEffectModifier = 10 for BrightPowder, 5 for Lax Incense (pokeemerald uses 10 for both)
     // Source: Showdown data/mods/gen3/items.ts — BrightPowder/Lax Incense both use 0.9x accuracy
     const defenderItem = context.defender.pokemon.heldItem;
-    if (defenderItem === "bright-powder" || defenderItem === "lax-incense") {
+    if (defenderItem === GEN3_ITEM_IDS.brightPowder || defenderItem === GEN3_ITEM_IDS.laxIncense) {
       calc = Math.floor((calc * 90) / 100);
     }
 
@@ -647,16 +651,16 @@ export class Gen3Ruleset extends BaseRuleset {
     // Source: pret/pokeemerald src/battle_script_commands.c:1156-1157
     if (context.attacker.ability === GEN3_ABILITY_IDS.hustle) {
       // Check if move type is physical (Gen 3 physical/special split is by type)
-      const physicalTypes = new Set([
-        "normal",
-        "fighting",
-        "flying",
-        "poison",
-        "ground",
-        "rock",
-        "bug",
-        "ghost",
-        "steel",
+      const physicalTypes = new Set<PokemonType>([
+        CORE_TYPE_IDS.normal,
+        CORE_TYPE_IDS.fighting,
+        CORE_TYPE_IDS.flying,
+        CORE_TYPE_IDS.poison,
+        CORE_TYPE_IDS.ground,
+        CORE_TYPE_IDS.rock,
+        CORE_TYPE_IDS.bug,
+        CORE_TYPE_IDS.ghost,
+        CORE_TYPE_IDS.steel,
       ]);
       if (physicalTypes.has(context.move.type)) {
         calc = Math.floor((calc * 80) / 100);
@@ -706,7 +710,7 @@ export class Gen3Ruleset extends BaseRuleset {
     // Macho Brace: halves Speed in battle
     // Source: pret/pokeemerald src/battle_util.c — HOLD_EFFECT_MACHO_BRACE halves speed
     // Source: Bulbapedia — "Macho Brace halves the holder's Speed stat"
-    if (active.pokemon.heldItem === "macho-brace") {
+    if (active.pokemon.heldItem === GEN3_ITEM_IDS.machoBrace) {
       effective = Math.floor(effective / 2);
     }
 
@@ -737,15 +741,26 @@ export class Gen3Ruleset extends BaseRuleset {
       case "flying":
         // Thunder, Twister, Gust, Sky Uppercut can hit Fly
         // Source: pret/pokeemerald — STATUS3_ON_AIR hit checks
-        return ["thunder", "twister", "gust", "sky-uppercut"].includes(moveId);
+        return (
+          [
+            GEN3_MOVE_IDS.thunder,
+            GEN3_MOVE_IDS.twister,
+            GEN3_MOVE_IDS.gust,
+            GEN3_MOVE_IDS.skyUppercut,
+          ] as readonly string[]
+        ).includes(moveId);
       case "underground":
         // Earthquake, Magnitude can hit Dig
         // Source: pret/pokeemerald — STATUS3_UNDERGROUND hit checks
-        return ["earthquake", "magnitude"].includes(moveId);
+        return ([GEN3_MOVE_IDS.earthquake, GEN3_MOVE_IDS.magnitude] as readonly string[]).includes(
+          moveId,
+        );
       case "underwater":
         // Surf, Whirlpool can hit Dive
         // Source: pret/pokeemerald — STATUS3_UNDERWATER hit checks
-        return ["surf", "whirlpool"].includes(moveId);
+        return ([GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.whirlpool] as readonly string[]).includes(
+          moveId,
+        );
       case "charging":
         // Generic charging moves (SolarBeam, Skull Bash, Razor Wind, Sky Attack, Bounce on
         // second turn) are NOT semi-invulnerable — all moves can hit a charging Pokemon.
