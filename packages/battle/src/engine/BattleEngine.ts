@@ -10,9 +10,13 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   getExpForLevel,
   getStatStageMultiplier,
   SeededRandom,
@@ -300,12 +304,12 @@ export class BattleEngine implements BattleEventEmitter {
         text: "The substitute took damage!",
       });
       if (target.substituteHp === 0) {
-        target.volatileStatuses.delete("substitute");
+        target.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
         this.emit({
           type: "volatile-end",
           side: targetSide,
           pokemon: getPokemonName(target),
-          volatile: "substitute",
+          volatile: CORE_VOLATILE_IDS.substitute,
         });
       }
       return;
@@ -976,22 +980,25 @@ export class BattleEngine implements BattleEventEmitter {
         disabled = true;
         disabledReason = "No PP remaining";
       } else if (
-        active.volatileStatuses.has("disable") &&
-        active.volatileStatuses.get("disable")?.data?.moveId === slot.moveId
+        active.volatileStatuses.has(CORE_VOLATILE_IDS.disable) &&
+        active.volatileStatuses.get(CORE_VOLATILE_IDS.disable)?.data?.moveId === slot.moveId
       ) {
         disabled = true;
         disabledReason = "Move is disabled";
-      } else if (active.volatileStatuses.has("taunt") && moveData?.category === "status") {
+      } else if (
+        active.volatileStatuses.has(CORE_VOLATILE_IDS.taunt) &&
+        moveData?.category === CORE_MOVE_CATEGORIES.status
+      ) {
         // Taunt prevents status moves
         // Source: Bulbapedia — "Taunt prevents the target from using status moves"
         disabled = true;
         disabledReason = "Blocked by Taunt";
       } else if (
         this.ruleset.hasHeldItems() &&
-        active.pokemon.heldItem === "assault-vest" &&
-        moveData?.category === "status" &&
-        active.ability !== "klutz" &&
-        !active.volatileStatuses.has("embargo")
+        active.pokemon.heldItem === CORE_ITEM_IDS.assaultVest &&
+        moveData?.category === CORE_MOVE_CATEGORIES.status &&
+        active.ability !== CORE_ABILITY_IDS.klutz &&
+        !active.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
       ) {
         // Assault Vest prevents the holder from using status moves
         // Source: Showdown data/items.ts — Assault Vest: "The holder is unable to use status moves"
@@ -1001,10 +1008,10 @@ export class BattleEngine implements BattleEventEmitter {
         // Source: Showdown data/moves.ts — Embargo: "Prevents the target from using held items"
         disabled = true;
         disabledReason = "Blocked by Assault Vest";
-      } else if (active.volatileStatuses.has("choice-locked")) {
+      } else if (active.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked)) {
         // Choice lock restricts to the locked move only
         // Source: Bulbapedia — Choice Band/Specs/Scarf lock the user into the first move used
-        const choiceData = active.volatileStatuses.get("choice-locked")?.data;
+        const choiceData = active.volatileStatuses.get(CORE_VOLATILE_IDS.choiceLocked)?.data;
         const lockedMoveId = choiceData?.moveId as string | undefined;
         if (lockedMoveId && slot.moveId !== lockedMoveId) {
           disabled = true;
@@ -1843,13 +1850,13 @@ export class BattleEngine implements BattleEventEmitter {
     if (
       this.ruleset.hasHeldItems() &&
       !actor.isDynamaxed &&
-      !actor.volatileStatuses.has("choice-locked") &&
+      !actor.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked) &&
       actor.pokemon.heldItem &&
-      (actor.pokemon.heldItem === "choice-band" ||
-        actor.pokemon.heldItem === "choice-specs" ||
-        actor.pokemon.heldItem === "choice-scarf")
+      (actor.pokemon.heldItem === CORE_ITEM_IDS.choiceBand ||
+        actor.pokemon.heldItem === CORE_ITEM_IDS.choiceSpecs ||
+        actor.pokemon.heldItem === CORE_ITEM_IDS.choiceScarf)
     ) {
-      actor.volatileStatuses.set("choice-locked", {
+      actor.volatileStatuses.set(CORE_VOLATILE_IDS.choiceLocked, {
         turnsLeft: -1,
         data: { moveId: moveData.id },
       });
@@ -2235,12 +2242,12 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (defender.substituteHp === 0) {
           brokeSubstitute = true;
-          defender.volatileStatuses.delete("substitute");
+          defender.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
           this.emit({
             type: "volatile-end",
             side: defenderSide as 0 | 1,
             pokemon: getPokemonName(defender),
-            volatile: "substitute",
+            volatile: CORE_VOLATILE_IDS.substitute,
           });
         }
       } else {
@@ -2480,12 +2487,12 @@ export class BattleEngine implements BattleEventEmitter {
           this.emit({ type: "message", text: "The substitute took damage!" });
           if (defender.substituteHp === 0) {
             brokeSubstitute = true;
-            defender.volatileStatuses.delete("substitute");
+            defender.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
             this.emit({
               type: "volatile-end",
               side: defenderSide as 0 | 1,
               pokemon: getPokemonName(defender),
-              volatile: "substitute",
+              volatile: CORE_VOLATILE_IDS.substitute,
             });
           }
         } else {
@@ -2724,12 +2731,12 @@ export class BattleEngine implements BattleEventEmitter {
         this.emit({ type: "message", text: "The substitute took damage!" });
         if (defender.substituteHp === 0) {
           brokeSubstitute = true;
-          defender.volatileStatuses.delete("substitute");
+          defender.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
           this.emit({
             type: "volatile-end",
             side: defenderSide,
             pokemon: getPokemonName(defender),
-            volatile: "substitute",
+            volatile: CORE_VOLATILE_IDS.substitute,
           });
         }
       } else {
@@ -3452,7 +3459,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Sleep check
     // Source: Showdown sim/battle-actions.ts — sleepUsable moves (Sleep Talk, Snore)
     // bypass the sleep immobilization check but still decrement the sleep counter.
-    if (actor.pokemon.status === "sleep") {
+    if (actor.pokemon.status === CORE_STATUS_IDS.sleep) {
       const canAct = this.ruleset.processSleepTurn(actor, this.state);
       if (actor.pokemon.status === null) {
         // Pokemon woke up (status cleared by processSleepTurn)
@@ -3460,7 +3467,7 @@ export class BattleEngine implements BattleEventEmitter {
           type: "status-cure",
           side,
           pokemon: getPokemonName(actor),
-          status: "sleep",
+          status: CORE_STATUS_IDS.sleep,
         });
       } else {
         // Still sleeping
@@ -3481,7 +3488,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Freeze check
-    if (actor.pokemon.status === "freeze") {
+    if (actor.pokemon.status === CORE_STATUS_IDS.freeze) {
       if (move.flags.defrost) {
         // Defrost moves (Scald, Flame Wheel, etc.) always thaw the user
         actor.pokemon.status = null;
@@ -3489,7 +3496,7 @@ export class BattleEngine implements BattleEventEmitter {
           type: "status-cure",
           side,
           pokemon: getPokemonName(actor),
-          status: "freeze",
+          status: CORE_STATUS_IDS.freeze,
         });
       } else if (this.ruleset.checkFreezeThaw(actor, this.state.rng)) {
         actor.pokemon.status = null;
@@ -3497,7 +3504,7 @@ export class BattleEngine implements BattleEventEmitter {
           type: "status-cure",
           side,
           pokemon: getPokemonName(actor),
-          status: "freeze",
+          status: CORE_STATUS_IDS.freeze,
         });
       } else {
         this.emit({
@@ -3509,7 +3516,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Paralysis check
-    if (actor.pokemon.status === "paralysis") {
+    if (actor.pokemon.status === CORE_STATUS_IDS.paralysis) {
       if (this.ruleset.checkFullParalysis(actor, this.state.rng)) {
         this.emit({
           type: "message",
@@ -3520,27 +3527,27 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Confusion check — turn countdown delegated to ruleset (Gen 7+ changed range from 1-4 to 2-5)
-    if (actor.volatileStatuses.has("confusion")) {
-      const confState = actor.volatileStatuses.get("confusion");
+    if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
+      const confState = actor.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
       if (!confState || confState.turnsLeft <= 0) {
         // Confusion already expired (e.g., turnsLeft was set to 0 before this check)
-        actor.volatileStatuses.delete("confusion");
+        actor.volatileStatuses.delete(CORE_VOLATILE_IDS.confusion);
         this.emit({
           type: "volatile-end",
           side,
           pokemon: getPokemonName(actor),
-          volatile: "confusion",
+          volatile: CORE_VOLATILE_IDS.confusion,
         });
       } else {
         const stillConfused = this.ruleset.processConfusionTurn(actor, this.state);
         if (!stillConfused) {
           // Confusion ended after decrement
-          actor.volatileStatuses.delete("confusion");
+          actor.volatileStatuses.delete(CORE_VOLATILE_IDS.confusion);
           this.emit({
             type: "volatile-end",
             side,
             pokemon: getPokemonName(actor),
-            volatile: "confusion",
+            volatile: CORE_VOLATILE_IDS.confusion,
           });
         } else {
           this.emit({
@@ -3574,12 +3581,12 @@ export class BattleEngine implements BattleEventEmitter {
                 text: "The substitute took damage!",
               });
               if (opponent.substituteHp === 0) {
-                opponent.volatileStatuses.delete("substitute");
+                opponent.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
                 this.emit({
                   type: "volatile-end",
                   side: opponentSide as 0 | 1,
                   pokemon: getPokemonName(opponent),
-                  volatile: "substitute",
+                  volatile: CORE_VOLATILE_IDS.substitute,
                 });
               }
             } else {
@@ -3602,27 +3609,27 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Bound check — turn countdown delegated to ruleset (trap mechanics vary by gen)
-    if (actor.volatileStatuses.has("bound")) {
-      const boundState = actor.volatileStatuses.get("bound");
+    if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.bound)) {
+      const boundState = actor.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
       if (!boundState || boundState.turnsLeft <= 0) {
         // Bound already expired
-        actor.volatileStatuses.delete("bound");
+        actor.volatileStatuses.delete(CORE_VOLATILE_IDS.bound);
         this.emit({
           type: "volatile-end",
           side,
           pokemon: getPokemonName(actor),
-          volatile: "bound",
+          volatile: CORE_VOLATILE_IDS.bound,
         });
       } else {
         const stillBound = this.ruleset.processBoundTurn(actor, this.state);
         if (!stillBound) {
           // Binding ended after decrement
-          actor.volatileStatuses.delete("bound");
+          actor.volatileStatuses.delete(CORE_VOLATILE_IDS.bound);
           this.emit({
             type: "volatile-end",
             side,
             pokemon: getPokemonName(actor),
-            volatile: "bound",
+            volatile: CORE_VOLATILE_IDS.bound,
           });
         } else {
           this.emit({
@@ -3657,7 +3664,10 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Taunt check — prevents status moves (runtime enforcement, mirrors getAvailableMoves check)
     // Source: Bulbapedia — "Taunt prevents the target from using status moves"
-    if (actor.volatileStatuses.has("taunt") && move.category === "status") {
+    if (
+      actor.volatileStatuses.has(CORE_VOLATILE_IDS.taunt) &&
+      move.category === CORE_MOVE_CATEGORIES.status
+    ) {
       this.emit({
         type: "message",
         text: `${getPokemonName(actor)} can't use ${move.id} after the taunt!`,
@@ -3673,10 +3683,10 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown data/moves.ts — Embargo: "Prevents the target from using held items"
     if (
       this.ruleset.hasHeldItems() &&
-      actor.pokemon.heldItem === "assault-vest" &&
-      move.category === "status" &&
-      actor.ability !== "klutz" &&
-      !actor.volatileStatuses.has("embargo")
+      actor.pokemon.heldItem === CORE_ITEM_IDS.assaultVest &&
+      move.category === CORE_MOVE_CATEGORIES.status &&
+      actor.ability !== CORE_ABILITY_IDS.klutz &&
+      !actor.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
     ) {
       this.emit({
         type: "message",
@@ -3687,8 +3697,8 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Choice lock check — prevents using a different move than the locked one
     // Source: Bulbapedia — "Choice Band/Specs/Scarf lock the user into the first move selected"
-    if (actor.volatileStatuses.has("choice-locked")) {
-      const choiceData = actor.volatileStatuses.get("choice-locked")?.data;
+    if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.choiceLocked)) {
+      const choiceData = actor.volatileStatuses.get(CORE_VOLATILE_IDS.choiceLocked)?.data;
       const lockedMoveId = choiceData?.moveId as string | undefined;
       if (lockedMoveId && move.id !== lockedMoveId) {
         this.emit({
@@ -3734,25 +3744,25 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Initialize companion volatiles that downstream mechanics depend on.
     // Must run BEFORE emitting status-inflict so synchronous listeners see fully-initialized state.
-    if (status === "badly-poisoned") {
+    if (status === CORE_STATUS_IDS.badlyPoisoned) {
       // Source: Showdown sim/battle-actions.ts — toxic counter starts at 1, increments each EoT
-      target.volatileStatuses.set("toxic-counter", {
+      target.volatileStatuses.set(CORE_VOLATILE_IDS.toxicCounter, {
         turnsLeft: -1,
         data: { counter: 1 },
       });
-    } else if (status === "sleep") {
+    } else if (status === CORE_STATUS_IDS.sleep) {
       // Source: Showdown sim/battle-actions.ts — sleep turns rolled on infliction, tracked by sleep-counter
       // startTime is stored so Gen 5's onSwitchIn can reset turnsLeft to the original value.
       // Source: Showdown data/mods/gen5/conditions.ts — slp.onSwitchIn: effectState.time = effectState.startTime
       const turns = sleepTurnsOverride ?? this.ruleset.rollSleepTurns(this.state.rng);
-      target.volatileStatuses.set("sleep-counter", {
+      target.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, {
         turnsLeft: turns,
         data: { startTime: turns },
       });
-    } else if (status === "freeze") {
+    } else if (status === CORE_STATUS_IDS.freeze) {
       // Source: pret/pokecrystal engine/battle/core.asm:1538-1540 — wPlayerJustGotFrozen
       // Prevents EoT processEndOfTurnDefrost from thawing on the same turn.
-      target.volatileStatuses.set("just-frozen", { turnsLeft: 1 });
+      target.volatileStatuses.set(CORE_VOLATILE_IDS.justFrozen, { turnsLeft: 1 });
     }
 
     this.emit({
@@ -4404,7 +4414,9 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.selfStatusInflicted && !attacker.pokemon.status) {
       // Use selfVolatileData.turnsLeft if provided (e.g., Rest's fixed 2-turn sleep)
       const sleepOverride =
-        result.selfStatusInflicted === "sleep" ? result.selfVolatileData?.turnsLeft : undefined;
+        result.selfStatusInflicted === CORE_STATUS_IDS.sleep
+          ? result.selfVolatileData?.turnsLeft
+          : undefined;
       this.applyPrimaryStatus(attacker, result.selfStatusInflicted, attackerSide, sleepOverride);
     }
 
@@ -4613,7 +4625,11 @@ export class BattleEngine implements BattleEventEmitter {
     if (!active.pokemon.status) return;
 
     const status = active.pokemon.status;
-    if (status === "burn" || status === "poison" || status === "badly-poisoned") {
+    if (
+      status === CORE_STATUS_IDS.burn ||
+      status === CORE_STATUS_IDS.poison ||
+      status === CORE_STATUS_IDS.badlyPoisoned
+    ) {
       const damage = this.ruleset.applyStatusDamage(active, status, this.state);
       if (damage > 0) {
         active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
@@ -4934,7 +4950,7 @@ export class BattleEngine implements BattleEventEmitter {
         participantLevel: participant.level,
         isTrainerBattle: !this.state.isWildBattle,
         participantCount, // living participants only — Source: Bulbapedia EXP mechanics
-        hasLuckyEgg: participant.heldItem === "lucky-egg",
+        hasLuckyEgg: participant.heldItem === CORE_ITEM_IDS.luckyEgg,
         hasExpShare,
         affectionBonus: false,
         // Source: pret/pokeplatinum src/battle/battle_script.c lines 9980-9988
@@ -5664,8 +5680,8 @@ export class BattleEngine implements BattleEventEmitter {
     const side = this.state.sides[sideIndex];
     const active = side.active[0];
     if (!active || active.pokemon.currentHp <= 0) return;
-    if (!active.volatileStatuses.has("nightmare")) return;
-    if (active.pokemon.status !== "sleep") return;
+    if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.nightmare)) return;
+    if (active.pokemon.status !== CORE_STATUS_IDS.sleep) return;
 
     const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
     const damage = this.ruleset.calculateNightmareDamage(active);
@@ -5717,7 +5733,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      if (!active.volatileStatuses.has("bound")) continue;
+      if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.bound)) continue;
 
       // Deal end-of-turn damage — delegate to ruleset (Gen 2-4: 1/16, Gen 5+: 1/8)
       // Counter management (decrement + removal) is handled by canExecuteMove.
@@ -5749,7 +5765,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const side of this.state.sides) {
       const active = side.active[0];
       if (!active || active.pokemon.currentHp <= 0) continue;
-      if (active.pokemon.status !== "freeze") continue;
+      if (active.pokemon.status !== CORE_STATUS_IDS.freeze) continue;
 
       // Delegate to the ruleset — Gen 2 uses 25/256 EoT thaw with just-frozen guard;
       // Gen 1 always returns false; Gen 3+ always returns false (thaw is handled pre-move).
@@ -5759,7 +5775,7 @@ export class BattleEngine implements BattleEventEmitter {
           type: "status-cure",
           side: side.index,
           pokemon: getPokemonName(active),
-          status: "freeze",
+          status: CORE_STATUS_IDS.freeze,
         });
       }
     }
