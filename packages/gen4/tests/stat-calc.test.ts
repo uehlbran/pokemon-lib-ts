@@ -1,5 +1,13 @@
 import type { PokemonInstance, PokemonSpeciesData } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  createEvs,
+  createIvs,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN4_NATURE_IDS, GEN4_SPECIES_IDS } from "../src";
 import { createGen4DataManager } from "../src/data";
 import { Gen4Ruleset } from "../src/Gen4Ruleset";
 
@@ -24,12 +32,16 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function makeRuleset(): Gen4Ruleset {
-  return new Gen4Ruleset(createGen4DataManager());
+const DATA_MANAGER = createGen4DataManager();
+const NATURES = GEN4_NATURE_IDS;
+const SPECIES = GEN4_SPECIES_IDS;
+
+function createRuleset(): Gen4Ruleset {
+  return new Gen4Ruleset(DATA_MANAGER);
 }
 
 /** Minimal PokemonInstance with controllable IVs, EVs, level, and nature. */
-function makePokemonInstance(opts: {
+function createSyntheticPokemonInstance(opts: {
   level: number;
   nature: string;
   ivs?: Partial<Record<"hp" | "attack" | "defense" | "spAttack" | "spDefense" | "speed", number>>;
@@ -37,41 +49,27 @@ function makePokemonInstance(opts: {
 }): PokemonInstance {
   return {
     uid: "test",
-    speciesId: 1,
+    speciesId: SPECIES.bulbasaur,
     nickname: null,
     level: opts.level,
     experience: 0,
     nature: opts.nature,
-    ivs: {
-      hp: opts.ivs?.hp ?? 31,
-      attack: opts.ivs?.attack ?? 31,
-      defense: opts.ivs?.defense ?? 31,
-      spAttack: opts.ivs?.spAttack ?? 31,
-      spDefense: opts.ivs?.spDefense ?? 31,
-      speed: opts.ivs?.speed ?? 31,
-    },
-    evs: {
-      hp: opts.evs?.hp ?? 0,
-      attack: opts.evs?.attack ?? 0,
-      defense: opts.evs?.defense ?? 0,
-      spAttack: opts.evs?.spAttack ?? 0,
-      spDefense: opts.evs?.spDefense ?? 0,
-      speed: opts.evs?.speed ?? 0,
-    },
+    ivs: createIvs(opts.ivs),
+    evs: createEvs(opts.evs),
     currentHp: 1,
     moves: [],
     ability: "",
-    abilitySlot: "normal1" as const,
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: null,
     status: null,
     friendship: 0,
-    gender: "male" as const,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
     originalTrainer: "",
     originalTrainerId: 0,
-    pokeball: "pokeball",
+    pokeball: CORE_ITEM_IDS.pokeBall,
     calculatedStats: null as never,
   } as PokemonInstance;
 }
@@ -90,15 +88,14 @@ describe("Gen 4 stat calculation — HP formula (issue #437)", () => {
     //           = floor(248 * 50/100) + 60
     //           = floor(124) + 60
     //           = 124 + 60 = 184
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("garchomp") as PokemonSpeciesData; // Garchomp #445
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.garchomp) as PokemonSpeciesData; // Garchomp #445
     expect(species).toBeDefined();
     expect(species.baseStats.hp).toBe(108);
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
-      nature: "jolly",
+      nature: NATURES.jolly,
       evs: { hp: 4, attack: 252, speed: 252 },
     });
 
@@ -122,15 +119,14 @@ describe("Gen 4 stat calculation — HP formula (issue #437)", () => {
     //   = floor(541) + 110 = 651
     //
     // Source: Showdown calc — Blissey L100, 31 IVs, 0 EVs = 651 HP
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("blissey") as PokemonSpeciesData; // Blissey #242
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.blissey) as PokemonSpeciesData; // Blissey #242
     expect(species).toBeDefined();
     expect(species.baseStats.hp).toBe(255);
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 100,
-      nature: "hardy",
+      nature: NATURES.hardy,
       ivs: { hp: 31 },
       evs: { hp: 0 },
     });
@@ -158,13 +154,12 @@ describe("Gen 4 stat calculation — non-HP neutral nature (issue #437)", () => 
     //   Atk = floor(182 * 1.0) = 182
     //
     // Jolly is +Speed/-SpAtk; Attack is neutral. Confirmed Showdown calc: 182
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("garchomp") as PokemonSpeciesData; // Garchomp #445
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.garchomp) as PokemonSpeciesData; // Garchomp #445
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
-      nature: "jolly",
+      nature: NATURES.jolly,
       ivs: { attack: 31 },
       evs: { attack: 252 },
     });
@@ -193,15 +188,14 @@ describe("Gen 4 stat calculation — non-HP boosting nature (issue #437)", () =>
     //   2*134 = 268, +31 = 299, +63 = 362; 362*50 = 18100; /100 = 181; +5 = 186; *1.1 = 204.6; floor = 204
     //
     // Source: Showdown calc — Tyranitar L50, 31 Atk IV, 252 Atk EVs, Adamant = 204 Atk
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("tyranitar") as PokemonSpeciesData; // Tyranitar #248
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.tyranitar) as PokemonSpeciesData; // Tyranitar #248
     expect(species).toBeDefined();
     expect(species.baseStats.attack).toBe(134);
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
-      nature: "adamant",
+      nature: NATURES.adamant,
       ivs: { attack: 31 },
       evs: { attack: 252 },
     });
@@ -225,13 +219,12 @@ describe("Gen 4 stat calculation — non-HP hindering nature (issue #437)", () =
     //   SpAtk = floor(100 * 0.9) = floor(90) = 90
     //
     // Source: Showdown calc — Garchomp L50, 31 SpAtk IV, 0 SpAtk EVs, Jolly = 90 SpAtk
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("garchomp") as PokemonSpeciesData; // Garchomp #445
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.garchomp) as PokemonSpeciesData; // Garchomp #445
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
-      nature: "jolly",
+      nature: NATURES.jolly,
       ivs: { spAttack: 31 },
       evs: { spAttack: 0 },
     });
@@ -257,13 +250,12 @@ describe("Gen 4 stat calculation — L100 (issue #437)", () => {
     //   Atk = floor(359 * 1.0) = 359
     //
     // Source: Showdown calc — Garchomp L100, 31 Atk IV, 252 Atk EVs, Jolly = 359 Atk
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("garchomp") as PokemonSpeciesData; // Garchomp #445
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.garchomp) as PokemonSpeciesData; // Garchomp #445
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 100,
-      nature: "jolly",
+      nature: NATURES.jolly,
       ivs: { attack: 31 },
       evs: { attack: 252 },
     });
@@ -283,15 +275,14 @@ describe("Gen 4 stat calculation — L100 (issue #437)", () => {
     //   Atk = floor(369 * 1.1) = floor(405.9) = 405
     //
     // Source: Showdown calc — Salamence L100, 31 Atk IV, 252 Atk EVs, Adamant = 405 Atk
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("salamence") as PokemonSpeciesData; // Salamence #373
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.salamence) as PokemonSpeciesData; // Salamence #373
     expect(species).toBeDefined();
     expect(species.baseStats.attack).toBe(135);
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 100,
-      nature: "adamant",
+      nature: NATURES.adamant,
       ivs: { attack: 31 },
       evs: { attack: 252 },
     });
@@ -318,13 +309,12 @@ describe("Gen 4 stat calculation — Speed (issue #437)", () => {
     //   Speed = floor(154 * 1.1) = floor(169.4) = 169
     //
     // Source: Showdown calc — Garchomp L50, 31 Spe IV, 252 Spe EVs, Jolly = 169 Speed
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("garchomp") as PokemonSpeciesData; // Garchomp #445
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.garchomp) as PokemonSpeciesData; // Garchomp #445
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
-      nature: "jolly",
+      nature: NATURES.jolly,
       ivs: { speed: 31 },
       evs: { speed: 252 },
     });
@@ -346,15 +336,14 @@ describe("Gen 4 stat calculation — Speed (issue #437)", () => {
     //   Speed = floor(135 * 1.1) = floor(148.5) = 148
     //
     // Source: Showdown calc — Starmie L50, 31 Spe IV, 0 Spe EVs, Timid = 148 Speed
-    const ruleset = makeRuleset();
-    const dm = createGen4DataManager();
-    const species = dm.getSpeciesByName("starmie") as PokemonSpeciesData; // Starmie #121
+    const ruleset = createRuleset();
+    const species = DATA_MANAGER.getSpecies(SPECIES.starmie) as PokemonSpeciesData; // Starmie #121
     expect(species).toBeDefined();
     expect(species.baseStats.speed).toBe(115);
 
-    const pokemon = makePokemonInstance({
+    const pokemon = createSyntheticPokemonInstance({
       level: 50,
-      nature: "timid",
+      nature: NATURES.timid,
       ivs: { speed: 31 },
       evs: { speed: 0 },
     });
