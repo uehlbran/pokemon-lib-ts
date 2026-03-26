@@ -1,6 +1,9 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { createGen4DataManager } from "../src/data";
 import { GEN4_TYPE_CHART, GEN4_TYPES } from "../src/Gen4TypeChart";
+
+const TYPE_IDS = CORE_TYPE_IDS;
 
 // ---------------------------------------------------------------------------
 // GEN4_TYPES — type list membership and count
@@ -15,23 +18,23 @@ describe("Gen 4 type list", () => {
 
   it("given GEN4_TYPES, when checking for Steel type, then Steel is present", () => {
     // Source: pret/pokeplatinum — Steel type introduced in Gen 2, present in Gen 4
-    expect(GEN4_TYPES).toContain("steel");
+    expect(GEN4_TYPES).toContain(TYPE_IDS.steel);
   });
 
   it("given GEN4_TYPES, when checking for Dark type, then Dark is present", () => {
     // Source: pret/pokeplatinum — Dark type introduced in Gen 2, present in Gen 4
-    expect(GEN4_TYPES).toContain("dark");
+    expect(GEN4_TYPES).toContain(TYPE_IDS.dark);
   });
 
   it("given GEN4_TYPES, when checking for Fairy type, then Fairy is NOT present", () => {
     // Source: Fairy type was not introduced until Gen 6 (X/Y)
     // pret/pokeplatinum has no TYPE_FAIRY constant
-    expect(GEN4_TYPES).not.toContain("fairy");
+    expect(GEN4_TYPES).not.toContain(TYPE_IDS.fairy);
   });
 
   it("given GEN4_TYPES, when checking for Normal type, then Normal is present", () => {
     // Source: pret/pokeplatinum — Normal type is the first of the 17 types
-    expect(GEN4_TYPES).toContain("normal");
+    expect(GEN4_TYPES).toContain(TYPE_IDS.normal);
   });
 });
 

@@ -12,10 +12,16 @@ import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib
 import type { MoveData, PokemonType, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createIvs,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -48,7 +54,7 @@ const FAILED_STATUS_RESULT = {
 // Helper factories (duplicated from move-effects-status.test.ts for isolation)
 // ---------------------------------------------------------------------------
 
-function makeActive(overrides: {
+function createSyntheticOnFieldPokemon(overrides: {
   level?: number;
   attack?: number;
   defense?: number;
@@ -81,23 +87,23 @@ function makeActive(overrides: {
       nickname: overrides.nickname ?? null,
       level: overrides.level ?? 50,
       experience: 0,
-      nature: "hardy",
-      ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-      evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+      nature: CORE_NATURE_IDS.hardy,
+      ivs: createIvs(),
+      evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
       moves: [],
       ability: overrides.ability ?? NONE_ABILITY,
-      abilitySlot: "normal1" as const,
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
       status: (overrides.status ?? null) as any,
       friendship: 0,
-      gender: "male" as any,
+      gender: CORE_GENDERS.male as any,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
       originalTrainer: "",
       originalTrainerId: 0,
-      pokeball: "pokeball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
       calculatedStats: { hp, attack, defense, spAttack, spDefense, speed },
     },
     teamSlot: 0,
@@ -135,11 +141,11 @@ function makeActive(overrides: {
   } as ActivePokemon;
 }
 
-function makeMove(moveId: string): MoveData {
+function createCanonicalMove(moveId: string): MoveData {
   return dataManager.getMove(moveId);
 }
 
-function makeState(): BattleState {
+function createBattleState(): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -184,7 +190,7 @@ function makeState(): BattleState {
   } as unknown as BattleState;
 }
 
-function makeContext(overrides: {
+function createMoveEffectContext(overrides: {
   attacker?: ActivePokemon;
   defender?: ActivePokemon;
   move?: MoveData;
@@ -192,11 +198,11 @@ function makeContext(overrides: {
   state?: BattleState;
 }): MoveEffectContext {
   return {
-    attacker: overrides.attacker ?? makeActive({}),
-    defender: overrides.defender ?? makeActive({}),
-    move: overrides.move ?? makeMove(CORE_MOVE_IDS.tackle),
+    attacker: overrides.attacker ?? createSyntheticOnFieldPokemon({}),
+    defender: overrides.defender ?? createSyntheticOnFieldPokemon({}),
+    move: overrides.move ?? createCanonicalMove(CORE_MOVE_IDS.tackle),
     damage: overrides.damage ?? 0,
-    state: overrides.state ?? makeState(),
+    state: overrides.state ?? createBattleState(),
     rng: new SeededRandom(42),
   };
 }
@@ -209,10 +215,10 @@ describe("Simple Beam", () => {
   it("given Simple Beam, when used on a target with Overgrow, then target ability becomes Simple", () => {
     // Source: Showdown data/moves.ts simplebeam.onHit -- target.setAbility('simple')
     // Source: Bulbapedia -- "Simple Beam changes the target's Ability to Simple"
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate, nickname: "Audino" }),
-      defender: makeActive({ ability: A.overgrow, nickname: "Serperior" }),
-      move: makeMove(M.simpleBeam),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate, nickname: "Audino" }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.overgrow, nickname: "Serperior" }),
+      move: createCanonicalMove(M.simpleBeam),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -225,10 +231,10 @@ describe("Simple Beam", () => {
   it("given Simple Beam, when used on a target with Blaze, then target ability becomes Simple", () => {
     // Source: Showdown data/moves.ts simplebeam.onHit -- target.setAbility('simple')
     // Second triangulation case with different input ability
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.healer }),
-      defender: makeActive({ ability: A.blaze }),
-      move: makeMove(M.simpleBeam),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.healer }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.blaze }),
+      move: createCanonicalMove(M.simpleBeam),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -239,9 +245,9 @@ describe("Simple Beam", () => {
 
   it("given target already has Simple, when Simple Beam is used, then fails", () => {
     // Source: Showdown data/moves.ts simplebeam.onTryHit -- target.ability === 'simple'
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.simple }),
-      move: makeMove(M.simpleBeam),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.simple }),
+      move: createCanonicalMove(M.simpleBeam),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -252,9 +258,9 @@ describe("Simple Beam", () => {
 
   it("given target has Truant, when Simple Beam is used, then fails", () => {
     // Source: Showdown data/moves.ts simplebeam.onTryHit -- target.ability === 'truant'
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.truant }),
-      move: makeMove(M.simpleBeam),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.truant }),
+      move: createCanonicalMove(M.simpleBeam),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -266,9 +272,9 @@ describe("Simple Beam", () => {
   it("given target has Multitype (cantsuppress), when Simple Beam is used, then fails", () => {
     // Source: Showdown data/moves.ts simplebeam.onTryHit -- cantsuppress flag
     // Source: Showdown data/abilities.ts -- multitype has flags.cantsuppress
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.multitype }),
-      move: makeMove(M.simpleBeam),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.multitype }),
+      move: createCanonicalMove(M.simpleBeam),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -280,9 +286,9 @@ describe("Simple Beam", () => {
   it("given target has Zen Mode (cantsuppress), when Simple Beam is used, then fails", () => {
     // Source: Showdown data/moves.ts simplebeam.onTryHit -- cantsuppress flag
     // Source: Showdown data/abilities.ts -- zen-mode has flags.cantsuppress
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.zenMode }),
-      move: makeMove(M.simpleBeam),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.zenMode }),
+      move: createCanonicalMove(M.simpleBeam),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -300,10 +306,10 @@ describe("Worry Seed", () => {
   it("given Worry Seed, when used on a target with Overgrow, then target ability becomes Insomnia", () => {
     // Source: Showdown data/moves.ts worryseed.onHit -- target.setAbility('insomnia')
     // Source: Bulbapedia -- "Worry Seed changes the target's Ability to Insomnia"
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.chlorophyll, nickname: "Whimsicott" }),
-      defender: makeActive({ ability: A.overgrow, nickname: "Serperior" }),
-      move: makeMove(M.worrySeed),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.chlorophyll, nickname: "Whimsicott" }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.overgrow, nickname: "Serperior" }),
+      move: createCanonicalMove(M.worrySeed),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -316,9 +322,9 @@ describe("Worry Seed", () => {
   it("given Worry Seed, when used on a target with Intimidate, then target ability becomes Insomnia", () => {
     // Source: Showdown data/moves.ts worryseed.onHit -- target.setAbility('insomnia')
     // Second triangulation case with different input ability
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.intimidate }),
-      move: makeMove(M.worrySeed),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      move: createCanonicalMove(M.worrySeed),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -332,14 +338,14 @@ describe("Worry Seed", () => {
     // Source: Bulbapedia -- "If the target is sleeping, it will wake up"
     const sleepVolatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
     sleepVolatiles.set(SLEEP_COUNTER, { turnsLeft: 3 });
-    const ctx = makeContext({
-      defender: makeActive({
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({
         ability: A.naturalCure,
         status: CORE_STATUS_IDS.sleep,
         volatiles: sleepVolatiles,
         nickname: "Chansey",
       }),
-      move: makeMove(M.worrySeed),
+      move: createCanonicalMove(M.worrySeed),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -354,9 +360,9 @@ describe("Worry Seed", () => {
 
   it("given target already has Insomnia, when Worry Seed is used, then fails", () => {
     // Source: Showdown data/moves.ts worryseed.onTryImmunity -- target.ability === 'insomnia'
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.insomnia }),
-      move: makeMove(M.worrySeed),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.insomnia }),
+      move: createCanonicalMove(M.worrySeed),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -367,9 +373,9 @@ describe("Worry Seed", () => {
 
   it("given target has Truant, when Worry Seed is used, then fails", () => {
     // Source: Showdown data/moves.ts worryseed.onTryImmunity -- target.ability === 'truant'
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.truant }),
-      move: makeMove(M.worrySeed),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.truant }),
+      move: createCanonicalMove(M.worrySeed),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -380,9 +386,9 @@ describe("Worry Seed", () => {
 
   it("given target has Multitype, when Worry Seed is used, then fails", () => {
     // Source: Showdown data/moves.ts worryseed.onTryHit -- cantsuppress flag
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.multitype }),
-      move: makeMove(M.worrySeed),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.multitype }),
+      move: createCanonicalMove(M.worrySeed),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -401,10 +407,10 @@ describe("Gastro Acid", () => {
     // Source: Showdown data/moves.ts gastroacid -- volatileStatus: 'gastroacid'
     // Source: Bulbapedia -- "Gastro Acid suppresses the target's Ability"
     // Source: Gen4MoveEffects.ts lines 1517-1518 -- same suppressedAbility pattern
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.prankster, nickname: "Sableye" }),
-      defender: makeActive({ ability: A.intimidate, nickname: "Gyarados" }),
-      move: makeMove(M.gastroAcid),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.prankster, nickname: "Sableye" }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.intimidate, nickname: "Gyarados" }),
+      move: createCanonicalMove(M.gastroAcid),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -419,9 +425,9 @@ describe("Gastro Acid", () => {
   it("given Gastro Acid, when used on a target with Mold Breaker, then target ability is suppressed", () => {
     // Source: Showdown data/moves.ts gastroacid -- volatileStatus: 'gastroacid'
     // Second triangulation case with different ability
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.moldBreaker }),
-      move: makeMove(M.gastroAcid),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.moldBreaker }),
+      move: createCanonicalMove(M.gastroAcid),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -433,9 +439,9 @@ describe("Gastro Acid", () => {
 
   it("given target has Multitype, when Gastro Acid is used, then fails", () => {
     // Source: Showdown data/moves.ts gastroacid.onTryHit -- cantsuppress flag
-    const ctx = makeContext({
-      defender: makeActive({ ability: A.multitype }),
-      move: makeMove(M.gastroAcid),
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({ ability: A.multitype }),
+      move: createCanonicalMove(M.gastroAcid),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -450,12 +456,12 @@ describe("Gastro Acid", () => {
   it("given target ability is already suppressed, when Gastro Acid is used again, then fails", () => {
     // Source: Showdown Gen 4 mod -- Gastro Acid is idempotent
     // Source: Gen4MoveEffects.ts -- if (defender.suppressedAbility != null) fail
-    const ctx = makeContext({
-      defender: makeActive({
+    const ctx = createMoveEffectContext({
+      defender: createSyntheticOnFieldPokemon({
         ability: "",
         suppressedAbility: A.intimidate,
       }),
-      move: makeMove(M.gastroAcid),
+      move: createCanonicalMove(M.gastroAcid),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -475,10 +481,10 @@ describe("Role Play", () => {
   it("given Role Play, when used, then user copies target's ability", () => {
     // Source: Showdown data/moves.ts roleplay.onHit -- source.setAbility(target.ability)
     // Source: Bulbapedia -- "Role Play copies the target's Ability, replacing the user's"
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate, nickname: "Gardevoir" }),
-      defender: makeActive({ ability: A.speedBoost, nickname: "Blaziken" }),
-      move: makeMove(M.rolePlay),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate, nickname: "Gardevoir" }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.speedBoost, nickname: "Blaziken" }),
+      move: createCanonicalMove(M.rolePlay),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -491,10 +497,10 @@ describe("Role Play", () => {
   it("given Role Play, when used to copy Levitate, then user gains Levitate", () => {
     // Source: Showdown data/moves.ts roleplay.onHit -- source.setAbility(target.ability)
     // Second triangulation case with different ability
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.synchronize }),
-      defender: makeActive({ ability: A.levitate }),
-      move: makeMove(M.rolePlay),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.synchronize }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.levitate }),
+      move: createCanonicalMove(M.rolePlay),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -505,10 +511,10 @@ describe("Role Play", () => {
 
   it("given target and source have the same ability, when Role Play is used, then fails", () => {
     // Source: Showdown data/moves.ts roleplay.onTryHit -- target.ability === source.ability
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate }),
-      defender: makeActive({ ability: A.intimidate }),
-      move: makeMove(M.rolePlay),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      move: createCanonicalMove(M.rolePlay),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -521,10 +527,10 @@ describe("Role Play", () => {
   it("given target has Illusion (failroleplay), when Role Play is used, then fails", () => {
     // Source: Showdown data/abilities.ts -- illusion has flags.failroleplay
     // Source: Showdown data/moves.ts roleplay.onTryHit -- target.getAbility().flags['failroleplay']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.synchronize }),
-      defender: makeActive({ ability: A.illusion }),
-      move: makeMove(M.rolePlay),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.synchronize }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.illusion }),
+      move: createCanonicalMove(M.rolePlay),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -536,10 +542,10 @@ describe("Role Play", () => {
 
   it("given source has Multitype (cantsuppress), when Role Play is used, then fails", () => {
     // Source: Showdown data/moves.ts roleplay.onTryHit -- source.getAbility().flags['cantsuppress']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.multitype }),
-      defender: makeActive({ ability: A.overgrow }),
-      move: makeMove(M.rolePlay),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.multitype }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.overgrow }),
+      move: createCanonicalMove(M.rolePlay),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -558,10 +564,10 @@ describe("Skill Swap", () => {
   it("given Skill Swap, when used, then user and target exchange abilities", () => {
     // Source: Showdown sim/battle.ts skillSwap -- source.ability = targetAbility.id; target.ability = sourceAbility.id
     // Source: Bulbapedia -- "Skill Swap swaps the user's Ability with the target's"
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.levitate, nickname: "Bronzong" }),
-      defender: makeActive({ ability: A.ironBarbs, nickname: "Ferrothorn" }),
-      move: makeMove(M.skillSwap),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.levitate, nickname: "Bronzong" }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.ironBarbs, nickname: "Ferrothorn" }),
+      move: createCanonicalMove(M.skillSwap),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -576,10 +582,10 @@ describe("Skill Swap", () => {
   it("given Skill Swap, when Intimidate and Overgrow are swapped, then abilities are exchanged", () => {
     // Source: Showdown sim/battle.ts skillSwap -- swap logic
     // Second triangulation case with different abilities
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate }),
-      defender: makeActive({ ability: A.overgrow }),
-      move: makeMove(M.skillSwap),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.overgrow }),
+      move: createCanonicalMove(M.skillSwap),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -592,10 +598,10 @@ describe("Skill Swap", () => {
   it("given both have the same ability in Gen 5, when Skill Swap is used, then fails", () => {
     // Source: Showdown sim/battle.ts skillSwap -- "if (this.gen <= 5 && sourceAbility.id === targetAbility.id) return false"
     // Gen 5 specific: same-ability Skill Swap fails (Gen 6+ allows it)
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate }),
-      defender: makeActive({ ability: A.intimidate }),
-      move: makeMove(M.skillSwap),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      move: createCanonicalMove(M.skillSwap),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -609,10 +615,10 @@ describe("Skill Swap", () => {
   it("given source has Wonder Guard (failskillswap), when Skill Swap is used, then fails", () => {
     // Source: Showdown data/abilities.ts -- wonder-guard has flags.failskillswap
     // Source: Showdown sim/battle.ts skillSwap -- sourceAbility.flags['failskillswap']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.wonderGuard }),
-      defender: makeActive({ ability: A.intimidate }),
-      move: makeMove(M.skillSwap),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.wonderGuard }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      move: createCanonicalMove(M.skillSwap),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -626,10 +632,10 @@ describe("Skill Swap", () => {
   it("given target has Multitype (failskillswap), when Skill Swap is used, then fails", () => {
     // Source: Showdown data/abilities.ts -- multitype has flags.failskillswap
     // Source: Showdown sim/battle.ts skillSwap -- targetAbility.flags['failskillswap']
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate }),
-      defender: makeActive({ ability: A.multitype }),
-      move: makeMove(M.skillSwap),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.multitype }),
+      move: createCanonicalMove(M.skillSwap),
     });
 
     const result = handleGen5StatusMove(ctx);
@@ -641,10 +647,10 @@ describe("Skill Swap", () => {
 
   it("given target has Illusion (failskillswap), when Skill Swap is used, then fails", () => {
     // Source: Showdown data/abilities.ts -- illusion has flags.failskillswap
-    const ctx = makeContext({
-      attacker: makeActive({ ability: A.intimidate }),
-      defender: makeActive({ ability: A.illusion }),
-      move: makeMove(M.skillSwap),
+    const ctx = createMoveEffectContext({
+      attacker: createSyntheticOnFieldPokemon({ ability: A.intimidate }),
+      defender: createSyntheticOnFieldPokemon({ ability: A.illusion }),
+      move: createCanonicalMove(M.skillSwap),
     });
 
     const result = handleGen5StatusMove(ctx);
