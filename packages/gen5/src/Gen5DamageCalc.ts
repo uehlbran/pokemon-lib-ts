@@ -7,14 +7,18 @@ import type {
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChartLookup } from "@pokemon-lib-ts/core";
 import {
+  BASE_ABILITY_TYPE_IMMUNITIES,
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  BASE_TYPE_RESIST_BERRIES,
+  CORE_TYPE_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
+import { GEN5_ITEM_IDS } from "./data/reference-ids";
 import { isSheerForceEligibleMove } from "./Gen5AbilitiesDamage";
 import { isWeatherSuppressedGen5 } from "./Gen5Weather";
 
@@ -39,23 +43,7 @@ const GIRATINA_SPECIES_ID = 487;
  * Source: Bulbapedia -- type-resist berries: "Weakens a supereffective [type]-type move"
  */
 export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
+  ...BASE_TYPE_RESIST_BERRIES,
 };
 
 // Re-exported for backwards compatibility; canonical implementation lives in core.
@@ -91,23 +79,23 @@ const PLATE_ITEMS = BASE_PLATE_ITEMS;
  *   -- chainModify(1.5) in Gen 5
  */
 const GEM_ITEMS: Readonly<Record<string, string>> = {
-  "normal-gem": "normal",
-  "fire-gem": "fire",
-  "water-gem": "water",
-  "electric-gem": "electric",
-  "grass-gem": "grass",
-  "ice-gem": "ice",
-  "fighting-gem": "fighting",
-  "poison-gem": "poison",
-  "ground-gem": "ground",
-  "flying-gem": "flying",
-  "psychic-gem": "psychic",
-  "bug-gem": "bug",
-  "rock-gem": "rock",
-  "ghost-gem": "ghost",
-  "dragon-gem": "dragon",
-  "dark-gem": "dark",
-  "steel-gem": "steel",
+  [GEN5_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
+  [GEN5_ITEM_IDS.fireGem]: CORE_TYPE_IDS.fire,
+  [GEN5_ITEM_IDS.waterGem]: CORE_TYPE_IDS.water,
+  [GEN5_ITEM_IDS.electricGem]: CORE_TYPE_IDS.electric,
+  [GEN5_ITEM_IDS.grassGem]: CORE_TYPE_IDS.grass,
+  [GEN5_ITEM_IDS.iceGem]: CORE_TYPE_IDS.ice,
+  [GEN5_ITEM_IDS.fightingGem]: CORE_TYPE_IDS.fighting,
+  [GEN5_ITEM_IDS.poisonGem]: CORE_TYPE_IDS.poison,
+  [GEN5_ITEM_IDS.groundGem]: CORE_TYPE_IDS.ground,
+  [GEN5_ITEM_IDS.flyingGem]: CORE_TYPE_IDS.flying,
+  [GEN5_ITEM_IDS.psychicGem]: CORE_TYPE_IDS.psychic,
+  [GEN5_ITEM_IDS.bugGem]: CORE_TYPE_IDS.bug,
+  [GEN5_ITEM_IDS.rockGem]: CORE_TYPE_IDS.rock,
+  [GEN5_ITEM_IDS.ghostGem]: CORE_TYPE_IDS.ghost,
+  [GEN5_ITEM_IDS.dragonGem]: CORE_TYPE_IDS.dragon,
+  [GEN5_ITEM_IDS.darkGem]: CORE_TYPE_IDS.dark,
+  [GEN5_ITEM_IDS.steelGem]: CORE_TYPE_IDS.steel,
 };
 
 // ---- Pinch Ability Types ----
@@ -132,17 +120,7 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  * Source: Showdown sim/battle.ts -- immunity abilities
  * Source: Bulbapedia -- Motor Drive, Dry Skin, etc.
  */
-const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
-  "storm-drain": "water",
-  "lightning-rod": "electric",
-  "sap-sipper": "grass",
-};
+const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
 // ---- Recoil Detection Helper ----
 
