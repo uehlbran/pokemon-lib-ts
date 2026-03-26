@@ -6,7 +6,7 @@ import {
   type ItemEffect,
   type ItemResult,
 } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { BattleStat, MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
@@ -27,6 +27,35 @@ const NO_ACTIVATION: ItemResult = {
 const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
 const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
+const PINCH_BERRY_INFO: Readonly<
+  Record<string, { stat: BattleStat; displayName: string; messageStat: string }>
+> = {
+  [GEN5_ITEM_IDS.liechiBerry]: {
+    stat: CORE_STAT_IDS.attack,
+    displayName: "Liechi Berry",
+    messageStat: "Attack",
+  },
+  [GEN5_ITEM_IDS.ganlonBerry]: {
+    stat: CORE_STAT_IDS.defense,
+    displayName: "Ganlon Berry",
+    messageStat: "Defense",
+  },
+  [GEN5_ITEM_IDS.salacBerry]: {
+    stat: CORE_STAT_IDS.speed,
+    displayName: "Salac Berry",
+    messageStat: "Speed",
+  },
+  [GEN5_ITEM_IDS.petayaBerry]: {
+    stat: CORE_STAT_IDS.spAttack,
+    displayName: "Petaya Berry",
+    messageStat: "Sp. Atk",
+  },
+  [GEN5_ITEM_IDS.apicotBerry]: {
+    stat: CORE_STAT_IDS.spDefense,
+    displayName: "Apicot Berry",
+    messageStat: "Sp. Def",
+  },
+};
 
 /**
  * Map of gem item IDs to the type they boost.
@@ -605,6 +634,29 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
   }
 }
 
+function tryPinchBerryActivation(
+  item: string,
+  pokemon: ItemContext["pokemon"],
+  currentHp: number,
+  maxHp: number,
+): ItemResult | null {
+  const info = PINCH_BERRY_INFO[item];
+  if (!info) return null;
+  const threshold = getPinchBerryThreshold(pokemon, 0.25);
+  if (currentHp <= 0 || currentHp > Math.floor(maxHp * threshold)) {
+    return null;
+  }
+  const name = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+  return {
+    activated: true,
+    effects: [
+      { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: info.stat },
+      { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: item },
+    ],
+    messages: [`${name}'s ${info.displayName} raised its ${info.messageStat}!`],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // on-damage-taken (defender perspective, after taking damage)
 // ---------------------------------------------------------------------------
@@ -677,116 +729,12 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     // Stat pinch berries: boost a stat by +1 when HP drops to <=25% (or <=50% with Gluttony)
     // Source: Showdown data/items.ts -- stat pinch berries onUpdate trigger
-    case GEN5_ITEM_IDS.liechiBerry: {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      // Note: currentHp is already post-damage (HP subtraction happens before this trigger).
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            {
-              type: ITEM_EFFECT.statBoost,
-              target: EFFECT_TARGET.self,
-              value: CORE_STAT_IDS.attack,
-            },
-            {
-              type: ITEM_EFFECT.consume,
-              target: EFFECT_TARGET.self,
-              value: GEN5_ITEM_IDS.liechiBerry,
-            },
-          ],
-          messages: [`${pokemonName}'s Liechi Berry raised its Attack!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case GEN5_ITEM_IDS.ganlonBerry: {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            {
-              type: ITEM_EFFECT.statBoost,
-              target: EFFECT_TARGET.self,
-              value: CORE_STAT_IDS.defense,
-            },
-            {
-              type: ITEM_EFFECT.consume,
-              target: EFFECT_TARGET.self,
-              value: GEN5_ITEM_IDS.ganlonBerry,
-            },
-          ],
-          messages: [`${pokemonName}'s Ganlon Berry raised its Defense!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case GEN5_ITEM_IDS.salacBerry: {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: CORE_STAT_IDS.speed },
-            {
-              type: ITEM_EFFECT.consume,
-              target: EFFECT_TARGET.self,
-              value: GEN5_ITEM_IDS.salacBerry,
-            },
-          ],
-          messages: [`${pokemonName}'s Salac Berry raised its Speed!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case GEN5_ITEM_IDS.petayaBerry: {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            {
-              type: ITEM_EFFECT.statBoost,
-              target: EFFECT_TARGET.self,
-              value: CORE_STAT_IDS.spAttack,
-            },
-            {
-              type: ITEM_EFFECT.consume,
-              target: EFFECT_TARGET.self,
-              value: GEN5_ITEM_IDS.petayaBerry,
-            },
-          ],
-          messages: [`${pokemonName}'s Petaya Berry raised its Sp. Atk!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
+    case GEN5_ITEM_IDS.liechiBerry:
+    case GEN5_ITEM_IDS.ganlonBerry:
+    case GEN5_ITEM_IDS.salacBerry:
+    case GEN5_ITEM_IDS.petayaBerry:
     case GEN5_ITEM_IDS.apicotBerry: {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            {
-              type: ITEM_EFFECT.statBoost,
-              target: EFFECT_TARGET.self,
-              value: CORE_STAT_IDS.spDefense,
-            },
-            {
-              type: ITEM_EFFECT.consume,
-              target: EFFECT_TARGET.self,
-              value: GEN5_ITEM_IDS.apicotBerry,
-            },
-          ],
-          messages: [`${pokemonName}'s Apicot Berry raised its Sp. Def!`],
-        };
-      }
-      return NO_ACTIVATION;
+      return tryPinchBerryActivation(item, pokemon, currentHp, maxHp) ?? NO_ACTIVATION;
     }
 
     // Jaboca Berry: when hit by a physical move, attacker takes 1/8 of ATTACKER's max HP
