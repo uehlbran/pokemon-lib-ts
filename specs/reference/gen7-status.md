@@ -105,14 +105,13 @@
 | Item | Reason |
 |------|--------|
 | Ultra Burst (Necrozma) | Distinct gimmick from Z-Moves; not yet implemented — see #788 |
-| Spectral Thief | Move effect not yet implemented — see #789 |
 | Doubles mechanics | Doubles initiative — engine doesn't support doubles |
 
 ---
 
 ## Test Coverage
 
-25 test files, 1,144 tests (as of 2026-03-22).
+25 test files, 1,178 tests (as of 2026-03-27).
 
 Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-new.test.ts`, `abilities-switch-contact.test.ts`, `aurora-veil.test.ts`, `bugfix-phase2.test.ts`, `coverage-gaps.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dual-gimmick.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `integration.test.ts`, `items.test.ts`, `mega-evolution.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`, `z-move.test.ts`, `z-move-status.test.ts`
 
@@ -131,6 +130,7 @@ None. All tracked bugs closed.
 - PR #786: Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage (closes #757)
 - PR #1054: Sunsteel Strike / Moongeist Beam now ignore target abilities through the shared Mold Breaker-style bypass path (partial close for #789)
 - PR #1055: Sunsteel Strike / Moongeist Beam now also bypass Battle Armor / Shell Armor crit immunity through the same shared signature-move ignore-ability set
+- Spectral Thief now steals positive boosts before damage through a shared pre-damage move-effect hook so the same hit uses the stolen stages (bounded slice tracked by #1060)
 
 ## PR History
 

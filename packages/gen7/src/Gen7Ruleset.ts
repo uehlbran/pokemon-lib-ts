@@ -55,7 +55,11 @@ import { ABILITY_IGNORING_MOVES, calculateGen7Damage } from "./Gen7DamageCalc.js
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
 import { applyGen7HeldItem } from "./Gen7Items.js";
 import { Gen7MegaEvolution } from "./Gen7MegaEvolution.js";
-import { executeGen7MoveEffect, isGen7GrassPowderBlocked } from "./Gen7MoveEffects.js";
+import {
+  executeGen7MoveEffect,
+  executeGen7PreDamageMoveEffect,
+  isGen7GrassPowderBlocked,
+} from "./Gen7MoveEffects.js";
 import {
   applyGen7TerrainEffects,
   checkGen7TerrainStatusImmunity,
@@ -196,6 +200,7 @@ export class Gen7Ruleset extends BaseRuleset {
    *   - Aurora Veil (Hail-only dual screen)
    *   - Baneful Bunker (new Gen 7 protect variant)
    *   - Protect variants (King's Shield with -2 Atk, Spiky Shield, Mat Block, Crafty Shield)
+   *   - Spectral Thief pre-damage boost stealing
    *   - Two-turn moves (Fly, Dig, Dive, Bounce, Solar Beam, Solar Blade, Phantom Force,
    *     Shadow Force, Sky Attack)
    *   - Drain effects (Giga Drain, Drain Kiss, Leech Life, etc.)
@@ -234,6 +239,10 @@ export class Gen7Ruleset extends BaseRuleset {
 
     // Fall through to BaseRuleset for default handling
     return super.executeMoveEffect(context);
+  }
+
+  override executePreDamageMoveEffect(context: MoveEffectContext): MoveEffectResult | null {
+    return executeGen7PreDamageMoveEffect(context);
   }
 
   // --- Ability System ---

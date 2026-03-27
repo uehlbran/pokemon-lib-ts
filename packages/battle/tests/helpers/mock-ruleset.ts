@@ -249,6 +249,10 @@ export class MockRuleset implements GenerationRuleset {
     return base;
   }
 
+  executePreDamageMoveEffect(_context: MoveEffectContext): MoveEffectResult | null {
+    return null;
+  }
+
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     switch (status) {

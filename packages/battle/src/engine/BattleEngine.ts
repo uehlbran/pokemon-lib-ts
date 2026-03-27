@@ -2205,7 +2205,8 @@ export class BattleEngine implements BattleEventEmitter {
         defender,
       });
 
-      const result = this.ruleset.calculateDamage({
+      const damageRngState = this.state.rng.getState();
+      let result = this.ruleset.calculateDamage({
         attacker: actor,
         defender,
         move: effectiveMoveData,
@@ -2214,8 +2215,6 @@ export class BattleEngine implements BattleEventEmitter {
         isCrit,
         hitThroughProtect,
       });
-
-      damage = result.damage;
 
       // Passive immunity ability (Water Absorb, Volt Absorb, Motor Drive, Flash Fire, Dry Skin, Levitate)
       // Source: Showdown sim/battle-actions.ts — ability immunities checked after damage calc returns 0
@@ -2235,6 +2234,49 @@ export class BattleEngine implements BattleEventEmitter {
           return; // Move fully absorbed — skip damage, effects, items
         }
       }
+
+      const preDamageEffectResult =
+        result.effectiveness !== 0
+          ? (this.ruleset.executePreDamageMoveEffect?.({
+              attacker: actor,
+              defender,
+              move: effectiveMoveData,
+              damage: result.damage,
+              state: this.state,
+              rng: this.state.rng,
+              defenderSelectedMove,
+            }) ?? null)
+          : null;
+
+      if (preDamageEffectResult !== null) {
+        this.processEffectResult(
+          preDamageEffectResult,
+          actor,
+          defender,
+          action.side,
+          defenderSide as 0 | 1,
+        );
+        if (this.state.ended) {
+          actor.lastMoveUsed = moveData.id;
+          actor.movedThisTurn = true;
+          return;
+        }
+
+        // Recompute from the same RNG checkpoint so pre-damage state changes
+        // affect this hit without consuming an extra damage roll.
+        this.state.rng.setState(damageRngState);
+        result = this.ruleset.calculateDamage({
+          attacker: actor,
+          defender,
+          move: effectiveMoveData,
+          state: this.state,
+          rng: this.state.rng,
+          isCrit,
+          hitThroughProtect,
+        });
+      }
+
+      damage = result.damage;
 
       // Effectiveness and crit events fire regardless of substitute — emit before
       // the damage is applied so the ordering matches real cartridge behaviour.

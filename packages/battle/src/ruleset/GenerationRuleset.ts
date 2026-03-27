@@ -239,6 +239,16 @@ export interface MoveSystem {
    */
   doesMoveHit(context: AccuracyContext): boolean;
   /**
+   * Execute a move effect that must happen after hit/protect checks succeed but
+   * before the current hit's damage is finalized.
+   *
+   * This keeps generation-owned mechanics like Spectral Thief out of the battle
+   * engine while still letting them affect the same hit's damage.
+   *
+   * Returns `null` when the move has no pre-damage effect.
+   */
+  executePreDamageMoveEffect?(context: MoveEffectContext): MoveEffectResult | null;
+  /**
    * Execute a move's effect during move resolution.
    * Usually runs after damage calculation, but charge-turn handlers may be
    * consulted before accuracy/damage so they can request a forced follow-up move
