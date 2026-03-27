@@ -77,6 +77,8 @@ Showdown parity is not the success criterion for Gen 1-4. For those gens, cartri
 
 ## Architecture Confidence Matrix (Initial Seed)
 
+Metric provenance: the LOC / `switch` / `if` counts below were measured at commit `4c730459` with a local `wc -l` + `rg -c '\bswitch\b'` + `rg -c '\bif\b'` scan across the listed source files on current `main`.
+
 | Hotspot | Risk | Evidence | Suggested Refactor Direction |
 | --- | --- | --- | --- |
 | `packages/battle/src/engine/BattleEngine.ts` | High | 6133 lines, 58 `switch`, 528 `if`; shared engine choke point for action resolution, event emission, and battle-state mutation | Split action resolution, turn progression, event emission, and state-transition pipelines into smaller engine modules with explicit contracts |
