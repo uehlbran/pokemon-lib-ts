@@ -29,7 +29,7 @@ import {
   GEN9_ITEM_IDS,
   GEN9_MOVE_IDS,
   GEN9_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import { handleGen9Ability } from "../src/Gen9Abilities";
 
 /**

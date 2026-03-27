@@ -40,14 +40,14 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen9DataManager } from "../../src";
 import {
-  createGen9DataManager,
   GEN9_ABILITY_IDS,
   GEN9_ITEM_IDS,
   GEN9_MOVE_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
-} from "../../src";
+} from "../../src/data";
 import {
   getHadronEngineSpAModifier,
   getOrichalcumPulseAtkModifier,

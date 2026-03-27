@@ -15,13 +15,8 @@ import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@poke
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen9DataManager,
-  GEN9_MOVE_IDS,
-  GEN9_NATURE_IDS,
-  GEN9_SPECIES_IDS,
-  Gen9Ruleset,
-} from "../src";
+import { createGen9DataManager, Gen9Ruleset } from "../src";
+import { GEN9_MOVE_IDS, GEN9_NATURE_IDS, GEN9_SPECIES_IDS } from "../src/data";
 
 const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;

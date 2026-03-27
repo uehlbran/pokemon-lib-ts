@@ -49,7 +49,7 @@ import {
   GEN9_MOVE_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import { handlePopulationBomb } from "../src/Gen9MoveEffects";
 import { Gen9Ruleset } from "../src/Gen9Ruleset";
 

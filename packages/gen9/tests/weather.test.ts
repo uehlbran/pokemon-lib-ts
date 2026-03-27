@@ -27,15 +27,16 @@ import {
   createIvs,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen9DataManager, GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "../src";
+import { createGen9DataManager } from "../src";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "../src/data";
 import {
-  ABILITY_WEATHER_TURNS,
   applyGen9WeatherEffects,
   getWeatherDuration,
   isGen9WeatherImmune,
   SANDSTORM_IMMUNE_TYPES,
   WEATHER_ROCK_EXTENSION,
 } from "../src/Gen9Weather";
+import { ABILITY_WEATHER_TURNS } from "../src/internal";
 
 // ---------------------------------------------------------------------------
 // Test Helpers

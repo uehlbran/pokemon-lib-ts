@@ -3,15 +3,29 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const indexSource = readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
-const sourceFile = ts.createSourceFile(
+const indexFile = ts.createSourceFile(
   "index.ts",
   indexSource,
   ts.ScriptTarget.Latest,
   true,
   ts.ScriptKind.TS,
 );
+const internalSource = readFileSync(new URL("../src/internal.ts", import.meta.url), "utf8");
+const internalFile = ts.createSourceFile(
+  "internal.ts",
+  internalSource,
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.TS,
+);
+const dataSource = readFileSync(new URL("../src/data/index.ts", import.meta.url), "utf8");
+const packageJson = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as {
+  exports: Record<string, unknown>;
+};
 
-function getRootExports(): string[] {
+function getNamedExports(sourceFile: ts.SourceFile): string[] {
   const exportedNames: string[] = [];
 
   for (const statement of sourceFile.statements) {
@@ -26,30 +40,38 @@ function getRootExports(): string[] {
 }
 
 describe("@pokemon-lib-ts/gen9 public API barrel", () => {
-  const rootExports = getRootExports();
+  const rootExports = getNamedExports(indexFile);
+  const internalExports = getNamedExports(internalFile);
 
-  it("exports explicit canonical names for low-level helpers and trigger handlers", () => {
-    expect(rootExports).toContain("applyGen9IntrepidSwordBoost");
-    expect(rootExports).toContain("applyGen9DauntlessShieldBoost");
-    expect(rootExports).toContain("applyGen9ProteanTypeChange");
-    expect(rootExports).toContain("handleGen9IntrepidSwordTrigger");
-    expect(rootExports).toContain("handleGen9DauntlessShieldTrigger");
-    expect(rootExports).toContain("handleGen9ProteanTrigger");
+  it("exports only the stable Gen 9 consumer entrypoints from the root barrel", () => {
+    expect(rootExports).toEqual([
+      "createGen9DataManager",
+      "Gen9Ruleset",
+      "calculateTeraStab",
+      "Gen9Terastallization",
+    ]);
   });
 
-  it("given the Gen9 root barrel, when checking deprecated ambiguous aliases, then it does not re-export them", () => {
-    expect(rootExports).not.toContain("handleGen9IntrepidSword");
-    expect(rootExports).not.toContain("handleGen9DauntlessShield");
-    expect(rootExports).not.toContain("handleGen9ProteanTypeChange");
-    expect(rootExports).not.toContain("handleIntrepidSwordGen9");
-    expect(rootExports).not.toContain("handleDauntlessShieldGen9");
-    expect(rootExports).not.toContain("handleProteanGen9");
+  it("moves stable data access to the ./data subpath", () => {
+    expect(dataSource).toContain('export * from "./reference-ids.js";');
+    expect(dataSource).toContain(
+      'export { GEN9_TYPE_CHART, GEN9_TYPES } from "../Gen9TypeChart.js";',
+    );
+    expect(dataSource).toContain("export function createGen9DataManager(): DataManager");
   });
 
-  it("given the Gen9 root barrel, when checking Supreme Overlord helpers, then it keeps only the fixed-point helper", () => {
-    expect(rootExports).toContain("getSupremeOverlordModifier");
-    expect(rootExports).not.toContain("getSupremeOverlordFloatMultiplier");
-    expect(rootExports).not.toContain("getSupremeOverlordMultiplier");
-    expect(rootExports).not.toContain("SUPREME_OVERLORD_TABLE");
+  it("moves low-level helpers and mechanics constants to the ./internal subpath", () => {
+    expect(rootExports).not.toContain("handleGen9StatAbility");
+    expect(rootExports).not.toContain("executeGen9MoveEffect");
+    expect(rootExports).not.toContain("GEN9_CRIT_RATE_TABLE");
+    expect(internalExports).toContain("handleGen9StatAbility");
+    expect(internalExports).toContain("executeGen9MoveEffect");
+    expect(internalExports).toContain("GEN9_CRIT_RATE_TABLE");
+  });
+
+  it("adds an explicit ./internal package export alongside root and ./data", () => {
+    expect(packageJson.exports).toHaveProperty(".");
+    expect(packageJson.exports).toHaveProperty("./data");
+    expect(packageJson.exports).toHaveProperty("./internal");
   });
 });

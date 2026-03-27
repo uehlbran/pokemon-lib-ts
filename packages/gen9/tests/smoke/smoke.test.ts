@@ -1,8 +1,7 @@
 import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import { CORE_GIMMICK_IDS, CORE_HAZARD_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN9_SPECIES_IDS } from "../../src";
-import { createGen9DataManager } from "../../src/data/index.js";
+import { createGen9DataManager, GEN9_SPECIES_IDS } from "../../src/data/index.js";
 import { Gen9Ruleset } from "../../src/Gen9Ruleset.js";
 
 describe("Gen9 smoke tests", () => {

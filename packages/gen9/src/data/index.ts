@@ -14,6 +14,9 @@ import naturesData from "../../data/natures.json";
 import pokemonData from "../../data/pokemon.json";
 import typeChartData from "../../data/type-chart.json";
 
+export { GEN9_TYPE_CHART, GEN9_TYPES } from "../Gen9TypeChart.js";
+export * from "./reference-ids.js";
+
 /**
  * Creates a `DataManager` pre-loaded with complete Gen 9 data:
  * ~733 Pokemon (#001-#1025, subject to Showdown's Gen 9 availability),

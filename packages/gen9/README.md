@@ -52,6 +52,13 @@ engine.on((event) => console.log(event));
 engine.start();
 ```
 
+Stable data helpers such as `GEN9_*_IDS`, `GEN9_TYPE_CHART`, and `GEN9_TYPES`
+are available from `@pokemon-lib-ts/gen9/data`.
+
+Broader mechanics helpers remain available for package-internal testing and
+debugging via `@pokemon-lib-ts/gen9/internal`. That entrypoint is intentionally
+not the primary consumer API.
+
 ## Gen 9 Key Mechanics
 
 | Mechanic | Behavior |

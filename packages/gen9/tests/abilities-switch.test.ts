@@ -25,7 +25,7 @@ import {
   GEN9_ITEM_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import {
   getWeatherDuration,
   handleGen9SwitchAbility,
@@ -35,7 +35,7 @@ import {
   SCREEN_CLEANER_SCREENS,
   TRACE_UNCOPYABLE_ABILITIES,
   UNSUPPRESSABLE_ABILITIES,
-} from "../src/Gen9AbilitiesSwitch";
+} from "../src/internal";
 
 const A = GEN9_ABILITY_IDS;
 const I = GEN9_ITEM_IDS;

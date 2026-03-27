@@ -19,13 +19,10 @@ import {
   createPokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen9DataManager } from "../src";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_NATURE_IDS, GEN9_SPECIES_IDS } from "../src/data";
 import {
-  createGen9DataManager,
-  GEN9_ABILITY_IDS,
-  GEN9_ITEM_IDS,
-  GEN9_NATURE_IDS,
   GEN9_ORICHALCUM_HADRON_MULTIPLIER,
-  GEN9_SPECIES_IDS,
   GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
   GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
   getBoostMultiplier,
@@ -37,7 +34,7 @@ import {
   handleQuarkDrive,
   shouldProtosynthesisActivate,
   shouldQuarkDriveActivate,
-} from "../src";
+} from "../src/internal";
 
 const ABILITIES = GEN9_ABILITY_IDS;
 const CORE_ABILITIES = CORE_ABILITY_IDS;
