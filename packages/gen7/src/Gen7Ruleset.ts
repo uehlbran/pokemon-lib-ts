@@ -494,7 +494,11 @@ export class Gen7Ruleset extends BaseRuleset {
    */
   rollCritical(context: CritContext): boolean {
     const defenderAbility = context.defender?.ability;
-    if (defenderAbility === "battle-armor" || defenderAbility === "shell-armor") {
+    if (
+      !moveIgnoresDefenderAbility(context.move) &&
+      (defenderAbility === GEN7_ABILITY_IDS.battleArmor ||
+        defenderAbility === GEN7_ABILITY_IDS.shellArmor)
+    ) {
       return false;
     }
     return super.rollCritical(context);
