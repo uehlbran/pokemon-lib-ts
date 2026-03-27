@@ -32,32 +32,20 @@ import {
   BATTLE_ITEM_EFFECT_VALUES,
 } from "../constants/effect-protocol";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
-import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context";
-import type {
-  BattleAction,
-  BattleEvent,
-  BattleEventEmitter,
-  BattleEventListener,
-  ItemAction,
-  MoveAction,
-  RunAction,
-} from "../events";
+import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context/types";
+import type { BattleAction, ItemAction, MoveAction, RunAction } from "../events/BattleAction";
 import { isMoveLikeAction } from "../events/BattleAction";
+import type { BattleEvent, BattleEventEmitter, BattleEventListener } from "../events/BattleEvent";
+import { generations } from "../ruleset/GenerationRegistry";
 import type {
   BattleGimmickType,
   ExpRecipient,
   ExpRecipientSelectionContext,
   GenerationRuleset,
-} from "../ruleset";
-import { generations } from "../ruleset";
+} from "../ruleset/GenerationRuleset";
 import { markGoFirstItemActivated } from "../ruleset/GoFirstItemActivation";
-import type {
-  ActivePokemon,
-  BattlePhase,
-  BattleSide,
-  BattleState,
-  VolatileStatusState,
-} from "../state";
+import type { ActivePokemon, BattleSide, VolatileStatusState } from "../state/BattleSide";
+import type { BattlePhase, BattleState } from "../state/BattleState";
 import {
   clonePokemonInstance,
   createDefaultStatStages,
@@ -3106,6 +3094,10 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     const side = this.state.sides[action.side];
+    if (side === undefined) {
+      this.emit({ type: "message", text: `Invalid side ${action.side} for item use.` });
+      return;
+    }
     // Determine target pokemon — default to active slot 0
     const targetSlot = action.target ?? 0;
 
