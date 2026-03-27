@@ -226,6 +226,77 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       expect((ordered[0] as { side: number }).side).toBe(1);
     },
   );
+
+  it(
+    "given Quick Draw user with a status move, when the Quick Draw chance would otherwise proc, " +
+      "then turn order does not change because Quick Draw only affects non-status moves",
+    () => {
+      const quickDrawUser = createOnFieldPokemon({
+        ability: abilityIds.quickDraw,
+        speed: 50,
+        moves: [createScenarioMoveSlot(moveIds.willOWisp)],
+      });
+      const opponent = createOnFieldPokemon({
+        speed: 200,
+        moves: [createScenarioMoveSlot(moveIds.tackle)],
+      });
+
+      const sideA = createBattleSide({ index: 0, active: [quickDrawUser] });
+      const sideB = createBattleSide({ index: 1, active: [opponent] });
+      const rng = makeRng(0.5, true);
+      const state = createBattleState({ generation: 8, sides: [sideA, sideB], rng });
+
+      const actions: BattleAction[] = [
+        { type: "move", side: 0, moveIndex: 0, target: 1 },
+        { type: "move", side: 1, moveIndex: 0, target: 0 },
+      ];
+
+      const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+      expect(ordered[0].type).toBe("move");
+      expect((ordered[0] as { side: number }).side).toBe(1);
+    },
+  );
+
+  it("uses only one Quick Draw chance roll during turn-order resolution", () => {
+    let chanceCalls = 0;
+    const rng = {
+      next: () => 0.5,
+      int: () => 1,
+      chance: () => {
+        chanceCalls += 1;
+        return true;
+      },
+      pick: <T>(arr: readonly T[]) => arr[0] as T,
+      shuffle: <T>(arr: T[]) => arr,
+      getState: () => 0,
+      setState: () => {},
+    } as unknown as SeededRandom;
+
+    const quickDrawUser = createOnFieldPokemon({
+      ability: abilityIds.quickDraw,
+      speed: 50,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+    const opponent = createOnFieldPokemon({
+      speed: 200,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+
+    const sideA = createBattleSide({ index: 0, active: [quickDrawUser] });
+    const sideB = createBattleSide({ index: 1, active: [opponent] });
+    const state = createBattleState({ generation: 8, sides: [sideA, sideB], rng });
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0, target: 1 },
+      { type: "move", side: 1, moveIndex: 0, target: 0 },
+    ];
+
+    const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+
+    expect((ordered[0] as { side: number }).side).toBe(0);
+    expect(chanceCalls).toBe(1);
+  });
 });
 
 // ---------------------------------------------------------------------------

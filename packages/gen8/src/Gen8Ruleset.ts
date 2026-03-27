@@ -263,6 +263,22 @@ export class Gen8Ruleset extends BaseRuleset {
   }
 
   /**
+   * Quick Draw is handled by `getQuickClawActivated()` as a within-bracket go-first roll.
+   * It must not also participate in the generic ability-priority path, or turn-order
+   * resolution will consume a second RNG roll for the same ability check.
+   */
+  protected override getAbilityPriorityBoost(
+    active: ActivePokemon,
+    moveData: MoveData,
+    state: BattleState,
+  ): number {
+    if (active.ability === GEN8_ABILITY_IDS.quickDraw) {
+      return 0;
+    }
+    return super.getAbilityPriorityBoost(active, moveData, state);
+  }
+
+  /**
    * Pursuit was removed in Gen 8 (Sword/Shield).
    * shouldExecutePursuitPreSwitch returns false.
    *

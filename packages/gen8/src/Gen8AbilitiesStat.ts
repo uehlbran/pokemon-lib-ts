@@ -166,6 +166,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       // Source: Showdown data/abilities.ts -- quickdraw: onFractionalPriority, 30% chance
       // Source: Bulbapedia "Quick Draw" -- "30% chance to move first in its priority bracket"
       if (!ctx.move) return INACTIVE;
+      if (ctx.move.category === "status") return INACTIVE;
       // Use RNG to check for 30% activation
       if (!ctx.rng.chance(0.3)) return INACTIVE;
       const name = getName(ctx);
