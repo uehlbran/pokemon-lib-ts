@@ -525,6 +525,28 @@ describe("disagreement registry", () => {
     ]);
   });
 
+  it("given a non-json oracle value, when resolving a new disagreement, then it reports the mismatch instead of throwing during formatting", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [
+        {
+          id: "gen1-bigint-mismatch",
+          suite: "data",
+          description: "BigInt mismatch",
+          ourValue: 1n,
+          oracleValue: 2n,
+        },
+      ],
+      [],
+    );
+
+    expect(result.matchedKnownDisagreements).toEqual([]);
+    expect(result.staleDisagreements).toEqual([]);
+    expect(result.failures).toEqual([
+      "NEW DISAGREEMENT DETECTED: gen1-bigint-mismatch — investigate before adding to known-disagreements file (suite=data, ours=1n, oracle=2n)",
+    ]);
+  });
+
   it("given a registry entry for a different suite, when resolving data-suite oracle checks, then it ignores the unrelated disagreement instead of flagging it as unexercised", () => {
     const result = resolveOracleChecks(
       "data",

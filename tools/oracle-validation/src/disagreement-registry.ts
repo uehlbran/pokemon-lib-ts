@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isDeepStrictEqual } from "node:util";
+import { inspect, isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 
@@ -212,7 +212,11 @@ interface ResolvedOracleChecks {
 }
 
 function formatValue(value: unknown): string {
-  return JSON.stringify(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return inspect(value, { depth: 3 });
+  }
 }
 
 export function resolveOracleChecks(
