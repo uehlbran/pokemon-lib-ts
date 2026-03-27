@@ -258,7 +258,7 @@ describe("Gen 1 Substitute: selective status interactions", () => {
   });
 
   it("given defender has Substitute, when Smokescreen resolves, then foe-targeted stat drops are blocked", () => {
-    // Source: gen1-ground-truth.md §7 — Substitute blocks most non-bypass status moves.
+    // Source: gen1-ground-truth.md §7 — Substitute blocks foe-targeted stat changes here.
     const defenderWithSubstitute = createSyntheticOnFieldPokemon({
       substituteHp: 40,
       types: [TYPES.normal],
