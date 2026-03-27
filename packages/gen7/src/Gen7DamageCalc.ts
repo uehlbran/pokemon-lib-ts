@@ -168,7 +168,7 @@ const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 // Source: Showdown data/moves.ts -- moongeistbeam / sunsteelstrike: ignoreAbility
 // Reused by the existing defensive-ability bypass path (same behavior model as
 // Mold Breaker/Teravolt/Turboblaze in this module).
-const ABILITY_IGNORING_MOVES: ReadonlySet<string> = new Set([
+export const ABILITY_IGNORING_MOVES: ReadonlySet<string> = new Set([
   GEN7_MOVE_IDS.moongeistBeam,
   GEN7_MOVE_IDS.sunsteelStrike,
 ]);

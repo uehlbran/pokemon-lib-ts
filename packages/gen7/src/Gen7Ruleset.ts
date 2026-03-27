@@ -43,7 +43,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
-import { GEN7_ABILITY_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
+import { GEN7_ABILITY_IDS } from "./data/reference-ids.js";
 import {
   handleGen7DamageCalcAbility,
   handleGen7DamageImmunityAbility,
@@ -51,7 +51,7 @@ import {
 import { handleGen7NewAbility } from "./Gen7AbilitiesNew.js";
 import { handleGen7StatAbility, isPranksterBlockedByDarkType } from "./Gen7AbilitiesStat.js";
 import { handleGen7SwitchAbility } from "./Gen7AbilitiesSwitch.js";
-import { calculateGen7Damage } from "./Gen7DamageCalc.js";
+import { ABILITY_IGNORING_MOVES, calculateGen7Damage } from "./Gen7DamageCalc.js";
 import { applyGen7EntryHazards } from "./Gen7EntryHazards.js";
 import { applyGen7HeldItem } from "./Gen7Items.js";
 import { Gen7MegaEvolution } from "./Gen7MegaEvolution.js";
@@ -67,11 +67,6 @@ import {
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
 import { applyGen7WeatherEffects, isWeatherSuppressedOnFieldGen7 } from "./Gen7Weather.js";
 import { Gen7ZMove } from "./Gen7ZMove.js";
-
-const ABILITY_IGNORING_MOVES = new Set<string>([
-  GEN7_MOVE_IDS.moongeistBeam,
-  GEN7_MOVE_IDS.sunsteelStrike,
-]);
 
 function moveIgnoresDefenderAbility(move: MoveData): boolean {
   return ABILITY_IGNORING_MOVES.has(move.id);
