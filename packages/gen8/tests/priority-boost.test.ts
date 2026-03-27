@@ -137,11 +137,11 @@ function createOnFieldPokemon(
   return active;
 }
 
-function makeRng(nextVal = 0.5): SeededRandom {
+function makeRng(nextVal = 0.5, chanceResult = false): SeededRandom {
   return {
     next: () => nextVal,
     int: () => 1,
-    chance: () => false,
+    chance: () => chanceResult,
     pick: <T>(arr: readonly T[]) => arr[0] as T,
     shuffle: <T>(arr: T[]) => arr,
     getState: () => 0,
@@ -386,4 +386,104 @@ describe("Gen8Ruleset.resolveTurnOrder -- Triage priority boost (#783)", () => {
       expect((ordered[0] as { side: number }).side).toBe(1);
     },
   );
+});
+
+// ---------------------------------------------------------------------------
+// Quick Draw priority boost (#801)
+// ---------------------------------------------------------------------------
+
+describe("Gen8Ruleset.resolveTurnOrder -- Quick Draw priority boost (#801)", () => {
+  const ruleset = new Gen8Ruleset();
+
+  it("given Quick Draw activates for a slower user, when resolving turn order against a faster priority-0 move, then the Quick Draw user moves first", () => {
+    // Source: Showdown data/abilities.ts -- quickdraw: 30% chance to move first in its priority bracket
+    const quickDrawUser = createOnFieldPokemon({
+      ability: abilityIds.quickDraw,
+      speed: 50,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+    const opponent = createOnFieldPokemon({
+      speed: 200,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+
+    const sideA = createBattleSide({ index: 0, active: [quickDrawUser] });
+    const sideB = createBattleSide({ index: 1, active: [opponent] });
+    const state = createBattleState({
+      generation: 8,
+      sides: [sideA, sideB],
+      rng: makeRng(0.5, true),
+    });
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0, target: 1 },
+      { type: "move", side: 1, moveIndex: 0, target: 0 },
+    ];
+
+    const ordered = ruleset.resolveTurnOrder(actions, state, makeRng(0.5, true));
+
+    expect(ordered[0].type).toBe("move");
+    expect((ordered[0] as { side: number }).side).toBe(0);
+  });
+
+  it("given Quick Draw activates against a higher-priority move, when resolving turn order, then the higher-priority move still goes first", () => {
+    // Source: Bulbapedia "Quick Draw" -- only moves first within its current priority bracket
+    const quickDrawUser = createOnFieldPokemon({
+      ability: abilityIds.quickDraw,
+      speed: 200,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+    const opponent = createOnFieldPokemon({
+      speed: 50,
+      moves: [createScenarioMoveSlot(moveIds.quickAttack)],
+    });
+
+    const sideA = createBattleSide({ index: 0, active: [quickDrawUser] });
+    const sideB = createBattleSide({ index: 1, active: [opponent] });
+    const state = createBattleState({
+      generation: 8,
+      sides: [sideA, sideB],
+      rng: makeRng(0.5, true),
+    });
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0, target: 1 },
+      { type: "move", side: 1, moveIndex: 0, target: 0 },
+    ];
+
+    const ordered = ruleset.resolveTurnOrder(actions, state, makeRng(0.5, true));
+
+    expect(ordered[0].type).toBe("move");
+    expect((ordered[0] as { side: number }).side).toBe(1);
+  });
+
+  it("given Quick Draw does not activate for a slower user, when resolving turn order against a faster priority-0 move, then the faster opponent still moves first", () => {
+    const quickDrawUser = createOnFieldPokemon({
+      ability: abilityIds.quickDraw,
+      speed: 50,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+    const opponent = createOnFieldPokemon({
+      speed: 200,
+      moves: [createScenarioMoveSlot(moveIds.tackle)],
+    });
+
+    const sideA = createBattleSide({ index: 0, active: [quickDrawUser] });
+    const sideB = createBattleSide({ index: 1, active: [opponent] });
+    const state = createBattleState({
+      generation: 8,
+      sides: [sideA, sideB],
+      rng: makeRng(0.5, false),
+    });
+
+    const actions: BattleAction[] = [
+      { type: "move", side: 0, moveIndex: 0, target: 1 },
+      { type: "move", side: 1, moveIndex: 0, target: 0 },
+    ];
+
+    const ordered = ruleset.resolveTurnOrder(actions, state, makeRng(0.5, false));
+
+    expect(ordered[0].type).toBe("move");
+    expect((ordered[0] as { side: number }).side).toBe(1);
+  });
 });

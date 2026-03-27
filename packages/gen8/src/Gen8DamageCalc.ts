@@ -81,6 +81,11 @@ const DIALGA_SPECIES_ID = 483;
 const PALKIA_SPECIES_ID = 484;
 const GIRATINA_SPECIES_ID = 487;
 
+const AIRBORNE_SEMI_INVULNERABLE: ReadonlySet<VolatileStatus> = new Set([
+  CORE_VOLATILE_IDS.flying,
+  CORE_VOLATILE_IDS.shadowForceCharging,
+]);
+
 // ---- Type-Resist Berries ----
 
 /**
@@ -247,6 +252,14 @@ function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): bo
  */
 export function isGen8Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
+
+  // Fly/Bounce and Shadow Force/Phantom Force place the user in an airborne semi-invulnerable
+  // state that terrain and grounded-only effects should treat as not grounded.
+  // Source: Showdown sim/pokemon.ts -- isGrounded checks airborne semi-invulnerable volatiles
+  for (const volatile of AIRBORNE_SEMI_INVULNERABLE) {
+    if (pokemon.volatileStatuses.has(volatile)) return false;
+  }
+
   if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
   const itemsSuppressed =

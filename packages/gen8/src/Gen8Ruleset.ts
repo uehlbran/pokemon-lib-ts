@@ -2,6 +2,7 @@ import type {
   AbilityContext,
   AbilityResult,
   ActivePokemon,
+  BattleAction,
   BattleGimmick,
   BattleGimmickType,
   BattleSide,
@@ -37,12 +38,14 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
+import { GEN8_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
 import { handleGen8StatAbility } from "./Gen8AbilitiesStat.js";
 import {
@@ -211,6 +214,53 @@ export class Gen8Ruleset extends BaseRuleset {
   }
 
   // --- Switch System ---
+
+  /**
+   * Quick Draw uses a within-bracket "go first" roll, matching Quick Claw style ordering
+   * rather than a true +1 priority boost.
+   *
+   * Source: Showdown data/abilities.ts -- quickdraw: onFractionalPriority
+   * Source: Bulbapedia "Quick Draw" -- "move first in its priority bracket"
+   */
+  protected override getQuickClawActivated(
+    actions: BattleAction[],
+    state: BattleState,
+    rng: SeededRandom,
+  ): Set<number> {
+    const activated = super.getQuickClawActivated(actions, state, rng);
+
+    for (const [index, action] of actions.entries()) {
+      if (action.type !== "move") continue;
+
+      const active = state.sides[action.side]?.active[0];
+      if (!active || active.ability !== GEN8_ABILITY_IDS.quickDraw) continue;
+
+      const moveSlot = active.pokemon.moves[action.moveIndex];
+      if (!moveSlot) continue;
+
+      let moveData: MoveData | null = null;
+      try {
+        moveData = this.dataManager.getMove(moveSlot.moveId);
+      } catch {
+        moveData = null;
+      }
+      if (!moveData) continue;
+
+      const result = this.applyAbility(CORE_ABILITY_TRIGGER_IDS.onPriorityCheck, {
+        pokemon: active,
+        state,
+        rng,
+        trigger: CORE_ABILITY_TRIGGER_IDS.onPriorityCheck,
+        move: moveData,
+      });
+
+      if (result.activated) {
+        activated.add(index);
+      }
+    }
+
+    return activated;
+  }
 
   /**
    * Pursuit was removed in Gen 8 (Sword/Shield).
