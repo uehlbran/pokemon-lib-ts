@@ -15,6 +15,19 @@ const GEN1_DATA_MANAGER = createGen1DataManager();
 const GEN2_DATA_MANAGER = createGen2DataManager();
 const GEN4_DATA_MANAGER = createGen4DataManager();
 
+const EXP_SHARE_ITEM: ItemData = {
+  id: "exp-share",
+  displayName: "Exp. Share",
+  description: "A held item that shares EXP with an inactive party member.",
+  category: "held-item",
+  pocket: "items",
+  price: 0,
+  battleUsable: false,
+  fieldUsable: false,
+  generation: 2,
+  spriteKey: "exp-share",
+};
+
 export const MOCK_SPECIES_IDS = {
   charizard: GEN1_SPECIES_IDS.charizard,
   blastoise: GEN1_SPECIES_IDS.blastoise,
@@ -60,6 +73,7 @@ function getMockSpecies(): PokemonSpeciesData[] {
 function getMockMoves(): MoveData[] {
   return [
     GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.tackle),
+    GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.growl),
     GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.thunderbolt),
     GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.scratch),
     GEN1_DATA_MANAGER.getMove(GEN1_MOVE_IDS.quickAttack),
@@ -76,6 +90,7 @@ function getMockItems(): ItemData[] {
   return [
     GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.pokeBall),
     GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.ultraBall),
+    EXP_SHARE_ITEM,
   ];
 }
 

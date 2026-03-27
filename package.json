@@ -12,6 +12,7 @@
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:integration": "turbo run test:integration",
+    "test:invariants": "npm run test:invariants --workspace @pokemon-lib-ts/core && npm run test:invariants --workspace @pokemon-lib-ts/battle && npm run test:invariants --workspace data-importer",
     "test:smoke": "turbo run test:smoke",
     "test:e2e": "turbo run test:e2e",
     "test:stress": "turbo run test:stress",
