@@ -138,6 +138,13 @@ interface PreDamageResolutionParams {
  * a stream of BattleEvents for UI/logging consumers.
  */
 export class BattleEngine implements BattleEventEmitter {
+  private static readonly STABLE_CHECKPOINT_PHASES: ReadonlySet<BattlePhase> = new Set([
+    "battle-start",
+    "action-select",
+    "switch-prompt",
+    "battle-end",
+  ]);
+
   // ─── State mutation model ───────────────────────────────────────────────────
   // BattleState is the source of truth. It is mutated in-place during turn
   // resolution. Events (BattleEvent[]) are emitted as notifications for UI/replay
@@ -1285,7 +1292,9 @@ export class BattleEngine implements BattleEventEmitter {
       parsed.state.generation,
       ruleset,
     );
+    BattleEngine.assertDeserializablePhase(parsed.state.phase);
     BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
+    BattleEngine.relinkRestoredActivePokemon(parsed.state);
 
     const restoredSwitchPromptState = BattleEngine.restoreSwitchPromptState(
       parsed.state,
@@ -1375,15 +1384,81 @@ export class BattleEngine implements BattleEventEmitter {
     return engine;
   }
 
-  private assertSerializablePhase(): void {
-    const stableCheckpointPhases: ReadonlySet<BattlePhase> = new Set([
-      "battle-start",
-      "action-select",
-      "switch-prompt",
-      "battle-end",
-    ]);
+  private static assertDeserializablePhase(phase: BattlePhase): void {
+    if (BattleEngine.STABLE_CHECKPOINT_PHASES.has(phase)) {
+      return;
+    }
 
-    if (stableCheckpointPhases.has(this.state.phase)) {
+    throw new Error(
+      `BattleEngine.deserialize cannot restore phase ${phase}; save only from stable checkpoint phases`,
+    );
+  }
+
+  private static relinkRestoredActivePokemon(state: BattleState): void {
+    const expectedActiveSlotsPerSide = state.phase === "battle-start" ? 0 : 1;
+
+    for (const side of state.sides) {
+      if (!Array.isArray(side.active)) {
+        throw new Error(
+          `BattleEngine.deserialize: side ${side.index} has invalid active slots payload`,
+        );
+      }
+
+      if (side.active.length !== expectedActiveSlotsPerSide) {
+        throw new Error(
+          `BattleEngine.deserialize: phase ${state.phase} requires ${expectedActiveSlotsPerSide} active slot(s) on side ${side.index}, got ${side.active.length}`,
+        );
+      }
+
+      for (const active of side.active) {
+        if (!active || typeof active !== "object") {
+          throw new Error(
+            `BattleEngine.deserialize: side ${side.index} has invalid active slot payload`,
+          );
+        }
+
+        if (!Number.isInteger(active.teamSlot) || active.teamSlot < 0) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon has invalid teamSlot ${active.teamSlot} on side ${side.index}`,
+          );
+        }
+
+        const teamPokemon = side.team[active.teamSlot];
+        if (!teamPokemon) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon teamSlot ${active.teamSlot} is missing on side ${side.index}`,
+          );
+        }
+
+        if (
+          !active.pokemon ||
+          typeof active.pokemon !== "object" ||
+          typeof active.pokemon.uid !== "string"
+        ) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon has invalid pokemon payload on side ${side.index}`,
+          );
+        }
+
+        if (typeof teamPokemon.uid !== "string") {
+          throw new Error(
+            `BattleEngine.deserialize: team slot ${active.teamSlot} has invalid pokemon payload on side ${side.index}`,
+          );
+        }
+
+        if (active.pokemon.uid !== teamPokemon.uid) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon uid "${active.pokemon.uid}" does not match team slot ${active.teamSlot} uid "${teamPokemon.uid}" on side ${side.index}`,
+          );
+        }
+
+        active.pokemon = teamPokemon;
+      }
+    }
+  }
+
+  private assertSerializablePhase(): void {
+    if (BattleEngine.STABLE_CHECKPOINT_PHASES.has(this.state.phase)) {
       return;
     }
 

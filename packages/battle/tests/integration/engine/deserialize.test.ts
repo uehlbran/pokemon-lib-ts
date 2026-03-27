@@ -297,6 +297,151 @@ describe("BattleEngine.deserialize", () => {
     ).toThrow('BattleEngine.deserialize: battle format "triples" is not supported');
   });
 
+  it("given a serialized battle with a non-checkpoint phase, when deserialized, then it rejects the lossy snapshot instead of restoring transient turn state", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        phase: string;
+      };
+    };
+    parsed.state.phase = "turn-resolve";
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow(
+      "BattleEngine.deserialize cannot restore phase turn-resolve; save only from stable checkpoint phases",
+    );
+  });
+
+  it("given a restored battle, when the active pokemon changes and later switches out and back in, then the restored team instance keeps the post-load HP and PP state", () => {
+    const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
+
+    const restored = BattleEngine.deserialize(engine.serialize(), ruleset, dataManager);
+    const restoredActive = restored.getState().sides[0].active[0]!;
+    // Source: these are deliberate synthetic post-load mutations used to prove that
+    // deserialize re-links active.pokemon back to the saved team instance instead of
+    // leaving a detached copy that would be silently discarded on the next sendOut.
+    const mutatedCurrentHp = 111;
+    const mutatedCurrentPp = 7;
+    restoredActive.pokemon.currentHp = mutatedCurrentHp;
+    restoredActive.pokemon.moves[0]!.currentPP = mutatedCurrentPp;
+
+    restored.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
+    restored.submitAction(1, { type: "switch", side: 1, switchTo: 1 });
+
+    expect(restored.getActive(0)?.pokemon.uid).toBe("pikachu-0");
+    expect(restored.getActive(1)?.pokemon.uid).toBe("pikachu-1");
+
+    restored.submitAction(0, { type: "switch", side: 0, switchTo: 0 });
+    restored.submitAction(1, { type: "switch", side: 1, switchTo: 0 });
+
+    const returnedActive = restored.getActive(0)!;
+    expect(returnedActive.pokemon.uid).toBe("charizard-1");
+    expect(returnedActive.pokemon.currentHp).toBe(mutatedCurrentHp);
+    expect(returnedActive.pokemon.moves[0]?.currentPP).toBe(mutatedCurrentPp);
+  });
+
+  it("given a serialized battle with a tampered active-team uid mismatch, when deserialized, then it rejects the save instead of restoring contradictory runtime state", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    // Source: deliberately synthetic UID used only to drive the tampered-save
+    // active/team mismatch branch during deserialize validation.
+    const tamperedActiveUid = "tampered-uid";
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: Array<{ teamSlot: number; pokemon: { uid: string } } | null>;
+        }>;
+      };
+    };
+    parsed.state.sides[0].active[0]!.pokemon.uid = tamperedActiveUid;
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow(
+      `BattleEngine.deserialize: active Pokemon uid "${tamperedActiveUid}" does not match team slot 0 uid "charizard-1" on side 0`,
+    );
+  });
+
+  it("given a serialized singles battle with multiple active slots on one side, when deserialized, then it rejects the contradictory multi-active state", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: unknown[];
+        }>;
+      };
+    };
+    const extraActive = structuredClone(parsed.state.sides[0].active[0]);
+    parsed.state.sides[0].active.push(extraActive);
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow(
+      "BattleEngine.deserialize: phase action-select requires 1 active slot(s) on side 0, got 2",
+    );
+  });
+
+  it("given a serialized checkpoint phase with a null active slot payload, when deserialized, then it rejects the malformed singles active shape", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: unknown[];
+        }>;
+      };
+    };
+    parsed.state.sides[0].active[0] = null;
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow("BattleEngine.deserialize: side 0 has invalid active slot payload");
+  });
+
+  it("given a serialized battle-start snapshot with active slots still present, when deserialized, then it rejects the impossible checkpoint shape", () => {
+    const { engine } = createTestEngine();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: unknown[];
+        }>;
+      };
+    };
+    parsed.state.sides[0].active = [{ teamSlot: 0, pokemon: { uid: "charizard-1" } }];
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow(
+      "BattleEngine.deserialize: phase battle-start requires 0 active slot(s) on side 0, got 1",
+    );
+  });
+
+  it("given a serialized battle with an invalid active pokemon payload, when deserialized, then it rejects the malformed save with a deterministic error", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: Array<{ teamSlot: number; pokemon: unknown } | null>;
+        }>;
+      };
+    };
+    parsed.state.sides[0].active[0]!.pokemon = null;
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow("BattleEngine.deserialize: active Pokemon has invalid pokemon payload on side 0");
+  });
+
   it("given a battle saved in switch-prompt, when deserialized, then submitSwitch resumes with the saved switch requirements", () => {
     const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
 
