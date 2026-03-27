@@ -174,6 +174,20 @@ describe("Gen5 isGen5Grounded", () => {
     expect(isGen5Grounded(pokemon, false)).toBe(true);
   });
 
+  it("given a Pokemon in the airborne Fly/Bounce charge turn, when checking grounding, then is NOT grounded", () => {
+    // Source: BattleEngine two-turn move handling — `flying` marks the airborne charge turn
+    const volatiles = new Map([[V.flying, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ volatiles });
+    expect(isGen5Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given a Pokemon in the Shadow Force charge turn, when checking grounding, then is NOT grounded", () => {
+    // Source: BattleEngine two-turn move handling — `shadow-force-charging` marks the phased-out charge turn
+    const volatiles = new Map([[V.shadowForceCharging, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ volatiles });
+    expect(isGen5Grounded(pokemon, false)).toBe(false);
+  });
+
   it("given a Flying-type Pokemon with Ingrain, when checking grounding, then IS grounded", () => {
     // Source: Bulbapedia -- Ingrain: "The user is affected by hazards on the ground,
     //   even if it is a Flying-type or has the Levitate ability."
@@ -265,6 +279,14 @@ describe("Gen5 Spikes", () => {
   it("given Spikes, when a Flying-type switches in, then takes no damage (returns null)", () => {
     // Source: Showdown data/moves.ts -- spikes: if (!pokemon.isGrounded()) return;
     const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, types: [T.flying] });
+    const result = applyGen5SpikesHazard(pokemon, 1, false);
+    expect(result).toBeNull();
+  });
+
+  it("given Spikes, when a Pokemon is in the airborne Fly/Bounce charge turn, then takes no damage (returns null)", () => {
+    // Source: BattleEngine two-turn move handling — airborne charge-turn users are not grounded
+    const volatiles = new Map([[V.flying, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ maxHp: 200, volatiles });
     const result = applyGen5SpikesHazard(pokemon, 1, false);
     expect(result).toBeNull();
   });
@@ -451,6 +473,15 @@ describe("Gen5 Toxic Spikes", () => {
     // Source: Showdown -- Levitate means not grounded
     const pokemon = createSyntheticOnFieldPokemon({ ability: A.levitate });
     const result = applyGen5ToxicSpikes(pokemon, 1, false);
+    expect(result.absorbed).toBe(false);
+    expect(result.status).toBeNull();
+  });
+
+  it("given Toxic Spikes, when a Pokemon is in the Shadow Force charge turn, then is immune (not grounded)", () => {
+    // Source: BattleEngine two-turn move handling — `shadow-force-charging` is semi-invulnerable and airborne
+    const volatiles = new Map([[V.shadowForceCharging, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ volatiles });
+    const result = applyGen5ToxicSpikes(pokemon, 2, false);
     expect(result.absorbed).toBe(false);
     expect(result.status).toBeNull();
   });
