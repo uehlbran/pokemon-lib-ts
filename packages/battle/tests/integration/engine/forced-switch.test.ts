@@ -1,5 +1,5 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -161,5 +161,76 @@ describe("Forced switch (phazing) action inheritance", () => {
     const side0Active = engine.state.sides[0].active[0];
     expect(side0Active).toBeDefined();
     expect(side0Active!.pokemon.currentHp).toBe(153);
+  });
+
+  it("given a phased side had queued Struggle, when the faster opponent forces a switch first, then the replacement does not inherit the queued Struggle", () => {
+    // Arrange
+    const { engine, ruleset, events } = createPhazeTestEngine({ seed: 7 });
+    ruleset.setMoveEffectResult({ switchOut: true, forcedSwitch: true });
+
+    engine.start();
+
+    // Act
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "struggle", side: 1 });
+
+    // Assert
+    const side1Active = engine.state.sides[1].active[0];
+    expect(side1Active).toBeDefined();
+    expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
+
+    const side0Active = engine.state.sides[0].active[0];
+    expect(side0Active).toBeDefined();
+    expect(side0Active!.pokemon.currentHp).toBe(153);
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === "move-start" && "move" in event && event.move === CORE_MOVE_IDS.struggle,
+      ),
+    ).toBe(false);
+    expect(
+      events.some(
+        (event) =>
+          event.type === "damage" && "source" in event && event.source === CORE_MOVE_IDS.struggle,
+      ),
+    ).toBe(false);
+  });
+
+  it("given a phased side had a queued recharge turn, when the faster opponent forces a switch first, then the replacement does not inherit the recharge action", () => {
+    // Arrange
+    const { engine, ruleset, events } = createPhazeTestEngine({ seed: 11 });
+    ruleset.setMoveEffectResult({ switchOut: true, forcedSwitch: true });
+
+    engine.start();
+
+    const side1ActiveBeforeTurn = engine.state.sides[1].active[0];
+    if (!side1ActiveBeforeTurn) {
+      throw new Error("Expected an active Pokemon on side 1");
+    }
+    side1ActiveBeforeTurn.volatileStatuses.set(CORE_VOLATILE_IDS.recharge, { turnsLeft: 1 });
+
+    // Act
+    events.length = 0;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    // Assert
+    const side1Active = engine.state.sides[1].active[0];
+    expect(side1Active).toBeDefined();
+    expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
+
+    const side0Active = engine.state.sides[0].active[0];
+    expect(side0Active).toBeDefined();
+    expect(side0Active!.pokemon.currentHp).toBe(153);
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === "message" &&
+          (event.text === "Blastoise must recharge!" || event.text === "Pikachu must recharge!"),
+      ),
+    ).toBe(false);
   });
 });

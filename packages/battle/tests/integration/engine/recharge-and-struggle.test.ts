@@ -148,6 +148,73 @@ describe("recharge enforcement (#104)", () => {
       const moveStart = events.find((e) => e.type === "move-start" && e.side === 0);
       expect(moveStart).toBeDefined();
     });
+
+    it("when the recharging Pokemon is faster than the opponent, then the recharge turn is consumed before the opponent's move starts", () => {
+      // Arrange
+      const { engine, events } = createEngine();
+      engine.start();
+
+      const active = engine.state.sides[0].active[0];
+      if (!active) {
+        throw new Error("Expected an active Pokemon on side 0");
+      }
+      active.volatileStatuses.set(VOLATILE_IDS.recharge, { turnsLeft: 1 });
+
+      // Act
+      events.length = 0;
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      const rechargeIndex = events.findIndex(
+        (event) => event.type === "message" && event.text === "Charizard must recharge!",
+      );
+      const opponentMoveIndex = events.findIndex(
+        (event) => event.type === "move-start" && event.side === 1,
+      );
+
+      expect(rechargeIndex).toBeGreaterThan(-1);
+      expect(opponentMoveIndex).toBeGreaterThan(rechargeIndex);
+    });
+
+    it("when the recharging Pokemon is slower than the opponent, then the opponent's move starts before the recharge turn is consumed", () => {
+      // Arrange
+      const { engine, events } = createEngine();
+      engine.start();
+
+      const active = engine.state.sides[0].active[0];
+      if (!active) {
+        throw new Error("Expected an active Pokemon on side 0");
+      }
+      const opponent = engine.state.sides[1].active[0];
+      if (!opponent) {
+        throw new Error("Expected an active Pokemon on side 1");
+      }
+
+      if (!active.pokemon.calculatedStats || !opponent.pokemon.calculatedStats) {
+        throw new Error("Expected calculated stats for both active Pokemon");
+      }
+
+      active.pokemon.calculatedStats.speed = 80;
+      opponent.pokemon.calculatedStats.speed = 120;
+      active.volatileStatuses.set(VOLATILE_IDS.recharge, { turnsLeft: 1 });
+
+      // Act
+      events.length = 0;
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      // Assert
+      const rechargeIndex = events.findIndex(
+        (event) => event.type === "message" && event.text === "Charizard must recharge!",
+      );
+      const opponentMoveIndex = events.findIndex(
+        (event) => event.type === "move-start" && event.side === 1,
+      );
+
+      expect(opponentMoveIndex).toBeGreaterThan(-1);
+      expect(rechargeIndex).toBeGreaterThan(opponentMoveIndex);
+    });
   });
 });
 

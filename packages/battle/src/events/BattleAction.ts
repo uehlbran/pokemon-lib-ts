@@ -107,3 +107,16 @@ export interface StruggleAction {
   /** Which side's Pokémon is struggling */
   readonly side: 0 | 1;
 }
+
+/**
+ * Returns whether an action occupies the side's normal combat slot in turn order.
+ *
+ * This groups standard move submissions with move-like queued actions that still
+ * resolve in the move-vs-move ordering lane, such as forced recharge turns and
+ * Struggle fallback turns.
+ */
+export function isMoveLikeAction(
+  action: BattleAction,
+): action is MoveAction | RechargeAction | StruggleAction {
+  return action.type === "move" || action.type === "recharge" || action.type === "struggle";
+}
