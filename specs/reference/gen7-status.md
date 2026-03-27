@@ -130,7 +130,7 @@ None. All tracked bugs closed.
 - PR #786: Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage (closes #757)
 - PR #1054: Sunsteel Strike / Moongeist Beam now ignore target abilities through the shared Mold Breaker-style bypass path (partial close for #789)
 - PR #1055: Sunsteel Strike / Moongeist Beam now also bypass Battle Armor / Shell Armor crit immunity through the same shared signature-move ignore-ability set
-- Spectral Thief now steals positive boosts before damage through a shared pre-damage move-effect hook so the same hit uses the stolen stages (bounded slice tracked by #1060)
+- PR #1061: Spectral Thief now steals positive boosts before damage through a shared pre-damage move-effect hook so the same hit uses the stolen stages (closes #1059)
 
 ## PR History
 
@@ -150,3 +150,4 @@ None. All tracked bugs closed.
 | #752 | fix/gen5-8-bughunt | Deep bughunt: EoT countdowns, Z-Move 0.25x through Protect, Disguise volatile, canBypassProtect (closes #735 #736 #739 #741) |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Rayquaza mega, Disguise non-lethal, Beast Boost/Moxie, pinch berries EoT, Focus Sash (closes #701 #687 #688 #683 #725) |
 | #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |
+| #1061 | fix/gen7-spectral-thief | fix: Spectral Thief boost stealing before damage via shared pre-damage move-effect hook (closes #1059) |
