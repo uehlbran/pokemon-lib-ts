@@ -28,7 +28,6 @@ import {
 } from "@pokemon-lib-ts/battle";
 import {
   type BattleStat,
-  CORE_ABILITY_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_MOVE_TARGET_IDS,
@@ -69,16 +68,6 @@ const SPECTRAL_THIEF_STEALABLE_STATS = [
   CORE_STAT_IDS.evasion,
 ] as const satisfies readonly BattleStat[];
 
-function transformStolenStagesForAttacker(attackerAbility: string | null, stages: number): number {
-  if (attackerAbility === GEN7_ABILITY_IDS.contrary) {
-    return -stages;
-  }
-  if (attackerAbility === CORE_ABILITY_IDS.simple) {
-    return stages * 2;
-  }
-  return stages;
-}
-
 function handleSpectralThiefPreDamage(ctx: MoveEffectContext): MoveEffectResult | null {
   const statChanges: Array<{
     target: typeof BATTLE_EFFECT_TARGETS.attacker | typeof BATTLE_EFFECT_TARGETS.defender;
@@ -87,8 +76,11 @@ function handleSpectralThiefPreDamage(ctx: MoveEffectContext): MoveEffectResult 
   }> = [];
 
   // Spectral Thief steals the target's positive boosts before damage. The target's
-  // raw boost stages are cleared, while the attacker gains those same stages through
-  // the repo's current ability semantics (Simple doubles the gain, Contrary inverts it).
+  // raw boost stages are cleared. The attacker keeps the repo's standard raw-stage
+  // representation so Simple is still applied on read by getEffectiveStatStage() /
+  // getEffectiveSpeed(), while Contrary is still a write-side inversion in the
+  // current engine because MoveEffectResult.statChanges do not route through the
+  // on-stat-change ability hook.
   // Source: packages/gen7/data/moves.json -- spectral-thief description
   // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
   for (const stat of SPECTRAL_THIEF_STEALABLE_STATS) {
@@ -98,7 +90,7 @@ function handleSpectralThiefPreDamage(ctx: MoveEffectContext): MoveEffectResult 
     statChanges.push({
       target: BATTLE_EFFECT_TARGETS.attacker,
       stat,
-      stages: transformStolenStagesForAttacker(ctx.attacker.ability, defenderStages),
+      stages: ctx.attacker.ability === GEN7_ABILITY_IDS.contrary ? -defenderStages : defenderStages,
     });
     statChanges.push({
       target: BATTLE_EFFECT_TARGETS.defender,

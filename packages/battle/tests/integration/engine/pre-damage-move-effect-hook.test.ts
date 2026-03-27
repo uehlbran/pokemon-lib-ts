@@ -169,11 +169,15 @@ class TrackingPreDamageRuleset extends MockRuleset {
         {
           target: BATTLE_EFFECT_TARGETS.attacker,
           stat: CORE_STAT_IDS.attack,
+          // The hook simulates a single +2 Attack stage boost before damage.
+          // Derivation: fixture-specific pre-damage attacker delta = +2
           stages: 2,
         },
         {
           target: BATTLE_EFFECT_TARGETS.defender,
           stat: CORE_STAT_IDS.defense,
+          // The hook simultaneously removes the defender's starting +2 Defense stage.
+          // Derivation: fixture-specific pre-damage defender delta = -2
           stages: -2,
         },
       ],
@@ -219,19 +223,31 @@ describe("BattleEngine pre-damage move-effect hook", () => {
       {
         attacker: "charizard-1",
         defender: "blastoise-1",
+        // The attacker starts at neutral raw stages before the pre-damage hook.
+        // Derivation: default battle state initializes Attack stage to 0
         attackStage: 0,
+        // The defender is explicitly seeded to +2 Defense in this test setup.
+        // Derivation: engine.state.sides[1].active[0]!.statStages.defense = 2
         defenseStage: 2,
+        // Damage rolls are sampled from the Gen 3+ [85, 100] range in this test ruleset.
+        // Derivation: TrackingPreDamageRuleset.calculateDamage uses rng.int(85, 100)
         randomRoll: charizardSnapshots[0]?.randomRoll ?? 85,
       },
       {
         attacker: "charizard-1",
         defender: "blastoise-1",
+        // The hook adds +2 raw Attack before the recomputed damage pass.
+        // Derivation: 0 + 2 = 2
         attackStage: 2,
+        // The hook removes the defender's seeded +2 Defense before recomputing damage.
+        // Derivation: 2 - 2 = 0
         defenseStage: 0,
         randomRoll: charizardSnapshots[0]?.randomRoll ?? 85,
       },
     ]);
     expect(charizardSnapshots[0]?.randomRoll).toBe(charizardSnapshots[1]?.randomRoll);
+    // onDamageTaken runs after the hook-applied -2 Defense, so the defender is already back at 0.
+    // Derivation: seeded +2 Defense + hook-applied -2 = 0
     expect(ruleset.onDamageTakenDefenseStages).toEqual([0]);
 
     const charizardAttackBoostIndex = events.findIndex(
@@ -252,6 +268,9 @@ describe("BattleEngine pre-damage move-effect hook", () => {
       (event) =>
         event.type === "damage" &&
         event.side === 1 &&
+        // Mock damage formula: 20 + AttackStage*10 - DefenseStage*5 + (roll - 85).
+        // With recomputed stages (+2 Attack, 0 Defense), damage becomes 40 + (roll - 85).
+        // Derivation: 20 + 2*10 - 0*5 + (roll - 85)
         event.amount === 40 + ((charizardSnapshots[0]?.randomRoll ?? 85) - 85),
     );
 
@@ -281,6 +300,8 @@ describe("BattleEngine pre-damage move-effect hook", () => {
         defender: "blastoise-1",
         attackStage: 0,
         defenseStage: 0,
+        // Damage rolls are sampled from the Gen 3+ [85, 100] range in this test ruleset.
+        // Derivation: TrackingPreDamageRuleset.calculateDamage uses rng.int(85, 100)
         randomRoll: charizardSnapshots[0]?.randomRoll ?? 85,
       },
     ]);
@@ -310,6 +331,8 @@ describe("BattleEngine pre-damage move-effect hook", () => {
         defender: "blastoise-1",
         attackStage: 0,
         defenseStage: 0,
+        // Damage rolls are sampled from the Gen 3+ [85, 100] range in this test ruleset.
+        // Derivation: TrackingPreDamageRuleset.calculateDamage uses rng.int(85, 100)
         randomRoll: charizardSnapshots[0]?.randomRoll ?? 85,
       },
     ]);
@@ -333,8 +356,14 @@ describe("BattleEngine pre-damage move-effect hook", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const expectedRng = new SeededRandom(12345);
+    // The mock damage path consumes the first RNG draw from the [85, 100] damage-roll range.
+    // Derivation: TrackingPreDamageRuleset.calculateDamage uses rng.int(85, 100)
     const expectedDamageRoll = expectedRng.int(85, 100);
+    // The hook then consumes one standalone [1, 100] draw when enabled.
+    // Derivation: executePreDamageMoveEffect calls context.rng.int(1, 100)
     const expectedPreDamageRoll = expectedRng.int(1, 100);
+    // Finally, the reactive onDamageTaken ability probe consumes the next [1, 100] draw.
+    // Derivation: applyAbility(onDamageTaken) calls context.rng.int(1, 100)
     const expectedOnDamageTakenRoll = expectedRng.int(1, 100);
 
     const charizardSnapshots = ruleset.damageSnapshots.filter(

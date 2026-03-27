@@ -1070,6 +1070,8 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     expect(result).toEqual({
       ...EMPTY_EFFECT_RESULT,
       statChanges: [
+        // Spectral Thief steals the target's positive raw stages before damage.
+        // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
         { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.attack, stages: 2 },
         { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.attack, stages: -2 },
         { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.defense, stages: 1 },
@@ -1078,7 +1080,7 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     });
   });
 
-  it("given Spectral Thief with Simple attacker, when pre-damage dispatch runs, then stolen boosts are doubled on the attacker only", () => {
+  it("given Spectral Thief with Simple attacker, when pre-damage dispatch runs, then it stores the raw stolen stages for the attacker", () => {
     const ctx = createMoveEffectContext(moveIds.spectralThief, {
       attacker: { ability: abilityIds.simple },
       defender: { ability: abilityIds.none },
@@ -1090,7 +1092,9 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     expect(result).toEqual({
       ...EMPTY_EFFECT_RESULT,
       statChanges: [
-        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.attack, stages: 4 },
+        // The repo stores raw stages and lets getEffectiveStatStage() apply Simple on read.
+        // Source: packages/battle/src/utils/statStageHelpers.ts -- Simple doubles read-side stage effects
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.attack, stages: 2 },
         { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.attack, stages: -2 },
       ],
     });
@@ -1108,6 +1112,9 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     expect(result).toEqual({
       ...EMPTY_EFFECT_RESULT,
       statChanges: [
+        // Contrary still inverts the stolen raw stage on write because MoveEffectResult
+        // statChanges do not pass through the on-stat-change ability pipeline.
+        // Source: packages/gen7/src/Gen7AbilitiesStat.ts -- Contrary is modeled as stat-change inversion
         { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.spAttack, stages: -3 },
         { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.spAttack, stages: -3 },
       ],
@@ -1188,6 +1195,8 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     expect(result).toEqual({
       ...EMPTY_EFFECT_RESULT,
       statChanges: [
+        // The defender's +2 Speed is stolen as a raw +2 to the attacker and cleared from the target.
+        // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
         { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.speed, stages: 2 },
         { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.speed, stages: -2 },
       ],

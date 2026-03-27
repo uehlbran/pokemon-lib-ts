@@ -398,17 +398,23 @@ describe("Integration: Spectral Thief", () => {
     baselineBattle.engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const boostedDamage = boostedBattle.events.find(
-      (event) => event.type === "damage" && event.side === 1,
+      (event): event is Extract<BattleEvent, { type: "damage" }> =>
+        event.type === "damage" && event.side === 1,
     );
     const baselineDamage = baselineBattle.events.find(
-      (event) => event.type === "damage" && event.side === 1,
+      (event): event is Extract<BattleEvent, { type: "damage" }> =>
+        event.type === "damage" && event.side === 1,
     );
 
+    expect(boostedDamage).toBeDefined();
+    expect(baselineDamage).toBeDefined();
+    // Spectral Thief steals the target's +2 Attack before the same-hit damage calculation.
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
     expect(boostedBattle.engine.state.sides[0].active[0]?.statStages.attack).toBe(2);
+    // The stolen positive boost is cleared from the target, so its raw stage returns to 0.
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
     expect(boostedDefender.statStages.attack).toBe(0);
-    expect(boostedDamage?.type === "damage" && boostedDamage.amount).toBeGreaterThan(
-      baselineDamage?.type === "damage" ? baselineDamage.amount : 0,
-    );
+    expect(boostedDamage!.amount).toBeGreaterThan(baselineDamage!.amount);
 
     const statChangeEvents = boostedBattle.events.filter((event) => event.type === "stat-change");
     expect(statChangeEvents).toEqual(
@@ -417,14 +423,22 @@ describe("Integration: Spectral Thief", () => {
           type: "stat-change",
           side: 0,
           stat: CORE_STAT_IDS.attack,
+          // Spectral Thief steals the defender's +2 Attack as a +2 attacker stage change.
+          // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
           stages: 2,
+          // The attacker starts at 0 raw Attack stages, so the stolen +2 resolves to currentStage 2.
+          // Derivation: 0 + 2 = 2
           currentStage: 2,
         }),
         expect.objectContaining({
           type: "stat-change",
           side: 1,
           stat: CORE_STAT_IDS.attack,
+          // The target's stolen +2 Attack is cleared as a matching -2 stage event.
+          // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
           stages: -2,
+          // The defender started at +2 raw Attack stages, so the clearing drop resolves to 0.
+          // Derivation: 2 - 2 = 0
           currentStage: 0,
         }),
       ]),
