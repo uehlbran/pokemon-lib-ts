@@ -216,7 +216,7 @@ export class BattleEngine implements BattleEventEmitter {
 
   private static shouldSkipRulesetValidationMessage(message: string): boolean {
     return (
-      message.includes('is not available in Gen ') ||
+      message.includes("is not available in Gen ") ||
       message === "Pokemon ability is required" ||
       message === "Pokemon move slot is empty"
     );

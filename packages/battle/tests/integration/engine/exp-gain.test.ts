@@ -2,8 +2,8 @@ import {
   CORE_HAZARD_IDS,
   CORE_MOVE_IDS,
   DataManager,
-  getExpForLevel,
   type ExperienceGroupIdentifier,
+  getExpForLevel,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult, ExpContext } from "../../../src/context";

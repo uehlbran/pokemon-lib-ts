@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import type { RawDataObjects } from "@pokemon-lib-ts/core";
+import { ALL_NATURES, DataManager, normalizeExperienceGroup } from "@pokemon-lib-ts/core";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
@@ -7,8 +8,7 @@ import {
   GEN8_SPECIES_IDS,
   GEN8_TYPE_CHART,
 } from "@pokemon-lib-ts/gen8/data";
-import { ALL_NATURES, DataManager, normalizeExperienceGroup } from "@pokemon-lib-ts/core";
-import type { RawDataObjects } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 
 const gen8DataManager = createGen8DataManager();
 
@@ -21,7 +21,7 @@ const loadedItem = gen8DataManager.getItem(GEN8_ITEM_IDS.eviolite);
 const adamant = ALL_NATURES.find((nature) => nature.id === "adamant");
 
 if (!adamant) {
-  throw new Error('Expected the canonical Adamant nature fixture to exist');
+  throw new Error("Expected the canonical Adamant nature fixture to exist");
 }
 
 function createFullData(): RawDataObjects {

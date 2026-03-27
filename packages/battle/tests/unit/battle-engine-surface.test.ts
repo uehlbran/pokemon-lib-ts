@@ -363,7 +363,11 @@ describe("BattleEngine surface", () => {
                 ability: "missing-ability",
               }),
             ],
-            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, { ability: CORE_ABILITY_IDS.blaze })],
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
+                ability: CORE_ABILITY_IDS.blaze,
+              }),
+            ],
           ],
           seed: 12345,
         },

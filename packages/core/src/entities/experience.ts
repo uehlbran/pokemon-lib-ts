@@ -11,9 +11,6 @@ export type ExperienceGroup =
  * formulas. The runtime normalizes them at the seam so existing shipped data remains usable
  * until regenerated datasets are refreshed.
  */
-export type ExperienceGroupAlias =
-  | "medium"
-  | "slow-then-very-fast"
-  | "fast-then-very-slow";
+export type ExperienceGroupAlias = "medium" | "slow-then-very-fast" | "fast-then-very-slow";
 
 export type ExperienceGroupIdentifier = ExperienceGroup | ExperienceGroupAlias;
