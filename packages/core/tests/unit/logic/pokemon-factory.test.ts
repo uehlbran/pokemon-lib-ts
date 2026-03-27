@@ -568,6 +568,17 @@ describe("createPokemonInstance", () => {
     expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
   });
 
+  it("given a malformed move seed, when called, then it throws instead of creating an invalid MoveSlot", () => {
+    const species = createSyntheticSpeciesData();
+    const rng = new SeededRandom(42);
+
+    expect(() =>
+      createPokemonInstanceForTest(species, 36, rng, {
+        moves: [{ currentPP: 1, maxPP: 1, ppUps: 0 } as never],
+      }),
+    ).toThrow("Invalid move slot seed: expected move id, canonical move metadata, or MoveSlot");
+  });
+
   it("given moves option has more than four entries, when called, then it throws instead of creating an invalid move list", () => {
     const species = createSyntheticSpeciesData();
     const rng = new SeededRandom(42);

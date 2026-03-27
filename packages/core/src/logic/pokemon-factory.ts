@@ -36,7 +36,24 @@ function cloneMoveSlot(slot: MoveSlot): MoveSlot {
 }
 
 function isMoveSlot(seed: MoveSlotSeed): seed is MoveSlot {
-  return typeof seed !== "string" && "currentPP" in seed && "maxPP" in seed && "ppUps" in seed;
+  if (typeof seed === "string") {
+    return false;
+  }
+  const candidate = seed as Partial<MoveSlot>;
+  return (
+    typeof candidate.moveId === "string" &&
+    typeof candidate.currentPP === "number" &&
+    typeof candidate.maxPP === "number" &&
+    typeof candidate.ppUps === "number"
+  );
+}
+
+function isMoveDataSeed(seed: MoveSlotSeed): seed is Pick<MoveData, "id" | "pp"> {
+  if (typeof seed === "string") {
+    return false;
+  }
+  const candidate = seed as Partial<Pick<MoveData, "id" | "pp">>;
+  return typeof candidate.id === "string" && typeof candidate.pp === "number";
 }
 
 function resolveMoveSlotSeed(
@@ -49,7 +66,10 @@ function resolveMoveSlotSeed(
     }
     return { id: seed, pp: movePpResolver(seed) };
   }
-  return seed;
+  if (isMoveSlot(seed) || isMoveDataSeed(seed)) {
+    return seed;
+  }
+  throw new Error("Invalid move slot seed: expected move id, canonical move metadata, or MoveSlot");
 }
 
 function createRandomIvs(rng: SeededRandom): StatBlock {
