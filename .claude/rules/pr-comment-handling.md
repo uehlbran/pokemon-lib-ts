@@ -17,10 +17,12 @@ retrying the merge.
 1. After creating a PR, monitor review comments until the PR is merged or closed.
 2. `gh pr merge` is allowed only after every review thread has been acknowledged.
 3. To assess comments manually:
+
    ```bash
    gh api repos/{owner}/{repo}/pulls/<N>/comments
    gh api repos/{owner}/{repo}/issues/<N>/comments
    ```
+
    Then reply to each thread and resolve addressed ones before attempting merge.
 
 ## What Counts as Addressing a Comment

@@ -21,12 +21,25 @@ fi
 # Extract PR number: scan ALL tokens in the command for a pure integer
 # (handles flags like --auto, --squash, --merge appearing before or after the number)
 PR_NUMBER=""
+TARGET_REPO=""
 TOKENS=$(printf '%s\n' "$FIRST_LINE" | sed -E 's/^gh[[:space:]]+pr[[:space:]]+merge[[:space:]]*//')
+PREV_TOKEN=""
 for token in $TOKENS; do
   if [[ "$token" =~ ^[0-9]+$ ]]; then
     PR_NUMBER="$token"
-    break
   fi
+
+  if [ "$PREV_TOKEN" = "-R" ] || [ "$PREV_TOKEN" = "--repo" ]; then
+    TARGET_REPO="$token"
+  fi
+
+  case "$token" in
+    -R=*|--repo=*)
+      TARGET_REPO="${token#*=}"
+      ;;
+  esac
+
+  PREV_TOKEN="$token"
 done
 
 # Fallback: if no explicit number in command, infer from current branch
@@ -41,7 +54,10 @@ if [ -z "$PR_NUMBER" ]; then
 fi
 
 # Get owner/repo
-REPO_NWO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
+REPO_NWO="$TARGET_REPO"
+if [ -z "$REPO_NWO" ]; then
+  REPO_NWO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)
+fi
 OWNER=$(echo "$REPO_NWO" | cut -d/ -f1)
 REPO_NAME=$(echo "$REPO_NWO" | cut -d/ -f2)
 
@@ -50,12 +66,26 @@ if [ -z "$OWNER" ] || [ -z "$REPO_NAME" ]; then
   exit 0
 fi
 
-# Query unresolved review threads
-RESULT=$(gh api graphql -f query='
-{
-  repository(owner: "'"$OWNER"'", name: "'"$REPO_NAME"'") {
-    pullRequest(number: '"$PR_NUMBER"') {
-      reviewThreads(first: 100) {
+# Query unresolved review threads, paginating until all pages are retrieved.
+THREADS='[]'
+CURSOR=""
+HAS_NEXT_PAGE="true"
+
+while [ "$HAS_NEXT_PAGE" = "true" ]; do
+  if [ -n "$CURSOR" ]; then
+    AFTER_ARG="-F"
+    AFTER_VALUE="after=$CURSOR"
+  else
+    AFTER_ARG=""
+    AFTER_VALUE=""
+  fi
+
+  if [ -n "$AFTER_ARG" ]; then
+    RESULT=$(gh api graphql -F owner="$OWNER" -F repo="$REPO_NAME" -F prNumber="$PR_NUMBER" -F after="$CURSOR" -f query='
+query($owner: String!, $repo: String!, $prNumber: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $prNumber) {
+      reviewThreads(first: 100, after: $after) {
         nodes {
           id
           isResolved
@@ -67,21 +97,66 @@ RESULT=$(gh api graphql -f query='
             }
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }
 }' 2>/dev/null)
+  else
+    RESULT=$(gh api graphql -F owner="$OWNER" -F repo="$REPO_NAME" -F prNumber="$PR_NUMBER" -f query='
+query($owner: String!, $repo: String!, $prNumber: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $prNumber) {
+      reviewThreads(first: 100, after: $after) {
+        nodes {
+          id
+          isResolved
+          comments(first: 2) {
+            totalCount
+            nodes {
+              path
+              author { login }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}' 2>/dev/null)
+  fi
 
-if [ -z "$RESULT" ]; then
-  # GraphQL failed — fail open
-  exit 0
-fi
+  if [ -z "$RESULT" ]; then
+    # GraphQL failed — fail open
+    exit 0
+  fi
+
+  THREADS=$(jq -c --argjson existing "$THREADS" '
+    $existing + (.data.repository.pullRequest.reviewThreads.nodes // [])
+  ' <<<"$RESULT" 2>/dev/null)
+
+  if [ -z "$THREADS" ]; then
+    exit 0
+  fi
+
+  HAS_NEXT_PAGE=$(jq -r '
+    .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage // false
+  ' <<<"$RESULT" 2>/dev/null)
+  CURSOR=$(jq -r '
+    .data.repository.pullRequest.reviewThreads.pageInfo.endCursor // empty
+  ' <<<"$RESULT" 2>/dev/null)
+done
 
 # Find unresolved threads with no reply (totalCount == 1 means only the original comment)
-UNADDRESSED=$(echo "$RESULT" | jq -r '
-  [.data.repository.pullRequest.reviewThreads.nodes[]
-   | select(.isResolved == false and (.comments.totalCount <= 1))
-  ] | length')
+UNADDRESSED=$(jq -r '
+  [.[] | select(.isResolved == false and (.comments.totalCount <= 1))] | length
+' <<<"$THREADS" 2>/dev/null)
 
 if [ -z "$UNADDRESSED" ]; then
   # jq parse failed — fail open
@@ -89,11 +164,11 @@ if [ -z "$UNADDRESSED" ]; then
 fi
 
 if [ "$UNADDRESSED" -gt 0 ]; then
-  DETAILS=$(echo "$RESULT" | jq -r '
-    [.data.repository.pullRequest.reviewThreads.nodes[]
-     | select(.isResolved == false and (.comments.totalCount <= 1))
+  DETAILS=$(jq -r '
+    [.[] | select(.isResolved == false and (.comments.totalCount <= 1))
      | "  \(.comments.nodes[0].author.login // "reviewer") on \(.comments.nodes[0].path // "unknown file")"]
-    | .[]')
+    | .[]
+  ' <<<"$THREADS")
 
   echo "BLOCKED: $UNADDRESSED unresolved review thread(s) have no reply — they were never acknowledged." >&2
   echo "" >&2

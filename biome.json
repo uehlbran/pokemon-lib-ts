@@ -43,13 +43,5 @@
     }
   ],
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": {
-    "includes": [
-      "**",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/build",
-      "!**/coverage"
-    ]
-  }
+  "files": { "includes": ["**", "!**/node_modules", "!**/dist", "!**/build", "!**/coverage"] }
 }
