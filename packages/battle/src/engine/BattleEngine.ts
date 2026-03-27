@@ -2153,44 +2153,22 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
-    // Terrain priority block (Gen 7+: Psychic Terrain blocks priority moves)
-    // Source: Showdown data/conditions.ts -- psychicterrain.onTryHit:
-    //   if (target.isGrounded() && move.priority > 0) { return false; }
-    if (this.ruleset.shouldBlockPriorityMove) {
-      const naturalPriority: number = effectiveMoveData.priority ?? 0;
-      if (
-        naturalPriority > 0 &&
-        this.ruleset.shouldBlockPriorityMove(actor, effectiveMoveData, defender, this.state)
-      ) {
-        this.emit({
-          type: "move-fail",
-          side: action.side,
-          pokemon: getPokemonName(actor),
-          move: effectiveMoveData.id,
-          reason: "blocked by terrain",
-        });
-        actor.lastMoveUsed = moveData.id;
-        actor.movedThisTurn = true;
-        return;
+    const preExecutionMoveFailure = this.ruleset.getPreExecutionMoveFailure?.(
+      actor,
+      defender,
+      effectiveMoveData,
+      this.state,
+    );
+    if (preExecutionMoveFailure) {
+      for (const message of preExecutionMoveFailure.messages ?? []) {
+        this.emit({ type: "message", text: message });
       }
-    }
-
-    // Gen 7+: Prankster-boosted status moves fail against Dark-type targets.
-    // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
-    if (
-      this.ruleset.checkPranksterDarkImmunity?.(
-        actor,
-        defender,
-        effectiveMoveData,
-        effectiveMoveData.target,
-      )
-    ) {
       this.emit({
         type: "move-fail",
         side: action.side,
         pokemon: getPokemonName(actor),
         move: effectiveMoveData.id,
-        reason: "blocked by Dark-type immunity",
+        reason: preExecutionMoveFailure.reason,
       });
       actor.lastMoveUsed = moveData.id;
       actor.movedThisTurn = true;

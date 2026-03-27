@@ -241,14 +241,46 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       });
       const agility = dataManager.getMove(moveIds.agility);
 
-      const blocked = ruleset.checkPranksterDarkImmunity(
-        pranksterUser,
-        opponent,
-        agility,
-        agility.target,
-      );
+      const state = createBattleState({
+        generation: 8,
+        sides: [
+          createBattleSide({ index: 0, active: [pranksterUser] }),
+          createBattleSide({ index: 1, active: [opponent] }),
+        ],
+        rng: makeRng(),
+      });
+      const blocked = ruleset.getPreExecutionMoveFailure(pranksterUser, opponent, agility, state);
 
-      expect(blocked).toBe(false);
+      expect(blocked).toBeNull();
+    },
+  );
+
+  it(
+    "given Prankster user with a status move and a Dark-type opposing defender, " +
+      "when checking pre-execution failure, then the move is blocked",
+    () => {
+      const pranksterUser = createOnFieldPokemon({
+        ability: abilityIds.prankster,
+        moves: [createScenarioMoveSlot(moveIds.willOWisp)],
+      });
+      const opponent = createOnFieldPokemon({
+        types: [typeIds.dark],
+      });
+      const willOWisp = dataManager.getMove(moveIds.willOWisp);
+      const state = createBattleState({
+        generation: 8,
+        sides: [
+          createBattleSide({ index: 0, active: [pranksterUser] }),
+          createBattleSide({ index: 1, active: [opponent] }),
+        ],
+        rng: makeRng(),
+      });
+
+      const result = ruleset.getPreExecutionMoveFailure(pranksterUser, opponent, willOWisp, state);
+
+      expect(result).toEqual({
+        reason: "blocked by Dark-type immunity",
+      });
     },
   );
 });
