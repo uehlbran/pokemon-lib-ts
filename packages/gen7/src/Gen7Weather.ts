@@ -20,7 +20,14 @@
  */
 
 import type { ActivePokemon, BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
-import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  type PokemonType,
+  type WeatherType,
+} from "@pokemon-lib-ts/core";
 
 export const GEN7_WEATHER_DAMAGE_MULTIPLIERS = {
   rainWaterBoost: 1.5,
@@ -37,7 +44,10 @@ export const GEN7_WEATHER_DAMAGE_MULTIPLIERS = {
  * Source: Showdown sim/battle.ts — suppressingWeather() checks for Cloud Nine and Air Lock
  * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
  */
-const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set(["cloud-nine", "air-lock"]);
+const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set([
+  CORE_ABILITY_IDS.cloudNine,
+  CORE_ABILITY_IDS.airLock,
+]);
 
 /**
  * Check if either the attacker or defender has Cloud Nine / Air Lock,
@@ -90,7 +100,11 @@ export const WEATHER_ROCK_EXTENSION = 3; // Total = 5 + 3 = 8
  * Source: Bulbapedia -- Sandstorm: "Rock-, Ground-, and Steel-type Pokemon are unaffected"
  * Source: Showdown data/conditions.ts -- sandstorm immunity type check
  */
-export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel"];
+export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = [
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.steel,
+];
 
 /**
  * Types immune to hail chip damage in Gen 7.
@@ -98,7 +112,7 @@ export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground",
  * Source: Bulbapedia -- Hail: "Ice-type Pokemon are unaffected"
  * Source: Showdown data/conditions.ts -- hail immunity type check
  */
-export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
+export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = [CORE_TYPE_IDS.ice];
 
 /**
  * Abilities that grant immunity to sandstorm chip damage in Gen 7.
@@ -114,11 +128,11 @@ export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
  * Source: Bulbapedia -- individual ability pages
  */
 const SAND_IMMUNE_ABILITIES: readonly string[] = [
-  "magic-guard",
-  "overcoat",
-  "sand-rush",
-  "sand-force",
-  "sand-veil",
+  CORE_ABILITY_IDS.magicGuard,
+  CORE_ABILITY_IDS.overcoat,
+  CORE_ABILITY_IDS.sandRush,
+  CORE_ABILITY_IDS.sandForce,
+  CORE_ABILITY_IDS.sandVeil,
 ];
 
 /**
@@ -136,11 +150,11 @@ const SAND_IMMUNE_ABILITIES: readonly string[] = [
  * Source: Bulbapedia -- Slush Rush: "is not damaged by hail"
  */
 const HAIL_IMMUNE_ABILITIES: readonly string[] = [
-  "magic-guard",
-  "overcoat",
-  "ice-body",
-  "snow-cloak",
-  "slush-rush",
+  CORE_ABILITY_IDS.magicGuard,
+  CORE_ABILITY_IDS.overcoat,
+  CORE_ABILITY_IDS.iceBody,
+  CORE_ABILITY_IDS.snowCloak,
+  CORE_ABILITY_IDS.slushRush,
 ];
 
 /**
@@ -162,13 +176,13 @@ export function isGen7WeatherImmune(
   heldItem?: string | null,
 ): boolean {
   // Rain and Sun have no chip damage
-  if (weather !== "sand" && weather !== "hail") return false;
+  if (weather !== CORE_WEATHER_IDS.sand && weather !== CORE_WEATHER_IDS.hail) return false;
 
   // Safety Goggles: immune to sand and hail chip damage
   // Source: Showdown data/items.ts -- safetygoggles: onImmunity for weather damage
-  if (heldItem === "safety-goggles") return true;
+  if (heldItem === CORE_ITEM_IDS.safetyGoggles) return true;
 
-  if (weather === "sand") {
+  if (weather === CORE_WEATHER_IDS.sand) {
     // Ability-based immunity
     if (ability && SAND_IMMUNE_ABILITIES.includes(ability)) return true;
     // Type-based immunity (Rock, Ground, Steel)
@@ -198,7 +212,9 @@ export function applyGen7WeatherEffects(state: BattleState): WeatherEffectResult
   // No weather or non-damaging weather
   if (!state.weather) return results;
   const weatherType = state.weather.type;
-  if (weatherType !== "sand" && weatherType !== "hail") return results;
+  if (weatherType !== CORE_WEATHER_IDS.sand && weatherType !== CORE_WEATHER_IDS.hail) {
+    return results;
+  }
 
   // Cloud Nine / Air Lock suppresses all weather effects including chip damage
   // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
@@ -222,7 +238,7 @@ export function applyGen7WeatherEffects(state: BattleState): WeatherEffectResult
       const pokemonName = active.pokemon.nickname ?? active.pokemon.speciesId.toString();
 
       const message =
-        weatherType === "sand"
+        weatherType === CORE_WEATHER_IDS.sand
           ? `${pokemonName} is buffeted by the sandstorm!`
           : `${pokemonName} is pelted by hail!`;
 

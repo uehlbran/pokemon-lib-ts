@@ -23,6 +23,7 @@ import type {
   TerastallizeEvent,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import { GEN9_SPECIAL_TERA_TYPE_IDS } from "./constants/mechanics.js";
 
 /**
  * Gen 9 Terastallization gimmick.
@@ -94,19 +95,19 @@ export class Gen9Terastallization implements BattleGimmick {
     // Change defensive typing to single Tera Type
     // Exception: Stellar retains original types defensively
     // Source: Showdown sim/pokemon.ts -- Stellar Tera has no defensive type change
-    const isStellar = (teraType as string) === "stellar";
+    const isStellar = (teraType as string) === GEN9_SPECIAL_TERA_TYPE_IDS.stellar;
     if (!isStellar) {
       pokemon.types = [teraType];
     }
     // If Stellar, types remain unchanged (original defensive types)
 
     // Persist Tera state on the underlying PokemonInstance so that when this Pokemon
-    // is switched out and back in, createActivePokemon() can restore the Tera form.
+    // is switched out and back in, createOnFieldPokemon() can restore the Tera form.
     // Source: Gen 9 game mechanic -- Terastallization is permanent for the rest of the battle.
     pokemon.pokemon.terastallized = true;
     // teraOriginalTypes: pre-Tera species types, used by getOriginalTypes() for STAB calc.
     pokemon.pokemon.teraOriginalTypes = originalTypes;
-    // teraTypes: resolved DEFENSIVE types for switch-in type restoration via createActivePokemon.
+    // teraTypes: resolved DEFENSIVE types for switch-in type restoration via createOnFieldPokemon.
     //   Non-Stellar: [teraType] (single Tera type is the defensive type)
     //   Stellar: originalTypes (Stellar retains original defensive types)
     // Source: Showdown sim/pokemon.ts -- Stellar retains original defensive types; non-Stellar is single Tera type
@@ -142,7 +143,7 @@ export class Gen9Terastallization implements BattleGimmick {
     const teraType = pokemon.teraType ?? pokemon.pokemon.teraType;
     if (!teraType) return move;
 
-    const isStellar = (teraType as string) === "stellar";
+    const isStellar = (teraType as string) === GEN9_SPECIAL_TERA_TYPE_IDS.stellar;
 
     if (isStellar) {
       // Stellar Tera Blast: 100 BP
@@ -213,7 +214,7 @@ export function calculateTeraStab(
     return 1.5;
   }
 
-  const isStellar = (pokemon.teraType as string) === "stellar";
+  const isStellar = (pokemon.teraType as string) === GEN9_SPECIAL_TERA_TYPE_IDS.stellar;
 
   if (isStellar) {
     // Stellar Tera: special one-time boost per base type

@@ -1,5 +1,6 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData, SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_IDS, CORE_SPECIES_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 2 critical hit rate table by stage.
@@ -78,25 +79,31 @@ export function getGen2CritStage(attacker: ActivePokemon, move: MoveData): numbe
   }
 
   // Focus Energy: +1 (fixed in Gen 2)
-  if (attacker.volatileStatuses.has("focus-energy")) {
+  if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.focusEnergy)) {
     stage += 1;
   }
 
   // Scope Lens held item: +1
   // Source: gen2-ground-truth.md §4 — Crit Stage Sources
-  if (attacker.pokemon.heldItem === "scope-lens") {
+  if (attacker.pokemon.heldItem === CORE_ITEM_IDS.scopeLens) {
     stage += 1;
   }
 
   // Stick (Farfetch'd #83 only): +2
   // Source: gen2-ground-truth.md §4 — Crit Stage Sources
-  if (attacker.pokemon.heldItem === "stick" && attacker.pokemon.speciesId === 83) {
+  if (
+    attacker.pokemon.heldItem === CORE_ITEM_IDS.stick &&
+    attacker.pokemon.speciesId === CORE_SPECIES_IDS.farfetchd
+  ) {
     stage += 2;
   }
 
   // Lucky Punch (Chansey #113 only): +2
   // Source: gen2-ground-truth.md §4 — Crit Stage Sources
-  if (attacker.pokemon.heldItem === "lucky-punch" && attacker.pokemon.speciesId === 113) {
+  if (
+    attacker.pokemon.heldItem === CORE_ITEM_IDS.luckyPunch &&
+    attacker.pokemon.speciesId === CORE_SPECIES_IDS.chansey
+  ) {
     stage += 2;
   }
 

@@ -17,6 +17,7 @@ import {
   type MoveData,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { BATTLE_SOURCE_IDS } from "../../../src";
 import type { BattleConfig, EndOfTurnEffect, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -351,7 +352,7 @@ describe("Bug #600 -- Leftovers should not activate twice when toxic-orb-activat
         "side" in e &&
         e.side === 0 &&
         "source" in e &&
-        e.source === "held-item",
+        e.source === BATTLE_SOURCE_IDS.heldItem,
     );
     // Should be exactly 1 heal event, not 2
     expect(healEvents.length).toBe(1);
@@ -391,7 +392,7 @@ describe("Bug #600 -- Leftovers should not activate twice when toxic-orb-activat
         "side" in e &&
         e.side === 0 &&
         "source" in e &&
-        e.source === "held-item",
+        e.source === BATTLE_SOURCE_IDS.heldItem,
     );
     expect(healEvents.length).toBe(1);
     expect(active0!.pokemon.currentHp).toBe(100 + expectedHeal);

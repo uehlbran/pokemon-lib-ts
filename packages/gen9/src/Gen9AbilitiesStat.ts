@@ -4,7 +4,13 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
-import { CORE_TERRAIN_IDS, CORE_VOLATILE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import {
+  CORE_STAT_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 import {
   GEN9_ORICHALCUM_HADRON_MULTIPLIER,
   GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
@@ -38,14 +44,19 @@ import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS } from "./data/reference-ids.js";
  * The 5 non-HP stats eligible for Protosynthesis/Quark Drive boost.
  * Source: Showdown data/abilities.ts:3440-3455 -- iterates atk/def/spa/spd/spe
  */
-export type BoostableStat = "attack" | "defense" | "spAttack" | "spDefense" | "speed";
+export type BoostableStat =
+  | typeof CORE_STAT_IDS.attack
+  | typeof CORE_STAT_IDS.defense
+  | typeof CORE_STAT_IDS.spAttack
+  | typeof CORE_STAT_IDS.spDefense
+  | typeof CORE_STAT_IDS.speed;
 
 const BOOSTABLE_STATS: readonly BoostableStat[] = [
-  "attack",
-  "defense",
-  "spAttack",
-  "spDefense",
-  "speed",
+  CORE_STAT_IDS.attack,
+  CORE_STAT_IDS.defense,
+  CORE_STAT_IDS.spAttack,
+  CORE_STAT_IDS.spDefense,
+  CORE_STAT_IDS.speed,
 ];
 
 // ---------------------------------------------------------------------------
@@ -76,9 +87,9 @@ function getName(ctx: AbilityContext): string {
 export function getHighestBaseStat(pokemon: ActivePokemon): BoostableStat {
   const species = pokemon.transformedSpecies ?? undefined;
   const baseStats = species?.baseStats ?? pokemon.pokemon.calculatedStats;
-  if (!baseStats) return "attack";
+  if (!baseStats) return CORE_STAT_IDS.attack;
 
-  let highestStat: BoostableStat = "attack";
+  let highestStat: BoostableStat = CORE_STAT_IDS.attack;
   let highestVal = baseStats.attack;
 
   for (const stat of BOOSTABLE_STATS) {
@@ -101,7 +112,7 @@ export function getHighestBaseStat(pokemon: ActivePokemon): BoostableStat {
  *   "return this.chainModify([5325, 4096])"
  */
 export function getBoostMultiplier(stat: BoostableStat): number {
-  return stat === "speed"
+  return stat === CORE_STAT_IDS.speed
     ? GEN9_STAT_ABILITY_SPEED_MULTIPLIER
     : GEN9_STAT_ABILITY_STANDARD_MULTIPLIER;
 }
@@ -110,11 +121,11 @@ export function getBoostMultiplier(stat: BoostableStat): number {
  * Human-readable stat display names for messages.
  */
 const STAT_DISPLAY_NAMES: Record<BoostableStat, string> = {
-  attack: "Attack",
-  defense: "Defense",
-  spAttack: "Sp. Atk",
-  spDefense: "Sp. Def",
-  speed: "Speed",
+  [CORE_STAT_IDS.attack]: "Attack",
+  [CORE_STAT_IDS.defense]: "Defense",
+  [CORE_STAT_IDS.spAttack]: "Sp. Atk",
+  [CORE_STAT_IDS.spDefense]: "Sp. Def",
+  [CORE_STAT_IDS.speed]: "Speed",
 };
 
 // ---------------------------------------------------------------------------
@@ -168,8 +179,8 @@ export function handleProtosynthesis(ctx: AbilityContext): AbilityResult {
 
     const effects: AbilityEffect[] = [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.protosynthesis,
         data: { boostedStat, fromBoosterEnergy: consumeBoosterEnergy },
       },
@@ -237,8 +248,8 @@ export function handleQuarkDrive(ctx: AbilityContext): AbilityResult {
 
     const effects: AbilityEffect[] = [
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: CORE_VOLATILE_IDS.quarkDrive,
         data: { boostedStat, fromBoosterEnergy: consumeBoosterEnergy },
       },

@@ -9,12 +9,19 @@ import {
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  CORE_GENDERS,
+  CORE_SCREEN_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
   getTypeMultiplier,
   getWeatherDamageModifier,
 } from "@pokemon-lib-ts/core";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
 import { isWeatherSuppressedGen4 } from "./Gen4Abilities";
 
 const LATIAS_SPECIES_ID = 380;
@@ -73,23 +80,23 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  * Source: Bulbapedia — type-resist berries (Occa, Passho, etc.)
  * Source: Showdown sim/items.ts — type-resist berries onSourceModifyDamage
  */
-export const TYPE_RESIST_BERRIES: Readonly<Record<string, string>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
+export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
+  [GEN4_ITEM_IDS.occaBerry]: CORE_TYPE_IDS.fire,
+  [GEN4_ITEM_IDS.passhoBerry]: CORE_TYPE_IDS.water,
+  [GEN4_ITEM_IDS.wacanBerry]: CORE_TYPE_IDS.electric,
+  [GEN4_ITEM_IDS.rindoBerry]: CORE_TYPE_IDS.grass,
+  [GEN4_ITEM_IDS.yacheBerry]: CORE_TYPE_IDS.ice,
+  [GEN4_ITEM_IDS.chopleBerry]: CORE_TYPE_IDS.fighting,
+  [GEN4_ITEM_IDS.kebiaBerry]: CORE_TYPE_IDS.poison,
+  [GEN4_ITEM_IDS.shucaBerry]: CORE_TYPE_IDS.ground,
+  [GEN4_ITEM_IDS.cobaBerry]: CORE_TYPE_IDS.flying,
+  [GEN4_ITEM_IDS.payapaBerry]: CORE_TYPE_IDS.psychic,
+  [GEN4_ITEM_IDS.tangaBerry]: CORE_TYPE_IDS.bug,
+  [GEN4_ITEM_IDS.chartiBerry]: CORE_TYPE_IDS.rock,
+  [GEN4_ITEM_IDS.kasibBerry]: CORE_TYPE_IDS.ghost,
+  [GEN4_ITEM_IDS.habanBerry]: CORE_TYPE_IDS.dragon,
+  [GEN4_ITEM_IDS.colburBerry]: CORE_TYPE_IDS.dark,
+  [GEN4_ITEM_IDS.babiriBerry]: CORE_TYPE_IDS.steel,
 };
 
 // ─── Ability Immunity Map ───────────────────────────────────────────────────
@@ -116,13 +123,13 @@ export const TYPE_RESIST_BERRIES: Readonly<Record<string, string>> = {
 // in doubles, it does NOT grant water immunity or SpAtk boost. That was added in Gen 5.
 // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —
 //   stormDrain.onTryHit is empty (no immunity)
-const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
+const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, PokemonType>> = {
+  [GEN4_ABILITY_IDS.levitate]: CORE_TYPE_IDS.ground,
+  [GEN4_ABILITY_IDS.voltAbsorb]: CORE_TYPE_IDS.electric,
+  [GEN4_ABILITY_IDS.waterAbsorb]: CORE_TYPE_IDS.water,
+  [GEN4_ABILITY_IDS.flashFire]: CORE_TYPE_IDS.fire,
+  [GEN4_ABILITY_IDS.motorDrive]: CORE_TYPE_IDS.electric,
+  [GEN4_ABILITY_IDS.drySkin]: CORE_TYPE_IDS.water,
 };
 
 // ─── Simple / Unaware Stat Stage Helper ───────────────────────────────────
@@ -159,8 +166,8 @@ function getEffectiveStatStage(
   // Mold Breaker on the attacker bypasses the defender's abilities.
   // When `pokemon` has Mold Breaker, `opponent`'s Unaware is bypassed.
   // When `opponent` has Mold Breaker, `pokemon`'s Simple is bypassed.
-  const pokemonHasMoldBreaker = pokemon.ability === "mold-breaker";
-  const opponentHasMoldBreaker = opponent?.ability === "mold-breaker";
+  const pokemonHasMoldBreaker = pokemon.ability === GEN4_ABILITY_IDS.moldBreaker;
+  const opponentHasMoldBreaker = opponent?.ability === GEN4_ABILITY_IDS.moldBreaker;
 
   // Unaware: opponent ignores this Pokemon's stat stages entirely.
   // Unaware takes priority over Simple — if the opponent has Unaware,
@@ -172,7 +179,10 @@ function getEffectiveStatStage(
   // Source: Showdown Gen 4 — Unaware's onAnyModifyBoost sets boosts to 0,
   //   which runs independently of and overrides Simple's doubling
   // Source: Showdown data/abilities.ts — Mold Breaker bypasses Unaware
-  if (opponent?.ability === "unaware" && !(statContext === "offense" && pokemonHasMoldBreaker)) {
+  if (
+    opponent?.ability === GEN4_ABILITY_IDS.unaware &&
+    !(statContext === "offense" && pokemonHasMoldBreaker)
+  ) {
     return 0;
   }
 
@@ -182,7 +192,10 @@ function getEffectiveStatStage(
   // In offense context: opponent's (defender's) Mold Breaker cannot suppress the attacker's Simple.
   // Source: Showdown Gen 4 — Simple doubles stat stage
   // Source: Showdown data/abilities.ts — Mold Breaker bypasses Simple
-  if (pokemon.ability === "simple" && !(statContext === "defense" && opponentHasMoldBreaker)) {
+  if (
+    pokemon.ability === GEN4_ABILITY_IDS.simple &&
+    !(statContext === "defense" && opponentHasMoldBreaker)
+  ) {
     return Math.max(-6, Math.min(6, raw * 2));
   }
   return raw;
@@ -247,12 +260,15 @@ function getAttackStat(
   // Klutz: holder cannot use its held item — all item-based stat modifiers are suppressed
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts — Klutz gates item modifiers
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === GEN4_ABILITY_IDS.klutz;
 
   // 1. Huge Power / Pure Power: doubles physical attack
   // Source: Showdown sim/battle.ts — Huge Power / Pure Power in Gen 4
   // Source: pret/pokeplatinum — same as Gen 3
-  if (isPhysical && (ability === "huge-power" || ability === "pure-power")) {
+  if (
+    isPhysical &&
+    (ability === GEN4_ABILITY_IDS.hugePower || ability === GEN4_ABILITY_IDS.purePower)
+  ) {
     rawStat = rawStat * 2;
   }
 
@@ -265,14 +281,14 @@ function getAttackStat(
   // 4. Choice Band: 1.5x physical attack (applied to raw stat)
   // Source: Showdown sim/battle.ts — Choice Band Gen 4
   // Source: pret/pokeplatinum — (150 * attack) / 100
-  if (!attackerHasKlutz && isPhysical && attackerItem === "choice-band") {
+  if (!attackerHasKlutz && isPhysical && attackerItem === GEN4_ITEM_IDS.choiceBand) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
   // 4a. Choice Specs (NEW in Gen 4): 1.5x special attack (applied to raw stat)
   // Source: Showdown sim/items.ts — Choice Specs
   // Source: Bulbapedia — Choice Specs: "Boosts Sp. Atk by 50%, but locks into one move."
-  if (!attackerHasKlutz && !isPhysical && attackerItem === "choice-specs") {
+  if (!attackerHasKlutz && !isPhysical && attackerItem === GEN4_ITEM_IDS.choiceSpecs) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
@@ -285,7 +301,7 @@ function getAttackStat(
   if (
     !attackerHasKlutz &&
     !isPhysical &&
-    attackerItem === "soul-dew" &&
+    attackerItem === GEN4_ITEM_IDS.soulDew &&
     (attackerSpecies === LATIAS_SPECIES_ID || attackerSpecies === LATIOS_SPECIES_ID)
   ) {
     rawStat = Math.floor((rawStat * 150) / 100);
@@ -297,7 +313,7 @@ function getAttackStat(
   if (
     !attackerHasKlutz &&
     !isPhysical &&
-    attackerItem === "deep-sea-tooth" &&
+    attackerItem === GEN4_ITEM_IDS.deepSeaTooth &&
     attackerSpecies === CLAMPERL_SPECIES_ID
   ) {
     rawStat = rawStat * 2;
@@ -316,7 +332,7 @@ function getAttackStat(
   if (
     !attackerHasKlutz &&
     isPhysical &&
-    attackerItem === "thick-club" &&
+    attackerItem === GEN4_ITEM_IDS.thickClub &&
     (attackerSpecies === CUBONE_SPECIES_ID || attackerSpecies === MAROWAK_SPECIES_ID)
   ) {
     rawStat = rawStat * 2;
@@ -325,7 +341,7 @@ function getAttackStat(
   // 6. Hustle: 1.5x physical attack (accuracy penalty handled by doesMoveHit)
   // Source: Showdown sim/battle.ts — Hustle in Gen 4
   // Source: pret/pokeplatinum — (150 * attack) / 100
-  if (isPhysical && ability === "hustle") {
+  if (isPhysical && ability === GEN4_ABILITY_IDS.hustle) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
@@ -333,7 +349,7 @@ function getAttackStat(
   // Guts negates burn's damage penalty separately (see main formula)
   // Source: Showdown sim/battle.ts — Guts in Gen 4
   // Source: pret/pokeplatinum — (150 * attack) / 100
-  if (isPhysical && ability === "guts" && attacker.pokemon.status !== null) {
+  if (isPhysical && ability === GEN4_ABILITY_IDS.guts && attacker.pokemon.status !== null) {
     rawStat = Math.floor((150 * rawStat) / 100);
   }
 
@@ -341,7 +357,7 @@ function getAttackStat(
   // Source: Bulbapedia — Solar Power: "During harsh sunlight, the Pokemon's Special Attack
   //   stat is boosted by 50%."
   // Source: Showdown data/abilities.ts — Solar Power onModifySpAPriority
-  if (!isPhysical && ability === "solar-power" && weather === "sun") {
+  if (!isPhysical && ability === GEN4_ABILITY_IDS.solarPower && weather === CORE_WEATHER_IDS.sun) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
 
@@ -350,14 +366,18 @@ function getAttackStat(
   // Source: Bulbapedia — Flower Gift: "During harsh sunlight, the Attack and Special Defense
   //   stats of the Pokemon with this Ability and its allies are boosted by 50%."
   // Source: Showdown data/abilities.ts — Flower Gift onAllyModifyAtkPriority
-  if (isPhysical && ability === "flower-gift" && weather === "sun") {
+  if (isPhysical && ability === GEN4_ABILITY_IDS.flowerGift && weather === CORE_WEATHER_IDS.sun) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
 
   // 7c. Slow Start: halve Attack for the first 5 turns after entering battle
   // Source: Bulbapedia — Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
   // Source: Showdown data/abilities.ts — Slow Start onModifyAtkPriority
-  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has("slow-start")) {
+  if (
+    isPhysical &&
+    ability === GEN4_ABILITY_IDS.slowStart &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
+  ) {
     rawStat = Math.floor(rawStat / 2);
   }
 
@@ -412,7 +432,7 @@ function getDefenseStat(
   // Klutz: holder cannot use its held item — all item-based stat modifiers are suppressed
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts — Klutz gates item modifiers
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === GEN4_ABILITY_IDS.klutz;
 
   // Soul Dew: 1.5x SpDef for Latias (380) / Latios (381)
   // Source: Bulbapedia — Soul Dew: "Raises Latias's and Latios's Sp. Atk and Sp. Def by 50%."
@@ -420,7 +440,7 @@ function getDefenseStat(
   if (
     !defenderHasKlutz &&
     !isPhysical &&
-    defenderItem === "soul-dew" &&
+    defenderItem === GEN4_ITEM_IDS.soulDew &&
     (defenderSpecies === LATIAS_SPECIES_ID || defenderSpecies === LATIOS_SPECIES_ID)
   ) {
     baseStat = Math.floor((baseStat * 150) / 100);
@@ -432,7 +452,7 @@ function getDefenseStat(
   if (
     !defenderHasKlutz &&
     !isPhysical &&
-    defenderItem === "deep-sea-scale" &&
+    defenderItem === GEN4_ITEM_IDS.deepSeaScale &&
     defenderSpecies === CLAMPERL_SPECIES_ID
   ) {
     baseStat = baseStat * 2;
@@ -445,11 +465,11 @@ function getDefenseStat(
   // Source: Bulbapedia — Marvel Scale: "If the Pokemon has a status condition, its Defense
   //   stat is 1.5x."
   // Source: Showdown sim/abilities.ts — Marvel Scale
-  const marvelScaleMoldBreaker = attacker?.ability === "mold-breaker";
+  const marvelScaleMoldBreaker = attacker?.ability === GEN4_ABILITY_IDS.moldBreaker;
   if (
     isPhysical &&
     !marvelScaleMoldBreaker &&
-    defender.ability === "marvel-scale" &&
+    defender.ability === GEN4_ABILITY_IDS.marvelScale &&
     defender.pokemon.status !== null
   ) {
     // Integer arithmetic matching pokeplatinum: (defense * 150) / 100
@@ -462,7 +482,11 @@ function getDefenseStat(
   // Source: Bulbapedia — Sandstorm: "Rock-type Pokemon have their Special Defense
   //   raised by 50% during a sandstorm."
   // Source: Showdown sim/battle.ts — Gen 4 sandstorm SpDef boost for Rock types
-  if (!isPhysical && weather === "sand" && defender.types.includes("rock")) {
+  if (
+    !isPhysical &&
+    weather === CORE_WEATHER_IDS.sand &&
+    defender.types.includes(CORE_TYPE_IDS.rock)
+  ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -478,12 +502,12 @@ function getDefenseStat(
   // Note: Teravolt and Turboblaze are Gen 5 abilities (Zekrom/Reshiram). They are NOT
   // present in Gen 4 and must not be referenced here.
   // Bug #377: Previous code referenced teravolt/turboblaze which are Gen 5+ only.
-  const flowerGiftMoldBreaker = attacker?.ability === "mold-breaker";
+  const flowerGiftMoldBreaker = attacker?.ability === GEN4_ABILITY_IDS.moldBreaker;
   if (
     !isPhysical &&
     !flowerGiftMoldBreaker &&
-    weather === "sun" &&
-    defender.ability === "flower-gift"
+    weather === CORE_WEATHER_IDS.sun &&
+    defender.ability === GEN4_ABILITY_IDS.flowerGift
   ) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
@@ -572,10 +596,10 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Solar Beam: "Has its base power halved in all weather
   //   conditions aside from harsh sunlight."
   if (
-    move.id === "solar-beam" &&
+    move.id === GEN4_MOVE_IDS.solarBeam &&
     weather !== null &&
-    weather !== "sun" &&
-    weather !== "harsh-sun"
+    weather !== CORE_WEATHER_IDS.sun &&
+    weather !== CORE_WEATHER_IDS.harshSun
   ) {
     power = Math.floor(power / 2);
   }
@@ -586,11 +610,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   //   normalize.onModifyMove: if (move.id !== 'struggle') move.type = 'Normal'
   // Source: Bulbapedia — Normalize: "All the Pokemon's moves become Normal-type."
   const effectiveMoveType: PokemonType =
-    attackerAbility === "normalize" && move.id !== "struggle" ? "normal" : move.type;
+    attackerAbility === GEN4_ABILITY_IDS.normalize && move.id !== GEN4_MOVE_IDS.struggle
+      ? CORE_TYPE_IDS.normal
+      : move.type;
 
   // Klutz: holder cannot use its held item — suppresses all held-item modifiers
   // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
-  const attackerHasKlutz = attackerAbility === "klutz";
+  const attackerHasKlutz = attackerAbility === GEN4_ABILITY_IDS.klutz;
 
   // Type-boost items (Charcoal, Mystic Water, etc.) and Plates (Flame Plate, etc.):
   // Both apply ~1.2x to BASE POWER (not attack stat).
@@ -616,7 +642,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/items.ts lines 7755-7759 — Wise Glasses onBasePower chainModify([4505, 4096])
   if (
     !attackerHasKlutz &&
-    attacker.pokemon.heldItem === "muscle-band" &&
+    attacker.pokemon.heldItem === GEN4_ITEM_IDS.muscleBand &&
     move.category === "physical"
   ) {
     power = Math.floor((power * 4505) / 4096);
@@ -624,7 +650,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
   if (
     !attackerHasKlutz &&
-    attacker.pokemon.heldItem === "wise-glasses" &&
+    attacker.pokemon.heldItem === GEN4_ITEM_IDS.wiseGlasses &&
     move.category === "special"
   ) {
     power = Math.floor((power * 4505) / 4096);
@@ -635,7 +661,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown Gen 4 — Mold Breaker negates defender abilities in damage calc
   // Source: Bulbapedia — Mold Breaker: "Moves used by the Pokemon with this Ability
   //   are unaffected by the target's Ability."
-  const moldBreaker = attackerAbility === "mold-breaker";
+  const moldBreaker = attackerAbility === GEN4_ABILITY_IDS.moldBreaker;
 
   // 2. Pinch abilities: 1.5x power when HP <= floor(maxHP/3) and type matches
   // Source: Showdown sim/battle.ts — Gen 4 pinch ability check
@@ -654,7 +680,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // NOT to base power. Handled below in the ModifyDamagePhase1 section (after burn).
   // Source: Showdown data/mods/gen4/abilities.ts line 135 — Flash Fire onModifyDamagePhase1
   const flashFireActive =
-    effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire");
+    effectiveMoveType === CORE_TYPE_IDS.fire &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire);
 
   // 3. Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin defenders.
   // Showdown processes onSourceBasePower callbacks by priority (ascending = runs first).
@@ -664,7 +691,11 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Dry Skin's water immunity is handled in step 5 (early return of 0 damage).
   // Source: Showdown data/abilities.ts — Dry Skin onSourceBasePower (priority 17)
   // Source: Bulbapedia — Dry Skin: "Fire-type moves deal 1.25× damage to the user."
-  if (!moldBreaker && defenderAbility === "dry-skin" && effectiveMoveType === "fire") {
+  if (
+    !moldBreaker &&
+    defenderAbility === GEN4_ABILITY_IDS.drySkin &&
+    effectiveMoveType === CORE_TYPE_IDS.fire
+  ) {
     power = Math.floor(power * 1.25);
   }
 
@@ -674,14 +705,14 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Technician: "Moves with a base power of 60 or less are
   //   boosted in power by 50%."
   // Source: Showdown data/abilities.ts — Technician onBasePower (priority 30)
-  if (attackerAbility === "technician" && power <= 60) {
+  if (attackerAbility === GEN4_ABILITY_IDS.technician && power <= 60) {
     power = Math.floor(power * 1.5);
   }
 
   // 4b. Iron Fist (NEW in Gen 4): 1.2x power for punching moves (flags.punch).
   // Source: Bulbapedia — Iron Fist: "Boosts the power of punching moves by 20%."
   // Source: Showdown data/abilities.ts — Iron Fist onBasePower
-  if (attackerAbility === "iron-fist" && move.flags.punch) {
+  if (attackerAbility === GEN4_ABILITY_IDS.ironFist && move.flags.punch) {
     power = Math.floor(power * 1.2);
   }
 
@@ -689,7 +720,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Does NOT boost Struggle (Struggle has effect: null).
   // Source: Bulbapedia — Reckless: "Boosts the base power of moves which have recoil damage."
   // Source: Showdown data/abilities.ts — Reckless onBasePower
-  if (attackerAbility === "reckless" && hasRecoilEffect(move.effect)) {
+  if (attackerAbility === GEN4_ABILITY_IDS.reckless && hasRecoilEffect(move.effect)) {
     power = Math.floor(power * 1.2);
   }
 
@@ -698,14 +729,14 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Rivalry: "Raises the base power of moves by 25% if the
   //   target is the same gender, lowers by 25% if the target is the opposite gender."
   // Source: Showdown data/abilities.ts — Rivalry onBasePower
-  if (attackerAbility === "rivalry") {
+  if (attackerAbility === GEN4_ABILITY_IDS.rivalry) {
     const attackerGender = attacker.pokemon.gender;
     const defenderGender = defender.pokemon.gender;
     if (
       attackerGender &&
       defenderGender &&
-      attackerGender !== "genderless" &&
-      defenderGender !== "genderless"
+      attackerGender !== CORE_GENDERS.genderless &&
+      defenderGender !== CORE_GENDERS.genderless
     ) {
       if (attackerGender === defenderGender) {
         power = Math.floor(power * 1.25);
@@ -721,23 +752,23 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/items.ts — Adamant Orb / Lustrous Orb onBasePower: basePower * 0x1333 / 0x1000
   // Source: Bulbapedia — Adamant Orb boosts Dialga's Dragon/Steel moves by 20%
   // Source: Bulbapedia — Lustrous Orb boosts Palkia's Water/Dragon moves by 20%
-  const attackerHasKlutzPower = attackerAbility === "klutz";
+  const attackerHasKlutzPower = attackerAbility === GEN4_ABILITY_IDS.klutz;
   const attackerItemPower = attacker.pokemon.heldItem;
   const attackerSpeciesIdPower = attacker.pokemon.speciesId;
   if (
     !attackerHasKlutzPower &&
-    attackerItemPower === "adamant-orb" &&
+    attackerItemPower === GEN4_ITEM_IDS.adamantOrb &&
     attackerSpeciesIdPower === DIALGA_SPECIES_ID &&
-    (effectiveMoveType === "dragon" || effectiveMoveType === "steel")
+    (effectiveMoveType === CORE_TYPE_IDS.dragon || effectiveMoveType === CORE_TYPE_IDS.steel)
   ) {
     power = Math.floor((power * 4915) / 4096);
     basePowerItemMultiplier = 4915 / 4096; // 1.2x in Gen 4 fraction form
   }
   if (
     !attackerHasKlutzPower &&
-    attackerItemPower === "lustrous-orb" &&
+    attackerItemPower === GEN4_ITEM_IDS.lustrousOrb &&
     attackerSpeciesIdPower === PALKIA_SPECIES_ID &&
-    (effectiveMoveType === "water" || effectiveMoveType === "dragon")
+    (effectiveMoveType === CORE_TYPE_IDS.water || effectiveMoveType === CORE_TYPE_IDS.dragon)
   ) {
     power = Math.floor((power * 4915) / 4096);
     basePowerItemMultiplier = 4915 / 4096; // 1.2x in Gen 4 fraction form
@@ -748,9 +779,9 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Griseous Orb: boosts Giratina's Ghost/Dragon moves by 20%
   if (
     !attackerHasKlutzPower &&
-    attackerItemPower === "griseous-orb" &&
+    attackerItemPower === GEN4_ITEM_IDS.griseousOrb &&
     attackerSpeciesIdPower === GIRATINA_SPECIES_ID &&
-    (effectiveMoveType === "ghost" || effectiveMoveType === "dragon")
+    (effectiveMoveType === CORE_TYPE_IDS.ghost || effectiveMoveType === CORE_TYPE_IDS.dragon)
   ) {
     power = Math.floor((power * 4915) / 4096);
     basePowerItemMultiplier = 4915 / 4096; // 1.2x in Gen 4 fraction form
@@ -761,7 +792,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   //   lightball: onBasePower(basePower, pokemon) { if Pikachu => chainModify(2) }
   if (
     !attackerHasKlutzPower &&
-    attackerItemPower === "light-ball" &&
+    attackerItemPower === GEN4_ITEM_IDS.lightBall &&
     attackerSpeciesIdPower === PIKACHU_SPECIES_ID
   ) {
     power = power * 2;
@@ -777,7 +808,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/items.ts — Iron Ball onImmunity removes Ground immunity
   // Source: Bulbapedia — Iron Ball: "makes the holder grounded"
   const ironBallGrounded =
-    defender.pokemon.heldItem === "iron-ball" && effectiveMoveType === "ground";
+    defender.pokemon.heldItem === GEN4_ITEM_IDS.ironBall &&
+    effectiveMoveType === CORE_TYPE_IDS.ground;
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
@@ -785,8 +817,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
       // Source: Showdown Gen 4 mod — Gravity suppresses Levitate
       // Source: Bulbapedia — Gravity: "Levitate will not give immunity to Ground-type moves."
       const isLevitateGrounded =
-        defenderAbility === "levitate" &&
-        effectiveMoveType === "ground" &&
+        defenderAbility === GEN4_ABILITY_IDS.levitate &&
+        effectiveMoveType === CORE_TYPE_IDS.ground &&
         (gravityActive || ironBallGrounded);
       if (!isLevitateGrounded) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
@@ -802,8 +834,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Magnet Rise: "The user levitates using electrically generated
   //   magnetism for five turns."
   if (
-    effectiveMoveType === "ground" &&
-    defender.volatileStatuses.has("magnet-rise") &&
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise) &&
     !gravityActive &&
     !ironBallGrounded
   ) {
@@ -837,8 +869,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Bug #353: Previous implementation halved the attacker's stat (Gen 5+ behavior).
   if (
     !moldBreaker &&
-    defenderAbility === "thick-fat" &&
-    (effectiveMoveType === "fire" || effectiveMoveType === "ice")
+    defenderAbility === GEN4_ABILITY_IDS.thickFat &&
+    (effectiveMoveType === CORE_TYPE_IDS.fire || effectiveMoveType === CORE_TYPE_IDS.ice)
   ) {
     power = Math.floor(power / 2);
     abilityMultiplier = 0.5;
@@ -855,13 +887,15 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   //
   // Bug #355: Previous implementation halved base power (incorrect phase for Gen 4).
   const heatproofActive =
-    !moldBreaker && defenderAbility === "heatproof" && effectiveMoveType === "fire";
+    !moldBreaker &&
+    defenderAbility === GEN4_ABILITY_IDS.heatproof &&
+    effectiveMoveType === CORE_TYPE_IDS.fire;
 
   // 7. Explosion / Self-Destruct: halve defense
   // Source: Showdown sim/battle.ts — Gen 4 Explosion/Self-Destruct halve defense
   // Source: Bulbapedia — Explosion: "Halves the target's Defense stat during damage
   //   calculation. (Generations I-IV)"
-  if (move.id === "explosion" || move.id === "self-destruct") {
+  if (move.id === GEN4_MOVE_IDS.explosion || move.id === GEN4_MOVE_IDS.selfDestruct) {
     defense = Math.max(1, Math.floor(defense / 2));
   }
 
@@ -876,8 +910,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // attacker has Guts (which negates the burn penalty).
   // Source: Showdown sim/battle.ts — Gen 4 burn halving
   // Source: pret/pokeplatinum — same as pokeemerald: damage /= 2
-  const hasBurn = isPhysical && attacker.pokemon.status === "burn";
-  const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
+  const hasBurn = isPhysical && attacker.pokemon.status === CORE_STATUS_IDS.burn;
+  const gutsActive = attackerAbility === GEN4_ABILITY_IDS.guts && attacker.pokemon.status !== null;
   const burnApplied = hasBurn && !gutsActive;
   if (burnApplied) {
     baseDamage = Math.floor(baseDamage / 2);
@@ -899,15 +933,16 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: pret/pokeplatinum battle_lib.c lines 6982-6991 (Reflect) and 7023-7032 (Light Screen)
   // Source: Showdown data/mods/gen4/scripts.ts — Reflect/LightScreen in ModifyDamagePhase1
   const sides = context.state.sides;
-  if (sides && !isCrit && move.id !== "brick-break") {
+  if (sides && !isCrit && move.id !== GEN4_MOVE_IDS.brickBreak) {
     const defenderSideIndex = sides[0]?.active?.includes(defender) ? 0 : 1;
     const defenderSide = sides[defenderSideIndex];
     if (defenderSide?.screens) {
       const hasReflect =
-        isPhysical && defenderSide.screens.some((s: { type: string }) => s.type === "reflect");
+        isPhysical &&
+        defenderSide.screens.some((s: { type: string }) => s.type === CORE_SCREEN_IDS.reflect);
       const hasLightScreen =
         !isPhysical &&
-        defenderSide.screens.some((s: { type: string }) => s.type === "light-screen");
+        defenderSide.screens.some((s: { type: string }) => s.type === CORE_SCREEN_IDS.lightScreen);
       if (hasReflect || hasLightScreen) {
         baseDamage = Math.floor(baseDamage / 2);
       }
@@ -952,7 +987,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/mods/gen4/items.ts lines 228-240 — Life Orb onModifyDamagePhase2
   //   (onModifyDamage is nulled out; only onModifyDamagePhase2 fires in Gen 4)
   // Source: Bulbapedia — Life Orb: "Boosts the power of moves by 30%."
-  if (!attackerHasKlutz && attackerItem === "life-orb") {
+  if (!attackerHasKlutz && attackerItem === GEN4_ITEM_IDS.lifeOrb) {
     baseDamage = Math.floor(baseDamage * 1.3);
     itemMultiplier = 1.3;
   }
@@ -965,8 +1000,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // First use: data.count = 1 (1.0x = no boost); second consecutive use: data.count = 2 (1.1x), etc.
   // Source: Showdown data/mods/gen4/items.ts line 326-328 — Metronome onModifyDamagePhase2:
   //   return damage * (1 + (this.effectState.numConsecutive / 10));
-  if (!attackerHasKlutz && attackerItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+  if (!attackerHasKlutz && attackerItem === GEN4_ITEM_IDS.metronome) {
+    const metronomeState = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
     if (metronomeState?.data?.count) {
       const boostSteps = (metronomeState.data.count as number) - 1;
       if (boostSteps > 0) {
@@ -996,7 +1031,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const stabMod = getStabModifier(
     effectiveMoveType,
     attacker.types,
-    attackerAbility === "adaptability",
+    attackerAbility === GEN4_ABILITY_IDS.adaptability,
   );
   if (stabMod > 1) {
     baseDamage = Math.floor(baseDamage * stabMod);
@@ -1012,13 +1047,13 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
   if (
     (gravityActive || ironBallGrounded) &&
-    effectiveMoveType === "ground" &&
-    defender.types.includes("flying")
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.types.includes(CORE_TYPE_IDS.flying)
   ) {
     // Remove Flying from the defender's types for effectiveness calculation
     // so Ground moves can hit. If the defender is pure Flying, treat as Normal.
-    const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
-    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
+    const nonFlyingTypes = defender.types.filter((t) => t !== CORE_TYPE_IDS.flying);
+    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : [CORE_TYPE_IDS.normal];
   }
   // Track the types to use for sequential application (may change with Scrappy)
   let sequentialTypes: readonly PokemonType[] = effectiveDefenderTypes;
@@ -1030,15 +1065,16 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   //   to hit Ghost-type Pokemon."
   // Source: Showdown data/abilities.ts — Scrappy onModifyMovePriority
   if (
-    attackerAbility === "scrappy" &&
+    attackerAbility === GEN4_ABILITY_IDS.scrappy &&
     effectiveness === 0 &&
-    (effectiveMoveType === "normal" || effectiveMoveType === "fighting") &&
-    defender.types.includes("ghost")
+    (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
+    defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
     // Recalculate effectiveness treating Ghost as neutral to Normal/Fighting.
     // Remove Ghost from defender types for this recalculation.
-    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
-    sequentialTypes = nonGhostTypes.length > 0 ? nonGhostTypes : (["normal"] as PokemonType[]);
+    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== CORE_TYPE_IDS.ghost);
+    sequentialTypes =
+      nonGhostTypes.length > 0 ? nonGhostTypes : ([CORE_TYPE_IDS.normal] as PokemonType[]);
     effectiveness =
       nonGhostTypes.length > 0
         ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
@@ -1077,9 +1113,9 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Bulbapedia — Wonder Guard: "Only super effective moves will hit."
   if (
     !moldBreaker &&
-    defenderAbility === "wonder-guard" &&
+    defenderAbility === GEN4_ABILITY_IDS.wonderGuard &&
     effectiveness < 2 &&
-    move.id !== "fire-fang"
+    move.id !== GEN4_MOVE_IDS.fireFang
   ) {
     return {
       damage: 0,
@@ -1118,7 +1154,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // 18. Tinted Lens (NEW in Gen 4): double damage if not very effective
   // Source: Bulbapedia — Tinted Lens: "The power of not very effective moves is doubled."
   // Source: Showdown sim/abilities.ts — Tinted Lens
-  if (attackerAbility === "tinted-lens" && effectiveness < 1) {
+  if (attackerAbility === GEN4_ABILITY_IDS.tintedLens && effectiveness < 1) {
     baseDamage = baseDamage * 2;
     abilityMultiplier *= 2;
   }
@@ -1130,7 +1166,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown sim/abilities.ts — Filter / Solid Rock
   if (
     !moldBreaker &&
-    (defenderAbility === "filter" || defenderAbility === "solid-rock") &&
+    (defenderAbility === GEN4_ABILITY_IDS.filter ||
+      defenderAbility === GEN4_ABILITY_IDS.solidRock) &&
     effectiveness > 1
   ) {
     baseDamage = Math.floor(baseDamage * 0.75);
@@ -1154,8 +1191,8 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown sim/items.ts — type-resist berries onSourceModifyDamage
   let typeResistBerryConsumed: string | null = null;
   const defenderItem = defender.pokemon.heldItem;
-  const defenderHasKlutz = defenderAbility === "klutz";
-  const defenderHasEmbargo = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutz = defenderAbility === GEN4_ABILITY_IDS.klutz;
+  const defenderHasEmbargo = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && effectiveness > 1) {
     const resistType = TYPE_RESIST_BERRIES[defenderItem];
     if (resistType && resistType === effectiveMoveType) {
@@ -1175,7 +1212,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Expert Belt: 1.2x damage for super-effective moves
   // Source: Bulbapedia — Expert Belt: "Boosts the power of super effective moves by 20%."
   // Source: Showdown sim/items.ts — Expert Belt
-  if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > 1) {
+  if (!attackerHasKlutz && attackerItem === GEN4_ITEM_IDS.expertBelt && effectiveness > 1) {
     baseDamage = Math.floor((baseDamage * 4915) / 4096);
     itemMultiplier = 4915 / 4096;
   }
@@ -1199,8 +1236,11 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Unburden: if defender has Unburden ability and loses its item, activate the volatile.
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === GEN4_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 

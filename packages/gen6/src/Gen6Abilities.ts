@@ -13,8 +13,19 @@
  * Source: Showdown data/mods/gen6/abilities.ts
  */
 
-import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  type AbilityContext,
+  type AbilityResult,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+} from "@pokemon-lib-ts/battle";
+import {
+  type AbilityTrigger,
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
 import {
   handleGen6DamageCalcAbility,
   handleGen6DamageImmunityAbility,
@@ -79,15 +90,15 @@ export {
  * Source: Showdown data/abilities.ts -- Levitate/Volt Absorb/Water Absorb/Flash Fire etc.
  */
 const PASSIVE_IMMUNITY_TYPES: Readonly<Record<string, PokemonType>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
-  "storm-drain": "water",
-  "lightning-rod": "electric",
-  "sap-sipper": "grass",
+  [CORE_ABILITY_IDS.levitate]: CORE_TYPE_IDS.ground,
+  [CORE_ABILITY_IDS.voltAbsorb]: CORE_TYPE_IDS.electric,
+  [CORE_ABILITY_IDS.waterAbsorb]: CORE_TYPE_IDS.water,
+  [CORE_ABILITY_IDS.flashFire]: CORE_TYPE_IDS.fire,
+  [CORE_ABILITY_IDS.motorDrive]: CORE_TYPE_IDS.electric,
+  [CORE_ABILITY_IDS.drySkin]: CORE_TYPE_IDS.water,
+  [CORE_ABILITY_IDS.stormDrain]: CORE_TYPE_IDS.water,
+  [CORE_ABILITY_IDS.lightningRod]: CORE_TYPE_IDS.electric,
+  [CORE_ABILITY_IDS.sapSipper]: CORE_TYPE_IDS.grass,
 };
 
 // ---------------------------------------------------------------------------
@@ -205,10 +216,10 @@ export function applyGen6Ability(trigger: AbilityTrigger, ctx: AbilityContext): 
       // Source: Showdown data/abilities.ts -- Levitate, Volt Absorb, Water Absorb, etc.
       const immuneType = PASSIVE_IMMUNITY_TYPES[ctx.pokemon.ability];
       let levitateActive = true;
-      if (ctx.pokemon.ability === "levitate") {
+      if (ctx.pokemon.ability === CORE_ABILITY_IDS.levitate) {
         // Levitate is negated by Gravity or Iron Ball
         const gravityActive = ctx.state.gravity?.active ?? false;
-        const ironBallGrounded = ctx.pokemon.pokemon.heldItem === "iron-ball";
+        const ironBallGrounded = ctx.pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall;
         if (gravityActive || ironBallGrounded) {
           levitateActive = false;
         }
@@ -217,7 +228,12 @@ export function applyGen6Ability(trigger: AbilityTrigger, ctx: AbilityContext): 
         const name = ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
         return {
           activated: true,
-          effects: [{ effectType: "none", target: "self" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.none,
+              target: BATTLE_EFFECT_TARGETS.self,
+            },
+          ],
           messages: [`${name}'s ${ctx.pokemon.ability} made ${ctx.move.displayName} miss!`],
         };
       }

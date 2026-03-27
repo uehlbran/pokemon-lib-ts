@@ -20,6 +20,7 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
@@ -29,7 +30,9 @@ import {
   CORE_GENDERS,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createEvs,
@@ -105,7 +108,7 @@ function createSyntheticPokemonInstance(overrides: {
     gender: CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
     friendship: species.baseFriendship,
-    metLocation: "test",
+    metLocation: CORE_POKEMON_DEFAULTS.metLocation,
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: GEN8_ITEM_IDS.pokeBall,
@@ -202,7 +205,11 @@ function createAbilityContext(opts: {
   speciesId?: number;
   currentHp?: number;
   maxHp?: number;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: string;
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
   move?: MoveData;
   state?: BattleState;
 }): AbilityContext {
@@ -285,7 +292,12 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
     const result = handleGen8SwitchInAbility(abilityIds.intrepidSword, triggerIds.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "stat-change", target: "self", stat: "attack", stages: 1 },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        stat: CORE_STAT_IDS.attack,
+        stages: 1,
+      },
     ]);
     expect(result.messages).toEqual([
       `${String(defaultSpecies.id)}'s Intrepid Sword raised its Attack!`,
@@ -368,7 +380,9 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
     expect(result.activated).toBe(true);
     // Heal effect should provide 100 HP (floor(300/3) = 100)
     // Source: Gen8AbilitiesSwitch.ts -- effectType:"heal", target:"self", value: healAmount
-    const healEffect = result.effects.find((e: any) => e.effectType === "heal");
+    const healEffect = result.effects.find(
+      (e: any) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.heal,
+    );
     expect(healEffect).toBeDefined();
     expect((healEffect as any).value).toBe(100);
   });

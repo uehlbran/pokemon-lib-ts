@@ -8,6 +8,7 @@ import {
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "../../../src";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -281,8 +282,8 @@ describe("passive-immunity ability hook", () => {
           activated: true,
           effects: [
             {
-              effectType: "heal" as const,
-              target: "self" as const,
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+              target: BATTLE_EFFECT_TARGETS.self,
               value: 25,
             },
           ],

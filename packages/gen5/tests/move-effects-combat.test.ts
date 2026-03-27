@@ -7,11 +7,13 @@
  */
 
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createEvs,
@@ -609,8 +611,8 @@ describe("Work Up", () => {
 
     expect(result).not.toBeNull();
     expect(result!.statChanges).toEqual([
-      { target: "attacker", stat: "attack", stages: 1 },
-      { target: "attacker", stat: "spAttack", stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 1 },
     ]);
   });
 
@@ -624,7 +626,7 @@ describe("Work Up", () => {
 
     expect(result).not.toBeNull();
     const defStats = result!.statChanges.filter(
-      (c) => c.stat === "defense" || c.stat === "spDefense",
+      (c) => c.stat === CORE_STAT_IDS.defense || c.stat === CORE_STAT_IDS.spDefense,
     );
     expect(defStats).toEqual([]);
   });
@@ -734,7 +736,7 @@ describe("Calm Mind", () => {
 
     expect(result).not.toBeNull();
     const physChanges = result!.statChanges.filter(
-      (c) => c.stat === "attack" || c.stat === "defense",
+      (c) => c.stat === CORE_STAT_IDS.attack || c.stat === CORE_STAT_IDS.defense,
     );
     expect(physChanges).toEqual([]);
   });

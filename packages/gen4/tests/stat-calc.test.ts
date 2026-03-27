@@ -35,6 +35,7 @@ import { Gen4Ruleset } from "../src/Gen4Ruleset";
 const DATA_MANAGER = createGen4DataManager();
 const NATURES = GEN4_NATURE_IDS;
 const SPECIES = GEN4_SPECIES_IDS;
+type StatKey = keyof ReturnType<typeof createIvs>;
 
 function createRuleset(): Gen4Ruleset {
   return new Gen4Ruleset(DATA_MANAGER);
@@ -44,8 +45,8 @@ function createRuleset(): Gen4Ruleset {
 function createSyntheticPokemonInstance(opts: {
   level: number;
   nature: string;
-  ivs?: Partial<Record<"hp" | "attack" | "defense" | "spAttack" | "spDefense" | "speed", number>>;
-  evs?: Partial<Record<"hp" | "attack" | "defense" | "spAttack" | "spDefense" | "speed", number>>;
+  ivs?: Partial<Record<StatKey, number>>;
+  evs?: Partial<Record<StatKey, number>>;
 }): PokemonInstance {
   return {
     uid: "test",

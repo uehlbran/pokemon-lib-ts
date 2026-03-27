@@ -15,6 +15,7 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { CORE_END_OF_TURN_EFFECT_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { BATTLE_SOURCE_IDS } from "../../../src";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -128,14 +129,14 @@ describe("processEffectResult -- defenderHealAmount (issue #526)", () => {
 
     // Assert -- defender (Blastoise, side 1) should have been healed by 50
     const defenderHealEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 1 && e.source === "move-effect",
+      (e) => e.type === "heal" && e.side === 1 && e.source === BATTLE_SOURCE_IDS.moveEffect,
     );
     expect(defenderHealEvents.length).toBe(1);
     expect(defenderHealEvents[0]!.type === "heal" && defenderHealEvents[0]!.amount).toBe(50);
 
     // The attacker should NOT have been healed
     const attackerHealEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 0 && e.source === "move-effect",
+      (e) => e.type === "heal" && e.side === 0 && e.source === BATTLE_SOURCE_IDS.moveEffect,
     );
     expect(attackerHealEvents.length).toBe(0);
   });
@@ -185,7 +186,7 @@ describe("processEffectResult -- defenderHealAmount (issue #526)", () => {
 
     // Assert -- heal is capped: only 30 HP healed (not 100)
     const healEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 1 && e.source === "move-effect",
+      (e) => e.type === "heal" && e.side === 1 && e.source === BATTLE_SOURCE_IDS.moveEffect,
     );
     expect(healEvents.length).toBe(1);
     expect(healEvents[0]!.type === "heal" && healEvents[0]!.amount).toBe(30);

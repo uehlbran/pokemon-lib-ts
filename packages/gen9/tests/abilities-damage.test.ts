@@ -35,6 +35,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
@@ -1505,15 +1506,24 @@ describe("Sturdy", () => {
   describe("sturdyBlocksOHKO", () => {
     it("given Sturdy and OHKO move, when checking, then returns true", () => {
       // Source: Showdown data/abilities.ts -- sturdy onTryHit: OHKO blocked
-      expect(sturdyBlocksOHKO(ABILITY_IDS.sturdy, { type: "ohko" })).toBe(true);
+      expect(sturdyBlocksOHKO(ABILITY_IDS.sturdy, { type: CORE_MOVE_EFFECT_TYPES.ohko })).toBe(
+        true,
+      );
     });
 
     it("given Sturdy and non-OHKO move, when checking, then returns false", () => {
-      expect(sturdyBlocksOHKO(ABILITY_IDS.sturdy, { type: "drain", percentage: 50 })).toBe(false);
+      expect(
+        sturdyBlocksOHKO(ABILITY_IDS.sturdy, {
+          type: CORE_MOVE_EFFECT_TYPES.drain,
+          percentage: 50,
+        }),
+      ).toBe(false);
     });
 
     it("given non-Sturdy and OHKO move, when checking, then returns false", () => {
-      expect(sturdyBlocksOHKO(ABILITY_IDS.blaze, { type: "ohko" })).toBe(false);
+      expect(sturdyBlocksOHKO(ABILITY_IDS.blaze, { type: CORE_MOVE_EFFECT_TYPES.ohko })).toBe(
+        false,
+      );
     });
   });
 });
@@ -1548,7 +1558,9 @@ describe("Parental Bond", () => {
   });
 
   it("given Parental Bond with multi-hit move, when checking eligibility, then returns false", () => {
-    expect(isParentalBondEligible(ABILITY_IDS.parentalBond, 80, "multi-hit")).toBe(false);
+    expect(
+      isParentalBondEligible(ABILITY_IDS.parentalBond, 80, CORE_MOVE_EFFECT_TYPES.multiHit),
+    ).toBe(false);
   });
 
   it("given Parental Bond with status move, when checking eligibility, then returns false", () => {

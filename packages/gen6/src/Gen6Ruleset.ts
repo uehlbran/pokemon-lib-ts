@@ -32,7 +32,14 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_HAZARD_IDS, CORE_VOLATILE_IDS, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
+  getStatStageMultiplier,
+} from "@pokemon-lib-ts/core";
 import { createGen6DataManager } from "./data/index.js";
 import { GEN6_MOVE_IDS } from "./data/reference-ids.js";
 import { applyGen6Ability } from "./Gen6Abilities.js";
@@ -337,11 +344,11 @@ export class Gen6Ruleset extends BaseRuleset {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
     const itemSuppressed =
-      defender.ability === "klutz" ||
-      defender.volatileStatuses.has("embargo") ||
+      defender.ability === CORE_ABILITY_IDS.klutz ||
+      defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo) ||
       (state.magicRoom?.active ?? false);
     if (
-      heldItem === "focus-sash" &&
+      heldItem === CORE_ITEM_IDS.focusSash &&
       !itemSuppressed &&
       currentHp === maxHp &&
       damage >= currentHp
@@ -350,7 +357,7 @@ export class Gen6Ruleset extends BaseRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on with its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 
@@ -475,11 +482,15 @@ export class Gen6Ruleset extends BaseRuleset {
 
     // Embargo: prevents held item effects (Gen 5+)
     // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
-    const isEmbargoed = active.volatileStatuses.has("embargo");
+    const isEmbargoed = active.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
 
     // Choice Scarf: 1.5x Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Choice Scarf boosts Speed 1.5x
-    if (active.pokemon.heldItem === "choice-scarf" && active.ability !== "klutz" && !isEmbargoed) {
+    if (
+      active.pokemon.heldItem === CORE_ITEM_IDS.choiceScarf &&
+      active.ability !== CORE_ABILITY_IDS.klutz &&
+      !isEmbargoed
+    ) {
       effective = Math.floor(effective * 1.5);
     }
 
@@ -510,8 +521,8 @@ export class Gen6Ruleset extends BaseRuleset {
     // Unburden: 2x Speed when held item is consumed/lost AND currently has no item.
     // Source: Bulbapedia -- Unburden doubles Speed when held item is lost
     if (
-      active.ability === "unburden" &&
-      active.volatileStatuses.has("unburden") &&
+      active.ability === CORE_ABILITY_IDS.unburden &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.unburden) &&
       !active.pokemon.heldItem
     ) {
       effective = effective * 2;
@@ -529,7 +540,11 @@ export class Gen6Ruleset extends BaseRuleset {
 
     // Iron Ball: halve Speed (suppressed by Klutz or Embargo)
     // Source: Bulbapedia -- Iron Ball halves Speed
-    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz" && !isEmbargoed) {
+    if (
+      active.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+      active.ability !== CORE_ABILITY_IDS.klutz &&
+      !isEmbargoed
+    ) {
       effective = Math.floor(effective * 0.5);
     }
 
@@ -740,46 +755,46 @@ export class Gen6Ruleset extends BaseRuleset {
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return [
-      "weather-damage",
-      "future-attack",
-      "wish",
-      "weather-healing",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
       "shed-skin",
-      "leech-seed",
-      "leftovers",
-      "black-sludge",
-      "aqua-ring",
-      "ingrain",
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.aquaRing,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
       "poison-heal",
-      "grassy-terrain-heal",
-      "status-damage",
-      "nightmare",
-      "curse",
+      CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
       "bad-dreams",
-      "bind",
-      "yawn-countdown",
-      "encore-countdown",
-      "taunt-countdown",
-      "disable-countdown",
-      "heal-block-countdown",
-      "embargo-countdown",
-      "magnet-rise-countdown",
-      "perish-song",
-      "screen-countdown",
-      "safeguard-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
-      "magic-room-countdown",
-      "wonder-room-countdown",
-      "gravity-countdown",
-      "slow-start-countdown",
-      "terrain-countdown",
-      "weather-countdown",
-      "toxic-orb-activation",
-      "flame-orb-activation",
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magicRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.wonderRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
       "speed-boost",
       "moody",
-      "healing-items",
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
     ];
   }
 

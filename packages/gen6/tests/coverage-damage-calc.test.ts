@@ -1908,7 +1908,7 @@ describe("Metronome item in damage calc", () => {
     // Source: Showdown -- Metronome item: +0.2x per consecutive use, max at 2.0x (6 uses)
     // 3 uses = 1 + (3-1)*0.2 = 1.4x
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 3 } });
+    volatiles.set(CORE_VOLATILE_IDS.metronomeCount, { turnsLeft: -1, data: { count: 3 } });
     const attacker = createSyntheticActivePokemon({
       types: [normal],
       heldItem: GEN6_ITEM_IDS.metronome,
@@ -1935,7 +1935,7 @@ describe("Metronome item in damage calc", () => {
   it("given Metronome item with 1 use (first), when calculating damage, then no boost", () => {
     // Source: Showdown -- Metronome first use: boostSteps = 1 - 1 = 0, no boost
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 1 } });
+    volatiles.set(CORE_VOLATILE_IDS.metronomeCount, { turnsLeft: -1, data: { count: 1 } });
     const attacker = createSyntheticActivePokemon({
       types: [normal],
       heldItem: GEN6_ITEM_IDS.metronome,

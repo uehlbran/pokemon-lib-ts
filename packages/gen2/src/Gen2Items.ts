@@ -1,4 +1,14 @@
-import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  type ItemContext,
+  type ItemEffect,
+  type ItemResult,
+} from "@pokemon-lib-ts/battle";
+import { CORE_ITEM_TRIGGER_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+
+const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
+const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 
 /** No-op result for when an item doesn't activate. */
 const NO_ACTIVATION: ItemResult = {
@@ -38,11 +48,11 @@ export function applyGen2HeldItem(trigger: string, context: ItemContext): ItemRe
   }
 
   switch (trigger) {
-    case "end-of-turn":
+    case CORE_ITEM_TRIGGER_IDS.endOfTurn:
       return handleEndOfTurn(item, context);
-    case "on-damage-taken":
+    case CORE_ITEM_TRIGGER_IDS.onDamageTaken:
       return handleOnDamageTaken(item, context);
-    case "on-hit":
+    case CORE_ITEM_TRIGGER_IDS.onHit:
       return handleOnHit(item, context);
     default:
       return NO_ACTIVATION;
@@ -65,7 +75,7 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ type: "heal", target: "self", value: healAmount }],
+        effects: [{ type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount }],
         messages: [`${pokemonName}'s Leftovers restored its HP!`],
       };
     }
@@ -76,8 +86,8 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 10 },
-            { type: "consume", target: "self", value: "berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 10 },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "berry" },
           ],
           messages: [`${pokemonName}'s Berry restored 10 HP!`],
         };
@@ -87,12 +97,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // PRZCureBerry: Cures paralysis (consumed)
     case "prz-cure-berry": {
-      if (status === "paralysis") {
+      if (status === CORE_STATUS_IDS.paralysis) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "prz-cure-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "prz-cure-berry" },
           ],
           messages: [`${pokemonName}'s PRZCureBerry cured its paralysis!`],
         };
@@ -106,8 +116,8 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 30 },
-            { type: "consume", target: "self", value: "gold-berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 30 },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "gold-berry" },
           ],
           messages: [`${pokemonName}'s Gold Berry restored 30 HP!`],
         };
@@ -117,12 +127,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Ice Berry: Cures burn (consumed)
     case "ice-berry": {
-      if (status === "burn") {
+      if (status === CORE_STATUS_IDS.burn) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "ice-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "ice-berry" },
           ],
           messages: [`${pokemonName}'s Ice Berry cured its burn!`],
         };
@@ -132,12 +142,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Mint Berry: Cures sleep (consumed)
     case "mint-berry": {
-      if (status === "sleep") {
+      if (status === CORE_STATUS_IDS.sleep) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "mint-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "mint-berry" },
           ],
           messages: [`${pokemonName}'s Mint Berry woke it up!`],
         };
@@ -147,12 +157,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Burnt Berry: Cures freeze (consumed)
     case "burnt-berry": {
-      if (status === "freeze") {
+      if (status === CORE_STATUS_IDS.freeze) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "burnt-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "burnt-berry" },
           ],
           messages: [`${pokemonName}'s Burnt Berry thawed it out!`],
         };
@@ -162,12 +172,12 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // PSNCureBerry: Cures poison and badly-poisoned (consumed)
     case "psn-cure-berry": {
-      if (status === "poison" || status === "badly-poisoned") {
+      if (status === CORE_STATUS_IDS.poison || status === CORE_STATUS_IDS.badlyPoisoned) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "psn-cure-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "psn-cure-berry" },
           ],
           messages: [`${pokemonName}'s PSNCureBerry cured its poisoning!`],
         };
@@ -177,12 +187,16 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Bitter Berry: Cures confusion volatile status (consumed)
     case "bitter-berry": {
-      if (pokemon.volatileStatuses.has("confusion")) {
+      if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
         return {
           activated: true,
           effects: [
-            { type: "volatile-cure", target: "self", value: "confusion" },
-            { type: "consume", target: "self", value: "bitter-berry" },
+            {
+              type: ITEM_EFFECT.volatileCure,
+              target: EFFECT_TARGET.self,
+              value: CORE_VOLATILE_IDS.confusion,
+            },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "bitter-berry" },
           ],
           messages: [`${pokemonName}'s Bitter Berry snapped it out of confusion!`],
         };
@@ -192,19 +206,27 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Miracle Berry: Cures any primary status OR confusion (consumed)
     case "miracle-berry": {
-      const hasConfusion = pokemon.volatileStatuses.has("confusion");
+      const hasConfusion = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion);
       const hasPrimaryStatus = status != null;
       if (!hasPrimaryStatus && !hasConfusion) {
         return NO_ACTIVATION;
       }
       const effects: ItemEffect[] = [];
       if (hasPrimaryStatus) {
-        effects.push({ type: "status-cure", target: "self" });
+        effects.push({ type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self });
       }
       if (hasConfusion) {
-        effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
+        effects.push({
+          type: ITEM_EFFECT.volatileCure,
+          target: EFFECT_TARGET.self,
+          value: CORE_VOLATILE_IDS.confusion,
+        });
       }
-      effects.push({ type: "consume", target: "self", value: "miracle-berry" });
+      effects.push({
+        type: ITEM_EFFECT.consume,
+        target: EFFECT_TARGET.self,
+        value: "miracle-berry",
+      });
       return {
         activated: true,
         effects,
@@ -218,8 +240,8 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 20 },
-            { type: "consume", target: "self", value: "berry-juice" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 20 },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "berry-juice" },
           ],
           messages: [`${pokemonName}'s Berry Juice restored 20 HP!`],
         };
@@ -249,7 +271,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         if (context.rng.int(0, 255) < 30) {
           return {
             activated: true,
-            effects: [{ type: "survive", target: "self", value: 1 }],
+            effects: [{ type: ITEM_EFFECT.survive, target: EFFECT_TARGET.self, value: 1 }],
             messages: [`${pokemonName} hung on using its Focus Band!`],
           };
         }
@@ -269,8 +291,8 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 30 },
-            { type: "consume", target: "self", value: "gold-berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 30 },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "gold-berry" },
           ],
           messages: [`${pokemonName}'s Gold Berry restored 30 HP!`],
         };
@@ -286,8 +308,8 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 20 },
-            { type: "consume", target: "self", value: "berry-juice" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 20 },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: "berry-juice" },
           ],
           messages: [`${pokemonName}'s Berry Juice restored 20 HP!`],
         };
@@ -313,7 +335,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
       if (context.rng.chance(30 / 256)) {
         return {
           activated: true,
-          effects: [{ type: "flinch", target: "opponent" }],
+          effects: [{ type: ITEM_EFFECT.flinch, target: EFFECT_TARGET.opponent }],
           messages: [`${pokemonName}'s King's Rock caused flinching!`],
         };
       }

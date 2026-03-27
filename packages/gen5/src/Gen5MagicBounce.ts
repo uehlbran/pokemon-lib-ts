@@ -18,7 +18,7 @@
  */
 
 import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { MoveData } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_VOLATILE_IDS, type MoveData } from "@pokemon-lib-ts/core";
 
 /**
  * Set of move IDs that are reflectable by Magic Bounce (and Magic Coat).
@@ -150,23 +150,27 @@ export function shouldReflectMoveGen5(
   _state: BattleState,
 ): { reflected: true; messages: string[] } | null {
   // Only Magic Bounce holders reflect moves
-  if (defender.ability !== "magic-bounce") return null;
+  if (defender.ability !== CORE_ABILITY_IDS.magicBounce) return null;
 
   // The move must be reflectable
   if (!isReflectableMove(move.id)) return null;
 
   // Mold Breaker variants ignore target abilities (including Magic Bounce)
   // Source: Showdown data/abilities.ts -- magicbounce has { breakable: 1 }
-  const moldBreakerAbilities = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+  const moldBreakerAbilities: ReadonlySet<string> = new Set([
+    CORE_ABILITY_IDS.moldBreaker,
+    CORE_ABILITY_IDS.teravolt,
+    CORE_ABILITY_IDS.turboblaze,
+  ]);
   if (moldBreakerAbilities.has(attacker.ability)) return null;
 
   // Semi-invulnerable defenders cannot reflect
   // Source: Showdown -- target.isSemiInvulnerable() check
   if (
-    defender.volatileStatuses.has("flying") ||
-    defender.volatileStatuses.has("underground") ||
-    defender.volatileStatuses.has("underwater") ||
-    defender.volatileStatuses.has("shadow-force-charging")
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.flying) ||
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.underground) ||
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.underwater) ||
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.shadowForceCharging)
   ) {
     return null;
   }

@@ -10,6 +10,8 @@ import {
   CORE_FIXED_POINT,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TYPES,
+  CORE_MOVE_TARGET_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   createEvs,
@@ -185,7 +187,11 @@ describe("isSheerForceEligibleMove", () => {
 
   it("given Flamethrower (status-chance effect, not whitelisted), when checking eligibility, then returns true via effect", () => {
     // Source: Showdown data/moves.ts -- flamethrower secondary: { chance: 10, status: 'brn' }
-    const effect = { type: "status-chance" as const, status: statusIds.burn, chance: 10 };
+    const effect = {
+      type: CORE_MOVE_EFFECT_TYPES.statusChance,
+      status: statusIds.burn,
+      chance: 10,
+    } as const;
     expect(isSheerForceEligibleMove(effect, moveIds.flamethrower)).toBe(true);
   });
 
@@ -199,7 +205,7 @@ describe("isSheerForceEligibleMove", () => {
     //   not secondary.self.boosts, so Sheer Force does NOT suppress it
     const effect = {
       type: "stat-change" as const,
-      target: "self" as const,
+      target: CORE_MOVE_TARGET_IDS.self,
       stats: { defense: -1, spDefense: -1 },
       chance: 100,
     };
@@ -233,7 +239,11 @@ describe("getSheerForceMultiplier with move ID whitelist", () => {
 
   it("given Sheer Force ability and Flamethrower (status-chance effect), when getting multiplier without moveId, then still returns 5325/4096", () => {
     // Backward compatibility: the effect-based check still works without a moveId
-    const effect = { type: "status-chance" as const, status: statusIds.burn, chance: 10 };
+    const effect = {
+      type: CORE_MOVE_EFFECT_TYPES.statusChance,
+      status: statusIds.burn,
+      chance: 10,
+    } as const;
     const result = getSheerForceMultiplier(abilityIds.sheerForce, effect);
     expect(result).toBeCloseTo(CORE_FIXED_POINT.gemBoost / CORE_FIXED_POINT.identity, 10);
   });

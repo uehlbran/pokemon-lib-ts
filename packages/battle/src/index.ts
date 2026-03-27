@@ -3,7 +3,17 @@
 // AI
 export type { AIController } from "./ai";
 export { RandomAI } from "./ai";
-export { BATTLE_GIMMICK_IDS } from "./constants/reference-ids";
+export {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
+} from "./constants/effect-protocol";
+export {
+  BATTLE_GIMMICK_IDS,
+  BATTLE_SOURCE_IDS,
+  type BattleSourceId,
+} from "./constants/reference-ids";
 // Context
 export type {
   AbilityContext,
@@ -34,6 +44,8 @@ export type {
   MoveEffectContextFor,
   MoveEffectResult,
   MoveEffectResultFor,
+  MoveEffectSideTarget,
+  MoveEffectSideTargetWithBoth,
   TerrainEffectResult,
   TrainerDataRef,
   ValidationResult,

@@ -14,7 +14,12 @@
  * Source: pret/pokecrystal engine/battle/effect_commands.asm
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
+import type {
+  MoveEffectContext,
+  MoveEffectResult,
+  MoveEffectSideTarget,
+} from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
   MoveData,
@@ -22,6 +27,8 @@ import type {
   SeededRandom,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN2_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen2Status } from "./Gen2Status";
 
 // ---------------------------------------------------------------------------
@@ -41,8 +48,8 @@ export type MutableResult = Omit<
   "messages" | "statChanges" | "volatilesToClear"
 > & {
   messages: string[];
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
-  volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
+  statChanges: Array<{ target: MoveEffectSideTarget; stat: BattleStat; stages: number }>;
+  volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
   /**
    * Lazy per-hit damage function. Added explicitly because the mapped type may not
    * pick up new MoveEffectResult fields during cross-package builds in worktrees.
@@ -135,7 +142,10 @@ export function applyMoveEffect(
       }
       for (const change of effect.changes) {
         result.statChanges.push({
-          target: effect.target === "self" ? "attacker" : "defender",
+          target:
+            effect.target === BATTLE_EFFECT_TARGETS.self
+              ? BATTLE_EFFECT_TARGETS.attacker
+              : BATTLE_EFFECT_TARGETS.defender,
           stat: change.stat,
           stages: change.stages,
         });
@@ -231,7 +241,7 @@ export function applyMoveEffect(
       result.screenSet = {
         screen: effect.screen as ScreenType,
         turnsLeft: 5,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       };
       break;
     }
@@ -286,8 +296,8 @@ export function handleCustomEffect(
       if (attacker.pokemon.currentHp > halfHp) {
         result.recoilDamage = halfHp;
         result.statChanges.push({
-          target: "attacker",
-          stat: "attack",
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.attack,
           stages: 6 - attacker.statStages.attack,
         });
         result.messages.push(`${pokemonName} cut its own HP and maximized Attack!`);
@@ -300,10 +310,10 @@ export function handleCustomEffect(
     case "rapid-spin": {
       // Remove leech-seed and binding volatiles from user, spikes from user's side
       result.volatilesToClear = [
-        { target: "attacker", volatile: "leech-seed" },
-        { target: "attacker", volatile: "bound" },
+        { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.leechSeed },
+        { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.bound },
       ];
-      result.clearSideHazards = "attacker";
+      result.clearSideHazards = BATTLE_EFFECT_TARGETS.attacker;
       result.messages.push(`${pokemonName} blew away leech seed and spikes!`);
       break;
     }
@@ -311,14 +321,17 @@ export function handleCustomEffect(
     case "mean-look":
     case "spider-web": {
       // Trapping effect — prevents switching
-      result.volatileInflicted = "trapped";
+      result.volatileInflicted = CORE_VOLATILE_IDS.trapped;
       break;
     }
 
     case "thief": {
       // Steal defender's item if user has no item
       if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
-        result.itemTransfer = { from: "defender", to: "attacker" };
+        result.itemTransfer = {
+          from: BATTLE_EFFECT_TARGETS.defender,
+          to: BATTLE_EFFECT_TARGETS.attacker,
+        };
         result.messages.push(
           `${pokemonName} stole ${defender.pokemon.nickname ?? "the foe"}'s ${defender.pokemon.heldItem}!`,
         );
@@ -352,7 +365,7 @@ export function handleCustomEffect(
       // Encore lasts 2-6 turns in Gen 2
       // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect duration
       const encoreTurns = context.rng.int(2, 6);
-      result.volatileInflicted = "encore";
+      result.volatileInflicted = CORE_VOLATILE_IDS.encore;
       result.volatileData = { turnsLeft: encoreTurns, data: { moveIndex } };
       result.messages.push(`${defender.pokemon.nickname ?? "The foe"} got an Encore!`);
       break;
@@ -362,7 +375,7 @@ export function handleCustomEffect(
       // Disable prevents the target from using its last-used move for 1-7 turns
       // Source: pret/pokecrystal engine/battle/effect_commands.asm DisableEffect
       // Fails if target has no last move or already disabled
-      if (defender.volatileStatuses.has("disable")) {
+      if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.disable)) {
         result.messages.push("But it failed!");
         break;
       }
@@ -381,7 +394,7 @@ export function handleCustomEffect(
       // Disable lasts 1-7 turns in Gen 2
       // Source: pret/pokecrystal engine/battle/effect_commands.asm DisableEffect duration
       const disableTurns = context.rng.int(1, 7);
-      result.volatileInflicted = "disable";
+      result.volatileInflicted = CORE_VOLATILE_IDS.disable;
       result.volatileData = { turnsLeft: disableTurns, data: { moveId: disableLastMoveId } };
       result.messages.push(
         `${defender.pokemon.nickname ?? "The foe"}'s ${disableLastMoveId} was disabled!`,
@@ -402,7 +415,7 @@ export function handleCustomEffect(
       result.screenSet = {
         screen: "safeguard",
         turnsLeft: 5,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       };
       result.messages.push(`${pokemonName}'s party is protected by Safeguard!`);
       break;
@@ -421,9 +434,9 @@ export function handleCustomEffect(
         break;
       }
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: attacker.lastDamageTaken * 2,
-        source: "counter",
+        source: GEN2_MOVE_IDS.counter,
       };
       break;
     }
@@ -437,9 +450,9 @@ export function handleCustomEffect(
         break;
       }
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: attacker.lastDamageTaken * 2,
-        source: "mirror-coat",
+        source: GEN2_MOVE_IDS.mirrorCoat,
       };
       break;
     }
@@ -507,7 +520,7 @@ export function handleCustomEffect(
       }
 
       result.futureAttack = {
-        moveId: "future-sight",
+        moveId: GEN2_MOVE_IDS.futureSight,
         turnsLeft: 2,
         sourceSide: actorSide,
       };

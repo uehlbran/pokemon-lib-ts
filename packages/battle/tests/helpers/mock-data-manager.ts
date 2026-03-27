@@ -1,8 +1,15 @@
-import type { ItemData, MoveData, PokemonSpeciesData, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS, DataManager } from "@pokemon-lib-ts/core";
+import type {
+  AbilityData,
+  ItemData,
+  MoveData,
+  NatureData,
+  PokemonSpeciesData,
+  TypeChart,
+} from "@pokemon-lib-ts/core";
+import { ALL_NATURES, CORE_TYPE_IDS, DataManager } from "@pokemon-lib-ts/core";
 import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS } from "@pokemon-lib-ts/gen2";
-import { createGen4DataManager, GEN4_MOVE_IDS } from "@pokemon-lib-ts/gen4";
+import { createGen4DataManager, GEN4_ABILITY_IDS, GEN4_MOVE_IDS } from "@pokemon-lib-ts/gen4";
 
 const GEN1_DATA_MANAGER = createGen1DataManager();
 const GEN2_DATA_MANAGER = createGen2DataManager();
@@ -35,9 +42,18 @@ function createIdentityTypeChart(): TypeChart {
 
 function getMockSpecies(): PokemonSpeciesData[] {
   return [
-    GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard),
-    GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise),
-    GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu),
+    {
+      ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard),
+      abilities: { ...GEN4_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard).abilities },
+    },
+    {
+      ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise),
+      abilities: { ...GEN4_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise).abilities },
+    },
+    {
+      ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu),
+      abilities: { ...GEN4_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu).abilities },
+    },
   ];
 }
 
@@ -63,6 +79,14 @@ function getMockItems(): ItemData[] {
   ];
 }
 
+function getMockAbilities(): AbilityData[] {
+  return [GEN4_DATA_MANAGER.getAbility(GEN4_ABILITY_IDS.blaze)];
+}
+
+function getMockNatures(): NatureData[] {
+  return [...ALL_NATURES];
+}
+
 /**
  * Creates a DataManager pre-loaded with a minimal canonical record set for battle tests.
  *
@@ -77,7 +101,9 @@ export function createMockDataManager(): DataManager {
   dataManager.loadFromObjects({
     pokemon: getMockSpecies(),
     moves: getMockMoves(),
+    abilities: getMockAbilities(),
     items: getMockItems(),
+    natures: getMockNatures(),
     typeChart: createIdentityTypeChart(),
   });
 

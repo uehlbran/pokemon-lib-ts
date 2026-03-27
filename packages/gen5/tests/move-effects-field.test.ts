@@ -6,6 +6,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_MOVE_TARGET_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
@@ -477,18 +478,18 @@ describe("Gen5 isBlockedByWideGuard", () => {
   it("given a single-target move, when checked against Wide Guard, then is not blocked", () => {
     // Source: Showdown wideguard condition -- only blocks spread moves
     // Single-target moves like Thunderbolt are not blocked
-    expect(isBlockedByWideGuard("adjacent-foe")).toBe(false);
+    expect(isBlockedByWideGuard(CORE_MOVE_TARGET_IDS.adjacentFoe)).toBe(false);
   });
 
   it("given a self-targeting move, when checked against Wide Guard, then is not blocked", () => {
     // Source: Showdown wideguard condition -- self-targeting moves pass through
-    expect(isBlockedByWideGuard("self")).toBe(false);
+    expect(isBlockedByWideGuard(CORE_MOVE_TARGET_IDS.self)).toBe(false);
   });
 
   it("given an entire-field move, when checked against Wide Guard, then is not blocked", () => {
     // Source: Showdown wideguard -- only allAdjacent and allAdjacentFoes are blocked
     // Field-wide status moves like Trick Room are not spread moves
-    expect(isBlockedByWideGuard("entire-field")).toBe(false);
+    expect(isBlockedByWideGuard(CORE_MOVE_TARGET_IDS.entireField)).toBe(false);
   });
 });
 

@@ -22,7 +22,15 @@ import type {
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import type { VolatileStatus } from "@pokemon-lib-ts/core";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import {
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import { GEN9_SPECIAL_TERA_TYPE_IDS } from "./constants/mechanics.js";
+import { GEN9_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -123,7 +131,9 @@ export function handleMakeItRain(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
-    statChanges: [{ target: "attacker", stat: "spAttack", stages: -1 }],
+    statChanges: [
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: -1 },
+    ],
     messages: [`${attackerName}'s Special Attack fell!`],
   };
 }
@@ -379,7 +389,7 @@ export function handleShedTail(ctx: MoveEffectContext): MoveEffectResult {
   // should check for this volatile and create a Substitute on the switch-in.
   // "shed-tail-sub" is defined in core's VolatileStatus union (added in this wave).
   // Cast required because the worktree build may resolve to an older core dist.
-  ctx.attacker.volatileStatuses.set("shed-tail-sub" as VolatileStatus, {
+  ctx.attacker.volatileStatuses.set(CORE_VOLATILE_IDS.shedTailSub as VolatileStatus, {
     turnsLeft: -1,
     data: { substituteHp: subHp },
   });
@@ -426,7 +436,7 @@ export function handleTidyUp(ctx: MoveEffectContext): MoveEffectResult {
     for (const active of side.active) {
       if (active && active.substituteHp > 0) {
         active.substituteHp = 0;
-        active.volatileStatuses.delete("substitute");
+        active.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
         const pokeName = active.pokemon.nickname ?? "The Pokemon";
         messages.push(`${pokeName}'s substitute faded!`);
       }
@@ -450,8 +460,8 @@ export function handleTidyUp(ctx: MoveEffectContext): MoveEffectResult {
   return {
     ...base,
     statChanges: [
-      { target: "attacker", stat: "attack", stages: 1 },
-      { target: "attacker", stat: "speed", stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.speed, stages: 1 },
     ],
     messages,
   };
@@ -477,7 +487,7 @@ export function handleTidyUp(ctx: MoveEffectContext): MoveEffectResult {
  * @returns Residual damage amount
  */
 export function calculateSaltCureDamage(maxHp: number, types: readonly string[]): number {
-  const isWaterOrSteel = types.includes("water") || types.includes("steel");
+  const isWaterOrSteel = types.includes(CORE_TYPE_IDS.water) || types.includes(CORE_TYPE_IDS.steel);
   const divisor = isWaterOrSteel ? 4 : 8;
   return Math.max(1, Math.floor(maxHp / divisor));
 }
@@ -502,7 +512,7 @@ export function handleSaltCure(ctx: MoveEffectContext): MoveEffectResult {
   // Check if target already has Salt Cure
   // "salt-cure" is defined in core's VolatileStatus union (added in this wave).
   // Cast required because the worktree build may resolve to an older core dist.
-  if (ctx.defender.volatileStatuses.has("salt-cure" as VolatileStatus)) {
+  if (ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.saltCure as VolatileStatus)) {
     // Salt Cure is already applied; the damaging hit still works, just no new volatile
     return base;
   }
@@ -511,7 +521,7 @@ export function handleSaltCure(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
-    volatileInflicted: "salt-cure" as VolatileStatus,
+    volatileInflicted: CORE_VOLATILE_IDS.saltCure as VolatileStatus,
     volatileData: { turnsLeft: -1 }, // Salt Cure has no set expiry
     messages: [`${defenderName} is being salt cured!`],
   };
@@ -537,7 +547,7 @@ export function handleSaltCure(ctx: MoveEffectContext): MoveEffectResult {
 export function shouldApplyStellarDebuff(attacker: ActivePokemon): boolean {
   if (!attacker.isTerastallized) return false;
   const teraType = attacker.teraType ?? attacker.pokemon.teraType;
-  return (teraType as string) === "stellar";
+  return (teraType as string) === GEN9_SPECIAL_TERA_TYPE_IDS.stellar;
 }
 
 /**
@@ -564,8 +574,8 @@ export function handleTeraBlast(ctx: MoveEffectContext): MoveEffectResult {
   return {
     ...base,
     statChanges: [
-      { target: "attacker", stat: "attack", stages: -1 },
-      { target: "attacker", stat: "spAttack", stages: -1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: -1 },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: -1 },
     ],
     messages: [`${attackerName}'s Attack fell!`, `${attackerName}'s Sp. Atk fell!`],
   };
@@ -587,31 +597,31 @@ export function handleTeraBlast(ctx: MoveEffectContext): MoveEffectResult {
  */
 export function executeGen9MoveEffect(ctx: MoveEffectContext): MoveEffectResult | null {
   switch (ctx.move.id) {
-    case "population-bomb":
+    case GEN9_MOVE_IDS.populationBomb:
       return handlePopulationBomb(ctx);
 
-    case "rage-fist":
+    case GEN9_MOVE_IDS.rageFist:
       return handleRageFist(ctx);
 
-    case "make-it-rain":
+    case GEN9_MOVE_IDS.makeItRain:
       return handleMakeItRain(ctx);
 
-    case "revival-blessing":
+    case GEN9_MOVE_IDS.revivalBlessing:
       return handleRevivalBlessing(ctx);
 
-    case "last-respects":
+    case GEN9_MOVE_IDS.lastRespects:
       return handleLastRespects(ctx);
 
-    case "shed-tail":
+    case GEN9_MOVE_IDS.shedTail:
       return handleShedTail(ctx);
 
-    case "tidy-up":
+    case GEN9_MOVE_IDS.tidyUp:
       return handleTidyUp(ctx);
 
-    case "salt-cure":
+    case GEN9_MOVE_IDS.saltCure:
       return handleSaltCure(ctx);
 
-    case "tera-blast":
+    case GEN9_MOVE_IDS.teraBlast:
       return handleTeraBlast(ctx);
 
     default:

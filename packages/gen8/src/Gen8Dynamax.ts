@@ -20,6 +20,7 @@ import type {
   BattleState,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_EFFECT_TYPES, CORE_PROTECT_EFFECT_VARIANTS } from "@pokemon-lib-ts/core";
 
 import {
   getGMaxMove,
@@ -304,7 +305,10 @@ export class Gen8Dynamax implements BattleGimmick {
         power: null,
         accuracy: null,
         priority: 4,
-        effect: { type: "protect", variant: "max-guard" },
+        effect: {
+          type: CORE_MOVE_EFFECT_TYPES.protect,
+          variant: CORE_PROTECT_EFFECT_VARIANTS.maxGuard,
+        },
       };
     }
 

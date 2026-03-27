@@ -41,6 +41,12 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_SLOTS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   CRIT_MULTIPLIER_CLASSIC,
   calculateExpGainClassic,
   gen1to2FullParalysisCheck,
@@ -48,6 +54,10 @@ import {
   gen1to6ConfusionSelfHitRoll,
   getAccuracyStageRatio,
   getGen12StatStageRatio,
+  NEUTRAL_NATURES,
+  validateDvs,
+  validateFriendship,
+  validateStatExp,
 } from "@pokemon-lib-ts/core";
 import { createGen2DataManager } from "./data";
 import { GEN2_CRIT_RATES, rollGen2Critical } from "./Gen2CritCalc";
@@ -288,7 +298,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
     // Paralysis reduces speed to 25%
-    if (active.pokemon.status === "paralysis") {
+    if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       effective = Math.floor(effective * 0.25);
     }
 
@@ -329,7 +339,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/effect_commands.asm:1286-1290
     // "ld a, BATTLE_WEATHER_RAIN ; cp [wBattleWeather] ; ret z" — if rain, skip accuracy check
     const weather = context.state.weather?.type ?? null;
-    if (move.id === "thunder" && weather === "rain") {
+    if (move.id === "thunder" && weather === CORE_WEATHER_IDS.rain) {
       return true;
     }
 
@@ -339,7 +349,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Thunder base accuracy = 70% → 178 on 0-255 scale → halved to 89.
     // Convert move accuracy from percentage to 0-255 scale
     let accuracy = Math.floor((move.accuracy * 255) / 100);
-    if (move.id === "thunder" && weather === "sun") {
+    if (move.id === "thunder" && weather === CORE_WEATHER_IDS.sun) {
       accuracy = Math.max(1, Math.floor(accuracy / 2));
     }
 
@@ -570,8 +580,8 @@ export class Gen2Ruleset implements GenerationRuleset {
   processEndOfTurnDefrost(pokemon: ActivePokemon, rng: SeededRandom): boolean {
     // Source: pret/pokecrystal engine/battle/core.asm:1524-1581 HandleDefrost
     // 25/256 (~9.8%) chance to thaw. Skip if frozen this turn (wPlayerJustGotFrozen guard).
-    if (pokemon.volatileStatuses.has("just-frozen")) {
-      pokemon.volatileStatuses.delete("just-frozen");
+    if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.justFrozen)) {
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.justFrozen);
       return false;
     }
     return rng.int(0, 255) < 25;
@@ -594,16 +604,16 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 2+: CAN act on the turn it wakes up (unlike Gen 1)
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true; // Gen 2+: can act on wake turn
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true; // Gen 2+: can act on wake turn
     }
     return false; // Still sleeping
@@ -687,7 +697,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     }
 
     // Flying types are immune to Spikes
-    if (pokemon.types.includes("flying")) {
+    if (pokemon.types.includes(CORE_TYPE_IDS.flying)) {
       return { damage: 0, statusInflicted: null, statChanges: [], messages: [] };
     }
 
@@ -741,9 +751,17 @@ export class Gen2Ruleset implements GenerationRuleset {
       errors.push(`Level must be between 1 and 100, got ${pokemon.level}`);
     }
 
-    // Check that species exists in Gen 2 (Dex #1-251)
-    if (species.id < 1 || species.id > 251) {
+    let speciesExistsInGeneration = true;
+    try {
+      this.dataManager.getSpecies(species.id);
+    } catch {
+      speciesExistsInGeneration = false;
       errors.push(`Species #${species.id} (${species.displayName}) is not available in Gen 2`);
+    }
+    if (typeof pokemon.speciesId === "number" && pokemon.speciesId !== species.id) {
+      errors.push(
+        `Pokemon species id ${pokemon.speciesId} does not match provided species ${species.displayName} (#${species.id})`,
+      );
     }
 
     // Check move count (1-4 moves)
@@ -751,7 +769,84 @@ export class Gen2Ruleset implements GenerationRuleset {
       errors.push(`Pokemon must have 1-4 moves, has ${pokemon.moves.length}`);
     }
 
-    // Held items ARE valid in Gen 2 (unlike Gen 1)
+    const legalMoves = new Set<string>();
+    if (speciesExistsInGeneration) {
+      for (const move of species.learnset.levelUp) legalMoves.add(move.move);
+      for (const move of species.learnset.tm) legalMoves.add(move);
+      for (const move of species.learnset.egg) legalMoves.add(move);
+      for (const move of species.learnset.tutor) legalMoves.add(move);
+      for (const move of species.learnset.event ?? []) legalMoves.add(move);
+    }
+
+    for (const moveSlot of pokemon.moves) {
+      if (!moveSlot.moveId) {
+        errors.push("Pokemon move slot is empty");
+        continue;
+      }
+
+      try {
+        this.dataManager.getMove(moveSlot.moveId);
+      } catch {
+        errors.push(`Move "${moveSlot.moveId}" is not available in Gen 2`);
+        continue;
+      }
+
+      if (speciesExistsInGeneration && !legalMoves.has(moveSlot.moveId)) {
+        errors.push(`Move "${moveSlot.moveId}" is not legal for ${species.displayName} in Gen 2`);
+      }
+    }
+
+    if (pokemon.heldItem) {
+      try {
+        this.dataManager.getItem(pokemon.heldItem);
+      } catch {
+        errors.push(`Item "${pokemon.heldItem}" is not available in Gen 2`);
+      }
+    }
+
+    if (pokemon.ability) {
+      errors.push("Abilities are not available in Gen 2");
+    }
+
+    if (!NEUTRAL_NATURES.includes(pokemon.nature)) {
+      errors.push(`Nature "${pokemon.nature}" is not supported in Gen 2`);
+    }
+
+    if (pokemon.abilitySlot !== CORE_ABILITY_SLOTS.normal1) {
+      errors.push(`Ability slot "${pokemon.abilitySlot}" is not supported in Gen 2`);
+    }
+
+    const dvValidation = validateDvs({
+      attack: pokemon.ivs.attack,
+      defense: pokemon.ivs.defense,
+      spAttack: pokemon.ivs.spAttack,
+      spDefense: pokemon.ivs.spDefense,
+      speed: pokemon.ivs.speed,
+    });
+    for (const failure of dvValidation.failures) {
+      errors.push(failure.message);
+    }
+
+    const expectedHpDv =
+      ((pokemon.ivs.attack & 1) << 3) |
+      ((pokemon.ivs.defense & 1) << 2) |
+      ((pokemon.ivs.speed & 1) << 1) |
+      (pokemon.ivs.spAttack & 1);
+    if (pokemon.ivs.hp !== expectedHpDv) {
+      errors.push(
+        `hp DV must be derived from the other DVs; expected ${expectedHpDv}, got ${pokemon.ivs.hp}`,
+      );
+    }
+
+    const statExpValidation = validateStatExp(pokemon.evs);
+    for (const failure of statExpValidation.failures) {
+      errors.push(failure.message);
+    }
+
+    const friendshipValidation = validateFriendship(pokemon.friendship);
+    for (const failure of friendshipValidation.failures) {
+      errors.push(failure.message);
+    }
 
     return {
       valid: errors.length === 0,
@@ -798,7 +893,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // Source: Gen 2 confusion lasts 1-4 turns (same as Gen 1)
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const conf = active.volatileStatuses.get("confusion");
+    const conf = active.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
     if (!conf) return false;
     conf.turnsLeft--;
     return conf.turnsLeft > 0;
@@ -806,7 +901,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   // Source: Gen 2 bind/trapping — 2-5 turns, 1/16 max HP per turn
   processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const bound = active.volatileStatuses.get("bound");
+    const bound = active.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
     if (!bound) return false;
     bound.turnsLeft--;
     return bound.turnsLeft > 0;
@@ -824,8 +919,8 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Gen 2: clear non-persistent volatiles on switch
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
     // Zeros wPlayerSubStatus1-5 (including SUBSTATUS_TOXIC), reverting badly-poisoned to regular poison
-    if (pokemon.pokemon.status === "badly-poisoned") {
-      pokemon.pokemon.status = "poison";
+    if (pokemon.pokemon.status === CORE_STATUS_IDS.badlyPoisoned) {
+      pokemon.pokemon.status = CORE_STATUS_IDS.poison;
     }
 
     // Baton Pass: preserve stat stages and certain volatiles for the incoming Pokemon
@@ -837,31 +932,31 @@ export class Gen2Ruleset implements GenerationRuleset {
     const isBatonPass = pokemon.lastMoveUsed === "baton-pass";
 
     if (!isBatonPass) {
-      pokemon.volatileStatuses.delete("confusion");
-      pokemon.volatileStatuses.delete("focus-energy");
-      pokemon.volatileStatuses.delete("leech-seed");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.confusion);
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.focusEnergy);
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.leechSeed);
       // Perish Song counter is cleared on normal switch (not Baton Pass)
       // Source: pret/pokecrystal engine/battle/core.asm NewBattleMonStatus
       // Source: gen2-ground-truth.md — Perish Song counter removed when switching out normally
-      pokemon.volatileStatuses.delete("perish-song");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.perishSong);
       // Substitute and Curse are cleared on normal switch, but preserved by Baton Pass
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BatonPassEffect
-      pokemon.volatileStatuses.delete("substitute");
-      pokemon.volatileStatuses.delete("curse");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.curse);
     }
 
     // These volatiles are ALWAYS cleared on switch (even with Baton Pass)
     // Source: pret/pokecrystal — encore/disable/bound/flinch are tied to the user, not baton-passable
-    pokemon.volatileStatuses.delete("bound");
-    pokemon.volatileStatuses.delete("flinch");
-    pokemon.volatileStatuses.delete("toxic-counter");
-    pokemon.volatileStatuses.delete("encore");
-    pokemon.volatileStatuses.delete("disable");
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.bound);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.flinch);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.toxicCounter);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.encore);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.disable);
     // Attract and Nightmare are cleared on switch-out (always, not baton-passable)
     // Source: pret/pokecrystal engine/battle/core.asm:4078-4104 NewBattleMonStatus
     // Source: gen2-ground-truth.md Switching Mechanics — Attract and Nightmare reset on switch
-    pokemon.volatileStatuses.delete("infatuation");
-    pokemon.volatileStatuses.delete("nightmare");
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.infatuation);
+    pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.nightmare);
 
     // If the switching Pokemon had applied trapping (Mean Look / Spider Web),
     // clear the "trapped" volatile from the opposing active Pokemon.
@@ -876,7 +971,7 @@ export class Gen2Ruleset implements GenerationRuleset {
       const opposingSide = state.sides[opposingSideIndex];
       for (const opposingActive of opposingSide?.active ?? []) {
         if (opposingActive) {
-          opposingActive.volatileStatuses.delete("trapped");
+          opposingActive.volatileStatuses.delete(CORE_VOLATILE_IDS.trapped);
         }
       }
     }
@@ -954,7 +1049,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: decomp lines 340-352 — BUG: only FRZ and SLP add +10; BRN/PSN/PAR have NO effect
     // This is a known bug in pokecrystal — we replicate it for cartridge accuracy.
     let statusBonus = 0;
-    if (status === "freeze" || status === "sleep") {
+    if (status === CORE_STATUS_IDS.freeze || status === CORE_STATUS_IDS.sleep) {
       statusBonus = 10;
     }
     // BRN/PSN/PAR intentionally do NOT add a bonus — decomp bug replicated for accuracy
@@ -980,7 +1075,7 @@ export class Gen2Ruleset implements GenerationRuleset {
 
   canSwitch(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 2: Mean Look / Spider Web prevent switching
-    return !pokemon.volatileStatuses.has("trapped");
+    return !pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.trapped);
   }
 
   // --- End-of-Turn Formulas ---
@@ -1069,7 +1164,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     readonly newCount: number;
     readonly fainted: boolean;
   } {
-    const perishState = pokemon.volatileStatuses.get("perish-song");
+    const perishState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.perishSong);
     if (!perishState) return { newCount: 0, fainted: false };
     const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
     if (counter <= 1) return { newCount: 0, fainted: true };
@@ -1095,23 +1190,23 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/core.asm:250-296 HandleBetweenTurnEffects
     // Disable countdown fires before Encore (jp HandleEncore is the final call)
     return [
-      "future-attack",
-      "weather-damage",
-      "weather-countdown",
-      "bind",
-      "perish-song",
-      "leftovers",
-      "mystery-berry",
-      "defrost",
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.mysteryBerry,
+      CORE_END_OF_TURN_EFFECT_IDS.defrost,
       // Note: safeguard-countdown removed — Safeguard is stored as a ScreenType screen
       // and is now decremented by screen-countdown below. Two separate handlers would
       // double-decrement turnsLeft, halving the effective duration.
       // Source: pret/pokecrystal engine/battle/core.asm — single per-turn countdown
-      "screen-countdown",
-      "stat-boosting-items",
-      "healing-items",
-      "disable-countdown",
-      "encore-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems,
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
     ] as const;
   }
 
@@ -1119,6 +1214,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Source: pret/pokecrystal engine/battle/core.asm — ResidualDamage
     // Phase 1: runs per-Pokemon after each attack resolves
     // Order: status-damage → leech-seed → nightmare → curse
-    return ["status-damage", "leech-seed", "nightmare", "curse"] as const;
+    return [
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
+    ] as const;
   }
 }

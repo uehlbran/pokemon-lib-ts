@@ -1,5 +1,10 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_HAZARD_IDS, createPokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
+import {
+  CORE_HAZARD_IDS,
+  CORE_STAT_IDS,
+  createPokemonInstance,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
@@ -110,7 +115,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
     const statChangeEvents = events.filter((e) => e.type === "stat-change");
     expect(statChangeEvents).toHaveLength(1);
     const speedChange = statChangeEvents.find(
-      (e) => e.type === "stat-change" && e.stat === "speed",
+      (e) => e.type === "stat-change" && e.stat === CORE_STAT_IDS.speed,
     );
     expect(speedChange?.stages).toBe(-1);
     expect(speedChange?.currentStage).toBe(-1);

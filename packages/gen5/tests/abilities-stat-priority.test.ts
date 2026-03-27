@@ -1,10 +1,17 @@
-import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  type AbilityContext,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  type BattleSide,
+  type BattleState,
+} from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createFriendship,
@@ -220,7 +227,11 @@ function createAbilityContext(opts: {
   nickname?: string;
   statStages?: Partial<Record<string, number>>;
   rngPick?: <T>(arr: readonly T[]) => T;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: (typeof CORE_STAT_IDS)[keyof typeof CORE_STAT_IDS];
+    stages: number;
+    source: "self" | "opponent";
+  };
 }): AbilityContext {
   const state = createBattleState();
   const pokemon = createOnFieldPokemon({
@@ -731,12 +742,12 @@ describe("handleGen5StatAbility -- Moody", () => {
     expect(result.effects).toHaveLength(2);
     // Source: Showdown data/mods/gen7/abilities.ts -- Moody onResidual: first effect is stat-change type
     // First effect: raise (rng.pick returns first eligible stat = attack)
-    expect(result.effects[0].effectType).toBe("stat-change");
+    expect(result.effects[0].effectType).toBe(BATTLE_ABILITY_EFFECT_TYPES.statChange);
     // Source: Showdown data/mods/gen7/abilities.ts -- Moody raises chosen stat by +2 stages
     expect((result.effects[0] as { stages: number }).stages).toBe(2);
     // Source: Showdown data/mods/gen7/abilities.ts -- Moody onResidual: second effect is stat-change type
     // Second effect: lower (rng.pick returns first eligible stat != raised = defense)
-    expect(result.effects[1].effectType).toBe("stat-change");
+    expect(result.effects[1].effectType).toBe(BATTLE_ABILITY_EFFECT_TYPES.statChange);
     // Source: Showdown data/mods/gen7/abilities.ts -- Moody lowers different chosen stat by -1 stage
     expect((result.effects[1] as { stages: number }).stages).toBe(-1);
     // The raised and lowered stats must differ
@@ -768,7 +779,7 @@ describe("handleGen5StatAbility -- Moody", () => {
     // With last-element picks, evasion should be the raised stat
     const raisedStat = (result.effects[0] as { stat: string }).stat;
     // Source: Bulbapedia -- Moody Gen V-VII includes accuracy and evasion in the eligible stat pool
-    expect(raisedStat).toBe("evasion");
+    expect(raisedStat).toBe(CORE_STAT_IDS.evasion);
   });
 
   it("given Moody with attack at +6, when on-turn-end fires, then attack is excluded from raise pool", () => {
@@ -784,7 +795,7 @@ describe("handleGen5StatAbility -- Moody", () => {
     expect(result.activated).toBe(true);
     // The raised stat should NOT be attack (it's at +6)
     const raisedStat = (result.effects[0] as { stat: string }).stat;
-    expect(raisedStat).not.toBe("attack");
+    expect(raisedStat).not.toBe(CORE_STAT_IDS.attack);
   });
 
   it("given Moody with all stats at +6, when on-turn-end fires, then no stat is raised but one is still lowered", () => {
@@ -1014,12 +1025,14 @@ describe("handleGen5StatAbility -- Weak Armor Gen 5 Speed boost amount", () => {
     const result = handleGen5StatAbility(ctx);
 
     const speedEffect = result.effects.find(
-      (e) => e.effectType === "stat-change" && (e as { stat: string }).stat === "speed",
+      (e) =>
+        e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+        (e as { stat: string }).stat === CORE_STAT_IDS.speed,
     );
     expect(speedEffect).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "speed",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.speed,
       stages: 1,
     });
   });

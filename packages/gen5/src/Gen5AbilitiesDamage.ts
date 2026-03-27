@@ -1,5 +1,13 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import {
+  CORE_MOVE_EFFECT_TARGETS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  type MoveEffect,
+  type PokemonType,
+} from "@pokemon-lib-ts/core";
+import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS } from "./data/reference-ids";
 
 /**
  * Gen 5 damage-modifying ability handlers.
@@ -66,7 +74,7 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
  *   exists (triattack has secondaries with chance: 20)
  */
 const SHEER_FORCE_MOVE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack", // 20% burn/paralysis/freeze; custom onHit in Showdown, effect=null in our data
+  GEN5_MOVE_IDS.triAttack, // 20% burn/paralysis/freeze; custom onHit in Showdown, effect=null in our data
 ]);
 
 /**
@@ -114,13 +122,14 @@ export function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean 
 
     case "stat-change":
       // Foe-targeted stat changes are always eligible (Acid Spray, Bulldoze, etc.)
-      if (effect.target === "foe" && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
       // Self-targeted stat changes are eligible ONLY when they come from secondary.self
       // (e.g., Flame Charge Speed boost). Primary self-effects (Close Combat Def/SpDef drop,
       // Draco Meteor SpAtk drop) are NOT eligible.
       // Source: Showdown data/abilities.ts -- sheerforce: delete move.secondaries; delete move.self
       //   (move.self is only deleted when move.secondaries exists -- i.e., secondary.self)
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
 
     case "volatile-status":
@@ -166,10 +175,10 @@ export function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: stri
  * Source: Bulbapedia -- Blaze, Overgrow, Torrent, Swarm
  */
 const PINCH_ABILITY_TYPES: Readonly<Record<string, PokemonType>> = {
-  blaze: "fire",
-  overgrow: "grass",
-  torrent: "water",
-  swarm: "bug",
+  [GEN5_ABILITY_IDS.blaze]: CORE_TYPE_IDS.fire,
+  [GEN5_ABILITY_IDS.overgrow]: CORE_TYPE_IDS.grass,
+  [GEN5_ABILITY_IDS.torrent]: CORE_TYPE_IDS.water,
+  [GEN5_ABILITY_IDS.swarm]: CORE_TYPE_IDS.bug,
 };
 
 // ---------------------------------------------------------------------------
@@ -228,7 +237,7 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
   switch (abilityId) {
     // ---- Attacker-side abilities ----
 
-    case "sheer-force": {
+    case GEN5_ABILITY_IDS.sheerForce: {
       // Sheer Force: 1.3x (5325/4096) damage for moves with secondary effects.
       // Suppresses secondary effects. Also suppresses Life Orb recoil.
       // Source: Showdown data/abilities.ts -- sheerforce
@@ -239,12 +248,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "analytic": {
+    case GEN5_ABILITY_IDS.analytic: {
       // Analytic: 1.3x (5325/4096) damage if the user moves last.
       // "Last" means all other active Pokemon have already moved this turn.
       // Source: Showdown data/abilities.ts -- analytic
@@ -257,30 +268,38 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "sand-force": {
+    case GEN5_ABILITY_IDS.sandForce: {
       // Sand Force: 1.3x (5325/4096) to Rock, Ground, Steel moves in sandstorm.
       // Also grants sandstorm immunity (handled separately).
       // Source: Showdown data/abilities.ts -- sandforce
       //   onBasePower: if sandstorm and move type is Rock/Ground/Steel, chainModify([5325, 4096])
       if (!ctx.move) return NO_ACTIVATION;
       const weather = ctx.state.weather?.type ?? null;
-      if (weather !== "sand") return NO_ACTIVATION;
-      const sandForceTypes: PokemonType[] = ["rock", "ground", "steel"];
+      if (weather !== CORE_WEATHER_IDS.sand) return NO_ACTIVATION;
+      const sandForceTypes: PokemonType[] = [
+        CORE_TYPE_IDS.rock,
+        CORE_TYPE_IDS.ground,
+        CORE_TYPE_IDS.steel,
+      ];
       if (!sandForceTypes.includes(ctx.move.type)) return NO_ACTIVATION;
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "technician": {
+    case GEN5_ABILITY_IDS.technician: {
       // Technician: 1.5x power for moves with base power <= 60.
       // Source: Showdown data/abilities.ts -- technician (priority 30)
       //   onBasePower: if basePowerAfterMultiplier <= 60, chainModify(1.5)
@@ -289,12 +308,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "iron-fist": {
+    case GEN5_ABILITY_IDS.ironFist: {
       // Iron Fist: 1.2x (4915/4096) power for punching moves.
       // Source: Showdown data/abilities.ts -- ironfist
       //   onBasePower: if move.flags['punch'], chainModify([4915, 4096])
@@ -303,12 +324,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "reckless": {
+    case GEN5_ABILITY_IDS.reckless: {
       // Reckless: 1.2x (4915/4096) power for recoil AND crash-damage moves.
       // Source: Showdown data/abilities.ts -- reckless
       //   onBasePower: if move.recoil || move.hasCrashDamage, chainModify([4915, 4096])
@@ -319,12 +342,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "adaptability": {
+    case GEN5_ABILITY_IDS.adaptability: {
       // Adaptability: STAB becomes 2x instead of 1.5x.
       // The actual STAB calculation is in the damage formula; this signals activation.
       // Source: Showdown data/abilities.ts -- adaptability
@@ -335,12 +360,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "hustle": {
+    case GEN5_ABILITY_IDS.hustle: {
       // Hustle: 1.5x Attack stat for physical moves, but 0.8x accuracy.
       // The stat boost is applied in the attack stat calc; this signals activation.
       // Source: Showdown data/abilities.ts -- hustle
@@ -351,13 +378,15 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "huge-power":
-    case "pure-power": {
+    case GEN5_ABILITY_IDS.hugePower:
+    case GEN5_ABILITY_IDS.purePower: {
       // Huge Power / Pure Power: 2x Attack stat.
       // Applied in the attack stat calculation.
       // Source: Showdown data/abilities.ts -- hugepower / purepower
@@ -367,12 +396,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "guts": {
+    case GEN5_ABILITY_IDS.guts: {
       // Guts: 1.5x Attack when the user has a primary status condition.
       // Also bypasses burn's attack penalty.
       // Source: Showdown data/abilities.ts -- guts
@@ -383,15 +414,17 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "blaze":
-    case "overgrow":
-    case "torrent":
-    case "swarm": {
+    case GEN5_ABILITY_IDS.blaze:
+    case GEN5_ABILITY_IDS.overgrow:
+    case GEN5_ABILITY_IDS.torrent:
+    case GEN5_ABILITY_IDS.swarm: {
       // Pinch abilities: 1.5x attack stat when HP <= floor(maxHP/3) and move type matches.
       // Source: Showdown data/abilities.ts -- blaze/overgrow/torrent/swarm
       //   onModifyAtk/onModifySpA: if move type matches and HP <= maxHP/3, chainModify(1.5)
@@ -405,12 +438,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "sniper": {
+    case GEN5_ABILITY_IDS.sniper: {
       // Sniper: 3x crit multiplier instead of 2x.
       // Source: Showdown data/abilities.ts -- sniper
       //   onModifyDamage: if crit, chainModify(1.5) -- applied on TOP of the 2x crit,
@@ -419,12 +454,14 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (!ctx.isCrit) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "tinted-lens": {
+    case GEN5_ABILITY_IDS.tintedLens: {
       // Tinted Lens: "Not very effective" moves deal 2x damage (making them neutral).
       // Source: Showdown data/abilities.ts -- tintedlens
       //   onModifyDamage: if typeMod < 0 (not very effective), chainModify(2)
@@ -432,14 +469,16 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness >= 1) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
     // ---- Defender-side abilities ----
 
-    case "multiscale": {
+    case GEN5_ABILITY_IDS.multiscale: {
       // Multiscale: 0.5x damage taken when at full HP.
       // Source: Showdown data/abilities.ts -- multiscale
       //   onSourceModifyDamage: if target.hp >= target.maxhp, chainModify(0.5)
@@ -448,13 +487,18 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Multiscale weakened the attack!`],
       };
     }
 
-    case "solid-rock":
-    case "filter": {
+    case GEN5_ABILITY_IDS.solidRock:
+    case GEN5_ABILITY_IDS.filter: {
       // Solid Rock / Filter: 0.75x super-effective damage taken.
       // Source: Showdown data/abilities.ts -- solidrock / filter
       //   onSourceModifyDamage: if typeMod > 0, chainModify(0.75)
@@ -462,27 +506,39 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       if (ctx.typeEffectiveness === undefined || ctx.typeEffectiveness <= 1) return NO_ACTIVATION;
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "thick-fat": {
+    case GEN5_ABILITY_IDS.thickFat: {
       // Thick Fat: 0.5x damage from Fire and Ice type moves.
       // Applied by halving the attacker's effective attack stat.
       // Source: Showdown data/abilities.ts -- thickfat
       //   onSourceModifyAtk/onSourceModifySpA: if Fire/Ice, chainModify(0.5)
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.type !== "fire" && ctx.move.type !== "ice") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.fire && ctx.move.type !== CORE_TYPE_IDS.ice) {
+        return NO_ACTIVATION;
+      }
 
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "marvel-scale": {
+    case GEN5_ABILITY_IDS.marvelScale: {
       // Marvel Scale: 1.5x Defense when the holder has a primary status condition.
       // Applied in the defense stat calculation.
       // Source: Showdown data/abilities.ts -- marvelscale
@@ -491,7 +547,12 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
 
       return {
         activated: true,
-        effects: [{ effectType: "damage-reduction", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [],
       };
     }
@@ -522,13 +583,18 @@ export function handleGen5DamageImmunityAbility(ctx: AbilityContext): AbilityRes
   const name = ctx.pokemon.pokemon.nickname ?? String(ctx.pokemon.pokemon.speciesId);
 
   switch (abilityId) {
-    case "sturdy": {
+    case GEN5_ABILITY_IDS.sturdy: {
       // Effect 1: Block OHKO moves entirely
       // Source: Showdown data/abilities.ts -- sturdy onTryHit
       if (ctx.move?.effect?.type === "ohko") {
         return {
           activated: true,
-          effects: [{ effectType: "damage-reduction", target: "self" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+              target: BATTLE_EFFECT_TARGETS.self,
+            },
+          ],
           messages: [`${name} held on thanks to Sturdy!`],
           movePrevented: true,
         };
@@ -567,7 +633,7 @@ export function getSheerForceMultiplier(
   effect: MoveEffect | null,
   moveId?: string,
 ): number {
-  if (abilityId !== "sheer-force") return 1;
+  if (abilityId !== GEN5_ABILITY_IDS.sheerForce) return 1;
   if (!isSheerForceEligibleMove(effect, moveId ?? "")) return 1;
   // Source: Showdown data/abilities.ts -- Sheer Force: 5325/4096 = ~1.3x
   return 5325 / 4096;
@@ -587,7 +653,7 @@ export function sheerForceSuppressesLifeOrb(
   effect: MoveEffect | null,
   moveId?: string,
 ): boolean {
-  if (abilityId !== "sheer-force") return false;
+  if (abilityId !== GEN5_ABILITY_IDS.sheerForce) return false;
   return isSheerForceEligibleMove(effect, moveId ?? "");
 }
 
@@ -600,7 +666,7 @@ export function sheerForceSuppressesLifeOrb(
  *   chainModify([5325, 4096])
  */
 export function getAnalyticMultiplier(abilityId: string, opponentMovedThisTurn: boolean): number {
-  if (abilityId !== "analytic") return 1;
+  if (abilityId !== GEN5_ABILITY_IDS.analytic) return 1;
   if (!opponentMovedThisTurn) return 1;
   // Source: Showdown data/abilities.ts -- Analytic: 5325/4096 = ~1.3x
   return 5325 / 4096;
@@ -619,9 +685,13 @@ export function getSandForceMultiplier(
   moveType: PokemonType,
   weather: string | null,
 ): number {
-  if (abilityId !== "sand-force") return 1;
-  if (weather !== "sand") return 1;
-  const boostedTypes: PokemonType[] = ["rock", "ground", "steel"];
+  if (abilityId !== GEN5_ABILITY_IDS.sandForce) return 1;
+  if (weather !== CORE_WEATHER_IDS.sand) return 1;
+  const boostedTypes: PokemonType[] = [
+    CORE_TYPE_IDS.rock,
+    CORE_TYPE_IDS.ground,
+    CORE_TYPE_IDS.steel,
+  ];
   if (!boostedTypes.includes(moveType)) return 1;
   // Source: Showdown data/abilities.ts -- Sand Force: 5325/4096 = ~1.3x
   return 5325 / 4096;
@@ -640,7 +710,7 @@ export function getMultiscaleMultiplier(
   currentHp: number,
   maxHp: number,
 ): number {
-  if (abilityId !== "multiscale") return 1;
+  if (abilityId !== GEN5_ABILITY_IDS.multiscale) return 1;
   if (currentHp < maxHp) return 1;
   // Source: Showdown data/abilities.ts -- Multiscale: 0.5x at full HP
   return 0.5;
@@ -660,7 +730,7 @@ export function getSturdyDamageCap(
   currentHp: number,
   maxHp: number,
 ): number {
-  if (abilityId !== "sturdy") return damage;
+  if (abilityId !== GEN5_ABILITY_IDS.sturdy) return damage;
   // Strict equality matches Showdown: `target.hp === target.maxhp`
   // Using >= would incorrectly trigger if currentHp ever exceeded maxHp due to a bug.
   // Source: Showdown data/abilities.ts -- sturdy onDamage:
@@ -677,7 +747,7 @@ export function getSturdyDamageCap(
  *   if (move.ohko) return null (immune)
  */
 export function sturdyBlocksOHKO(abilityId: string, effect: MoveEffect | null): boolean {
-  if (abilityId !== "sturdy") return false;
+  if (abilityId !== GEN5_ABILITY_IDS.sturdy) return false;
   if (!effect) return false;
   return effect.type === "ohko";
 }

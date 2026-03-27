@@ -22,8 +22,25 @@
  * Source: references/pokemon-showdown/data/mods/gen5/moves.ts
  */
 
-import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
-import type { BattleStat, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+} from "@pokemon-lib-ts/battle";
+import {
+  type BattleStat,
+  CORE_ABILITY_IDS,
+  CORE_STAT_IDS,
+  CORE_VOLATILE_IDS,
+  type PrimaryStatus,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
+
+type MoveEffectBehaviorTarget =
+  | typeof BATTLE_EFFECT_TARGETS.attacker
+  | typeof BATTLE_EFFECT_TARGETS.defender;
+
+type MoveEffectBehaviorMultiTarget = MoveEffectBehaviorTarget | typeof BATTLE_EFFECT_TARGETS.both;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -136,11 +153,13 @@ function handleDefog(_ctx: MoveEffectContext): MoveEffectResult {
   return makeResult({
     // Evasion -1 on target
     // Source: Showdown gen5/moves.ts -- `this.boost({evasion: -1})` on target
-    statChanges: [{ target: "defender", stat: "evasion", stages: -1 }],
+    statChanges: [
+      { target: BATTLE_EFFECT_TARGETS.defender, stat: CORE_STAT_IDS.evasion, stages: -1 },
+    ],
     // Clear hazards and screens from TARGET side only
     // Source: Showdown gen5/moves.ts -- removes from `pokemon.side` (target)
-    clearSideHazards: "defender",
-    screensCleared: "defender",
+    clearSideHazards: BATTLE_EFFECT_TARGETS.defender,
+    screensCleared: BATTLE_EFFECT_TARGETS.defender,
     messages: [],
   });
 }
@@ -159,9 +178,9 @@ function handleDefog(_ctx: MoveEffectContext): MoveEffectResult {
 function handleScald(ctx: MoveEffectContext): MoveEffectResult {
   const result: {
     statusInflicted: PrimaryStatus | null;
-    statusCuredOnly: { target: "attacker" | "defender" | "both" } | null;
+    statusCuredOnly: { target: MoveEffectBehaviorMultiTarget } | null;
     messages: string[];
-    statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+    statChanges: Array<{ target: MoveEffectBehaviorTarget; stat: BattleStat; stages: number }>;
   } = {
     statusInflicted: null,
     statusCuredOnly: null,
@@ -172,7 +191,7 @@ function handleScald(ctx: MoveEffectContext): MoveEffectResult {
   // Thaw the USER if frozen (the defrost flag handles this in the engine,
   // but we also produce the result here for completeness)
   if (ctx.attacker.pokemon.status === "freeze") {
-    result.statusCuredOnly = { target: "attacker" };
+    result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
     result.messages.push(`${ctx.attacker.pokemon.nickname ?? "The attacker"} thawed out!`);
   }
 
@@ -203,8 +222,8 @@ function handleGrowth(ctx: MoveEffectContext): MoveEffectResult {
 
   return makeResult({
     statChanges: [
-      { target: "attacker", stat: "attack", stages },
-      { target: "attacker", stat: "spAttack", stages },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages },
+      { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages },
     ],
     messages: [],
   });
@@ -239,8 +258,11 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
     // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem + onUpdate:
     //   activates when the Pokemon loses its item by any means (consumed, stolen, knocked off).
     // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
-    if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
-      ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      ctx.defender.ability === CORE_ABILITY_IDS.unburden &&
+      !ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      ctx.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
 
     return makeResult({
@@ -279,7 +301,8 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   // brokeSubstitute means this hit destroyed the sub (still did not hit the Pokemon directly).
   if (
     ctx.brokeSubstitute ||
-    (ctx.defender.volatileStatuses.has("substitute") && !ctx.move.flags.bypassSubstitute)
+    (ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.substitute) &&
+      !ctx.move.flags.bypassSubstitute)
   ) {
     return makeResult({ messages: [] });
   }
@@ -293,9 +316,7 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   if (userItem != null && userItem !== "") {
     return makeResult({ messages: [] });
   }
-  if (
-    ctx.attacker.volatileStatuses.has("gem-used" as import("@pokemon-lib-ts/core").VolatileStatus)
-  ) {
+  if (ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.gemUsed as VolatileStatus)) {
     return makeResult({ messages: [] });
   }
 
@@ -310,12 +331,18 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   // Unburden: if the target has Unburden, set the volatile to double Speed.
   // Source: Showdown data/abilities.ts -- Unburden activates when item is lost by any means.
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is used or lost."
-  if (ctx.defender.ability === "unburden" && !ctx.defender.volatileStatuses.has("unburden")) {
-    ctx.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+  if (
+    ctx.defender.ability === CORE_ABILITY_IDS.unburden &&
+    !ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+  ) {
+    ctx.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
   }
 
   return makeResult({
-    itemTransfer: { from: "defender", to: "attacker" },
+    itemTransfer: {
+      from: BATTLE_EFFECT_TARGETS.defender,
+      to: BATTLE_EFFECT_TARGETS.attacker,
+    },
     messages: [`${attackerName} stole ${defenderName}'s ${targetItem}!`],
   });
 }
@@ -349,26 +376,32 @@ function handleRapidSpin(ctx: MoveEffectContext): MoveEffectResult {
   // Clear Leech Seed from the user
   // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('leechseed')
   const volatilesToClear: Array<{
-    target: "attacker" | "defender";
+    target: MoveEffectBehaviorTarget;
     volatile: VolatileStatus;
   }> = [];
 
-  if (ctx.attacker.volatileStatuses.has("leech-seed")) {
-    volatilesToClear.push({ target: "attacker", volatile: "leech-seed" });
+  if (ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.leechSeed)) {
+    volatilesToClear.push({
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      volatile: CORE_VOLATILE_IDS.leechSeed,
+    });
     messages.push("The Leech Seed was removed!");
   }
 
   // Clear binding/trapping from the user
   // Source: Showdown data/moves.ts -- rapidspin: pokemon.removeVolatile('partiallytrapped')
-  if (ctx.attacker.volatileStatuses.has("bound")) {
-    volatilesToClear.push({ target: "attacker", volatile: "bound" });
+  if (ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.bound)) {
+    volatilesToClear.push({
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      volatile: CORE_VOLATILE_IDS.bound,
+    });
     messages.push("The binding was removed!");
   }
 
   return makeResult({
     // Clear all hazards from the USER's side
     // Source: Showdown data/moves.ts -- rapidspin: removes spikes/toxicspikes/stealthrock
-    clearSideHazards: "attacker",
+    clearSideHazards: BATTLE_EFFECT_TARGETS.attacker,
     volatilesToClear: volatilesToClear.length > 0 ? volatilesToClear : undefined,
     messages,
   });
@@ -389,14 +422,14 @@ function handleEncore(ctx: MoveEffectContext): MoveEffectResult {
 
   // Fail if target has no last move or is already Encored
   // Source: Showdown data/moves.ts -- encore: onTry checks target.lastMove and volatile
-  if (!defender.lastMoveUsed || defender.volatileStatuses.has("encore")) {
+  if (!defender.lastMoveUsed || defender.volatileStatuses.has(CORE_VOLATILE_IDS.encore)) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
   // Gen 5: exactly 3 turns (changed from Gen 4's random 4-8)
   // Source: Showdown data/mods/gen5/moves.ts -- encore: condition.duration = 3
   return makeResult({
-    volatileInflicted: "encore",
+    volatileInflicted: CORE_VOLATILE_IDS.encore,
     volatileData: { turnsLeft: 3, data: { moveId: defender.lastMoveUsed } },
     messages: [`${defenderName} got an encore!`],
   });
@@ -417,14 +450,14 @@ function handleTaunt(ctx: MoveEffectContext): MoveEffectResult {
 
   // Fail if target is already Taunted
   // Source: Showdown data/moves.ts -- taunt: volatileStatus check
-  if (defender.volatileStatuses.has("taunt")) {
+  if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.taunt)) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
   // Gen 5: exactly 3 turns (changed from Gen 4's random 3-5)
   // Source: Showdown data/mods/gen5/moves.ts -- taunt: condition.duration = 3
   return makeResult({
-    volatileInflicted: "taunt",
+    volatileInflicted: CORE_VOLATILE_IDS.taunt,
     volatileData: { turnsLeft: 3 },
     messages: [`${defenderName} fell for the taunt!`],
   });
@@ -445,14 +478,14 @@ function handleDisable(ctx: MoveEffectContext): MoveEffectResult {
 
   // Fail if target has no last move or is already Disabled
   // Source: Showdown data/moves.ts -- disable: onTry checks target.lastMove and volatile
-  if (!defender.lastMoveUsed || defender.volatileStatuses.has("disable")) {
+  if (!defender.lastMoveUsed || defender.volatileStatuses.has(CORE_VOLATILE_IDS.disable)) {
     return makeResult({ messages: ["But it failed!"] });
   }
 
   // Gen 5: exactly 4 turns (changed from Gen 4's random 4-7)
   // Source: Showdown data/mods/gen5/moves.ts -- disable: condition.duration = 4
   return makeResult({
-    volatileInflicted: "disable",
+    volatileInflicted: CORE_VOLATILE_IDS.disable,
     volatileData: { turnsLeft: 4, data: { moveId: defender.lastMoveUsed } },
     messages: [`${defenderName}'s ${defender.lastMoveUsed} was disabled!`],
   });

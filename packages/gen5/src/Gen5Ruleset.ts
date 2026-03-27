@@ -28,7 +28,15 @@ import type {
   TwoTurnMoveVolatile,
   TypeChart,
 } from "@pokemon-lib-ts/core";
-import { DataManager, getStatStageMultiplier } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
+  DataManager,
+  getStatStageMultiplier,
+} from "@pokemon-lib-ts/core";
+import { GEN5_ITEM_IDS } from "./data/reference-ids.js";
 import { applyGen5Ability } from "./Gen5Abilities";
 import { getSturdyDamageCap } from "./Gen5AbilitiesDamage";
 import { GEN5_CRIT_MULTIPLIER, GEN5_CRIT_RATE_TABLE } from "./Gen5CritCalc";
@@ -171,11 +179,11 @@ export class Gen5Ruleset extends BaseRuleset {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
     const itemSuppressed =
-      defender.ability === "klutz" ||
-      defender.volatileStatuses.has("embargo") ||
+      defender.ability === CORE_ABILITY_IDS.klutz ||
+      defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo) ||
       (state.magicRoom?.active ?? false);
     if (
-      heldItem === "focus-sash" &&
+      heldItem === CORE_ITEM_IDS.focusSash &&
       !itemSuppressed &&
       defender.pokemon.currentHp === maxHp &&
       damage >= defender.pokemon.currentHp
@@ -184,14 +192,18 @@ export class Gen5Ruleset extends BaseRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on with its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 
     // 3. Focus Band (item) -- 10% chance to survive at 1 HP, NOT consumed
     // Source: Showdown data/items.ts -- Focus Band 10% activation
     // Fix: use currentHp - 1 (not maxHp - 1) to leave exactly 1 HP regardless of current HP
-    if (heldItem === "focus-band" && !itemSuppressed && damage >= defender.pokemon.currentHp) {
+    if (
+      heldItem === GEN5_ITEM_IDS.focusBand &&
+      !itemSuppressed &&
+      damage >= defender.pokemon.currentHp
+    ) {
       if (state.rng.chance(0.1)) {
         return {
           damage: defender.pokemon.currentHp - 1,
@@ -506,8 +518,8 @@ export class Gen5Ruleset extends BaseRuleset {
 
     // Unburden: 2x Speed when held item is consumed/lost AND currently has no item.
     if (
-      active.ability === "unburden" &&
-      active.volatileStatuses.has("unburden") &&
+      active.ability === CORE_ABILITY_IDS.unburden &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.unburden) &&
       !active.pokemon.heldItem
     ) {
       effective = effective * 2;
@@ -522,7 +534,10 @@ export class Gen5Ruleset extends BaseRuleset {
     }
 
     // Iron Ball: halve Speed (suppressed by Klutz)
-    if (active.pokemon.heldItem === "iron-ball" && active.ability !== "klutz") {
+    if (
+      active.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+      active.ability !== CORE_ABILITY_IDS.klutz
+    ) {
       effective = Math.floor(effective * 0.5);
     }
 
@@ -743,44 +758,44 @@ export class Gen5Ruleset extends BaseRuleset {
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return [
-      "weather-damage",
-      "future-attack",
-      "wish",
-      "weather-healing",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
       "shed-skin",
-      "leech-seed",
-      "leftovers",
-      "black-sludge",
-      "aqua-ring",
-      "ingrain",
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.aquaRing,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
       "poison-heal",
-      "status-damage",
-      "nightmare",
-      "curse",
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
       "bad-dreams",
-      "bind",
-      "yawn-countdown",
-      "encore-countdown",
-      "taunt-countdown",
-      "disable-countdown",
-      "heal-block-countdown",
-      "embargo-countdown",
-      "magnet-rise-countdown",
-      "perish-song",
-      "screen-countdown",
-      "safeguard-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
-      "magic-room-countdown",
-      "wonder-room-countdown",
-      "gravity-countdown",
-      "weather-countdown",
-      "toxic-orb-activation",
-      "flame-orb-activation",
-      "slow-start-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magicRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.wonderRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
       "speed-boost",
       "moody",
-      "healing-items",
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
     ];
   }
 

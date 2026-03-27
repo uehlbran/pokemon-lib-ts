@@ -16,6 +16,23 @@ const dataManager = createGen3DataManager();
 const defaultSpecies = dataManager.getSpecies(GEN3_SPECIES_IDS.bulbasaur);
 const defaultMove = dataManager.getMove(GEN3_MOVE_IDS.tackle);
 
+function resolveAbilitySlot(
+  species: ReturnType<typeof dataManager.getSpecies>,
+  ability: string | undefined,
+  abilitySlot: PokemonInstance["abilitySlot"] | undefined,
+): PokemonInstance["abilitySlot"] {
+  if (abilitySlot) {
+    return abilitySlot;
+  }
+  if (ability && species.abilities.normal[1] === ability) {
+    return CORE_ABILITY_SLOTS.normal2;
+  }
+  if (ability && species.abilities.hidden === ability) {
+    return CORE_ABILITY_SLOTS.hidden;
+  }
+  return CORE_ABILITY_SLOTS.normal1;
+}
+
 export interface CreateGen3TestPokemonOptions {
   readonly speciesId?: number;
   readonly level?: number;
@@ -44,6 +61,7 @@ export interface CreateGen3TestPokemonOptions {
 export function createGen3TestPokemon(options: CreateGen3TestPokemonOptions = {}): PokemonInstance {
   const species = dataManager.getSpecies(options.speciesId ?? defaultSpecies.id);
   const level = options.level ?? 50;
+  const abilitySlot = resolveAbilitySlot(species, options.ability, options.abilitySlot);
   const pokemon = createPokemonInstance(
     species,
     level,
@@ -55,7 +73,7 @@ export function createGen3TestPokemon(options: CreateGen3TestPokemonOptions = {}
       moves: [],
       heldItem: options.heldItem ?? null,
       friendship: options.friendship ?? species.baseFriendship,
-      abilitySlot: options.abilitySlot ?? CORE_ABILITY_SLOTS.normal1,
+      abilitySlot,
       gender: options.gender ?? CORE_GENDERS.male,
       isShiny: options.isShiny ?? false,
       metLocation: options.metLocation ?? "test",

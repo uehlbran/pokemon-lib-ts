@@ -6,6 +6,7 @@ export interface TeamGeneratorOptions {
   levelRange: [number, number];
   movesPerPokemon: [number, number];
   allowDuplicateSpecies: boolean;
+  uidPrefix: string;
 }
 
 export interface BattleRunConfig {

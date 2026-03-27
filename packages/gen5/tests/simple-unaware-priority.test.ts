@@ -19,6 +19,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createFriendship,
@@ -395,7 +396,12 @@ describe("#757 — Simple/Unaware priority order in getEffectiveStatStage", () =
       statStages: { defense: 2 },
     });
 
-    const stage = getEffectiveStatStage(defender, "defense", attacker, "defense");
+    const stage = getEffectiveStatStage(
+      defender,
+      CORE_STAT_IDS.defense,
+      attacker,
+      CORE_STAT_IDS.defense,
+    );
 
     expect(stage).toBe(0);
   });

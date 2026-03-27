@@ -7,13 +7,26 @@
  * Source: Bulbapedia "Max Move" -- secondary effects per type
  */
 
-import type { BattleStat, PokemonType } from "@pokemon-lib-ts/core";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import type { BattleStat, PokemonType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
+import {
+  CORE_STAT_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
 
 export const GEN8_MAX_MOVE_EFFECT_TYPES = {
   statBoost: "stat-boost",
   weather: "weather",
   terrain: "terrain",
   protect: "protect",
+} as const;
+
+export const GEN8_MAX_MOVE_EFFECT_TARGETS = {
+  userSide: "user-side",
+  opponent: BATTLE_EFFECT_TARGETS.opponent,
+  opponentSide: "opponent-side",
 } as const;
 
 /**
@@ -31,10 +44,13 @@ export type MaxMoveEffect =
       type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["statBoost"];
       stat: BattleStat;
       stages: number;
-      target: "user-side" | "opponent" | "opponent-side";
+      target:
+        | (typeof GEN8_MAX_MOVE_EFFECT_TARGETS)["userSide"]
+        | (typeof GEN8_MAX_MOVE_EFFECT_TARGETS)["opponent"]
+        | (typeof GEN8_MAX_MOVE_EFFECT_TARGETS)["opponentSide"];
     }
-  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["weather"]; weather: string }
-  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["terrain"]; terrain: string }
+  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["weather"]; weather: WeatherType }
+  | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["terrain"]; terrain: TerrainType }
   | { type: (typeof GEN8_MAX_MOVE_EFFECT_TYPES)["protect"] };
 
 /**
@@ -43,24 +59,24 @@ export type MaxMoveEffect =
  * Source: Showdown sim/battle-actions.ts lines 9-29 -- MAX_MOVES table
  */
 const MAX_MOVE_NAMES: Readonly<Record<PokemonType, string>> = {
-  normal: "Max Strike",
-  fire: "Max Flare",
-  water: "Max Geyser",
-  electric: "Max Lightning",
-  grass: "Max Overgrowth",
-  ice: "Max Hailstorm",
-  fighting: "Max Knuckle",
-  poison: "Max Ooze",
-  ground: "Max Quake",
-  flying: "Max Airstream",
-  psychic: "Max Mindstorm",
-  bug: "Max Flutterby",
-  rock: "Max Rockfall",
-  ghost: "Max Phantasm",
-  dragon: "Max Wyrmwind",
-  dark: "Max Darkness",
-  steel: "Max Steelspike",
-  fairy: "Max Starfall",
+  [CORE_TYPE_IDS.normal]: "Max Strike",
+  [CORE_TYPE_IDS.fire]: "Max Flare",
+  [CORE_TYPE_IDS.water]: "Max Geyser",
+  [CORE_TYPE_IDS.electric]: "Max Lightning",
+  [CORE_TYPE_IDS.grass]: "Max Overgrowth",
+  [CORE_TYPE_IDS.ice]: "Max Hailstorm",
+  [CORE_TYPE_IDS.fighting]: "Max Knuckle",
+  [CORE_TYPE_IDS.poison]: "Max Ooze",
+  [CORE_TYPE_IDS.ground]: "Max Quake",
+  [CORE_TYPE_IDS.flying]: "Max Airstream",
+  [CORE_TYPE_IDS.psychic]: "Max Mindstorm",
+  [CORE_TYPE_IDS.bug]: "Max Flutterby",
+  [CORE_TYPE_IDS.rock]: "Max Rockfall",
+  [CORE_TYPE_IDS.ghost]: "Max Phantasm",
+  [CORE_TYPE_IDS.dragon]: "Max Wyrmwind",
+  [CORE_TYPE_IDS.dark]: "Max Darkness",
+  [CORE_TYPE_IDS.steel]: "Max Steelspike",
+  [CORE_TYPE_IDS.fairy]: "Max Starfall",
 };
 
 /**
@@ -71,74 +87,74 @@ const MAX_MOVE_NAMES: Readonly<Record<PokemonType, string>> = {
  */
 const MAX_MOVE_EFFECTS: Readonly<Record<string, MaxMoveEffect>> = {
   "Max Strike": {
-    type: "stat-boost",
-    stat: "speed",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.speed,
     stages: -1,
-    target: "opponent-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.opponentSide,
   },
-  "Max Flare": { type: "weather", weather: "sun" },
-  "Max Geyser": { type: "weather", weather: "rain" },
-  "Max Lightning": { type: "terrain", terrain: "electric" },
-  "Max Overgrowth": { type: "terrain", terrain: "grassy" },
-  "Max Hailstorm": { type: "weather", weather: "hail" },
+  "Max Flare": { type: GEN8_MAX_MOVE_EFFECT_TYPES.weather, weather: CORE_WEATHER_IDS.sun },
+  "Max Geyser": { type: GEN8_MAX_MOVE_EFFECT_TYPES.weather, weather: CORE_WEATHER_IDS.rain },
+  "Max Lightning": { type: GEN8_MAX_MOVE_EFFECT_TYPES.terrain, terrain: CORE_TERRAIN_IDS.electric },
+  "Max Overgrowth": { type: GEN8_MAX_MOVE_EFFECT_TYPES.terrain, terrain: CORE_TERRAIN_IDS.grassy },
+  "Max Hailstorm": { type: GEN8_MAX_MOVE_EFFECT_TYPES.weather, weather: CORE_WEATHER_IDS.hail },
   "Max Knuckle": {
-    type: "stat-boost",
-    stat: "attack",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.attack,
     stages: 1,
-    target: "user-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.userSide,
   },
   "Max Ooze": {
-    type: "stat-boost",
-    stat: "spAttack",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.spAttack,
     stages: 1,
-    target: "user-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.userSide,
   },
   "Max Quake": {
-    type: "stat-boost",
-    stat: "spDefense",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.spDefense,
     stages: 1,
-    target: "user-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.userSide,
   },
   "Max Airstream": {
-    type: "stat-boost",
-    stat: "speed",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.speed,
     stages: 1,
-    target: "user-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.userSide,
   },
-  "Max Mindstorm": { type: "terrain", terrain: "psychic" },
+  "Max Mindstorm": { type: GEN8_MAX_MOVE_EFFECT_TYPES.terrain, terrain: CORE_TERRAIN_IDS.psychic },
   "Max Flutterby": {
-    type: "stat-boost",
-    stat: "spAttack",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.spAttack,
     stages: -1,
-    target: "opponent-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.opponentSide,
   },
-  "Max Rockfall": { type: "weather", weather: "sandstorm" },
+  "Max Rockfall": { type: GEN8_MAX_MOVE_EFFECT_TYPES.weather, weather: CORE_WEATHER_IDS.sand },
   "Max Phantasm": {
-    type: "stat-boost",
-    stat: "defense",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.defense,
     stages: -1,
-    target: "opponent",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.opponent,
   },
   "Max Wyrmwind": {
-    type: "stat-boost",
-    stat: "attack",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.attack,
     stages: -1,
-    target: "opponent-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.opponentSide,
   },
   "Max Darkness": {
-    type: "stat-boost",
-    stat: "spDefense",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.spDefense,
     stages: -1,
-    target: "opponent-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.opponentSide,
   },
   "Max Steelspike": {
-    type: "stat-boost",
-    stat: "defense",
+    type: GEN8_MAX_MOVE_EFFECT_TYPES.statBoost,
+    stat: CORE_STAT_IDS.defense,
     stages: 1,
-    target: "user-side",
+    target: GEN8_MAX_MOVE_EFFECT_TARGETS.userSide,
   },
-  "Max Starfall": { type: "terrain", terrain: "misty" },
-  "Max Guard": { type: "protect" },
+  "Max Starfall": { type: GEN8_MAX_MOVE_EFFECT_TYPES.terrain, terrain: CORE_TERRAIN_IDS.misty },
+  "Max Guard": { type: GEN8_MAX_MOVE_EFFECT_TYPES.protect },
 };
 
 /**
@@ -173,7 +189,8 @@ export function getMaxMoveName(moveType: PokemonType, isStatus: boolean): string
 export function getMaxMovePower(basePower: number, moveType: PokemonType): number {
   if (basePower === 0) return 0;
 
-  const isPoisonOrFighting = moveType === "poison" || moveType === "fighting";
+  const isPoisonOrFighting =
+    moveType === CORE_TYPE_IDS.poison || moveType === CORE_TYPE_IDS.fighting;
 
   if (isPoisonOrFighting) {
     return getPoisonFightingMaxPower(basePower);

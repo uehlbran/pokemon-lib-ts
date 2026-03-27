@@ -64,7 +64,7 @@ const flamethrowerMove = dataManager.getMove(moveIds.flamethrower);
 const surfMove = dataManager.getMove(moveIds.surf);
 const thunderboltMove = dataManager.getMove(moveIds.thunderbolt);
 const iceBeamMove = dataManager.getMove(moveIds.iceBeam);
-const metronomeCountVolatileId = "metronome-count" as const;
+const metronomeCountVolatileId = CORE_VOLATILE_IDS.metronomeCount;
 const forceSwitchEffect = "force-switch" as const;
 
 type PokemonGender = (typeof genderIds)[keyof typeof genderIds];

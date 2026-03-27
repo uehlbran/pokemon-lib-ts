@@ -1,4 +1,9 @@
-import { CORE_MOVE_CATEGORIES, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_HAZARD_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -37,7 +42,7 @@ describe("Gen8GMaxMoves", () => {
         "gmax-sandblast",
         "gmax-smite",
         "gmax-snooze",
-        "gmax-steelsurge",
+        CORE_HAZARD_IDS.gmaxSteelsurge,
         "gmax-stonesurge",
         "gmax-stun-shock",
         "gmax-sweetness",
@@ -57,10 +62,10 @@ describe("Gen8GMaxMoves", () => {
         moveType: "fire",
         effect: { type: "residual", duration: 4, damage: "1/6", immunity: ["fire"] },
       });
-      expect(GMAX_MOVES["gmax-steelsurge"]).toEqual({
+      expect(GMAX_MOVES[CORE_HAZARD_IDS.gmaxSteelsurge]).toEqual({
         species: "Copperajah",
         moveType: "steel",
-        effect: { type: "hazard", hazard: "gmax-steelsurge" },
+        effect: { type: "hazard", hazard: CORE_HAZARD_IDS.gmaxSteelsurge },
       });
       expect(GMAX_MOVES["gmax-drum-solo"]).toEqual({
         species: "Rillaboom",
@@ -71,7 +76,7 @@ describe("Gen8GMaxMoves", () => {
       expect(GMAX_MOVES["gmax-volt-crash"]).toEqual({
         species: "Pikachu",
         moveType: "electric",
-        effect: { type: "status", status: "par" },
+        effect: { type: "status", status: CORE_STATUS_IDS.paralysis },
       });
     });
   });
@@ -93,7 +98,7 @@ describe("Gen8GMaxMoves", () => {
       expect(result).toEqual({
         species: "Pikachu",
         moveType: TYPE_IDS.electric,
-        effect: { type: CORE_MOVE_CATEGORIES.status, status: "par" },
+        effect: { type: CORE_MOVE_CATEGORIES.status, status: CORE_STATUS_IDS.paralysis },
       });
     });
 
@@ -128,11 +133,11 @@ describe("Gen8GMaxMoves", () => {
   describe("getGMaxMoveEffect", () => {
     it("given gmax-steelsurge ID, when looking up effect, then returns Steel type with hazard effect", () => {
       // Source: Showdown data/moves.ts -- gmaxSteelsurge sets Steel-type hazard
-      const result = getGMaxMoveEffect("gmax-steelsurge");
+      const result = getGMaxMoveEffect(CORE_HAZARD_IDS.gmaxSteelsurge);
       expect(result).toEqual({
         species: "Copperajah",
         moveType: TYPE_IDS.steel,
-        effect: { type: "hazard", hazard: "gmax-steelsurge" },
+        effect: { type: "hazard", hazard: CORE_HAZARD_IDS.gmaxSteelsurge },
       });
     });
 

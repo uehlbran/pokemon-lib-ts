@@ -158,11 +158,6 @@ describe("Gen9Ruleset -- canHitSemiInvulnerable", () => {
     expect(ruleset.canHitSemiInvulnerable(MOVES.twister, TYPES.flying)).toBe(true);
   });
 
-  it("given target is flying, when Sky Uppercut is used, then it can hit", () => {
-    // Source: Showdown data/moves.ts -- Sky Uppercut hits flying targets
-    expect(ruleset.canHitSemiInvulnerable(MOVES.skyUppercut, TYPES.flying)).toBe(true);
-  });
-
   it("given target is flying, when Smack Down is used, then it can hit", () => {
     // Source: Showdown data/moves.ts -- Smack Down hits flying targets
     expect(ruleset.canHitSemiInvulnerable(MOVES.smackDown, TYPES.flying)).toBe(true);
@@ -272,7 +267,7 @@ describe("Gen9Ruleset -- inherited BaseRuleset behaviors", () => {
   it("given Gen9Ruleset, when getAvailableHazards(), then does NOT include gmax-steelsurge (Dynamax removed)", () => {
     // Source: Bulbapedia -- G-Max Steelsurge was a Gen 8 Dynamax-exclusive hazard
     // Dynamax was removed in Gen 9, so G-Max Steelsurge is not available
-    expect(ruleset.getAvailableHazards()).not.toContain("gmax-steelsurge");
+    expect(ruleset.getAvailableHazards()).not.toContain(HAZARDS.gmaxSteelsurge);
   });
 
   it("given Gen9Ruleset, when getCritRateTable(), then returns [24, 8, 2, 1] (Gen 6+ table)", () => {

@@ -7,14 +7,23 @@ import type {
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChartLookup } from "@pokemon-lib-ts/core";
 import {
+  BASE_ABILITY_TYPE_IMMUNITIES,
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  BASE_TYPE_RESIST_BERRIES,
+  CORE_ABILITY_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
+import { GEN5_ITEM_IDS } from "./data/reference-ids";
 import { isSheerForceEligibleMove } from "./Gen5AbilitiesDamage";
 import { isWeatherSuppressedGen5 } from "./Gen5Weather";
 
@@ -39,23 +48,7 @@ const GIRATINA_SPECIES_ID = 487;
  * Source: Bulbapedia -- type-resist berries: "Weakens a supereffective [type]-type move"
  */
 export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
+  ...BASE_TYPE_RESIST_BERRIES,
 };
 
 // Re-exported for backwards compatibility; canonical implementation lives in core.
@@ -91,23 +84,23 @@ const PLATE_ITEMS = BASE_PLATE_ITEMS;
  *   -- chainModify(1.5) in Gen 5
  */
 const GEM_ITEMS: Readonly<Record<string, string>> = {
-  "normal-gem": "normal",
-  "fire-gem": "fire",
-  "water-gem": "water",
-  "electric-gem": "electric",
-  "grass-gem": "grass",
-  "ice-gem": "ice",
-  "fighting-gem": "fighting",
-  "poison-gem": "poison",
-  "ground-gem": "ground",
-  "flying-gem": "flying",
-  "psychic-gem": "psychic",
-  "bug-gem": "bug",
-  "rock-gem": "rock",
-  "ghost-gem": "ghost",
-  "dragon-gem": "dragon",
-  "dark-gem": "dark",
-  "steel-gem": "steel",
+  [GEN5_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
+  [GEN5_ITEM_IDS.fireGem]: CORE_TYPE_IDS.fire,
+  [GEN5_ITEM_IDS.waterGem]: CORE_TYPE_IDS.water,
+  [GEN5_ITEM_IDS.electricGem]: CORE_TYPE_IDS.electric,
+  [GEN5_ITEM_IDS.grassGem]: CORE_TYPE_IDS.grass,
+  [GEN5_ITEM_IDS.iceGem]: CORE_TYPE_IDS.ice,
+  [GEN5_ITEM_IDS.fightingGem]: CORE_TYPE_IDS.fighting,
+  [GEN5_ITEM_IDS.poisonGem]: CORE_TYPE_IDS.poison,
+  [GEN5_ITEM_IDS.groundGem]: CORE_TYPE_IDS.ground,
+  [GEN5_ITEM_IDS.flyingGem]: CORE_TYPE_IDS.flying,
+  [GEN5_ITEM_IDS.psychicGem]: CORE_TYPE_IDS.psychic,
+  [GEN5_ITEM_IDS.bugGem]: CORE_TYPE_IDS.bug,
+  [GEN5_ITEM_IDS.rockGem]: CORE_TYPE_IDS.rock,
+  [GEN5_ITEM_IDS.ghostGem]: CORE_TYPE_IDS.ghost,
+  [GEN5_ITEM_IDS.dragonGem]: CORE_TYPE_IDS.dragon,
+  [GEN5_ITEM_IDS.darkGem]: CORE_TYPE_IDS.dark,
+  [GEN5_ITEM_IDS.steelGem]: CORE_TYPE_IDS.steel,
 };
 
 // ---- Pinch Ability Types ----
@@ -132,17 +125,7 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  * Source: Showdown sim/battle.ts -- immunity abilities
  * Source: Bulbapedia -- Motor Drive, Dry Skin, etc.
  */
-const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
-  "storm-drain": "water",
-  "lightning-rod": "electric",
-  "sap-sipper": "grass",
-};
+const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
 // ---- Recoil Detection Helper ----
 
@@ -177,14 +160,14 @@ function getAttackStat(
   weather: string | null,
   defender?: ActivePokemon,
 ): number {
-  const statKey = isPhysical ? "attack" : "spAttack";
+  const statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   const stats = attacker.pokemon.calculatedStats;
   let rawStat = stats ? stats[statKey] : 100;
 
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
   const attackerSpecies = attacker.pokemon.speciesId;
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === CORE_ABILITY_IDS.klutz;
 
   // Huge Power / Pure Power: doubles physical attack
   // Source: Showdown -- Huge Power / Pure Power
@@ -305,7 +288,7 @@ function getAttackStat(
   }
 
   // Apply stat stages (with Simple/Unaware adjustments)
-  const statKey2 = isPhysical ? "attack" : "spAttack";
+  const statKey2 = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   const stage = getEffectiveStatStage(attacker, statKey2, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
@@ -332,13 +315,13 @@ function getDefenseStat(
   attacker?: ActivePokemon,
   ignoreDefenseStages?: boolean,
 ): number {
-  const statKey = isPhysical ? "defense" : "spDefense";
+  const statKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
   const stats = defender.pokemon.calculatedStats;
   let baseStat = stats ? stats[statKey] : 100;
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
 
   // Soul Dew: 1.5x SpDef for Latias (380) / Latios (381)
   // Source: Showdown sim/items.ts -- Soul Dew Gen 3-6 behavior
@@ -407,8 +390,8 @@ function getDefenseStat(
   // Fur Coat (NEW in Gen 6 -- NOT Gen 5)
 
   // Stat stages
-  const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
+  const defStatKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, CORE_STAT_IDS.defense);
 
   // Chip Away / Sacred Sword: ignore all defense stat stages
   // Source: Showdown data/moves.ts -- chipaway: { ignoreDefensive: true }
@@ -487,7 +470,7 @@ export function calculateGen5Damage(
   const effectiveMoveType: PokemonType = attackerAbility === "normalize" ? "normal" : move.type;
 
   // Klutz check
-  const attackerHasKlutz = attackerAbility === "klutz";
+  const attackerHasKlutz = attackerAbility === CORE_ABILITY_IDS.klutz;
   const attackerItem = attacker.pokemon.heldItem;
 
   // ---- Pre-damage base power modifications ----
@@ -507,7 +490,7 @@ export function calculateGen5Damage(
   // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts gem condition -- chainModify(1.5)
   // Embargo suppresses all held item effects including gems
   // Source: Showdown data/moves.ts -- embargo: suppresses item use
-  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
+  const attackerHasEmbargo = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   let gemConsumed = false;
   if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
@@ -642,8 +625,8 @@ export function calculateGen5Damage(
     if (
       attackerGender &&
       defenderGender &&
-      attackerGender !== "genderless" &&
-      defenderGender !== "genderless"
+      attackerGender !== CORE_GENDERS.genderless &&
+      defenderGender !== CORE_GENDERS.genderless
     ) {
       if (attackerGender === defenderGender) {
         // Source: Showdown data/abilities.ts — rivalry: chainModify(1.25) = 5120/4096
@@ -685,14 +668,15 @@ export function calculateGen5Damage(
 
   const gravityActive = context.state.gravity?.active ?? false;
   const ironBallGrounded =
-    defender.pokemon.heldItem === "iron-ball" && effectiveMoveType === "ground";
+    defender.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+    effectiveMoveType === CORE_TYPE_IDS.ground;
 
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
       const isLevitateGrounded =
-        defenderAbility === "levitate" &&
-        effectiveMoveType === "ground" &&
+        defenderAbility === CORE_ABILITY_IDS.levitate &&
+        effectiveMoveType === CORE_TYPE_IDS.ground &&
         (gravityActive || ironBallGrounded);
       if (!isLevitateGrounded) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
@@ -703,8 +687,8 @@ export function calculateGen5Damage(
   // Magnet Rise: Ground immunity (not ability-based, Mold Breaker does NOT bypass)
   // Source: Showdown -- Magnet Rise
   if (
-    effectiveMoveType === "ground" &&
-    defender.volatileStatuses.has("magnet-rise") &&
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise) &&
     !gravityActive &&
     !ironBallGrounded
   ) {
@@ -837,11 +821,11 @@ export function calculateGen5Damage(
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
   if (
     (gravityActive || ironBallGrounded) &&
-    effectiveMoveType === "ground" &&
-    defender.types.includes("flying")
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.types.includes(CORE_TYPE_IDS.flying)
   ) {
-    const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
-    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
+    const nonFlyingTypes = defender.types.filter((t) => t !== CORE_TYPE_IDS.flying);
+    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : [CORE_TYPE_IDS.normal];
   }
   let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
 
@@ -995,7 +979,7 @@ export function calculateGen5Damage(
   // Metronome item: consecutive use boost
   // Source: Showdown data/items.ts -- Metronome onModifyDamage
   if (!attackerHasKlutz && attackerItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+    const metronomeState = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
     if (metronomeState?.data?.count) {
       const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
       if (boostSteps > 0) {
@@ -1014,8 +998,8 @@ export function calculateGen5Damage(
   // Source: Showdown data/moves.ts -- Magic Room: "Items have no effect" (suppresses berries)
   let typeResistBerryConsumed: string | null = null;
   const defenderItem = defender.pokemon.heldItem;
-  const defenderHasKlutz = defender.ability === "klutz";
-  const defenderHasEmbargo = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
+  const defenderHasEmbargo = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   const magicRoomActive = context.state?.magicRoom?.active ?? false;
   if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && !magicRoomActive) {
     const resistType = TYPE_RESIST_BERRIES[defenderItem];
@@ -1040,8 +1024,11 @@ export function calculateGen5Damage(
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is consumed"
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === CORE_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 
@@ -1054,8 +1041,11 @@ export function calculateGen5Damage(
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
     attacker.pokemon.heldItem = null;
-    if (attacker.ability === "unburden" && !attacker.volatileStatuses.has("unburden")) {
-      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      attacker.ability === CORE_ABILITY_IDS.unburden &&
+      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
     // Mark gem-used so onAfterHit item-theft checks (Thief/Covet) know the attacker
     // held an item that was consumed this move. Showdown uses source.volatiles['gem']

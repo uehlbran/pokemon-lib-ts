@@ -1,5 +1,22 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, PokemonType, ScreenType } from "@pokemon-lib-ts/core";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityTrigger,
+  PokemonType,
+  ScreenType,
+  VolatileStatus,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_GENDERS,
+  CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 8 switch-in, switch-out, contact, and passive ability handlers.
@@ -35,6 +52,8 @@ function getOpponentName(ctx: AbilityContext): string {
   return ctx.opponent.pokemon.nickname ?? String(ctx.opponent.pokemon.speciesId);
 }
 
+type MirrorArmorSource = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -48,31 +67,31 @@ function getOpponentName(ctx: AbilityContext): string {
  * Source: Showdown data/abilities.ts -- trace.onUpdate
  * Source: Bulbapedia "Trace" Gen 8 -- cannot copy these abilities
  */
-export const TRACE_UNCOPYABLE_ABILITIES = new Set([
-  "trace",
-  "multitype",
-  "forecast",
-  "illusion",
-  "flower-gift",
-  "imposter",
-  "zen-mode",
-  "stance-change",
-  "power-construct",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "receiver",
-  "power-of-alchemy",
+export const TRACE_UNCOPYABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN8_ABILITY_IDS.trace,
+  GEN8_ABILITY_IDS.multitype,
+  GEN8_ABILITY_IDS.forecast,
+  GEN8_ABILITY_IDS.illusion,
+  GEN8_ABILITY_IDS.flowerGift,
+  GEN8_ABILITY_IDS.imposter,
+  GEN8_ABILITY_IDS.zenMode,
+  GEN8_ABILITY_IDS.stanceChange,
+  GEN8_ABILITY_IDS.powerConstruct,
+  GEN8_ABILITY_IDS.schooling,
+  GEN8_ABILITY_IDS.comatose,
+  GEN8_ABILITY_IDS.shieldsDown,
+  GEN8_ABILITY_IDS.disguise,
+  GEN8_ABILITY_IDS.rksSystem,
+  GEN8_ABILITY_IDS.battleBond,
+  GEN8_ABILITY_IDS.receiver,
+  GEN8_ABILITY_IDS.powerOfAlchemy,
   // Gen 8 additions
-  "hunger-switch",
-  "gulp-missile",
-  "ice-face",
-  "neutralizing-gas",
-  "intrepid-sword",
-  "dauntless-shield",
+  GEN8_ABILITY_IDS.hungerSwitch,
+  GEN8_ABILITY_IDS.gulpMissile,
+  GEN8_ABILITY_IDS.iceFace,
+  GEN8_ABILITY_IDS.neutralizingGas,
+  GEN8_ABILITY_IDS.intrepidSword,
+  GEN8_ABILITY_IDS.dauntlessShield,
 ]);
 
 /**
@@ -82,20 +101,20 @@ export const TRACE_UNCOPYABLE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- cantsuppress
  */
-export const UNSUPPRESSABLE_ABILITIES = new Set([
-  "multitype",
-  "stance-change",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "power-construct",
+export const UNSUPPRESSABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN8_ABILITY_IDS.multitype,
+  GEN8_ABILITY_IDS.stanceChange,
+  GEN8_ABILITY_IDS.schooling,
+  GEN8_ABILITY_IDS.comatose,
+  GEN8_ABILITY_IDS.shieldsDown,
+  GEN8_ABILITY_IDS.disguise,
+  GEN8_ABILITY_IDS.rksSystem,
+  GEN8_ABILITY_IDS.battleBond,
+  GEN8_ABILITY_IDS.powerConstruct,
   // Gen 8 additions
-  "gulp-missile",
-  "ice-face",
-  "neutralizing-gas",
+  GEN8_ABILITY_IDS.gulpMissile,
+  GEN8_ABILITY_IDS.iceFace,
+  GEN8_ABILITY_IDS.neutralizingGas,
 ]);
 
 /**
@@ -105,19 +124,19 @@ export const UNSUPPRESSABLE_ABILITIES = new Set([
  * Source: Bulbapedia "Neutralizing Gas" -- does not suppress itself,
  *   Comatose, or any ability in the unsuppressable set
  */
-export const NEUTRALIZING_GAS_IMMUNE_ABILITIES = new Set([
-  "neutralizing-gas",
-  "comatose",
-  "multitype",
-  "stance-change",
-  "schooling",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "power-construct",
-  "gulp-missile",
-  "ice-face",
+export const NEUTRALIZING_GAS_IMMUNE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN8_ABILITY_IDS.neutralizingGas,
+  GEN8_ABILITY_IDS.comatose,
+  GEN8_ABILITY_IDS.multitype,
+  GEN8_ABILITY_IDS.stanceChange,
+  GEN8_ABILITY_IDS.schooling,
+  GEN8_ABILITY_IDS.shieldsDown,
+  GEN8_ABILITY_IDS.disguise,
+  GEN8_ABILITY_IDS.rksSystem,
+  GEN8_ABILITY_IDS.battleBond,
+  GEN8_ABILITY_IDS.powerConstruct,
+  GEN8_ABILITY_IDS.gulpMissile,
+  GEN8_ABILITY_IDS.iceFace,
 ]);
 
 /**
@@ -125,7 +144,11 @@ export const NEUTRALIZING_GAS_IMMUNE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- moldbreaker/teravolt/turboblaze
  */
-export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+export const MOLD_BREAKER_ALIASES: ReadonlySet<string> = new Set([
+  GEN8_ABILITY_IDS.moldBreaker,
+  GEN8_ABILITY_IDS.teravolt,
+  GEN8_ABILITY_IDS.turboblaze,
+]);
 
 /**
  * Weather duration extension by weather rocks: 5 turns base, 8 with rock.
@@ -133,11 +156,11 @@ export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turbob
  * Source: Bulbapedia -- individual rock item pages
  * Source: Showdown data/items.ts -- damprock/heatrock/smoothrock/icyrock
  */
-const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: string; turns: number }>> = {
-  "damp-rock": { weather: "rain", turns: 8 },
-  "heat-rock": { weather: "sun", turns: 8 },
-  "smooth-rock": { weather: "sand", turns: 8 },
-  "icy-rock": { weather: "hail", turns: 8 },
+const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: WeatherType; turns: number }>> = {
+  [GEN8_ITEM_IDS.dampRock]: { weather: CORE_WEATHER_IDS.rain, turns: 8 },
+  [GEN8_ITEM_IDS.heatRock]: { weather: CORE_WEATHER_IDS.sun, turns: 8 },
+  [GEN8_ITEM_IDS.smoothRock]: { weather: CORE_WEATHER_IDS.sand, turns: 8 },
+  [GEN8_ITEM_IDS.icyRock]: { weather: CORE_WEATHER_IDS.hail, turns: 8 },
 };
 
 const BASE_WEATHER_TURNS = 5;
@@ -148,9 +171,9 @@ const BASE_WEATHER_TURNS = 5;
  * Source: Showdown data/abilities.ts -- Screen Cleaner onStart
  */
 export const SCREEN_CLEANER_SCREENS: readonly ScreenType[] = [
-  "reflect",
-  "light-screen",
-  "aurora-veil",
+  CORE_SCREEN_IDS.reflect,
+  CORE_SCREEN_IDS.lightScreen,
+  CORE_SCREEN_IDS.auroraVeil,
 ];
 
 // ---------------------------------------------------------------------------
@@ -205,16 +228,16 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "intimidate": {
+    case GEN8_ABILITY_IDS.intimidate: {
       // Source: Showdown data/abilities.ts -- Intimidate lowers opponent's Attack by 1 stage
       // Blocked by Substitute
       if (!ctx.opponent) return NO_EFFECT;
       if (ctx.opponent.substituteHp > 0) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "opponent",
-        stat: "attack",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.opponent,
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -224,80 +247,109 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       };
     }
 
-    case "pressure": {
+    case GEN8_ABILITY_IDS.pressure: {
       // Source: Showdown data/abilities.ts -- Pressure onStart message
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is exerting its Pressure!`],
       };
     }
 
-    case "drizzle": {
+    case GEN8_ABILITY_IDS.drizzle: {
       // Source: Showdown data/abilities.ts -- Drizzle sets rain, 5 turns (8 with Damp Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "rain");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.rain);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "rain", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
     }
 
-    case "drought": {
+    case GEN8_ABILITY_IDS.drought: {
       // Source: Showdown data/abilities.ts -- Drought sets sun, 5 turns (8 with Heat Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "sun");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sun);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sun", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
     }
 
-    case "sand-stream": {
+    case GEN8_ABILITY_IDS.sandStream: {
       // Source: Showdown data/abilities.ts -- Sand Stream sets sand, 5 turns (8 with Smooth Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "sand");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sand);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sand", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
     }
 
-    case "snow-warning": {
+    case GEN8_ABILITY_IDS.snowWarning: {
       // Source: Showdown data/abilities.ts -- Snow Warning sets hail, 5 turns (8 with Icy Rock)
-      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, "hail");
+      const turns = getWeatherTurns(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.hail);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "hail", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.hail,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Snow Warning made it hail!`],
       };
     }
 
-    case "download": {
+    case GEN8_ABILITY_IDS.download: {
       // Source: Showdown data/abilities.ts -- Download: compare foe Def vs SpDef
       if (!ctx.opponent) return NO_EFFECT;
       const foeStats = ctx.opponent.pokemon.calculatedStats;
       if (!foeStats) return NO_EFFECT;
 
       const raisesAtk = foeStats.defense < foeStats.spDefense;
-      const stat = raisesAtk ? ("attack" as const) : ("spAttack" as const);
+      const stat = raisesAtk ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat, stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Download raised its ${statName}!`],
       };
     }
 
-    case "trace": {
+    case GEN8_ABILITY_IDS.trace: {
       // Source: Showdown data/abilities.ts -- Trace: copies opponent's ability
       if (!ctx.opponent) return NO_EFFECT;
       const opponentAbility = ctx.opponent.ability;
@@ -305,109 +357,149 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "self", newAbility: opponentAbility }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            newAbility: opponentAbility,
+          },
+        ],
         messages: [`${name} traced ${oppName}'s ${opponentAbility}!`],
       };
     }
 
-    case "mold-breaker": {
+    case GEN8_ABILITY_IDS.moldBreaker: {
       // Source: Showdown data/abilities.ts -- Mold Breaker onStart announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} breaks the mold!`],
       };
     }
 
-    case "teravolt": {
+    case GEN8_ABILITY_IDS.teravolt: {
       // Source: Showdown data/abilities.ts -- Teravolt onStart announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a bursting aura!`],
       };
     }
 
-    case "turboblaze": {
+    case GEN8_ABILITY_IDS.turboblaze: {
       // Source: Showdown data/abilities.ts -- Turboblaze onStart announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a blazing aura!`],
       };
     }
 
-    case "imposter": {
+    case GEN8_ABILITY_IDS.imposter: {
       // Source: Showdown data/abilities.ts -- Imposter: transforms into opponent on switch-in
       if (!ctx.opponent) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} transformed into ${oppName}!`],
       };
     }
 
-    case "illusion": {
+    case GEN8_ABILITY_IDS.illusion: {
       // Source: Showdown data/abilities.ts -- Illusion: sets volatile on switch-in
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "self", volatile: "illusion" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.illusion,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "stance-change": {
+    case GEN8_ABILITY_IDS.stanceChange: {
       // Source: Showdown data/abilities.ts -- Stance Change (Aegislash)
       // Switch-in always resets to Shield Forme
-      if (ctx.pokemon.pokemon.speciesId !== 681) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN8_SPECIES_IDS.aegislash) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
-    case "screen-cleaner": {
+    case GEN8_ABILITY_IDS.screenCleaner: {
       // Source: Showdown data/abilities.ts -- Screen Cleaner onStart
       // Removes Reflect, Light Screen, AND Aurora Veil from BOTH sides
       // Source: specs/reference/gen8-ground-truth.md -- Screen Cleaner: both sides + Aurora Veil
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "field" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.field },
+        ],
         messages: [`${name}'s Screen Cleaner removed all screens!`],
       };
     }
 
-    case "neutralizing-gas": {
+    case GEN8_ABILITY_IDS.neutralizingGas: {
       // Source: Showdown data/abilities.ts -- Neutralizing Gas onStart
       // Suppresses all abilities on the field except unsuppressable ones
       // Source: Bulbapedia "Neutralizing Gas" -- nullifies all abilities while on field
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "field" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.field },
+        ],
         messages: [`${name}'s Neutralizing Gas filled the area!`],
       };
     }
 
-    case "intrepid-sword": {
+    case GEN8_ABILITY_IDS.intrepidSword: {
       // Source: Showdown data/mods/gen8/abilities.ts -- Intrepid Sword onStart
       // Gen 8: raises Attack by 1 stage on EVERY switch-in (no once-per-battle limit)
       // Source: specs/reference/gen8-ground-truth.md -- Intrepid Sword: every switch-in
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "attack", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.attack,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Intrepid Sword raised its Attack!`],
       };
     }
 
-    case "dauntless-shield": {
+    case GEN8_ABILITY_IDS.dauntlessShield: {
       // Source: Showdown data/mods/gen8/abilities.ts -- Dauntless Shield onStart
       // Gen 8: raises Defense by 1 stage on EVERY switch-in (no once-per-battle limit)
       // Source: specs/reference/gen8-ground-truth.md -- Dauntless Shield: every switch-in
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "defense", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.defense,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Dauntless Shield raised its Defense!`],
       };
     }
@@ -415,8 +507,8 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
     // Receiver / Power of Alchemy: copies fallen ally's ability (Doubles only)
     // In singles, never triggers.
     // Source: Showdown data/abilities.ts -- receiver/powerofalchemy: onAllyFaint
-    case "receiver":
-    case "power-of-alchemy": {
+    case GEN8_ABILITY_IDS.receiver:
+    case GEN8_ABILITY_IDS.powerOfAlchemy: {
       return NO_EFFECT;
     }
 
@@ -439,23 +531,34 @@ function handleSwitchOut(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "regenerator": {
+    case GEN8_ABILITY_IDS.regenerator: {
       // Source: Showdown data/abilities.ts -- Regenerator: heals 1/3 max HP on switch-out
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmount = Math.max(1, Math.floor(maxHp / 3));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmount,
+          },
+        ],
         messages: [`${name}'s Regenerator restored its HP!`],
       };
     }
 
-    case "natural-cure": {
+    case GEN8_ABILITY_IDS.naturalCure: {
       // Source: Showdown data/abilities.ts -- Natural Cure: cures status on switch-out
       if (!ctx.pokemon.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-cure", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusCure,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Natural Cure cured its status!`],
       };
     }
@@ -490,84 +593,126 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "static": {
+    case GEN8_ABILITY_IDS.static: {
       // Source: Showdown data/abilities.ts -- Static: 30% paralysis on contact
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [`${name}'s Static paralyzed the attacker!`],
       };
     }
 
-    case "flame-body": {
+    case GEN8_ABILITY_IDS.flameBody: {
       // Source: Showdown data/abilities.ts -- Flame Body: 30% burn on contact
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [`${name}'s Flame Body burned the attacker!`],
       };
     }
 
-    case "poison-point": {
+    case GEN8_ABILITY_IDS.poisonPoint: {
       // Source: Showdown data/abilities.ts -- Poison Point: 30% poison on contact
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
       };
     }
 
-    case "rough-skin":
-    case "iron-barbs": {
+    case GEN8_ABILITY_IDS.roughSkin:
+    case GEN8_ABILITY_IDS.ironBarbs: {
       // Source: Showdown data/abilities.ts -- Rough Skin / Iron Barbs: 1/8 attacker HP on contact
       const otherMaxHp = other.pokemon.calculatedStats?.hp ?? other.pokemon.currentHp;
       const chipDamage = Math.max(1, Math.floor(otherMaxHp / 8));
-      const abilityName = abilityId === "rough-skin" ? "Rough Skin" : "Iron Barbs";
+      const abilityName = abilityId === GEN8_ABILITY_IDS.roughSkin ? "Rough Skin" : "Iron Barbs";
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s ${abilityName} hurt the attacker!`],
       };
     }
 
-    case "effect-spore": {
+    case GEN8_ABILITY_IDS.effectSpore: {
       // Source: Showdown data/abilities.ts -- Effect Spore: single random(100) roll
       // 0-9 = sleep, 10-19 = paralysis, 20-29 = poison, 30-99 = nothing
       if (other.pokemon.status) return NO_EFFECT;
-      if (other.types.includes("grass")) return NO_EFFECT;
-      if (other.ability === "overcoat") return NO_EFFECT;
+      if (other.types.includes(CORE_TYPE_IDS.grass)) return NO_EFFECT;
+      if (other.ability === GEN8_ABILITY_IDS.overcoat) return NO_EFFECT;
       const roll = Math.floor(ctx.rng.next() * 100);
       if (roll < 10) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: CORE_STATUS_IDS.sleep,
+            },
+          ],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
         };
       }
       if (roll < 20) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: CORE_STATUS_IDS.paralysis,
+            },
+          ],
           messages: [`${name}'s Effect Spore paralyzed the attacker!`],
         };
       }
       if (roll < 30) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: CORE_STATUS_IDS.poison,
+            },
+          ],
           messages: [`${name}'s Effect Spore poisoned the attacker!`],
         };
       }
       return NO_EFFECT;
     }
 
-    case "cute-charm": {
+    case GEN8_ABILITY_IDS.cuteCharm: {
       // Source: Showdown data/abilities.ts -- Cute Charm: 30% infatuation on contact
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       const defenderGender = ctx.pokemon.pokemon.gender;
@@ -575,80 +720,117 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (
         !defenderGender ||
         !attackerGender ||
-        defenderGender === "genderless" ||
-        attackerGender === "genderless" ||
+        defenderGender === CORE_GENDERS.genderless ||
+        attackerGender === CORE_GENDERS.genderless ||
         defenderGender === attackerGender
       ) {
         return NO_EFFECT;
       }
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            volatile: CORE_VOLATILE_IDS.infatuation,
+          },
+        ],
         messages: [`${name}'s Cute Charm infatuated the attacker!`],
       };
     }
 
-    case "aftermath": {
+    case GEN8_ABILITY_IDS.aftermath: {
       // Source: Showdown data/abilities.ts -- Aftermath: 1/4 attacker HP if holder fainted
       if (ctx.pokemon.pokemon.currentHp > 0) return NO_EFFECT;
       const otherMaxHp = other.pokemon.calculatedStats?.hp ?? other.pokemon.currentHp;
       const chipDamage = Math.max(1, Math.floor(otherMaxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s Aftermath hurt the attacker!`],
       };
     }
 
-    case "mummy": {
+    case GEN8_ABILITY_IDS.mummy: {
       // Source: Showdown data/abilities.ts -- Mummy: contact changes attacker's ability to Mummy
       const otherAbility = other.ability;
-      if (!otherAbility || otherAbility === "mummy" || UNSUPPRESSABLE_ABILITIES.has(otherAbility)) {
+      if (
+        !otherAbility ||
+        otherAbility === GEN8_ABILITY_IDS.mummy ||
+        UNSUPPRESSABLE_ABILITIES.has(otherAbility)
+      ) {
         return NO_EFFECT;
       }
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "opponent", newAbility: "mummy" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            newAbility: GEN8_ABILITY_IDS.mummy,
+          },
+        ],
         messages: [`${oppName}'s ability became Mummy!`],
       };
     }
 
-    case "gooey":
-    case "tangling-hair": {
+    case GEN8_ABILITY_IDS.gooey:
+    case GEN8_ABILITY_IDS.tanglingHair: {
       // Source: Showdown data/abilities.ts -- Gooey / Tangling Hair: -1 Speed to contact attacker
-      const abilityName = abilityId === "gooey" ? "Gooey" : "Tangling Hair";
+      const abilityName = abilityId === GEN8_ABILITY_IDS.gooey ? "Gooey" : "Tangling Hair";
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "opponent", stat: "speed", stages: -1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            stat: CORE_STAT_IDS.speed,
+            stages: -1,
+          },
+        ],
         messages: [`${name}'s ${abilityName} lowered the attacker's Speed!`],
       };
     }
 
-    case "poison-touch": {
+    case GEN8_ABILITY_IDS.poisonTouch: {
       // Source: Showdown data/abilities.ts -- Poison Touch: 30% poison on own contact moves
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [`${name}'s Poison Touch poisoned the target!`],
       };
     }
 
-    case "pickpocket": {
+    case GEN8_ABILITY_IDS.pickpocket: {
       // Source: Showdown data/abilities.ts -- Pickpocket: steals attacker's item on contact
       if (ctx.pokemon.pokemon.heldItem) return NO_EFFECT;
       if (!other.pokemon.heldItem) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Pickpocket stole ${oppName}'s ${other.pokemon.heldItem}!`],
       };
     }
 
-    case "wandering-spirit": {
+    case GEN8_ABILITY_IDS.wanderingSpirit: {
       // Source: Showdown data/abilities.ts -- Wandering Spirit: swap abilities on contact
       // Doesn't work on unsuppressable abilities
       // Source: Bulbapedia "Wandering Spirit" -- swaps abilities with the attacker on contact
@@ -660,27 +842,43 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "ability-change", target: "self", newAbility: otherAbility },
-          { effectType: "ability-change", target: "opponent", newAbility: "wandering-spirit" },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            newAbility: otherAbility,
+          },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            newAbility: GEN8_ABILITY_IDS.wanderingSpirit,
+          },
         ],
         messages: [`${name} and ${oppName} swapped Abilities!`],
       };
     }
 
-    case "perish-body": {
+    case GEN8_ABILITY_IDS.perishBody: {
       // Source: Showdown data/abilities.ts -- Perish Body: both get Perish Song on contact
       // Source: Bulbapedia "Perish Body" -- both Pokemon get 3-turn Perish Song countdown
       return {
         activated: true,
         effects: [
-          { effectType: "volatile-inflict", target: "self", volatile: "perish-song" },
-          { effectType: "volatile-inflict", target: "opponent", volatile: "perish-song" },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.perishSong,
+          },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            volatile: CORE_VOLATILE_IDS.perishSong,
+          },
         ],
         messages: [`${name}'s Perish Body activated!`, `Both Pokemon will faint in 3 turns!`],
       };
     }
 
-    case "gulp-missile": {
+    case GEN8_ABILITY_IDS.gulpMissile: {
       // Source: Showdown data/abilities.ts -- Gulp Missile: Cramorant spits projectile when hit
       // Gulping Form (Arrokuda) = 1/4 max HP damage + -1 Defense
       // Gorging Form (Pikachu) = 1/4 max HP damage + paralysis
@@ -688,7 +886,7 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       return handleGulpMissileOnHit(ctx);
     }
 
-    case "ice-face": {
+    case GEN8_ABILITY_IDS.iceFace: {
       // Source: Showdown data/abilities.ts -- Ice Face: blocks first physical hit
       // Only blocks physical moves; special moves go through
       // Source: Bulbapedia "Ice Face" -- "The Pokemon takes no damage from physical moves once."
@@ -714,16 +912,28 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "synchronize": {
+    case GEN8_ABILITY_IDS.synchronize: {
       // Source: Showdown data/abilities.ts -- Synchronize: passes burn/paralysis/poison
       if (!ctx.opponent) return NO_EFFECT;
       const status = ctx.pokemon.pokemon.status;
       if (!status) return NO_EFFECT;
-      if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
+      if (
+        status !== CORE_STATUS_IDS.burn &&
+        status !== CORE_STATUS_IDS.paralysis &&
+        status !== CORE_STATUS_IDS.poison
+      ) {
+        return NO_EFFECT;
+      }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status,
+          },
+        ],
         messages: [`${name}'s Synchronize spread ${status}!`],
       };
     }
@@ -746,8 +956,8 @@ function handleBeforeMove(ctx: AbilityContext): AbilityResult {
   const abilityId = ctx.pokemon.ability;
 
   switch (abilityId) {
-    case "libero":
-    case "protean": {
+    case GEN8_ABILITY_IDS.libero:
+    case GEN8_ABILITY_IDS.protean: {
       // Source: Showdown data/abilities.ts -- Libero/Protean: changes type before attacking
       // Gen 8: activates on every move use (no once-per-switchin limit)
       // Source: specs/reference/gen8-ground-truth.md -- Libero/Protean: no once-per-switchin limit
@@ -761,10 +971,16 @@ function handleBeforeMove(ctx: AbilityContext): AbilityResult {
       }
 
       const name = getName(ctx);
-      const abilityName = abilityId === "libero" ? "Libero" : "Protean";
+      const abilityName = abilityId === GEN8_ABILITY_IDS.libero ? "Libero" : "Protean";
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [moveType] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [moveType],
+          },
+        ],
         messages: [`${name}'s ${abilityName} changed its type to ${moveType}!`],
       };
     }
@@ -788,14 +1004,16 @@ function handleTurnEnd(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "hunger-switch": {
+    case GEN8_ABILITY_IDS.hungerSwitch: {
       // Source: Showdown data/abilities.ts -- Hunger Switch: Morpeko toggles form each turn
       // Changes between Full Belly Mode and Hangry Mode
       // Source: Bulbapedia "Hunger Switch" -- Morpeko (species 877) only
-      if (ctx.pokemon.pokemon.speciesId !== 877) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN8_SPECIES_IDS.morpeko) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} transformed!`],
       };
     }
@@ -822,7 +1040,7 @@ function handleTurnEnd(ctx: AbilityContext): AbilityResult {
 function handleGulpMissileOnHit(ctx: AbilityContext): AbilityResult {
   if (!ctx.opponent) return NO_EFFECT;
   // Only for Cramorant (species 845)
-  if (ctx.pokemon.pokemon.speciesId !== 845) return NO_EFFECT;
+  if (ctx.pokemon.pokemon.speciesId !== GEN8_SPECIES_IDS.cramorant) return NO_EFFECT;
 
   const name = getName(ctx);
   const otherMaxHp = ctx.opponent.pokemon.calculatedStats?.hp ?? ctx.opponent.pokemon.currentHp;
@@ -830,22 +1048,39 @@ function handleGulpMissileOnHit(ctx: AbilityContext): AbilityResult {
 
   // Determine form from volatile status data
   // The engine should set a "gulp-missile-gulping" or "gulp-missile-gorging" volatile
-  const isGulping = ctx.pokemon.volatileStatuses.has("gulp-missile-gulping" as never);
-  const isGorging = ctx.pokemon.volatileStatuses.has("gulp-missile-gorging" as never);
+  const isGulping = ctx.pokemon.volatileStatuses.has(
+    CORE_VOLATILE_IDS.gulpMissileGulping as VolatileStatus,
+  );
+  const isGorging = ctx.pokemon.volatileStatuses.has(
+    CORE_VOLATILE_IDS.gulpMissileGorging as VolatileStatus,
+  );
 
   if (!isGulping && !isGorging) return NO_EFFECT;
 
   const effects: AbilityEffect[] = [
-    { effectType: "chip-damage", target: "opponent", value: chipDamage },
+    {
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+      target: BATTLE_EFFECT_TARGETS.opponent,
+      value: chipDamage,
+    },
   ];
 
   if (isGulping) {
     // Arrokuda form: Defense -1
-    effects.push({ effectType: "stat-change", target: "opponent", stat: "defense", stages: -1 });
+    effects.push({
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.opponent,
+      stat: CORE_STAT_IDS.defense,
+      stages: -1,
+    });
   } else {
     // Pikachu form: paralysis
     if (!ctx.opponent.pokemon.status) {
-      effects.push({ effectType: "status-inflict", target: "opponent", status: "paralysis" });
+      effects.push({
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+        target: BATTLE_EFFECT_TARGETS.opponent,
+        status: CORE_STATUS_IDS.paralysis,
+      });
     }
   }
 
@@ -878,14 +1113,21 @@ function handleIceFaceOnHit(ctx: AbilityContext): AbilityResult {
   if (!ctx.move || ctx.move.category !== "physical") return NO_EFFECT;
 
   // Check if Ice Face is active (not broken)
-  if (ctx.pokemon.volatileStatuses.has("ice-face-broken")) return NO_EFFECT;
+  if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.iceFaceBroken)) return NO_EFFECT;
 
   const name = getName(ctx);
   return {
     activated: true,
     effects: [
-      { effectType: "damage-reduction", target: "self" },
-      { effectType: "volatile-inflict", target: "self", volatile: "ice-face-broken" },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+        target: BATTLE_EFFECT_TARGETS.self,
+      },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
+        volatile: CORE_VOLATILE_IDS.iceFaceBroken,
+      },
     ],
     messages: [`${name}'s Ice Face absorbed the damage!`],
   };
@@ -911,7 +1153,7 @@ export function isMoldBreakerAbility(abilityId: string): boolean {
  * Source: Bulbapedia "Magic Guard" -- "Prevents all damage except from direct attacks."
  */
 export function hasMagicGuard(abilityId: string): boolean {
-  return abilityId === "magic-guard";
+  return abilityId === GEN8_ABILITY_IDS.magicGuard;
 }
 
 /**
@@ -921,7 +1163,7 @@ export function hasMagicGuard(abilityId: string): boolean {
  * Source: Bulbapedia "Overcoat" Gen 6+ -- blocks weather damage AND powder moves
  */
 export function hasOvercoat(abilityId: string): boolean {
-  return abilityId === "overcoat";
+  return abilityId === GEN8_ABILITY_IDS.overcoat;
 }
 
 /**
@@ -934,7 +1176,7 @@ export function isSoundproofBlocked(
   abilityId: string,
   moveFlags: Record<string, boolean>,
 ): boolean {
-  if (abilityId !== "soundproof") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.soundproof) return false;
   return !!moveFlags.sound;
 }
 
@@ -948,7 +1190,7 @@ export function isBulletproofBlocked(
   abilityId: string,
   moveFlags: Record<string, boolean>,
 ): boolean {
-  if (abilityId !== "bulletproof") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.bulletproof) return false;
   return !!moveFlags.bullet;
 }
 
@@ -959,7 +1201,7 @@ export function isBulletproofBlocked(
  * Source: Bulbapedia "Damp" -- "Prevents the use of self-destructing moves."
  */
 export function isDampBlocked(abilityId: string, moveId: string): boolean {
-  if (abilityId !== "damp") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.damp) return false;
   return moveId === "self-destruct" || moveId === "explosion" || moveId === "mind-blown";
 }
 
@@ -970,7 +1212,7 @@ export function isDampBlocked(abilityId: string, moveId: string): boolean {
  * Source: Bulbapedia "Shed Skin" -- "Has a 1/3 chance of curing status at end of turn."
  */
 export function rollShedSkin(abilityId: string, hasStatus: boolean, rngRoll: number): boolean {
-  if (abilityId !== "shed-skin") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.shedSkin) return false;
   if (!hasStatus) return false;
   return rngRoll < 1 / 3;
 }
@@ -988,9 +1230,9 @@ export function rollHarvest(
   weatherType: string | null,
   rngRoll: number,
 ): boolean {
-  if (abilityId !== "harvest") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.harvest) return false;
   if (!hasBerry) return false;
-  if (weatherType === "sun") return true;
+  if (weatherType === CORE_WEATHER_IDS.sun) return true;
   return rngRoll < 0.5;
 }
 
@@ -1000,7 +1242,7 @@ export function rollHarvest(
  * Source: Showdown data/items.ts -- damprock/heatrock/smoothrock/icyrock
  * Source: Bulbapedia -- each rock extends weather to 8 turns
  */
-function getWeatherTurns(heldItem: string | null, weatherType: string): number {
+function getWeatherTurns(heldItem: string | null, weatherType: WeatherType): number {
   if (!heldItem) return BASE_WEATHER_TURNS;
   const rock = WEATHER_ROCK_MAP[heldItem];
   if (rock && rock.weather === weatherType) return rock.turns;
@@ -1010,7 +1252,7 @@ function getWeatherTurns(heldItem: string | null, weatherType: string): number {
 /**
  * Exported version for testing.
  */
-export function getWeatherDuration(heldItem: string | null, weatherType: string): number {
+export function getWeatherDuration(heldItem: string | null, weatherType: WeatherType): number {
   return getWeatherTurns(heldItem, weatherType);
 }
 
@@ -1025,7 +1267,7 @@ export function getWeatherDuration(heldItem: string | null, weatherType: string)
  * Source: specs/reference/gen8-ground-truth.md -- removes from BOTH sides
  */
 export function isScreenCleaner(abilityId: string): boolean {
-  return abilityId === "screen-cleaner";
+  return abilityId === GEN8_ABILITY_IDS.screenCleaner;
 }
 
 /**
@@ -1052,12 +1294,12 @@ export function getScreenCleanerTargets(): readonly ScreenType[] {
 export function shouldMirrorArmorReflect(
   abilityId: string,
   stages: number,
-  source: "self" | "opponent",
+  source: MirrorArmorSource,
 ): boolean {
-  if (abilityId !== "mirror-armor") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.mirrorArmor) return false;
   // Only reflects drops (negative stages) from the opponent
   if (stages >= 0) return false;
-  if (source !== "opponent") return false;
+  if (source !== BATTLE_EFFECT_TARGETS.opponent) return false;
   return true;
 }
 
@@ -1071,7 +1313,7 @@ export function shouldMirrorArmorReflect(
  * @param sideAbilities - Array of ability IDs of all active Pokemon on the field (both sides)
  */
 export function isNeutralizingGasActive(sideAbilities: readonly string[]): boolean {
-  return sideAbilities.some((a) => a === "neutralizing-gas");
+  return sideAbilities.some((a) => a === GEN8_ABILITY_IDS.neutralizingGas);
 }
 
 /**
@@ -1098,8 +1340,10 @@ export function isPastelVeilBlocking(
   activeSideAbilities: readonly string[],
   status: string,
 ): boolean {
-  if (status !== "poison" && status !== "bad-poison") return false;
-  return activeSideAbilities.some((a) => a === "pastel-veil");
+  if (status !== CORE_STATUS_IDS.poison && status !== CORE_STATUS_IDS.badlyPoisoned) {
+    return false;
+  }
+  return activeSideAbilities.some((a) => a === GEN8_ABILITY_IDS.pastelVeil);
 }
 
 /**
@@ -1113,7 +1357,7 @@ export function shouldWanderingSpiritSwap(
   trigger: AbilityTrigger,
   contactMade: boolean,
 ): boolean {
-  if (abilityId !== "wandering-spirit") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.wanderingSpirit) return false;
   if (trigger !== "on-contact") return false;
   return contactMade;
 }
@@ -1129,7 +1373,7 @@ export function shouldPerishBodyTrigger(
   trigger: AbilityTrigger,
   contactMade: boolean,
 ): boolean {
-  if (abilityId !== "perish-body") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.perishBody) return false;
   if (trigger !== "on-contact") return false;
   return contactMade;
 }
@@ -1140,7 +1384,7 @@ export function shouldPerishBodyTrigger(
  * Source: Showdown data/abilities.ts -- Gulp Missile: species check
  */
 export function isCramorantWithGulpMissile(speciesId: number, abilityId: string): boolean {
-  return speciesId === 845 && abilityId === "gulp-missile";
+  return speciesId === GEN8_SPECIES_IDS.cramorant && abilityId === GEN8_ABILITY_IDS.gulpMissile;
 }
 
 /**
@@ -1180,7 +1424,7 @@ export function isIceFaceActive(
   hasIceFaceBroken: boolean,
 ): boolean {
   if (speciesId !== 875) return false;
-  if (abilityId !== "ice-face") return false;
+  if (abilityId !== GEN8_ABILITY_IDS.iceFace) return false;
   return !hasIceFaceBroken;
 }
 
@@ -1191,8 +1435,8 @@ export function isIceFaceActive(
  * Source: Bulbapedia "Ice Face" -- "If Hail is active, it will reform."
  */
 export function shouldIceFaceReform(abilityId: string, weather: string | null): boolean {
-  if (abilityId !== "ice-face") return false;
-  return weather === "hail";
+  if (abilityId !== GEN8_ABILITY_IDS.iceFace) return false;
+  return weather === CORE_WEATHER_IDS.hail;
 }
 
 /**
@@ -1202,8 +1446,8 @@ export function shouldIceFaceReform(abilityId: string, weather: string | null): 
  * Source: Bulbapedia "Hunger Switch" -- Morpeko (species 877) toggles each turn
  */
 export function shouldHungerSwitchToggle(abilityId: string, speciesId: number): boolean {
-  if (abilityId !== "hunger-switch") return false;
-  return speciesId === 877;
+  if (abilityId !== GEN8_ABILITY_IDS.hungerSwitch) return false;
+  return speciesId === GEN8_SPECIES_IDS.morpeko;
 }
 
 /**
@@ -1214,5 +1458,5 @@ export function shouldHungerSwitchToggle(abilityId: string, speciesId: number): 
  * Source: specs/reference/gen8-ground-truth.md -- Libero/Protean pre-nerf
  */
 export function isLiberoActive(abilityId: string): boolean {
-  return abilityId === "libero" || abilityId === "protean";
+  return abilityId === GEN8_ABILITY_IDS.libero || abilityId === GEN8_ABILITY_IDS.protean;
 }

@@ -8,6 +8,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_MOVE_TARGET_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -44,6 +45,7 @@ const abilityIds = { ...CORE_ABILITY_IDS, ...GEN7_ABILITY_IDS } as const;
 const itemIds = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const moveIds = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const moveCategories = CORE_MOVE_CATEGORIES;
+const moveTargetIds = CORE_MOVE_TARGET_IDS;
 const typeIds = CORE_TYPE_IDS;
 const volatileIds = CORE_VOLATILE_IDS;
 const weatherIds = CORE_WEATHER_IDS;
@@ -503,7 +505,7 @@ describe("Gen7 isBlockedByMatBlock", () => {
 
   it("given self-targeting move with protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (move.target === 'self' || ...) return;
-    expect(isBlockedByMatBlock(moveCategories.physical, true, "self")).toBe(false);
+    expect(isBlockedByMatBlock(moveCategories.physical, true, moveTargetIds.self)).toBe(false);
   });
 
   it("given move without protect flag, when checking, then NOT blocked", () => {
@@ -539,12 +541,12 @@ describe("Gen7 isBlockedByCraftyShield", () => {
 
   it("given status move targeting self, when checking, then NOT blocked", () => {
     // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
-    expect(isBlockedByCraftyShield(moveCategories.status, "self")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, moveTargetIds.self)).toBe(false);
   });
 
   it("given status move targeting entire-field, when checking, then NOT blocked", () => {
     // Source: Showdown -- 'all' maps to our 'entire-field' for field-wide moves
-    expect(isBlockedByCraftyShield(moveCategories.status, "entire-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, moveTargetIds.entireField)).toBe(false);
   });
 
   it("given physical move targeting normal, when checking, then NOT blocked", () => {
@@ -555,19 +557,19 @@ describe("Gen7 isBlockedByCraftyShield", () => {
   it("given stealth-rock (target foe-field), when checking, then NOT blocked", () => {
     // Source: Bulbapedia -- Crafty Shield does not protect against entry hazards
     // Source: Showdown data/moves.ts -- stealth-rock target: foeSide (maps to foe-field)
-    expect(isBlockedByCraftyShield(moveCategories.status, "foe-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, moveTargetIds.foeField)).toBe(false);
   });
 
   it("given spikes (target foe-field), when checking, then NOT blocked", () => {
     // Source: Bulbapedia -- entry hazard moves pass through Crafty Shield
     // Source: Showdown data/moves.ts -- spikes target: foeSide
-    expect(isBlockedByCraftyShield(moveCategories.status, "foe-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, moveTargetIds.foeField)).toBe(false);
   });
 
   it("given user-field targeting status move, when checking, then NOT blocked", () => {
     // Source: Showdown -- user-field hazards (e.g. Sticky Web vs opponent side) are side-condition setters
     // that should pass through Crafty Shield per Bulbapedia ruling
-    expect(isBlockedByCraftyShield(moveCategories.status, "user-field")).toBe(false);
+    expect(isBlockedByCraftyShield(moveCategories.status, moveTargetIds.userField)).toBe(false);
   });
 });
 

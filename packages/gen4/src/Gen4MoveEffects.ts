@@ -22,7 +22,10 @@ import type {
   BattleState,
   MoveEffectContext,
   MoveEffectResult,
+  MoveEffectSideTarget,
+  MoveEffectSideTargetWithBoth,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
   EntryHazardType,
@@ -34,6 +37,17 @@ import type {
   VolatileStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_HAZARD_IDS,
+  CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,37 +60,37 @@ import type {
 type MutableResult = {
   statusInflicted: PrimaryStatus | null;
   volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+  statChanges: Array<{ target: MoveEffectSideTarget; stat: BattleStat; stages: number }>;
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
   /** When true along with switchOut, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
   forcedSwitch?: boolean;
   messages: string[];
-  screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  screenSet?: { screen: string; turnsLeft: number; side: MoveEffectSideTarget } | null;
   selfFaint?: boolean;
   customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     amount: number;
     source: string;
     type?: PokemonType | null;
   } | null;
-  statusCured?: { target: "attacker" | "defender" | "both" } | null;
+  statusCured?: { target: MoveEffectSideTargetWithBoth } | null;
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
   hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-  volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-  clearSideHazards?: "attacker" | "defender";
-  itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
-  screensCleared?: "attacker" | "defender" | "both" | null;
+  volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
+  clearSideHazards?: MoveEffectSideTarget;
+  itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
+  screensCleared?: MoveEffectSideTargetWithBoth | null;
   /** When set, only remove screens whose type is in this list (Brick Break: reflect, light-screen) */
   screenTypesToRemove?: readonly string[];
-  statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
-  statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+  statStagesReset?: { target: MoveEffectSideTargetWithBoth } | null;
+  statusCuredOnly?: { target: MoveEffectSideTargetWithBoth } | null;
   selfStatusInflicted?: PrimaryStatus | null;
   selfVolatileInflicted?: VolatileStatus | null;
   selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
-  tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
+  typeChange?: { target: MoveEffectSideTarget; types: readonly PokemonType[] } | null;
+  tailwindSet?: { turnsLeft: number; side: MoveEffectSideTarget } | null;
   trickRoomSet?: { turnsLeft: number } | null;
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   futureAttack?: { moveId: string; turnsLeft: number; sourceSide: 0 | 1 } | null;
@@ -89,6 +103,8 @@ type MutableResult = {
   attackerItemConsumed?: boolean;
   wishSet?: { healAmount: number; turnsLeft: number } | null;
 };
+
+const ITEM_IDS = GEN4_ITEM_IDS;
 
 // ---------------------------------------------------------------------------
 // Status Immunity Table
@@ -103,11 +119,11 @@ type MutableResult = {
  * Source: Showdown sim/battle.ts Gen 4 mod — no paralysis immunity for Electric
  * Source: Bulbapedia — Electric-type paralysis immunity introduced in Gen 6
  */
-const GEN4_STATUS_IMMUNITIES: Record<string, readonly PokemonType[]> = {
-  burn: ["fire"],
-  poison: ["poison", "steel"],
-  "badly-poisoned": ["poison", "steel"],
-  freeze: ["ice"],
+const GEN4_STATUS_IMMUNITIES: Partial<Record<PrimaryStatus, readonly PokemonType[]>> = {
+  [CORE_STATUS_IDS.burn]: [CORE_TYPE_IDS.fire],
+  [CORE_STATUS_IDS.poison]: [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel],
+  [CORE_STATUS_IDS.badlyPoisoned]: [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel],
+  [CORE_STATUS_IDS.freeze]: [CORE_TYPE_IDS.ice],
   // No paralysis immunity for Electric — added in Gen 6
 };
 
@@ -119,13 +135,13 @@ const GEN4_STATUS_IMMUNITIES: Record<string, readonly PokemonType[]> = {
  * Source: Showdown sim/abilities.ts Gen 4 mod — ability status immunities
  * Source: Bulbapedia — individual ability pages (Immunity, Insomnia, etc.)
  */
-const ABILITY_STATUS_IMMUNITIES: Record<string, readonly string[]> = {
-  immunity: ["poison", "badly-poisoned"],
-  insomnia: ["sleep"],
-  "vital-spirit": ["sleep"],
-  limber: ["paralysis"],
-  "water-veil": ["burn"],
-  "magma-armor": ["freeze"],
+const ABILITY_STATUS_IMMUNITIES: Record<string, readonly PrimaryStatus[]> = {
+  [GEN4_ABILITY_IDS.immunity]: [CORE_STATUS_IDS.poison, CORE_STATUS_IDS.badlyPoisoned],
+  [GEN4_ABILITY_IDS.insomnia]: [CORE_STATUS_IDS.sleep],
+  [GEN4_ABILITY_IDS.vitalSpirit]: [CORE_STATUS_IDS.sleep],
+  [GEN4_ABILITY_IDS.limber]: [CORE_STATUS_IDS.paralysis],
+  [GEN4_ABILITY_IDS.waterVeil]: [CORE_STATUS_IDS.burn],
+  [GEN4_ABILITY_IDS.magmaArmor]: [CORE_STATUS_IDS.freeze],
 };
 
 /**
@@ -137,7 +153,7 @@ const ABILITY_STATUS_IMMUNITIES: Record<string, readonly string[]> = {
  *
  * Source: Showdown sim/abilities.ts Gen 4 mod — ability-based status immunity
  */
-export function isStatusBlockedByAbility(target: ActivePokemon, status: string): boolean {
+export function isStatusBlockedByAbility(target: ActivePokemon, status: PrimaryStatus): boolean {
   const immuneStatuses = ABILITY_STATUS_IMMUNITIES[target.ability];
   if (!immuneStatuses) return false;
   return immuneStatuses.includes(status);
@@ -149,10 +165,10 @@ export function isStatusBlockedByAbility(target: ActivePokemon, status: string):
  * Source: Showdown sim/abilities.ts Gen 4 mod — volatile immunity abilities
  * Source: Bulbapedia — Inner Focus, Own Tempo, Oblivious
  */
-const ABILITY_VOLATILE_IMMUNITIES: Record<string, readonly string[]> = {
-  "inner-focus": ["flinch"],
-  "own-tempo": ["confusion"],
-  oblivious: ["infatuation"],
+const ABILITY_VOLATILE_IMMUNITIES: Record<string, readonly VolatileStatus[]> = {
+  [GEN4_ABILITY_IDS.innerFocus]: [CORE_VOLATILE_IDS.flinch],
+  [GEN4_ABILITY_IDS.ownTempo]: [CORE_VOLATILE_IDS.confusion],
+  [GEN4_ABILITY_IDS.oblivious]: [CORE_VOLATILE_IDS.infatuation],
 };
 
 /**
@@ -164,7 +180,10 @@ const ABILITY_VOLATILE_IMMUNITIES: Record<string, readonly string[]> = {
  *
  * Source: Showdown sim/abilities.ts Gen 4 mod — ability volatile immunity
  */
-export function isVolatileBlockedByAbility(target: ActivePokemon, volatile: string): boolean {
+export function isVolatileBlockedByAbility(
+  target: ActivePokemon,
+  volatile: VolatileStatus,
+): boolean {
   const immuneVolatiles = ABILITY_VOLATILE_IMMUNITIES[target.ability];
   if (!immuneVolatiles) return false;
   return immuneVolatiles.includes(volatile);
@@ -193,7 +212,10 @@ export function canInflictGen4Status(
   // Leaf Guard: all status conditions blocked in sun weather
   // Source: Bulbapedia — Leaf Guard: "Prevents status conditions in sunny weather"
   // Source: Showdown data/abilities.ts — Leaf Guard onSetStatus
-  if (target.ability === "leaf-guard" && state?.weather?.type === "sun") {
+  if (
+    target.ability === GEN4_ABILITY_IDS.leafGuard &&
+    state?.weather?.type === CORE_WEATHER_IDS.sun
+  ) {
     return false;
   }
 
@@ -228,11 +250,11 @@ export function canInflictGen4Status(
  * Source: pret/pokeplatinum — weather rock items extend weather to 8 turns
  * Source: Bulbapedia — Damp Rock, Heat Rock, Smooth Rock, Icy Rock
  */
-const WEATHER_ROCK_ITEMS: Record<string, string> = {
-  "damp-rock": "rain",
-  "heat-rock": "sun",
-  "smooth-rock": "sand",
-  "icy-rock": "hail",
+const WEATHER_ROCK_ITEMS: Record<string, WeatherType> = {
+  [ITEM_IDS.dampRock]: CORE_WEATHER_IDS.rain,
+  [ITEM_IDS.heatRock]: CORE_WEATHER_IDS.sun,
+  [ITEM_IDS.smoothRock]: CORE_WEATHER_IDS.sand,
+  [ITEM_IDS.icyRock]: CORE_WEATHER_IDS.hail,
 };
 
 // ---------------------------------------------------------------------------
@@ -266,7 +288,7 @@ function rollEffectChance(
 ): boolean {
   // Shield Dust: blocks secondary effects on the holder
   // Source: Showdown Gen 4 — Shield Dust blocks secondary effects
-  if (isSecondary && defender?.ability === "shield-dust") {
+  if (isSecondary && defender?.ability === GEN4_ABILITY_IDS.shieldDust) {
     return false;
   }
 
@@ -274,7 +296,7 @@ function rollEffectChance(
 
   // Serene Grace: double the secondary effect chance (cap at 100)
   // Source: pret/pokeplatinum — Serene Grace doubles percentChance
-  if (attacker.ability === "serene-grace") {
+  if (attacker.ability === GEN4_ABILITY_IDS.sereneGrace) {
     effectiveChance = Math.min(chance * 2, 100);
   }
 
@@ -353,13 +375,13 @@ function applyMoveEffect(
       // Rock Head: prevents recoil damage from recoil moves (NOT Struggle)
       // Source: Showdown Gen 4 — Rock Head prevents recoil
       // Source: Bulbapedia — "Rock Head: Protects the Pokemon from recoil damage."
-      if (attacker.ability === "rock-head") {
+      if (attacker.ability === GEN4_ABILITY_IDS.rockHead) {
         break;
       }
       // Magic Guard: prevents recoil damage from moves (NOT Struggle recoil)
       // Source: Bulbapedia — Magic Guard: "prevents all indirect damage"
       // Source: Showdown Gen 4 — Magic Guard prevents move recoil
-      if (attacker.ability === "magic-guard") {
+      if (attacker.ability === GEN4_ABILITY_IDS.magicGuard) {
         break;
       }
       // Recoil damage is a fraction of damage dealt
@@ -430,9 +452,13 @@ function applyMoveEffect(
       // Source: Bulbapedia — Light Clay extends screens to 8 turns
       // Source: Showdown Gen 4 — Light Clay screen duration
       const screenName = effect.screen;
-      const turns = attacker.pokemon.heldItem === "light-clay" ? 8 : 5;
-      result.screenSet = { screen: screenName, turnsLeft: turns, side: "attacker" };
-      const displayName = screenName === "reflect" ? "Reflect" : "Light Screen";
+      const turns = attacker.pokemon.heldItem === ITEM_IDS.lightClay ? 8 : 5;
+      result.screenSet = {
+        screen: screenName,
+        turnsLeft: turns,
+        side: BATTLE_EFFECT_TARGETS.attacker,
+      };
+      const displayName = screenName === CORE_SCREEN_IDS.reflect ? "Reflect" : "Light Screen";
       result.messages.push(`${attackerName} put up a ${displayName}!`);
       break;
     }
@@ -466,7 +492,7 @@ function applyMoveEffect(
     case "protect": {
       // Protect/Detect — engine handles protect volatile + consecutive-use scaling
       // Source: Showdown Gen 4 — Protect sets PROTECTED status
-      result.volatileInflicted = "protect";
+      result.volatileInflicted = CORE_VOLATILE_IDS.protect;
       break;
     }
 
@@ -516,15 +542,15 @@ function applyMoveEffect(
  * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
  */
 const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
-  fly: "flying",
-  bounce: "flying",
-  dig: "underground",
-  dive: "underwater",
-  "shadow-force": "shadow-force-charging",
-  "solar-beam": "charging",
-  "skull-bash": "charging",
-  "razor-wind": "charging",
-  "sky-attack": "charging",
+  [GEN4_MOVE_IDS.fly]: CORE_VOLATILE_IDS.flying,
+  [GEN4_MOVE_IDS.bounce]: CORE_VOLATILE_IDS.flying,
+  [GEN4_MOVE_IDS.dig]: CORE_VOLATILE_IDS.underground,
+  [GEN4_MOVE_IDS.dive]: CORE_VOLATILE_IDS.underwater,
+  [GEN4_MOVE_IDS.shadowForce]: CORE_VOLATILE_IDS.shadowForceCharging,
+  [GEN4_MOVE_IDS.solarBeam]: CORE_VOLATILE_IDS.charging,
+  [GEN4_MOVE_IDS.skullBash]: CORE_VOLATILE_IDS.charging,
+  [GEN4_MOVE_IDS.razorWind]: CORE_VOLATILE_IDS.charging,
+  [GEN4_MOVE_IDS.skyAttack]: CORE_VOLATILE_IDS.charging,
 };
 
 /**
@@ -537,8 +563,8 @@ const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
   bounce: "{pokemon} sprang up!",
   dig: "{pokemon} dug underground!",
   dive: "{pokemon} dived underwater!",
-  "shadow-force": "{pokemon} vanished!",
-  "solar-beam": "{pokemon} is absorbing sunlight!",
+  [GEN4_MOVE_IDS.shadowForce]: "{pokemon} vanished!",
+  [GEN4_MOVE_IDS.solarBeam]: "{pokemon} is absorbing sunlight!",
 };
 
 /**
@@ -560,12 +586,12 @@ function handleTwoTurnEffect(
   const { attacker } = context;
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
 
-  const volatile = TWO_TURN_VOLATILE_MAP[move.id] ?? "charging";
+  const volatile = TWO_TURN_VOLATILE_MAP[move.id] ?? CORE_VOLATILE_IDS.charging;
 
   // SolarBeam in sun: skip charge, attack immediately
   // Source: Showdown Gen 4 mod — SolarBeam fires immediately in sun
   // Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
-  if (move.id === "solar-beam" && context.state.weather?.type === "sun") {
+  if (move.id === GEN4_MOVE_IDS.solarBeam && context.state.weather?.type === CORE_WEATHER_IDS.sun) {
     return; // No forcedMoveSet — engine proceeds with the attack immediately
   }
 
@@ -573,7 +599,7 @@ function handleTwoTurnEffect(
   // Source: Showdown Gen 4 mod — Power Herb allows immediate attack
   // Source: Bulbapedia — "Power Herb allows the holder to skip the charge turn of a
   //   two-turn move. It is consumed after use."
-  if (attacker.pokemon.heldItem === "power-herb") {
+  if (attacker.pokemon.heldItem === ITEM_IDS.powerHerb) {
     result.attackerItemConsumed = true;
     result.messages.push(`${attackerName} became fully charged due to its Power Herb!`);
     return; // No forcedMoveSet — engine proceeds with the attack immediately
@@ -615,7 +641,7 @@ function handleCustomEffect(
   const defenderName = defender.pokemon.nickname ?? "The foe";
 
   switch (move.id) {
-    case "belly-drum": {
+    case GEN4_MOVE_IDS.bellyDrum: {
       // Lose 50% max HP, maximize Attack to +6
       // Source: Showdown Gen 4 — Belly Drum cuts HP and maximizes Attack
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
@@ -623,8 +649,8 @@ function handleCustomEffect(
       if (attacker.pokemon.currentHp > halfHp) {
         result.recoilDamage = halfHp;
         result.statChanges.push({
-          target: "attacker",
-          stat: "attack",
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.attack,
           stages: 6 - attacker.statStages.attack,
         });
         result.messages.push(`${attackerName} cut its own HP and maximized Attack!`);
@@ -634,34 +660,43 @@ function handleCustomEffect(
       break;
     }
 
-    case "rapid-spin": {
+    case GEN4_MOVE_IDS.rapidSpin: {
       // Remove leech-seed and binding volatiles from user, hazards from user's side
       // Source: Showdown Gen 4 — Rapid Spin clears Spikes, Stealth Rock, Toxic Spikes,
       //   Leech Seed, and Wrap/Bind
       result.volatilesToClear = [
-        { target: "attacker", volatile: "leech-seed" },
-        { target: "attacker", volatile: "bound" },
+        {
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          volatile: CORE_VOLATILE_IDS.leechSeed,
+        },
+        {
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          volatile: CORE_VOLATILE_IDS.bound,
+        },
       ];
-      result.clearSideHazards = "attacker";
+      result.clearSideHazards = BATTLE_EFFECT_TARGETS.attacker;
       result.messages.push(`${attackerName} blew away leech seed and spikes!`);
       break;
     }
 
-    case "mean-look":
-    case "spider-web":
-    case "block": {
+    case GEN4_MOVE_IDS.meanLook:
+    case GEN4_MOVE_IDS.spiderWeb:
+    case GEN4_MOVE_IDS.block: {
       // Trapping effect — prevents switching
       // Source: Showdown Gen 4 — Mean Look / Spider Web / Block set TRAPPED flag
-      result.volatileInflicted = "trapped";
+      result.volatileInflicted = CORE_VOLATILE_IDS.trapped;
       break;
     }
 
-    case "thief":
-    case "covet": {
+    case GEN4_MOVE_IDS.thief:
+    case GEN4_MOVE_IDS.covet: {
       // Steal defender's item if user has no item
       // Source: Showdown Gen 4 — Thief/Covet takes held item
       if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
-        result.itemTransfer = { from: "defender", to: "attacker" };
+        result.itemTransfer = {
+          from: BATTLE_EFFECT_TARGETS.defender,
+          to: BATTLE_EFFECT_TARGETS.attacker,
+        };
         result.messages.push(
           `${attackerName} stole ${defenderName}'s ${defender.pokemon.heldItem}!`,
         );
@@ -669,15 +704,15 @@ function handleCustomEffect(
       break;
     }
 
-    case "baton-pass": {
+    case GEN4_MOVE_IDS.batonPass: {
       // Switch out preserving stat changes and volatile statuses
       // Source: Showdown Gen 4 — Baton Pass
       result.switchOut = true;
       break;
     }
 
-    case "explosion":
-    case "self-destruct": {
+    case GEN4_MOVE_IDS.explosion:
+    case GEN4_MOVE_IDS.selfDestruct: {
       // Self-KO after damage
       // Source: Showdown Gen 4 — Explosion/Self-Destruct
       result.selfFaint = true;
@@ -685,48 +720,48 @@ function handleCustomEffect(
       break;
     }
 
-    case "haze": {
+    case GEN4_MOVE_IDS.haze: {
       // Reset stat stages for both Pokemon
       // Source: Showdown Gen 4 — Haze resets all stat changes for both sides
-      result.statStagesReset = { target: "both" };
+      result.statStagesReset = { target: BATTLE_EFFECT_TARGETS.both };
       result.messages.push("All stat changes were eliminated!");
       break;
     }
 
-    case "rest": {
+    case GEN4_MOVE_IDS.rest: {
       // Full heal + self-inflict sleep
       // Source: Showdown Gen 4 — Rest heals fully and inflicts sleep (2 turns)
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       result.healAmount = maxHp;
-      result.selfStatusInflicted = "sleep";
+      result.selfStatusInflicted = CORE_STATUS_IDS.sleep;
       result.messages.push(`${attackerName} went to sleep and became healthy!`);
       break;
     }
 
-    case "heal-bell":
-    case "aromatherapy": {
+    case GEN4_MOVE_IDS.healBell:
+    case GEN4_MOVE_IDS.aromatherapy: {
       // Cure all party members' status conditions (attacker's side only — not the foe's party)
       // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
       // Source: Bulbapedia — "Heal Bell cures all status conditions of the user and the user's party"
-      result.statusCuredOnly = { target: "attacker" };
-      const moveName = move.id === "heal-bell" ? "Heal Bell" : "Aromatherapy";
+      result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
+      const moveName = move.id === GEN4_MOVE_IDS.healBell ? "Heal Bell" : "Aromatherapy";
       result.messages.push(`A bell chimed! ${moveName} cured the team's status!`);
       break;
     }
 
-    case "perish-song": {
+    case GEN4_MOVE_IDS.perishSong: {
       // Both Pokemon get Perish Song volatile (3-turn countdown)
       // Source: Showdown Gen 4 — Perish Song affects both sides
       // Source: Bulbapedia — Perish Song: "All Pokemon that hear this song will faint in 3 turns."
-      result.selfVolatileInflicted = "perish-song";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.perishSong;
       result.selfVolatileData = { turnsLeft: 3 };
-      result.volatileInflicted = "perish-song";
+      result.volatileInflicted = CORE_VOLATILE_IDS.perishSong;
       result.volatileData = { turnsLeft: 3 };
       result.messages.push("All Pokemon that heard the song will faint in 3 turns!");
       break;
     }
 
-    case "pain-split": {
+    case GEN4_MOVE_IDS.painSplit: {
       // Pain Split: set both sides to the average HP, capped at each Pokemon's maxHp.
       // Uses event-stream-compatible result fields wherever possible (#311 fix).
       //
@@ -754,9 +789,9 @@ function handleCustomEffect(
       const defenderDelta = newDefenderHp - defenderHp;
       if (defenderDelta < 0) {
         result.customDamage = {
-          target: "defender",
+          target: BATTLE_EFFECT_TARGETS.defender,
           amount: -defenderDelta,
-          source: "pain-split",
+          source: GEN4_MOVE_IDS.painSplit,
         };
       } else if (defenderDelta > 0) {
         // FIXME: Direct mutation for defender healing — MoveEffectResult lacks a
@@ -769,18 +804,22 @@ function handleCustomEffect(
       break;
     }
 
-    case "moonlight":
-    case "morning-sun":
-    case "synthesis": {
+    case GEN4_MOVE_IDS.moonlight:
+    case GEN4_MOVE_IDS.morningSun:
+    case GEN4_MOVE_IDS.synthesis: {
       // Weather-dependent healing
       // Source: Showdown Gen 4 — sun: 2/3, rain/sand/hail: 1/4, else: 1/2
       // Source: Bulbapedia — Weather-based HP recovery moves
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       const weather = state.weather?.type ?? null;
       let healFraction: number;
-      if (weather === "sun") {
+      if (weather === CORE_WEATHER_IDS.sun) {
         healFraction = 2 / 3;
-      } else if (weather === "rain" || weather === "sand" || weather === "hail") {
+      } else if (
+        weather === CORE_WEATHER_IDS.rain ||
+        weather === CORE_WEATHER_IDS.sand ||
+        weather === CORE_WEATHER_IDS.hail
+      ) {
         healFraction = 1 / 4;
       } else {
         healFraction = 1 / 2;
@@ -789,7 +828,7 @@ function handleCustomEffect(
       break;
     }
 
-    case "wish": {
+    case GEN4_MOVE_IDS.wish: {
       // Schedule Wish heal — at the end of the next turn, heal active Pokemon
       // by floor(wisher's max HP / 2).
       // Source: Showdown data/moves.ts -- wish condition: { duration: 2, onResidual: heals floor(hp/2) }
@@ -802,59 +841,67 @@ function handleCustomEffect(
       break;
     }
 
-    case "safeguard": {
+    case GEN4_MOVE_IDS.safeguard: {
       // Set Safeguard on attacker's side (5 turns)
       // Source: Showdown Gen 4 — Safeguard prevents status for 5 turns
-      result.screenSet = { screen: "safeguard", turnsLeft: 5, side: "attacker" };
+      result.screenSet = {
+        screen: CORE_SCREEN_IDS.safeguard,
+        turnsLeft: 5,
+        side: BATTLE_EFFECT_TARGETS.attacker,
+      };
       result.messages.push(`${attackerName}'s team became cloaked in a mystical veil!`);
       break;
     }
 
-    case "lucky-chant": {
+    case GEN4_MOVE_IDS.luckyChant: {
       // Set Lucky Chant on attacker's side (5 turns)
       // Source: Showdown Gen 4 — Lucky Chant prevents crits for 5 turns
-      result.screenSet = { screen: "lucky-chant", turnsLeft: 5, side: "attacker" };
+      result.screenSet = {
+        screen: CORE_SCREEN_IDS.luckyChant,
+        turnsLeft: 5,
+        side: BATTLE_EFFECT_TARGETS.attacker,
+      };
       result.messages.push(`${attackerName}'s team is shielded from critical hits!`);
       break;
     }
 
-    case "ingrain": {
+    case GEN4_MOVE_IDS.ingrain: {
       // Root into the ground — heal each turn, cannot switch
       // Source: Showdown Gen 4 — Ingrain volatile
-      result.selfVolatileInflicted = "ingrain";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.ingrain;
       result.messages.push(`${attackerName} planted its roots!`);
       break;
     }
 
-    case "aqua-ring": {
+    case GEN4_MOVE_IDS.aquaRing: {
       // Surround with water — heal each turn
       // Source: Showdown Gen 4 — Aqua Ring volatile
-      result.selfVolatileInflicted = "aqua-ring";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.aquaRing;
       result.messages.push(`${attackerName} surrounded itself with a veil of water!`);
       break;
     }
 
-    case "refresh": {
+    case GEN4_MOVE_IDS.refresh: {
       // Cure own status
       // Source: Showdown Gen 4 — Refresh cures burn/poison/paralysis
       if (attacker.pokemon.status) {
-        result.statusCuredOnly = { target: "attacker" };
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
         result.messages.push(`${attackerName} cured its status condition!`);
       }
       break;
     }
 
-    case "destiny-bond": {
+    case GEN4_MOVE_IDS.destinyBond: {
       // Destiny Bond: if the user faints from the opponent's next move, the attacker faints too
       // Source: Bulbapedia — "If the user faints after using Destiny Bond, the Pokemon
       //   that KO'd it also faints"
       // Source: Showdown Gen 4 — sets destiny-bond volatile
-      result.selfVolatileInflicted = "destiny-bond";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.destinyBond;
       result.messages.push(`${attackerName} is trying to take its foe down with it!`);
       break;
     }
 
-    case "future-sight": {
+    case GEN4_MOVE_IDS.futureSight: {
       // Future Sight: schedules a hit 3 end-of-turns later; damage calculated at hit time in Gen 4
       // Source: Bulbapedia — "Future Sight hits 2 turns after being used (3 EoT ticks)"
       // Source: Showdown Gen 4 — Future Sight schedules future attack
@@ -871,7 +918,7 @@ function handleCustomEffect(
       }
 
       result.futureAttack = {
-        moveId: "future-sight",
+        moveId: GEN4_MOVE_IDS.futureSight,
         turnsLeft: 3,
         sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
       };
@@ -907,7 +954,7 @@ function handleNullEffectMoves(
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
 
   switch (moveId) {
-    case "stealth-rock": {
+    case GEN4_MOVE_IDS.stealthRock: {
       // Place Stealth Rock on the foe's side
       // Source: Showdown Gen 4 — Stealth Rock entry hazard
       // Source: Bulbapedia — Stealth Rock introduced in Gen 4
@@ -915,12 +962,12 @@ function handleNullEffectMoves(
         side.active.some((a) => a?.pokemon === attacker.pokemon),
       );
       const targetSide = (attackerSideIndex === 0 ? 1 : 0) as 0 | 1;
-      result.hazardSet = { hazard: "stealth-rock", targetSide };
+      result.hazardSet = { hazard: CORE_HAZARD_IDS.stealthRock, targetSide };
       result.messages.push("Pointed stones float in the air around the foe!");
       break;
     }
 
-    case "toxic-spikes": {
+    case GEN4_MOVE_IDS.toxicSpikes: {
       // Place Toxic Spikes on the foe's side
       // Source: Showdown Gen 4 — Toxic Spikes entry hazard
       // Source: Bulbapedia — Toxic Spikes introduced in Gen 4
@@ -928,12 +975,12 @@ function handleNullEffectMoves(
         side.active.some((a) => a?.pokemon === attacker.pokemon),
       );
       const targetSide = (attackerSideIndex === 0 ? 1 : 0) as 0 | 1;
-      result.hazardSet = { hazard: "toxic-spikes", targetSide };
+      result.hazardSet = { hazard: CORE_HAZARD_IDS.toxicSpikes, targetSide };
       result.messages.push("Poison spikes were scattered on the ground!");
       break;
     }
 
-    case "trick-room": {
+    case GEN4_MOVE_IDS.trickRoom: {
       // Toggle Trick Room: if already active, end it; otherwise start it (5 turns)
       // Source: Showdown Gen 4 — Trick Room reverses speed order for 5 turns
       if (context.state.trickRoom.active) {
@@ -947,54 +994,58 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "tailwind": {
+    case GEN4_MOVE_IDS.tailwind: {
       // Set Tailwind on attacker's side (3 turns in Gen 4)
       // Source: Showdown Gen 4 — Tailwind lasts 3 turns (including the turn it's used)
       // Source: Bulbapedia — Tailwind duration is 3 turns in Gen 4
       // Note: Gen 5+ extended Tailwind to 4 turns
-      result.tailwindSet = { turnsLeft: 3, side: "attacker" };
+      result.tailwindSet = { turnsLeft: 3, side: BATTLE_EFFECT_TARGETS.attacker };
       result.messages.push(`${attackerName} whipped up a tailwind!`);
       break;
     }
 
-    case "defog": {
+    case GEN4_MOVE_IDS.defog: {
       // Clear defender's hazards + screens; -1 evasion on defender
       // Source: Showdown Gen 4 — Defog clears hazards, screens, and lowers evasion
       // Source: Bulbapedia — Defog lowers target's evasion by 1 and clears hazards
-      result.clearSideHazards = "defender";
-      result.screensCleared = "defender";
-      result.statChanges.push({ target: "defender", stat: "evasion", stages: -1 });
+      result.clearSideHazards = BATTLE_EFFECT_TARGETS.defender;
+      result.screensCleared = BATTLE_EFFECT_TARGETS.defender;
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.defender,
+        stat: CORE_STAT_IDS.evasion,
+        stages: -1,
+      });
       result.messages.push("It blew away the hazards!");
       break;
     }
 
-    case "roost": {
+    case GEN4_MOVE_IDS.roost: {
       // Heal 50% max HP + temporarily remove Flying type for this turn
       // Source: Showdown Gen 4 — Roost heals 50% and removes Flying type
       // Source: Bulbapedia — Roost: the user temporarily loses its Flying type
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       result.healAmount = Math.floor(maxHp / 2);
       // Remove Flying type for this turn (if the attacker is Flying-type)
-      if (attacker.types.includes("flying")) {
-        const newTypes = attacker.types.filter((t) => t !== "flying");
+      if (attacker.types.includes(CORE_TYPE_IDS.flying)) {
+        const newTypes = attacker.types.filter((t) => t !== CORE_TYPE_IDS.flying);
         result.typeChange = {
-          target: "attacker",
-          types: newTypes.length > 0 ? newTypes : ["normal"],
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          types: newTypes.length > 0 ? newTypes : [CORE_TYPE_IDS.normal],
         };
       }
       result.messages.push(`${attackerName} landed and recovered health!`);
       break;
     }
 
-    case "haze": {
+    case GEN4_MOVE_IDS.haze: {
       // Reset stat stages for both Pokemon
       // Source: Showdown Gen 4 — Haze resets all stat changes
-      result.statStagesReset = { target: "both" };
+      result.statStagesReset = { target: BATTLE_EFFECT_TARGETS.both };
       result.messages.push("All stat changes were eliminated!");
       break;
     }
 
-    case "rest": {
+    case GEN4_MOVE_IDS.rest: {
       // Full heal + self-inflict exactly 2-turn sleep (wakes on turn 3 and can act).
       // The engine uses selfVolatileData.turnsLeft as a sleep duration override
       // (see BattleEngine line ~2547-2549), so we MUST set it to avoid random rollSleepTurns().
@@ -1002,32 +1053,36 @@ function handleNullEffectMoves(
       // Source: Bulbapedia — Rest: "The user goes to sleep for two turns, fully restoring its HP"
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       result.healAmount = maxHp;
-      result.selfStatusInflicted = "sleep";
+      result.selfStatusInflicted = CORE_STATUS_IDS.sleep;
       result.selfVolatileData = { turnsLeft: 2 };
       result.messages.push(`${attackerName} went to sleep and became healthy!`);
       break;
     }
 
-    case "safeguard": {
+    case GEN4_MOVE_IDS.safeguard: {
       // Set Safeguard on attacker's side (5 turns)
       // Source: Showdown Gen 4 — Safeguard prevents status for 5 turns
-      result.screenSet = { screen: "safeguard", turnsLeft: 5, side: "attacker" };
+      result.screenSet = {
+        screen: CORE_SCREEN_IDS.safeguard,
+        turnsLeft: 5,
+        side: BATTLE_EFFECT_TARGETS.attacker,
+      };
       result.messages.push(`${attackerName}'s team became cloaked in a mystical veil!`);
       break;
     }
 
-    case "heal-bell":
-    case "aromatherapy": {
+    case GEN4_MOVE_IDS.healBell:
+    case GEN4_MOVE_IDS.aromatherapy: {
       // Cure all party members' status conditions (attacker's side only)
       // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
       // Source: Bulbapedia — cures user's party, not the foe's party
-      result.statusCuredOnly = { target: "attacker" };
-      const moveName = moveId === "heal-bell" ? "Heal Bell" : "Aromatherapy";
+      result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
+      const moveName = moveId === GEN4_MOVE_IDS.healBell ? "Heal Bell" : "Aromatherapy";
       result.messages.push(`A bell chimed! ${moveName} cured the team's status!`);
       break;
     }
 
-    case "wish": {
+    case GEN4_MOVE_IDS.wish: {
       // Schedule Wish heal — at the end of the next turn, heal active Pokemon
       // by floor(wisher's max HP / 2).
       // Source: Showdown data/moves.ts -- wish condition: { duration: 2, onResidual: heals floor(hp/2) }
@@ -1040,51 +1095,55 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "lucky-chant": {
+    case GEN4_MOVE_IDS.luckyChant: {
       // Set Lucky Chant on attacker's side (5 turns)
       // Source: Showdown Gen 4 — Lucky Chant prevents crits for 5 turns
-      result.screenSet = { screen: "lucky-chant", turnsLeft: 5, side: "attacker" };
+      result.screenSet = {
+        screen: CORE_SCREEN_IDS.luckyChant,
+        turnsLeft: 5,
+        side: BATTLE_EFFECT_TARGETS.attacker,
+      };
       result.messages.push(`${attackerName}'s team is shielded from critical hits!`);
       break;
     }
 
-    case "block":
-    case "mean-look":
-    case "spider-web": {
+    case GEN4_MOVE_IDS.block:
+    case GEN4_MOVE_IDS.meanLook:
+    case GEN4_MOVE_IDS.spiderWeb: {
       // Trapping effect — prevents switching
       // Source: Showdown Gen 4 — trap volatile
-      result.volatileInflicted = "trapped";
+      result.volatileInflicted = CORE_VOLATILE_IDS.trapped;
       break;
     }
 
-    case "ingrain": {
+    case GEN4_MOVE_IDS.ingrain: {
       // Root into the ground
       // Source: Showdown Gen 4 — Ingrain volatile
-      result.selfVolatileInflicted = "ingrain";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.ingrain;
       result.messages.push(`${attackerName} planted its roots!`);
       break;
     }
 
-    case "aqua-ring": {
+    case GEN4_MOVE_IDS.aquaRing: {
       // Surround with water — heal each turn
       // Source: Showdown Gen 4 — Aqua Ring volatile
-      result.selfVolatileInflicted = "aqua-ring";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.aquaRing;
       result.messages.push(`${attackerName} surrounded itself with a veil of water!`);
       break;
     }
 
-    case "refresh": {
+    case GEN4_MOVE_IDS.refresh: {
       // Cure own status
       // Source: Showdown Gen 4 — Refresh cures burn/poison/paralysis
       if (attacker.pokemon.status) {
-        result.statusCuredOnly = { target: "attacker" };
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
         result.messages.push(`${attackerName} cured its status condition!`);
       }
       break;
     }
 
-    case "explosion":
-    case "self-destruct": {
+    case GEN4_MOVE_IDS.explosion:
+    case GEN4_MOVE_IDS.selfDestruct: {
       // Self-KO after damage
       // Source: Showdown Gen 4 — Explosion/Self-Destruct
       result.selfFaint = true;
@@ -1092,7 +1151,7 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "covet": {
+    case GEN4_MOVE_IDS.covet: {
       // Steal defender's item if user has no item
       // Source: Showdown Gen 4 — Covet takes held item (same as Thief)
       const { defender } = context;
@@ -1104,7 +1163,7 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "gravity": {
+    case GEN4_MOVE_IDS.gravity: {
       // Intensify gravity — engine applies the field state via gravitySet flag
       // Source: Showdown Gen 4 — Gravity lasts 5 turns, grounds all Pokemon
       // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Gravity_(move)
@@ -1113,15 +1172,15 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "whirlwind":
-    case "roar": {
+    case GEN4_MOVE_IDS.whirlwind:
+    case GEN4_MOVE_IDS.roar: {
       // Force switch — engine handles phazing logic
       // Source: Showdown Gen 4 — Whirlwind/Roar force random switch (onDragOut handler)
       // Suction Cups: prevents forced switch effects (Whirlwind, Roar)
       // Source: Bulbapedia — Suction Cups: "Prevents the Pokemon from being forced to switch out"
       // Source: Showdown data/abilities.ts — Suction Cups onDragOut
       const { defender: phazeDef } = context;
-      if (phazeDef.ability === "suction-cups") {
+      if (phazeDef.ability === GEN4_ABILITY_IDS.suctionCups) {
         const dName = phazeDef.pokemon.nickname ?? String(phazeDef.pokemon.speciesId);
         result.messages.push(`${dName} anchored itself with Suction Cups!`);
         break;
@@ -1129,7 +1188,7 @@ function handleNullEffectMoves(
       // Ingrain: prevents forced switch (rooted Pokemon cannot be phazed)
       // Source: Showdown Gen 4 — onDragOut checks Ingrain volatile alongside Suction Cups
       // Source: Bulbapedia — Ingrain: "The user can't be switched out by Whirlwind, Roar, etc."
-      if (phazeDef.volatileStatuses.has("ingrain")) {
+      if (phazeDef.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) {
         const dName = phazeDef.pokemon.nickname ?? String(phazeDef.pokemon.speciesId);
         result.messages.push(`${dName} anchored itself with its roots!`);
         break;
@@ -1141,13 +1200,13 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "bind":
-    case "wrap":
-    case "fire-spin":
-    case "clamp":
-    case "whirlpool":
-    case "sand-tomb":
-    case "magma-storm": {
+    case GEN4_MOVE_IDS.bind:
+    case GEN4_MOVE_IDS.wrap:
+    case GEN4_MOVE_IDS.fireSpin:
+    case GEN4_MOVE_IDS.clamp:
+    case GEN4_MOVE_IDS.whirlpool:
+    case GEN4_MOVE_IDS.sandTomb:
+    case GEN4_MOVE_IDS.magmaStorm: {
       // Binding moves: trap target for 3-6 turns (or 6 with Grip Claw).
       // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/conditions.ts —
       //   partiallytrapped.durationCallback: if gripclaw => 6, else this.random(3, 7)
@@ -1155,20 +1214,22 @@ function handleNullEffectMoves(
       // Our rng.int() is inclusive, so rng.int(3, 6) gives the same range.
       const { attacker: bindAtk, defender: bindDef } = context;
       const defName = bindDef.pokemon.nickname ?? "The foe";
-      if (bindDef.volatileStatuses.has("bound")) {
+      if (bindDef.volatileStatuses.has(CORE_VOLATILE_IDS.bound)) {
         break; // Already bound
       }
       // Grip Claw: binding lasts 6 turns (not random)
       // Source: Showdown Gen 4 mod conditions.ts — if gripclaw => return 6
-      const hasGripClaw = bindAtk.pokemon.heldItem === "grip-claw" && bindAtk.ability !== "klutz";
+      const hasGripClaw =
+        bindAtk.pokemon.heldItem === ITEM_IDS.gripClaw &&
+        bindAtk.ability !== CORE_ABILITY_IDS.klutz;
       const turnsLeft = hasGripClaw ? 6 : context.rng.int(3, 6);
-      result.volatileInflicted = "bound";
+      result.volatileInflicted = CORE_VOLATILE_IDS.bound;
       result.volatileData = { turnsLeft };
       result.messages.push(`${defName} was squeezed by ${moveId}!`);
       break;
     }
 
-    case "power-swap": {
+    case GEN4_MOVE_IDS.powerSwap: {
       // Swap Atk and SpAtk stat stages between attacker and defender.
       // Source: Showdown Gen 4 mod — Power Swap swaps Attack and SpAtk stat boosts/drops
       // Source: Bulbapedia — Power Swap: "The user swaps its Attack and Sp. Atk stat
@@ -1189,7 +1250,7 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "guard-swap": {
+    case GEN4_MOVE_IDS.guardSwap: {
       // Swap Def and SpDef stat stages between attacker and defender.
       // Source: Showdown Gen 4 mod — Guard Swap swaps Defense and SpDef stat boosts/drops
       // Source: Bulbapedia — Guard Swap: "The user swaps its Defense and Sp. Def stat
@@ -1210,20 +1271,20 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "heart-swap": {
+    case GEN4_MOVE_IDS.heartSwap: {
       // Swap ALL stat stages between attacker and defender.
       // Source: Showdown Gen 4 mod — Heart Swap swaps all stat stage changes
       // Source: Bulbapedia — Heart Swap: "The user swaps all stat changes with the target."
       const { attacker: hswAtk, defender: hswDef } = context;
       const hswAtkName = hswAtk.pokemon.nickname ?? "The Pokemon";
       const allStats: Array<keyof typeof hswAtk.statStages> = [
-        "attack",
-        "defense",
+        CORE_STAT_IDS.attack,
+        CORE_STAT_IDS.defense,
         "spAttack",
         "spDefense",
-        "speed",
-        "accuracy",
-        "evasion",
+        CORE_STAT_IDS.speed,
+        CORE_STAT_IDS.accuracy,
+        CORE_STAT_IDS.evasion,
       ];
       for (const stat of allStats) {
         const temp = hswAtk.statStages[stat];
@@ -1234,7 +1295,7 @@ function handleNullEffectMoves(
       break;
     }
 
-    case "counter": {
+    case GEN4_MOVE_IDS.counter: {
       // Counter: returns 2x the physical damage taken this turn
       // Source: Showdown Gen 4 sim — Counter returns double physical damage received this turn
       // Source: Bulbapedia — "Counter deals damage equal to twice the damage dealt by the
@@ -1244,14 +1305,14 @@ function handleNullEffectMoves(
         break;
       }
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: attacker.lastDamageTaken * 2,
-        source: "counter",
+        source: GEN4_MOVE_IDS.counter,
       };
       break;
     }
 
-    case "mirror-coat": {
+    case GEN4_MOVE_IDS.mirrorCoat: {
       // Mirror Coat: returns 2x the special damage taken this turn
       // Source: Showdown Gen 4 sim — Mirror Coat returns double special damage received this turn
       // Source: Bulbapedia — "Mirror Coat deals damage equal to twice the damage dealt by the
@@ -1261,9 +1322,9 @@ function handleNullEffectMoves(
         break;
       }
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: attacker.lastDamageTaken * 2,
-        source: "mirror-coat",
+        source: GEN4_MOVE_IDS.mirrorCoat,
       };
       break;
     }
@@ -1304,10 +1365,13 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Destiny Bond persists only until the user's next action; if they choose a different move,
   // the volatile is removed.
   // Source: Showdown Gen 4 — destiny-bond volatile is cleared in onBeforeMove
-  if (context.move.id !== "destiny-bond" && context.attacker.volatileStatuses.has("destiny-bond")) {
+  if (
+    context.move.id !== GEN4_MOVE_IDS.destinyBond &&
+    context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.destinyBond)
+  ) {
     result.volatilesToClear = [
       ...(result.volatilesToClear ?? []),
-      { target: "attacker", volatile: "destiny-bond" },
+      { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.destinyBond },
     ];
   }
 
@@ -1317,11 +1381,11 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // We intercept by move ID before dispatch so both effects are applied correctly.
   // Source: Showdown Gen 4 — Roost heals 50% and removes Flying type
   // Source: Bulbapedia — Roost: the user temporarily loses its Flying type
-  if (context.move.id === "roost") {
+  if (context.move.id === GEN4_MOVE_IDS.roost) {
     const { attacker } = context;
     // Heal Block: prevent HP recovery
     // Source: Showdown Gen 4 mod — heal-block volatile gates all healing
-    if (attacker.volatileStatuses.has("heal-block")) {
+    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
       const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
       result.messages.push(`${attackerName} is blocked from healing!`);
       return result;
@@ -1331,11 +1395,14 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     const healEffect = context.move.effect as { type: string; amount: number } | null;
     const healFraction = healEffect?.amount ?? 0.5;
     result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
-    if (attacker.types.includes("flying")) {
-      const newTypes = attacker.types.filter((t) => t !== "flying");
+    if (attacker.types.includes(CORE_TYPE_IDS.flying)) {
+      const newTypes = attacker.types.filter((t) => t !== CORE_TYPE_IDS.flying);
       result.typeChange = {
-        target: "attacker",
-        types: newTypes.length > 0 ? (newTypes as readonly PokemonType[]) : (["normal"] as const),
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        types:
+          newTypes.length > 0
+            ? (newTypes as readonly PokemonType[])
+            : ([CORE_TYPE_IDS.normal] as const),
       };
     }
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
@@ -1349,7 +1416,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Note: Directly mutates defender.pokemon.heldItem (consistent with Gen 3 pattern).
   // The itemKnockedOff flag prevents Trick/Switcheroo from re-giving an item.
   // Source: Showdown Gen 4 — itemKnockedOff flag suppresses item re-giving
-  if (context.move.id === "knock-off") {
+  if (context.move.id === GEN4_MOVE_IDS.knockOff) {
     if (context.defender.pokemon.heldItem) {
       const item = context.defender.pokemon.heldItem;
       context.defender.pokemon.heldItem = null;
@@ -1359,10 +1426,10 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       // Unburden: if the defender had Unburden, set the volatile now that its item is gone
       // Source: Showdown Gen 4 mod — Unburden activates when item is knocked off
       if (
-        context.defender.ability === "unburden" &&
-        !context.defender.volatileStatuses.has("unburden")
+        context.defender.ability === GEN4_ABILITY_IDS.unburden &&
+        !context.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
       ) {
-        context.defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+        context.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
       }
     }
     return result;
@@ -1371,8 +1438,8 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Taunt: data has volatile-status "taunt" but we need to set turnsLeft randomly for Gen 4
   // Source: Showdown Gen 4 mod — `this.random(3, 6)` (exclusive max) = 3, 4, or 5 turns
   // Source: Bulbapedia — "Taunt lasts for 3–5 turns in Generation IV" (fixed to 3 in Gen 5+)
-  if (context.move.id === "taunt") {
-    result.volatileInflicted = "taunt";
+  if (context.move.id === GEN4_MOVE_IDS.taunt) {
+    result.volatileInflicted = CORE_VOLATILE_IDS.taunt;
     result.volatileData = { turnsLeft: context.rng.int(3, 5) };
     return result;
   }
@@ -1380,7 +1447,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Disable: data has volatile-status "disable" but we need turnsLeft and target's lastMoveUsed
   // Source: Showdown Gen 4 — Disable lasts 4-7 turns (this.random(4, 8) = exclusive upper bound)
   // Source: Bulbapedia — "Disable disables the target's last used move for 4-7 turns in Gen 4"
-  if (context.move.id === "disable") {
+  if (context.move.id === GEN4_MOVE_IDS.disable) {
     const { defender } = context;
     if (!defender.lastMoveUsed) {
       result.messages.push("But it failed!");
@@ -1395,7 +1462,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       result.messages.push("But it failed!");
       return result;
     }
-    result.volatileInflicted = "disable";
+    result.volatileInflicted = CORE_VOLATILE_IDS.disable;
     result.volatileData = {
       turnsLeft: context.rng.int(4, 7),
       data: { moveId: defender.lastMoveUsed },
@@ -1407,7 +1474,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at the end
   //   of the next turn"
   // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
-  if (context.move.id === "yawn") {
+  if (context.move.id === GEN4_MOVE_IDS.yawn) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
     // Yawn fails if target already has a primary status
@@ -1416,17 +1483,20 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       return result;
     }
     // Yawn fails if target already has the yawn volatile
-    if (defender.volatileStatuses.has("yawn")) {
+    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.yawn)) {
       result.messages.push("But it failed!");
       return result;
     }
     // Yawn fails if target has Insomnia or Vital Spirit
     // Source: Showdown Gen 4 mod — Yawn blocked by sleep-preventing abilities
-    if (defender.ability === "insomnia" || defender.ability === "vital-spirit") {
+    if (
+      defender.ability === GEN4_ABILITY_IDS.insomnia ||
+      defender.ability === GEN4_ABILITY_IDS.vitalSpirit
+    ) {
       result.messages.push("But it failed!");
       return result;
     }
-    result.volatileInflicted = "yawn";
+    result.volatileInflicted = CORE_VOLATILE_IDS.yawn;
     result.volatileData = { turnsLeft: 1 };
     result.messages.push(`${defenderName} grew drowsy!`);
     return result;
@@ -1436,17 +1506,17 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown Gen 4 mod — Encore duration: this.random(4, 9) (exclusive max) = 4..8 turns
   // Source: Bulbapedia — "Encore forces the target to repeat its last used move for 2-6 turns"
   // Note: Showdown Gen 4 uses 4-8 turns. Bulbapedia states 4-8 for Gen 4.
-  if (context.move.id === "encore") {
+  if (context.move.id === GEN4_MOVE_IDS.encore) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
     // Fail if target has no last move or is already Encored
-    if (!defender.lastMoveUsed || defender.volatileStatuses.has("encore")) {
+    if (!defender.lastMoveUsed || defender.volatileStatuses.has(CORE_VOLATILE_IDS.encore)) {
       result.messages.push("But it failed!");
       return result;
     }
     // Source: Showdown Gen 4 mod — Encore lasts 4-8 turns
     const turnsLeft = context.rng.int(4, 8);
-    result.volatileInflicted = "encore";
+    result.volatileInflicted = CORE_VOLATILE_IDS.encore;
     result.volatileData = { turnsLeft, data: { moveId: defender.lastMoveUsed } };
     result.messages.push(`${defenderName} got an encore!`);
     return result;
@@ -1455,14 +1525,14 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Heal Block: prevent HP recovery for 5 turns
   // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
   // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
-  if (context.move.id === "heal-block") {
+  if (context.move.id === GEN4_MOVE_IDS.healBlock) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.volatileStatuses.has("heal-block")) {
+    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
       result.messages.push("But it failed!");
       return result;
     }
-    result.volatileInflicted = "heal-block";
+    result.volatileInflicted = CORE_VOLATILE_IDS.healBlock;
     result.volatileData = { turnsLeft: 5 };
     result.messages.push(`${defenderName} was prevented from healing!`);
     return result;
@@ -1471,14 +1541,14 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Embargo: prevent item use for 5 turns
   // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
   // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
-  if (context.move.id === "embargo") {
+  if (context.move.id === GEN4_MOVE_IDS.embargo) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.volatileStatuses.has("embargo")) {
+    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
       result.messages.push("But it failed!");
       return result;
     }
-    result.volatileInflicted = "embargo";
+    result.volatileInflicted = CORE_VOLATILE_IDS.embargo;
     result.volatileData = { turnsLeft: 5 };
     result.messages.push(`${defenderName} can't use items!`);
     return result;
@@ -1487,20 +1557,24 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Worry Seed: change target's ability to Insomnia
   // Source: Bulbapedia — Worry Seed: "Changes the target's Ability to Insomnia"
   // Source: Showdown Gen 4 mod — Worry Seed fails vs Insomnia, Truant, Multitype
-  if (context.move.id === "worry-seed") {
+  if (context.move.id === GEN4_MOVE_IDS.worrySeed) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    const failAbilities = ["insomnia", "truant", "multitype"];
-    if (failAbilities.includes(defender.ability ?? "")) {
+    const failAbilities = new Set<string>([
+      GEN4_ABILITY_IDS.insomnia,
+      GEN4_ABILITY_IDS.truant,
+      GEN4_ABILITY_IDS.multitype,
+    ]);
+    if (failAbilities.has(defender.ability ?? "")) {
       result.messages.push("But it failed!");
       return result;
     }
-    defender.ability = "insomnia";
+    defender.ability = GEN4_ABILITY_IDS.insomnia;
     // If target is asleep, Insomnia immediately wakes it
     // Source: Showdown Gen 4 mod — Worry Seed cures sleep if the new ability blocks it
-    if (defender.pokemon.status === "sleep") {
+    if (defender.pokemon.status === CORE_STATUS_IDS.sleep) {
       defender.pokemon.status = null;
-      defender.volatileStatuses.delete("sleep-counter");
+      defender.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       result.messages.push(`${defenderName}'s ability changed to Insomnia and it woke up!`);
     } else {
       result.messages.push(`${defenderName}'s ability changed to Insomnia!`);
@@ -1511,10 +1585,10 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Gastro Acid: suppress target's ability (set to empty string)
   // Source: Bulbapedia — Gastro Acid: "suppresses the target's ability"
   // Source: Showdown Gen 4 mod — Gastro Acid fails vs Multitype
-  if (context.move.id === "gastro-acid") {
+  if (context.move.id === GEN4_MOVE_IDS.gastroAcid) {
     const { defender } = context;
     const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.ability === "multitype") {
+    if (defender.ability === GEN4_ABILITY_IDS.multitype) {
       result.messages.push("But it failed!");
       return result;
     }
@@ -1542,7 +1616,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   //   target is not using a damaging move or has already moved
   // Source: Bulbapedia — "Sucker Punch will fail if the target does not select a
   //   move that deals damage, or if the target moves before the user."
-  if (context.move.id === "sucker-punch") {
+  if (context.move.id === GEN4_MOVE_IDS.suckerPunch) {
     const { defender } = context;
 
     // If the defender already moved this turn, Sucker Punch fails (target acted first).
@@ -1580,9 +1654,9 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown sim/battle-actions.ts Gen 4 — Feint: breaks Protect/Detect
   // Source: Bulbapedia — "Feint will fail if the target has not used Protect or
   //   Detect during the turn. If successful, it lifts the effects of those moves."
-  if (context.move.id === "feint") {
+  if (context.move.id === GEN4_MOVE_IDS.feint) {
     const { defender } = context;
-    const hasProtect = defender.volatileStatuses.has("protect");
+    const hasProtect = defender.volatileStatuses.has(CORE_VOLATILE_IDS.protect);
 
     if (!hasProtect) {
       result.messages.push("But it failed!");
@@ -1591,7 +1665,9 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
 
     // Remove the protection volatile
     // Source: Showdown Gen 4 — Feint removes Protect/Detect volatile
-    result.volatilesToClear = [{ target: "defender", volatile: "protect" }];
+    result.volatilesToClear = [
+      { target: BATTLE_EFFECT_TARGETS.defender, volatile: CORE_VOLATILE_IDS.protect },
+    ];
 
     const defenderName = defender.pokemon.nickname ?? "The foe";
     result.messages.push(`${defenderName} fell for the feint!`);
@@ -1606,7 +1682,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   //   "focusing" message, onTry checks if user was hit
   // Source: Bulbapedia — "The user will lose its focus and be unable to attack
   //   if it is hit by a damaging move before it can execute Focus Punch."
-  if (context.move.id === "focus-punch") {
+  if (context.move.id === GEN4_MOVE_IDS.focusPunch) {
     const { attacker } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
 
@@ -1627,7 +1703,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Bulbapedia — "The user swaps held items with the target"
   // Fails if: both have no item, target has Sticky Hold, either has Multitype,
   //   or either holds a Mail or Griseous Orb, or either had their item knocked off.
-  if (context.move.id === "trick" || context.move.id === "switcheroo") {
+  if (context.move.id === GEN4_MOVE_IDS.trick || context.move.id === GEN4_MOVE_IDS.switcheroo) {
     const { attacker, defender } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const defenderName = defender.pokemon.nickname ?? "The foe";
@@ -1649,14 +1725,17 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     // Fail if target has Sticky Hold
     // Source: Showdown data/abilities.ts — Sticky Hold blocks item removal
     // Source: Bulbapedia — Sticky Hold prevents item removal by the foe
-    if (defender.ability === "sticky-hold") {
+    if (defender.ability === GEN4_ABILITY_IDS.stickyHold) {
       result.messages.push(`${defenderName}'s Sticky Hold made Trick fail!`);
       return result;
     }
 
     // Fail if either has Multitype (Arceus's plates are bound)
     // Source: Showdown Gen 4 — Trick fails if either has Multitype
-    if (attacker.ability === "multitype" || defender.ability === "multitype") {
+    if (
+      attacker.ability === GEN4_ABILITY_IDS.multitype ||
+      defender.ability === GEN4_ABILITY_IDS.multitype
+    ) {
       result.messages.push("But it failed!");
       return result;
     }
@@ -1668,7 +1747,10 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     attacker.pokemon.heldItem = defenderItem;
     defender.pokemon.heldItem = attackerItem;
 
-    result.itemTransfer = { from: "defender", to: "attacker" };
+    result.itemTransfer = {
+      from: BATTLE_EFFECT_TARGETS.defender,
+      to: BATTLE_EFFECT_TARGETS.attacker,
+    };
 
     if (attackerItem && defenderItem) {
       result.messages.push(`${attackerName} switched items with ${defenderName}!`);
@@ -1683,18 +1765,18 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     if (
       attackerItem &&
       !attacker.pokemon.heldItem &&
-      attacker.ability === "unburden" &&
-      !attacker.volatileStatuses.has("unburden")
+      attacker.ability === GEN4_ABILITY_IDS.unburden &&
+      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
     ) {
-      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
     if (
       defenderItem &&
       !defender.pokemon.heldItem &&
-      defender.ability === "unburden" &&
-      !defender.volatileStatuses.has("unburden")
+      defender.ability === GEN4_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
     ) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
 
     return result;
@@ -1708,7 +1790,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   //   It has 120 base power and is Steel-type in Gen 4."
   // Note: In Gen 4, Future Sight and Doom Desire deal typeless damage at hit time
   //   (type chart is not applied). The type is stored for completeness.
-  if (context.move.id === "doom-desire") {
+  if (context.move.id === GEN4_MOVE_IDS.doomDesire) {
     const { attacker, state } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const attackerSideIndex = state.sides.findIndex((side) =>
@@ -1724,7 +1806,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     }
 
     result.futureAttack = {
-      moveId: "doom-desire",
+      moveId: GEN4_MOVE_IDS.doomDesire,
       turnsLeft: 3,
       sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
     };
@@ -1737,7 +1819,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown Gen 4 mod — Magnet Rise sets volatile on self for 5 turns
   // Source: Bulbapedia — Magnet Rise: "The user levitates using electrically generated
   //   magnetism for five turns." Fails under Gravity.
-  if (context.move.id === "magnet-rise") {
+  if (context.move.id === GEN4_MOVE_IDS.magnetRise) {
     const { attacker, state } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     // Fail if Gravity is active
@@ -1746,11 +1828,11 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       return result;
     }
     // Fail if already has Magnet Rise
-    if (attacker.volatileStatuses.has("magnet-rise")) {
+    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) {
       result.messages.push("But it failed!");
       return result;
     }
-    result.selfVolatileInflicted = "magnet-rise";
+    result.selfVolatileInflicted = CORE_VOLATILE_IDS.magnetRise;
     result.selfVolatileData = { turnsLeft: 5 };
     result.messages.push(`${attackerName} levitated with electromagnetism!`);
     return result;
@@ -1759,17 +1841,17 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Acupressure: +2 to a random stat stage (from stats not already at +6).
   // Source: Showdown Gen 4 mod — Acupressure boosts a random stat by 2
   // Source: Bulbapedia — Acupressure: "Sharply raises one of the user's stats at random"
-  if (context.move.id === "acupressure") {
+  if (context.move.id === GEN4_MOVE_IDS.acupressure) {
     const { attacker, rng } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const allStats: BattleStat[] = [
-      "attack",
-      "defense",
+      CORE_STAT_IDS.attack,
+      CORE_STAT_IDS.defense,
       "spAttack",
       "spDefense",
-      "speed",
-      "accuracy",
-      "evasion",
+      CORE_STAT_IDS.speed,
+      CORE_STAT_IDS.accuracy,
+      CORE_STAT_IDS.evasion,
     ];
     const boostableStats = allStats.filter((stat) => attacker.statStages[stat] < 6);
     if (boostableStats.length === 0) {
@@ -1778,7 +1860,11 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     }
     const chosenIndex = rng.int(0, boostableStats.length - 1);
     const chosen = boostableStats[chosenIndex] as BattleStat;
-    result.statChanges.push({ target: "attacker", stat: chosen, stages: 2 });
+    result.statChanges.push({
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      stat: chosen,
+      stages: 2,
+    });
     result.messages.push(`${attackerName}'s ${chosen} rose sharply!`);
     return result;
   }
@@ -1789,20 +1875,24 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Showdown Gen 4 mod — Ghost Curse: user sacrifices 1/2 HP, target gets cursed
   // Source: Bulbapedia — Curse: "If the user is a Ghost-type, the user loses 1/2 of its
   //   maximum HP and the target is cursed."
-  if (context.move.id === "curse") {
+  if (context.move.id === GEN4_MOVE_IDS.curse) {
     const { attacker, defender } = context;
-    if (attacker.types.includes("ghost")) {
+    if (attacker.types.includes(CORE_TYPE_IDS.ghost)) {
       const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
       const defenderName = defender.pokemon.nickname ?? "The foe";
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       const hpCost = Math.max(1, Math.floor(maxHp / 2));
       // Already cursed — fail
-      if (defender.volatileStatuses.has("curse")) {
+      if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.curse)) {
         result.messages.push("But it failed!");
         return result;
       }
-      result.customDamage = { target: "attacker", amount: hpCost, source: "curse" };
-      result.volatileInflicted = "curse";
+      result.customDamage = {
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        amount: hpCost,
+        source: GEN4_MOVE_IDS.curse,
+      };
+      result.volatileInflicted = CORE_VOLATILE_IDS.curse;
       result.messages.push(`${attackerName} cut its own HP and laid a curse on ${defenderName}!`);
       return result;
     }
@@ -1813,7 +1903,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Fails if user has no held item, held item is not a berry, user has Klutz, or Embargo.
   // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Natural_Gift_(move)
   // Source: Showdown sim/battle-actions.ts Gen 4 — Natural Gift type/power lookup
-  if (context.move.id === "natural-gift") {
+  if (context.move.id === GEN4_MOVE_IDS.naturalGift) {
     const { attacker } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const heldItem = attacker.pokemon.heldItem;
@@ -1821,8 +1911,8 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     if (
       !heldItem ||
       !NATURAL_GIFT_TABLE[heldItem] ||
-      attacker.ability === "klutz" ||
-      attacker.volatileStatuses.has("embargo")
+      attacker.ability === GEN4_ABILITY_IDS.klutz ||
+      attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
     ) {
       result.messages.push("But it failed!");
       return result;
@@ -1843,11 +1933,15 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Fails if user has no held item, item has no Fling power, user has Klutz, or Embargo.
   // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Fling_(move)
   // Source: Showdown sim/battle-actions.ts Gen 4 — Fling power lookup
-  if (context.move.id === "fling") {
+  if (context.move.id === GEN4_MOVE_IDS.fling) {
     const { attacker } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const heldItem = attacker.pokemon.heldItem;
-    if (!heldItem || attacker.ability === "klutz" || attacker.volatileStatuses.has("embargo")) {
+    if (
+      !heldItem ||
+      attacker.ability === GEN4_ABILITY_IDS.klutz ||
+      attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
+    ) {
       result.messages.push("But it failed!");
       return result;
     }
@@ -1870,7 +1964,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   // Source: Bulbapedia — Pluck: "steals the target's held Berry if it is holding one"
   // Source: Bulbapedia — Bug Bite: same mechanic as Pluck
   // Source: Showdown sim/battle-actions.ts Gen 4 — Pluck/Bug Bite berry steal
-  if (context.move.id === "pluck" || context.move.id === "bug-bite") {
+  if (context.move.id === GEN4_MOVE_IDS.pluck || context.move.id === GEN4_MOVE_IDS.bugBite) {
     const { attacker, defender } = context;
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const defenderName = defender.pokemon.nickname ?? "The foe";
@@ -1885,8 +1979,11 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
       applyBerryEffectToAttacker(stolenBerry, attacker, result);
       result.messages.push(`${attackerName} stole and ate ${defenderName}'s ${stolenBerry}!`);
       // Unburden: if the defender had Unburden, set the volatile
-      if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-        defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      if (
+        defender.ability === GEN4_ABILITY_IDS.unburden &&
+        !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+      ) {
+        defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
       }
     }
     // Even if no berry was stolen, the move's damage already happened (effect: null)
@@ -1915,7 +2012,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
  * Source: Bulbapedia — Heal Block: "prevents the target from recovering HP"
  */
 function applyHealBlockGate(result: MutableResult, context: MoveEffectContext): void {
-  if (result.healAmount > 0 && context.attacker.volatileStatuses.has("heal-block")) {
+  if (result.healAmount > 0 && context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
     result.healAmount = 0;
     const attackerName = context.attacker.pokemon.nickname ?? "The Pokemon";
     result.messages.push(`${attackerName} is blocked from healing!`);
@@ -1934,70 +2031,70 @@ function applyHealBlockGate(result: MutableResult, context: MoveEffectContext): 
  * Source: Showdown sim/items.ts — naturalGift field per berry item
  */
 export const NATURAL_GIFT_TABLE: Readonly<Record<string, { type: PokemonType; power: number }>> = {
-  "cheri-berry": { type: "fire", power: 60 },
-  "chesto-berry": { type: "water", power: 60 },
-  "pecha-berry": { type: "electric", power: 60 },
-  "rawst-berry": { type: "grass", power: 60 },
-  "aspear-berry": { type: "ice", power: 60 },
-  "leppa-berry": { type: "fighting", power: 60 },
-  "oran-berry": { type: "poison", power: 60 },
-  "persim-berry": { type: "ground", power: 60 },
-  "lum-berry": { type: "flying", power: 60 },
-  "sitrus-berry": { type: "psychic", power: 60 },
-  "figy-berry": { type: "bug", power: 60 },
-  "wiki-berry": { type: "rock", power: 60 },
-  "mago-berry": { type: "ghost", power: 60 },
-  "aguav-berry": { type: "dragon", power: 60 },
-  "iapapa-berry": { type: "dark", power: 60 },
-  "razz-berry": { type: "steel", power: 60 },
-  "bluk-berry": { type: "fire", power: 70 },
-  "nanab-berry": { type: "water", power: 70 },
-  "wepear-berry": { type: "electric", power: 70 },
-  "pinap-berry": { type: "grass", power: 70 },
-  "pomeg-berry": { type: "ice", power: 70 },
-  "kelpsy-berry": { type: "fighting", power: 70 },
-  "qualot-berry": { type: "poison", power: 70 },
-  "hondew-berry": { type: "ground", power: 70 },
-  "grepa-berry": { type: "flying", power: 70 },
-  "tamato-berry": { type: "psychic", power: 70 },
-  "cornn-berry": { type: "bug", power: 70 },
-  "magost-berry": { type: "rock", power: 70 },
-  "rabuta-berry": { type: "ghost", power: 70 },
-  "nomel-berry": { type: "dragon", power: 70 },
-  "spelon-berry": { type: "dark", power: 70 },
-  "pamtre-berry": { type: "steel", power: 70 },
-  "watmel-berry": { type: "fire", power: 80 },
-  "durin-berry": { type: "water", power: 80 },
-  "belue-berry": { type: "electric", power: 80 },
-  "occa-berry": { type: "fire", power: 60 },
-  "passho-berry": { type: "water", power: 60 },
-  "wacan-berry": { type: "electric", power: 60 },
-  "rindo-berry": { type: "grass", power: 60 },
-  "yache-berry": { type: "ice", power: 60 },
-  "chople-berry": { type: "fighting", power: 60 },
-  "kebia-berry": { type: "poison", power: 60 },
-  "shuca-berry": { type: "ground", power: 60 },
-  "coba-berry": { type: "flying", power: 60 },
-  "payapa-berry": { type: "psychic", power: 60 },
-  "tanga-berry": { type: "bug", power: 60 },
-  "charti-berry": { type: "rock", power: 60 },
-  "kasib-berry": { type: "ghost", power: 60 },
-  "haban-berry": { type: "dragon", power: 60 },
-  "colbur-berry": { type: "dark", power: 60 },
-  "babiri-berry": { type: "steel", power: 60 },
-  "liechi-berry": { type: "grass", power: 80 },
-  "ganlon-berry": { type: "ice", power: 80 },
-  "salac-berry": { type: "fighting", power: 80 },
+  [ITEM_IDS.cheriBerry]: { type: CORE_TYPE_IDS.fire, power: 60 },
+  [ITEM_IDS.chestoBerry]: { type: CORE_TYPE_IDS.water, power: 60 },
+  [ITEM_IDS.pechaBerry]: { type: CORE_TYPE_IDS.electric, power: 60 },
+  [ITEM_IDS.rawstBerry]: { type: CORE_TYPE_IDS.grass, power: 60 },
+  [ITEM_IDS.aspearBerry]: { type: CORE_TYPE_IDS.ice, power: 60 },
+  [ITEM_IDS.leppaBerry]: { type: CORE_TYPE_IDS.fighting, power: 60 },
+  [ITEM_IDS.oranBerry]: { type: CORE_TYPE_IDS.poison, power: 60 },
+  [ITEM_IDS.persimBerry]: { type: CORE_TYPE_IDS.ground, power: 60 },
+  [ITEM_IDS.lumBerry]: { type: CORE_TYPE_IDS.flying, power: 60 },
+  [ITEM_IDS.sitrusBerry]: { type: CORE_TYPE_IDS.psychic, power: 60 },
+  [ITEM_IDS.figyBerry]: { type: CORE_TYPE_IDS.bug, power: 60 },
+  [ITEM_IDS.wikiBerry]: { type: CORE_TYPE_IDS.rock, power: 60 },
+  [ITEM_IDS.magoBerry]: { type: CORE_TYPE_IDS.ghost, power: 60 },
+  [ITEM_IDS.aguavBerry]: { type: CORE_TYPE_IDS.dragon, power: 60 },
+  [ITEM_IDS.iapapaBerry]: { type: CORE_TYPE_IDS.dark, power: 60 },
+  [ITEM_IDS.razzBerry]: { type: CORE_TYPE_IDS.steel, power: 60 },
+  [ITEM_IDS.blukBerry]: { type: CORE_TYPE_IDS.fire, power: 70 },
+  [ITEM_IDS.nanabBerry]: { type: CORE_TYPE_IDS.water, power: 70 },
+  [ITEM_IDS.wepearBerry]: { type: CORE_TYPE_IDS.electric, power: 70 },
+  [ITEM_IDS.pinapBerry]: { type: CORE_TYPE_IDS.grass, power: 70 },
+  [ITEM_IDS.pomegBerry]: { type: CORE_TYPE_IDS.ice, power: 70 },
+  [ITEM_IDS.kelpsyBerry]: { type: CORE_TYPE_IDS.fighting, power: 70 },
+  [ITEM_IDS.qualotBerry]: { type: CORE_TYPE_IDS.poison, power: 70 },
+  [ITEM_IDS.hondewBerry]: { type: CORE_TYPE_IDS.ground, power: 70 },
+  [ITEM_IDS.grepaBerry]: { type: CORE_TYPE_IDS.flying, power: 70 },
+  [ITEM_IDS.tamatoBerry]: { type: CORE_TYPE_IDS.psychic, power: 70 },
+  [ITEM_IDS.cornnBerry]: { type: CORE_TYPE_IDS.bug, power: 70 },
+  [ITEM_IDS.magostBerry]: { type: CORE_TYPE_IDS.rock, power: 70 },
+  [ITEM_IDS.rabutaBerry]: { type: CORE_TYPE_IDS.ghost, power: 70 },
+  [ITEM_IDS.nomelBerry]: { type: CORE_TYPE_IDS.dragon, power: 70 },
+  [ITEM_IDS.spelonBerry]: { type: CORE_TYPE_IDS.dark, power: 70 },
+  [ITEM_IDS.pamtreBerry]: { type: CORE_TYPE_IDS.steel, power: 70 },
+  [ITEM_IDS.watmelBerry]: { type: CORE_TYPE_IDS.fire, power: 80 },
+  [ITEM_IDS.durinBerry]: { type: CORE_TYPE_IDS.water, power: 80 },
+  [ITEM_IDS.belueBerry]: { type: CORE_TYPE_IDS.electric, power: 80 },
+  [ITEM_IDS.occaBerry]: { type: CORE_TYPE_IDS.fire, power: 60 },
+  [ITEM_IDS.passhoBerry]: { type: CORE_TYPE_IDS.water, power: 60 },
+  [ITEM_IDS.wacanBerry]: { type: CORE_TYPE_IDS.electric, power: 60 },
+  [ITEM_IDS.rindoBerry]: { type: CORE_TYPE_IDS.grass, power: 60 },
+  [ITEM_IDS.yacheBerry]: { type: CORE_TYPE_IDS.ice, power: 60 },
+  [ITEM_IDS.chopleBerry]: { type: CORE_TYPE_IDS.fighting, power: 60 },
+  [ITEM_IDS.kebiaBerry]: { type: CORE_TYPE_IDS.poison, power: 60 },
+  [ITEM_IDS.shucaBerry]: { type: CORE_TYPE_IDS.ground, power: 60 },
+  [ITEM_IDS.cobaBerry]: { type: CORE_TYPE_IDS.flying, power: 60 },
+  [ITEM_IDS.payapaBerry]: { type: CORE_TYPE_IDS.psychic, power: 60 },
+  [ITEM_IDS.tangaBerry]: { type: CORE_TYPE_IDS.bug, power: 60 },
+  [ITEM_IDS.chartiBerry]: { type: CORE_TYPE_IDS.rock, power: 60 },
+  [ITEM_IDS.kasibBerry]: { type: CORE_TYPE_IDS.ghost, power: 60 },
+  [ITEM_IDS.habanBerry]: { type: CORE_TYPE_IDS.dragon, power: 60 },
+  [ITEM_IDS.colburBerry]: { type: CORE_TYPE_IDS.dark, power: 60 },
+  [ITEM_IDS.babiriBerry]: { type: CORE_TYPE_IDS.steel, power: 60 },
+  [ITEM_IDS.liechiBerry]: { type: CORE_TYPE_IDS.grass, power: 80 },
+  [ITEM_IDS.ganlonBerry]: { type: CORE_TYPE_IDS.ice, power: 80 },
+  [ITEM_IDS.salacBerry]: { type: CORE_TYPE_IDS.fighting, power: 80 },
   // Source: Showdown Gen 4 data — Natural Gift: Petaya Berry => Poison type, 80 power
-  "petaya-berry": { type: "poison", power: 80 },
-  "apicot-berry": { type: "ground", power: 80 },
-  "lansat-berry": { type: "flying", power: 80 },
-  "starf-berry": { type: "psychic", power: 80 },
-  "enigma-berry": { type: "bug", power: 80 },
-  "micle-berry": { type: "rock", power: 80 },
-  "custap-berry": { type: "ghost", power: 80 },
-  "jaboca-berry": { type: "dragon", power: 80 },
-  "rowap-berry": { type: "dark", power: 80 },
+  [ITEM_IDS.petayaBerry]: { type: CORE_TYPE_IDS.poison, power: 80 },
+  [ITEM_IDS.apicotBerry]: { type: CORE_TYPE_IDS.ground, power: 80 },
+  [ITEM_IDS.lansatBerry]: { type: CORE_TYPE_IDS.flying, power: 80 },
+  [ITEM_IDS.starfBerry]: { type: CORE_TYPE_IDS.psychic, power: 80 },
+  [ITEM_IDS.enigmaBerry]: { type: CORE_TYPE_IDS.bug, power: 80 },
+  [ITEM_IDS.micleBerry]: { type: CORE_TYPE_IDS.rock, power: 80 },
+  [ITEM_IDS.custapBerry]: { type: CORE_TYPE_IDS.ghost, power: 80 },
+  [ITEM_IDS.jabocaBerry]: { type: CORE_TYPE_IDS.dragon, power: 80 },
+  [ITEM_IDS.rowapBerry]: { type: CORE_TYPE_IDS.dark, power: 80 },
 };
 
 // ---------------------------------------------------------------------------
@@ -2014,68 +2111,68 @@ export const NATURAL_GIFT_TABLE: Readonly<Record<string, { type: PokemonType; po
  * Source: Showdown sim/items.ts — fling field per item
  */
 const FLING_POWER_TABLE: Readonly<Record<string, number>> = {
-  "iron-ball": 130,
-  "hard-stone": 100,
-  "rare-bone": 100,
-  "poison-barb": 70,
-  "power-bracer": 70,
-  "power-belt": 70,
-  "power-lens": 70,
-  "power-band": 70,
-  "power-anklet": 70,
-  "power-weight": 70,
-  "macho-brace": 60,
-  "adamant-orb": 60,
-  "lustrous-orb": 60,
-  "griseous-orb": 60,
-  "damp-rock": 60,
-  "heat-rock": 60,
-  "icy-rock": 60,
-  "smooth-rock": 60,
-  "thick-club": 90,
-  "lucky-punch": 40,
-  stick: 60,
-  "metal-coat": 30,
-  "kings-rock": 30,
-  "razor-fang": 30,
-  "deep-sea-tooth": 90,
-  "deep-sea-scale": 30,
-  "light-ball": 30,
-  "flame-orb": 30,
-  "toxic-orb": 30,
-  "black-belt": 30,
-  "black-glasses": 30,
-  charcoal: 30,
-  "dragon-fang": 30,
-  magnet: 30,
-  "miracle-seed": 30,
-  "mystic-water": 30,
-  "never-melt-ice": 30,
-  "sharp-beak": 30,
-  "silk-scarf": 30,
-  "silver-powder": 30,
-  "soft-sand": 30,
-  "spell-tag": 30,
-  "twisted-spoon": 30,
-  "choice-band": 10,
-  "choice-scarf": 10,
-  "choice-specs": 10,
-  leftovers: 10,
-  "life-orb": 30,
-  "scope-lens": 30,
-  "wide-lens": 10,
-  "zoom-lens": 10,
-  "expert-belt": 10,
-  "focus-sash": 10,
-  "focus-band": 10,
-  "muscle-band": 10,
-  "wise-glasses": 10,
-  "razor-claw": 80,
-  "shell-bell": 30,
-  "soul-dew": 30,
-  "white-herb": 10,
-  "mental-herb": 10,
-  "power-herb": 10,
+  [ITEM_IDS.ironBall]: 130,
+  [ITEM_IDS.hardStone]: 100,
+  [ITEM_IDS.rareBone]: 100,
+  [ITEM_IDS.poisonBarb]: 70,
+  [ITEM_IDS.powerBracer]: 70,
+  [ITEM_IDS.powerBelt]: 70,
+  [ITEM_IDS.powerLens]: 70,
+  [ITEM_IDS.powerBand]: 70,
+  [ITEM_IDS.powerAnklet]: 70,
+  [ITEM_IDS.powerWeight]: 70,
+  [ITEM_IDS.machoBrace]: 60,
+  [ITEM_IDS.adamantOrb]: 60,
+  [ITEM_IDS.lustrousOrb]: 60,
+  [ITEM_IDS.griseousOrb]: 60,
+  [ITEM_IDS.dampRock]: 60,
+  [ITEM_IDS.heatRock]: 60,
+  [ITEM_IDS.icyRock]: 60,
+  [ITEM_IDS.smoothRock]: 60,
+  [ITEM_IDS.thickClub]: 90,
+  [ITEM_IDS.luckyPunch]: 40,
+  [ITEM_IDS.stick]: 60,
+  [ITEM_IDS.metalCoat]: 30,
+  [ITEM_IDS.kingsRock]: 30,
+  [ITEM_IDS.razorFang]: 30,
+  [ITEM_IDS.deepSeaTooth]: 90,
+  [ITEM_IDS.deepSeaScale]: 30,
+  [ITEM_IDS.lightBall]: 30,
+  [ITEM_IDS.flameOrb]: 30,
+  [ITEM_IDS.toxicOrb]: 30,
+  [ITEM_IDS.blackBelt]: 30,
+  [ITEM_IDS.blackGlasses]: 30,
+  [ITEM_IDS.charcoal]: 30,
+  [ITEM_IDS.dragonFang]: 30,
+  [ITEM_IDS.magnet]: 30,
+  [ITEM_IDS.miracleSeed]: 30,
+  [ITEM_IDS.mysticWater]: 30,
+  [ITEM_IDS.neverMeltIce]: 30,
+  [ITEM_IDS.sharpBeak]: 30,
+  [ITEM_IDS.silkScarf]: 30,
+  [ITEM_IDS.silverPowder]: 30,
+  [ITEM_IDS.softSand]: 30,
+  [ITEM_IDS.spellTag]: 30,
+  [ITEM_IDS.twistedSpoon]: 30,
+  [ITEM_IDS.choiceBand]: 10,
+  [ITEM_IDS.choiceScarf]: 10,
+  [ITEM_IDS.choiceSpecs]: 10,
+  [ITEM_IDS.leftovers]: 10,
+  [ITEM_IDS.lifeOrb]: 30,
+  [ITEM_IDS.scopeLens]: 30,
+  [ITEM_IDS.wideLens]: 10,
+  [ITEM_IDS.zoomLens]: 10,
+  [ITEM_IDS.expertBelt]: 10,
+  [ITEM_IDS.focusSash]: 10,
+  [ITEM_IDS.focusBand]: 10,
+  [ITEM_IDS.muscleBand]: 10,
+  [ITEM_IDS.wiseGlasses]: 10,
+  [ITEM_IDS.razorClaw]: 80,
+  [ITEM_IDS.shellBell]: 30,
+  [ITEM_IDS.soulDew]: 30,
+  [ITEM_IDS.whiteHerb]: 10,
+  [ITEM_IDS.mentalHerb]: 10,
+  [ITEM_IDS.powerHerb]: 10,
 };
 
 /**
@@ -2113,70 +2210,96 @@ function applyBerryEffectToAttacker(
   const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
 
   switch (berry) {
-    case "oran-berry":
+    case ITEM_IDS.oranBerry:
       result.healAmount = Math.min(10, maxHp - attacker.pokemon.currentHp);
       break;
-    case "sitrus-berry":
+    case ITEM_IDS.sitrusBerry:
       result.healAmount = Math.max(1, Math.floor(maxHp / 4));
       break;
-    case "lum-berry": {
+    case ITEM_IDS.lumBerry: {
       if (attacker.pokemon.status) {
-        result.statusCuredOnly = { target: "attacker" };
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
       }
       break;
     }
-    case "cheri-berry":
-      if (attacker.pokemon.status === "paralysis") {
-        result.statusCuredOnly = { target: "attacker" };
+    case ITEM_IDS.cheriBerry:
+      if (attacker.pokemon.status === CORE_STATUS_IDS.paralysis) {
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
       }
       break;
-    case "chesto-berry":
-      if (attacker.pokemon.status === "sleep") {
-        result.statusCuredOnly = { target: "attacker" };
+    case ITEM_IDS.chestoBerry:
+      if (attacker.pokemon.status === CORE_STATUS_IDS.sleep) {
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
       }
       break;
-    case "pecha-berry":
-      if (attacker.pokemon.status === "poison" || attacker.pokemon.status === "badly-poisoned") {
-        result.statusCuredOnly = { target: "attacker" };
+    case ITEM_IDS.pechaBerry:
+      if (
+        attacker.pokemon.status === CORE_STATUS_IDS.poison ||
+        attacker.pokemon.status === CORE_STATUS_IDS.badlyPoisoned
+      ) {
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
       }
       break;
-    case "rawst-berry":
-      if (attacker.pokemon.status === "burn") {
-        result.statusCuredOnly = { target: "attacker" };
+    case ITEM_IDS.rawstBerry:
+      if (attacker.pokemon.status === CORE_STATUS_IDS.burn) {
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
       }
       break;
-    case "aspear-berry":
-      if (attacker.pokemon.status === "freeze") {
-        result.statusCuredOnly = { target: "attacker" };
+    case ITEM_IDS.aspearBerry:
+      if (attacker.pokemon.status === CORE_STATUS_IDS.freeze) {
+        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
       }
       break;
-    case "persim-berry":
-      if (attacker.volatileStatuses.has("confusion")) {
+    case ITEM_IDS.persimBerry:
+      if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
         result.volatilesToClear = [
           ...(result.volatilesToClear ?? []),
-          { target: "attacker", volatile: "confusion" as VolatileStatus },
+          {
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            volatile: CORE_VOLATILE_IDS.confusion,
+          },
         ];
       }
       break;
-    case "leppa-berry":
+    case ITEM_IDS.leppaBerry:
       // Restore 10 PP to the first depleted move
       // Source: Showdown — Leppa Berry restores 10 PP
       break;
     // Stat pinch berries — boost stat immediately when eaten via Pluck/Bug Bite
-    case "liechi-berry":
-      result.statChanges.push({ target: "attacker", stat: "attack", stages: 1 });
+    case ITEM_IDS.liechiBerry:
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.attack,
+        stages: 1,
+      });
       break;
-    case "ganlon-berry":
-      result.statChanges.push({ target: "attacker", stat: "defense", stages: 1 });
+    case ITEM_IDS.ganlonBerry:
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.defense,
+        stages: 1,
+      });
       break;
-    case "salac-berry":
-      result.statChanges.push({ target: "attacker", stat: "speed", stages: 1 });
+    case ITEM_IDS.salacBerry:
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.speed,
+        stages: 1,
+      });
       break;
-    case "petaya-berry":
-      result.statChanges.push({ target: "attacker", stat: "spAttack", stages: 1 });
+    case ITEM_IDS.petayaBerry:
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.spAttack,
+        stages: 1,
+      });
       break;
-    case "apicot-berry":
-      result.statChanges.push({ target: "attacker", stat: "spDefense", stages: 1 });
+    case ITEM_IDS.apicotBerry:
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.spDefense,
+        stages: 1,
+      });
       break;
     default:
       // Many berries have no in-battle effect when consumed this way

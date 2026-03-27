@@ -44,6 +44,7 @@ export function runBattle(config: BattleRunConfig): BattleReport {
     // Generate two random teams
     const team1 = generateRandomTeam(config.generation, dataManager, rng, {
       teamSize: config.teamSize,
+      uidPrefix: "side-0",
     });
     const team2 = generateRandomTeam(
       config.generation,
@@ -51,6 +52,7 @@ export function runBattle(config: BattleRunConfig): BattleReport {
       new SeededRandom(config.seed + 500),
       {
         teamSize: config.teamSize,
+        uidPrefix: "side-1",
       },
     );
 

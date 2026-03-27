@@ -5,6 +5,7 @@ import type {
   BattleState,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_ITEM_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveSlot, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -13,6 +14,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createEvs,
@@ -46,11 +48,14 @@ const ABILITY_TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const CORE_ABILITIES = CORE_ABILITY_IDS;
 const CORE_ITEMS = CORE_ITEM_IDS;
 const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
+const ITEM_EFFECT_TYPES = BATTLE_ITEM_EFFECT_TYPES;
+const ABILITY_EFFECT_TYPES = BATTLE_ABILITY_EFFECT_TYPES;
 const ABILITIES = GEN7_ABILITY_IDS;
 const ITEMS = GEN7_ITEM_IDS;
 const MOVES = GEN7_MOVE_IDS;
 const SPECIES = GEN7_SPECIES_IDS;
 const NATURES = GEN7_NATURE_IDS;
+const STATS = CORE_STAT_IDS;
 const data = createGen7DataManager();
 const defaultSpecies = data.getSpecies(SPECIES.charizard);
 const defaultNature = data.getNature(NATURES.hardy).id;
@@ -492,8 +497,8 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
-    expect(result.effects[0].effectType).toBe("stat-change");
-    expect((result.effects[0] as any).stat).toBe("attack");
+    expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.statChange);
+    expect((result.effects[0] as any).stat).toBe(STATS.attack);
     expect((result.effects[0] as any).stages).toBe(1);
   });
 
@@ -516,8 +521,8 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
     const result = handleGen7StatAbility(ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0].effectType).toBe("stat-change");
-    expect((result.effects[0] as any).stat).toBe("spAttack");
+    expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.statChange);
+    expect((result.effects[0] as any).stat).toBe(STATS.spAttack);
   });
 
   it("given Pokemon with beast-boost, when opponent is still alive, then no activation", () => {
@@ -555,8 +560,8 @@ describe("#688 — Moxie raises Attack after KO", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
-    expect(result.effects[0].effectType).toBe("stat-change");
-    expect((result.effects[0] as any).stat).toBe("attack");
+    expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.statChange);
+    expect((result.effects[0] as any).stat).toBe(STATS.attack);
     expect((result.effects[0] as any).stages).toBe(1);
   });
 
@@ -587,7 +592,7 @@ describe("#688 — Battle Bond transforms Greninja after KO", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
-    expect(result.effects[0].effectType).toBe("volatile-inflict");
+    expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.volatileInflict);
     expect(result.messages[0]).toContain("Ash-Greninja");
   });
 
@@ -633,10 +638,12 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
-      true,
-    );
-    expect(result.effects.some((e: any) => e.type === "consume")).toBe(true);
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.attack,
+      ),
+    ).toBe(true);
+    expect(result.effects.some((e: any) => e.type === ITEM_EFFECT_TYPES.consume)).toBe(true);
   });
 
   it("given Pokemon holding Ganlon Berry with HP at 20%, when stat-boost-between-turns fires, then Defense boost + consume", () => {
@@ -651,9 +658,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "defense")).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.defense,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Salac Berry with HP at 25%, when stat-boost-between-turns fires, then Speed boost + consume", () => {
@@ -667,9 +676,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "speed")).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.speed,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Petaya Berry with HP at 10%, when stat-boost-between-turns fires, then Sp. Atk boost + consume", () => {
@@ -683,9 +694,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "spAttack")).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.spAttack,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Apicot Berry with HP at 25%, when stat-boost-between-turns fires, then Sp. Def boost + consume", () => {
@@ -700,7 +713,9 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
 
     expect(result.activated).toBe(true);
     expect(
-      result.effects.some((e: any) => e.type === "stat-boost" && e.value === "spDefense"),
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.spDefense,
+      ),
     ).toBe(true);
   });
 
@@ -730,9 +745,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.attack,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Leftovers at 25% HP, when stat-boost-between-turns fires, then no activation (not a stat-pinch berry)", () => {

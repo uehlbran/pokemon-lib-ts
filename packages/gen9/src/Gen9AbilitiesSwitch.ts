@@ -1,12 +1,16 @@
 import type { AbilityContext, AbilityResult, BattleState } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger, ScreenType, TerrainType } from "@pokemon-lib-ts/core";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import type { AbilityTrigger, ScreenType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
 import {
   CORE_ITEM_IDS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
+  CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
-import { GEN9_ABILITY_IDS } from "./data/reference-ids";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS } from "./data/reference-ids";
 
 /**
  * Gen 9 switch-in, switch-out, contact, and passive ability handlers.
@@ -45,31 +49,31 @@ function getOpponentName(ctx: AbilityContext): string {
  *
  * Source: Showdown data/abilities.ts -- trace.onUpdate ban list
  */
-export const TRACE_UNCOPYABLE_ABILITIES = new Set([
-  "trace",
-  "multitype",
-  "forecast",
-  "illusion",
-  "flower-gift",
-  "imposter",
-  "zen-mode",
-  "stance-change",
-  "power-construct",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "receiver",
-  "power-of-alchemy",
+export const TRACE_UNCOPYABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN9_ABILITY_IDS.trace,
+  GEN9_ABILITY_IDS.multitype,
+  GEN9_ABILITY_IDS.forecast,
+  GEN9_ABILITY_IDS.illusion,
+  GEN9_ABILITY_IDS.flowerGift,
+  GEN9_ABILITY_IDS.imposter,
+  GEN9_ABILITY_IDS.zenMode,
+  GEN9_ABILITY_IDS.stanceChange,
+  GEN9_ABILITY_IDS.powerConstruct,
+  GEN9_ABILITY_IDS.schooling,
+  GEN9_ABILITY_IDS.comatose,
+  GEN9_ABILITY_IDS.shieldsDown,
+  GEN9_ABILITY_IDS.disguise,
+  GEN9_ABILITY_IDS.rksSystem,
+  GEN9_ABILITY_IDS.battleBond,
+  GEN9_ABILITY_IDS.receiver,
+  GEN9_ABILITY_IDS.powerOfAlchemy,
   // Gen 8 additions
-  "hunger-switch",
-  "gulp-missile",
-  "ice-face",
-  "neutralizing-gas",
-  "intrepid-sword",
-  "dauntless-shield",
+  GEN9_ABILITY_IDS.hungerSwitch,
+  GEN9_ABILITY_IDS.gulpMissile,
+  GEN9_ABILITY_IDS.iceFace,
+  GEN9_ABILITY_IDS.neutralizingGas,
+  GEN9_ABILITY_IDS.intrepidSword,
+  GEN9_ABILITY_IDS.dauntlessShield,
   // Gen 9 additions
   GEN9_ABILITY_IDS.protosynthesis,
   GEN9_ABILITY_IDS.quarkDrive,
@@ -86,20 +90,20 @@ export const TRACE_UNCOPYABLE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- cantsuppress
  */
-export const UNSUPPRESSABLE_ABILITIES = new Set([
-  "multitype",
-  "stance-change",
-  "schooling",
-  "comatose",
-  "shields-down",
-  "disguise",
-  "rks-system",
-  "battle-bond",
-  "power-construct",
+export const UNSUPPRESSABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN9_ABILITY_IDS.multitype,
+  GEN9_ABILITY_IDS.stanceChange,
+  GEN9_ABILITY_IDS.schooling,
+  GEN9_ABILITY_IDS.comatose,
+  GEN9_ABILITY_IDS.shieldsDown,
+  GEN9_ABILITY_IDS.disguise,
+  GEN9_ABILITY_IDS.rksSystem,
+  GEN9_ABILITY_IDS.battleBond,
+  GEN9_ABILITY_IDS.powerConstruct,
   // Gen 8 additions
-  "gulp-missile",
-  "ice-face",
-  "neutralizing-gas",
+  GEN9_ABILITY_IDS.gulpMissile,
+  GEN9_ABILITY_IDS.iceFace,
+  GEN9_ABILITY_IDS.neutralizingGas,
   // Gen 9 additions
   GEN9_ABILITY_IDS.protosynthesis,
   GEN9_ABILITY_IDS.quarkDrive,
@@ -117,7 +121,11 @@ export const UNSUPPRESSABLE_ABILITIES = new Set([
  *
  * Source: Showdown data/abilities.ts -- moldbreaker/teravolt/turboblaze
  */
-export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+export const MOLD_BREAKER_ALIASES: ReadonlySet<string> = new Set([
+  GEN9_ABILITY_IDS.moldBreaker,
+  GEN9_ABILITY_IDS.teravolt,
+  GEN9_ABILITY_IDS.turboblaze,
+]);
 
 /**
  * Weather duration extension by weather rocks: 5 turns base, 8 with rock.
@@ -125,7 +133,7 @@ export const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turbob
  * Source: Bulbapedia -- individual rock item pages
  * Source: Showdown data/items.ts -- damprock/heatrock/smoothrock/icyrock
  */
-const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: string; turns: number }>> = {
+const WEATHER_ROCK_MAP: Readonly<Record<string, { weather: WeatherType; turns: number }>> = {
   [CORE_ITEM_IDS.dampRock]: { weather: CORE_WEATHER_IDS.rain, turns: 8 },
   [CORE_ITEM_IDS.heatRock]: { weather: CORE_WEATHER_IDS.sun, turns: 8 },
   [CORE_ITEM_IDS.smoothRock]: { weather: CORE_WEATHER_IDS.sand, turns: 8 },
@@ -180,7 +188,7 @@ const NO_EFFECT: AbilityResult = { activated: false, effects: [], messages: [] }
  *
  * Source: Showdown data/items.ts -- weather rocks
  */
-export function getWeatherDuration(heldItem: string | null, weather: string): number {
+export function getWeatherDuration(heldItem: string | null, weather: WeatherType): number {
   if (heldItem) {
     const rock = WEATHER_ROCK_MAP[heldItem];
     if (rock && rock.weather === weather) {
@@ -194,7 +202,7 @@ export function getWeatherDuration(heldItem: string | null, weather: string): nu
  * Get terrain duration based on held item.
  */
 function getTerrainDuration(heldItem: string | null): number {
-  if (heldItem === "terrain-extender") return EXTENDED_TERRAIN_TURNS;
+  if (heldItem === GEN9_ITEM_IDS.terrainExtender) return EXTENDED_TERRAIN_TURNS;
   return BASE_TERRAIN_TURNS;
 }
 
@@ -234,96 +242,130 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "intimidate": {
+    case GEN9_ABILITY_IDS.intimidate: {
       // Source: Showdown data/abilities.ts -- Intimidate lowers opponent's Attack by 1 stage
       if (!ctx.opponent) return NO_EFFECT;
       if (ctx.opponent.substituteHp > 0) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "opponent", stat: "attack", stages: -1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            stat: CORE_STAT_IDS.attack,
+            stages: -1,
+          },
+        ],
         messages: [`${name}'s Intimidate cut ${oppName}'s Attack!`],
       };
     }
 
-    case "pressure": {
+    case GEN9_ABILITY_IDS.pressure: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is exerting its Pressure!`],
       };
     }
 
-    case "drizzle": {
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "rain");
+    case GEN9_ABILITY_IDS.drizzle: {
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.rain);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "rain", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
     }
 
-    case "drought": {
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "sun");
+    case GEN9_ABILITY_IDS.drought: {
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sun);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sun", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
     }
 
-    case "sand-stream": {
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "sand");
+    case GEN9_ABILITY_IDS.sandStream: {
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sand);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sand", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
     }
 
-    case "snow-warning": {
+    case GEN9_ABILITY_IDS.snowWarning: {
       // Gen 9: Snow Warning sets Snow instead of Hail
       // Source: Showdown data/abilities.ts -- snowwarning: sets "snow" in Gen 9
       // Source: specs/battle/10-gen9.md -- "Snow replaces Hail"
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "snow");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.snow);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "snow", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.snow,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Snow Warning made it snow!`],
       };
     }
 
-    case "orichalcum-pulse": {
+    case GEN9_ABILITY_IDS.orichalcumPulse: {
       // Source: Showdown data/abilities.ts:3016-3035
       // Sets Sun on entry; Attack boost handled as a stat modifier during damage calc
-      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, "sun");
+      const turns = getWeatherDuration(ctx.pokemon.pokemon.heldItem, CORE_WEATHER_IDS.sun);
       return {
         activated: true,
         effects: [
-          { effectType: "weather-set", target: "field", weather: "sun", weatherTurns: turns },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: turns,
+          },
         ],
         messages: [`${name}'s Orichalcum Pulse turned the sunlight harsh!`],
       };
     }
 
-    case "hadron-engine": {
+    case GEN9_ABILITY_IDS.hadronEngine: {
       // Source: Showdown data/abilities.ts:1725-1742
       // Sets Electric Terrain on entry; SpA boost handled as a stat modifier during damage calc
       const turns = getTerrainDuration(ctx.pokemon.pokemon.heldItem);
       // Directly set terrain on state
       const mutableState = ctx.state as BattleState;
       mutableState.terrain = {
-        type: "electric",
+        type: CORE_TERRAIN_IDS.electric,
         turnsLeft: turns,
-        source: "hadron-engine",
+        source: GEN9_ABILITY_IDS.hadronEngine,
       };
       return {
         activated: true,
@@ -332,92 +374,121 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       };
     }
 
-    case "download": {
+    case GEN9_ABILITY_IDS.download: {
       if (!ctx.opponent) return NO_EFFECT;
       const foeStats = ctx.opponent.pokemon.calculatedStats;
       if (!foeStats) return NO_EFFECT;
       const raisesAtk = foeStats.defense < foeStats.spDefense;
-      const stat = raisesAtk ? ("attack" as const) : ("spAttack" as const);
+      const stat = raisesAtk ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat, stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Download raised its ${statName}!`],
       };
     }
 
-    case "trace": {
+    case GEN9_ABILITY_IDS.trace: {
       if (!ctx.opponent) return NO_EFFECT;
       const opponentAbility = ctx.opponent.ability;
       if (!opponentAbility || TRACE_UNCOPYABLE_ABILITIES.has(opponentAbility)) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "self", newAbility: opponentAbility }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            newAbility: opponentAbility,
+          },
+        ],
         messages: [`${name} traced ${oppName}'s ${opponentAbility}!`],
       };
     }
 
-    case "mold-breaker": {
+    case GEN9_ABILITY_IDS.moldBreaker: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} breaks the mold!`],
       };
     }
 
-    case "teravolt": {
+    case GEN9_ABILITY_IDS.teravolt: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a bursting aura!`],
       };
     }
 
-    case "turboblaze": {
+    case GEN9_ABILITY_IDS.turboblaze: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a blazing aura!`],
       };
     }
 
-    case "imposter": {
+    case GEN9_ABILITY_IDS.imposter: {
       if (!ctx.opponent) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} transformed into ${oppName}!`],
       };
     }
 
-    case "illusion": {
+    case GEN9_ABILITY_IDS.illusion: {
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "self", volatile: "illusion" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.illusion,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "screen-cleaner": {
+    case GEN9_ABILITY_IDS.screenCleaner: {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "field" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.field },
+        ],
         messages: [`${name}'s Screen Cleaner removed all screens!`],
       };
     }
 
     // Surge abilities
-    case "electric-surge":
-    case "grassy-surge":
-    case "psychic-surge":
-    case "misty-surge": {
+    case GEN9_ABILITY_IDS.electricSurge:
+    case GEN9_ABILITY_IDS.grassySurge:
+    case GEN9_ABILITY_IDS.psychicSurge:
+    case GEN9_ABILITY_IDS.mistySurge: {
       return handleSurgeAbilitySwitchIn(ctx);
     }
 
     // Speed Boost announces on switch-in (actual boost is end-of-turn)
-    case "speed-boost": {
+    case GEN9_ABILITY_IDS.speedBoost: {
       return NO_EFFECT; // Speed Boost activates at end-of-turn, not switch-in
     }
 
@@ -470,21 +541,32 @@ function handleSwitchOut(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "regenerator": {
+    case GEN9_ABILITY_IDS.regenerator: {
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmount = Math.max(1, Math.floor(maxHp / 3));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmount,
+          },
+        ],
         messages: [`${name}'s Regenerator restored its HP!`],
       };
     }
 
-    case "natural-cure": {
+    case GEN9_ABILITY_IDS.naturalCure: {
       if (!ctx.pokemon.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-cure", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusCure,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Natural Cure cured its status!`],
       };
     }
@@ -506,44 +588,68 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "static": {
+    case GEN9_ABILITY_IDS.static: {
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [`${name}'s Static paralyzed the attacker!`],
       };
     }
 
-    case "flame-body": {
+    case GEN9_ABILITY_IDS.flameBody: {
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [`${name}'s Flame Body burned the attacker!`],
       };
     }
 
-    case "poison-point": {
+    case GEN9_ABILITY_IDS.poisonPoint: {
       if (other.pokemon.status) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
       };
     }
 
-    case "rough-skin":
-    case "iron-barbs": {
+    case GEN9_ABILITY_IDS.roughSkin:
+    case GEN9_ABILITY_IDS.ironBarbs: {
       const maxHp = other.pokemon.calculatedStats?.hp ?? other.pokemon.currentHp;
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
-      const abilityName = abilityId === "rough-skin" ? "Rough Skin" : "Iron Barbs";
+      const abilityName = abilityId === GEN9_ABILITY_IDS.roughSkin ? "Rough Skin" : "Iron Barbs";
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s ${abilityName} hurt the attacker!`],
       };
     }
@@ -562,16 +668,27 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "synchronize": {
+    case GEN9_ABILITY_IDS.synchronize: {
       if (!ctx.opponent) return NO_EFFECT;
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       const myStatus = ctx.pokemon.pokemon.status;
-      if (!myStatus || (myStatus !== "burn" && myStatus !== "poison" && myStatus !== "paralysis")) {
+      if (
+        !myStatus ||
+        (myStatus !== CORE_STATUS_IDS.burn &&
+          myStatus !== CORE_STATUS_IDS.poison &&
+          myStatus !== CORE_STATUS_IDS.paralysis)
+      ) {
         return NO_EFFECT;
       }
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: myStatus }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: myStatus,
+          },
+        ],
         messages: [`${name}'s Synchronize passed the status!`],
       };
     }
@@ -590,11 +707,18 @@ function handleTurnEnd(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
 
   switch (abilityId) {
-    case "speed-boost": {
+    case GEN9_ABILITY_IDS.speedBoost: {
       // Source: Showdown data/abilities.ts -- Speed Boost: +1 Speed at end of turn
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.speed,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Speed Boost raised its Speed!`],
       };
     }

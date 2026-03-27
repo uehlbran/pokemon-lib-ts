@@ -20,6 +20,7 @@ import {
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   createEvs,
   createFriendship,
@@ -70,11 +71,12 @@ const MOVES = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const _STATUS = CORE_STATUS_IDS;
 const SPECIES = GEN7_SPECIES_IDS;
 const TERRAIN = CORE_TERRAIN_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
 const WEATHER = CORE_WEATHER_IDS;
 const TYPES = CORE_TYPE_IDS;
 const DEFAULT_NATURE = GEN7_NATURE_IDS.hardy;
 const AURORA_VEIL = MOVES.auroraVeil;
-const DISGUISE_BROKEN = "disguise-broken" as const;
+const DISGUISE_BROKEN = VOLATILES.disguiseBroken;
 
 function getCanonicalMove(moveId: string): MoveData {
   return dataManager.getMove(moveId);

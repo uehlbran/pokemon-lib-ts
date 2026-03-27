@@ -1,4 +1,9 @@
-import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import {
+  type ActivePokemon,
+  BATTLE_EFFECT_TARGETS,
+  type BattleState,
+  type MoveEffectContext,
+} from "@pokemon-lib-ts/battle";
 import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
@@ -6,7 +11,10 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -449,7 +457,11 @@ describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert — should have the attack drop
     expect(result.statChanges.length).toBeGreaterThan(0);
-    expect(result.statChanges[0]).toMatchObject({ target: "defender", stat: "attack", stages: -1 });
+    expect(result.statChanges[0]).toMatchObject({
+      target: "defender",
+      stat: CORE_STAT_IDS.attack,
+      stages: -1,
+    });
   });
 
   it("given defender has mist, when a self-stat-drop move is used (target=self), then it is NOT blocked by mist", () => {
@@ -464,12 +476,12 @@ describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
       id: "self-drop-test",
       displayName: "Self Drop",
       type: TYPE_IDS.normal,
-      category: "status",
-      target: "self",
+      category: CORE_MOVE_CATEGORIES.status,
+      target: BATTLE_EFFECT_TARGETS.self,
       effect: {
-        type: "stat-change" as const,
-        target: "self",
-        changes: [{ stat: "defense" as const, stages: -1 }],
+        type: CORE_MOVE_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        changes: [{ stat: CORE_STAT_IDS.defense, stages: -1 }],
       },
     });
     const context = createMoveEffectContext({ move: selfDropMove, attacker, damage: 0 });

@@ -1,5 +1,11 @@
 import type { ActivePokemon, BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
-import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_TYPE_IDS,
+  CORE_WEATHER_IDS,
+  type PokemonType,
+  type WeatherType,
+} from "@pokemon-lib-ts/core";
 
 // ─── Cloud Nine / Air Lock Weather Suppression ─────────────────────────────
 
@@ -9,7 +15,10 @@ import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
  * Source: Showdown sim/battle.ts — suppressingWeather() checks for Cloud Nine and Air Lock
  * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
  */
-const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set(["cloud-nine", "air-lock"]);
+const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set([
+  CORE_ABILITY_IDS.cloudNine,
+  CORE_ABILITY_IDS.airLock,
+]);
 
 /**
  * Check if either the attacker or defender has Cloud Nine / Air Lock,
@@ -55,7 +64,11 @@ export function isWeatherSuppressedOnFieldGen5(state: {
  * Source: Showdown sim/battle.ts Gen 5 mod -- sandstorm immunity type check
  * Source: Bulbapedia -- Sandstorm: "Rock-, Ground-, and Steel-type Pokemon are unaffected"
  */
-export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel"];
+export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = [
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.steel,
+];
 
 /**
  * Types immune to hail chip damage in Gen 5.
@@ -64,7 +77,7 @@ export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground",
  * Source: Showdown sim/battle.ts Gen 5 mod -- hail immunity type check
  * Source: Bulbapedia -- Hail: "Ice-type Pokemon are unaffected"
  */
-export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
+export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = [CORE_TYPE_IDS.ice];
 
 /**
  * Abilities that grant immunity to weather chip damage in Gen 5.
@@ -83,18 +96,18 @@ export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
  * Source: Bulbapedia -- Sand Veil: "immune to sandstorm damage"; Snow Cloak: "immune to hail damage"
  */
 const SAND_IMMUNE_ABILITIES: readonly string[] = [
-  "magic-guard",
-  "overcoat",
-  "sand-rush",
-  "sand-force",
-  "sand-veil",
+  CORE_ABILITY_IDS.magicGuard,
+  CORE_ABILITY_IDS.overcoat,
+  CORE_ABILITY_IDS.sandRush,
+  CORE_ABILITY_IDS.sandForce,
+  CORE_ABILITY_IDS.sandVeil,
 ];
 
 const HAIL_IMMUNE_ABILITIES: readonly string[] = [
-  "magic-guard",
-  "overcoat",
-  "ice-body",
-  "snow-cloak",
+  CORE_ABILITY_IDS.magicGuard,
+  CORE_ABILITY_IDS.overcoat,
+  CORE_ABILITY_IDS.iceBody,
+  CORE_ABILITY_IDS.snowCloak,
 ];
 
 /**
@@ -119,9 +132,9 @@ export function isGen5WeatherImmune(
   ability?: string,
 ): boolean {
   // Rain and Sun have no chip damage -- immunity concept does not apply
-  if (weather !== "sand" && weather !== "hail") return false;
+  if (weather !== CORE_WEATHER_IDS.sand && weather !== CORE_WEATHER_IDS.hail) return false;
 
-  if (weather === "sand") {
+  if (weather === CORE_WEATHER_IDS.sand) {
     // Ability-based immunity (Magic Guard, Overcoat, Sand Rush, Sand Force, Sand Veil)
     if (ability && SAND_IMMUNE_ABILITIES.includes(ability)) return true;
     // Type-based immunity (Rock, Ground, Steel)
@@ -161,7 +174,9 @@ export function applyGen5WeatherEffects(state: BattleState): WeatherEffectResult
   // No weather or non-damaging weather (rain/sun have no chip damage)
   if (!state.weather) return results;
   const weatherType = state.weather.type;
-  if (weatherType !== "sand" && weatherType !== "hail") return results;
+  if (weatherType !== CORE_WEATHER_IDS.sand && weatherType !== CORE_WEATHER_IDS.hail) {
+    return results;
+  }
 
   // Cloud Nine / Air Lock suppresses all weather effects including chip damage
   // Source: Showdown sim/battle.ts — suppressingWeather() gates weather residual damage
@@ -183,7 +198,7 @@ export function applyGen5WeatherEffects(state: BattleState): WeatherEffectResult
       const pokemonName = active.pokemon.nickname ?? active.pokemon.speciesId.toString();
 
       const message =
-        weatherType === "sand"
+        weatherType === CORE_WEATHER_IDS.sand
           ? `${pokemonName} is buffeted by the sandstorm!`
           : `${pokemonName} is pelted by hail!`;
 

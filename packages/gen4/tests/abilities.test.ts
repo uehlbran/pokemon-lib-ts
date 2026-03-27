@@ -6,6 +6,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -54,6 +55,7 @@ const defaultSpecies = dataManager.getSpecies(GEN4_SPECIES_IDS.bulbasaur);
 const abilityIds = { ...CORE_ABILITY_IDS, ...GEN4_ABILITY_IDS } as const;
 const itemIds = { ...CORE_ITEM_IDS, ...GEN4_ITEM_IDS } as const;
 const abilityTriggers = CORE_ABILITY_TRIGGER_IDS;
+const moveEffectTypes = CORE_MOVE_EFFECT_TYPES;
 
 function createSyntheticPokemonInstance(overrides: {
   speciesId?: number;
@@ -542,7 +544,7 @@ describe("applyGen4Ability on-turn-end — Rain Dish", () => {
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(10);
     expect(result.messages[0]).toContain("Rain Dish");
   });
@@ -573,7 +575,7 @@ describe("applyGen4Ability on-turn-end — Ice Body (NEW in Gen 4)", () => {
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(10);
     expect(result.messages[0]).toContain("Ice Body");
   });
@@ -603,7 +605,7 @@ describe("applyGen4Ability on-turn-end — Dry Skin (NEW in Gen 4)", () => {
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(20);
     expect(result.messages[0]).toContain("Dry Skin");
   });
@@ -792,7 +794,7 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(20);
     expect(result.messages[0]).toContain("Poison Heal");
   });
@@ -809,7 +811,7 @@ describe("applyGen4Ability on-turn-end — Poison Heal (NEW in Gen 4)", () => {
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(20);
   });
 
@@ -883,7 +885,7 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(20);
   });
 
@@ -900,7 +902,7 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(20);
   });
 
@@ -963,7 +965,7 @@ describe("applyGen4Ability — heal/chip-damage effect types (triangulation)", (
     const result = applyGen4Ability(abilityTriggers.onTurnEnd, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     expect(result.effects[0]?.value).toBe(40);
   });
 });
@@ -1006,7 +1008,7 @@ describe("applyGen4Ability — integration: Rain Dish end-to-end", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
-    expect(result.effects[0]?.effectType).toBe("heal");
+    expect(result.effects[0]?.effectType).toBe(moveEffectTypes.heal);
     // Source: 1/16 of 160 = 10
     expect(result.effects[0]?.value).toBe(10);
   });

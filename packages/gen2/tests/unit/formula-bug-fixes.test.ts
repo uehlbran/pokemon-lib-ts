@@ -28,6 +28,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
@@ -589,7 +590,7 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
       type: TYPE_IDS.ground,
       power: null,
       accuracy: 30,
-      effect: { type: "ohko" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
     });
 
     const hits = countSuccessfulTrials(1000, (i) => {
@@ -611,7 +612,7 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
       type: TYPE_IDS.normal,
       power: null,
       accuracy: 30,
-      effect: { type: "ohko" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
     });
 
     const trials = 10000;
@@ -637,7 +638,7 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
       type: TYPE_IDS.normal,
       power: null,
       accuracy: 30,
-      effect: { type: "ohko" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
     });
 
     let hits = 0;

@@ -5,7 +5,7 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { getGen12StatStageRatio, getStabModifier } from "@pokemon-lib-ts/core";
+import { createFriendship, getGen12StatStageRatio, getStabModifier } from "@pokemon-lib-ts/core";
 
 import { getWeatherDamageModifier } from "./Gen2Weather";
 
@@ -319,10 +319,10 @@ export function calculateGen2Damage(
   // Frustration: floor((255 - friendship) / 2.5), minimum 1
   let dynamicPower: number | null = move.power;
   if (move.id === "return") {
-    const friendship = attacker.pokemon.friendship ?? 70;
+    const friendship = createFriendship(attacker.pokemon.friendship);
     dynamicPower = Math.max(1, Math.floor(friendship / 2.5));
   } else if (move.id === "frustration") {
-    const friendship = attacker.pokemon.friendship ?? 70;
+    const friendship = createFriendship(attacker.pokemon.friendship);
     dynamicPower = Math.max(1, Math.floor((255 - friendship) / 2.5));
   }
 

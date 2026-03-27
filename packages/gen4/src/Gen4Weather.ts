@@ -1,5 +1,6 @@
 import type { BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { isWeatherSuppressedOnField } from "./Gen4Abilities";
 
 export const GEN4_WEATHER_DAMAGE_MULTIPLIERS = {
@@ -16,7 +17,11 @@ export const GEN4_WEATHER_DAMAGE_MULTIPLIERS = {
  * Source: Showdown sim/battle.ts Gen 4 mod — sandstorm immunity type check
  * Source: pret/pokeplatinum — same immunity list as Gen 3
  */
-export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel"];
+export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = [
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.steel,
+];
 
 /**
  * Types immune to hail chip damage in Gen 4.
@@ -25,7 +30,7 @@ export const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground",
  * Source: Showdown sim/battle.ts Gen 4 mod — hail immunity type check
  * Source: pret/pokeplatinum — same immunity list as Gen 3
  */
-export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = ["ice"];
+export const HAIL_IMMUNE_TYPES: readonly PokemonType[] = [CORE_TYPE_IDS.ice];
 
 /**
  * Check whether a Pokemon is immune to the given weather's end-of-turn chip damage.
@@ -50,16 +55,16 @@ export function isGen4WeatherImmune(
   ability?: string,
 ): boolean {
   // Rain and Sun have no chip damage — immunity concept does not apply
-  if (weather !== "sand" && weather !== "hail") return false;
+  if (weather !== CORE_WEATHER_IDS.sand && weather !== CORE_WEATHER_IDS.hail) return false;
 
   // Magic Guard: immune to all indirect damage, including weather chip
   // Only applies to sand/hail (checked after the early-return above so this
   // does not spuriously return true for rain/sun).
   // Source: Bulbapedia — Magic Guard: prevents all indirect damage
   // Source: Showdown — magic-guard check before weather damage loop
-  if (ability === "magic-guard") return true;
+  if (ability === CORE_ABILITY_IDS.magicGuard) return true;
 
-  if (weather === "sand") {
+  if (weather === CORE_WEATHER_IDS.sand) {
     return types.some((type) => SANDSTORM_IMMUNE_TYPES.includes(type));
   }
   // hail
@@ -89,7 +94,9 @@ export function applyGen4WeatherEffects(state: BattleState): WeatherEffectResult
   // No weather or non-damaging weather (rain/sun have no chip damage)
   if (!state.weather) return results;
   const weatherType = state.weather.type;
-  if (weatherType !== "sand" && weatherType !== "hail") return results;
+  if (weatherType !== CORE_WEATHER_IDS.sand && weatherType !== CORE_WEATHER_IDS.hail) {
+    return results;
+  }
 
   // Cloud Nine / Air Lock suppress all weather effects including chip damage.
   // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates weather chip damage
@@ -112,7 +119,7 @@ export function applyGen4WeatherEffects(state: BattleState): WeatherEffectResult
       const pokemonName = active.pokemon.nickname ?? active.pokemon.speciesId.toString();
 
       const message =
-        weatherType === "sand"
+        weatherType === CORE_WEATHER_IDS.sand
           ? `${pokemonName} is buffeted by the sandstorm!`
           : `${pokemonName} is pelted by hail!`;
 

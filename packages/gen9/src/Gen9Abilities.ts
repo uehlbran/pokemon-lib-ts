@@ -1,5 +1,5 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { AbilityTrigger } from "@pokemon-lib-ts/core";
+import { type AbilityTrigger, CORE_ABILITY_TRIGGER_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen9NewAbility, isEmbodyAspect } from "./Gen9AbilitiesNew.js";
 import { handleGen9StatAbility } from "./Gen9AbilitiesStat.js";
@@ -107,7 +107,7 @@ function handleCarryForwardPriorityCheck(ctx: AbilityContext): AbilityResult {
     case "gale-wings": {
       // +1 priority to Flying moves at full HP (Gen 7+ nerf)
       // Source: Showdown data/abilities.ts -- requires pokemon.hp === pokemon.maxhp
-      if (ctx.move.type !== "flying") return NO_ACTIVATION;
+      if (ctx.move.type !== CORE_TYPE_IDS.flying) return NO_ACTIVATION;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       if (ctx.pokemon.pokemon.currentHp < maxHp) return NO_ACTIVATION;
       return {
@@ -194,16 +194,16 @@ export function handleGen9Ability(trigger: AbilityTrigger, context: AbilityConte
 
   // 3. Carry-forward abilities by trigger
   switch (trigger) {
-    case "on-switch-in":
-    case "on-switch-out":
-    case "on-contact":
-    case "on-status-inflicted":
-    case "on-turn-end":
+    case CORE_ABILITY_TRIGGER_IDS.onSwitchIn:
+    case CORE_ABILITY_TRIGGER_IDS.onSwitchOut:
+    case CORE_ABILITY_TRIGGER_IDS.onContact:
+    case CORE_ABILITY_TRIGGER_IDS.onStatusInflicted:
+    case CORE_ABILITY_TRIGGER_IDS.onTurnEnd:
       return handleGen9SwitchAbility(trigger, context);
 
     // Carry-forward priority abilities (Prankster, Gale Wings, Triage)
     // Source: Showdown data/abilities.ts -- onModifyPriority handlers
-    case "on-priority-check":
+    case CORE_ABILITY_TRIGGER_IDS.onPriorityCheck:
       return handleCarryForwardPriorityCheck(context);
 
     default:

@@ -3860,7 +3860,7 @@ describe("Gen 7 Metronome item", () => {
     // Source: Showdown data/items.ts -- Metronome: 1 + 0.2*(count-1), max 2.0x at 6
     // 3 uses: 1 + 0.2*2 = 1.4x => 4096 * 1.4 = 5734
     const vols = new Map<string, any>();
-    vols.set("metronome-count", { turnsLeft: -1, data: { count: 3 } });
+    vols.set(CORE_VOLATILE_IDS.metronomeCount, { turnsLeft: -1, data: { count: 3 } });
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({
         attack: 100,

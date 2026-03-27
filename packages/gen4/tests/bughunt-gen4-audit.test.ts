@@ -4,6 +4,7 @@ import type {
   ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   MoveEffect,
@@ -19,8 +20,10 @@ import {
   CORE_GENDERS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createFriendship,
   createIvs,
@@ -626,9 +629,9 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
 
     expect(result.activated).toBe(true);
     const statEffect = result.effects.find(
-      (e: { effectType: string }) => e.effectType === "stat-change",
+      (e: { effectType: string }) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange,
     );
-    expect(statEffect?.stat).toBe("attack");
+    expect(statEffect?.stat).toBe(CORE_STAT_IDS.attack);
     expect(statEffect?.stages).toBe(1);
   });
 
@@ -652,9 +655,9 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
 
     expect(result.activated).toBe(true);
     const statEffect = result.effects.find(
-      (e: { effectType: string }) => e.effectType === "stat-change",
+      (e: { effectType: string }) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange,
     );
-    expect(statEffect?.stat).toBe("spAttack");
+    expect(statEffect?.stat).toBe(CORE_STAT_IDS.spAttack);
     expect(statEffect?.stages).toBe(1);
   });
 });
@@ -677,7 +680,10 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     //   Random (100/100=1.0): 55; STAB (normal/normal): floor(55*1.5) = 82
     //   count=7 → numConsecutive=6 → multiplier=1.6 → floor(37*1.6)=59; STAB: floor(59*1.5)=88
     const metronomeVolatiles = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 6, moveId: GEN4_MOVE_IDS.hyperFang } }],
+      [
+        CORE_VOLATILE_IDS.metronomeCount,
+        { turnsLeft: -1, data: { count: 6, moveId: GEN4_MOVE_IDS.hyperFang } },
+      ],
     ]);
     const attacker = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
@@ -697,7 +703,10 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
 
     // count=7: numConsecutive=6 → multiplier=1.6 (no cap per Showdown)
     const metronomeVolatiles7 = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 7, moveId: GEN4_MOVE_IDS.hyperFang } }],
+      [
+        CORE_VOLATILE_IDS.metronomeCount,
+        { turnsLeft: -1, data: { count: 7, moveId: GEN4_MOVE_IDS.hyperFang } },
+      ],
     ]);
     const attacker7 = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
@@ -730,7 +739,10 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     //   baseDmg = 37; Metronome Phase 2: floor(37*1.1) = floor(40.7) = 40
     //   Random (100/100=1.0): 40; STAB (normal/normal): floor(40*1.5) = 60
     const metronomeVolatiles = new Map([
-      ["metronome-count", { turnsLeft: -1, data: { count: 2, moveId: GEN4_MOVE_IDS.hyperFang } }],
+      [
+        CORE_VOLATILE_IDS.metronomeCount,
+        { turnsLeft: -1, data: { count: 2, moveId: GEN4_MOVE_IDS.hyperFang } },
+      ],
     ]);
     const attacker = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],

@@ -6,6 +6,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
+  CORE_PROTECT_EFFECT_VARIANTS,
   createEvs,
   createFriendship,
   createIvs,
@@ -682,7 +683,7 @@ describe("Gen8Dynamax", () => {
       const result = dynamax.modifyMove(statusMove, pokemon);
 
       expect(result.displayName).toBe("Max Guard");
-      expect(result.id).toBe("max-guard");
+      expect(result.id).toBe(CORE_PROTECT_EFFECT_VARIANTS.maxGuard);
     });
   });
 });

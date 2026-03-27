@@ -48,9 +48,19 @@ import type {
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
+  BASE_ABILITY_TYPE_IMMUNITIES,
   BASE_PINCH_ABILITY_TYPES,
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
+  BASE_TYPE_RESIST_BERRIES,
+  CORE_ABILITY_IDS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TARGETS,
+  CORE_MOVE_IDS,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   getStabModifier,
   getStatStageMultiplier,
   getTypeEffectiveness,
@@ -82,24 +92,8 @@ const GIRATINA_SPECIES_ID = 487;
  * Source: Bulbapedia -- type-resist berries
  */
 export const TYPE_RESIST_BERRIES: Readonly<Record<string, PokemonType>> = {
-  "occa-berry": "fire",
-  "passho-berry": "water",
-  "wacan-berry": "electric",
-  "rindo-berry": "grass",
-  "yache-berry": "ice",
-  "chople-berry": "fighting",
-  "kebia-berry": "poison",
-  "shuca-berry": "ground",
-  "coba-berry": "flying",
-  "payapa-berry": "psychic",
-  "tanga-berry": "bug",
-  "charti-berry": "rock",
-  "kasib-berry": "ghost",
-  "haban-berry": "dragon",
-  "colbur-berry": "dark",
-  "babiri-berry": "steel",
-  "chilan-berry": "normal",
-  "roseli-berry": "fairy",
+  ...BASE_TYPE_RESIST_BERRIES,
+  [CORE_ITEM_IDS.roseliBerry]: CORE_TYPE_IDS.fairy,
 };
 
 // ---- Type-Boosting Items ----
@@ -122,7 +116,7 @@ const TYPE_BOOST_ITEMS = BASE_TYPE_BOOST_ITEMS;
  */
 const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
   ...BASE_PLATE_ITEMS,
-  "pixie-plate": "fairy",
+  [CORE_ITEM_IDS.pixiePlate]: CORE_TYPE_IDS.fairy,
 };
 
 // ---- Gem Items (Gen 8) ----
@@ -136,7 +130,7 @@ const PLATE_ITEMS: Readonly<Record<string, PokemonType>> = {
  * Source: Bulbapedia "Gem" -- "From Generation VII onwards, only Normal Gem is available."
  */
 const GEM_ITEMS: Readonly<Record<string, string>> = {
-  "normal-gem": "normal",
+  [CORE_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
 };
 
 /**
@@ -167,17 +161,7 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  * Source: Showdown sim/battle.ts -- immunity abilities
  * Source: Bulbapedia -- Motor Drive, Dry Skin, etc.
  */
-const ABILITY_TYPE_IMMUNITIES: Readonly<Record<string, string>> = {
-  levitate: "ground",
-  "volt-absorb": "electric",
-  "water-absorb": "water",
-  "flash-fire": "fire",
-  "motor-drive": "electric",
-  "dry-skin": "water",
-  "storm-drain": "water",
-  "lightning-rod": "electric",
-  "sap-sipper": "grass",
-};
+const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
 // ---- Anti-Dynamax Moves ----
 
@@ -225,8 +209,9 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
       return true;
 
     case "stat-change":
-      if (effect.target === "foe" && effect.chance > 0) return true;
-      if (effect.target === "self" && effect.fromSecondary === true) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.foe && effect.chance > 0) return true;
+      if (effect.target === CORE_MOVE_EFFECT_TARGETS.self && effect.fromSecondary === true)
+        return true;
       return false;
 
     case "volatile-status":
@@ -245,11 +230,7 @@ function hasSheerForceEligibleEffect(effect: MoveEffect | null): boolean {
  *
  * Source: Showdown data/moves.ts -- moves with secondaries as onHit
  */
-const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([
-  "tri-attack",
-  "secret-power",
-  "relic-song",
-]);
+const SHEER_FORCE_WHITELIST: ReadonlySet<string> = new Set([CORE_MOVE_IDS.triAttack]);
 
 function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): boolean {
   return hasSheerForceEligibleEffect(effect) || SHEER_FORCE_WHITELIST.has(moveId);
@@ -266,23 +247,25 @@ function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): bo
  */
 export function isGen8Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
-  if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
-  if (pokemon.types.includes("flying")) return false;
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
   if (
-    pokemon.pokemon.heldItem === "air-balloon" &&
+    pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon &&
     !itemsSuppressed &&
     pokemon.pokemon.currentHp > 0
   ) {
     return false;
   }
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
-  if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis as VolatileStatus)) return false;
 
   return true;
 }
@@ -326,25 +309,25 @@ function getTerrainDamageModifier(
 
   // Electric Terrain: 1.3x for Electric moves when attacker is grounded
   // Source: Showdown data/mods/gen8/scripts.ts -- terrain boost 1.3x
-  if (terrainType === "electric" && moveType === "electric" && attackerGrounded) {
+  if (terrainType === "electric" && moveType === CORE_TYPE_IDS.electric && attackerGrounded) {
     powerModifier = TERRAIN_BOOST_MODIFIER;
   }
 
   // Grassy Terrain: 1.3x for Grass moves when attacker is grounded
   // Source: Showdown data/mods/gen8/scripts.ts -- terrain boost 1.3x
-  if (terrainType === "grassy" && moveType === "grass" && attackerGrounded) {
+  if (terrainType === "grassy" && moveType === CORE_TYPE_IDS.grass && attackerGrounded) {
     powerModifier = TERRAIN_BOOST_MODIFIER;
   }
 
   // Misty Terrain: 0.5x for Dragon moves when defender is grounded
   // Source: Showdown data/conditions.ts -- mistyterrain.onBasePower
-  if (terrainType === "misty" && moveType === "dragon" && defenderGrounded) {
+  if (terrainType === "misty" && moveType === CORE_TYPE_IDS.dragon && defenderGrounded) {
     powerModifier = 2048;
   }
 
   // Psychic Terrain: 1.3x for Psychic moves when attacker is grounded
   // Source: Showdown data/mods/gen8/scripts.ts -- terrain boost 1.3x
-  if (terrainType === "psychic" && moveType === "psychic" && attackerGrounded) {
+  if (terrainType === "psychic" && moveType === CORE_TYPE_IDS.psychic && attackerGrounded) {
     powerModifier = TERRAIN_BOOST_MODIFIER;
   }
 
@@ -386,9 +369,9 @@ function getAttackStat(
 
   let statKey: string;
   if (isBodyPress) {
-    statKey = "defense";
+    statKey = CORE_STAT_IDS.defense;
   } else {
-    statKey = isPhysical ? "attack" : "spAttack";
+    statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   }
 
   const stats = attacker.pokemon.calculatedStats;
@@ -397,7 +380,7 @@ function getAttackStat(
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
   const attackerSpecies = attacker.pokemon.speciesId;
-  const attackerHasKlutz = ability === "klutz";
+  const attackerHasKlutz = ability === CORE_ABILITY_IDS.klutz;
 
   // Huge Power / Pure Power: doubles physical attack
   // Source: Showdown -- Huge Power / Pure Power
@@ -496,7 +479,11 @@ function getAttackStat(
 
   // Apply stat stages (with Simple/Unaware adjustments)
   // Body Press uses defense stat stages
-  const stageKey = isBodyPress ? "defense" : isPhysical ? "attack" : "spAttack";
+  const stageKey = isBodyPress
+    ? CORE_STAT_IDS.defense
+    : isPhysical
+      ? CORE_STAT_IDS.attack
+      : CORE_STAT_IDS.spAttack;
   const stage = getEffectiveStatStage(attacker, stageKey, defender);
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
@@ -525,13 +512,13 @@ function getDefenseStat(
   attacker?: ActivePokemon,
   ignoreDefenseStages?: boolean,
 ): number {
-  const statKey = isPhysical ? "defense" : "spDefense";
+  const statKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
   const stats = defender.pokemon.calculatedStats;
   let baseStat = stats ? stats[statKey] : 100;
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
-  const defenderHasKlutz = defender.ability === "klutz";
+  const defenderHasKlutz = defender.ability === CORE_ABILITY_IDS.klutz;
 
   // Deep Sea Scale: 2x SpDef for Clamperl (366)
   // Source: Showdown data/items.ts -- Deep Sea Scale
@@ -552,7 +539,7 @@ function getDefenseStat(
 
   // Assault Vest: 1.5x SpDef
   // Source: Showdown data/items.ts -- Assault Vest onModifySpD
-  if (!defenderHasKlutz && !isPhysical && defenderItem === "assault-vest") {
+  if (!defenderHasKlutz && !isPhysical && defenderItem === CORE_ITEM_IDS.assaultVest) {
     baseStat = Math.floor((baseStat * 150) / 100);
   }
 
@@ -594,8 +581,8 @@ function getDefenseStat(
   }
 
   // Stat stages
-  const defStatKey = isPhysical ? "defense" : "spDefense";
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, "defense");
+  const defStatKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
+  const stage = getEffectiveStatStage(defender, defStatKey, attacker, CORE_STAT_IDS.defense);
 
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
@@ -750,7 +737,7 @@ export function calculateGen8Damage(
 
   // Gem boost: only Normal Gem available in Gen 8, 1.3x via pokeRound
   // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096])
-  const attackerHasEmbargo = attacker.volatileStatuses.has("embargo");
+  const attackerHasEmbargo = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   let gemConsumed = false;
   if (!attackerHasKlutz && !attackerHasEmbargo && attackerItem) {
     const gemType = GEM_ITEMS[attackerItem];
@@ -778,10 +765,10 @@ export function calculateGen8Damage(
   // Source: Showdown data/items.ts -- Soul Dew Gen 7+: onBasePower: chainModify([4915, 4096])
   if (
     !attackerHasKlutz &&
-    attackerItem === "soul-dew" &&
+    attackerItem === CORE_ITEM_IDS.soulDew &&
     (attacker.pokemon.speciesId === LATIAS_SPECIES_ID ||
       attacker.pokemon.speciesId === LATIOS_SPECIES_ID) &&
-    (effectiveMoveType === "psychic" || effectiveMoveType === "dragon")
+    (effectiveMoveType === CORE_TYPE_IDS.psychic || effectiveMoveType === CORE_TYPE_IDS.dragon)
   ) {
     power = pokeRound(power, 4915);
   }
@@ -807,7 +794,10 @@ export function calculateGen8Damage(
 
   // Flash Fire volatile: 1.5x power for Fire moves
   // Source: Showdown data/abilities.ts -- Flash Fire
-  if (effectiveMoveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+  if (
+    effectiveMoveType === CORE_TYPE_IDS.fire &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire)
+  ) {
     power = Math.floor(power * 1.5);
   }
 
@@ -817,7 +807,11 @@ export function calculateGen8Damage(
     attackerAbility === "mold-breaker" ||
     attackerAbility === "teravolt" ||
     attackerAbility === "turboblaze";
-  if (!moldBreaker && defenderAbility === "dry-skin" && effectiveMoveType === "fire") {
+  if (
+    !moldBreaker &&
+    defenderAbility === CORE_ABILITY_IDS.drySkin &&
+    effectiveMoveType === CORE_TYPE_IDS.fire
+  ) {
     power = Math.floor(power * 1.25);
   }
 
@@ -922,8 +916,8 @@ export function calculateGen8Damage(
     if (
       attackerGender &&
       defenderGender &&
-      attackerGender !== "genderless" &&
-      defenderGender !== "genderless"
+      attackerGender !== CORE_GENDERS.genderless &&
+      defenderGender !== CORE_GENDERS.genderless
     ) {
       if (attackerGender === defenderGender) {
         power = Math.floor(power * 1.25);
@@ -997,14 +991,15 @@ export function calculateGen8Damage(
 
   const gravityActive = context.state.gravity?.active ?? false;
   const ironBallGrounded =
-    defender.pokemon.heldItem === "iron-ball" && effectiveMoveType === "ground";
+    defender.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
+    effectiveMoveType === CORE_TYPE_IDS.ground;
 
   if (!moldBreaker) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
       const isLevitateGrounded =
-        defenderAbility === "levitate" &&
-        effectiveMoveType === "ground" &&
+        defenderAbility === CORE_ABILITY_IDS.levitate &&
+        effectiveMoveType === CORE_TYPE_IDS.ground &&
         (gravityActive || ironBallGrounded);
       if (!isLevitateGrounded) {
         return { damage: 0, effectiveness: 0, isCrit, randomFactor: 1 };
@@ -1015,8 +1010,8 @@ export function calculateGen8Damage(
   // Magnet Rise: Ground immunity (not ability-based, Mold Breaker does NOT bypass)
   // Source: Showdown -- Magnet Rise
   if (
-    effectiveMoveType === "ground" &&
-    defender.volatileStatuses.has("magnet-rise") &&
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise) &&
     !gravityActive &&
     !ironBallGrounded
   ) {
@@ -1153,23 +1148,23 @@ export function calculateGen8Damage(
   let effectiveDefenderTypes: readonly PokemonType[] = defender.types;
   if (
     (gravityActive || ironBallGrounded) &&
-    effectiveMoveType === "ground" &&
-    defender.types.includes("flying")
+    effectiveMoveType === CORE_TYPE_IDS.ground &&
+    defender.types.includes(CORE_TYPE_IDS.flying)
   ) {
-    const nonFlyingTypes = defender.types.filter((t) => t !== "flying");
-    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : ["normal"];
+    const nonFlyingTypes = defender.types.filter((t) => t !== CORE_TYPE_IDS.flying);
+    effectiveDefenderTypes = nonFlyingTypes.length > 0 ? nonFlyingTypes : [CORE_TYPE_IDS.normal];
   }
   let effectiveness = getTypeEffectiveness(effectiveMoveType, effectiveDefenderTypes, typeChart);
 
   // Scrappy: Normal and Fighting hit Ghost
   // Source: Showdown data/abilities.ts -- Scrappy
   if (
-    attackerAbility === "scrappy" &&
+    attackerAbility === CORE_ABILITY_IDS.scrappy &&
     effectiveness === 0 &&
-    (effectiveMoveType === "normal" || effectiveMoveType === "fighting") &&
-    defender.types.includes("ghost")
+    (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
+    defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
-    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== "ghost");
+    const nonGhostTypes = effectiveDefenderTypes.filter((t) => t !== CORE_TYPE_IDS.ghost);
     effectiveness =
       nonGhostTypes.length > 0
         ? getTypeEffectiveness(effectiveMoveType, nonGhostTypes, typeChart)
@@ -1345,7 +1340,7 @@ export function calculateGen8Damage(
   // Metronome item: consecutive use boost
   // Source: Showdown data/items.ts -- Metronome onModifyDamage
   if (!attackerHasKlutz && attackerItem === "metronome") {
-    const metronomeState = attacker.volatileStatuses.get("metronome-count");
+    const metronomeState = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
     if (metronomeState?.data?.count) {
       const boostSteps = Math.min((metronomeState.data.count as number) - 1, 5);
       if (boostSteps > 0) {
@@ -1360,8 +1355,8 @@ export function calculateGen8Damage(
   // Source: Showdown data/items.ts -- type-resist berries onSourceModifyDamage
   let typeResistBerryConsumed: string | null = null;
   const defenderItemForBerry = defender.pokemon.heldItem;
-  const defenderHasKlutzForBerry = defender.ability === "klutz";
-  const defenderHasEmbargoForBerry = defender.volatileStatuses.has("embargo");
+  const defenderHasKlutzForBerry = defender.ability === CORE_ABILITY_IDS.klutz;
+  const defenderHasEmbargoForBerry = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
   const magicRoomActive = context.state?.magicRoom?.active ?? false;
   if (
     defenderItemForBerry &&
@@ -1373,7 +1368,7 @@ export function calculateGen8Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === "normal" || effectiveness > 1) {
+      if (resistType === CORE_TYPE_IDS.normal || effectiveness > 1) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound
         typeResistBerryConsumed = defenderItemForBerry;
       }
@@ -1395,8 +1390,11 @@ export function calculateGen8Damage(
   // Source: Showdown data/items.ts -- type-resist berries: consumed after activation
   if (typeResistBerryConsumed) {
     defender.pokemon.heldItem = null;
-    if (defender.ability === "unburden" && !defender.volatileStatuses.has("unburden")) {
-      defender.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      defender.ability === CORE_ABILITY_IDS.unburden &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
   }
 
@@ -1409,8 +1407,11 @@ export function calculateGen8Damage(
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
     attacker.pokemon.heldItem = null;
-    if (attacker.ability === "unburden" && !attacker.volatileStatuses.has("unburden")) {
-      attacker.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    if (
+      attacker.ability === CORE_ABILITY_IDS.unburden &&
+      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+    ) {
+      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
     attacker.volatileStatuses.set("gem-used" as VolatileStatus, { turnsLeft: 1 });
   }

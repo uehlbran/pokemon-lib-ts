@@ -1,4 +1,5 @@
 import type { BattleStat } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS } from "@pokemon-lib-ts/core";
 import type { ActivePokemon } from "../state";
 
 /**
@@ -27,13 +28,13 @@ export function getEffectiveStatStage(
   // Mold Breaker / Turboblaze / Teravolt on the attacker bypasses the defender's abilities.
   // Source: Showdown data/abilities.ts -- moldbreaker/turboblaze/teravolt bypass Unaware/Simple
   const pokemonHasMoldBreaker =
-    pokemon.ability === "mold-breaker" ||
-    pokemon.ability === "turboblaze" ||
-    pokemon.ability === "teravolt";
+    pokemon.ability === CORE_ABILITY_IDS.moldBreaker ||
+    pokemon.ability === CORE_ABILITY_IDS.turboblaze ||
+    pokemon.ability === CORE_ABILITY_IDS.teravolt;
   const opponentHasMoldBreaker =
-    opponent?.ability === "mold-breaker" ||
-    opponent?.ability === "turboblaze" ||
-    opponent?.ability === "teravolt";
+    opponent?.ability === CORE_ABILITY_IDS.moldBreaker ||
+    opponent?.ability === CORE_ABILITY_IDS.turboblaze ||
+    opponent?.ability === CORE_ABILITY_IDS.teravolt;
 
   // Unaware takes priority over Simple — if the opponent has Unaware, stages are 0
   // regardless of whether this Pokemon has Simple.

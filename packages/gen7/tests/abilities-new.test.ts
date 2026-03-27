@@ -13,6 +13,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createIvs,
   createMoveSlot,
@@ -58,9 +59,9 @@ const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN7_NATURE_IDS.hardy).id;
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
 const DEFAULT_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
 const CONTACT_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
-const DISGUISE_BROKEN = "disguise-broken" as const;
-const BATTLE_BOND_TRANSFORMED = "battle-bond-transformed" as const;
-const POWER_CONSTRUCT_TRANSFORMED = "power-construct-transformed" as const;
+const DISGUISE_BROKEN = CORE_VOLATILE_IDS.disguiseBroken;
+const BATTLE_BOND_TRANSFORMED = CORE_VOLATILE_IDS.battleBondTransformed;
+const POWER_CONSTRUCT_TRANSFORMED = CORE_VOLATILE_IDS.powerConstructTransformed;
 
 /**
  * Gen 7 new signature ability tests.

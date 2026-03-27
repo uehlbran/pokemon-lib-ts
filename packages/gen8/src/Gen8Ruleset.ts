@@ -17,7 +17,11 @@ import type {
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { BaseRuleset } from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BaseRuleset,
+} from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
@@ -30,6 +34,13 @@ import type {
   TwoTurnMoveVolatile,
   TypeChart,
   VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
@@ -237,7 +248,13 @@ export class Gen8Ruleset extends BaseRuleset {
    * Source: Bulbapedia -- G-Max Steelsurge (Copperajah G-Max move)
    */
   override getAvailableHazards(): readonly EntryHazardType[] {
-    return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web", "gmax-steelsurge"];
+    return [
+      CORE_HAZARD_IDS.stealthRock,
+      CORE_HAZARD_IDS.spikes,
+      CORE_HAZARD_IDS.toxicSpikes,
+      CORE_HAZARD_IDS.stickyWeb,
+      CORE_HAZARD_IDS.gmaxSteelsurge,
+    ];
   }
 
   /**
@@ -322,7 +339,14 @@ export class Gen8Ruleset extends BaseRuleset {
             context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
           return {
             activated: true,
-            effects: [{ effectType: "stat-change", target: "opponent", stat, stages }],
+            effects: [
+              {
+                effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+                target: BATTLE_EFFECT_TARGETS.opponent,
+                stat,
+                stages,
+              },
+            ],
             messages: [`${name}'s Mirror Armor reflected the stat drop!`],
           };
         }
@@ -382,46 +406,46 @@ export class Gen8Ruleset extends BaseRuleset {
    */
   override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return [
-      "weather-damage",
-      "future-attack",
-      "wish",
-      "weather-healing",
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
       "shed-skin",
-      "leech-seed",
-      "leftovers",
-      "black-sludge",
-      "aqua-ring",
-      "ingrain",
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.aquaRing,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
       "poison-heal",
-      "grassy-terrain-heal",
-      "status-damage",
-      "nightmare",
-      "curse",
+      CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
       "bad-dreams",
-      "bind",
-      "yawn-countdown",
-      "encore-countdown",
-      "taunt-countdown",
-      "disable-countdown",
-      "heal-block-countdown",
-      "embargo-countdown",
-      "magnet-rise-countdown",
-      "perish-song",
-      "screen-countdown",
-      "safeguard-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
-      "magic-room-countdown",
-      "wonder-room-countdown",
-      "gravity-countdown",
-      "slow-start-countdown",
-      "terrain-countdown",
-      "weather-countdown",
-      "toxic-orb-activation",
-      "flame-orb-activation",
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magicRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.wonderRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
       "speed-boost",
       "moody",
-      "healing-items",
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
     ];
   }
 
@@ -581,11 +605,11 @@ export class Gen8Ruleset extends BaseRuleset {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const heldItem = defender.pokemon.heldItem;
     const itemSuppressed =
-      defender.ability === "klutz" ||
-      defender.volatileStatuses.has("embargo") ||
+      defender.ability === CORE_ABILITY_IDS.klutz ||
+      defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo) ||
       (state.magicRoom?.active ?? false);
     if (
-      heldItem === "focus-sash" &&
+      heldItem === CORE_ITEM_IDS.focusSash &&
       !itemSuppressed &&
       currentHp === maxHp &&
       damage >= currentHp
@@ -594,7 +618,7 @@ export class Gen8Ruleset extends BaseRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on with its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 

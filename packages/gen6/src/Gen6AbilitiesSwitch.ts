@@ -1,5 +1,15 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { AbilityTrigger, MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import {
+  CORE_GENDERS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN6_ABILITY_IDS, GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 6 switch-in, contact, switch-out, and passive ability handlers.
@@ -52,7 +62,11 @@ function getOpponentName(ctx: AbilityContext): string {
 // Mold Breaker variants
 // Source: Showdown data/abilities.ts — onModifyMove: move.ignoreAbility = true
 // ---------------------------------------------------------------------------
-const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"]);
+export const MOLD_BREAKER_ALIASES: ReadonlySet<string> = new Set([
+  GEN6_ABILITY_IDS.moldBreaker,
+  GEN6_ABILITY_IDS.teravolt,
+  GEN6_ABILITY_IDS.turboblaze,
+]);
 
 /**
  * Abilities that cannot be overwritten by Mummy in Gen 6.
@@ -62,7 +76,22 @@ const MOLD_BREAKER_ALIASES = new Set(["mold-breaker", "teravolt", "turboblaze"])
  * Source: Showdown data/mods/gen6/abilities.ts — cantsuppress flag for Gen 6
  * Source: Showdown data/abilities.ts — { cantsuppress: 1 } flag
  */
-const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "stance-change", "zen-mode"]);
+export const UNSUPPRESSABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN6_ABILITY_IDS.multitype,
+  GEN6_ABILITY_IDS.stanceChange,
+  GEN6_ABILITY_IDS.zenMode,
+]);
+
+export const TRACE_UNCOPYABLE_ABILITIES: ReadonlySet<string> = new Set([
+  GEN6_ABILITY_IDS.trace,
+  GEN6_ABILITY_IDS.multitype,
+  GEN6_ABILITY_IDS.forecast,
+  GEN6_ABILITY_IDS.illusion,
+  GEN6_ABILITY_IDS.flowerGift,
+  GEN6_ABILITY_IDS.imposter,
+  GEN6_ABILITY_IDS.zenMode,
+  GEN6_ABILITY_IDS.stanceChange,
+]);
 
 // Bulletproof uses the move.flags.bullet flag (see handler and isBulletproofBlocked).
 // Source: Showdown data/abilities.ts — bulletproof: `move.flags['bullet']`
@@ -72,13 +101,13 @@ const UNSUPPRESSABLE_ABILITIES = new Set(["multitype", "stance-change", "zen-mod
  * Move IDs that Aroma Veil blocks (mental interference moves).
  * Source: Showdown data/abilities.ts — aromaveil: blocks moves targeting mental freedom
  */
-const AROMA_VEIL_BLOCKED_MOVES = new Set([
-  "taunt",
-  "encore",
-  "torment",
-  "disable",
-  "heal-block",
-  "attract",
+export const AROMA_VEIL_BLOCKED_MOVES: ReadonlySet<string> = new Set([
+  GEN6_MOVE_IDS.taunt,
+  GEN6_MOVE_IDS.encore,
+  GEN6_MOVE_IDS.torment,
+  GEN6_MOVE_IDS.disable,
+  GEN6_MOVE_IDS.healBlock,
+  GEN6_MOVE_IDS.attract,
 ]);
 
 // ---------------------------------------------------------------------------
@@ -141,9 +170,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       if (ctx.opponent.substituteHp > 0) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "opponent",
-        stat: "attack",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.opponent,
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -158,7 +187,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // PP cost increase handled elsewhere (getPPCost)
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is exerting its Pressure!`],
       };
     }
@@ -169,7 +200,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Drizzle Gen VI: "Summons rain for 5 turns on entry."
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "rain", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.rain,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Drizzle made it rain!`],
       };
     }
@@ -178,7 +216,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/mods/gen6/abilities.ts — Drought sets 5-turn sun in Gen 6
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "sun", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sun,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Drought intensified the sun's rays!`],
       };
     }
@@ -187,7 +232,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/mods/gen6/abilities.ts — Sand Stream sets 5-turn sandstorm in Gen 6
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "sand", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.sand,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Sand Stream whipped up a sandstorm!`],
       };
     }
@@ -196,7 +248,14 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/mods/gen6/abilities.ts — Snow Warning sets 5-turn hail in Gen 6
       return {
         activated: true,
-        effects: [{ effectType: "weather-set", target: "field", weather: "hail", weatherTurns: 5 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.weatherSet,
+            target: BATTLE_EFFECT_TARGETS.field,
+            weather: CORE_WEATHER_IDS.hail,
+            weatherTurns: 5,
+          },
+        ],
         messages: [`${name}'s Snow Warning made it hail!`],
       };
     }
@@ -210,37 +269,39 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       if (!foeStats) return NO_EFFECT;
 
       const raisesAtk = foeStats.defense < foeStats.spDefense;
-      const stat = raisesAtk ? ("attack" as const) : ("spAttack" as const);
+      const stat = raisesAtk ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
       const statName = raisesAtk ? "Attack" : "Sp. Atk";
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat, stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Download raised its ${statName}!`],
       };
     }
 
     case "trace": {
       // Source: Showdown data/abilities.ts — Trace: copies opponent's ability
-      // Gen 6 ban list adds "power-construct", "stance-change" to Gen 5 list
-      // Source: Bulbapedia — Trace Gen VI: cannot copy Power Construct, Stance Change
+      // Gen 6 ban list adds Stance Change to the Gen 5 list.
+      // Power Construct is Gen 7-only and is not part of the Gen 6 surface.
       if (!ctx.opponent) return NO_EFFECT;
-      const uncopyable = [
-        "trace",
-        "multitype",
-        "forecast",
-        "illusion",
-        "flower-gift",
-        "imposter",
-        "zen-mode",
-        "stance-change",
-        "power-construct",
-      ];
       const opponentAbility = ctx.opponent.ability;
-      if (!opponentAbility || uncopyable.includes(opponentAbility)) return NO_EFFECT;
+      if (!opponentAbility || TRACE_UNCOPYABLE_ABILITIES.has(opponentAbility)) return NO_EFFECT;
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "self", newAbility: opponentAbility }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            newAbility: opponentAbility,
+          },
+        ],
         messages: [`${name} traced ${oppName}'s ${opponentAbility}!`],
       };
     }
@@ -249,7 +310,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Mold Breaker switch-in announcement
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} breaks the mold!`],
       };
     }
@@ -259,7 +322,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Functionally identical to Mold Breaker; separate message
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a bursting aura!`],
       };
     }
@@ -269,7 +334,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Functionally identical to Mold Breaker; separate message
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is radiating a blazing aura!`],
       };
     }
@@ -282,7 +349,9 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} transformed into ${oppName}!`],
       };
     }
@@ -291,7 +360,13 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Illusion: sets volatile on switch-in
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "self", volatile: "illusion" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.illusion,
+          },
+        ],
         messages: [],
       };
     }
@@ -303,10 +378,12 @@ function handleSwitchIn(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Stance Change: "Changes from Shield Forme to Blade Forme before
       //   using an attack move and from Blade Forme to Shield Forme when using King's Shield."
       // Only species 681 (Aegislash) has Stance Change
-      if (ctx.pokemon.pokemon.speciesId !== 681) return NO_EFFECT;
+      if (ctx.pokemon.pokemon.speciesId !== GEN6_SPECIES_IDS.aegislash) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -337,7 +414,13 @@ function handleSwitchOut(ctx: AbilityContext): AbilityResult {
       const healAmount = Math.max(1, Math.floor(maxHp / 3));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmount }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmount,
+          },
+        ],
         messages: [`${name}'s Regenerator restored its HP!`],
       };
     }
@@ -348,7 +431,12 @@ function handleSwitchOut(ctx: AbilityContext): AbilityResult {
       if (!ctx.pokemon.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-cure", target: "self" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusCure,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
+        ],
         messages: [`${name}'s Natural Cure cured its status!`],
       };
     }
@@ -392,7 +480,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [`${name}'s Static paralyzed the attacker!`],
       };
     }
@@ -405,7 +499,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [`${name}'s Flame Body burned the attacker!`],
       };
     }
@@ -418,7 +518,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [`${name}'s Poison Point poisoned the attacker!`],
       };
     }
@@ -432,7 +538,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const abilityName = abilityId === "rough-skin" ? "Rough Skin" : "Iron Barbs";
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s ${abilityName} hurt the attacker!`],
       };
     }
@@ -445,29 +557,47 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Gen 6: Overcoat blocks Effect Spore
       const otherStatus = other.pokemon.status;
       if (otherStatus) return NO_EFFECT;
-      if (other.types.includes("grass")) return NO_EFFECT;
+      if (other.types.includes(CORE_TYPE_IDS.grass)) return NO_EFFECT;
       // Overcoat blocks powder/spore moves in Gen 6 (including Effect Spore)
       // Source: Showdown data/mods/gen6/abilities.ts — overcoat: blocks powder flag
-      if (other.ability === "overcoat") return NO_EFFECT;
+      if (other.ability === GEN6_ABILITY_IDS.overcoat) return NO_EFFECT;
       const roll = Math.floor(ctx.rng.next() * 100);
       if (roll < 10) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: CORE_STATUS_IDS.sleep,
+            },
+          ],
           messages: [`${name}'s Effect Spore put the attacker to sleep!`],
         };
       }
       if (roll < 20) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: CORE_STATUS_IDS.paralysis,
+            },
+          ],
           messages: [`${name}'s Effect Spore paralyzed the attacker!`],
         };
       }
       if (roll < 30) {
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [
+            {
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+              target: BATTLE_EFFECT_TARGETS.opponent,
+              status: CORE_STATUS_IDS.poison,
+            },
+          ],
           messages: [`${name}'s Effect Spore poisoned the attacker!`],
         };
       }
@@ -483,15 +613,21 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (
         !defenderGender ||
         !attackerGender ||
-        defenderGender === "genderless" ||
-        attackerGender === "genderless" ||
+        defenderGender === CORE_GENDERS.genderless ||
+        attackerGender === CORE_GENDERS.genderless ||
         defenderGender === attackerGender
       ) {
         return NO_EFFECT;
       }
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            volatile: CORE_VOLATILE_IDS.infatuation,
+          },
+        ],
         messages: [`${name}'s Cute Charm infatuated the attacker!`],
       };
     }
@@ -505,7 +641,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       const chipDamage = Math.max(1, Math.floor(otherMaxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [`${name}'s Aftermath hurt the attacker!`],
       };
     }
@@ -514,13 +656,23 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Mummy: contact changes attacker's ability to Mummy.
       // Cannot overwrite unsuppressable abilities or Mummy itself.
       const otherAbility = other.ability;
-      if (!otherAbility || otherAbility === "mummy" || UNSUPPRESSABLE_ABILITIES.has(otherAbility)) {
+      if (
+        !otherAbility ||
+        otherAbility === GEN6_ABILITY_IDS.mummy ||
+        UNSUPPRESSABLE_ABILITIES.has(otherAbility)
+      ) {
         return NO_EFFECT;
       }
       const oppName = getOpponentName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "ability-change", target: "opponent", newAbility: "mummy" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            newAbility: GEN6_ABILITY_IDS.mummy,
+          },
+        ],
         messages: [`${oppName}'s ability became Mummy!`],
       };
     }
@@ -533,7 +685,13 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [`${name}'s Poison Touch poisoned the target!`],
       };
     }
@@ -551,13 +709,18 @@ function handleOnContact(ctx: AbilityContext): AbilityResult {
       other.pokemon.heldItem = null;
 
       // Unburden activates if the victim (attacker) loses its item
-      if (other.ability === "unburden" && !other.volatileStatuses.has("unburden")) {
-        other.volatileStatuses.set("unburden", { turnsLeft: -1 });
+      if (
+        other.ability === GEN6_ABILITY_IDS.unburden &&
+        !other.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+      ) {
+        other.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
       }
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Pickpocket stole ${oppName}'s ${stolenItem}!`],
       };
     }
@@ -588,15 +751,15 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Cursed Body: 30% to disable attacker's move
       // Source: Bulbapedia — Cursed Body: "30% chance of disabling the attacker's move."
       if (!ctx.opponent) return NO_EFFECT;
-      if (ctx.opponent.volatileStatuses.has("disable")) return NO_EFFECT;
+      if (ctx.opponent.volatileStatuses.has(CORE_VOLATILE_IDS.disable)) return NO_EFFECT;
       if (ctx.rng.next() >= 0.3) return NO_EFFECT;
       return {
         activated: true,
         effects: [
           {
-            effectType: "volatile-inflict",
-            target: "opponent",
-            volatile: "disable",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            volatile: CORE_VOLATILE_IDS.disable,
             data: { turnsLeft: 4 },
           },
         ],
@@ -608,21 +771,34 @@ function handleOnDamageTaken(ctx: AbilityContext): AbilityResult {
       // Source: Showdown data/abilities.ts — Rattled: +1 Speed when hit by Bug/Dark/Ghost move
       const moveType = ctx.move?.type;
       if (!moveType) return NO_EFFECT;
-      const rattledTypes: PokemonType[] = ["bug", "dark", "ghost"];
+      const rattledTypes: PokemonType[] = [
+        CORE_TYPE_IDS.bug,
+        CORE_TYPE_IDS.dark,
+        CORE_TYPE_IDS.ghost,
+      ];
       if (!rattledTypes.includes(moveType)) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.speed,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Rattled raised its Speed!`],
       };
     }
 
     case "illusion": {
       // Source: Showdown data/abilities.ts — Illusion: breaks on damaging hit
-      if (!ctx.pokemon.volatileStatuses.has("illusion")) return NO_EFFECT;
+      if (!ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.illusion)) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Illusion was broken!`],
       };
     }
@@ -656,11 +832,23 @@ function handleOnStatusInflicted(ctx: AbilityContext): AbilityResult {
       if (!ctx.opponent) return NO_EFFECT;
       const status = ctx.pokemon.pokemon.status;
       if (!status) return NO_EFFECT;
-      if (status !== "burn" && status !== "paralysis" && status !== "poison") return NO_EFFECT;
+      if (
+        status !== CORE_STATUS_IDS.burn &&
+        status !== CORE_STATUS_IDS.paralysis &&
+        status !== CORE_STATUS_IDS.poison
+      ) {
+        return NO_EFFECT;
+      }
       if (ctx.opponent.pokemon.status) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statusInflict,
+            target: BATTLE_EFFECT_TARGETS.opponent,
+            status,
+          },
+        ],
         messages: [`${name}'s Synchronize spread ${status}!`],
       };
     }
@@ -696,19 +884,23 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
     case "levitate": {
       // Source: Showdown data/abilities.ts — Levitate: immune to Ground moves
       // Gravity and Iron Ball grounding handled in Gen6Abilities.ts passive-immunity case
-      if (moveType !== "ground") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.ground) return NO_EFFECT;
       return { activated: true, effects: [], messages: [] };
     }
 
     case "flash-fire": {
       // Source: Showdown data/abilities.ts — Flash Fire: Fire immune + volatile boost
-      if (moveType !== "fire") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.fire) return NO_EFFECT;
       // Frozen Pokemon cannot activate Flash Fire; the Fire move thaws them instead
-      if (ctx.pokemon.pokemon.status === "freeze") return NO_EFFECT;
-      const hasBoost = ctx.pokemon.volatileStatuses.has("flash-fire");
+      if (ctx.pokemon.pokemon.status === CORE_STATUS_IDS.freeze) return NO_EFFECT;
+      const hasBoost = ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire);
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {
-        effects.push({ effectType: "volatile-inflict", target: "self", volatile: "flash-fire" });
+        effects.push({
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
+          volatile: CORE_VOLATILE_IDS.flashFire,
+        });
       }
       const ffName = getName(ctx);
       return {
@@ -724,34 +916,53 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "water-absorb": {
       // Source: Showdown data/abilities.ts — Water Absorb: Water immune + heal 1/4 HP
-      if (moveType !== "water") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.water) return NO_EFFECT;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmt,
+          },
+        ],
         messages: [],
       };
     }
 
     case "volt-absorb": {
       // Source: Showdown data/abilities.ts — Volt Absorb: Electric immune + heal 1/4 HP
-      if (moveType !== "electric") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.electric) return NO_EFFECT;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmt,
+          },
+        ],
         messages: [],
       };
     }
 
     case "motor-drive": {
       // Source: Showdown data/abilities.ts — Motor Drive: Electric immune + Speed +1
-      if (moveType !== "electric") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.electric) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.speed,
+            stages: 1,
+          },
+        ],
         messages: [],
       };
     }
@@ -759,12 +970,18 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
     case "dry-skin": {
       // Source: Showdown data/abilities.ts — Dry Skin: Water immune + heal 1/4 HP
       // (Fire weakness is in damage calc, not here)
-      if (moveType !== "water") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.water) return NO_EFFECT;
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: healAmt,
+          },
+        ],
         messages: [],
       };
     }
@@ -779,7 +996,9 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
         const name = getName(ctx);
         return {
           activated: true,
-          effects: [{ effectType: "none", target: "self" }],
+          effects: [
+            { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+          ],
           messages: [`${name}'s Overcoat protected it from the powder move!`],
         };
       }
@@ -795,10 +1014,17 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
 
     case "sap-sipper": {
       // Source: Showdown data/abilities.ts — Sap Sipper: Grass immune + Atk +1
-      if (moveType !== "grass") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.grass) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "attack", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.attack,
+            stages: 1,
+          },
+        ],
         messages: [],
       };
     }
@@ -808,27 +1034,43 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
       // This is a passive flag checked by engine when applying indirect damage.
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
 
     case "storm-drain": {
       // Source: Showdown data/abilities.ts — Storm Drain: Water immune + SpAtk +1
-      if (moveType !== "water") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.water) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "spAttack", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.spAttack,
+            stages: 1,
+          },
+        ],
         messages: [],
       };
     }
 
     case "lightning-rod": {
       // Source: Showdown data/abilities.ts — Lightning Rod: Electric immune + SpAtk +1
-      if (moveType !== "electric") return NO_EFFECT;
+      if (moveType !== CORE_TYPE_IDS.electric) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "spAttack", stages: 1 }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.spAttack,
+            stages: 1,
+          },
+        ],
         messages: [],
       };
     }
@@ -842,7 +1084,9 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
       const name = getName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Bulletproof protected it!`],
       };
     }
@@ -858,7 +1102,9 @@ function handlePassiveImmunity(ctx: AbilityContext): AbilityResult {
       const name = getName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Sweet Veil prevents sleep!`],
       };
     }
@@ -886,12 +1132,14 @@ function handleOnStatChange(ctx: AbilityContext): AbilityResult {
       // Big Pecks only blocks Defense drops.
       // Source: Showdown data/abilities.ts — Big Pecks onTryBoost:
       //   if (boost.def && boost.def < 0) { delete boost.def; ... }
-      if (ctx.statChange?.stat !== "defense" || (ctx.statChange?.stages ?? 0) >= 0) {
+      if (ctx.statChange?.stat !== CORE_STAT_IDS.defense || (ctx.statChange?.stages ?? 0) >= 0) {
         return NO_EFFECT;
       }
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Big Pecks prevents its Defense from being lowered!`],
       };
     }
@@ -903,14 +1151,16 @@ function handleOnStatChange(ctx: AbilityContext): AbilityResult {
       //   stats and protects them from status conditions."
       // In singles, protects the holder only if it's Grass type.
       const holderTypes = ctx.pokemon.types;
-      if (!holderTypes.includes("grass")) return NO_EFFECT;
+      if (!holderTypes.includes(CORE_TYPE_IDS.grass)) return NO_EFFECT;
       // Only block drops (negative stages) caused by the opponent
       if ((ctx.statChange?.stages ?? 0) >= 0) return NO_EFFECT;
       // Only block opponent-caused drops (not self-inflicted drops like Superpower)
       if (!ctx.opponent) return NO_EFFECT;
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name}'s Flower Veil prevented its stats from being lowered!`],
       };
     }
@@ -946,7 +1196,9 @@ function handleOnAccuracyCheck(ctx: AbilityContext): AbilityResult {
       // Source: Bulbapedia — Victory Star: "Raises accuracy of user and allies by 10%."
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [],
       };
     }
@@ -1002,12 +1254,12 @@ function moveInflictsSleep(move: MoveData): boolean {
 function effectCausesSleep(effect: NonNullable<MoveData["effect"]>): boolean {
   switch (effect.type) {
     case "status-guaranteed":
-      return effect.status === "sleep";
+      return effect.status === CORE_STATUS_IDS.sleep;
     case "status-chance":
-      return effect.status === "sleep";
+      return effect.status === CORE_STATUS_IDS.sleep;
     case "volatile-status":
       // Yawn causes sleep the following turn
-      return effect.status === "yawn";
+      return effect.status === CORE_VOLATILE_IDS.yawn;
     case "multi":
       return effect.effects.some((e) => effectCausesSleep(e));
     default:

@@ -1,6 +1,7 @@
 import type {
   AbilityTrigger,
   BattleStat,
+  CORE_STAT_IDS,
   EntryHazardType,
   Generation,
   MoveCategory,
@@ -16,6 +17,11 @@ import type {
   VolatileStatusByGeneration,
   WeatherType,
 } from "@pokemon-lib-ts/core";
+import type {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+} from "../constants/effect-protocol";
 import type { BattleEvent } from "../events/BattleEvent";
 import type {
   ActivePokemon,
@@ -171,6 +177,12 @@ export interface MoveEffectContext {
   readonly defenderSelectedMove?: { id: string; category: MoveCategory } | null;
 }
 
+export type MoveEffectSideTarget =
+  | typeof BATTLE_EFFECT_TARGETS.attacker
+  | typeof BATTLE_EFFECT_TARGETS.defender;
+
+export type MoveEffectSideTargetWithBoth = MoveEffectSideTarget | typeof BATTLE_EFFECT_TARGETS.both;
+
 /**
  * Structured result produced by `GenerationRuleset.executeMoveEffect()`.
  * The engine reads these fields and applies each effect to the battle state,
@@ -196,7 +208,7 @@ export interface MoveEffectResult {
   } | null;
   /** Stat stage changes to apply; empty array means no stat changes */
   readonly statChanges: ReadonlyArray<{
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     stat: BattleStat;
     stages: number;
   }>;
@@ -230,21 +242,25 @@ export interface MoveEffectResult {
   /** Freeform messages to emit as `MessageEvent`s after the move resolves */
   readonly messages: readonly string[];
   /** Wave 1: Set a screen (Reflect/Light Screen) on the attacker's side */
-  readonly screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  readonly screenSet?: {
+    screen: string;
+    turnsLeft: number;
+    side: MoveEffectSideTarget;
+  } | null;
   /** Wave 1: Attacker faints after using the move (Explosion, Self-Destruct) */
   readonly selfFaint?: boolean;
   /** Wave 1: Skip recharge next turn (e.g., Hyper Beam KO'd the target) */
   readonly noRecharge?: boolean;
   /** Wave 1: Custom damage to apply to a target (for OHKO, fixed-damage, Counter) */
   readonly customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     amount: number;
     source: string;
     /** The type of the move dealing this damage, for lastDamageType tracking */
     type?: PokemonType | null;
   } | null;
   /** Cure the target's status AND reset their stat stages (e.g., Haze cures defender's status) */
-  readonly statusCured?: { target: "attacker" | "defender" | "both" } | null;
+  readonly statusCured?: { target: MoveEffectSideTargetWithBoth } | null;
   /** Wave 2/3: Data for volatile status infliction (turnsLeft, etc.) */
   readonly volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   readonly weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
@@ -259,13 +275,13 @@ export interface MoveEffectResult {
   } | null;
   readonly hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
   readonly volatilesToClear?: ReadonlyArray<{
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     volatile: VolatileStatus;
   }>;
-  readonly clearSideHazards?: "attacker" | "defender";
-  readonly itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+  readonly clearSideHazards?: MoveEffectSideTarget;
+  readonly itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
-  readonly screensCleared?: "attacker" | "defender" | "both" | null;
+  readonly screensCleared?: MoveEffectSideTargetWithBoth | null;
   /**
    * When set alongside `screensCleared`, only remove screens whose type is in this list.
    * E.g., Brick Break sets `["reflect", "light-screen"]` to avoid removing Safeguard.
@@ -275,9 +291,9 @@ export interface MoveEffectResult {
    */
   readonly screenTypesToRemove?: readonly string[];
   /** Reset stat stages for target(s) WITHOUT curing status (e.g. Haze resets attacker stages) */
-  readonly statStagesReset?: { target: "attacker" | "defender" | "both" } | null;
+  readonly statStagesReset?: { target: MoveEffectSideTargetWithBoth } | null;
   /** Cure the attacker's status WITHOUT resetting stat stages (unlike statusCured which is Haze-only) */
-  readonly statusCuredOnly?: { target: "attacker" | "defender" | "both" } | null;
+  readonly statusCuredOnly?: { target: MoveEffectSideTargetWithBoth } | null;
   /**
    * Cure primary status on ALL Pokemon on the specified side's team (including bench).
    * Used by Aromatherapy and Heal Bell which cure the entire party, not just the active Pokemon.
@@ -285,7 +301,7 @@ export interface MoveEffectResult {
    * Source: Bulbapedia -- "Aromatherapy cures the status conditions of all Pokemon on the user's team"
    * Source: Showdown data/moves.ts -- aromatherapy: { target: 'allyTeam' }
    */
-  readonly teamStatusCure?: { side: "attacker" | "defender" } | null;
+  readonly teamStatusCure?: { side: MoveEffectSideTarget } | null;
   /**
    * Change the active ability of the attacker or defender.
    * Used by Entrainment (replaces target's ability with user's ability),
@@ -294,7 +310,7 @@ export interface MoveEffectResult {
    * Source: Showdown data/moves.ts -- entrainment: target.setAbility(source.ability)
    */
   readonly abilityChange?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     ability: string;
   } | null;
   /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */
@@ -304,7 +320,7 @@ export interface MoveEffectResult {
   /** Data for selfVolatileInflicted (turnsLeft, etc.) */
   readonly selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   /** Change the types of the attacker or defender */
-  readonly typeChange?: { target: "attacker" | "defender"; types: readonly PokemonType[] } | null;
+  readonly typeChange?: { target: MoveEffectSideTarget; types: readonly PokemonType[] } | null;
   /**
    * Move ID to execute immediately after this move resolves (for Mirror Move, Metronome).
    * No PP is deducted for the recursive move.
@@ -324,7 +340,7 @@ export interface MoveEffectResult {
     originalMoveId: string;
   } | null;
   /** Set Tailwind on a side (Gen 4+) */
-  readonly tailwindSet?: { turnsLeft: number; side: "attacker" | "defender" } | null;
+  readonly tailwindSet?: { turnsLeft: number; side: MoveEffectSideTarget } | null;
   /** Set Trick Room on the field (Gen 4+) */
   readonly trickRoomSet?: { turnsLeft: number } | null;
   /** Schedule a Future Sight / Doom Desire attack on the target side (Gen 2+) */
@@ -488,7 +504,7 @@ export type MoveEffectResultFor<G extends Generation> = Omit<
     blocksAction?: boolean;
   } | null;
   readonly volatilesToClear?: ReadonlyArray<{
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     volatile: VolatileStatusByGeneration<G>;
   }>;
   readonly selfVolatileInflicted?: VolatileStatusByGeneration<G> | null;
@@ -527,7 +543,7 @@ export interface AbilityContext {
   readonly statChange?: {
     readonly stat: BattleStat;
     readonly stages: number;
-    readonly source: "self" | "opponent";
+    readonly source: AbilitySourceTarget;
   };
   /** Whether the current hit is a critical hit (used by Sniper gating). */
   readonly isCrit?: boolean;
@@ -539,83 +555,85 @@ export interface AbilityContext {
  * Result of an ability trigger.
  * Returned by `GenerationRuleset.applyAbility()`.
  */
+type AbilityTarget = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+type AbilityTargetWithAlly = AbilityTarget | typeof BATTLE_EFFECT_TARGETS.ally;
+type AbilityTargetWithField = AbilityTarget | typeof BATTLE_EFFECT_TARGETS.field;
+type AbilitySourceTarget =
+  | typeof BATTLE_EFFECT_TARGETS.self
+  | typeof BATTLE_EFFECT_TARGETS.opponent;
+type StageableBattleStat = Exclude<BattleStat, typeof CORE_STAT_IDS.hp>;
+
 /** Discriminated union of ability effect categories. */
 export type AbilityEffectType =
-  | "stat-change"
-  | "status-cure"
-  | "status-inflict"
-  | "damage-reduction"
-  | "type-change"
-  | "weather-set"
-  | "ability-change"
-  | "heal"
-  | "chip-damage"
-  | "volatile-inflict"
-  | "volatile-remove"
-  | "item-restore"
-  | "none";
+  (typeof BATTLE_ABILITY_EFFECT_TYPES)[keyof typeof BATTLE_ABILITY_EFFECT_TYPES];
 
 /** A single effect produced by an ability trigger — proper discriminated union on effectType. */
 export type AbilityEffect =
   | {
-      readonly effectType: "stat-change";
-      readonly target: "self" | "opponent";
-      readonly stat:
-        | "attack"
-        | "defense"
-        | "spAttack"
-        | "spDefense"
-        | "speed"
-        | "accuracy"
-        | "evasion";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statChange;
+      readonly target: AbilityTarget;
+      readonly stat: StageableBattleStat;
       readonly stages: number;
     }
   | {
-      readonly effectType: "weather-set";
-      readonly target: "field";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.weatherSet;
+      readonly target: typeof BATTLE_EFFECT_TARGETS.field;
       readonly weather: import("@pokemon-lib-ts/core").WeatherType;
       readonly weatherTurns: number;
     }
-  | { readonly effectType: "damage-reduction"; readonly target: "self" | "opponent" }
   | {
-      readonly effectType: "type-change";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.damageReduction;
+      readonly target: AbilityTarget;
+    }
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.typeChange;
+      readonly target: AbilityTarget;
       readonly types: readonly import("@pokemon-lib-ts/core").PokemonType[];
     }
-  | { readonly effectType: "status-cure"; readonly target: "self" | "opponent" | "ally" }
   | {
-      readonly effectType: "ability-change";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statusCure;
+      readonly target: AbilityTargetWithAlly;
+    }
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.abilityChange;
+      readonly target: AbilityTarget;
       readonly newAbility: string;
     }
-  | { readonly effectType: "heal"; readonly target: "self" | "opponent"; readonly value: number }
   | {
-      readonly effectType: "chip-damage";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.heal;
+      readonly target: AbilityTarget;
       readonly value: number;
     }
   | {
-      readonly effectType: "status-inflict";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.chipDamage;
+      readonly target: AbilityTarget;
+      readonly value: number;
+    }
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.statusInflict;
+      readonly target: AbilityTarget;
       readonly status: PrimaryStatus;
     }
   | {
-      readonly effectType: "volatile-inflict";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.volatileInflict;
+      readonly target: AbilityTarget;
       readonly volatile: VolatileStatus;
       readonly data?: Record<string, unknown>;
     }
   | {
-      readonly effectType: "volatile-remove";
-      readonly target: "self" | "opponent";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.volatileRemove;
+      readonly target: AbilityTarget;
       readonly volatile: VolatileStatus;
     }
   | {
-      readonly effectType: "item-restore";
-      readonly target: "self";
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.itemRestore;
+      readonly target: typeof BATTLE_EFFECT_TARGETS.self;
       readonly item: string;
     }
-  | { readonly effectType: "none"; readonly target: "self" | "opponent" | "field" };
+  | {
+      readonly effectType: typeof BATTLE_ABILITY_EFFECT_TYPES.none;
+      readonly target: AbilityTargetWithField;
+    };
 
 export interface AbilityResult {
   /** `true` if the ability actually activated and produced effects */
@@ -666,21 +684,12 @@ export interface ItemContext {
   readonly damage?: number;
 }
 
+type ItemEffectTarget = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+type ItemEffectTargetWithField = ItemEffectTarget | typeof BATTLE_EFFECT_TARGETS.field;
+
 /** Discriminated union of item effect categories. */
 export type ItemEffectType =
-  | "stat-boost"
-  | "heal"
-  | "speed-boost"
-  | "status-cure"
-  | "consume"
-  | "survive"
-  | "flinch"
-  | "volatile-cure"
-  | "status-inflict"
-  | "self-damage"
-  | "chip-damage"
-  | "inflict-status"
-  | "none";
+  (typeof BATTLE_ITEM_EFFECT_TYPES)[keyof typeof BATTLE_ITEM_EFFECT_TYPES];
 
 /**
  * A single effect produced by an item trigger — proper discriminated union on `type`.
@@ -694,47 +703,67 @@ export type ItemEffectType =
  * - `status-inflict`: status via value field (value: PrimaryStatus string); prefer `inflict-status` in new code
  */
 export type ItemEffect =
-  | { readonly type: "heal"; readonly target: "self" | "opponent"; readonly value: number }
-  | { readonly type: "status-cure"; readonly target: "self" | "opponent" }
-  | { readonly type: "consume"; readonly target: "self" | "opponent"; readonly value: string }
-  | { readonly type: "survive"; readonly target: "self"; readonly value: number }
-  | { readonly type: "flinch"; readonly target: "self" | "opponent" }
-  | { readonly type: "volatile-cure"; readonly target: "self" | "opponent"; readonly value: string }
   | {
-      readonly type: "stat-boost";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.heal;
+      readonly target: ItemEffectTarget;
+      readonly value: number;
+    }
+  | { readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.statusCure; readonly target: ItemEffectTarget }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.consume;
+      readonly target: ItemEffectTarget;
+      readonly value: string;
+    }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.survive;
+      readonly target: typeof BATTLE_EFFECT_TARGETS.self;
+      readonly value: number;
+    }
+  | { readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.flinch; readonly target: ItemEffectTarget }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.volatileCure;
+      readonly target: ItemEffectTarget;
+      readonly value: string;
+    }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.statBoost;
+      readonly target: ItemEffectTarget;
       readonly value: string;
       readonly stages?: number;
     }
-  | { readonly type: "speed-boost"; readonly target: "self" | "opponent"; readonly value: number }
+  | {
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.speedBoost;
+      readonly target: ItemEffectTarget;
+      readonly value: number;
+    }
   | {
       /** Chip damage to a target (Life Orb recoil, Black Sludge, Sticky Barb, Rocky Helmet). */
-      readonly type: "chip-damage";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.chipDamage;
+      readonly target: ItemEffectTarget;
       /** HP to subtract from the target (always positive). */
       readonly value: number;
     }
   | {
       /** Inflict a primary status condition on a target (Toxic Orb, Flame Orb). */
-      readonly type: "inflict-status";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.inflictStatus;
+      readonly target: ItemEffectTarget;
       readonly status: PrimaryStatus;
     }
   | {
       /** @deprecated Use `chip-damage` instead. Kept for Gen 3–4 backward compatibility. */
-      readonly type: "self-damage";
-      readonly target: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.selfDamage;
+      readonly target: ItemEffectTarget;
       readonly value: number;
     }
   | {
       /** @deprecated Use `inflict-status` instead. Kept for Gen 3–4 backward compatibility. */
-      readonly type: "status-inflict";
-      readonly target?: "self" | "opponent";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.statusInflict;
+      readonly target?: ItemEffectTarget;
       readonly value: PrimaryStatus;
     }
   | {
-      readonly type: "none";
-      readonly target?: "self" | "opponent" | "field";
+      readonly type: typeof BATTLE_ITEM_EFFECT_TYPES.none;
+      readonly target?: ItemEffectTargetWithField;
       readonly value?: number | string;
     };
 

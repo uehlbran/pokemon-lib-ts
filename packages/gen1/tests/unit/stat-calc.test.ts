@@ -3,6 +3,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   calculateStatExpContribution,
   createDvs,
@@ -22,6 +23,7 @@ const typeIds = CORE_TYPE_IDS;
 const abilitySlots = CORE_ABILITY_SLOTS;
 const genders = CORE_GENDERS;
 const itemIds = CORE_ITEM_IDS;
+const statIds = CORE_STAT_IDS;
 const defaultSpecies = dataManager.getSpecies(GEN1_SPECIES_IDS.bulbasaur);
 
 function createSyntheticSpecies(baseStats: {
@@ -735,7 +737,14 @@ describe("calculateGen1Stats — output validity", () => {
     expect(stats.spAttack).toBe(70);
     expect(stats.spDefense).toBe(70); // Gen 1: unified Special — mirrors spAttack
     expect(stats.speed).toBe(50);
-    for (const key of ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const) {
+    for (const key of [
+      statIds.hp,
+      statIds.attack,
+      statIds.defense,
+      statIds.spAttack,
+      statIds.spDefense,
+      statIds.speed,
+    ] as const) {
       expect(Number.isInteger(stats[key])).toBe(true);
     }
   });
@@ -767,7 +776,14 @@ describe("calculateGen1Stats — output validity", () => {
     expect(stats.spAttack).toBe(5);
     expect(stats.spDefense).toBe(5); // Gen 1: unified Special — mirrors spAttack
     expect(stats.speed).toBe(5);
-    for (const key of ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const) {
+    for (const key of [
+      statIds.hp,
+      statIds.attack,
+      statIds.defense,
+      statIds.spAttack,
+      statIds.spDefense,
+      statIds.speed,
+    ] as const) {
       expect(Number.isInteger(stats[key])).toBe(true);
     }
   });

@@ -37,11 +37,24 @@ import type {
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import type { BattleStat, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import {
+  type BattleStat,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type PokemonType,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import { GEN5_MOVE_IDS } from "./data/reference-ids";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+type MoveEffectCombatTarget =
+  | typeof BATTLE_EFFECT_TARGETS.attacker
+  | typeof BATTLE_EFFECT_TARGETS.defender;
 
 /**
  * Mutable internal result type used during effect processing.
@@ -50,7 +63,7 @@ import type { BattleStat, PokemonType, VolatileStatus } from "@pokemon-lib-ts/co
 type MutableResult = {
   statusInflicted: import("@pokemon-lib-ts/core").PrimaryStatus | null;
   volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+  statChanges: Array<{ target: MoveEffectCombatTarget; stat: BattleStat; stages: number }>;
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
@@ -58,7 +71,7 @@ type MutableResult = {
   messages: string[];
   selfFaint?: boolean;
   customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectCombatTarget;
     amount: number;
     source: string;
     type?: PokemonType | null;
@@ -270,10 +283,10 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
       const userHp = ctx.attacker.pokemon.currentHp;
       result.selfFaint = true;
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: userHp,
-        source: "final-gambit",
-        type: "fighting",
+        source: GEN5_MOVE_IDS.finalGambit,
+        type: CORE_TYPE_IDS.fighting,
       };
       result.messages.push(`${attackerName} risked everything in a final gambit!`);
       return result;
@@ -299,11 +312,11 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "shell-smash": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "attack", stages: 2 },
-        { target: "attacker", stat: "spAttack", stages: 2 },
-        { target: "attacker", stat: "speed", stages: 2 },
-        { target: "attacker", stat: "defense", stages: -1 },
-        { target: "attacker", stat: "spDefense", stages: -1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 2 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 2 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.speed, stages: 2 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: -1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: -1 },
       );
       result.messages.push(`${attackerName} broke its shell!`);
       return result;
@@ -317,9 +330,9 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "coil": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "attack", stages: 1 },
-        { target: "attacker", stat: "defense", stages: 1 },
-        { target: "attacker", stat: "accuracy", stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.accuracy, stages: 1 },
       );
       return result;
     }
@@ -332,9 +345,9 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "quiver-dance": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "spAttack", stages: 1 },
-        { target: "attacker", stat: "spDefense", stages: 1 },
-        { target: "attacker", stat: "speed", stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.speed, stages: 1 },
       );
       return result;
     }
@@ -347,7 +360,11 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     // -----------------------------------------------------------------
     case "flame-charge": {
       const result = emptyResult();
-      result.statChanges.push({ target: "attacker", stat: "speed", stages: 1 });
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.speed,
+        stages: 1,
+      });
       return result;
     }
 
@@ -359,8 +376,8 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "work-up": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "attack", stages: 1 },
-        { target: "attacker", stat: "spAttack", stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 1 },
       );
       return result;
     }
@@ -373,8 +390,8 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "hone-claws": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "attack", stages: 1 },
-        { target: "attacker", stat: "accuracy", stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.accuracy, stages: 1 },
       );
       return result;
     }
@@ -387,8 +404,8 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "bulk-up": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "attack", stages: 1 },
-        { target: "attacker", stat: "defense", stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 },
       );
       return result;
     }
@@ -401,8 +418,8 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "calm-mind": {
       const result = emptyResult();
       result.statChanges.push(
-        { target: "attacker", stat: "spAttack", stages: 1 },
-        { target: "attacker", stat: "spDefense", stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spAttack, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: 1 },
       );
       return result;
     }
@@ -415,7 +432,7 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     // -----------------------------------------------------------------
     case "smack-down": {
       const result = emptyResult();
-      result.volatileInflicted = "smackdown" as VolatileStatus;
+      result.volatileInflicted = CORE_VOLATILE_IDS.smackDown as VolatileStatus;
       result.messages.push(`${ctx.defender.pokemon.nickname ?? "The foe"} fell straight down!`);
       return result;
     }
@@ -427,7 +444,11 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     // -----------------------------------------------------------------
     case "low-sweep": {
       const result = emptyResult();
-      result.statChanges.push({ target: "defender", stat: "speed", stages: -1 });
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.defender,
+        stat: CORE_STAT_IDS.speed,
+        stages: -1,
+      });
       return result;
     }
 
@@ -445,7 +466,7 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
       result.messages.push(
         `${ctx.defender.pokemon.nickname ?? "The target"}'s stat changes were removed!`,
       );
-      return { ...result, statStagesReset: { target: "defender" } };
+      return { ...result, statStagesReset: { target: BATTLE_EFFECT_TARGETS.defender } };
     }
 
     // -----------------------------------------------------------------
@@ -468,7 +489,11 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
         // Return a result that signals the move failed (0 damage, no effects)
         return {
           ...result,
-          customDamage: { target: "defender", amount: 0, source: "synchronoise-fail" },
+          customDamage: {
+            target: BATTLE_EFFECT_TARGETS.defender,
+            amount: 0,
+            source: GEN5_MOVE_IDS.synchronoise,
+          },
         };
       }
       // Shared type found -- let normal damage calc handle it
@@ -487,7 +512,7 @@ export function handleGen5CombatMove(ctx: MoveEffectContext): MoveEffectResult |
     case "nature-power": {
       const result = emptyResult();
       result.messages.push("Nature Power turned into Tri Attack!");
-      return { ...result, recursiveMove: "tri-attack" };
+      return { ...result, recursiveMove: GEN5_MOVE_IDS.triAttack };
     }
 
     // -----------------------------------------------------------------

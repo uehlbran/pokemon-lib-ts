@@ -1,4 +1,15 @@
 import type { DataManager, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AbilityResult, EndOfTurnEffect, ItemResult } from "../context";
 import type { BattleEvent } from "../events";
 import type { GenerationRuleset } from "../ruleset";
@@ -60,12 +71,12 @@ function processOnTurnEndAbilities(
     abilityEndOfTurnFired.add(pokeKey);
 
     const opponent = host.getOpponentActive(side.index);
-    const result = host.ruleset.applyAbility("on-turn-end", {
+    const result = host.ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onTurnEnd, {
       pokemon: active,
       opponent: opponent ?? undefined,
       state: host.state,
       rng: host.state.rng,
-      trigger: "on-turn-end",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onTurnEnd,
     });
     if (result.activated) {
       host.processAbilityResult(result, active, opponent ?? active, side.index);
@@ -79,7 +90,7 @@ function processSpecificHeldItemEndOfTurn(host: BattleEndOfTurnPipelineHost, ite
     if (!active || active.pokemon.currentHp <= 0) continue;
     if (active.pokemon.heldItem !== itemId) continue;
 
-    const itemResult = host.ruleset.applyHeldItem("end-of-turn", {
+    const itemResult = host.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon: active,
       state: host.state,
       rng: host.state.rng,
@@ -137,7 +148,7 @@ function processSimpleVolatileCountdown(
 
 function processYawnCountdown(host: BattleEndOfTurnPipelineHost): void {
   forEachLivingActivePokemon(host, (active, sideIndex) => {
-    const yawnState = active.volatileStatuses.get("yawn");
+    const yawnState = active.volatileStatuses.get(CORE_VOLATILE_IDS.yawn);
     if (!yawnState) return;
 
     if (yawnState.turnsLeft > 0) {
@@ -145,9 +156,9 @@ function processYawnCountdown(host: BattleEndOfTurnPipelineHost): void {
     }
     if (yawnState.turnsLeft > 0) return;
 
-    endVolatileStatus(host, active, sideIndex, "yawn");
+    endVolatileStatus(host, active, sideIndex, CORE_VOLATILE_IDS.yawn);
     if (active.pokemon.status === null) {
-      host.applyPrimaryStatus(active, "sleep", sideIndex);
+      host.applyPrimaryStatus(active, CORE_STATUS_IDS.sleep, sideIndex);
     }
   });
 }
@@ -180,77 +191,77 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
 
   for (const effect of effectOrder) {
     switch (effect) {
-      case "weather-damage":
+      case CORE_END_OF_TURN_EFFECT_IDS.weatherDamage:
         host.processWeatherDamage();
         break;
-      case "weather-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown:
         host.processWeatherCountdown();
         break;
-      case "terrain-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown:
         host.processTerrainCountdown();
         break;
-      case "status-damage":
+      case CORE_END_OF_TURN_EFFECT_IDS.statusDamage:
         host.processStatusDamage();
         break;
-      case "screen-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.screenCountdown:
         host.processScreenCountdown();
         break;
-      case "tailwind-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown:
         host.processTailwindCountdown();
         break;
-      case "trick-room-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown:
         host.processTrickRoomCountdown();
         break;
-      case "leftovers":
+      case CORE_END_OF_TURN_EFFECT_IDS.leftovers:
         host.processHeldItemEndOfTurn();
         break;
-      case "leech-seed":
+      case CORE_END_OF_TURN_EFFECT_IDS.leechSeed:
         host.processLeechSeed();
         break;
-      case "perish-song":
+      case CORE_END_OF_TURN_EFFECT_IDS.perishSong:
         host.processPerishSong();
         break;
-      case "curse":
+      case CORE_END_OF_TURN_EFFECT_IDS.curse:
         host.processCurse();
         break;
-      case "nightmare":
+      case CORE_END_OF_TURN_EFFECT_IDS.nightmare:
         host.processNightmare();
         break;
-      case "bind":
+      case CORE_END_OF_TURN_EFFECT_IDS.bind:
         host.processBindDamage();
         break;
-      case "salt-cure":
+      case CORE_END_OF_TURN_EFFECT_IDS.saltCure:
         host.processSaltCureEoT();
         break;
-      case "defrost":
+      case CORE_END_OF_TURN_EFFECT_IDS.defrost:
         host.processDefrost();
         break;
-      case "safeguard-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown:
         host.processSafeguardCountdown();
         break;
-      case "mystery-berry":
+      case CORE_END_OF_TURN_EFFECT_IDS.mysteryBerry:
         host.processMysteryBerry();
         break;
-      case "stat-boosting-items":
+      case CORE_END_OF_TURN_EFFECT_IDS.statBoostingItems:
         host.processStatBoostingItems();
         break;
-      case "healing-items":
+      case CORE_END_OF_TURN_EFFECT_IDS.healingItems:
         host.processHealingItems();
         break;
-      case "encore-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown:
         host.processEncoreCountdown();
         break;
-      case "weather-healing":
-      case "shed-skin":
-      case "poison-heal":
-      case "bad-dreams":
-      case "speed-boost":
-      case "moody":
-      case "harvest":
-      case "pickup":
+      case CORE_END_OF_TURN_EFFECT_IDS.weatherHealing:
+      case CORE_ABILITY_IDS.shedSkin:
+      case CORE_ABILITY_IDS.poisonHeal:
+      case CORE_ABILITY_IDS.badDreams:
+      case CORE_ABILITY_IDS.speedBoost:
+      case CORE_ABILITY_IDS.moody:
+      case CORE_ABILITY_IDS.harvest:
+      case CORE_ABILITY_IDS.pickup:
         processOnTurnEndAbilities(host, abilityEndOfTurnFired);
         break;
-      case "slow-start-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown:
         // Slow Start: decrement turnsLeft on the slow-start volatile each EoT.
         // No ability check: the volatile should tick down even if the ability was
         // temporarily changed (e.g., by Skill Swap). The stat-halving in damage/speed
@@ -259,7 +270,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         // When turnsLeft reaches 0, remove the volatile so the Attack/Speed halving stops.
         // Source: Pokemon Showdown Gen 4 mod — Slow Start countdown
         // Source: Bulbapedia — Slow Start: halves Attack and Speed for 5 turns
-        processSimpleVolatileCountdown(host, "slow-start", (active) => {
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.slowStart, (active) => {
           const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
           host.emit({
             type: "message",
@@ -267,21 +278,21 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           });
         });
         break;
-      case "toxic-orb-activation":
-        processSpecificHeldItemEndOfTurn(host, "toxic-orb");
+      case CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation:
+        processSpecificHeldItemEndOfTurn(host, CORE_ITEM_IDS.toxicOrb);
         break;
-      case "flame-orb-activation":
-        processSpecificHeldItemEndOfTurn(host, "flame-orb");
+      case CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation:
+        processSpecificHeldItemEndOfTurn(host, CORE_ITEM_IDS.flameOrb);
         break;
-      case "black-sludge":
+      case CORE_END_OF_TURN_EFFECT_IDS.blackSludge:
         if (!host.ruleset.hasHeldItems()) break;
-        processSpecificHeldItemEndOfTurn(host, "black-sludge");
+        processSpecificHeldItemEndOfTurn(host, CORE_ITEM_IDS.blackSludge);
         break;
-      case "aqua-ring":
+      case CORE_END_OF_TURN_EFFECT_IDS.aquaRing:
         for (const side of host.state.sides) {
           const active = side.active[0];
           if (!active || active.pokemon.currentHp <= 0) continue;
-          if (!active.volatileStatuses.has("aqua-ring")) continue;
+          if (!active.volatileStatuses.has(BATTLE_SOURCE_IDS.aquaRing)) continue;
           const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
           const healAmount = Math.max(1, Math.floor(maxHp / 16));
           const oldHp = active.pokemon.currentHp;
@@ -295,17 +306,17 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               amount: healed,
               currentHp: active.pokemon.currentHp,
               maxHp,
-              source: "aqua-ring",
+              source: BATTLE_SOURCE_IDS.aquaRing,
             });
           }
         }
         break;
-      case "ingrain":
+      case CORE_END_OF_TURN_EFFECT_IDS.ingrain:
         // Source: Bulbapedia — Ingrain heals 1/16 max HP per turn
         for (const side of host.state.sides) {
           const active = side.active[0];
           if (!active || active.pokemon.currentHp <= 0) continue;
-          if (!active.volatileStatuses.has("ingrain")) continue;
+          if (!active.volatileStatuses.has(BATTLE_SOURCE_IDS.ingrain)) continue;
           const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
           const healAmount = Math.max(1, Math.floor(maxHp / 16));
           const oldHp = active.pokemon.currentHp;
@@ -319,12 +330,12 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               amount: healed,
               currentHp: active.pokemon.currentHp,
               maxHp,
-              source: "ingrain",
+              source: BATTLE_SOURCE_IDS.ingrain,
             });
           }
         }
         break;
-      case "wish":
+      case CORE_END_OF_TURN_EFFECT_IDS.wish:
         for (const side of host.state.sides) {
           if (!side.wish?.active) continue;
           side.wish.turnsLeft--;
@@ -342,7 +353,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                   amount: healAmount,
                   currentHp: active.pokemon.currentHp,
                   maxHp,
-                  source: "wish",
+                  source: BATTLE_SOURCE_IDS.wish,
                 });
               }
             }
@@ -350,7 +361,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           }
         }
         break;
-      case "future-attack":
+      case CORE_END_OF_TURN_EFFECT_IDS.futureAttack:
         for (const side of host.state.sides) {
           if (!side.futureAttack) continue;
           side.futureAttack.turnsLeft--;
@@ -409,27 +420,27 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           }
         }
         break;
-      case "taunt-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown:
         // Taunt volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — "Taunt lasts for 3 turns in Gen 4"
-        processSimpleVolatileCountdown(host, "taunt");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.taunt);
         break;
-      case "disable-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.disableCountdown:
         // Disable volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — "Disable lasts for 4-7 turns in Gen 4"
-        processSimpleVolatileCountdown(host, "disable");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.disable);
         break;
-      case "gravity-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown:
         // Gravity field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown Gen 4 mod — Gravity lasts 5 turns
         processFieldCountdown(host, "gravity", "Gravity returned to normal!");
         break;
-      case "magic-room-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.magicRoomCountdown:
         // Magic Room field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown magicroom condition — duration: 5
         processFieldCountdown(host, "magicRoom", "The area returned to normal!");
         break;
-      case "wonder-room-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.wonderRoomCountdown:
         // Wonder Room field countdown — deactivate when turnsLeft reaches 0
         // Source: Showdown wonderroom condition — duration: 5
         processFieldCountdown(
@@ -438,32 +449,32 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
         );
         break;
-      case "yawn-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown:
         // Yawn volatile countdown — inflict sleep when turnsLeft reaches 0
         // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at
         //   the end of the next turn"
         // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
         processYawnCountdown(host);
         break;
-      case "heal-block-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown:
         // Heal Block volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
         // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
-        processSimpleVolatileCountdown(host, "heal-block");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.healBlock);
         break;
-      case "embargo-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown:
         // Embargo volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
         // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
-        processSimpleVolatileCountdown(host, "embargo");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.embargo);
         break;
-      case "magnet-rise-countdown":
+      case CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown:
         // Magnet Rise volatile countdown — remove when turnsLeft reaches 0
         // Source: Bulbapedia — Magnet Rise: "The user levitates for five turns."
         // Source: Showdown Gen 4 mod — Magnet Rise lasts 5 turns
-        processSimpleVolatileCountdown(host, "magnet-rise");
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.magnetRise);
         break;
-      case "uproar": {
+      case CORE_VOLATILE_IDS.uproar: {
         // Source: pret/pokeemerald -- Uproar: countdown duration, wake sleeping Pokemon
         // Source: Bulbapedia — Uproar prevents sleep while the user is in uproar
         // Note: "uproar" is added to VolatileStatus in core/entities/status.ts
@@ -472,7 +483,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         // still has the uproar volatile. Only wake sleepers if uproar is still active.
         // Previously, the wake check ran inside the same loop as the decrement, so
         // sleepers were woken even when the uproar expired on that turn.
-        const uproarVolatile = "uproar" as import("@pokemon-lib-ts/core").VolatileStatus;
+        const uproarVolatile = CORE_VOLATILE_IDS.uproar;
 
         // Step 1: Decrement uproar counters for all active Pokemon
         for (const side of host.state.sides) {
@@ -513,11 +524,11 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           for (const side of host.state.sides) {
             const active = side.active[0];
             if (!active || active.pokemon.currentHp <= 0) continue;
-            if (active.pokemon.status === "sleep") {
+            if (active.pokemon.status === CORE_STATUS_IDS.sleep) {
               // Soundproof blocks Uproar wake-up (Uproar is a sound-based move/effect)
               // Source: Bulbapedia — Soundproof protects from sound-based effects including Uproar
               // Source: Showdown sim/battle-actions.ts — Soundproof immunity to Uproar
-              if (host.ruleset.hasAbilities() && active.ability === "soundproof") {
+              if (host.ruleset.hasAbilities() && active.ability === CORE_ABILITY_IDS.soundproof) {
                 continue;
               }
               active.pokemon.status = null;
@@ -525,7 +536,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                 type: "status-cure",
                 side: side.index,
                 pokemon: getPokemonName(active),
-                status: "sleep",
+                status: CORE_STATUS_IDS.sleep,
               });
               host.emit({
                 type: "message",
@@ -536,10 +547,10 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         }
         break;
       }
-      case "grassy-terrain-heal": {
+      case CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal: {
         // Gen 6+ terrain: heals grounded Pokemon for 1/16 max HP at EoT.
         // Source: Showdown sim/field.ts — Grassy Terrain heals at residual phase
-        if (host.state.terrain?.type === "grassy") {
+        if (host.state.terrain?.type === CORE_TERRAIN_IDS.grassy) {
           const terrainResults = host.ruleset.applyTerrainEffects(host.state);
           for (const result of terrainResults) {
             const active = host.state.sides[result.side].active[0];
@@ -557,7 +568,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                     amount: healed,
                     currentHp: active.pokemon.currentHp,
                     maxHp,
-                    source: "grassy-terrain",
+                    source: BATTLE_SOURCE_IDS.grassyTerrain,
                   });
                 }
               }

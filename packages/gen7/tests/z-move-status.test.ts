@@ -5,6 +5,8 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_Z_MOVE_EFFECT_IDS,
   createEvs,
   createIvs,
   createMoveSlot,
@@ -24,10 +26,15 @@ import { Gen7ZMove, getZMovePower } from "../src/Gen7ZMove";
 const DATA_MANAGER = createGen7DataManager();
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(GEN7_SPECIES_IDS.pikachu);
 const ZERO_STAT_STAGES = Object.fromEntries(
-  ["attack", "defense", "spAttack", "spDefense", "speed", "accuracy", "evasion"].map((stat) => [
-    stat,
-    0,
-  ]),
+  [
+    CORE_STAT_IDS.attack,
+    CORE_STAT_IDS.defense,
+    CORE_STAT_IDS.spAttack,
+    CORE_STAT_IDS.spDefense,
+    CORE_STAT_IDS.speed,
+    CORE_STAT_IDS.accuracy,
+    CORE_STAT_IDS.evasion,
+  ].map((stat) => [stat, 0]),
 ) as ActivePokemon["statStages"];
 
 // ---------------------------------------------------------------------------
@@ -140,7 +147,7 @@ describe("Status Z-Move: modifyMove preserves original move identity", () => {
 
     const swordsDance = createCanonicalStatusMoveWithZEffect(
       GEN7_MOVE_IDS.swordsDance,
-      "clearnegativeboost",
+      CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost,
     );
 
     const result = zMove.modifyMove(swordsDance, pokemon);
@@ -165,14 +172,14 @@ describe("Status Z-Move: modifyMove preserves original move identity", () => {
 
     const calmMind = createCanonicalStatusMoveWithZEffect(
       GEN7_MOVE_IDS.calmMind,
-      "clearnegativeboost",
+      CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost,
     );
 
     const result = zMove.modifyMove(calmMind, pokemon);
 
     expect(result.id).toBe(GEN7_MOVE_IDS.calmMind);
     expect(result.displayName).toBe(`Z-${calmMind.displayName}`);
-    expect(result.zMoveEffect).toBe("clearnegativeboost");
+    expect(result.zMoveEffect).toBe(CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost);
   });
 });
 
@@ -188,12 +195,15 @@ describe("Status Z-Move: heal effect", () => {
       moves: [{ moveId: GEN7_MOVE_IDS.memento }],
     });
 
-    const statusMove = createCanonicalStatusMoveWithZEffect(GEN7_MOVE_IDS.memento, "heal");
+    const statusMove = createCanonicalStatusMoveWithZEffect(
+      GEN7_MOVE_IDS.memento,
+      CORE_Z_MOVE_EFFECT_IDS.heal,
+    );
 
     const result = zMove.modifyMove(statusMove, pokemon);
 
     // The zMoveEffect is preserved from the base move data
-    expect(result.zMoveEffect).toBe("heal");
+    expect(result.zMoveEffect).toBe(CORE_Z_MOVE_EFFECT_IDS.heal);
     // Move ID preserved so original effect fires
     expect(result.id).toBe(GEN7_MOVE_IDS.memento);
     // Power is 0 (status Z-Move)
@@ -202,7 +212,10 @@ describe("Status Z-Move: heal effect", () => {
 
   it("given a status move with heal zMoveEffect, when checking power, then getZMovePower returns 0", () => {
     // Source: Showdown sim/dex-moves.ts:551 -- status moves return 0 power
-    const statusMove = createCanonicalStatusMoveWithZEffect(GEN7_MOVE_IDS.healingWish, "heal");
+    const statusMove = createCanonicalStatusMoveWithZEffect(
+      GEN7_MOVE_IDS.healingWish,
+      CORE_Z_MOVE_EFFECT_IDS.heal,
+    );
 
     expect(getZMovePower(statusMove)).toBe(0);
   });
@@ -220,12 +233,12 @@ describe("Status Z-Move: clearnegativeboost effect", () => {
 
     const swordsDance = createCanonicalStatusMoveWithZEffect(
       GEN7_MOVE_IDS.swordsDance,
-      "clearnegativeboost",
+      CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost,
     );
 
     const result = zMove.modifyMove(swordsDance, pokemon);
 
-    expect(result.zMoveEffect).toBe("clearnegativeboost");
+    expect(result.zMoveEffect).toBe(CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost);
     expect(result.id).toBe(GEN7_MOVE_IDS.swordsDance);
   });
 
@@ -238,11 +251,14 @@ describe("Status Z-Move: clearnegativeboost effect", () => {
       moves: [{ moveId: GEN7_MOVE_IDS.bulkUp }],
     });
 
-    const bulkUp = createCanonicalStatusMoveWithZEffect(GEN7_MOVE_IDS.bulkUp, "clearnegativeboost");
+    const bulkUp = createCanonicalStatusMoveWithZEffect(
+      GEN7_MOVE_IDS.bulkUp,
+      CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost,
+    );
 
     const result = zMove.modifyMove(bulkUp, pokemon);
 
-    expect(result.zMoveEffect).toBe("clearnegativeboost");
+    expect(result.zMoveEffect).toBe(CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost);
     expect(result.id).toBe(GEN7_MOVE_IDS.bulkUp);
     expect(result.displayName).toBe(`Z-${bulkUp.displayName}`);
   });
@@ -258,11 +274,14 @@ describe("Status Z-Move: crit2 effect", () => {
       moves: [{ moveId: GEN7_MOVE_IDS.honeClaws }],
     });
 
-    const honeClaws = createCanonicalStatusMoveWithZEffect(GEN7_MOVE_IDS.honeClaws, "crit2");
+    const honeClaws = createCanonicalStatusMoveWithZEffect(
+      GEN7_MOVE_IDS.honeClaws,
+      CORE_Z_MOVE_EFFECT_IDS.crit2,
+    );
 
     const result = zMove.modifyMove(honeClaws, pokemon);
 
-    expect(result.zMoveEffect).toBe("crit2");
+    expect(result.zMoveEffect).toBe(CORE_Z_MOVE_EFFECT_IDS.crit2);
     expect(result.id).toBe(GEN7_MOVE_IDS.honeClaws);
     expect(result.displayName).toBe(`Z-${honeClaws.displayName}`);
     expect(result.zMovePower).toBe(0);
@@ -277,11 +296,14 @@ describe("Status Z-Move: crit2 effect", () => {
       moves: [{ moveId: GEN7_MOVE_IDS.focusEnergy }],
     });
 
-    const focusEnergy = createCanonicalStatusMoveWithZEffect(GEN7_MOVE_IDS.focusEnergy, "crit2");
+    const focusEnergy = createCanonicalStatusMoveWithZEffect(
+      GEN7_MOVE_IDS.focusEnergy,
+      CORE_Z_MOVE_EFFECT_IDS.crit2,
+    );
 
     const result = zMove.modifyMove(focusEnergy, pokemon);
 
-    expect(result.zMoveEffect).toBe("crit2");
+    expect(result.zMoveEffect).toBe(CORE_Z_MOVE_EFFECT_IDS.crit2);
     expect(result.id).toBe(GEN7_MOVE_IDS.focusEnergy);
   });
 });
@@ -319,7 +341,7 @@ describe("Status Z-Move: does NOT convert to a damaging move", () => {
 
     const thunderWave = createCanonicalStatusMoveWithZEffect(
       GEN7_MOVE_IDS.thunderWave,
-      "clearnegativeboost",
+      CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost,
     );
 
     const result = zMove.modifyMove(thunderWave, pokemon);
@@ -340,7 +362,7 @@ describe("Status Z-Move: does NOT convert to a damaging move", () => {
 
     const swordsDance = createCanonicalStatusMoveWithZEffect(
       GEN7_MOVE_IDS.swordsDance,
-      "clearnegativeboost",
+      CORE_Z_MOVE_EFFECT_IDS.clearNegativeBoost,
     );
 
     const result = zMove.modifyMove(swordsDance, pokemon);

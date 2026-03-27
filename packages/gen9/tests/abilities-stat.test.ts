@@ -8,6 +8,7 @@ import {
   CORE_GENDERS,
   CORE_MECHANIC_MULTIPLIERS,
   CORE_NATURE_IDS,
+  CORE_STAT_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -249,7 +250,7 @@ describe("getHighestBaseStat", () => {
         speed: 100,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("attack");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given a Pokemon with highest Speed, when finding highest stat, then returns speed", () => {
@@ -264,7 +265,7 @@ describe("getHighestBaseStat", () => {
         speed: 130,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("speed");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.speed);
   });
 
   it("given a Pokemon with highest SpAttack, when finding highest stat, then returns spAttack", () => {
@@ -279,7 +280,7 @@ describe("getHighestBaseStat", () => {
         speed: 100,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("spAttack");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.spAttack);
   });
 
   it("given a Pokemon with tied Attack and Defense, when finding highest stat, then returns attack (first in order)", () => {
@@ -294,7 +295,7 @@ describe("getHighestBaseStat", () => {
         speed: 80,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("attack");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given a Pokemon with all equal stats, when finding highest stat, then returns attack (first in order)", () => {
@@ -309,7 +310,7 @@ describe("getHighestBaseStat", () => {
         speed: 100,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("attack");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given a Pokemon with highest Defense, when finding highest stat, then returns defense", () => {
@@ -323,7 +324,7 @@ describe("getHighestBaseStat", () => {
         speed: 80,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("defense");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.defense);
   });
 
   it("given a Pokemon with highest SpDefense, when finding highest stat, then returns spDefense", () => {
@@ -337,7 +338,7 @@ describe("getHighestBaseStat", () => {
         speed: 80,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe("spDefense");
+    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.spDefense);
   });
 });
 
@@ -349,23 +350,32 @@ describe("getBoostMultiplier", () => {
   it("given Speed stat, when getting boost multiplier, then returns 1.5 (50%)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
     // "if (bestStat === 'spe') return this.chainModify(1.5)"
-    expect(getBoostMultiplier("speed")).toBe(GEN9_STAT_ABILITY_SPEED_MULTIPLIER);
+    expect(getBoostMultiplier(CORE_STAT_IDS.speed)).toBe(GEN9_STAT_ABILITY_SPEED_MULTIPLIER);
   });
 
   it("given Attack stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
     // "return this.chainModify([5325, 4096])"
-    expect(getBoostMultiplier("attack")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
+    expect(getBoostMultiplier(CORE_STAT_IDS.attack)).toBeCloseTo(
+      GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
+      10,
+    );
   });
 
   it("given Defense stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("defense")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
+    expect(getBoostMultiplier(CORE_STAT_IDS.defense)).toBeCloseTo(
+      GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
+      10,
+    );
   });
 
   it("given SpAttack stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {
     // Source: Showdown data/abilities.ts:3480-3483
-    expect(getBoostMultiplier("spAttack")).toBeCloseTo(GEN9_STAT_ABILITY_STANDARD_MULTIPLIER, 10);
+    expect(getBoostMultiplier(CORE_STAT_IDS.spAttack)).toBeCloseTo(
+      GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
+      10,
+    );
   });
 
   it("given SpDefense stat, when getting boost multiplier, then returns 5325/4096 (~1.3)", () => {

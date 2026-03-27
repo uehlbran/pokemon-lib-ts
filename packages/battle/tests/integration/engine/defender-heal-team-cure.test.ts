@@ -13,6 +13,7 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_IDS, CORE_MOVE_IDS, CORE_STATUS_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { BATTLE_SOURCE_IDS } from "../../../src";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -126,13 +127,13 @@ describe("processEffectResult -- defenderHealAmount", () => {
     // Assert -- defender (Blastoise, side 1) should have been healed
     // Charizard (speed 120) moves first, so it heals Blastoise
     const healEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 1 && e.source === "move-effect",
+      (e) => e.type === "heal" && e.side === 1 && e.source === BATTLE_SOURCE_IDS.moveEffect,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
 
     // Verify the attacker was NOT healed (healAmount was 0 and no defenderHealAmount on 2nd move)
     const attackerHealEvents = events.filter(
-      (e) => e.type === "heal" && e.side === 0 && e.source === "move-effect",
+      (e) => e.type === "heal" && e.side === 0 && e.source === BATTLE_SOURCE_IDS.moveEffect,
     );
     expect(attackerHealEvents.length).toBe(0);
   });

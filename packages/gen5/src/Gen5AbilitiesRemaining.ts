@@ -1,4 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 5 remaining ability handlers (Wave 4A).
@@ -103,14 +106,14 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
 
   // Check if currently in Zen form via volatile status
   // Source: Showdown -- zenmode condition uses addVolatile('zenmode')
-  const isZenForm = pokemon.volatileStatuses.has("zen-mode" as never);
+  const isZenForm = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.zenMode as never);
 
   if (currentHp <= Math.floor(maxHp / 2) && !isZenForm) {
     // Transform to Zen Mode
     const effect: AbilityEffect = {
-      effectType: "volatile-inflict",
-      target: "self",
-      volatile: "zen-mode" as never,
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+      target: BATTLE_EFFECT_TARGETS.self,
+      volatile: CORE_VOLATILE_IDS.zenMode as never,
     };
     return {
       activated: true,
@@ -124,9 +127,9 @@ function handleZenMode(ctx: AbilityContext): AbilityResult {
     // Source: Showdown data/abilities.ts -- zenmode onResidual:
     //   pokemon.hp > pokemon.maxhp / 2 && Zen form => formeChange back to standard
     const effect: AbilityEffect = {
-      effectType: "volatile-remove",
-      target: "self",
-      volatile: "zen-mode" as never,
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileRemove,
+      target: BATTLE_EFFECT_TARGETS.self,
+      volatile: CORE_VOLATILE_IDS.zenMode as never,
     };
     return {
       activated: true,
@@ -181,8 +184,8 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
   // Restore the consumed berry via the item-restore AbilityEffect.
   // Source: Showdown data/abilities.ts -- harvest: pokemon.setItem(pokemon.lastItem)
   const effect: AbilityEffect = {
-    effectType: "item-restore",
-    target: "self",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.itemRestore,
+    target: BATTLE_EFFECT_TARGETS.self,
     item: berryId,
   };
   return {
@@ -234,8 +237,8 @@ function handleHealer(ctx: AbilityContext): AbilityResult {
 
   // Source: Showdown data/abilities.ts -- healer: allyActive.cureStatus()
   const effect: AbilityEffect = {
-    effectType: "status-cure",
-    target: "ally",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statusCure,
+    target: BATTLE_EFFECT_TARGETS.ally,
   };
   return {
     activated: true,
@@ -282,7 +285,7 @@ function handleFrisk(ctx: AbilityContext): AbilityResult {
 
   return {
     activated: true,
-    effects: [{ effectType: "none", target: "self" }],
+    effects: [{ effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self }],
     messages: [`${name} frisked ${foeName} and found its ${foeItem}!`],
   };
 }
@@ -339,7 +342,7 @@ function handleTelepathy(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
   return {
     activated: true,
-    effects: [{ effectType: "none", target: "self" }],
+    effects: [{ effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self }],
     messages: [`${name} avoided the attack with Telepathy!`],
     movePrevented: true,
   };
@@ -363,7 +366,9 @@ function handleOblivious(ctx: AbilityContext): AbilityResult {
   if (moveId === "attract") {
     return {
       activated: true,
-      effects: [{ effectType: "none", target: "self" }],
+      effects: [
+        { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+      ],
       messages: [`${name}'s Oblivious prevents infatuation!`],
       movePrevented: true,
     };
@@ -373,7 +378,9 @@ function handleOblivious(ctx: AbilityContext): AbilityResult {
   if (moveId === "captivate") {
     return {
       activated: true,
-      effects: [{ effectType: "none", target: "self" }],
+      effects: [
+        { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+      ],
       messages: [`${name}'s Oblivious prevents Captivate!`],
       movePrevented: true,
     };
@@ -432,7 +439,12 @@ function handleFriendGuard(ctx: AbilityContext): AbilityResult {
   const name = getName(ctx);
   return {
     activated: true,
-    effects: [{ effectType: "damage-reduction", target: "self" }],
+    effects: [
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+        target: BATTLE_EFFECT_TARGETS.self,
+      },
+    ],
     messages: [`${name}'s Friend Guard reduced the damage!`],
   };
 }
@@ -451,11 +463,11 @@ function handleSereneGrace(ctx: AbilityContext): AbilityResult {
 
   // Gen 5: Secret Power is excluded from Serene Grace
   // Source: Showdown data/mods/gen5/abilities.ts -- move.id !== 'secretpower'
-  if (ctx.move.id === "secret-power") return NO_EFFECT;
+  if (ctx.move.id === GEN5_MOVE_IDS.secretPower) return NO_EFFECT;
 
   return {
     activated: true,
-    effects: [{ effectType: "none", target: "self" }],
+    effects: [{ effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self }],
     messages: [],
   };
 }
@@ -490,9 +502,9 @@ export const LIGHT_METAL_WEIGHT_MULTIPLIER = 0.5;
  */
 export function getWeightMultiplier(abilityId: string): number {
   switch (abilityId) {
-    case "heavy-metal":
+    case GEN5_ABILITY_IDS.heavyMetal:
       return HEAVY_METAL_WEIGHT_MULTIPLIER;
-    case "light-metal":
+    case GEN5_ABILITY_IDS.lightMetal:
       return LIGHT_METAL_WEIGHT_MULTIPLIER;
     default:
       return 1;
@@ -556,7 +568,7 @@ export const HEALER_PROBABILITY = 0.3;
  * Source: Showdown data/mods/gen5/abilities.ts -- excludes secretpower
  */
 export function getSereneGraceMultiplier(abilityId: string, moveId: string): number {
-  if (abilityId !== "serene-grace") return 1;
-  if (moveId === "secret-power") return 1;
+  if (abilityId !== GEN5_ABILITY_IDS.sereneGrace) return 1;
+  if (moveId === GEN5_MOVE_IDS.secretPower) return 1;
   return SERENE_GRACE_CHANCE_MULTIPLIER;
 }

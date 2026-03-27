@@ -1,5 +1,8 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { MoveCategory } from "@pokemon-lib-ts/core";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import type { MoveCategory, VolatileStatus } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "./data/reference-ids";
 
 /**
  * Gen 6 stat-modifying and priority ability handlers.
@@ -23,13 +26,13 @@ import type { MoveCategory } from "@pokemon-lib-ts/core";
  * Source: Showdown data/mods/gen7/abilities.ts -- Moody iterates all boost IDs
  */
 const ALL_MOODY_STATS = [
-  "attack",
-  "defense",
-  "spAttack",
-  "spDefense",
-  "speed",
-  "accuracy",
-  "evasion",
+  CORE_STAT_IDS.attack,
+  CORE_STAT_IDS.defense,
+  CORE_STAT_IDS.spAttack,
+  CORE_STAT_IDS.spDefense,
+  CORE_STAT_IDS.speed,
+  CORE_STAT_IDS.accuracy,
+  CORE_STAT_IDS.evasion,
 ] as const;
 
 type MoodyStat = (typeof ALL_MOODY_STATS)[number];
@@ -120,7 +123,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       //   by a Pokemon with Gale Wings will have their priority increased by 1."
       // Source: Showdown data/mods/gen6/abilities.ts -- galeWings has no HP check
       if (!ctx.move) return INACTIVE;
-      if (ctx.move.type !== "flying") return INACTIVE;
+      if (ctx.move.type !== CORE_TYPE_IDS.flying) return INACTIVE;
       const name = getName(ctx);
       return {
         activated: true,
@@ -163,8 +166,8 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
         activated: true,
         effects: [
           {
-            effectType: "type-change",
-            target: "self",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
             types: [moveType],
           },
         ],
@@ -180,21 +183,23 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
       //   before using an attack move and from Blade Forme to Shield Forme when using
       //   King's Shield."
       // Only Aegislash (species 681) has Stance Change
-      if (ctx.pokemon.pokemon.speciesId !== 681) return INACTIVE;
+      if (ctx.pokemon.pokemon.speciesId !== GEN6_SPECIES_IDS.aegislash) return INACTIVE;
       if (!ctx.move) return INACTIVE;
 
       const name = getName(ctx);
-      const isBladeForm = ctx.pokemon.volatileStatuses.has("stance-change-blade" as never);
+      const isBladeForm = ctx.pokemon.volatileStatuses.has(
+        CORE_VOLATILE_IDS.stanceChangeBlade as VolatileStatus,
+      );
 
-      if (ctx.move.id === "kings-shield" && isBladeForm) {
+      if (ctx.move.id === GEN6_MOVE_IDS.kingsShield && isBladeForm) {
         // Blade -> Shield: remove blade volatile
         return {
           activated: true,
           effects: [
             {
-              effectType: "volatile-remove",
-              target: "self",
-              volatile: "stance-change-blade" as never,
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileRemove,
+              target: BATTLE_EFFECT_TARGETS.self,
+              volatile: CORE_VOLATILE_IDS.stanceChangeBlade as VolatileStatus,
             },
           ],
           messages: [`${name} changed to Shield Forme!`],
@@ -207,9 +212,9 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
           activated: true,
           effects: [
             {
-              effectType: "volatile-inflict",
-              target: "self",
-              volatile: "stance-change-blade" as never,
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+              target: BATTLE_EFFECT_TARGETS.self,
+              volatile: CORE_VOLATILE_IDS.stanceChangeBlade as VolatileStatus,
             },
           ],
           messages: [`${name} changed to Blade Forme!`],
@@ -242,9 +247,9 @@ function handleAfterMoveUsed(abilityId: string, ctx: AbilityContext): AbilityRes
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "attack",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.attack,
     stages: 1,
   };
   return {
@@ -290,15 +295,19 @@ function handleStatChange(abilityId: string, ctx: AbilityContext): AbilityResult
  * Source: Bulbapedia -- Defiant: "+2 Attack when any stat lowered by opponent"
  */
 function handleDefiant(ctx: AbilityContext): AbilityResult {
-  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
+  if (
+    !ctx.statChange ||
+    ctx.statChange.stages >= 0 ||
+    ctx.statChange.source !== BATTLE_EFFECT_TARGETS.opponent
+  ) {
     return INACTIVE;
   }
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "attack",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.attack,
     stages: 2,
   };
   return {
@@ -315,15 +324,19 @@ function handleDefiant(ctx: AbilityContext): AbilityResult {
  * Source: Bulbapedia -- Competitive: "+2 SpAtk when any stat lowered by opponent"
  */
 function handleCompetitive(ctx: AbilityContext): AbilityResult {
-  if (!ctx.statChange || ctx.statChange.stages >= 0 || ctx.statChange.source !== "opponent") {
+  if (
+    !ctx.statChange ||
+    ctx.statChange.stages >= 0 ||
+    ctx.statChange.source !== BATTLE_EFFECT_TARGETS.opponent
+  ) {
     return INACTIVE;
   }
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "spAttack",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.spAttack,
     stages: 2,
   };
   return {
@@ -394,9 +407,9 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "attack",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.attack,
     stages: 1,
   };
   return {
@@ -418,15 +431,15 @@ function handleWeakArmor(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "defense",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.defense,
     stages: -1,
   };
   const spdEffect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "speed",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.speed,
     stages: 1,
   };
   return {
@@ -470,9 +483,9 @@ function handleSpeedBoost(ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "speed",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.speed,
     stages: 1,
   };
   return {
@@ -521,8 +534,8 @@ function handleMoody(ctx: AbilityContext): AbilityResult {
 
   if (raisedStat) {
     effects.push({
-      effectType: "stat-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       stat: raisedStat,
       stages: 2,
     });
@@ -531,8 +544,8 @@ function handleMoody(ctx: AbilityContext): AbilityResult {
 
   if (loweredStat) {
     effects.push({
-      effectType: "stat-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       stat: loweredStat,
       stages: -1,
     });
@@ -562,9 +575,9 @@ function handleFlinch(abilityId: string, ctx: AbilityContext): AbilityResult {
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
-    effectType: "stat-change",
-    target: "self",
-    stat: "speed",
+    effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    target: BATTLE_EFFECT_TARGETS.self,
+    stat: CORE_STAT_IDS.speed,
     stages: 1,
   };
   return {
@@ -615,19 +628,19 @@ function handlePassiveImmunity(_abilityId: string, _ctx: AbilityContext): Abilit
 /** Format a stat ID as a human-readable name for messages. */
 function formatStatName(stat: string): string {
   switch (stat) {
-    case "attack":
+    case CORE_STAT_IDS.attack:
       return "Attack";
-    case "defense":
+    case CORE_STAT_IDS.defense:
       return "Defense";
-    case "spAttack":
+    case CORE_STAT_IDS.spAttack:
       return "Special Attack";
-    case "spDefense":
+    case CORE_STAT_IDS.spDefense:
       return "Special Defense";
-    case "speed":
+    case CORE_STAT_IDS.speed:
       return "Speed";
-    case "accuracy":
+    case CORE_STAT_IDS.accuracy:
       return "Accuracy";
-    case "evasion":
+    case CORE_STAT_IDS.evasion:
       return "Evasion";
     default:
       return stat;

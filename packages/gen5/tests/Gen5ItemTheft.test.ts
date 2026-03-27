@@ -41,8 +41,7 @@ import { handleGen5SwitchAbility } from "../src/Gen5AbilitiesSwitch";
 import { handleGen5BehaviorMove } from "../src/Gen5MoveEffectsBehavior";
 
 const dataManager = createGen5DataManager();
-// Gen 5 currently does not expose a named volatile-id surface for the gem-consumed marker.
-const GEM_USED_VOLATILE = "gem-used" as const;
+const GEM_USED_VOLATILE = CORE_VOLATILE_IDS.gemUsed;
 
 // ---------------------------------------------------------------------------
 // Test helpers

@@ -1,10 +1,13 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
+  CORE_MOVE_EFFECT_TARGETS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -311,7 +314,7 @@ describe("Fur Coat", () => {
     });
     const result = handleGen6DamageCalcAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]!.effectType).toBe("damage-reduction");
+    expect(result.effects[0]!.effectType).toBe(BATTLE_ABILITY_EFFECT_TYPES.damageReduction);
   });
 
   it("given Fur Coat defender + special move, when checking damage-calc, then does not activate", () => {
@@ -533,7 +536,9 @@ describe("Parental Bond", () => {
 
   it("given Parental Bond utility function, when checking multi-hit move, then returns false", () => {
     // Source: Showdown data/abilities.ts -- parentalbond doesn't stack with multi-hit
-    expect(isParentalBondEligible(GEN6_ABILITY_IDS.parentalBond, 25, "multi-hit")).toBe(false);
+    expect(
+      isParentalBondEligible(GEN6_ABILITY_IDS.parentalBond, 25, CORE_MOVE_EFFECT_TYPES.multiHit),
+    ).toBe(false);
   });
 });
 
@@ -613,7 +618,7 @@ describe("Multiscale (carry-forward)", () => {
 describe("Sturdy (carry-forward)", () => {
   it("given Sturdy + OHKO move, when checking damage immunity, then blocks the move", () => {
     // Source: Showdown data/abilities.ts -- sturdy onTryHit: if move.ohko, return null
-    const ohkoEffect: MoveEffect = { type: "ohko" };
+    const ohkoEffect: MoveEffect = { type: CORE_MOVE_EFFECT_TYPES.ohko };
     const ctx = createAbilityContextFixture({
       pokemon: createOnFieldPokemonFixture({ ability: CORE_ABILITY_IDS.sturdy }),
       move: createMoveFixture(GEN6_MOVE_IDS.fissure, { effect: ohkoEffect }),
@@ -645,13 +650,17 @@ describe("Sturdy (carry-forward)", () => {
 
   it("given sturdyBlocksOHKO + OHKO effect, then returns true", () => {
     // Source: Showdown data/abilities.ts -- sturdy onTryHit: move.ohko
-    const ohkoEffect: MoveEffect = { type: "ohko" };
+    const ohkoEffect: MoveEffect = { type: CORE_MOVE_EFFECT_TYPES.ohko };
     expect(sturdyBlocksOHKO(CORE_ABILITY_IDS.sturdy, ohkoEffect)).toBe(true);
   });
 
   it("given sturdyBlocksOHKO + non-OHKO effect, then returns false", () => {
     // Source: Showdown -- only OHKO moves blocked
-    const healEffect: MoveEffect = { type: "heal", amount: 50, target: "self" };
+    const healEffect: MoveEffect = {
+      type: CORE_MOVE_EFFECT_TYPES.heal,
+      amount: 50,
+      target: CORE_MOVE_EFFECT_TARGETS.self,
+    };
     expect(sturdyBlocksOHKO(CORE_ABILITY_IDS.sturdy, healEffect)).toBe(false);
   });
 });

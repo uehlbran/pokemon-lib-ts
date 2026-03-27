@@ -1,4 +1,5 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -8,6 +9,8 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
@@ -65,7 +68,7 @@ function createSyntheticPokemonInstance(overrides: {
     gender: overrides.gender ?? genderIds.male,
     heldItem: overrides.heldItem ?? null,
     friendship: species.baseFriendship,
-    metLocation: "test",
+    metLocation: CORE_POKEMON_DEFAULTS.metLocation,
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: itemIds.pokeBall,
@@ -196,7 +199,11 @@ function createSyntheticAbilityContext(opts: {
   nickname?: string;
   statStages?: Partial<Record<string, number>>;
   rngPick?: <T>(arr: readonly T[]) => T;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: string;
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
 }): AbilityContext {
   const state = createSyntheticBattleState();
   const pokemon = createSyntheticOnFieldPokemon({
@@ -295,7 +302,11 @@ describe("Protean (Gen 6)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "type-change", target: "self", types: [CORE_TYPE_IDS.water] },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        types: [CORE_TYPE_IDS.water],
+      },
     ]);
   });
 
@@ -324,8 +335,8 @@ describe("Protean (Gen 6)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "type-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       types: [CORE_TYPE_IDS.fighting],
     });
   });
@@ -342,14 +353,18 @@ describe("Competitive", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.competitive,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "attack", stages: -1, source: "opponent" },
+      statChange: {
+        stat: CORE_STAT_IDS.attack,
+        stages: -1,
+        source: BATTLE_EFFECT_TARGETS.opponent,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
       effectType: "stat-change",
-      target: "self",
-      stat: "spAttack",
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.spAttack,
       stages: 2,
     });
   });
@@ -359,7 +374,11 @@ describe("Competitive", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.competitive,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "defense", stages: -1, source: "self" },
+      statChange: {
+        stat: CORE_STAT_IDS.defense,
+        stages: -1,
+        source: BATTLE_EFFECT_TARGETS.self,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -370,7 +389,11 @@ describe("Competitive", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.competitive,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "attack", stages: 1, source: "opponent" },
+      statChange: {
+        stat: CORE_STAT_IDS.attack,
+        stages: 1,
+        source: BATTLE_EFFECT_TARGETS.opponent,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -428,14 +451,18 @@ describe("Defiant (carry-forward)", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.defiant,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "attack", stages: -1, source: "opponent" },
+      statChange: {
+        stat: CORE_STAT_IDS.attack,
+        stages: -1,
+        source: BATTLE_EFFECT_TARGETS.opponent,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "attack",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.attack,
       stages: 2,
     });
   });
@@ -445,7 +472,11 @@ describe("Defiant (carry-forward)", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.defiant,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "defense", stages: -1, source: "self" },
+      statChange: {
+        stat: CORE_STAT_IDS.defense,
+        stages: -1,
+        source: BATTLE_EFFECT_TARGETS.self,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(false);
@@ -467,9 +498,9 @@ describe("Speed Boost (carry-forward)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "speed",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.speed,
       stages: 1,
     });
   });
@@ -503,8 +534,18 @@ describe("Weak Armor (Gen 5-6 version)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
-      { effectType: "stat-change", target: "self", stat: "defense", stages: -1 },
-      { effectType: "stat-change", target: "self", stat: "speed", stages: 1 },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        stat: CORE_STAT_IDS.defense,
+        stages: -1,
+      },
+      {
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        stat: CORE_STAT_IDS.speed,
+        stages: 1,
+      },
     ]);
   });
 
@@ -537,9 +578,9 @@ describe("Justified (carry-forward)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "attack",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.attack,
       stages: 1,
     });
   });
@@ -571,9 +612,9 @@ describe("Steadfast (carry-forward)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "speed",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.speed,
       stages: 1,
     });
   });
@@ -599,7 +640,11 @@ describe("Contrary (carry-forward)", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.contrary,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "attack", stages: 2, source: "self" },
+      statChange: {
+        stat: CORE_STAT_IDS.attack,
+        stages: 2,
+        source: BATTLE_EFFECT_TARGETS.self,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -616,7 +661,11 @@ describe("Simple (carry-forward)", () => {
     const ctx = createSyntheticAbilityContext({
       ability: GEN6_ABILITY_IDS.simple,
       trigger: abilityTriggers.onStatChange,
-      statChange: { stat: "attack", stages: 1, source: "self" },
+      statChange: {
+        stat: CORE_STAT_IDS.attack,
+        stages: 1,
+        source: BATTLE_EFFECT_TARGETS.self,
+      },
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
@@ -639,9 +688,9 @@ describe("Moxie (carry-forward)", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "attack",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.attack,
       stages: 1,
     });
   });

@@ -15,11 +15,23 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   ALL_NATURES,
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_SLOTS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_ITEM_IDS,
+  CORE_SPECIES_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
   calculateAllStats,
   calculateModifiedCatchRate,
   calculateShakeChecks,
   DataManager,
   getStatStageMultiplier,
+  validateEvs,
+  validateFriendship,
+  validateIvs,
 } from "@pokemon-lib-ts/core";
 import type {
   AbilityContext,
@@ -139,7 +151,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
     // Focus Energy: +2 stages
     // Source: Showdown sim/battle-actions.ts getMoveHit crit stage calc
-    if (attacker.volatileStatuses.has("focus-energy")) stage += 2;
+    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.focusEnergy)) stage += 2;
 
     // High crit-ratio move: from move data (e.g., Slash, Crabhammer = critRatio 1)
     // Source: Showdown sim/battle-actions.ts — move.critRatio adds to crit stage
@@ -148,18 +160,24 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // Held item bonuses
     // Source: Showdown sim/battle-actions.ts — item crit stage modifiers
     const item = attacker.pokemon.heldItem;
-    if (item === "scope-lens" || item === "razor-claw") stage += 1;
+    if (item === CORE_ITEM_IDS.scopeLens || item === CORE_ITEM_IDS.razorClaw) stage += 1;
     if (
-      (item === "leek" || item === "stick") &&
-      (attacker.pokemon.speciesId === 83 || attacker.pokemon.speciesId === 865)
+      (item === CORE_ITEM_IDS.leek || item === CORE_ITEM_IDS.stick) &&
+      (attacker.pokemon.speciesId === CORE_SPECIES_IDS.farfetchd ||
+        attacker.pokemon.speciesId === CORE_SPECIES_IDS.sirfetchd)
     ) {
       stage += 2;
     }
-    if (item === "lucky-punch" && attacker.pokemon.speciesId === 113) stage += 2;
+    if (
+      item === CORE_ITEM_IDS.luckyPunch &&
+      attacker.pokemon.speciesId === CORE_SPECIES_IDS.chansey
+    ) {
+      stage += 2;
+    }
 
     // Ability: Super Luck (+1 stage)
     // Source: Showdown sim/battle-actions.ts — Super Luck ability crit bonus
-    if (attacker.ability === "super-luck") stage += 1;
+    if (attacker.ability === CORE_ABILITY_IDS.superLuck) stage += 1;
 
     stage = Math.min(stage, table.length - 1);
     const rate = table[stage];
@@ -301,11 +319,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
     moveData: MoveData,
     state: BattleState,
   ): number {
-    const result = this.applyAbility("on-priority-check", {
+    const result = this.applyAbility(CORE_ABILITY_TRIGGER_IDS.onPriorityCheck, {
       pokemon: active,
       state,
       rng: state.rng,
-      trigger: "on-priority-check",
+      trigger: CORE_ABILITY_TRIGGER_IDS.onPriorityCheck,
       move: moveData,
     });
     if (!result.activated) return 0;
@@ -363,7 +381,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
    * Source: Showdown sim/battle.ts — ABILITY_PRESSURE check in deductPP
    */
   getPPCost(_actor: ActivePokemon, defender: ActivePokemon | null, _state: BattleState): number {
-    return defender?.ability === "pressure" ? 2 : 1;
+    return defender?.ability === CORE_ABILITY_IDS.pressure ? 2 : 1;
   }
 
   /**
@@ -410,14 +428,14 @@ export abstract class BaseRuleset implements GenerationRuleset {
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
     switch (status) {
-      case "burn":
+      case CORE_STATUS_IDS.burn:
         // Gen 7+: 1/16 max HP
         return Math.max(1, Math.floor(maxHp / 16));
-      case "poison":
+      case CORE_STATUS_IDS.poison:
         return Math.max(1, Math.floor(maxHp / 8));
-      case "badly-poisoned": {
+      case CORE_STATUS_IDS.badlyPoisoned: {
         // Escalating: 1/16, 2/16, 3/16... per turn, tracked via toxic-counter volatile
-        const toxicState = pokemon.volatileStatuses.get("toxic-counter");
+        const toxicState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
         const counter = (toxicState?.data?.counter as number) ?? 1;
         const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
         if (toxicState) {
@@ -464,18 +482,18 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Look up the sleep counter in volatile statuses
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // No counter found or already at 0 — wake up
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true; // Can act this turn (Gen 2+ behavior)
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Just reached 0 — wake up, can act this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     return false; // Still sleeping
@@ -560,12 +578,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
     // ─── Status cure items ────────────────────────────────────────────────────
     const statusCures: Record<string, PrimaryStatus | "any"> = {
-      antidote: "poison",
-      burnheal: "burn",
-      iceheal: "freeze",
-      awakening: "sleep",
-      paralyzeheal: "paralysis",
-      parlyzheal: "paralysis",
+      antidote: CORE_STATUS_IDS.poison,
+      burnheal: CORE_STATUS_IDS.burn,
+      iceheal: CORE_STATUS_IDS.freeze,
+      awakening: CORE_STATUS_IDS.sleep,
+      paralyzeheal: CORE_STATUS_IDS.paralysis,
+      parlyzheal: CORE_STATUS_IDS.paralysis,
       fullheal: "any",
     };
 
@@ -581,7 +599,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
         cureTarget === "any" ||
         pokemon.status === cureTarget ||
         // Antidote cures both poison and badly-poisoned
-        (cureTarget === "poison" && pokemon.status === "badly-poisoned");
+        (cureTarget === CORE_STATUS_IDS.poison && pokemon.status === CORE_STATUS_IDS.badlyPoisoned);
 
       if (!cures) {
         messages.push("It won't have any effect.");
@@ -608,14 +626,14 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // ─── Stat boost items (X items: +2 stages, capped at +6) ─────────────────
     // Source: Bulbapedia "X Attack" etc. — Gen 7+ X items raise stat by 2 stages
     const statBoosts: Record<string, import("@pokemon-lib-ts/core").BattleStat> = {
-      xattack: "attack",
-      xdefense: "defense",
-      xdefend: "defense",
-      xspatk: "spAttack",
-      xspecial: "spAttack",
-      xspdef: "spDefense",
-      xspeed: "speed",
-      xaccuracy: "accuracy",
+      xattack: CORE_STAT_IDS.attack,
+      xdefense: CORE_STAT_IDS.defense,
+      xdefend: CORE_STAT_IDS.defense,
+      xspatk: CORE_STAT_IDS.spAttack,
+      xspecial: CORE_STAT_IDS.spAttack,
+      xspdef: CORE_STAT_IDS.spDefense,
+      xspeed: CORE_STAT_IDS.speed,
+      xaccuracy: CORE_STAT_IDS.accuracy,
     };
 
     const boostStat = statBoosts[normalizedId];
@@ -712,7 +730,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
         continue;
       }
 
-      if (usesHeldExpShare && pokemon.heldItem === "exp-share") {
+      if (usesHeldExpShare && pokemon.heldItem === CORE_ITEM_IDS.expShare) {
         recipients.push({ pokemon, hasExpShare: true });
       }
     }
@@ -724,8 +742,137 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return null;
   }
 
-  validatePokemon(_pokemon: PokemonInstance, _species: PokemonSpeciesData): ValidationResult {
-    return { valid: true, errors: [] };
+  private static appendValidationMessages(
+    errors: string[],
+    validation: { readonly failures: readonly { readonly message: string }[] },
+  ): void {
+    for (const failure of validation.failures) {
+      errors.push(failure.message);
+    }
+  }
+
+  private validateKnownSpecies(
+    pokemon: PokemonInstance,
+    species: PokemonSpeciesData,
+    errors: string[],
+  ): void {
+    try {
+      this.dataManager.getSpecies(species.id);
+    } catch {
+      errors.push(
+        `Species #${species.id} (${species.displayName}) is not available in Gen ${this.generation}`,
+      );
+      return;
+    }
+
+    if (typeof pokemon.speciesId === "number" && pokemon.speciesId !== species.id) {
+      errors.push(
+        `Pokemon species id ${pokemon.speciesId} does not match provided species ${species.displayName} (#${species.id})`,
+      );
+    }
+  }
+
+  private validateKnownMove(moveId: string, errors: string[]): void {
+    try {
+      this.dataManager.getMove(moveId);
+    } catch {
+      errors.push(`Move "${moveId}" is not available in Gen ${this.generation}`);
+    }
+  }
+
+  private validateKnownItem(itemId: string, errors: string[]): void {
+    try {
+      this.dataManager.getItem(itemId);
+    } catch {
+      errors.push(`Item "${itemId}" is not available in Gen ${this.generation}`);
+    }
+  }
+
+  private validateKnownAbility(abilityId: string, errors: string[]): void {
+    try {
+      this.dataManager.getAbility(abilityId);
+    } catch {
+      errors.push(`Ability "${abilityId}" is not available in Gen ${this.generation}`);
+    }
+  }
+
+  validatePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): ValidationResult {
+    const errors: string[] = [];
+
+    if (pokemon.level < 1 || pokemon.level > 100) {
+      errors.push(`Level must be between 1 and 100, got ${pokemon.level}`);
+    }
+
+    if (pokemon.moves.length < 1 || pokemon.moves.length > 4) {
+      errors.push(`Pokemon must have 1-4 moves, has ${pokemon.moves.length}`);
+    }
+
+    this.validateKnownSpecies(pokemon, species, errors);
+
+    for (const moveSlot of pokemon.moves) {
+      if (!moveSlot.moveId) {
+        errors.push("Pokemon move slot is empty");
+        continue;
+      }
+      this.validateKnownMove(moveSlot.moveId, errors);
+    }
+
+    if (pokemon.heldItem) {
+      this.validateKnownItem(pokemon.heldItem, errors);
+    }
+
+    if (!pokemon.ability) {
+      errors.push("Pokemon ability is required");
+    } else {
+      this.validateKnownAbility(pokemon.ability, errors);
+      const legalAbilities = new Set(species.abilities.normal);
+      if (species.abilities.hidden) {
+        legalAbilities.add(species.abilities.hidden);
+      }
+      if (!legalAbilities.has(pokemon.ability)) {
+        errors.push(`Ability "${pokemon.ability}" is not legal for ${species.displayName}`);
+      }
+
+      if (
+        pokemon.abilitySlot === CORE_ABILITY_SLOTS.normal2 &&
+        species.abilities.normal.length < 2
+      ) {
+        errors.push(
+          `Ability slot "${pokemon.abilitySlot}" is not supported for ${species.displayName}`,
+        );
+      } else if (pokemon.abilitySlot === CORE_ABILITY_SLOTS.hidden && !species.abilities.hidden) {
+        errors.push(
+          `Ability slot "${pokemon.abilitySlot}" is not supported for ${species.displayName}`,
+        );
+      } else {
+        const expectedAbility =
+          pokemon.abilitySlot === CORE_ABILITY_SLOTS.normal2
+            ? species.abilities.normal[1]
+            : pokemon.abilitySlot === CORE_ABILITY_SLOTS.hidden
+              ? species.abilities.hidden
+              : species.abilities.normal[0];
+        if (expectedAbility && pokemon.ability !== expectedAbility) {
+          errors.push(
+            `Ability "${pokemon.ability}" does not match slot "${pokemon.abilitySlot}" for ${species.displayName}`,
+          );
+        }
+      }
+    }
+
+    try {
+      this.dataManager.getNature(pokemon.nature);
+    } catch {
+      errors.push(`Nature "${pokemon.nature}" is not available in Gen ${this.generation}`);
+    }
+
+    BaseRuleset.appendValidationMessages(errors, validateIvs(pokemon.ivs));
+    BaseRuleset.appendValidationMessages(errors, validateEvs(pokemon.evs));
+    BaseRuleset.appendValidationMessages(errors, validateFriendship(pokemon.friendship));
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
   }
 
   getConfusionSelfHitChance(): number {
@@ -751,7 +898,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
       Math.floor(baseDef * getStatStageMultiplier(pokemon.statStages.defense)),
     );
 
-    if (pokemon.pokemon.status === "burn") {
+    if (pokemon.pokemon.status === CORE_STATUS_IDS.burn) {
       atk = Math.floor(atk / 2);
     }
 
@@ -837,12 +984,12 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // Gen 3-4 values inlined to avoid cross-package build-order dependency
     // Source: pret/pokeemerald src/battle_script_commands.c — sleep/freeze: odds *= 2
     return {
-      sleep: 2.0,
-      freeze: 2.0,
-      paralysis: 1.5,
-      burn: 1.5,
-      poison: 1.5,
-      "badly-poisoned": 1.5,
+      [CORE_STATUS_IDS.sleep]: 2.0,
+      [CORE_STATUS_IDS.freeze]: 2.0,
+      [CORE_STATUS_IDS.paralysis]: 1.5,
+      [CORE_STATUS_IDS.burn]: 1.5,
+      [CORE_STATUS_IDS.poison]: 1.5,
+      [CORE_STATUS_IDS.badlyPoisoned]: 1.5,
     };
   }
 
@@ -939,7 +1086,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
   rollMultiHitCount(attacker: ActivePokemon, rng: SeededRandom): number {
     // Gen 5+ distribution: 35/35/15/15% for 2/3/4/5 hits
     // Skill Link ability (Gen 5+) always hits 5 times
-    if (attacker.ability === "skill-link") return 5;
+    if (attacker.ability === CORE_ABILITY_IDS.skillLink) return 5;
     const roll = rng.int(1, 100);
     if (roll <= 35) return 2;
     if (roll <= 70) return 3;
@@ -964,7 +1111,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     readonly newCount: number;
     readonly fainted: boolean;
   } {
-    const perishState = pokemon.volatileStatuses.get("perish-song");
+    const perishState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.perishSong);
     if (!perishState) return { newCount: 0, fainted: false };
     const counter = (perishState.data?.counter as number) ?? perishState.turnsLeft;
     if (counter <= 1) {
@@ -991,7 +1138,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // Apply stat stages
     let effective = Math.floor(baseSpeed * getStatStageMultiplier(active.statStages.speed));
     // Gen 7+ default: paralysis halves speed (×0.5); Gen 1-6 must override (×0.25)
-    if (active.pokemon.status === "paralysis") {
+    if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       effective = Math.floor(effective * 0.5);
     }
     return Math.max(1, effective);
@@ -1007,24 +1154,24 @@ export abstract class BaseRuleset implements GenerationRuleset {
     // ingrain(7), leech-seed(8), status-damage(9-10), nightmare(11),
     // curse(12), bind/partiallytrapped(13), perish-song(24), countdowns(26)
     return [
-      "future-attack",
-      "wish",
-      "weather-damage",
-      "leftovers",
-      "black-sludge",
-      "ingrain",
-      "leech-seed",
-      "status-damage",
-      "nightmare",
-      "curse",
-      "bind",
-      "perish-song",
-      "screen-countdown",
-      "weather-countdown",
-      "terrain-countdown",
-      "tailwind-countdown",
-      "trick-room-countdown",
-      "encore-countdown",
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
     ];
   }
 

@@ -91,7 +91,7 @@ describe("Gen9 smoke tests", () => {
     expect(hazards).toContain(CORE_HAZARD_IDS.spikes);
     expect(hazards).toContain(CORE_HAZARD_IDS.toxicSpikes);
     expect(hazards).toContain(CORE_HAZARD_IDS.stickyWeb);
-    expect(hazards).not.toContain("gmax-steelsurge");
+    expect(hazards).not.toContain(CORE_HAZARD_IDS.gmaxSteelsurge);
   });
 
   it("given Gen9Ruleset with custom DataManager, when created, then uses provided DataManager", () => {

@@ -16,6 +16,9 @@ import {
   CORE_MOVE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  createEvs,
+  createFriendship,
+  createIvs,
   NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -85,24 +88,32 @@ function createSyntheticPokemonInstance(overrides: {
   maxHp?: number;
   moves?: Array<{ moveId: string; currentPP: number; maxPP: number }>;
 }): PokemonInstance {
+  const speciesId = overrides.speciesId ?? SPECIES_IDS.bulbasaur;
+  const species = DATA_MANAGER.getSpecies(speciesId);
   const maxHp = overrides.maxHp ?? 200;
+  const gender =
+    species.genderRatio === -1
+      ? CORE_GENDERS.genderless
+      : species.genderRatio === 0
+        ? CORE_GENDERS.female
+        : CORE_GENDERS.male;
   return {
     uid: `test-${++testUidCounter}`,
-    speciesId: overrides.speciesId ?? SPECIES_IDS.bulbasaur,
+    speciesId,
     nickname: overrides.nickname ?? null,
     level: 50,
     experience: 0,
     nature: DEFAULT_NATURE,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
+    ivs: createIvs(),
+    evs: { ...createEvs() },
     currentHp: overrides.currentHp ?? maxHp,
     moves: overrides.moves ?? [createMoveSlot(MOVES.tackle), createMoveSlot(MOVES.fly)],
-    ability: overrides.ability ?? ABILITIES.none,
+    ability: overrides.ability ?? species.abilities.normal[0] ?? ABILITIES.none,
     abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: overrides.heldItem ?? null,
     status: overrides.status ?? null,
-    friendship: 0,
-    gender: CORE_GENDERS.genderless,
+    friendship: createFriendship(0),
+    gender,
     isShiny: false,
     metLocation: "",
     metLevel: 1,
@@ -146,6 +157,7 @@ function createSyntheticOnFieldPokemon(overrides: {
 
   const volatiles =
     overrides.volatiles ?? new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
+  const speciesTypes = DATA_MANAGER.getSpecies(pokemon.speciesId).types;
 
   return {
     pokemon,
@@ -160,8 +172,8 @@ function createSyntheticOnFieldPokemon(overrides: {
       evasion: 0,
     },
     volatileStatuses: volatiles,
-    types: overrides.types ?? [TYPE_IDS.normal],
-    ability: overrides.ability ?? ABILITIES.none,
+    types: overrides.types ?? [...speciesTypes],
+    ability: overrides.ability ?? pokemon.ability,
     lastMoveUsed: overrides.lastMoveUsed ?? null,
     lastDamageTaken: 0,
     lastDamageType: null,

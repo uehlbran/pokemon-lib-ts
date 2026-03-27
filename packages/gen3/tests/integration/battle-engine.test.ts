@@ -1,7 +1,7 @@
 import type { BattleConfig } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_STATUS_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, CORE_STATUS_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
   createGen3DataManager,
@@ -366,14 +366,14 @@ describe("Gen 3 Battle Engine Integration", () => {
         (event) =>
           event.type === "stat-change" &&
           event.side === 1 &&
-          event.stat === "attack" &&
+          event.stat === CORE_STAT_IDS.attack &&
           event.stages === -1,
       );
 
     expect(intimidateEvent).toMatchObject({
       type: "stat-change",
       side: 1,
-      stat: "attack",
+      stat: CORE_STAT_IDS.attack,
       stages: -1,
     });
   });
@@ -438,7 +438,8 @@ describe("Gen 3 Battle Engine Integration", () => {
     const speedBoostEvents = engine
       .getEventLog()
       .filter(
-        (event) => event.type === "stat-change" && event.side === 0 && event.stat === "speed",
+        (event) =>
+          event.type === "stat-change" && event.side === 0 && event.stat === CORE_STAT_IDS.speed,
       );
 
     expect(speedBoostEvents).toHaveLength(0);
@@ -477,7 +478,7 @@ describe("Gen 3 Battle Engine Integration", () => {
         (event) =>
           event.type === "stat-change" &&
           event.side === 0 &&
-          event.stat === "speed" &&
+          event.stat === CORE_STAT_IDS.speed &&
           event.stages === 1,
       );
 

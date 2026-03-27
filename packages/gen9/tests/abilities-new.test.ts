@@ -4,6 +4,7 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
@@ -13,6 +14,8 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -111,7 +114,7 @@ function createSyntheticPokemonInstance(overrides: {
     moves: [],
     heldItem: overrides.heldItem ?? null,
     friendship: species.baseFriendship,
-    metLocation: "test",
+    metLocation: CORE_POKEMON_DEFAULTS.metLocation,
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: ITEMS.pokeBall,
@@ -540,14 +543,14 @@ describe("handleEmbodyAspect", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.embodyAspectUsed,
         },
         {
-          effectType: "stat-change",
-          target: "self",
-          stat: "speed",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.speed,
           stages: 1,
         },
       ],
@@ -571,14 +574,14 @@ describe("handleEmbodyAspect", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.embodyAspectUsed,
         },
         {
-          effectType: "stat-change",
-          target: "self",
-          stat: "attack",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.attack,
           stages: 1,
         },
       ],
@@ -602,14 +605,14 @@ describe("handleEmbodyAspect", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.embodyAspectUsed,
         },
         {
-          effectType: "stat-change",
-          target: "self",
-          stat: "spDefense",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.spDefense,
           stages: 1,
         },
       ],
@@ -633,14 +636,14 @@ describe("handleEmbodyAspect", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.embodyAspectUsed,
         },
         {
-          effectType: "stat-change",
-          target: "self",
-          stat: "defense",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.defense,
           stages: 1,
         },
       ],
@@ -715,16 +718,16 @@ describe("isEmbodyAspect", () => {
 describe("EMBODY_ASPECT_BOOSTS", () => {
   it("given Embody Aspect Teal, when looking up its stat boost, then it maps to Speed", () => {
     // Source: Showdown data/abilities.ts:1162-1212
-    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectTeal]).toBe("speed");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectTeal]).toBe(CORE_STAT_IDS.speed);
   });
   it("given Embody Aspect Hearthflame, when looking up its stat boost, then it maps to Attack", () => {
-    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectHearthflame]).toBe("attack");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectHearthflame]).toBe(CORE_STAT_IDS.attack);
   });
   it("given Embody Aspect Wellspring, when looking up its stat boost, then it maps to Sp. Def", () => {
     expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectWellspring]).toBe("spDefense");
   });
   it("given Embody Aspect Cornerstone, when looking up its stat boost, then it maps to Defense", () => {
-    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectCornerstone]).toBe("defense");
+    expect(EMBODY_ASPECT_BOOSTS[ABILITIES.embodyAspectCornerstone]).toBe(CORE_STAT_IDS.defense);
   });
 });
 
@@ -886,14 +889,14 @@ describe("handleGen9IntrepidSwordTrigger", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.intrepidSwordUsed,
         },
         {
-          effectType: "stat-change",
-          target: "self",
-          stat: "attack",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.attack,
           stages: 1,
         },
       ],
@@ -959,14 +962,14 @@ describe("handleGen9DauntlessShieldTrigger", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.dauntlessShieldUsed,
         },
         {
-          effectType: "stat-change",
-          target: "self",
-          stat: "defense",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.defense,
           stages: 1,
         },
       ],
@@ -1037,13 +1040,13 @@ describe("handleProteanGen9", () => {
       activated: true,
       effects: [
         {
-          effectType: "volatile-inflict",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+          target: BATTLE_EFFECT_TARGETS.self,
           volatile: VOLATILES.proteanUsed,
         },
         {
-          effectType: "type-change",
-          target: "self",
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+          target: BATTLE_EFFECT_TARGETS.self,
           types: [TYPES.fire],
         },
       ],
@@ -1108,13 +1111,13 @@ describe("handleProteanGen9", () => {
     expect(result.activated).toBe(true);
     expect(result.effects).toEqual([
       {
-        effectType: "volatile-inflict",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+        target: BATTLE_EFFECT_TARGETS.self,
         volatile: VOLATILES.proteanUsed,
       },
       {
-        effectType: "type-change",
-        target: "self",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+        target: BATTLE_EFFECT_TARGETS.self,
         types: [TYPES.fire],
       },
     ]);

@@ -1,5 +1,20 @@
-import type { ItemContext, ItemEffect, ItemResult } from "@pokemon-lib-ts/battle";
-import type { MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
+  type ItemContext,
+  type ItemEffect,
+  type ItemResult,
+} from "@pokemon-lib-ts/battle";
+import type { BattleStat, MoveEffect, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN5_ABILITY_IDS, GEN5_ITEM_IDS } from "./data/reference-ids.js";
 import { sheerForceSuppressesLifeOrb } from "./Gen5AbilitiesDamage";
 
 /** No-op result for when an item doesn't activate. */
@@ -7,6 +22,39 @@ const NO_ACTIVATION: ItemResult = {
   activated: false,
   effects: [],
   messages: [],
+};
+
+const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
+const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
+const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
+const PINCH_BERRY_INFO: Readonly<
+  Record<string, { stat: BattleStat; displayName: string; messageStat: string }>
+> = {
+  [GEN5_ITEM_IDS.liechiBerry]: {
+    stat: CORE_STAT_IDS.attack,
+    displayName: "Liechi Berry",
+    messageStat: "Attack",
+  },
+  [GEN5_ITEM_IDS.ganlonBerry]: {
+    stat: CORE_STAT_IDS.defense,
+    displayName: "Ganlon Berry",
+    messageStat: "Defense",
+  },
+  [GEN5_ITEM_IDS.salacBerry]: {
+    stat: CORE_STAT_IDS.speed,
+    displayName: "Salac Berry",
+    messageStat: "Speed",
+  },
+  [GEN5_ITEM_IDS.petayaBerry]: {
+    stat: CORE_STAT_IDS.spAttack,
+    displayName: "Petaya Berry",
+    messageStat: "Sp. Atk",
+  },
+  [GEN5_ITEM_IDS.apicotBerry]: {
+    stat: CORE_STAT_IDS.spDefense,
+    displayName: "Apicot Berry",
+    messageStat: "Sp. Def",
+  },
 };
 
 /**
@@ -21,23 +69,23 @@ const NO_ACTIVATION: ItemResult = {
  * Source: references/pokemon-showdown/data/items.ts -- individual gem entries
  */
 export const GEM_TYPES: Record<string, string> = {
-  "normal-gem": "normal",
-  "fire-gem": "fire",
-  "water-gem": "water",
-  "electric-gem": "electric",
-  "grass-gem": "grass",
-  "ice-gem": "ice",
-  "fighting-gem": "fighting",
-  "poison-gem": "poison",
-  "ground-gem": "ground",
-  "flying-gem": "flying",
-  "psychic-gem": "psychic",
-  "bug-gem": "bug",
-  "rock-gem": "rock",
-  "ghost-gem": "ghost",
-  "dragon-gem": "dragon",
-  "dark-gem": "dark",
-  "steel-gem": "steel",
+  [GEN5_ITEM_IDS.normalGem]: CORE_TYPE_IDS.normal,
+  [GEN5_ITEM_IDS.fireGem]: CORE_TYPE_IDS.fire,
+  [GEN5_ITEM_IDS.waterGem]: CORE_TYPE_IDS.water,
+  [GEN5_ITEM_IDS.electricGem]: CORE_TYPE_IDS.electric,
+  [GEN5_ITEM_IDS.grassGem]: CORE_TYPE_IDS.grass,
+  [GEN5_ITEM_IDS.iceGem]: CORE_TYPE_IDS.ice,
+  [GEN5_ITEM_IDS.fightingGem]: CORE_TYPE_IDS.fighting,
+  [GEN5_ITEM_IDS.poisonGem]: CORE_TYPE_IDS.poison,
+  [GEN5_ITEM_IDS.groundGem]: CORE_TYPE_IDS.ground,
+  [GEN5_ITEM_IDS.flyingGem]: CORE_TYPE_IDS.flying,
+  [GEN5_ITEM_IDS.psychicGem]: CORE_TYPE_IDS.psychic,
+  [GEN5_ITEM_IDS.bugGem]: CORE_TYPE_IDS.bug,
+  [GEN5_ITEM_IDS.rockGem]: CORE_TYPE_IDS.rock,
+  [GEN5_ITEM_IDS.ghostGem]: CORE_TYPE_IDS.ghost,
+  [GEN5_ITEM_IDS.dragonGem]: CORE_TYPE_IDS.dragon,
+  [GEN5_ITEM_IDS.darkGem]: CORE_TYPE_IDS.dark,
+  [GEN5_ITEM_IDS.steelGem]: CORE_TYPE_IDS.steel,
 };
 
 /**
@@ -57,7 +105,7 @@ export function getPinchBerryThreshold(
   pokemon: { ability: string },
   normalFraction: number,
 ): number {
-  if (pokemon.ability === "gluttony" && normalFraction <= 0.25) {
+  if (pokemon.ability === GEN5_ABILITY_IDS.gluttony && normalFraction <= 0.25) {
     return 0.5;
   }
   return normalFraction;
@@ -97,14 +145,14 @@ export function applyGen5HeldItem(trigger: string, context: ItemContext): ItemRe
   // Klutz: holder cannot use its held item -- suppress all item triggers
   // Source: Bulbapedia -- Klutz: "The Pokemon can't use any held items"
   // Source: Showdown data/abilities.ts -- Klutz gates all item battle effects
-  if (context.pokemon.ability === "klutz") {
+  if (context.pokemon.ability === GEN5_ABILITY_IDS.klutz) {
     return NO_ACTIVATION;
   }
 
   // Embargo: prevents item use for 5 turns
   // Source: Bulbapedia -- Embargo: "prevents the target from using its held item"
   // Source: Showdown Gen 5 -- Embargo blocks item effects
-  if (context.pokemon.volatileStatuses.has("embargo")) {
+  if (context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
     return NO_ACTIVATION;
   }
 
@@ -137,11 +185,11 @@ export function applyGen5HeldItem(trigger: string, context: ItemContext): ItemRe
   // Source: Showdown data/abilities.ts -- Unburden onAfterUseItem
   if (
     result.activated &&
-    context.pokemon.ability === "unburden" &&
-    result.effects.some((e) => e.type === "consume") &&
-    !context.pokemon.volatileStatuses.has("unburden")
+    context.pokemon.ability === GEN5_ABILITY_IDS.unburden &&
+    result.effects.some((e) => e.type === ITEM_EFFECT.consume) &&
+    !context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
   ) {
-    context.pokemon.volatileStatuses.set("unburden", { turnsLeft: -1 });
+    context.pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
   }
 
   return result;
@@ -163,26 +211,26 @@ export function applyGen5HeldItem(trigger: string, context: ItemContext): ItemRe
  *   consecutively. +20% per consecutive use, up to 100% (2.0x)."
  */
 function handleBeforeMove(item: string, context: ItemContext): ItemResult {
-  if (item !== "metronome") return NO_ACTIVATION;
+  if (item !== GEN5_ITEM_IDS.metronome) return NO_ACTIVATION;
 
   const pokemon = context.pokemon;
   const moveId = context.move?.id;
   if (!moveId) return NO_ACTIVATION;
 
-  const existing = pokemon.volatileStatuses.get("metronome-count");
+  const existing = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.metronomeCount);
   const previousMoveId = existing?.data?.moveId as string | undefined;
   const previousCount = (existing?.data?.count as number) ?? 0;
 
   if (previousMoveId === moveId) {
     // Same move used consecutively -- increment count
     const newCount = previousCount + 1;
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: newCount, moveId },
     });
   } else {
     // Different move (or first use) -- reset to count 1
-    pokemon.volatileStatuses.set("metronome-count", {
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 1, moveId },
     });
@@ -238,28 +286,28 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
   const maxHp = pokemon.pokemon.calculatedStats?.hp ?? currentHp;
   const status = pokemon.pokemon.status;
   const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
-  const isPoison = pokemon.types.includes("poison");
+  const isPoison = pokemon.types.includes(CORE_TYPE_IDS.poison);
 
   switch (item) {
     // Leftovers: Heal 1/16 max HP each turn, NOT consumed
     // Source: Showdown data/items.ts -- Leftovers heals 1/16 max HP
-    case "leftovers": {
+    case GEN5_ITEM_IDS.leftovers: {
       const healAmount = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ type: "heal", target: "self", value: healAmount }],
+        effects: [{ type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount }],
         messages: [`${pokemonName}'s Leftovers restored its HP!`],
       };
     }
 
     // Black Sludge: Heals Poison-types 1/16 max HP; damages non-Poison-types 1/8 max HP
     // Source: Showdown data/items.ts -- Black Sludge onResidual
-    case "black-sludge": {
+    case GEN5_ITEM_IDS.blackSludge: {
       if (isPoison) {
         const healAmount = Math.max(1, Math.floor(maxHp / 16));
         return {
           activated: true,
-          effects: [{ type: "heal", target: "self", value: healAmount }],
+          effects: [{ type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount }],
           messages: [`${pokemonName}'s Black Sludge restored its HP!`],
         };
       }
@@ -267,53 +315,72 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ type: "chip-damage", target: "self", value: chipDamage }],
+        effects: [{ type: ITEM_EFFECT.chipDamage, target: EFFECT_TARGET.self, value: chipDamage }],
         messages: [`${pokemonName} was hurt by its Black Sludge!`],
       };
     }
 
     // Toxic Orb: Badly poisons the holder at end of turn
     // Source: Showdown data/items.ts -- Toxic Orb onResidual
-    case "toxic-orb": {
+    case GEN5_ITEM_IDS.toxicOrb: {
       if (status) return NO_ACTIVATION; // Already has a status
       // Poison and Steel types are immune to poisoning
       // Source: Showdown -- type immunity prevents Orb activation
-      if (pokemon.types.includes("poison") || pokemon.types.includes("steel")) {
+      if (
+        pokemon.types.includes(CORE_TYPE_IDS.poison) ||
+        pokemon.types.includes(CORE_TYPE_IDS.steel)
+      ) {
         return NO_ACTIVATION;
       }
       return {
         activated: true,
-        effects: [{ type: "inflict-status", target: "self", status: "badly-poisoned" }],
+        effects: [
+          {
+            type: ITEM_EFFECT.inflictStatus,
+            target: EFFECT_TARGET.self,
+            status: CORE_STATUS_IDS.badlyPoisoned,
+          },
+        ],
         messages: [`${pokemonName} was badly poisoned by its Toxic Orb!`],
       };
     }
 
     // Flame Orb: Burns the holder at end of turn
     // Source: Showdown data/items.ts -- Flame Orb onResidual
-    case "flame-orb": {
+    case GEN5_ITEM_IDS.flameOrb: {
       if (status) return NO_ACTIVATION; // Already has a status
       // Fire types are immune to burns
       // Source: Showdown -- type immunity prevents Orb activation
-      if (pokemon.types.includes("fire")) {
+      if (pokemon.types.includes(CORE_TYPE_IDS.fire)) {
         return NO_ACTIVATION;
       }
       return {
         activated: true,
-        effects: [{ type: "inflict-status", target: "self", status: "burn" }],
+        effects: [
+          {
+            type: ITEM_EFFECT.inflictStatus,
+            target: EFFECT_TARGET.self,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [`${pokemonName} was burned by its Flame Orb!`],
       };
     }
 
     // Sitrus Berry: Heal 1/4 max HP when HP <= 50% max HP (consumed)
     // Source: Showdown data/items.ts -- Sitrus Berry onEat / onUpdate
-    case "sitrus-berry": {
+    case GEN5_ITEM_IDS.sitrusBerry: {
       if (currentHp <= Math.floor(maxHp / 2)) {
         const healAmount = Math.max(1, Math.floor(maxHp / 4));
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: healAmount },
-            { type: "consume", target: "self", value: "sitrus-berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.sitrusBerry,
+            },
           ],
           messages: [`${pokemonName}'s Sitrus Berry restored its HP!`],
         };
@@ -323,13 +390,17 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Oran Berry: Restore 10 HP when HP <= 50% max HP (consumed)
     // Source: Showdown data/items.ts -- Oran Berry
-    case "oran-berry": {
+    case GEN5_ITEM_IDS.oranBerry: {
       if (currentHp <= Math.floor(maxHp / 2)) {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 10 },
-            { type: "consume", target: "self", value: "oran-berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 10 },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.oranBerry,
+            },
           ],
           messages: [`${pokemonName}'s Oran Berry restored 10 HP!`],
         };
@@ -339,20 +410,28 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Lum Berry: Cures any primary status OR confusion (consumed)
     // Source: Showdown data/items.ts -- Lum Berry onUpdate
-    case "lum-berry": {
-      const hasConfusion = pokemon.volatileStatuses.has("confusion");
+    case GEN5_ITEM_IDS.lumBerry: {
+      const hasConfusion = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion);
       const hasPrimaryStatus = status != null;
       if (!hasPrimaryStatus && !hasConfusion) {
         return NO_ACTIVATION;
       }
       const effects: ItemEffect[] = [];
       if (hasPrimaryStatus) {
-        effects.push({ type: "status-cure", target: "self" });
+        effects.push({ type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self });
       }
       if (hasConfusion) {
-        effects.push({ type: "volatile-cure", target: "self", value: "confusion" });
+        effects.push({
+          type: ITEM_EFFECT.volatileCure,
+          target: EFFECT_TARGET.self,
+          value: CORE_VOLATILE_IDS.confusion,
+        });
       }
-      effects.push({ type: "consume", target: "self", value: "lum-berry" });
+      effects.push({
+        type: ITEM_EFFECT.consume,
+        target: EFFECT_TARGET.self,
+        value: GEN5_ITEM_IDS.lumBerry,
+      });
       return {
         activated: true,
         effects,
@@ -362,13 +441,17 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Cheri Berry: Cures paralysis (consumed)
     // Source: Showdown data/items.ts -- Cheri Berry
-    case "cheri-berry": {
-      if (status === "paralysis") {
+    case GEN5_ITEM_IDS.cheriBerry: {
+      if (status === CORE_STATUS_IDS.paralysis) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "cheri-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.cheriBerry,
+            },
           ],
           messages: [`${pokemonName}'s Cheri Berry cured its paralysis!`],
         };
@@ -378,13 +461,17 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Chesto Berry: Cures sleep (consumed)
     // Source: Showdown data/items.ts -- Chesto Berry
-    case "chesto-berry": {
-      if (status === "sleep") {
+    case GEN5_ITEM_IDS.chestoBerry: {
+      if (status === CORE_STATUS_IDS.sleep) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "chesto-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.chestoBerry,
+            },
           ],
           messages: [`${pokemonName}'s Chesto Berry woke it up!`],
         };
@@ -394,13 +481,17 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Pecha Berry: Cures poison and badly-poisoned (consumed)
     // Source: Showdown data/items.ts -- Pecha Berry
-    case "pecha-berry": {
-      if (status === "poison" || status === "badly-poisoned") {
+    case GEN5_ITEM_IDS.pechaBerry: {
+      if (status === CORE_STATUS_IDS.poison || status === CORE_STATUS_IDS.badlyPoisoned) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "pecha-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.pechaBerry,
+            },
           ],
           messages: [`${pokemonName}'s Pecha Berry cured its poisoning!`],
         };
@@ -410,13 +501,17 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Rawst Berry: Cures burn (consumed)
     // Source: Showdown data/items.ts -- Rawst Berry
-    case "rawst-berry": {
-      if (status === "burn") {
+    case GEN5_ITEM_IDS.rawstBerry: {
+      if (status === CORE_STATUS_IDS.burn) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "rawst-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.rawstBerry,
+            },
           ],
           messages: [`${pokemonName}'s Rawst Berry cured its burn!`],
         };
@@ -426,13 +521,17 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Aspear Berry: Cures freeze (consumed)
     // Source: Showdown data/items.ts -- Aspear Berry
-    case "aspear-berry": {
-      if (status === "freeze") {
+    case GEN5_ITEM_IDS.aspearBerry: {
+      if (status === CORE_STATUS_IDS.freeze) {
         return {
           activated: true,
           effects: [
-            { type: "status-cure", target: "self" },
-            { type: "consume", target: "self", value: "aspear-berry" },
+            { type: ITEM_EFFECT.statusCure, target: EFFECT_TARGET.self },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.aspearBerry,
+            },
           ],
           messages: [`${pokemonName}'s Aspear Berry thawed it out!`],
         };
@@ -442,13 +541,21 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Persim Berry: Cures confusion volatile status (consumed)
     // Source: Showdown data/items.ts -- Persim Berry
-    case "persim-berry": {
-      if (pokemon.volatileStatuses.has("confusion")) {
+    case GEN5_ITEM_IDS.persimBerry: {
+      if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
         return {
           activated: true,
           effects: [
-            { type: "volatile-cure", target: "self", value: "confusion" },
-            { type: "consume", target: "self", value: "persim-berry" },
+            {
+              type: ITEM_EFFECT.volatileCure,
+              target: EFFECT_TARGET.self,
+              value: CORE_VOLATILE_IDS.confusion,
+            },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.persimBerry,
+            },
           ],
           messages: [`${pokemonName}'s Persim Berry snapped it out of confusion!`],
         };
@@ -460,14 +567,14 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     // CHANGED from Gen 4 (was infatuation only)
     // Source: Showdown data/items.ts -- Mental Herb onUpdate:
     //   checks attract, taunt, encore, torment, disable, healblock
-    case "mental-herb": {
+    case GEN5_ITEM_IDS.mentalHerb: {
       const mentalVolatiles: VolatileStatus[] = [
-        "infatuation",
-        "taunt",
-        "encore",
-        "disable",
-        "torment",
-        "heal-block",
+        CORE_VOLATILE_IDS.infatuation,
+        CORE_VOLATILE_IDS.taunt,
+        CORE_VOLATILE_IDS.encore,
+        CORE_VOLATILE_IDS.disable,
+        CORE_VOLATILE_IDS.torment,
+        CORE_VOLATILE_IDS.healBlock,
       ];
       const hasMentalVolatile = mentalVolatiles.some((v) => pokemon.volatileStatuses.has(v));
       if (!hasMentalVolatile) {
@@ -476,10 +583,14 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
       const effects: ItemEffect[] = [];
       for (const v of mentalVolatiles) {
         if (pokemon.volatileStatuses.has(v)) {
-          effects.push({ type: "volatile-cure", target: "self", value: v });
+          effects.push({ type: ITEM_EFFECT.volatileCure, target: EFFECT_TARGET.self, value: v });
         }
       }
-      effects.push({ type: "consume", target: "self", value: "mental-herb" });
+      effects.push({
+        type: ITEM_EFFECT.consume,
+        target: EFFECT_TARGET.self,
+        value: GEN5_ITEM_IDS.mentalHerb,
+      });
       return {
         activated: true,
         effects,
@@ -489,24 +600,28 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
 
     // Sticky Barb: 1/8 max HP damage to holder each turn (NOT consumed)
     // Source: Showdown data/items.ts -- Sticky Barb onResidual
-    case "sticky-barb": {
+    case GEN5_ITEM_IDS.stickyBarb: {
       const chipDamage = Math.max(1, Math.floor(maxHp / 8));
       return {
         activated: true,
-        effects: [{ type: "chip-damage", target: "self", value: chipDamage }],
+        effects: [{ type: ITEM_EFFECT.chipDamage, target: EFFECT_TARGET.self, value: chipDamage }],
         messages: [`${pokemonName} was hurt by its Sticky Barb!`],
       };
     }
 
     // Berry Juice: Heal 20 HP when holder drops to <=50% HP (consumed)
     // Source: Showdown data/items.ts -- Berry Juice
-    case "berry-juice": {
+    case GEN5_ITEM_IDS.berryJuice: {
       if (currentHp <= Math.floor(maxHp / 2)) {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 20 },
-            { type: "consume", target: "self", value: "berry-juice" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 20 },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.berryJuice,
+            },
           ],
           messages: [`${pokemonName}'s Berry Juice restored 20 HP!`],
         };
@@ -517,6 +632,29 @@ function handleEndOfTurn(item: string, context: ItemContext): ItemResult {
     default:
       return NO_ACTIVATION;
   }
+}
+
+function tryPinchBerryActivation(
+  item: string,
+  pokemon: ItemContext["pokemon"],
+  currentHp: number,
+  maxHp: number,
+): ItemResult | null {
+  const info = PINCH_BERRY_INFO[item];
+  if (!info) return null;
+  const threshold = getPinchBerryThreshold(pokemon, 0.25);
+  if (currentHp <= 0 || currentHp > Math.floor(maxHp * threshold)) {
+    return null;
+  }
+  const name = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+  return {
+    activated: true,
+    effects: [
+      { type: ITEM_EFFECT.statBoost, target: EFFECT_TARGET.self, value: info.stat },
+      { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: item },
+    ],
+    messages: [`${name}'s ${info.displayName} raised its ${info.messageStat}!`],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -549,14 +687,18 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Sitrus Berry: Activates when HP drops to <= 50% after damage.
     // Note: currentHp is already post-damage (HP subtraction happens before this trigger).
     // Source: Showdown data/items.ts -- Sitrus Berry onUpdate post-damage check
-    case "sitrus-berry": {
+    case GEN5_ITEM_IDS.sitrusBerry: {
       if (currentHp > 0 && currentHp <= Math.floor(maxHp / 2)) {
         const healAmount = Math.max(1, Math.floor(maxHp / 4));
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: healAmount },
-            { type: "consume", target: "self", value: "sitrus-berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.sitrusBerry,
+            },
           ],
           messages: [`${pokemonName}'s Sitrus Berry restored its HP!`],
         };
@@ -567,13 +709,17 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Oran Berry: Activates when HP drops to <= 50% after damage.
     // Note: currentHp is already post-damage.
     // Source: Showdown data/items.ts -- Oran Berry post-damage check
-    case "oran-berry": {
+    case GEN5_ITEM_IDS.oranBerry: {
       if (currentHp > 0 && currentHp <= Math.floor(maxHp / 2)) {
         return {
           activated: true,
           effects: [
-            { type: "heal", target: "self", value: 10 },
-            { type: "consume", target: "self", value: "oran-berry" },
+            { type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: 10 },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.oranBerry,
+            },
           ],
           messages: [`${pokemonName}'s Oran Berry restored 10 HP!`],
         };
@@ -583,95 +729,35 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     // Stat pinch berries: boost a stat by +1 when HP drops to <=25% (or <=50% with Gluttony)
     // Source: Showdown data/items.ts -- stat pinch berries onUpdate trigger
-    case "liechi-berry": {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      // Note: currentHp is already post-damage (HP subtraction happens before this trigger).
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: "stat-boost", target: "self", value: "attack" },
-            { type: "consume", target: "self", value: "liechi-berry" },
-          ],
-          messages: [`${pokemonName}'s Liechi Berry raised its Attack!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case "ganlon-berry": {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: "stat-boost", target: "self", value: "defense" },
-            { type: "consume", target: "self", value: "ganlon-berry" },
-          ],
-          messages: [`${pokemonName}'s Ganlon Berry raised its Defense!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case "salac-berry": {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: "stat-boost", target: "self", value: "speed" },
-            { type: "consume", target: "self", value: "salac-berry" },
-          ],
-          messages: [`${pokemonName}'s Salac Berry raised its Speed!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case "petaya-berry": {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: "stat-boost", target: "self", value: "spAttack" },
-            { type: "consume", target: "self", value: "petaya-berry" },
-          ],
-          messages: [`${pokemonName}'s Petaya Berry raised its Sp. Atk!`],
-        };
-      }
-      return NO_ACTIVATION;
-    }
-
-    case "apicot-berry": {
-      const threshold = getPinchBerryThreshold(pokemon, 0.25);
-      if (currentHp > 0 && currentHp <= Math.floor(maxHp * threshold)) {
-        return {
-          activated: true,
-          effects: [
-            { type: "stat-boost", target: "self", value: "spDefense" },
-            { type: "consume", target: "self", value: "apicot-berry" },
-          ],
-          messages: [`${pokemonName}'s Apicot Berry raised its Sp. Def!`],
-        };
-      }
-      return NO_ACTIVATION;
+    case GEN5_ITEM_IDS.liechiBerry:
+    case GEN5_ITEM_IDS.ganlonBerry:
+    case GEN5_ITEM_IDS.salacBerry:
+    case GEN5_ITEM_IDS.petayaBerry:
+    case GEN5_ITEM_IDS.apicotBerry: {
+      return tryPinchBerryActivation(item, pokemon, currentHp, maxHp) ?? NO_ACTIVATION;
     }
 
     // Jaboca Berry: when hit by a physical move, attacker takes 1/8 of ATTACKER's max HP
     // Source: Showdown data/items.ts -- Jaboca Berry onDamagingHit:
     //   this.damage(source.baseMaxhp / 8, source, target)
-    case "jaboca-berry": {
+    case GEN5_ITEM_IDS.jabocaBerry: {
       const moveCategory = context.move?.category;
-      if (moveCategory === "physical" && damage > 0) {
+      if (moveCategory === CORE_MOVE_CATEGORIES.physical && damage > 0) {
         const attackerMaxHp = getOpponentMaxHp(context);
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
         return {
           activated: true,
           effects: [
-            { type: "chip-damage", target: "opponent", value: retaliationDamage },
-            { type: "consume", target: "self", value: "jaboca-berry" },
+            {
+              type: ITEM_EFFECT.chipDamage,
+              target: EFFECT_TARGET.opponent,
+              value: retaliationDamage,
+            },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.jabocaBerry,
+            },
           ],
           messages: [`${pokemonName}'s Jaboca Berry hurt the attacker!`],
         };
@@ -682,16 +768,24 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Rowap Berry: when hit by a special move, attacker takes 1/8 of ATTACKER's max HP
     // Source: Showdown data/items.ts -- Rowap Berry onDamagingHit:
     //   this.damage(source.baseMaxhp / 8, source, target)
-    case "rowap-berry": {
+    case GEN5_ITEM_IDS.rowapBerry: {
       const moveCategory = context.move?.category;
-      if (moveCategory === "special" && damage > 0) {
+      if (moveCategory === CORE_MOVE_CATEGORIES.special && damage > 0) {
         const attackerMaxHp = getOpponentMaxHp(context);
         const retaliationDamage = Math.max(1, Math.floor(attackerMaxHp / 8));
         return {
           activated: true,
           effects: [
-            { type: "chip-damage", target: "opponent", value: retaliationDamage },
-            { type: "consume", target: "self", value: "rowap-berry" },
+            {
+              type: ITEM_EFFECT.chipDamage,
+              target: EFFECT_TARGET.opponent,
+              value: retaliationDamage,
+            },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.rowapBerry,
+            },
           ],
           messages: [`${pokemonName}'s Rowap Berry hurt the attacker!`],
         };
@@ -701,7 +795,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     // Sticky Barb: transfer to attacker on contact move if attacker has no held item.
     // Source: Showdown data/items.ts -- Sticky Barb onHit: item transfer on contact
-    case "sticky-barb": {
+    case GEN5_ITEM_IDS.stickyBarb: {
       const moveUsed = context.move;
       if (!moveUsed?.flags?.contact) {
         return NO_ACTIVATION;
@@ -719,7 +813,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
         return NO_ACTIVATION;
       }
       pokemon.pokemon.heldItem = null;
-      opponent.pokemon.heldItem = "sticky-barb";
+      opponent.pokemon.heldItem = GEN5_ITEM_IDS.stickyBarb;
       return {
         activated: true,
         effects: [],
@@ -731,11 +825,17 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
 
     // Air Balloon: pops when hit by any damaging move (consumed)
     // Source: Showdown data/items.ts -- Air Balloon onDamagingHit: useItem()
-    case "air-balloon": {
+    case GEN5_ITEM_IDS.airBalloon: {
       if (damage > 0) {
         return {
           activated: true,
-          effects: [{ type: "consume", target: "self", value: "air-balloon" }],
+          effects: [
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.airBalloon,
+            },
+          ],
           messages: [`${pokemonName}'s Air Balloon popped!`],
         };
       }
@@ -745,13 +845,17 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Red Card: forces the attacker to switch out after being hit (consumed)
     // Source: Showdown data/items.ts -- Red Card onAfterMoveSecondary:
     //   source.forceSwitchFlag = true; target.useItem()
-    case "red-card": {
+    case GEN5_ITEM_IDS.redCard: {
       if (damage > 0) {
         return {
           activated: true,
           effects: [
-            { type: "none", target: "opponent", value: "force-switch" },
-            { type: "consume", target: "self", value: "red-card" },
+            {
+              type: ITEM_EFFECT.none,
+              target: EFFECT_TARGET.opponent,
+              value: ITEM_EFFECT_VALUE.forceSwitch,
+            },
+            { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: GEN5_ITEM_IDS.redCard },
           ],
           messages: [`${pokemonName} held up its Red Card against the attacker!`],
         };
@@ -762,13 +866,21 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Eject Button: holder switches out after being hit (consumed)
     // Source: Showdown data/items.ts -- Eject Button onAfterMoveSecondary:
     //   target.switchFlag = true; target.useItem()
-    case "eject-button": {
+    case GEN5_ITEM_IDS.ejectButton: {
       if (damage > 0) {
         return {
           activated: true,
           effects: [
-            { type: "none", target: "self", value: "force-switch" },
-            { type: "consume", target: "self", value: "eject-button" },
+            {
+              type: ITEM_EFFECT.none,
+              target: EFFECT_TARGET.self,
+              value: ITEM_EFFECT_VALUE.forceSwitch,
+            },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.ejectButton,
+            },
           ],
           messages: [`${pokemonName}'s Eject Button activated!`],
         };
@@ -779,13 +891,21 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Absorb Bulb: +1 SpA when hit by a Water-type move (consumed)
     // Source: Showdown data/items.ts -- Absorb Bulb onDamagingHit:
     //   if (move.type === 'Water') boost spa by 1, useItem
-    case "absorb-bulb": {
-      if (damage > 0 && context.move?.type === "water") {
+    case GEN5_ITEM_IDS.absorbBulb: {
+      if (damage > 0 && context.move?.type === CORE_TYPE_IDS.water) {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "spAttack" },
-            { type: "consume", target: "self", value: "absorb-bulb" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.spAttack,
+            },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.absorbBulb,
+            },
           ],
           messages: [`${pokemonName}'s Absorb Bulb raised its Sp. Atk!`],
         };
@@ -796,13 +916,21 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Cell Battery: +1 Atk when hit by an Electric-type move (consumed)
     // Source: Showdown data/items.ts -- Cell Battery onDamagingHit:
     //   if (move.type === 'Electric') boost atk by 1, useItem
-    case "cell-battery": {
-      if (damage > 0 && context.move?.type === "electric") {
+    case GEN5_ITEM_IDS.cellBattery: {
+      if (damage > 0 && context.move?.type === CORE_TYPE_IDS.electric) {
         return {
           activated: true,
           effects: [
-            { type: "stat-boost", target: "self", value: "attack" },
-            { type: "consume", target: "self", value: "cell-battery" },
+            {
+              type: ITEM_EFFECT.statBoost,
+              target: EFFECT_TARGET.self,
+              value: CORE_STAT_IDS.attack,
+            },
+            {
+              type: ITEM_EFFECT.consume,
+              target: EFFECT_TARGET.self,
+              value: GEN5_ITEM_IDS.cellBattery,
+            },
           ],
           messages: [`${pokemonName}'s Cell Battery raised its Attack!`],
         };
@@ -833,7 +961,7 @@ function handleOnContact(item: string, context: ItemContext): ItemResult {
     // NOT consumed -- permanent item.
     // Source: Showdown data/items.ts -- Rocky Helmet onDamagingHit:
     //   if (move.flags['contact']) this.damage(source.baseMaxhp / 6, source, target)
-    case "rocky-helmet": {
+    case GEN5_ITEM_IDS.rockyHelmet: {
       const moveUsed = context.move;
       if (!moveUsed?.flags?.contact) {
         return NO_ACTIVATION;
@@ -843,7 +971,9 @@ function handleOnContact(item: string, context: ItemContext): ItemResult {
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 6));
       return {
         activated: true,
-        effects: [{ type: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          { type: ITEM_EFFECT.chipDamage, target: EFFECT_TARGET.opponent, value: chipDamage },
+        ],
         messages: [`${pokemonName}'s Rocky Helmet hurt the attacker!`],
       };
     }
@@ -876,13 +1006,13 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
     // CHANGED from Gen 4 (Gen 4 used a ~200-move whitelist)
     // Source: Showdown data/items.ts -- King's Rock onModifyMovePriority -1
     //   In Gen 5+, the affectedByKingsRock list is removed; applies to all moves
-    case "kings-rock": {
+    case GEN5_ITEM_IDS.kingsRock: {
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         if (context.rng.chance(0.1)) {
           return {
             activated: true,
-            effects: [{ type: "flinch", target: "opponent" }],
+            effects: [{ type: ITEM_EFFECT.flinch, target: EFFECT_TARGET.opponent }],
             messages: [`${pokemonName}'s King's Rock caused flinching!`],
           };
         }
@@ -893,13 +1023,13 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
     // Razor Fang: 10% flinch chance on ALL damaging moves (Gen 5+, no whitelist)
     // CHANGED from Gen 4 (Gen 4 used the same whitelist as King's Rock)
     // Source: Showdown data/items.ts -- Razor Fang onModifyMovePriority
-    case "razor-fang": {
+    case GEN5_ITEM_IDS.razorFang: {
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         if (context.rng.chance(0.1)) {
           return {
             activated: true,
-            effects: [{ type: "flinch", target: "opponent" }],
+            effects: [{ type: ITEM_EFFECT.flinch, target: EFFECT_TARGET.opponent }],
             messages: [`${pokemonName}'s Razor Fang caused flinching!`],
           };
         }
@@ -909,13 +1039,13 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
 
     // Shell Bell: Heal 1/8 of damage dealt (NOT consumed -- permanent item)
     // Source: Showdown data/items.ts -- Shell Bell onAfterMoveSecondarySelf
-    case "shell-bell": {
+    case GEN5_ITEM_IDS.shellBell: {
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         const healAmount = Math.max(1, Math.floor(damageDealt / 8));
         return {
           activated: true,
-          effects: [{ type: "heal", target: "self", value: healAmount }],
+          effects: [{ type: ITEM_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmount }],
           messages: [`${pokemonName}'s Shell Bell restored HP!`],
         };
       }
@@ -927,7 +1057,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
     // Sheer Force suppresses Life Orb recoil when the ability activates
     // Source: Showdown data/items.ts -- Life Orb onAfterMoveSecondarySelf
     // Source: Showdown scripts.ts -- if move.hasSheerForce, skip Life Orb recoil
-    case "life-orb": {
+    case GEN5_ITEM_IDS.lifeOrb: {
       const damageDealt = context.damage ?? 0;
       if (damageDealt > 0) {
         // Check Sheer Force suppression -- when SF activates, Life Orb recoil is skipped
@@ -939,7 +1069,7 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         const recoil = Math.max(1, Math.floor(maxHp / 10));
         return {
           activated: true,
-          effects: [{ type: "chip-damage", target: "self", value: recoil }],
+          effects: [{ type: ITEM_EFFECT.chipDamage, target: EFFECT_TARGET.self, value: recoil }],
           messages: [`${pokemonName} is hurt by its Life Orb!`],
         };
       }

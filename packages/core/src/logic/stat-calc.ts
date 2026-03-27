@@ -1,3 +1,4 @@
+import { CORE_STAT_IDS } from "../constants/reference-ids";
 import type { NatureData } from "../entities/nature";
 import type { PokemonInstance } from "../entities/pokemon";
 import type { PokemonSpeciesData } from "../entities/species";
@@ -89,35 +90,35 @@ export function calculateAllStats(
       pokemon.ivs.attack,
       pokemon.evs.attack,
       pokemon.level,
-      getNatureModifier(nature, "attack"),
+      getNatureModifier(nature, CORE_STAT_IDS.attack),
     ),
     defense: calculateStat(
       species.baseStats.defense,
       pokemon.ivs.defense,
       pokemon.evs.defense,
       pokemon.level,
-      getNatureModifier(nature, "defense"),
+      getNatureModifier(nature, CORE_STAT_IDS.defense),
     ),
     spAttack: calculateStat(
       species.baseStats.spAttack,
       pokemon.ivs.spAttack,
       pokemon.evs.spAttack,
       pokemon.level,
-      getNatureModifier(nature, "spAttack"),
+      getNatureModifier(nature, CORE_STAT_IDS.spAttack),
     ),
     spDefense: calculateStat(
       species.baseStats.spDefense,
       pokemon.ivs.spDefense,
       pokemon.evs.spDefense,
       pokemon.level,
-      getNatureModifier(nature, "spDefense"),
+      getNatureModifier(nature, CORE_STAT_IDS.spDefense),
     ),
     speed: calculateStat(
       species.baseStats.speed,
       pokemon.ivs.speed,
       pokemon.evs.speed,
       pokemon.level,
-      getNatureModifier(nature, "speed"),
+      getNatureModifier(nature, CORE_STAT_IDS.speed),
     ),
   };
 }

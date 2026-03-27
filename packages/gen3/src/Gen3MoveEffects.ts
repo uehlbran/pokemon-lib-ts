@@ -18,7 +18,14 @@
  * Source: pret/pokeemerald src/battle_script_commands.c
  */
 
-import type { ActivePokemon, MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
+import {
+  type ActivePokemon,
+  BATTLE_EFFECT_TARGETS,
+  type MoveEffectContext,
+  type MoveEffectResult,
+  type MoveEffectSideTarget,
+  type MoveEffectSideTargetWithBoth,
+} from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
   EntryHazardType,
@@ -29,6 +36,15 @@ import type {
   VolatileStatus,
   WeatherType,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN3_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen3Status } from "./Gen3Ruleset";
 
 // ---------------------------------------------------------------------------
@@ -42,7 +58,7 @@ import { canInflictGen3Status } from "./Gen3Ruleset";
 type MutableResult = {
   statusInflicted: PrimaryStatus | null;
   volatileInflicted: VolatileStatus | null;
-  statChanges: Array<{ target: "attacker" | "defender"; stat: BattleStat; stages: number }>;
+  statChanges: Array<{ target: MoveEffectSideTarget; stat: BattleStat; stages: number }>;
   recoilDamage: number;
   healAmount: number;
   switchOut: boolean;
@@ -52,23 +68,23 @@ type MutableResult = {
   /** When true along with switchOut, the DEFENDER is forced to switch (Whirlwind/Roar phazing) */
   forcedSwitch?: boolean;
   customDamage?: {
-    target: "attacker" | "defender";
+    target: MoveEffectSideTarget;
     amount: number;
     source: string;
   } | null;
   weatherSet?: { weather: WeatherType; turns: number; source: string } | null;
   hazardSet?: { hazard: EntryHazardType; targetSide: 0 | 1 } | null;
-  volatilesToClear?: Array<{ target: "attacker" | "defender"; volatile: VolatileStatus }>;
-  clearSideHazards?: "attacker" | "defender";
-  itemTransfer?: { from: "attacker" | "defender"; to: "attacker" | "defender" };
+  volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
+  clearSideHazards?: MoveEffectSideTarget;
+  itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
   selfStatusInflicted?: PrimaryStatus | null;
   selfVolatileInflicted?: VolatileStatus | null;
   selfVolatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
   volatileData?: { turnsLeft: number; data?: Record<string, unknown> } | null;
-  screenSet?: { screen: string; turnsLeft: number; side: "attacker" | "defender" } | null;
+  screenSet?: { screen: string; turnsLeft: number; side: MoveEffectSideTarget } | null;
   forcedMoveSet?: { moveIndex: number; moveId: string; volatileStatus: VolatileStatus } | null;
   /** Screens to clear from the defender's side (e.g., Brick Break removes Reflect/Light Screen) */
-  screensCleared?: "attacker" | "defender" | "both" | null;
+  screensCleared?: MoveEffectSideTargetWithBoth | null;
   /** When set, only remove screens whose type is in this list (Brick Break: reflect, light-screen) */
   screenTypesToRemove?: readonly string[];
 };
@@ -156,7 +172,10 @@ function applyMoveEffect(
       }
       for (const change of effect.changes) {
         result.statChanges.push({
-          target: effect.target === "self" ? "attacker" : "defender",
+          target:
+            effect.target === BATTLE_EFFECT_TARGETS.self
+              ? BATTLE_EFFECT_TARGETS.attacker
+              : BATTLE_EFFECT_TARGETS.defender,
           stat: change.stat,
           stages: change.stages,
         });
@@ -254,7 +273,7 @@ function applyMoveEffect(
         //   "gBattleScripting.savedBattler" + stat/volatile transfer logic
         // Source: Bulbapedia — "Baton Pass passes stat stage changes and certain
         //   volatile status conditions to the replacement Pokemon"
-        if (context.move.id === "baton-pass") {
+        if (context.move.id === GEN3_MOVE_IDS.batonPass) {
           result.batonPass = true;
         }
       }
@@ -267,7 +286,8 @@ function applyMoveEffect(
       // Max Guard uses a distinct "max-guard" volatile that the engine treats as always-block
       // (cannot be bypassed by any move, including other Max Moves).
       // Source: Showdown sim/battle-actions.ts -- Max Guard blocks all moves including Max Moves
-      result.volatileInflicted = effect.variant === "max-guard" ? "max-guard" : "protect";
+      result.volatileInflicted =
+        effect.variant === "max-guard" ? "max-guard" : CORE_VOLATILE_IDS.protect;
       break;
     }
 
@@ -302,7 +322,7 @@ function applyMoveEffect(
       result.screenSet = {
         screen: effect.screen,
         turnsLeft: effect.turns,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       };
       break;
     }
@@ -333,14 +353,14 @@ function applyMoveEffect(
  * Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Two-turn_move
  */
 const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
-  fly: "flying",
-  bounce: "flying", // Bounce grants STATUS3_ON_AIR like Fly — Source: pret/pokeemerald
-  dig: "underground",
-  dive: "underwater",
-  "solar-beam": "charging",
-  "skull-bash": "charging",
-  "razor-wind": "charging",
-  "sky-attack": "charging",
+  [GEN3_MOVE_IDS.fly]: CORE_VOLATILE_IDS.flying,
+  [GEN3_MOVE_IDS.bounce]: CORE_VOLATILE_IDS.flying, // Bounce grants STATUS3_ON_AIR like Fly — Source: pret/pokeemerald
+  [GEN3_MOVE_IDS.dig]: CORE_VOLATILE_IDS.underground,
+  [GEN3_MOVE_IDS.dive]: CORE_VOLATILE_IDS.underwater,
+  [GEN3_MOVE_IDS.solarBeam]: CORE_VOLATILE_IDS.charging,
+  [GEN3_MOVE_IDS.skullBash]: CORE_VOLATILE_IDS.charging,
+  [GEN3_MOVE_IDS.razorWind]: CORE_VOLATILE_IDS.charging,
+  [GEN3_MOVE_IDS.skyAttack]: CORE_VOLATILE_IDS.charging,
 };
 
 /**
@@ -349,15 +369,15 @@ const TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
  * Source: pret/pokeemerald src/battle_script_commands.c — charge turn messages
  */
 const TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
-  fly: "{pokemon} flew up high!",
-  bounce: "{pokemon} sprang up!",
-  dig: "{pokemon} dug underground!",
-  dive: "{pokemon} dived underwater!",
-  "solar-beam": "{pokemon} is absorbing sunlight!",
-  "skull-bash": "{pokemon} lowered its head!",
+  [GEN3_MOVE_IDS.fly]: "{pokemon} flew up high!",
+  [GEN3_MOVE_IDS.bounce]: "{pokemon} sprang up!",
+  [GEN3_MOVE_IDS.dig]: "{pokemon} dug underground!",
+  [GEN3_MOVE_IDS.dive]: "{pokemon} dived underwater!",
+  [GEN3_MOVE_IDS.solarBeam]: "{pokemon} is absorbing sunlight!",
+  [GEN3_MOVE_IDS.skullBash]: "{pokemon} lowered its head!",
   // Source: pret/pokeemerald src/battle_script_commands.c — charge turn messages
-  "razor-wind": "{pokemon} whipped up a whirlwind!",
-  "sky-attack": "{pokemon} is glowing!",
+  [GEN3_MOVE_IDS.razorWind]: "{pokemon} whipped up a whirlwind!",
+  [GEN3_MOVE_IDS.skyAttack]: "{pokemon} is glowing!",
 };
 
 /**
@@ -379,12 +399,12 @@ function handleTwoTurnEffect(
   const { attacker } = context;
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
 
-  const volatile = TWO_TURN_VOLATILE_MAP[move.id] ?? "charging";
+  const volatile = TWO_TURN_VOLATILE_MAP[move.id] ?? CORE_VOLATILE_IDS.charging;
 
   // SolarBeam in harsh sunlight: skip charge, attack immediately
   // Source: pret/pokeemerald — SolarBeam not charging in sunny weather
   // Source: Bulbapedia — "In harsh sunlight, Solar Beam can be used without a charging turn."
-  if (move.id === "solar-beam" && context.state.weather?.type === "sun") {
+  if (move.id === GEN3_MOVE_IDS.solarBeam && context.state.weather?.type === CORE_WEATHER_IDS.sun) {
     return; // No forcedMoveSet — engine proceeds with the attack immediately
   }
 
@@ -402,8 +422,12 @@ function handleTwoTurnEffect(
 
   // Skull Bash raises Defense by 1 stage on the charge turn
   // Source: pret/pokeemerald — EFFECT_SKULL_BASH: RaiseStat(STAT_DEF) before charging
-  if (move.id === "skull-bash") {
-    result.statChanges.push({ target: "attacker", stat: "defense", stages: 1 });
+  if (move.id === GEN3_MOVE_IDS.skullBash) {
+    result.statChanges.push({
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      stat: CORE_STAT_IDS.defense,
+      stages: 1,
+    });
   }
 
   const messageTemplate = TWO_TURN_MESSAGES[move.id] ?? "{pokemon} is charging up!";
@@ -428,7 +452,7 @@ function handleCustomEffect(
   const pokemonName = attacker.pokemon.nickname ?? "The Pokemon";
 
   switch (move.id) {
-    case "belly-drum": {
+    case GEN3_MOVE_IDS.bellyDrum: {
       // Lose 50% max HP, maximize Attack to +6
       // Source: pret/pokeemerald — Belly Drum cuts HP and maximizes Attack
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
@@ -436,8 +460,8 @@ function handleCustomEffect(
       if (attacker.pokemon.currentHp > halfHp) {
         result.recoilDamage = halfHp;
         result.statChanges.push({
-          target: "attacker",
-          stat: "attack",
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.attack,
           stages: 6 - attacker.statStages.attack,
         });
         result.messages.push(`${pokemonName} cut its own HP and maximized Attack!`);
@@ -447,28 +471,28 @@ function handleCustomEffect(
       break;
     }
 
-    case "rapid-spin": {
+    case GEN3_MOVE_IDS.rapidSpin: {
       // Remove leech-seed and binding volatiles from user, spikes from user's side
       // Source: pret/pokeemerald — Rapid Spin clears Spikes, Leech Seed, Wrap
       result.volatilesToClear = [
-        { target: "attacker", volatile: "leech-seed" },
-        { target: "attacker", volatile: "bound" },
+        { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.leechSeed },
+        { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.bound },
       ];
-      result.clearSideHazards = "attacker";
+      result.clearSideHazards = BATTLE_EFFECT_TARGETS.attacker;
       result.messages.push(`${pokemonName} blew away leech seed and spikes!`);
       break;
     }
 
-    case "mean-look":
-    case "spider-web":
-    case "block": {
+    case GEN3_MOVE_IDS.meanLook:
+    case GEN3_MOVE_IDS.spiderWeb:
+    case GEN3_MOVE_IDS.block: {
       // Trapping effect — prevents switching
       // Source: pret/pokeemerald — Mean Look / Spider Web / Block set TRAPPED flag
-      result.volatileInflicted = "trapped";
+      result.volatileInflicted = CORE_VOLATILE_IDS.trapped;
       break;
     }
 
-    case "thief": {
+    case GEN3_MOVE_IDS.thief: {
       // Steal defender's item if user has no item
       // Source: pret/pokeemerald — Thief takes held item
       if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
@@ -480,7 +504,7 @@ function handleCustomEffect(
       break;
     }
 
-    case "baton-pass": {
+    case GEN3_MOVE_IDS.batonPass: {
       // Switch out preserving stat changes and volatile statuses.
       // The batonPass flag tells the engine to transfer stat stages and
       // volatile statuses to the incoming Pokemon.
@@ -494,8 +518,8 @@ function handleCustomEffect(
       break;
     }
 
-    case "explosion":
-    case "self-destruct": {
+    case GEN3_MOVE_IDS.explosion:
+    case GEN3_MOVE_IDS.selfDestruct: {
       result.selfFaint = true;
       result.messages.push(`${pokemonName} exploded!`);
       break;
@@ -525,7 +549,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
 
   switch (move.id) {
     // --- Knock Off ---
-    case "knock-off": {
+    case GEN3_MOVE_IDS.knockOff: {
       // Knock Off: remove defender's item (no damage boost in Gen 3 — Gen 5+ only)
       // Source: pret/pokeemerald src/battle_script_commands.c — Knock Off removes item
       if (defender.pokemon.heldItem) {
@@ -538,7 +562,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Counter ---
-    case "counter": {
+    case GEN3_MOVE_IDS.counter: {
       // Counter: returns 2x the physical damage taken
       // Source: pret/pokeemerald — Counter returns 2x physical damage
       // Source: Bulbapedia — "Counter deals damage equal to twice the damage dealt by the
@@ -548,15 +572,15 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
         return true;
       }
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: attacker.lastDamageTaken * 2,
-        source: "counter",
+        source: GEN3_MOVE_IDS.counter,
       };
       return true;
     }
 
     // --- Mirror Coat ---
-    case "mirror-coat": {
+    case GEN3_MOVE_IDS.mirrorCoat: {
       // Mirror Coat: returns 2x the special damage taken
       // Source: pret/pokeemerald — Mirror Coat returns 2x special damage
       // Source: Bulbapedia — "Mirror Coat deals damage equal to twice the damage dealt by the
@@ -566,24 +590,24 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
         return true;
       }
       result.customDamage = {
-        target: "defender",
+        target: BATTLE_EFFECT_TARGETS.defender,
         amount: attacker.lastDamageTaken * 2,
-        source: "mirror-coat",
+        source: GEN3_MOVE_IDS.mirrorCoat,
       };
       return true;
     }
 
     // --- Destiny Bond ---
-    case "destiny-bond": {
+    case GEN3_MOVE_IDS.destinyBond: {
       // Destiny Bond: if the user faints from the opponent's next move, the attacker faints too
       // Source: pret/pokeemerald — sets destiny-bond volatile on user
-      result.selfVolatileInflicted = "destiny-bond";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.destinyBond;
       result.messages.push(`${attackerName} is trying to take its foe down with it!`);
       return true;
     }
 
     // --- Perish Song ---
-    case "perish-song": {
+    case GEN3_MOVE_IDS.perishSong: {
       // Both Pokemon get Perish Song volatile (3-turn countdown)
       // Already-affected Pokemon are skipped
       // Source: pret/pokeemerald — Perish Song sets 3-turn countdown on both
@@ -591,15 +615,15 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       //   unless they switch out"
       const perishData = { turnsLeft: 3, data: { counter: 3 } };
 
-      if (!defender.volatileStatuses.has("perish-song")) {
-        result.volatileInflicted = "perish-song";
+      if (!defender.volatileStatuses.has(CORE_VOLATILE_IDS.perishSong)) {
+        result.volatileInflicted = CORE_VOLATILE_IDS.perishSong;
         result.volatileData = perishData;
       } else {
         result.volatileInflicted = null;
       }
 
-      if (!attacker.volatileStatuses.has("perish-song")) {
-        result.selfVolatileInflicted = "perish-song";
+      if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.perishSong)) {
+        result.selfVolatileInflicted = CORE_VOLATILE_IDS.perishSong;
         result.selfVolatileData = perishData;
       }
 
@@ -608,20 +632,20 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Endure ---
-    case "endure": {
+    case GEN3_MOVE_IDS.endure: {
       // Endure: survive with 1 HP this turn
       // Source: pret/pokeemerald — Endure sets ENDURE volatile
-      result.selfVolatileInflicted = "endure";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.endure;
       result.messages.push(`${attackerName} braced itself!`);
       return true;
     }
 
     // --- Taunt ---
-    case "taunt": {
+    case GEN3_MOVE_IDS.taunt: {
       // Taunt: 2 turns in Gen 3
       // Source: pret/pokeemerald — Taunt lasts 2 turns
       // Source: Bulbapedia — "In Generation III, Taunt lasts for 2 turns"
-      result.volatileInflicted = "taunt";
+      result.volatileInflicted = CORE_VOLATILE_IDS.taunt;
       result.volatileData = { turnsLeft: 2 };
       const defenderName = defender.pokemon.nickname ?? "The foe";
       result.messages.push(`${defenderName} fell for the taunt!`);
@@ -629,16 +653,16 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Encore ---
-    case "encore": {
+    case GEN3_MOVE_IDS.encore: {
       // Encore: 2-5 turns in Gen 3
       // Source: pret/pokeemerald — Encore lasts 2-5 turns
       // Source: Bulbapedia — "In Generation III, Encore lasts 2-5 turns"
-      if (!defender.lastMoveUsed || defender.volatileStatuses.has("encore")) {
+      if (!defender.lastMoveUsed || defender.volatileStatuses.has(CORE_VOLATILE_IDS.encore)) {
         result.messages.push("But it failed!");
         return true;
       }
       const encoreTurns = rng.int(2, 5);
-      result.volatileInflicted = "encore";
+      result.volatileInflicted = CORE_VOLATILE_IDS.encore;
       result.volatileData = { turnsLeft: encoreTurns, data: { moveId: defender.lastMoveUsed } };
       const defenderNameE = defender.pokemon.nickname ?? "The foe";
       result.messages.push(`${defenderNameE} got an encore!`);
@@ -646,7 +670,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Disable ---
-    case "disable": {
+    case GEN3_MOVE_IDS.disable: {
       // Disable: 2-5 turns in Gen 3, targets last used move
       // Source: pret/pokeemerald — Disable lasts 2-5 turns
       // Source: Bulbapedia — "In Generation III, Disable lasts 2-5 turns"
@@ -655,7 +679,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
         return true;
       }
       const disableTurns = rng.int(2, 5);
-      result.volatileInflicted = "disable";
+      result.volatileInflicted = CORE_VOLATILE_IDS.disable;
       result.volatileData = {
         turnsLeft: disableTurns,
         data: { moveId: defender.lastMoveUsed },
@@ -666,42 +690,54 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Rest ---
-    case "rest": {
+    case GEN3_MOVE_IDS.rest: {
       // Full heal + self-inflict 2-turn sleep
       // Source: pret/pokeemerald — Rest heals fully and inflicts sleep
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       result.healAmount = maxHp;
-      result.selfStatusInflicted = "sleep";
+      result.selfStatusInflicted = CORE_STATUS_IDS.sleep;
       result.messages.push(`${attackerName} went to sleep and became healthy!`);
       return true;
     }
 
     // --- Curse ---
-    case "curse": {
+    case GEN3_MOVE_IDS.curse: {
       // Ghost-type Curse: lose 50% HP, inflict curse volatile on defender
       // Non-Ghost Curse: -1 Speed, +1 Attack, +1 Defense
       // Source: pret/pokeemerald — Curse has two different effects based on user type
-      if (attacker.types.includes("ghost")) {
+      if (attacker.types.includes(CORE_TYPE_IDS.ghost)) {
         const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
         const halfHp = Math.floor(maxHp / 2);
         result.recoilDamage = halfHp;
-        result.volatileInflicted = "curse";
+        result.volatileInflicted = CORE_VOLATILE_IDS.curse;
         result.messages.push(
           `${attackerName} cut its own HP and laid a curse on ${defender.pokemon.nickname ?? "the foe"}!`,
         );
       } else {
         result.statChanges.push(
-          { target: "attacker", stat: "speed", stages: -1 },
-          { target: "attacker", stat: "attack", stages: 1 },
-          { target: "attacker", stat: "defense", stages: 1 },
+          {
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            stat: CORE_STAT_IDS.speed,
+            stages: -1,
+          },
+          {
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            stat: CORE_STAT_IDS.attack,
+            stages: 1,
+          },
+          {
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            stat: CORE_STAT_IDS.defense,
+            stages: 1,
+          },
         );
       }
       return true;
     }
 
     // --- Whirlwind / Roar ---
-    case "whirlwind":
-    case "roar": {
+    case GEN3_MOVE_IDS.whirlwind:
+    case GEN3_MOVE_IDS.roar: {
       // Force switch — engine handles phazing logic when both switchOut and forcedSwitch are set
       // Source: pret/pokeemerald src/battle_script_commands.c — Whirlwind/Roar force random switch
       // Suction Cups: prevents forced switch
@@ -713,7 +749,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       }
       // Ingrain: prevents forced switch
       // Source: pret/pokeemerald src/battle_util.c — STATUS3_ROOTED blocks phazing
-      if (defender.volatileStatuses.has("ingrain")) {
+      if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) {
         const dName = defender.pokemon.nickname ?? "The foe";
         result.messages.push(`${dName} anchored itself with its roots!`);
         return true;
@@ -724,7 +760,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Trick / Switcheroo ---
-    case "trick": {
+    case GEN3_MOVE_IDS.trick: {
       // Swap items between attacker and defender
       // Source: pret/pokeemerald — Trick swaps held items
       // Fails if neither has an item, or if Sticky Hold blocks it
@@ -743,18 +779,22 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Morning Sun / Synthesis / Moonlight ---
-    case "morning-sun":
-    case "synthesis":
-    case "moonlight": {
+    case GEN3_MOVE_IDS.morningSun:
+    case GEN3_MOVE_IDS.synthesis:
+    case GEN3_MOVE_IDS.moonlight: {
       // Weather-dependent healing
       // Source: pret/pokeemerald — sun: 2/3, rain/sand/hail: 1/4, else: 1/2
       // Source: Bulbapedia — Weather-based HP recovery moves
       const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
       const weather = state.weather?.type ?? null;
       let healFraction: number;
-      if (weather === "sun") {
+      if (weather === CORE_WEATHER_IDS.sun) {
         healFraction = 2 / 3;
-      } else if (weather === "rain" || weather === "sand" || weather === "hail") {
+      } else if (
+        weather === CORE_WEATHER_IDS.rain ||
+        weather === CORE_WEATHER_IDS.sand ||
+        weather === CORE_WEATHER_IDS.hail
+      ) {
         healFraction = 1 / 4;
       } else {
         healFraction = 1 / 2;
@@ -764,7 +804,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Focus Punch ---
-    case "focus-punch": {
+    case GEN3_MOVE_IDS.focusPunch: {
       // Focus Punch: fails if the attacker took damage this turn before acting.
       // Focus Punch has -3 priority, so it always executes last. If the user was hit
       // by any damaging move before Focus Punch resolves, it fails.
@@ -780,7 +820,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Pursuit ---
-    case "pursuit": {
+    case GEN3_MOVE_IDS.pursuit: {
       // Pursuit: if the target is switching out this turn, deal double damage.
       // The engine tracks switching via the defender's action. In the move effect handler,
       // we can only check if the defender is switching by examining the context.
@@ -797,23 +837,24 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Brick Break ---
-    case "brick-break": {
+    case GEN3_MOVE_IDS.brickBreak: {
       // Brick Break: removes Reflect and Light Screen from the target's side before dealing damage.
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_BRICK_BREAK
       // Source: Bulbapedia — "Brick Break removes Reflect and Light Screen from the target's
       //   side of the field, then inflicts damage."
-      result.screensCleared = "defender";
+      result.screensCleared = BATTLE_EFFECT_TARGETS.defender;
       // Source: pret/pokeemerald EFFECT_BRICK_BREAK -- only removes Reflect and Light Screen,
       // NOT Safeguard. Defog (Gen 4) clears all screens including Safeguard.
-      result.screenTypesToRemove = ["reflect", "light-screen"];
+      result.screenTypesToRemove = [CORE_SCREEN_IDS.reflect, CORE_SCREEN_IDS.lightScreen];
       // Only show message if there are actually screens to remove
       const defenderSideIndex = state.sides.findIndex((side) =>
         side.active.some((a) => a?.pokemon === defender.pokemon),
       );
       const defenderSide = state.sides[defenderSideIndex];
       const hasScreens =
-        defenderSide?.screens.some((s) => s.type === "reflect" || s.type === "light-screen") ??
-        false;
+        defenderSide?.screens.some(
+          (s) => s.type === CORE_SCREEN_IDS.reflect || s.type === CORE_SCREEN_IDS.lightScreen,
+        ) ?? false;
       if (hasScreens) {
         result.messages.push("The wall shattered!");
       }
@@ -821,7 +862,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Secret Power ---
-    case "secret-power": {
+    case GEN3_MOVE_IDS.secretPower: {
       // Secret Power: 30% chance of a secondary effect that varies by terrain.
       // Since terrain is not modeled, default to paralysis (building/indoor terrain effect).
       // The move data already has: effect = { type: 'status-chance', status: 'paralysis', chance: 30 }
@@ -834,23 +875,23 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Torment ---
-    case "torment": {
+    case GEN3_MOVE_IDS.torment: {
       // Torment: prevents the target from using the same move twice in a row.
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_TORMENT
       // Source: Bulbapedia — "Torment prevents the target from selecting the same move
       //   for use twice in a row."
-      if (defender.volatileStatuses.has("torment")) {
+      if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.torment)) {
         result.messages.push("But it failed!");
         return true;
       }
-      result.volatileInflicted = "torment";
+      result.volatileInflicted = CORE_VOLATILE_IDS.torment;
       const defenderNameT = defender.pokemon.nickname ?? "The foe";
       result.messages.push(`${defenderNameT} was subjected to torment!`);
       return true;
     }
 
     // --- Charge ---
-    case "charge": {
+    case GEN3_MOVE_IDS.charge: {
       // Charge: doubles the power of the user's next Electric-type move.
       // Also raises SpDef by 1 stage in Gen 3 (unlike later gens where it's just the power boost).
       // The "charged" volatile is consumed on the next Electric move via the damage calc.
@@ -858,19 +899,23 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_CHARGE
       // Source: Bulbapedia "Charge" — "If the user uses an Electric-type move on the next turn,
       //   its power will be doubled. In Generation III, it also raises the user's Special Defense."
-      if (attacker.volatileStatuses.has("charged")) {
+      if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.charged)) {
         result.messages.push("But it failed!");
         return true;
       }
-      result.selfVolatileInflicted = "charged";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.charged;
       result.selfVolatileData = { turnsLeft: 2 }; // Lasts until end of next turn
-      result.statChanges.push({ target: "attacker", stat: "spDefense", stages: 1 });
+      result.statChanges.push({
+        target: BATTLE_EFFECT_TARGETS.attacker,
+        stat: CORE_STAT_IDS.spDefense,
+        stages: 1,
+      });
       result.messages.push(`${attackerName} began charging power!`);
       return true;
     }
 
     // --- Mud Sport ---
-    case "mud-sport": {
+    case GEN3_MOVE_IDS.mudSport: {
       // Mud Sport: halves Electric-type move power for all Pokemon on the field.
       // In Gen 3-4, this is a field-wide effect stored as a volatile on the user.
       // The damage calc checks any active Pokemon for this volatile.
@@ -884,7 +929,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Water Sport ---
-    case "water-sport": {
+    case GEN3_MOVE_IDS.waterSport: {
       // Water Sport: halves Fire-type move power for all Pokemon on the field.
       // In Gen 3-4, this is a field-wide effect stored as a volatile on the user.
       // The damage calc checks any active Pokemon for this volatile.
@@ -898,7 +943,7 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
     }
 
     // --- Ingrain ---
-    case "ingrain": {
+    case GEN3_MOVE_IDS.ingrain: {
       // Ingrain: user roots itself, gaining 1/16 HP recovery per turn.
       // Cannot switch out (except via Baton Pass). Phazing moves fail against the user.
       // The engine handles the 1/16 HP restoration via the "ingrain" end-of-turn effect.
@@ -906,11 +951,11 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       // Source: pret/pokeemerald src/battle_script_commands.c — EFFECT_INGRAIN
       // Source: Bulbapedia — "Ingrain causes the user to restore 1/16 of its maximum HP
       //   at the end of each turn. The user cannot be switched out or flee."
-      if (attacker.volatileStatuses.has("ingrain")) {
+      if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) {
         result.messages.push("But it failed!");
         return true;
       }
-      result.selfVolatileInflicted = "ingrain";
+      result.selfVolatileInflicted = CORE_VOLATILE_IDS.ingrain;
       result.messages.push(`${attackerName} planted its roots!`);
       return true;
     }

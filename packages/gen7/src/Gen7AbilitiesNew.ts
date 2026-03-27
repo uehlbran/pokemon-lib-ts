@@ -1,5 +1,10 @@
-import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import type { PokemonType } from "@pokemon-lib-ts/core";
+import {
+  type AbilityContext,
+  type AbilityResult,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+} from "@pokemon-lib-ts/battle";
+import { CORE_VOLATILE_IDS, type PokemonType } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 7 new signature abilities.
@@ -139,7 +144,7 @@ function handleDisguise(ctx: AbilityContext): AbilityResult {
   switch (ctx.trigger) {
     case "on-damage-taken": {
       // If Disguise is already broken, no activation
-      if (ctx.pokemon.volatileStatuses.has("disguise-broken")) return NO_EFFECT;
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.disguiseBroken)) return NO_EFFECT;
 
       // Only blocks damaging moves (not status)
       if (!ctx.move) return NO_EFFECT;
@@ -150,8 +155,15 @@ function handleDisguise(ctx: AbilityContext): AbilityResult {
       return {
         activated: true,
         effects: [
-          { effectType: "volatile-inflict", target: "self", volatile: "disguise-broken" },
-          { effectType: "damage-reduction", target: "self" },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.disguiseBroken,
+          },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.damageReduction,
+            target: BATTLE_EFFECT_TARGETS.self,
+          },
         ],
         messages: [`${name}'s Disguise was busted!`],
         movePrevented: false,
@@ -224,7 +236,9 @@ function handleSchooling(ctx: AbilityContext): AbilityResult {
       // Return the form state for the engine to apply stat recalculation
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: isSchoolForm ? [`${name} formed a school!`] : [`${name} stopped schooling!`],
       };
     }
@@ -273,12 +287,18 @@ function handleBattleBond(ctx: AbilityContext): AbilityResult {
       if (ctx.opponent.pokemon.currentHp > 0) return NO_EFFECT;
 
       // Already transformed
-      if (ctx.pokemon.volatileStatuses.has("battle-bond-transformed")) return NO_EFFECT;
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.battleBondTransformed)) {
+        return NO_EFFECT;
+      }
 
       return {
         activated: true,
         effects: [
-          { effectType: "volatile-inflict", target: "self", volatile: "battle-bond-transformed" },
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.battleBondTransformed,
+          },
         ],
         messages: [`${name} became Ash-Greninja!`],
       };
@@ -328,7 +348,9 @@ function handleShieldsDown(ctx: AbilityContext): AbilityResult {
 
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: isMeteorForm
           ? [] // Meteor Form is the default, no message
           : [`${name}'s shields went down!`],
@@ -388,7 +410,9 @@ function handlePowerConstruct(ctx: AbilityContext): AbilityResult {
     case "on-damage-taken":
     case "on-turn-end": {
       // Already transformed this battle
-      if (ctx.pokemon.volatileStatuses.has("power-construct-transformed")) return NO_EFFECT;
+      if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.powerConstructTransformed)) {
+        return NO_EFFECT;
+      }
 
       const maxHp = ctx.pokemon.pokemon.calculatedStats?.hp ?? ctx.pokemon.pokemon.currentHp;
       const currentHp = ctx.pokemon.pokemon.currentHp;
@@ -400,9 +424,9 @@ function handlePowerConstruct(ctx: AbilityContext): AbilityResult {
         activated: true,
         effects: [
           {
-            effectType: "volatile-inflict",
-            target: "self",
-            volatile: "power-construct-transformed",
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+            target: BATTLE_EFFECT_TARGETS.self,
+            volatile: CORE_VOLATILE_IDS.powerConstructTransformed,
           },
         ],
         messages: [`${name} transformed into its Complete Forme!`],
@@ -451,7 +475,13 @@ function handleRKSSystem(ctx: AbilityContext): AbilityResult {
       const name = getName(ctx);
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [type] }],
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            types: [type],
+          },
+        ],
         messages: [`${name}'s RKS System changed its type to ${type}!`],
       };
     }
@@ -491,7 +521,9 @@ function handleComatose(ctx: AbilityContext): AbilityResult {
     case "on-switch-in": {
       return {
         activated: true,
-        effects: [{ effectType: "none", target: "self" }],
+        effects: [
+          { effectType: BATTLE_ABILITY_EFFECT_TYPES.none, target: BATTLE_EFFECT_TARGETS.self },
+        ],
         messages: [`${name} is drowsing!`],
       };
     }

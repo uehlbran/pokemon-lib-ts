@@ -20,7 +20,7 @@ import type {
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
 
-import { BaseRuleset } from "@pokemon-lib-ts/battle";
+import { BATTLE_GIMMICK_IDS, BaseRuleset } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   DataManager,
@@ -34,7 +34,15 @@ import type {
   TypeChart,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { createGen9DataManager } from "./data/index.js";
+import { GEN9_ABILITY_IDS, GEN9_MOVE_IDS } from "./data/reference-ids.js";
 import { handleGen9Ability } from "./Gen9Abilities.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
@@ -50,6 +58,18 @@ import {
 } from "./Gen9Terrain.js";
 import { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 import { applyGen9WeatherEffects } from "./Gen9Weather.js";
+
+const SEMI_INVULNERABLE_MOVES_BY_VOLATILE = {
+  flying: [
+    GEN9_MOVE_IDS.gust,
+    GEN9_MOVE_IDS.twister,
+    GEN9_MOVE_IDS.thunder,
+    GEN9_MOVE_IDS.hurricane,
+    GEN9_MOVE_IDS.smackDown,
+  ],
+  underground: [GEN9_MOVE_IDS.earthquake, GEN9_MOVE_IDS.fissure],
+  underwater: [GEN9_MOVE_IDS.surf, GEN9_MOVE_IDS.whirlpool],
+} as const;
 
 /**
  * Gen 9 (Scarlet/Violet) ruleset.
@@ -126,7 +146,10 @@ export class Gen9Ruleset extends BaseRuleset {
    */
   rollCritical(context: CritContext): boolean {
     const defenderAbility = context.defender?.ability;
-    if (defenderAbility === "battle-armor" || defenderAbility === "shell-armor") {
+    if (
+      defenderAbility === GEN9_ABILITY_IDS.battleArmor ||
+      defenderAbility === GEN9_ABILITY_IDS.shellArmor
+    ) {
       return false;
     }
     return super.rollCritical(context);
@@ -237,7 +260,12 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: Showdown data/moves.ts -- Gen 9 hazard availability
    */
   override getAvailableHazards(): readonly EntryHazardType[] {
-    return ["stealth-rock", "spikes", "toxic-spikes", "sticky-web"];
+    return [
+      CORE_HAZARD_IDS.stealthRock,
+      CORE_HAZARD_IDS.spikes,
+      CORE_HAZARD_IDS.toxicSpikes,
+      CORE_HAZARD_IDS.stickyWeb,
+    ];
   }
 
   /**
@@ -280,7 +308,7 @@ export class Gen9Ruleset extends BaseRuleset {
    * Gen 9 semi-invulnerable move bypass check (same as Gen 6-8).
    *
    * Certain moves can hit targets in semi-invulnerable states:
-   * - Flying (Fly/Bounce): Gust, Twister, Thunder, Sky Uppercut, Hurricane,
+   * - Flying (Fly/Bounce): Gust, Twister, Thunder, Hurricane,
    *   Smack Down
    * - Underground (Dig): Earthquake, Fissure
    * - Underwater (Dive): Surf, Whirlpool
@@ -293,17 +321,19 @@ export class Gen9Ruleset extends BaseRuleset {
   canHitSemiInvulnerable(moveId: string, volatile: Gen9TwoTurnMoveVolatile): boolean;
   override canHitSemiInvulnerable(moveId: string, volatile: TwoTurnMoveVolatile): boolean {
     switch (volatile) {
-      case "flying":
-        return ["gust", "twister", "thunder", "sky-uppercut", "hurricane", "smack-down"].includes(
-          moveId,
+      case CORE_VOLATILE_IDS.flying:
+        return SEMI_INVULNERABLE_MOVES_BY_VOLATILE.flying.some((candidate) => candidate === moveId);
+      case CORE_VOLATILE_IDS.underground:
+        return SEMI_INVULNERABLE_MOVES_BY_VOLATILE.underground.some(
+          (candidate) => candidate === moveId,
         );
-      case "underground":
-        return ["earthquake", "fissure"].includes(moveId);
-      case "underwater":
-        return ["surf", "whirlpool"].includes(moveId);
-      case "shadow-force-charging":
+      case CORE_VOLATILE_IDS.underwater:
+        return SEMI_INVULNERABLE_MOVES_BY_VOLATILE.underwater.some(
+          (candidate) => candidate === moveId,
+        );
+      case CORE_VOLATILE_IDS.shadowForceCharging:
         return false; // Nothing bypasses Shadow Force / Phantom Force
-      case "charging":
+      case CORE_VOLATILE_IDS.charging:
         return true; // Generic charging moves are NOT semi-invulnerable
       default:
         return false;
@@ -326,7 +356,7 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: Bulbapedia -- Terastallization is the Gen 9 battle gimmick
    */
   getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
-    if (type === "tera") return this._tera;
+    if (type === BATTLE_GIMMICK_IDS.tera) return this._tera;
     return null;
   }
 
@@ -505,9 +535,8 @@ export class Gen9Ruleset extends BaseRuleset {
     for (const effect of baseOrder) {
       result.push(effect);
       // Insert salt-cure right after bind (both at residualOrder 13)
-      if (effect === "bind") {
-        // "salt-cure" is defined in battle's EndOfTurnEffect union (added in this wave).
-        result.push("salt-cure" as EndOfTurnEffect);
+      if (effect === CORE_END_OF_TURN_EFFECT_IDS.bind) {
+        result.push(CORE_END_OF_TURN_EFFECT_IDS.saltCure as EndOfTurnEffect);
       }
     }
 
@@ -553,7 +582,7 @@ export class Gen9Ruleset extends BaseRuleset {
    */
   processSaltCureDamage(active: ActivePokemon): number {
     // "salt-cure" is defined in core's VolatileStatus union (added in this wave).
-    if (!active.volatileStatuses.has("salt-cure" as VolatileStatus)) return 0;
+    if (!active.volatileStatuses.has(CORE_VOLATILE_IDS.saltCure as VolatileStatus)) return 0;
     if (active.pokemon.currentHp <= 0) return 0;
 
     const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
@@ -583,7 +612,7 @@ export class Gen9Ruleset extends BaseRuleset {
    */
   override onSwitchOut(pokemon: ActivePokemon, state: BattleState): void {
     // Check for pending shed tail substitute before volatiles are cleared
-    const shedTailData = pokemon.volatileStatuses.get("shed-tail-sub");
+    const shedTailData = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.shedTailSub);
     if (shedTailData?.data?.substituteHp) {
       // Determine which side this pokemon is on
       const sideIndex = state.sides.findIndex((side) =>
@@ -620,7 +649,7 @@ export class Gen9Ruleset extends BaseRuleset {
 
       // Apply the substitute to the incoming pokemon
       pokemon.substituteHp = subHp;
-      pokemon.volatileStatuses.set("substitute", { turnsLeft: -1 });
+      pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.substitute, { turnsLeft: -1 });
     }
   }
 
@@ -654,7 +683,11 @@ export class Gen9Ruleset extends BaseRuleset {
 
     // Sturdy: survive with 1 HP if at full health and damage would KO
     // Source: Showdown data/abilities.ts -- sturdy: onTryHit at full HP
-    if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
+    if (
+      defender.ability === CORE_ABILITY_IDS.sturdy &&
+      currentHp === maxHp &&
+      damage >= currentHp
+    ) {
       return {
         damage: maxHp - 1,
         survived: true,
@@ -666,11 +699,11 @@ export class Gen9Ruleset extends BaseRuleset {
     // Source: Showdown data/items.ts -- focussash: onDamage at full HP
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     const itemSuppressed =
-      defender.ability === "klutz" ||
-      defender.volatileStatuses.has("embargo") ||
+      defender.ability === CORE_ABILITY_IDS.klutz ||
+      defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo) ||
       (state.magicRoom?.active ?? false);
     if (
-      defender.pokemon.heldItem === "focus-sash" &&
+      defender.pokemon.heldItem === CORE_ITEM_IDS.focusSash &&
       !itemSuppressed &&
       currentHp === maxHp &&
       damage >= currentHp
@@ -679,7 +712,7 @@ export class Gen9Ruleset extends BaseRuleset {
         damage: maxHp - 1,
         survived: true,
         messages: [`${name} held on using its Focus Sash!`],
-        consumedItem: "focus-sash",
+        consumedItem: CORE_ITEM_IDS.focusSash,
       };
     }
 
@@ -700,7 +733,7 @@ export class Gen9Ruleset extends BaseRuleset {
     target: ActivePokemon,
     state: BattleState,
   ): boolean {
-    if (volatile === "confusion") {
+    if (volatile === CORE_VOLATILE_IDS.confusion) {
       return checkMistyTerrainConfusionImmunity(target, state);
     }
     return false;

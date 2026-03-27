@@ -18,6 +18,14 @@
 
 import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
 import type { MoveData, SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_TARGET_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN6_ITEM_IDS, GEN6_MOVE_IDS } from "./data/reference-ids.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -212,7 +220,7 @@ function handleCraftyShield(ctx: MoveEffectContext): MoveEffectResult {
  *   (same semi-invulnerable state as Shadow Force)
  */
 const GEN6_TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
-  "phantom-force": "shadow-force-charging",
+  [GEN6_MOVE_IDS.phantomForce]: CORE_VOLATILE_IDS.shadowForceCharging,
 };
 
 /**
@@ -222,7 +230,7 @@ const GEN6_TWO_TURN_VOLATILE_MAP: Readonly<Record<string, VolatileStatus>> = {
  * Source: Bulbapedia -- "The user vanishes somewhere, then strikes the target"
  */
 const GEN6_TWO_TURN_MESSAGES: Readonly<Record<string, string>> = {
-  "phantom-force": "{pokemon} vanished!",
+  [GEN6_MOVE_IDS.phantomForce]: "{pokemon} vanished!",
 };
 
 /**
@@ -243,7 +251,7 @@ function handlePhantomForce(ctx: MoveEffectContext): MoveEffectResult | null {
   // If the attacker already has the charge volatile, this is the SECOND turn (attack turn).
   // Return null so the engine handles normal damage.
   // Source: Showdown -- if (attacker.removeVolatile(move.id)) return; (attack turn)
-  if (attacker.volatileStatuses.has("shadow-force-charging")) {
+  if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.shadowForceCharging)) {
     return null;
   }
 
@@ -251,8 +259,10 @@ function handlePhantomForce(ctx: MoveEffectContext): MoveEffectResult | null {
   // Klutz and Embargo suppress item effects — Power Herb is ineffective.
   // Source: Showdown data/items.ts -- powerherb: onTryMove skips charge, item consumed
   // Source: Showdown data/abilities.ts -- klutz: item has no effect
-  const itemSuppressed = attacker.ability === "klutz" || attacker.volatileStatuses.has("embargo");
-  if (attacker.pokemon.heldItem === "power-herb" && !itemSuppressed) {
+  const itemSuppressed =
+    attacker.ability === CORE_ABILITY_IDS.klutz ||
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
+  if (attacker.pokemon.heldItem === GEN6_ITEM_IDS.powerHerb && !itemSuppressed) {
     const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
     const base = createBaseResult();
     return {
@@ -312,7 +322,7 @@ function handlePhantomForce(ctx: MoveEffectContext): MoveEffectResult | null {
  */
 export function isGen6GrassPowderBlocked(move: MoveData, targetTypes: readonly string[]): boolean {
   if (!move.flags.powder) return false;
-  return targetTypes.includes("grass");
+  return targetTypes.includes(CORE_TYPE_IDS.grass);
 }
 
 // ---------------------------------------------------------------------------
@@ -375,15 +385,15 @@ export function executeGen6MoveEffect(
   rollProtectSuccess: (consecutiveProtects: number, rng: SeededRandom) => boolean,
 ): MoveEffectResult | null {
   switch (ctx.move.id) {
-    case "kings-shield":
+    case GEN6_MOVE_IDS.kingsShield:
       return handleKingsShield(ctx, rng, rollProtectSuccess);
-    case "spiky-shield":
+    case GEN6_MOVE_IDS.spikyShield:
       return handleSpikyShield(ctx, rng, rollProtectSuccess);
-    case "mat-block":
+    case GEN6_MOVE_IDS.matBlock:
       return handleMatBlock(ctx, rng, rollProtectSuccess);
-    case "crafty-shield":
+    case GEN6_MOVE_IDS.craftyShield:
       return handleCraftyShield(ctx);
-    case "phantom-force":
+    case GEN6_MOVE_IDS.phantomForce:
       return handlePhantomForce(ctx);
     default:
       break;
@@ -417,7 +427,7 @@ export function isBlockedByKingsShield(
 ): { blocked: boolean; contactPenalty: boolean } {
   // King's Shield allows Status moves through
   // Source: Showdown -- if (!move.flags['protect'] || move.category === 'Status') return;
-  if (!moveHasProtectFlag || moveCategory === "status") {
+  if (!moveHasProtectFlag || moveCategory === CORE_MOVE_CATEGORIES.status) {
     return { blocked: false, contactPenalty: false };
   }
   return {
@@ -468,7 +478,9 @@ export function isBlockedByMatBlock(
   if (!moveHasProtectFlag) return false;
   // Mat Block allows self-targeting moves and Status moves through
   // Source: Showdown -- if (move && (move.target === 'self' || move.category === 'Status')) return;
-  if (moveTarget === "self" || moveCategory === "status") return false;
+  if (moveTarget === CORE_MOVE_TARGET_IDS.self || moveCategory === CORE_MOVE_CATEGORIES.status) {
+    return false;
+  }
   return true;
 }
 
@@ -485,10 +497,16 @@ export function isBlockedByMatBlock(
 export function isBlockedByCraftyShield(moveCategory: string, moveTarget: string): boolean {
   // Only blocks Status category moves
   // Source: Showdown -- if (... move.category !== 'Status') return;
-  if (moveCategory !== "status") return false;
+  if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
   // Does not block self-targeting or field-wide moves
   // Source: Showdown -- if (['self', 'all'].includes(move.target)) return;
-  if (moveTarget === "self" || moveTarget === "all" || moveTarget === "entire-field") return false;
+  if (
+    moveTarget === CORE_MOVE_TARGET_IDS.self ||
+    moveTarget === CORE_MOVE_TARGET_IDS.all ||
+    moveTarget === CORE_MOVE_TARGET_IDS.entireField
+  ) {
+    return false;
+  }
   return true;
 }
 

@@ -21,7 +21,9 @@ import {
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
+  CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -74,8 +76,21 @@ const {
   weatherCountdown,
   weatherDamage,
 } = CORE_END_OF_TURN_EFFECT_IDS;
+const { adamant, hardy } = CORE_NATURE_IDS;
 const { charcoal, mysteryBerry, quickClaw } = GEN2_ITEM_IDS;
 const { quickAttack, tackle } = GEN2_MOVE_IDS;
+const {
+  custom,
+  damage,
+  fixedDamage,
+  levelDamage,
+  multiHit,
+  ohko,
+  removeHazards,
+  screen,
+  terrain,
+  twoTurn,
+} = CORE_MOVE_EFFECT_TYPES;
 const TEST_DATA_MANAGER = createGen2DataManager();
 function createMoveSlotFixture(
   moveId: string,
@@ -83,6 +98,50 @@ function createMoveSlotFixture(
 ): ReturnType<typeof createMoveSlot> {
   const moveData = TEST_DATA_MANAGER.getMove(moveId);
   return createMoveSlot(moveId, overrides.pp ?? moveData.pp);
+}
+
+function createValidationPokemonFixture(
+  species: PokemonSpeciesData,
+  overrides: Partial<PokemonInstance> = {},
+): PokemonInstance {
+  const defaultMoveId =
+    species.learnset.levelUp[0]?.move ??
+    species.learnset.tm[0] ??
+    species.learnset.egg[0] ??
+    species.learnset.tutor[0] ??
+    species.learnset.event?.[0] ??
+    tackle;
+
+  return {
+    uid: `validation-${species.id}`,
+    speciesId: species.id,
+    nickname: null,
+    level: 50,
+    experience: 0,
+    nature: hardy,
+    ivs: createDvs(),
+    evs: createStatExp(),
+    currentHp: 100,
+    moves: [createMoveSlotFixture(defaultMoveId)],
+    ability: "",
+    abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    heldItem: null,
+    status: null,
+    friendship: createFriendship(species.baseFriendship),
+    gender:
+      species.genderRatio === -1
+        ? CORE_GENDERS.genderless
+        : species.genderRatio === 0
+          ? CORE_GENDERS.female
+          : CORE_GENDERS.male,
+    isShiny: false,
+    metLocation: "test",
+    metLevel: 50,
+    originalTrainer: "test",
+    originalTrainerId: 0,
+    pokeball: CORE_ITEM_IDS.pokeBall,
+    ...overrides,
+  };
 }
 
 /**
@@ -601,10 +660,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.celebi);
-      const pokemon = {
-        level: 50,
-        moves: [createMoveSlotFixture(tackle)],
-      } as unknown as PokemonInstance;
+      const pokemon = createValidationPokemonFixture(species);
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -617,11 +673,10 @@ describe("Gen2Ruleset", () => {
     it("given a dex number above the Gen 2 range, when validatePokemon runs, then the species is rejected", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = {
-        level: 50,
-        moves: [createMoveSlotFixture(tackle)],
-      } as unknown as PokemonInstance;
       const species = { id: 252, displayName: "Treecko" } as unknown as PokemonSpeciesData;
+      const pokemon = createValidationPokemonFixture(
+        TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.chikorita),
+      );
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -635,11 +690,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.snorlax);
-      const pokemon = {
-        level: 50,
-        heldItem: leftovers,
-        moves: [createMoveSlotFixture(tackle)],
-      } as unknown as PokemonInstance;
+      const pokemon = createValidationPokemonFixture(species, { heldItem: leftovers });
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -652,10 +703,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
-      const pokemon = {
-        level: 50,
-        moves: [],
-      } as unknown as PokemonInstance;
+      const pokemon = createValidationPokemonFixture(species, { moves: [] });
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -669,8 +717,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
-      const pokemon = {
-        level: 50,
+      const pokemon = createValidationPokemonFixture(species, {
         moves: [
           createMoveSlotFixture(tackle),
           createMoveSlotFixture(quickAttack),
@@ -678,7 +725,7 @@ describe("Gen2Ruleset", () => {
           createMoveSlotFixture(quickAttack),
           createMoveSlotFixture(tackle),
         ],
-      } as unknown as PokemonInstance;
+      });
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -691,10 +738,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
-      const pokemon = {
-        level: 0,
-        moves: [createMoveSlotFixture(tackle)],
-      } as unknown as PokemonInstance;
+      const pokemon = createValidationPokemonFixture(species, { level: 0 });
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -1943,7 +1987,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: "rapid-spin-generic",
-        effect: { type: "remove-hazards" },
+        effect: { type: removeHazards },
       } as unknown as MoveData;
 
       // Act
@@ -1971,7 +2015,7 @@ describe("Gen2Ruleset", () => {
       );
       const rng = new SeededRandom(42);
 
-      for (const effectType of ["fixed-damage", "level-damage", "ohko", "damage"]) {
+      for (const effectType of [fixedDamage, levelDamage, ohko, damage]) {
         const move = {
           id: "test-move",
           effect: { type: effectType },
@@ -2004,7 +2048,7 @@ describe("Gen2Ruleset", () => {
       );
       const rng = new SeededRandom(42);
 
-      for (const effectType of ["terrain", "screen", "multi-hit", "two-turn"]) {
+      for (const effectType of [terrain, screen, multiHit, twoTurn]) {
         const move = {
           id: "test-move",
           effect: { type: effectType },
@@ -2045,7 +2089,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.bellyDrum,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2090,7 +2134,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.bellyDrum,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2124,7 +2168,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.rapidSpin,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2152,7 +2196,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.meanLook,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2189,7 +2233,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.spiderWeb,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2217,7 +2261,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.thief,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2250,7 +2294,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.thief,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2278,7 +2322,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.batonPass,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2316,7 +2360,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: "some-unknown-move",
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2358,7 +2402,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.explosion,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2391,7 +2435,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.selfDestruct,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2549,11 +2593,8 @@ describe("Gen2Ruleset", () => {
     it("given a level above 100, when validatePokemon runs, then the level check fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = {
-        level: 101,
-        moves: [createMoveSlotFixture(tackle)],
-      } as unknown as PokemonInstance;
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
+      const pokemon = createValidationPokemonFixture(species, { level: 101 });
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -2567,11 +2608,10 @@ describe("Gen2Ruleset", () => {
     it("given dex id 0, when validatePokemon runs, then the species check fails", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = {
-        level: 50,
-        moves: [createMoveSlotFixture(tackle)],
-      } as unknown as PokemonInstance;
       const species = { id: 0, displayName: "MissingNo" } as unknown as PokemonSpeciesData;
+      const pokemon = createValidationPokemonFixture(
+        TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu),
+      );
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
@@ -2585,19 +2625,63 @@ describe("Gen2Ruleset", () => {
     it("given invalid level, invalid species, and no moves, when validatePokemon runs, then it collects all three errors", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
-      const pokemon = {
-        level: 0,
-        moves: [],
-      } as unknown as PokemonInstance;
       const species = { id: 999, displayName: "FutureMon" } as unknown as PokemonSpeciesData;
+      const pokemon = createValidationPokemonFixture(
+        TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu),
+        { level: 0, moves: [] },
+      );
 
       // Act
       const result = ruleset.validatePokemon(pokemon, species);
 
       // Assert: there are 3 errors (level, species, moves)
       expect(result.valid).toBe(false);
-      // Source: the invalid level, invalid species, and empty move list each produce a validation error.
-      expect(result.errors.length).toBe(3);
+      // Source: invalid level, invalid species, species-id mismatch, and empty move list each produce a validation error.
+      expect(result.errors.length).toBe(4);
+    });
+
+    it("given invalid friendship and a non-neutral nature, when validatePokemon runs, then both errors are collected", () => {
+      const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
+      const pokemon = createValidationPokemonFixture(species, {
+        friendship: 999,
+        nature: adamant,
+      });
+
+      const result = ruleset.validatePokemon(pokemon, species);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("friendship must be between 0 and 255");
+      expect(result.errors).toContain(`Nature "${adamant}" is not supported in Gen 2`);
+    });
+
+    it("given invalid DVs and Stat Exp, when validatePokemon runs, then bounded-domain errors are returned", () => {
+      const ruleset = new Gen2Ruleset();
+      const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
+      const pokemon = createValidationPokemonFixture(species, {
+        ivs: {
+          hp: 15,
+          attack: 16,
+          defense: 15,
+          spAttack: 15,
+          spDefense: 15,
+          speed: 15,
+        },
+        evs: {
+          hp: 65535,
+          attack: 70000,
+          defense: 65535,
+          spAttack: 65535,
+          spDefense: 65535,
+          speed: 65535,
+        },
+      });
+
+      const result = ruleset.validatePokemon(pokemon, species);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("attack DV must be between 0 and 15");
+      expect(result.errors).toContain("attack Stat Exp must be between 0 and 65535");
     });
   });
 

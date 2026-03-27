@@ -31,6 +31,12 @@ import type {
   TypeChart,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_ABILITY_IDS,
+  CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
   calculateExpGainClassic,
   DataManager,
   gen1to4MultiHitRoll,
@@ -362,7 +368,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Magnet Rise: grants levitation — immune to ground-based hazards (Spikes, Toxic Spikes)
     // Source: Bulbapedia — Magnet Rise: "makes the user immune to Ground-type moves"
     // Source: Showdown Gen 4 mod — Magnet Rise grants same grounding immunity as Levitate
-    const hasMagnetRise = pokemon.volatileStatuses.has("magnet-rise");
+    const hasMagnetRise = pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise);
 
     // Gravity: grounds all Pokemon, overriding Flying type, Levitate, and Magnet Rise
     // Source: Bulbapedia — Gravity: "All Pokemon are grounded."
@@ -412,21 +418,21 @@ export class Gen4Ruleset extends BaseRuleset {
       if (toxicSpikes && toxicSpikes.layers > 0) {
         // Poison-types absorb (remove) toxic spikes on switch-in
         // Source: Bulbapedia — Toxic Spikes: grounded Poison-types remove them
-        if (pokemon.types.includes("poison")) {
+        if (pokemon.types.includes(CORE_TYPE_IDS.poison)) {
           // Absorb: remove the toxic spikes from this side
           // Source: Bulbapedia — Toxic Spikes: grounded Poison-types remove them
           hazardsToRemove.push("toxic-spikes");
           messages.push(`${pokemonName} absorbed the poison spikes!`);
-        } else if (pokemon.types.includes("steel")) {
+        } else if (pokemon.types.includes(CORE_TYPE_IDS.steel)) {
           // Steel-types are immune to poison status
           // Source: Bulbapedia — Steel types cannot be poisoned
         } else if (!pokemon.pokemon.status) {
           // Can only inflict status if the target has no existing status
           if (toxicSpikes.layers >= 2) {
-            statusInflicted = "badly-poisoned";
+            statusInflicted = CORE_STATUS_IDS.badlyPoisoned;
             messages.push(`${pokemonName} was badly poisoned by the toxic spikes!`);
           } else {
-            statusInflicted = "poison";
+            statusInflicted = CORE_STATUS_IDS.poison;
             messages.push(`${pokemonName} was poisoned by the toxic spikes!`);
           }
         }
@@ -553,18 +559,18 @@ export class Gen4Ruleset extends BaseRuleset {
    * behavior to Gen 4. Gen 4 follows Gen 3+ rules: Pokemon CAN act on the wake turn.
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // No counter found or already at 0 — wake up, CAN act (Gen 3-4 behavior)
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Counter just reached 0 — wake up, CAN act (Gen 3-4 behavior)
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     return false; // Still sleeping — cannot act
@@ -586,7 +592,7 @@ export class Gen4Ruleset extends BaseRuleset {
     }
 
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
-    if (status === "burn") {
+    if (status === CORE_STATUS_IDS.burn) {
       // Heatproof: burn damage is halved (1/16 instead of 1/8)
       // Source: Bulbapedia — Heatproof: "Also halves the damage the holder takes from a burn."
       // Source: Showdown Gen 4 — Heatproof halves burn damage
@@ -707,7 +713,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Klutz: held item has no effect (including Choice Scarf speed boost)
     // Source: Bulbapedia — Klutz: "The Pokemon can't use any held items"
     // Source: Showdown data/abilities.ts — Klutz gates all item battle effects
-    const hasKlutz = active.ability === "klutz";
+    const hasKlutz = active.ability === CORE_ABILITY_IDS.klutz;
 
     // Choice Scarf: 1.5x Speed
     // Source: Bulbapedia — Choice Scarf raises Speed by 50%
@@ -719,14 +725,14 @@ export class Gen4Ruleset extends BaseRuleset {
     // Chlorophyll: 2x Speed in sun
     // Source: Bulbapedia — Chlorophyll doubles Speed in sun
     // Source: Showdown data/abilities.ts — Chlorophyll onModifySpe
-    if (active.ability === "chlorophyll" && this._currentWeather === "sun") {
+    if (active.ability === "chlorophyll" && this._currentWeather === CORE_WEATHER_IDS.sun) {
       effective = effective * 2;
     }
 
     // Swift Swim: 2x Speed in rain
     // Source: Bulbapedia — Swift Swim doubles Speed in rain
     // Source: Showdown data/abilities.ts — Swift Swim onModifySpe
-    if (active.ability === "swift-swim" && this._currentWeather === "rain") {
+    if (active.ability === "swift-swim" && this._currentWeather === CORE_WEATHER_IDS.rain) {
       effective = effective * 2;
     }
 
@@ -743,8 +749,8 @@ export class Gen4Ruleset extends BaseRuleset {
     //   item is used or lost."
     // Source: Showdown data/abilities.ts — Unburden onModifySpe
     if (
-      active.ability === "unburden" &&
-      active.volatileStatuses.has("unburden") &&
+      active.ability === CORE_ABILITY_IDS.unburden &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.unburden) &&
       !active.pokemon.heldItem
     ) {
       effective = effective * 2;
@@ -985,9 +991,9 @@ export class Gen4Ruleset extends BaseRuleset {
         if (!active) continue;
         if (active.pokemon.heldItem !== "custap-berry") continue;
         // Klutz prevents item activation
-        if (active.ability === "klutz") continue;
+        if (active.ability === CORE_ABILITY_IDS.klutz) continue;
         // Embargo prevents item activation
-        if (active.volatileStatuses.has("embargo")) continue;
+        if (active.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) continue;
         const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
         // Gluttony: activates at <=50% HP instead of <=25% HP
         // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/items.ts —
@@ -1045,13 +1051,13 @@ export class Gen4Ruleset extends BaseRuleset {
     const rawWeather = context.state.weather?.type ?? null;
     const weather = isWeatherSuppressedGen4(context.attacker, context.defender) ? null : rawWeather;
     if (context.move.id === "thunder") {
-      if (weather === "rain") return true; // Thunder always hits in rain
-      if (weather === "sun") {
+      if (weather === CORE_WEATHER_IDS.rain) return true; // Thunder always hits in rain
+      if (weather === CORE_WEATHER_IDS.sun) {
         // Thunder has 50% accuracy in sun (overrides base 70%)
         return context.rng.int(1, 100) <= 50;
       }
     }
-    if (context.move.id === "blizzard" && weather === "hail") {
+    if (context.move.id === "blizzard" && weather === CORE_WEATHER_IDS.hail) {
       // Blizzard always hits in hail (NEW in Gen 4)
       return true;
     }
@@ -1084,7 +1090,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts — Tangled Feet onModifyAccuracy: return accuracy * 0.5
     if (
       context.defender.ability === "tangled-feet" &&
-      context.defender.volatileStatuses.has("confusion")
+      context.defender.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)
     ) {
       calc = Math.floor(calc * 0.5);
     }
@@ -1097,13 +1103,13 @@ export class Gen4Ruleset extends BaseRuleset {
 
     // Sand Veil: 0.8x accuracy in sandstorm
     // Source: pret/pokeplatinum — Sand Veil evasion boost in sandstorm
-    if (context.defender.ability === "sand-veil" && weather === "sand") {
+    if (context.defender.ability === "sand-veil" && weather === CORE_WEATHER_IDS.sand) {
       calc = Math.floor((calc * 80) / 100);
     }
 
     // Snow Cloak: 0.8x accuracy in hail (NEW in Gen 4, analogous to Sand Veil)
     // Source: Bulbapedia — Snow Cloak: evasion +20% in hail
-    if (context.defender.ability === "snow-cloak" && weather === "hail") {
+    if (context.defender.ability === "snow-cloak" && weather === CORE_WEATHER_IDS.hail) {
       calc = Math.floor((calc * 80) / 100);
     }
 
@@ -1319,41 +1325,41 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
     return [
-      "weather-damage", // Sandstorm/Hail chip
-      "future-attack", // Future Sight / Doom Desire
-      "wish", // Wish recovery
-      "weather-healing", // Rain Dish, Dry Skin rain, Ice Body
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage, // Sandstorm/Hail chip
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack, // Future Sight / Doom Desire
+      CORE_END_OF_TURN_EFFECT_IDS.wish, // Wish recovery
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing, // Rain Dish, Dry Skin rain, Ice Body
       "shed-skin", // Shed Skin 33% cure
-      "leech-seed", // Leech Seed drain (before item recovery)
-      "leftovers", // Leftovers recovery
-      "black-sludge", // Black Sludge
-      "aqua-ring", // Aqua Ring recovery
-      "ingrain", // Ingrain recovery
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed, // Leech Seed drain (before item recovery)
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers, // Leftovers recovery
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge, // Black Sludge
+      CORE_END_OF_TURN_EFFECT_IDS.aquaRing, // Aqua Ring recovery
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain, // Ingrain recovery
       "poison-heal", // Poison Heal (before status damage)
-      "status-damage", // Poison/Toxic/Burn
-      "nightmare", // Nightmare damage
-      "curse", // Ghost Curse damage
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage, // Poison/Toxic/Burn
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare, // Nightmare damage
+      CORE_END_OF_TURN_EFFECT_IDS.curse, // Ghost Curse damage
       "bad-dreams", // Bad Dreams
-      "bind", // Trap damage
-      "yawn-countdown", // Yawn drowsy → sleep
-      "encore-countdown", // Encore timer
-      "taunt-countdown", // Taunt timer (3 turns in Gen 4)
-      "disable-countdown", // Disable timer (4 turns in Gen 4)
-      "heal-block-countdown", // Heal Block (5 turns)
-      "embargo-countdown", // Embargo (5 turns)
-      "magnet-rise-countdown", // Magnet Rise (5 turns)
-      "perish-song", // Perish Song countdown
-      "screen-countdown", // Reflect / Light Screen
-      "safeguard-countdown", // Safeguard
-      "tailwind-countdown", // Tailwind
-      "trick-room-countdown", // Trick Room
-      "gravity-countdown", // Gravity (Gen 4+)
-      "weather-countdown", // Weather timer
-      "toxic-orb-activation", // Toxic Orb
-      "flame-orb-activation", // Flame Orb
-      "slow-start-countdown", // Slow Start
+      CORE_END_OF_TURN_EFFECT_IDS.bind, // Trap damage
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown, // Yawn drowsy → sleep
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown, // Encore timer
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown, // Taunt timer (3 turns in Gen 4)
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown, // Disable timer (4 turns in Gen 4)
+      CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown, // Heal Block (5 turns)
+      CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown, // Embargo (5 turns)
+      CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown, // Magnet Rise (5 turns)
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong, // Perish Song countdown
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown, // Reflect / Light Screen
+      CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown, // Safeguard
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown, // Tailwind
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown, // Trick Room
+      CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown, // Gravity (Gen 4+)
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown, // Weather timer
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation, // Toxic Orb
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation, // Flame Orb
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown, // Slow Start
       "speed-boost", // Speed Boost
-      "healing-items", // Berry/item consumption
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems, // Berry/item consumption
     ] as const;
   }
 }

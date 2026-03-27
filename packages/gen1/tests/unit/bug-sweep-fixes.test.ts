@@ -27,7 +27,9 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -280,7 +282,7 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
 
     // Assert — non-special stats are not duplicated
     expect(result.statChanges).toHaveLength(1);
-    expect(result.statChanges[0]?.stat).toBe("attack");
+    expect(result.statChanges[0]?.stat).toBe(CORE_STAT_IDS.attack);
     expect(result.statChanges[0]?.stages).toBe(2);
   });
 });
@@ -674,7 +676,7 @@ describe("Bug #93 — Stat-change secondary effects respect chance field", () =>
 
     // Assert — always applied when chance is 100
     expect(result.statChanges).toHaveLength(1);
-    expect(result.statChanges[0]?.stat).toBe("attack");
+    expect(result.statChanges[0]?.stat).toBe(CORE_STAT_IDS.attack);
   });
 });
 
@@ -692,7 +694,11 @@ describe(`Bug #101 — Trapping moves use ${CORE_VOLATILE_IDS.bound} volatile ke
     // but executeMoveEffect applies it at runtime when a trapping effect is present.
     const context = createMoveEffectContext({
       move: createSyntheticMoveFrom(WRAP_MOVE, {
-        effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.bound, chance: 100 },
+        effect: {
+          type: CORE_MOVE_EFFECT_TYPES.volatileStatus,
+          status: CORE_VOLATILE_IDS.bound,
+          chance: 100,
+        },
       }),
     });
 
@@ -921,7 +927,7 @@ describe(`Bug #105 — ${GEN1_MOVE_IDS.sharpen} move exists in move data`, () =>
 
     // Assert — Sharpen raises Attack by 1 stage on self (attacker)
     const attackChange = result.statChanges.find(
-      (c) => c.stat === "attack" && c.target === "attacker",
+      (c) => c.stat === CORE_STAT_IDS.attack && c.target === "attacker",
     );
     expect(attackChange).toBeDefined();
     expect(attackChange?.stages).toBe(1);

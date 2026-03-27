@@ -27,6 +27,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -257,7 +258,7 @@ describe("Gen 1 Substitute: status moves are blocked", () => {
     // In Gen 1, damaging moves that break the sub STILL don't apply their status effect.
     // The engine passes brokeSubstitute=true in that case.
     const thunderMove = createSyntheticMoveFrom(getCanonicalMove(MOVES.thunder), {
-      effect: { type: "status-chance" as const, status: STATUSES.paralysis, chance: 30 },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.statusChance, status: STATUSES.paralysis, chance: 30 },
     });
     const defenderWithSub = createSyntheticOnFieldPokemon({
       types: [TYPES.normal],

@@ -1,5 +1,27 @@
-import type { DataManager, PokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
-import { NEUTRAL_NATURES } from "@pokemon-lib-ts/core";
+import type {
+  DataManager,
+  MutableStatBlock,
+  PokemonInstance,
+  PokemonSpeciesData,
+  SeededRandom,
+  StatBlock,
+} from "@pokemon-lib-ts/core";
+import {
+  ALL_NATURES,
+  CORE_ABILITY_SLOTS,
+  CORE_GENDERS,
+  CORE_ITEM_IDS,
+  createDvs,
+  createEvs,
+  createFriendship,
+  createIvs,
+  createStatExp,
+  MAX_DV,
+  MAX_IV,
+  MIN_DV,
+  MIN_IV,
+  NEUTRAL_NATURES,
+} from "@pokemon-lib-ts/core";
 import type { TeamGeneratorOptions } from "./types.js";
 
 const DEFAULT_OPTIONS: TeamGeneratorOptions = {
@@ -7,39 +29,83 @@ const DEFAULT_OPTIONS: TeamGeneratorOptions = {
   levelRange: [50, 100],
   movesPerPokemon: [1, 4],
   allowDuplicateSpecies: false,
+  uidPrefix: "sim",
 };
 
-const ALL_NATURES = [
-  "hardy",
-  "lonely",
-  "brave",
-  "adamant",
-  "naughty",
-  "bold",
-  "docile",
-  "relaxed",
-  "impish",
-  "lax",
-  "timid",
-  "hasty",
-  "serious",
-  "jolly",
-  "naive",
-  "modest",
-  "mild",
-  "quiet",
-  "bashful",
-  "rash",
-  "calm",
-  "gentle",
-  "sassy",
-  "careful",
-  "quirky",
-] as const;
+const ALL_NATURE_IDS = ALL_NATURES.map((nature) => nature.id);
+const SIMULATION_MET_LOCATION = "simulation";
+const SIMULATION_ORIGINAL_TRAINER = "Simulation";
 
-let _uidCounter = 0;
-function nextUid(): string {
-  return `sim-${++_uidCounter}`;
+function cloneMutableStatBlock(block: StatBlock): MutableStatBlock {
+  return {
+    hp: block.hp,
+    attack: block.attack,
+    defense: block.defense,
+    spAttack: block.spAttack,
+    spDefense: block.spDefense,
+    speed: block.speed,
+  };
+}
+
+function createGenerationStatInputs(
+  generation: number,
+  rng: SeededRandom,
+): Pick<PokemonInstance, "ivs" | "evs"> {
+  if (generation <= 2) {
+    const specialDv = rng.int(MIN_DV, MAX_DV);
+    return {
+      ivs: createDvs({
+        attack: rng.int(MIN_DV, MAX_DV),
+        defense: rng.int(MIN_DV, MAX_DV),
+        speed: rng.int(MIN_DV, MAX_DV),
+        spAttack: specialDv,
+        spDefense: specialDv,
+      }),
+      evs: cloneMutableStatBlock(createStatExp()),
+    };
+  }
+
+  return {
+    ivs: createIvs({
+      hp: rng.int(MIN_IV, MAX_IV),
+      attack: rng.int(MIN_IV, MAX_IV),
+      defense: rng.int(MIN_IV, MAX_IV),
+      spAttack: rng.int(MIN_IV, MAX_IV),
+      spDefense: rng.int(MIN_IV, MAX_IV),
+      speed: rng.int(MIN_IV, MAX_IV),
+    }),
+    evs: cloneMutableStatBlock(createEvs()),
+  };
+}
+
+function determineAbilitySlot(
+  generation: number,
+  species: PokemonSpeciesData,
+  rng: SeededRandom,
+): PokemonInstance["abilitySlot"] {
+  if (generation < 3) {
+    return CORE_ABILITY_SLOTS.normal1;
+  }
+
+  return species.abilities.normal.length > 1 && rng.chance(0.5)
+    ? CORE_ABILITY_SLOTS.normal2
+    : CORE_ABILITY_SLOTS.normal1;
+}
+
+function determineGender(
+  species: PokemonSpeciesData,
+  rng: SeededRandom,
+): PokemonInstance["gender"] {
+  if (species.genderRatio === -1) {
+    return CORE_GENDERS.genderless;
+  }
+  if (species.genderRatio === 0) {
+    return CORE_GENDERS.female;
+  }
+  if (species.genderRatio === 100) {
+    return CORE_GENDERS.male;
+  }
+  return rng.int(1, 100) <= species.genderRatio ? CORE_GENDERS.male : CORE_GENDERS.female;
 }
 
 export function generateRandomTeam(
@@ -54,6 +120,7 @@ export function generateRandomTeam(
 
   const team: PokemonInstance[] = [];
   const usedSpecies = new Set<number>();
+  let nextUidIndex = 0;
 
   for (const species of shuffled) {
     if (team.length >= opts.teamSize) break;
@@ -95,49 +162,19 @@ export function generateRandomTeam(
     // After filtering, we need at least 1 valid move slot
     if (moves.length === 0) continue;
 
-    // Gen-aware IVs: Gen 1-2 use DVs (0-15), Gen 3+ use IVs (0-31)
-    const ivMax = generation <= 2 ? 15 : 31;
-    const ivs = {
-      hp: rng.int(0, ivMax),
-      attack: rng.int(0, ivMax),
-      defense: rng.int(0, ivMax),
-      spAttack: rng.int(0, ivMax),
-      spDefense: rng.int(0, ivMax),
-      speed: rng.int(0, ivMax),
-    };
-
-    const evs = { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 };
-
-    // Gen 1 has no abilities, Gen 3+ has abilities
-    const hasAbilities = generation >= 3;
-
-    const abilitySlot =
-      hasAbilities && species.abilities.normal.length > 1 && rng.chance(0.5)
-        ? ("normal2" as const)
-        : ("normal1" as const);
-
-    const ability = hasAbilities
-      ? abilitySlot === "normal2" && species.abilities.normal[1] != null
-        ? species.abilities.normal[1]
-        : (species.abilities.normal[0] ?? "")
-      : "";
-
-    // Determine gender
-    let gender: "male" | "female" | "genderless";
-    if (species.genderRatio === -1) {
-      gender = "genderless";
-    } else if (species.genderRatio === 0) {
-      gender = "female";
-    } else if (species.genderRatio === 100) {
-      gender = "male";
-    } else {
-      gender = rng.int(1, 100) <= species.genderRatio ? "male" : "female";
-    }
-
-    const nature = generation <= 2 ? rng.pick(NEUTRAL_NATURES) : rng.pick(ALL_NATURES);
+    const { ivs, evs } = createGenerationStatInputs(generation, rng);
+    const abilitySlot = determineAbilitySlot(generation, species, rng);
+    const ability =
+      generation >= 3
+        ? abilitySlot === CORE_ABILITY_SLOTS.normal2 && species.abilities.normal[1] != null
+          ? species.abilities.normal[1]
+          : (species.abilities.normal[0] ?? "")
+        : "";
+    const gender = determineGender(species, rng);
+    const nature = generation <= 2 ? rng.pick(NEUTRAL_NATURES) : rng.pick(ALL_NATURE_IDS);
 
     const pokemon: PokemonInstance = {
-      uid: nextUid(),
+      uid: `${opts.uidPrefix}-${++nextUidIndex}`,
       speciesId: species.id,
       nickname: null,
       level,
@@ -151,14 +188,14 @@ export function generateRandomTeam(
       abilitySlot,
       heldItem: null, // no item assignment yet — safe default
       status: null,
-      friendship: species.baseFriendship,
+      friendship: createFriendship(species.baseFriendship),
       gender,
       isShiny: false,
-      metLocation: "simulation",
+      metLocation: SIMULATION_MET_LOCATION,
       metLevel: level,
-      originalTrainer: "Simulation",
+      originalTrainer: SIMULATION_ORIGINAL_TRAINER,
       originalTrainerId: 0,
-      pokeball: "poke-ball",
+      pokeball: CORE_ITEM_IDS.pokeBall,
     };
 
     team.push(pokemon);

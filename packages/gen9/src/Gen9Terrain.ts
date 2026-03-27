@@ -20,7 +20,18 @@
  */
 
 import type { ActivePokemon, BattleState, TerrainEffectResult } from "@pokemon-lib-ts/battle";
-import type { PrimaryStatus, TerrainType, VolatileStatus } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  type PrimaryStatus,
+  type TerrainType,
+  type VolatileStatus,
+} from "@pokemon-lib-ts/core";
+import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 
 // ---- Constants ----
 
@@ -61,23 +72,25 @@ export const TERRAIN_EXTENDED_TURNS = 8;
  */
 export function isGen9Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
-  if (pokemon.volatileStatuses.has("ingrain")) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
-  const itemsSuppressed = pokemon.ability === "klutz" || pokemon.volatileStatuses.has("embargo");
-  if (pokemon.pokemon.heldItem === "iron-ball" && !itemsSuppressed) return true;
-  if (pokemon.volatileStatuses.has("smackdown" as VolatileStatus)) return true;
+  const itemsSuppressed =
+    pokemon.ability === CORE_ABILITY_IDS.klutz ||
+    pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
+  if (pokemon.pokemon.heldItem === CORE_ITEM_IDS.ironBall && !itemsSuppressed) return true;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
-  if (pokemon.types.includes("flying")) return false;
-  if (pokemon.ability === "levitate") return false;
+  if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
+  if (pokemon.ability === CORE_ABILITY_IDS.levitate) return false;
   if (
-    pokemon.pokemon.heldItem === "air-balloon" &&
+    pokemon.pokemon.heldItem === CORE_ITEM_IDS.airBalloon &&
     !itemsSuppressed &&
     pokemon.pokemon.currentHp > 0
   ) {
     return false;
   }
-  if (pokemon.volatileStatuses.has("magnet-rise")) return false;
-  if (pokemon.volatileStatuses.has("telekinesis" as VolatileStatus)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis as VolatileStatus)) return false;
 
   return true;
 }
@@ -118,7 +131,7 @@ export function checkGen9TerrainStatusImmunity(
   // Electric Terrain: prevents sleep for grounded Pokemon
   // Source: Showdown data/conditions.ts -- electricterrain.onSetStatus:
   //   if (status.id === 'slp') { ... return false; }
-  if (state.terrain.type === "electric" && status === "sleep") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.electric && status === CORE_STATUS_IDS.sleep) {
     return {
       immune: true,
       message: `${pokemonName} is protected by Electric Terrain!`,
@@ -128,7 +141,7 @@ export function checkGen9TerrainStatusImmunity(
   // Misty Terrain: prevents all primary status for grounded Pokemon
   // Source: Showdown data/conditions.ts -- mistyterrain.onSetStatus:
   //   return false; (blocks all status)
-  if (state.terrain.type === "misty") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.misty) {
     return {
       immune: true,
       message: `${pokemonName} is protected by Misty Terrain!`,
@@ -152,7 +165,7 @@ export function checkMistyTerrainConfusionImmunity(
   target: ActivePokemon,
   state: BattleState,
 ): boolean {
-  if (!state.terrain || state.terrain.type !== "misty") return false;
+  if (!state.terrain || state.terrain.type !== CORE_TERRAIN_IDS.misty) return false;
 
   const gravityActive = state.gravity?.active ?? false;
   return isGen9Grounded(target, gravityActive);
@@ -186,7 +199,7 @@ export function checkPsychicTerrainPriorityBlock(
   target: ActivePokemon,
   state: BattleState,
 ): boolean {
-  if (terrainType !== "psychic") return false;
+  if (terrainType !== CORE_TERRAIN_IDS.psychic) return false;
   if (movePriority <= 0) return false;
 
   const gravityActive = state.gravity?.active ?? false;
@@ -211,7 +224,7 @@ export function applyGen9TerrainEffects(state: BattleState): TerrainEffectResult
 
   const results: TerrainEffectResult[] = [];
 
-  if (state.terrain.type === "grassy") {
+  if (state.terrain.type === CORE_TERRAIN_IDS.grassy) {
     const gravityActive = state.gravity?.active ?? false;
 
     for (const side of state.sides) {
@@ -249,10 +262,10 @@ export function applyGen9TerrainEffects(state: BattleState): TerrainEffectResult
  * Source: Bulbapedia -- Surge abilities set terrain on switch-in
  */
 const SURGE_ABILITIES: Readonly<Record<string, TerrainType>> = {
-  "electric-surge": "electric",
-  "grassy-surge": "grassy",
-  "psychic-surge": "psychic",
-  "misty-surge": "misty",
+  [GEN9_ABILITY_IDS.electricSurge]: CORE_TERRAIN_IDS.electric,
+  [GEN9_ABILITY_IDS.grassySurge]: CORE_TERRAIN_IDS.grassy,
+  [GEN9_ABILITY_IDS.psychicSurge]: CORE_TERRAIN_IDS.psychic,
+  [GEN9_ABILITY_IDS.mistySurge]: CORE_TERRAIN_IDS.misty,
 };
 
 /**

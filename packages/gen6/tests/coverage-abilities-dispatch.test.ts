@@ -7,7 +7,9 @@
  *
  * Source: Showdown data/abilities.ts, Bulbapedia ability articles
  */
+
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type { Gender, MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -16,9 +18,13 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   createEvs,
   createIvs,
@@ -83,7 +89,7 @@ function createOnFieldPokemon(overrides: {
     gender: overrides.gender ?? CORE_GENDERS.male,
     heldItem: overrides.heldItem ?? null,
     friendship: species.baseFriendship,
-    metLocation: "test",
+    metLocation: CORE_POKEMON_DEFAULTS.metLocation,
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: itemIds.pokeBall,
@@ -424,7 +430,7 @@ describe("applyGen6Ability — dispatcher triggers", () => {
       trigger: abilityTriggers.onDamageTaken,
       move: createSyntheticMove(typeIds.ground, {
         id: moveIds.fissure,
-        effect: { type: "ohko" },
+        effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
       }),
     });
     const result = applyGen6Ability(abilityTriggers.onDamageTaken, ctx);
@@ -653,7 +659,9 @@ describe("handleGen6StatAbility — branch coverage", () => {
     });
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ stat: "attack", stages: 1 }));
+    expect(result.effects[0]).toEqual(
+      expect.objectContaining({ stat: CORE_STAT_IDS.attack, stages: 1 }),
+    );
   });
 
   it("given Justified + non-dark move, when on-damage-taken, then does not activate", () => {
@@ -677,8 +685,12 @@ describe("handleGen6StatAbility — branch coverage", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(2);
-    expect(result.effects[0]).toEqual(expect.objectContaining({ stat: "defense", stages: -1 }));
-    expect(result.effects[1]).toEqual(expect.objectContaining({ stat: "speed", stages: 1 }));
+    expect(result.effects[0]).toEqual(
+      expect.objectContaining({ stat: CORE_STAT_IDS.defense, stages: -1 }),
+    );
+    expect(result.effects[1]).toEqual(
+      expect.objectContaining({ stat: CORE_STAT_IDS.speed, stages: 1 }),
+    );
   });
 
   it("given Weak Armor + special move, when on-damage-taken, then does not activate", () => {
@@ -758,8 +770,8 @@ describe("handleGen6StatAbility — branch coverage", () => {
     } as unknown as AbilityContext;
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
-    expect(result.effects[0]?.effectType).toBe("volatile-inflict");
-    expect(result.effects[0]?.volatile).toBe("stance-change-blade");
+    expect(result.effects[0]?.effectType).toBe(BATTLE_ABILITY_EFFECT_TYPES.volatileInflict);
+    expect(result.effects[0]?.volatile).toBe(CORE_VOLATILE_IDS.stanceChangeBlade);
     expect(result.messages[0]).toContain("Blade Forme");
   });
 
@@ -770,7 +782,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
       ability: abilityIds.stanceChange,
       speciesId: speciesIds.aegislash,
     });
-    pokemon.volatileStatuses.set("stance-change-blade", { turnsLeft: -1 } as never);
+    pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.stanceChangeBlade, { turnsLeft: -1 } as never);
     const ctx = {
       pokemon,
       state: createBattleState(),
@@ -784,7 +796,7 @@ describe("handleGen6StatAbility — branch coverage", () => {
     const result = handleGen6StatAbility(ctx);
     expect(result.activated).toBe(true);
     expect(result.effects[0]?.effectType).toBe("volatile-remove");
-    expect(result.effects[0]?.volatile).toBe("stance-change-blade");
+    expect(result.effects[0]?.volatile).toBe(CORE_VOLATILE_IDS.stanceChangeBlade);
     expect(result.messages[0]).toContain("Shield Forme");
   });
 

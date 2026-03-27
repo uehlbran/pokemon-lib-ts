@@ -4,13 +4,27 @@ import type {
   AbilityResult,
   ActivePokemon,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   PokemonType,
   PrimaryStatus,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_GENDERS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+  CORE_WEATHER_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN3_ABILITY_IDS } from "./data/reference-ids";
+
+const ABILITY_EFFECT = BATTLE_ABILITY_EFFECT_TYPES;
+const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 
 /**
  * Gen 3 Abilities — applyAbility dispatch.
@@ -40,12 +54,12 @@ import { CORE_ABILITY_IDS } from "@pokemon-lib-ts/core";
  */
 export const GEN3_ABILITY_STATUS_IMMUNITIES: ReadonlyMap<string, readonly PrimaryStatus[]> =
   new Map<string, readonly PrimaryStatus[]>([
-    ["immunity", ["poison", "badly-poisoned"]],
-    ["insomnia", ["sleep"]],
-    ["vital-spirit", ["sleep"]],
-    ["limber", ["paralysis"]],
-    ["water-veil", ["burn"]],
-    ["magma-armor", ["freeze"]],
+    [GEN3_ABILITY_IDS.immunity, [CORE_STATUS_IDS.poison, CORE_STATUS_IDS.badlyPoisoned]],
+    [GEN3_ABILITY_IDS.insomnia, [CORE_STATUS_IDS.sleep]],
+    [GEN3_ABILITY_IDS.vitalSpirit, [CORE_STATUS_IDS.sleep]],
+    [GEN3_ABILITY_IDS.limber, [CORE_STATUS_IDS.paralysis]],
+    [GEN3_ABILITY_IDS.waterVeil, [CORE_STATUS_IDS.burn]],
+    [GEN3_ABILITY_IDS.magmaArmor, [CORE_STATUS_IDS.freeze]],
     // Own Tempo prevents confusion (volatile, not primary status — handled separately)
   ]);
 
@@ -57,9 +71,9 @@ export const GEN3_ABILITY_STATUS_IMMUNITIES: ReadonlyMap<string, readonly Primar
  */
 export const GEN3_ABILITY_VOLATILE_IMMUNITIES: ReadonlyMap<string, readonly VolatileStatus[]> =
   new Map<string, readonly VolatileStatus[]>([
-    ["inner-focus", ["flinch"]],
-    ["own-tempo", ["confusion"]],
-    ["oblivious", ["infatuation"]],
+    [GEN3_ABILITY_IDS.innerFocus, [CORE_VOLATILE_IDS.flinch]],
+    [GEN3_ABILITY_IDS.ownTempo, [CORE_VOLATILE_IDS.confusion]],
+    [GEN3_ABILITY_IDS.oblivious, [CORE_VOLATILE_IDS.infatuation]],
   ]);
 
 /**
@@ -114,10 +128,10 @@ function canInflictContactStatus(status: PrimaryStatus, target: ActivePokemon): 
   // NOTE: No Electric-type paralysis immunity in Gen 3. That was added in Gen 6.
   // Source: Bulbapedia — "In Generation VI onward, Electric-type Pokemon are immune to paralysis."
   const typeImmunities: Record<string, readonly string[]> = {
-    burn: ["fire"],
-    poison: ["poison", "steel"],
-    "badly-poisoned": ["poison", "steel"],
-    freeze: ["ice"],
+    [CORE_STATUS_IDS.burn]: [CORE_TYPE_IDS.fire],
+    [CORE_STATUS_IDS.poison]: [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel],
+    [CORE_STATUS_IDS.badlyPoisoned]: [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel],
+    [CORE_STATUS_IDS.freeze]: [CORE_TYPE_IDS.ice],
     // No paralysis immunity for Electric types in Gen 3
   };
   const immuneTypes = typeImmunities[status];
@@ -154,15 +168,15 @@ function canInflictContactStatus(status: PrimaryStatus, target: ActivePokemon): 
  */
 export function isGen3StatDropBlocked(abilityId: string, stat: string): boolean {
   // Clear Body / White Smoke: block ALL stat drops
-  if (abilityId === "clear-body" || abilityId === "white-smoke") {
+  if (abilityId === GEN3_ABILITY_IDS.clearBody || abilityId === GEN3_ABILITY_IDS.whiteSmoke) {
     return true;
   }
   // Hyper Cutter: blocks Attack drops only
-  if (abilityId === "hyper-cutter" && stat === "attack") {
+  if (abilityId === GEN3_ABILITY_IDS.hyperCutter && stat === CORE_STAT_IDS.attack) {
     return true;
   }
   // Keen Eye: blocks Accuracy drops only
-  if (abilityId === "keen-eye" && stat === "accuracy") {
+  if (abilityId === GEN3_ABILITY_IDS.keenEye && stat === CORE_STAT_IDS.accuracy) {
     return true;
   }
   return false;
@@ -181,8 +195,8 @@ export function isGen3StatDropBlocked(abilityId: string, stat: string): boolean 
  * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
  */
 export const WEATHER_SUPPRESSING_ABILITIES: ReadonlySet<string> = new Set([
-  "cloud-nine",
-  "air-lock",
+  CORE_ABILITY_IDS.cloudNine,
+  CORE_ABILITY_IDS.airLock,
 ]);
 
 /**
@@ -220,14 +234,14 @@ export function isWeatherSuppressedGen3(
  */
 function getForecastType(weather: string | null): PokemonType {
   switch (weather) {
-    case "sun":
-      return "fire";
-    case "rain":
-      return "water";
-    case "hail":
-      return "ice";
+    case CORE_WEATHER_IDS.sun:
+      return CORE_TYPE_IDS.fire;
+    case CORE_WEATHER_IDS.rain:
+      return CORE_TYPE_IDS.water;
+    case CORE_WEATHER_IDS.hail:
+      return CORE_TYPE_IDS.ice;
     default:
-      return "normal"; // Sandstorm and no weather both → Normal
+      return CORE_TYPE_IDS.normal; // Sandstorm and no weather both → Normal
   }
 }
 
@@ -242,21 +256,21 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
   const abilityId = context.pokemon.ability;
 
   switch (trigger) {
-    case "on-switch-in":
+    case CORE_ABILITY_TRIGGER_IDS.onSwitchIn:
       return handleSwitchIn(abilityId, context);
-    case "on-contact":
+    case CORE_ABILITY_TRIGGER_IDS.onContact:
       return handleOnContact(abilityId, context);
-    case "on-turn-end":
+    case CORE_ABILITY_TRIGGER_IDS.onTurnEnd:
       return handleTurnEnd(abilityId, context);
-    case "passive-immunity":
+    case CORE_ABILITY_TRIGGER_IDS.passiveImmunity:
       return handlePassiveImmunity(abilityId, context);
-    case "on-before-move":
+    case CORE_ABILITY_TRIGGER_IDS.onBeforeMove:
       return handleBeforeMove(abilityId, context);
-    case "on-damage-taken":
+    case CORE_ABILITY_TRIGGER_IDS.onDamageTaken:
       return handleDamageTaken(abilityId, context);
-    case "on-status-inflicted":
+    case CORE_ABILITY_TRIGGER_IDS.onStatusInflicted:
       return handleStatusInflicted(abilityId, context);
-    case "on-weather-change":
+    case CORE_ABILITY_TRIGGER_IDS.onWeatherChange:
       return handleWeatherChange(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
@@ -283,7 +297,7 @@ export function applyGen3Ability(trigger: AbilityTrigger, context: AbilityContex
  */
 function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResult {
   switch (abilityId) {
-    case "intimidate": {
+    case GEN3_ABILITY_IDS.intimidate: {
       // Source: pret/pokeemerald ABILITY_INTIMIDATE — lowers opponent's Attack by 1 stage
       // Source: pret/pokeemerald src/battle_script_commands.c:4141-4145 — stat drop blocked by
       //   Clear Body, White Smoke, Hyper Cutter (for Attack), and Keen Eye (for Accuracy)
@@ -294,21 +308,21 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
 
       // Check if opponent's ability blocks the Attack drop
       // Source: pret/pokeemerald src/battle_script_commands.c:4142-4145
-      if (isGen3StatDropBlocked(context.opponent.ability, "attack")) {
+      if (isGen3StatDropBlocked(context.opponent.ability, CORE_STAT_IDS.attack)) {
         return {
           activated: true,
           effects: [],
           messages: [
             `${name}'s Intimidate!`,
-            `${oppName}'s ${context.opponent.ability === "hyper-cutter" ? "Hyper Cutter" : context.opponent.ability === "clear-body" ? "Clear Body" : "White Smoke"} prevents stat loss!`,
+            `${oppName}'s ${context.opponent.ability === GEN3_ABILITY_IDS.hyperCutter ? "Hyper Cutter" : context.opponent.ability === GEN3_ABILITY_IDS.clearBody ? "Clear Body" : "White Smoke"} prevents stat loss!`,
           ],
         };
       }
 
       const effect: AbilityEffect = {
-        effectType: "stat-change",
-        target: "opponent",
-        stat: "attack",
+        effectType: ABILITY_EFFECT.statChange,
+        target: EFFECT_TARGET.opponent,
+        stat: CORE_STAT_IDS.attack,
         stages: -1,
       };
       return {
@@ -318,13 +332,13 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "drizzle": {
+    case GEN3_ABILITY_IDS.drizzle: {
       // Source: pret/pokeemerald ABILITY_DRIZZLE — sets permanent rain on switch-in
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
-        weather: "rain",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
+        weather: CORE_WEATHER_IDS.rain,
         weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite)
       };
       return {
@@ -334,13 +348,13 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "drought": {
+    case GEN3_ABILITY_IDS.drought: {
       // Source: pret/pokeemerald ABILITY_DROUGHT — sets permanent sun on switch-in
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
-        weather: "sun",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
+        weather: CORE_WEATHER_IDS.sun,
         weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite)
       };
       return {
@@ -350,13 +364,13 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "sand-stream": {
+    case GEN3_ABILITY_IDS.sandStream: {
       // Source: pret/pokeemerald ABILITY_SAND_STREAM — sets permanent sandstorm on switch-in
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "weather-set",
-        target: "field",
-        weather: "sand",
+        effectType: ABILITY_EFFECT.weatherSet,
+        target: EFFECT_TARGET.field,
+        weather: CORE_WEATHER_IDS.sand,
         weatherTurns: -1, // Gen 3: permanent weather from abilities (-1 = infinite)
       };
       return {
@@ -366,7 +380,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "trace": {
+    case GEN3_ABILITY_IDS.trace: {
       // Trace: copies the opponent's ability on switch-in.
       //
       // Source: pret/pokeemerald src/battle_util.c:3020-3060 — ABILITYEFFECT_TRACE
@@ -377,7 +391,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       // Source: Showdown data/mods/gen3/abilities.ts — trace.onStart copies foe ability (blocks trace)
       // Source: Bulbapedia/Trace — "Trace cannot copy Trace"
       if (!context.opponent) return { activated: false, effects: [], messages: [] };
-      const uncopyable = ["trace", CORE_ABILITY_IDS.none]; // Trace cannot copy itself or the repo's "no ability" sentinel
+      const uncopyable: readonly string[] = [GEN3_ABILITY_IDS.trace, CORE_ABILITY_IDS.none]; // Trace cannot copy itself or the repo's "no ability" sentinel
       const opponentAbility = context.opponent.ability;
       if (!opponentAbility || uncopyable.includes(opponentAbility)) {
         return { activated: false, effects: [], messages: [] };
@@ -386,8 +400,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       const oppName =
         context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
       const effect: AbilityEffect = {
-        effectType: "ability-change",
-        target: "self",
+        effectType: ABILITY_EFFECT.abilityChange,
+        target: EFFECT_TARGET.self,
         newAbility: opponentAbility,
       };
       return {
@@ -397,7 +411,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "pressure": {
+    case CORE_ABILITY_IDS.pressure: {
       // Pressure: announced on switch-in, no immediate effect.
       // The actual PP doubling is handled via getPPCost() in Gen3Ruleset.
       // Source: pret/pokeemerald — ABILITY_PRESSURE announces on entry
@@ -410,8 +424,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "cloud-nine":
-    case "air-lock": {
+    case CORE_ABILITY_IDS.cloudNine:
+    case CORE_ABILITY_IDS.airLock: {
       // Cloud Nine / Air Lock: suppress all weather effects while on the field.
       // The actual suppression is handled by isWeatherSuppressedGen3() checks in
       // damage calc, accuracy, and weather effects. The switch-in handler just
@@ -421,7 +435,8 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       //   triggers ABILITYEFFECT_ON_SWITCHIN announcement
       // Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
       const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-      const abilityDisplayName = abilityId === "cloud-nine" ? "Cloud Nine" : "Air Lock";
+      const abilityDisplayName =
+        abilityId === CORE_ABILITY_IDS.cloudNine ? "Cloud Nine" : "Air Lock";
       return {
         activated: true,
         effects: [],
@@ -429,7 +444,7 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       };
     }
 
-    case "forecast": {
+    case GEN3_ABILITY_IDS.forecast: {
       // Forecast: Castform changes type and form based on weather.
       // On switch-in, set Castform's type to match the current weather.
       // If weather is suppressed (Cloud Nine/Air Lock), Castform stays Normal.
@@ -457,13 +472,15 @@ function handleSwitchIn(abilityId: string, context: AbilityContext): AbilityResu
       if (currentTypes.length === 1 && currentTypes[0] === newType) {
         return { activated: false, effects: [], messages: [] };
       }
-      if (currentTypes.length === 0 && newType === "normal") {
+      if (currentTypes.length === 0 && newType === CORE_TYPE_IDS.normal) {
         return { activated: false, effects: [], messages: [] };
       }
 
       return {
         activated: true,
-        effects: [{ effectType: "type-change", target: "self", types: [newType] }],
+        effects: [
+          { effectType: ABILITY_EFFECT.typeChange, target: EFFECT_TARGET.self, types: [newType] },
+        ],
         messages: [`${name} transformed into the ${newType} type!`],
       };
     }
@@ -496,49 +513,67 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
   if (!attacker) return { activated: false, effects: [], messages: [] };
 
   switch (abilityId) {
-    case "static": {
+    case CORE_ABILITY_IDS.static: {
       // Source: pret/pokeemerald src/battle_util.c:2821-2827 — Static: (Random() % 3) == 0 = 33.3%
       // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
-      if (!canInflictContactStatus("paralysis", attacker))
+      if (!canInflictContactStatus(CORE_STATUS_IDS.paralysis, attacker))
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "flame-body": {
+    case GEN3_ABILITY_IDS.flameBody: {
       // Source: pret/pokeemerald src/battle_util.c:2836-2842 — Flame Body: (Random() % 3) == 0 = 33.3%
       // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
-      if (!canInflictContactStatus("burn", attacker))
+      if (!canInflictContactStatus(CORE_STATUS_IDS.burn, attacker))
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "burn" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.burn,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "poison-point": {
+    case GEN3_ABILITY_IDS.poisonPoint: {
       // Source: pret/pokeemerald src/battle_util.c:2806-2812 — Poison Point: (Random() % 3) == 0 = 33.3%
       // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (attacker.pokemon.status) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
-      if (!canInflictContactStatus("poison", attacker))
+      if (!canInflictContactStatus(CORE_STATUS_IDS.poison, attacker))
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.poison,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "rough-skin": {
+    case GEN3_ABILITY_IDS.roughSkin: {
       // Source: pret/pokeemerald — Rough Skin: deals 1/16 attacker's max HP on contact
       // Gen 3 uses 1/16 (Gen 4+ uses 1/8)
       // Source: Bulbapedia — "In Generation III, it causes 1/16 of the attacker's maximum HP"
@@ -546,12 +581,18 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       const chipDamage = Math.max(1, Math.floor(attackerMaxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "chip-damage", target: "opponent", value: chipDamage }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.chipDamage,
+            target: EFFECT_TARGET.opponent,
+            value: chipDamage,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "effect-spore": {
+    case GEN3_ABILITY_IDS.effectSpore: {
       // Source: pret/pokeemerald src/battle_util.c:2782-2804 — Effect Spore:
       //   (Random() % 10) == 0 = 10% total trigger chance (NOT 30%)
       //   Then picks MOVE_EFFECT via (Random() & 3), rerolling 0, giving equal 1/3 for each:
@@ -564,35 +605,53 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       const roll = context.rng.next();
       if (roll < 1 / 3) {
         // MOVE_EFFECT_SLEEP (value 1)
-        if (!canInflictContactStatus("sleep", attacker))
+        if (!canInflictContactStatus(CORE_STATUS_IDS.sleep, attacker))
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "sleep" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.sleep,
+            },
+          ],
           messages: [],
         };
       }
       if (roll < 2 / 3) {
         // MOVE_EFFECT_POISON (value 2)
-        if (!canInflictContactStatus("poison", attacker))
+        if (!canInflictContactStatus(CORE_STATUS_IDS.poison, attacker))
           return { activated: false, effects: [], messages: [] };
         return {
           activated: true,
-          effects: [{ effectType: "status-inflict", target: "opponent", status: "poison" }],
+          effects: [
+            {
+              effectType: ABILITY_EFFECT.statusInflict,
+              target: EFFECT_TARGET.opponent,
+              status: CORE_STATUS_IDS.poison,
+            },
+          ],
           messages: [],
         };
       }
       // MOVE_EFFECT_BURN → replaced with MOVE_EFFECT_PARALYSIS (value 3 → adjusted to paralysis)
-      if (!canInflictContactStatus("paralysis", attacker))
+      if (!canInflictContactStatus(CORE_STATUS_IDS.paralysis, attacker))
         return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-inflict", target: "opponent", status: "paralysis" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statusInflict,
+            target: EFFECT_TARGET.opponent,
+            status: CORE_STATUS_IDS.paralysis,
+          },
+        ],
         messages: [],
       };
     }
 
-    case "cute-charm": {
+    case CORE_ABILITY_IDS.cuteCharm: {
       // Source: pret/pokeemerald src/battle_util.c:2851-2858 — Cute Charm: (Random() % 3) == 0 = 33.3%
       // Note: Gen 3 uses 1/3 (33.3%), NOT 30%. Gen 4+ changed to % 10 < 3 (30%).
       if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
@@ -601,19 +660,25 @@ function handleOnContact(abilityId: string, context: AbilityContext): AbilityRes
       if (
         !defenderGender ||
         !attackerGender ||
-        defenderGender === "genderless" ||
-        attackerGender === "genderless" ||
+        defenderGender === CORE_GENDERS.genderless ||
+        attackerGender === CORE_GENDERS.genderless ||
         defenderGender === attackerGender
       ) {
         return { activated: false, effects: [], messages: [] };
       }
       // Oblivious blocks infatuation
-      if (isGen3VolatileBlockedByAbility(attacker.ability, "infatuation")) {
+      if (isGen3VolatileBlockedByAbility(attacker.ability, CORE_VOLATILE_IDS.infatuation)) {
         return { activated: false, effects: [], messages: [] };
       }
       return {
         activated: true,
-        effects: [{ effectType: "volatile-inflict", target: "opponent", volatile: "infatuation" }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.volatileInflict,
+            target: EFFECT_TARGET.opponent,
+            volatile: CORE_VOLATILE_IDS.infatuation,
+          },
+        ],
         messages: [],
       };
     }
@@ -642,7 +707,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
   const maxHp = context.pokemon.pokemon.calculatedStats?.hp ?? context.pokemon.pokemon.currentHp;
 
   switch (abilityId) {
-    case "truant": {
+    case GEN3_ABILITY_IDS.truant: {
       // Source: pret/pokeemerald src/battle_util.c — Truant toggle at ABILITYEFFECT_ENDTURN, not at move execution
       // Toggle the "truant-turn" volatile: if present, remove it (next turn can act);
       // if absent, set it (next turn will loaf). This fires every turn regardless of
@@ -657,7 +722,7 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       return { activated: true, effects: [], messages: [] };
     }
 
-    case "speed-boost": {
+    case CORE_ABILITY_IDS.speedBoost: {
       // Source: pret/pokeemerald src/battle_util.c:2642-2643 — Speed Boost:
       //   gDisableStructs[battler].isFirstTurn != 2 — does NOT activate on the first turn
       //   after switching in.
@@ -669,12 +734,19 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       }
       return {
         activated: true,
-        effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+        effects: [
+          {
+            effectType: ABILITY_EFFECT.statChange,
+            target: EFFECT_TARGET.self,
+            stat: CORE_STAT_IDS.speed,
+            stages: 1,
+          },
+        ],
         messages: [`${name}'s Speed Boost raised its Speed!`],
       };
     }
 
-    case "rain-dish": {
+    case CORE_ABILITY_IDS.rainDish: {
       // Source: pret/pokeemerald — Rain Dish: heal 1/16 max HP in rain
       // Source: Bulbapedia — Rain Dish heals 1/16 each turn during rain
       // Cloud Nine / Air Lock suppress weather, so Rain Dish does not activate.
@@ -682,24 +754,24 @@ function handleTurnEnd(abilityId: string, context: AbilityContext): AbilityResul
       const effectiveWeatherForRainDish = isWeatherSuppressedGen3(context.pokemon, context.opponent)
         ? null
         : weather;
-      if (effectiveWeatherForRainDish !== "rain")
+      if (effectiveWeatherForRainDish !== CORE_WEATHER_IDS.rain)
         return { activated: false, effects: [], messages: [] };
       const healAmt = Math.max(1, Math.floor(maxHp / 16));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [`${name}'s Rain Dish restored some HP!`],
       };
     }
 
-    case "shed-skin": {
+    case CORE_ABILITY_IDS.shedSkin: {
       // Source: pret/pokeemerald — Shed Skin: 1/3 chance to cure status each turn
       // Source: Bulbapedia — Shed Skin has a 1/3 chance of curing a status at end of turn
       if (!context.pokemon.pokemon.status) return { activated: false, effects: [], messages: [] };
       if (context.rng.next() >= 1 / 3) return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
-        effects: [{ effectType: "status-cure", target: "self" }],
+        effects: [{ effectType: ABILITY_EFFECT.statusCure, target: EFFECT_TARGET.self }],
         messages: [`${name}'s Shed Skin cured its status!`],
       };
     }
@@ -741,38 +813,43 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
 
   switch (abilityId) {
-    case "volt-absorb": {
+    case CORE_ABILITY_IDS.voltAbsorb: {
       // Source: pret/pokeemerald — Volt Absorb: Electric moves heal 1/4 max HP
       // Source: Bulbapedia — Volt Absorb absorbs Electric moves and heals 1/4 max HP
-      if (moveType !== "electric") return { activated: false, effects: [], messages: [] };
+      if (moveType !== CORE_TYPE_IDS.electric)
+        return { activated: false, effects: [], messages: [] };
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [`${name}'s Volt Absorb restored HP!`],
       };
     }
 
-    case "water-absorb": {
+    case CORE_ABILITY_IDS.waterAbsorb: {
       // Source: pret/pokeemerald — Water Absorb: Water moves heal 1/4 max HP
       // Source: Bulbapedia — Water Absorb absorbs Water moves and heals 1/4 max HP
-      if (moveType !== "water") return { activated: false, effects: [], messages: [] };
+      if (moveType !== CORE_TYPE_IDS.water) return { activated: false, effects: [], messages: [] };
       const healAmt = Math.max(1, Math.floor(maxHp / 4));
       return {
         activated: true,
-        effects: [{ effectType: "heal", target: "self", value: healAmt }],
+        effects: [{ effectType: ABILITY_EFFECT.heal, target: EFFECT_TARGET.self, value: healAmt }],
         messages: [`${name}'s Water Absorb restored HP!`],
       };
     }
 
-    case "flash-fire": {
+    case CORE_ABILITY_IDS.flashFire: {
       // Source: pret/pokeemerald — Flash Fire: absorbs Fire moves, boosts Fire power by 50%
       // Source: Bulbapedia — Flash Fire grants immunity to Fire and powers up Fire-type moves
-      if (moveType !== "fire") return { activated: false, effects: [], messages: [] };
-      const hasBoost = context.pokemon.volatileStatuses.has("flash-fire");
+      if (moveType !== CORE_TYPE_IDS.fire) return { activated: false, effects: [], messages: [] };
+      const hasBoost = context.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire);
       const effects: AbilityEffect[] = [];
       if (!hasBoost) {
-        effects.push({ effectType: "volatile-inflict", target: "self", volatile: "flash-fire" });
+        effects.push({
+          effectType: ABILITY_EFFECT.volatileInflict,
+          target: EFFECT_TARGET.self,
+          volatile: CORE_VOLATILE_IDS.flashFire,
+        });
       }
       return {
         activated: true,
@@ -785,10 +862,10 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       };
     }
 
-    case "levitate": {
+    case CORE_ABILITY_IDS.levitate: {
       // Source: pret/pokeemerald — Levitate: Ground moves have no effect
       // Source: Bulbapedia — Levitate grants Ground immunity
-      if (moveType !== "ground") return { activated: false, effects: [], messages: [] };
+      if (moveType !== CORE_TYPE_IDS.ground) return { activated: false, effects: [], messages: [] };
       return {
         activated: true,
         effects: [],
@@ -796,7 +873,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       };
     }
 
-    case "lightning-rod": {
+    case GEN3_ABILITY_IDS.lightningRod: {
       // Source: pret/pokeemerald — Lightning Rod: in Gen 3, redirects Electric moves in doubles.
       //   In singles, Lightning Rod has NO immunity effect and NO SpAtk boost.
       //   The SpAtk boost was added in Gen 5.
@@ -807,7 +884,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       return { activated: false, effects: [], messages: [] };
     }
 
-    case "soundproof": {
+    case CORE_ABILITY_IDS.soundproof: {
       // Source: pret/pokeemerald — Soundproof: blocks sound-based moves
       // Source: Bulbapedia — Soundproof makes the Pokemon immune to sound-based moves
       // Use the move's flags.sound metadata for detection rather than a hardcoded list,
@@ -822,7 +899,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
       };
     }
 
-    case "sturdy": {
+    case CORE_ABILITY_IDS.sturdy: {
       // Source: pret/pokeemerald — Sturdy: blocks OHKO moves (Fissure, Horn Drill, Guillotine, Sheer Cold)
       // In Gen 3-4, Sturdy ONLY blocks OHKO moves. The Focus Sash effect (surviving
       // any hit at full HP) was added in Gen 5.
@@ -855,7 +932,7 @@ function handlePassiveImmunity(abilityId: string, context: AbilityContext): Abil
  */
 function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityResult {
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-  if (abilityId === "truant") {
+  if (abilityId === GEN3_ABILITY_IDS.truant) {
     // Truant: check if the "truant-turn" volatile is present. If so, block the move.
     // The toggle itself happens at end of turn (handleTurnEnd), not here.
     //
@@ -890,7 +967,7 @@ function handleBeforeMove(abilityId: string, context: AbilityContext): AbilityRe
  */
 function handleDamageTaken(abilityId: string, context: AbilityContext): AbilityResult {
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-  if (abilityId === "color-change") {
+  if (abilityId === GEN3_ABILITY_IDS.colorChange) {
     // Color Change: changes the holder's type to match the type of the move that just hit it.
     // Only activates on damaging moves. Does not activate if the holder is already
     // purely that type (already mono-typed to that type).
@@ -907,7 +984,13 @@ function handleDamageTaken(abilityId: string, context: AbilityContext): AbilityR
     }
     return {
       activated: true,
-      effects: [{ effectType: "type-change", target: "self", types: [moveType as PokemonType] }],
+      effects: [
+        {
+          effectType: ABILITY_EFFECT.typeChange,
+          target: EFFECT_TARGET.self,
+          types: [moveType as PokemonType],
+        },
+      ],
       messages: [`${name}'s Color Change made it the ${moveType} type!`],
     };
   }
@@ -927,7 +1010,7 @@ function handleDamageTaken(abilityId: string, context: AbilityContext): AbilityR
  */
 function handleStatusInflicted(abilityId: string, context: AbilityContext): AbilityResult {
   const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
-  if (abilityId === "synchronize") {
+  if (abilityId === GEN3_ABILITY_IDS.synchronize) {
     // Synchronize: when the holder receives a burn, paralysis, or poison, the
     // opponent also receives the same status condition.
     // Synchronize does NOT activate for sleep or freeze.
@@ -938,10 +1021,10 @@ function handleStatusInflicted(abilityId: string, context: AbilityContext): Abil
     if (!status) return { activated: false, effects: [], messages: [] };
     // Only burn, paralysis, poison, and badly-poisoned are Synchronized
     const syncableStatuses: readonly PrimaryStatus[] = [
-      "burn",
-      "paralysis",
-      "poison",
-      "badly-poisoned",
+      CORE_STATUS_IDS.burn,
+      CORE_STATUS_IDS.paralysis,
+      CORE_STATUS_IDS.poison,
+      CORE_STATUS_IDS.badlyPoisoned,
     ];
     if (!syncableStatuses.includes(status)) {
       return { activated: false, effects: [], messages: [] };
@@ -955,10 +1038,17 @@ function handleStatusInflicted(abilityId: string, context: AbilityContext): Abil
     // In Gen 3, Synchronize converts badly-poisoned -> regular poison before mirroring.
     // Source: pret/pokeemerald src/battle_util.c — synchronizeMoveEffect == MOVE_EFFECT_TOXIC
     //   sets synchronizeMoveEffect = MOVE_EFFECT_POISON (lines 2976-2977, 2992-2993)
-    const mirroredStatus = status === "badly-poisoned" ? "poison" : status;
+    const mirroredStatus =
+      status === CORE_STATUS_IDS.badlyPoisoned ? CORE_STATUS_IDS.poison : status;
     return {
       activated: true,
-      effects: [{ effectType: "status-inflict", target: "opponent", status: mirroredStatus }],
+      effects: [
+        {
+          effectType: ABILITY_EFFECT.statusInflict,
+          target: EFFECT_TARGET.opponent,
+          status: mirroredStatus,
+        },
+      ],
       messages: [`${name}'s Synchronize shared its ${mirroredStatus} with ${oppName}!`],
     };
   }
@@ -976,7 +1066,8 @@ function handleStatusInflicted(abilityId: string, context: AbilityContext): Abil
  * Source: Bulbapedia — "Forecast changes Castform's type based on the weather"
  */
 function handleWeatherChange(abilityId: string, context: AbilityContext): AbilityResult {
-  if (abilityId !== "forecast") return { activated: false, effects: [], messages: [] };
+  if (abilityId !== GEN3_ABILITY_IDS.forecast)
+    return { activated: false, effects: [], messages: [] };
 
   // Forecast only has an effect on Castform (speciesId 351).
   // Source: pret/pokeemerald — IS_CASTFORM_SPECIES guard
@@ -997,13 +1088,15 @@ function handleWeatherChange(abilityId: string, context: AbilityContext): Abilit
   if (currentTypes.length === 1 && currentTypes[0] === newType) {
     return { activated: false, effects: [], messages: [] };
   }
-  if (currentTypes.length === 0 && newType === "normal") {
+  if (currentTypes.length === 0 && newType === CORE_TYPE_IDS.normal) {
     return { activated: false, effects: [], messages: [] };
   }
 
   return {
     activated: true,
-    effects: [{ effectType: "type-change", target: "self", types: [newType] }],
+    effects: [
+      { effectType: ABILITY_EFFECT.typeChange, target: EFFECT_TARGET.self, types: [newType] },
+    ],
     messages: [`${name} transformed into the ${newType} type!`],
   };
 }
