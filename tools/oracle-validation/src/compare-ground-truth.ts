@@ -166,10 +166,7 @@ export function loadGroundTruthDataset(repoRoot: string): GroundTruthDataset {
   return groundTruthDatasetSchema.parse(JSON.parse(readFileSync(datasetPath, "utf8")));
 }
 
-function evaluateTypeChartCase(
-  testCase: TypeChartCase,
-  typeChart: LoadedTypeChart,
-): string | null {
+function evaluateTypeChartCase(testCase: TypeChartCase, typeChart: LoadedTypeChart): string | null {
   if (!(testCase.attackerType in typeChart)) {
     return `${testCase.id}: unknown attacker type ${testCase.attackerType} (${testCase.source})`;
   }
@@ -250,10 +247,7 @@ function evaluateCritRateCase(testCase: CritRateCase): string | null {
   return null;
 }
 
-function evaluateCase(
-  testCase: GroundTruthCase,
-  context: GroundTruthSuiteContext,
-): string | null {
+function evaluateCase(testCase: GroundTruthCase, context: GroundTruthSuiteContext): string | null {
   if (testCase.kind === "typeChart") {
     return evaluateTypeChartCase(testCase, context.typeChart);
   }
