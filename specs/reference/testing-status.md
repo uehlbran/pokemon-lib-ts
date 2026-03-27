@@ -29,6 +29,7 @@ Confidence levels:
   - `packages/core/tests/unit/data/data-manager.test.ts`
 - `battle` is functionally broad and documents a complete singles engine in [battle-status.md](./battle-status.md), including turn flow and end-of-turn handler coverage.
 - `battle` has direct deterministic ordering coverage for same-speed ties, action-type priority, and forced-switch queued-action invalidation in its shared unit/integration suites.
+- `battle` also now has direct setup/runtime invariant coverage for helper-built active/side/state wrappers in `packages/battle/tests/unit/utils/battle-helpers.test.ts`, plus stronger deserialize checkpoint/relink validation in `packages/battle/tests/integration/engine/deserialize.test.ts`.
 - Gen 1 has the deepest source-backed confidence today:
   - ground-truth / deep-dive coverage
   - replay validation
@@ -68,7 +69,7 @@ Showdown parity is not the success criterion for Gen 1-4. For those gens, cartri
 | Gen-specific end-of-turn ordering | battle + gen1-9 | `weak` to `strong` mixed | Engine and per-gen suites cover many handlers, but there is no maintained per-generation order matrix | Build per-gen ordering matrix against tests + source notes |
 | Hazard / grounded / semi-invulnerable interactions | gen5-9 | `weak` | Multiple historical bughunt fixes landed across gen5-9, but there is still no maintained confidence row tying those interactions to current test evidence | Audit tests against current rulesets and identify remaining blind spots |
 | Data legality / packaging / canonical runtime identity | core + gen1 | `weak` | Open issues `#1014`, `#905`, and `#897` show runtime identity, packaging, and published-consumer confidence gaps still exist | Tighten runtime identity coverage, package-surface checks, and published-install/documentation validation |
-| Invalid runtime-state rejection | core + battle | `strong` | `packages/core/tests/unit/logic/stat-inputs.test.ts`, `packages/core/tests/unit/logic/pokemon-factory.test.ts`, `packages/core/tests/unit/data/data-manager.test.ts`, `packages/battle/tests/unit/ruleset/base-ruleset.test.ts`, and `packages/battle/tests/unit/battle-engine-surface.test.ts` directly assert invalid bounded-domain input and malformed runtime state are rejected | Extend the same explicit invariant coverage to the remaining battle wrapper/setup helpers instead of relying on helper discipline alone |
+| Invalid runtime-state rejection | core + battle | `strong` | `packages/core/tests/unit/logic/stat-inputs.test.ts`, `packages/core/tests/unit/logic/pokemon-factory.test.ts`, `packages/core/tests/unit/data/data-manager.test.ts`, `packages/battle/tests/unit/ruleset/base-ruleset.test.ts`, `packages/battle/tests/unit/battle-engine-surface.test.ts`, `packages/battle/tests/unit/utils/battle-helpers.test.ts`, and `packages/battle/tests/integration/engine/deserialize.test.ts` directly assert invalid bounded-domain input, malformed wrapper setup, and contradictory serialized runtime state are rejected | Continue outward from the helper / deserialize surfaces into the remaining ordering- and trace-centric runtime-state gaps |
 | Gen 1 cartridge-only mechanics still outside confidence closure | gen1 | `weak` | Gen 1 has the strongest ground-truth assets, but `#530` remains open for the badge boost glitch | Keep Gen 1 cartridge rows visible and add explicit badge-boost confidence coverage before claiming closure |
 | Cross-gen generation-specific move / ability / gimmick gaps | gen4-9 | `weak` | Open issues `#793`, `#788`, `#789`, `#1059`, and `#1060` show real singles mechanic surfaces still missing or still treated as live confidence debt; doubles-only gaps stay tracked separately | Separate missing singles mechanics from deferred doubles mechanics and cover the live singles gaps first |
 | Replay / external differential validation | repo-wide | `none` beyond Gen1 | `tools/replay-parser` currently focuses on Gen 1 structural validation | Expand plan from Gen1-only precedent into fast compliance path |
@@ -209,7 +210,7 @@ First concrete targets:
 ## Default Next PR Sequence
 
 1. Expand the confidence matrices and live issue mapping on current `main`
-2. Close the highest-risk `core` / `battle` ordering and validation gaps
+2. Close the highest-risk remaining `core` / `battle` ordering and trace-consistency gaps
 3. Widen Gen 1 cartridge-confidence rows around the remaining open mechanic debt
 4. Extend the oracle fast path with curated ground-truth scenarios
 5. Establish the first mutation baseline for `core` + `battle`

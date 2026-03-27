@@ -1,6 +1,6 @@
 # Battle Implementation Status
 
-**Last updated:** 2026-03-24
+**Last updated:** 2026-03-27
 **Overall estimate:** ~100% complete for singles battles (EXP gain + catch mechanics merged)
 **Architecture:** Pluggable gen-agnostic engine. Delegates ALL gen-specific behavior to GenerationRuleset. Depends only on @pokemon-lib-ts/core.
 
@@ -32,6 +32,10 @@
 ### BattleState, BattleSide, ActivePokemon
 - `BattlePhase` (8 phases), `BattleFormat` (4 formats — singles only implemented), `WeatherState`, `TerrainState`, `TurnRecord`
 - All side/active state: volatiles, stat stages, forced moves, two-turn states, gimmicks, encode/encore, disable, protect counters, future attacks, screens, hazard layers
+- Direct helper invariant coverage now pins malformed battle-wrapper rejection in `packages/battle/tests/unit/utils/battle-helpers.test.ts`, including:
+  - invalid `createOnFieldPokemon()` team slots / type lists / persisted Mega-Tera state
+  - invalid `createBattleSide()` active-team mismatches, duplicates, and faint-count bounds
+  - invalid `createBattleState()` side ordering, counters, premature winners, and singles multi-active layouts
 
 ### BattleEvent (30 types), BattleAction (6 types)
 - Full discriminated union for all event/action types
@@ -86,7 +90,11 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 
 ### Serialization
 - `serialize()`/`deserialize()` round-trips full battle state including Map/Set/SeededRandom
-- Tests: `deserialize.test.ts` (737 lines)
+- Stable-checkpoint restore rules are now pinned directly:
+  - rejects lossy non-checkpoint phases during `deserialize()`
+  - re-links deserialized `active.pokemon` references back to the saved team instance
+  - rejects tampered active/team UID mismatches and contradictory singles active-slot shapes
+- Tests: `deserialize.test.ts` (expanded direct restore / malformed-save coverage)
 
 ---
 
@@ -126,3 +134,5 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 | #634 | fix/battle,gen2 | Hazard `maxLayers` delegated to GenerationRuleset (gen-configurable cap) |
 | #635 | fix/all-gens | Traded Pokémon EXP bonus: 1.5x same-language, 1.7x international |
 | #636 | fix/battle,gen6 | `getBattleGimmick()` gains type parameter for Gen 7 disambiguation |
+| #1067 | chore/core-battle-confidence-phase1 | BattleEngine deserialize now rejects lossy non-checkpoint restores, re-links active Pokemon back to saved team instances, and rejects contradictory active/team checkpoint state |
+| #1068 | chore/core-battle-confidence-phase2 | Battle helper fixture surfaces now pin malformed `createOnFieldPokemon()` / `createBattleSide()` / `createBattleState()` inputs with direct invariant tests while preserving supported active-only and Tera fallback fixture shapes |
