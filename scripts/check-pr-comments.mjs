@@ -39,7 +39,7 @@ function fetchPrAuthor(repoNameWithOwner, prNumber) {
     "--json",
     "author",
   ]);
-  return pr.author.login;
+  return pr.author?.login ?? "deleted-user";
 }
 
 function fetchAllReviewThreads(owner, repo, prNumber) {
@@ -137,6 +137,10 @@ function main() {
   }
 
   const repoNameWithOwner = getRepoNameWithOwner(args.repo);
+  if (!/^[^/]+\/[^/]+$/.test(repoNameWithOwner)) {
+    console.error(`Invalid --repo format: expected "owner/name", got "${repoNameWithOwner}"`);
+    process.exit(1);
+  }
   const [owner, repo] = repoNameWithOwner.split("/");
   const prAuthor = fetchPrAuthor(repoNameWithOwner, prNumber);
   const reviewThreads = fetchAllReviewThreads(owner, repo, prNumber);

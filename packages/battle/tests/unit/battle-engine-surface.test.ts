@@ -432,6 +432,32 @@ describe("BattleEngine surface", () => {
       });
     });
 
+    it("given an unsupported format, when validateConfig is called, then it rejects the config before team validation", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "doubles",
+          teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)]],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result).toEqual({
+        valid: false,
+        errors: [
+          {
+            entity: "battle",
+            id: "unsupported-format",
+            field: "format",
+            message: 'Battle format "doubles" is not supported',
+          },
+        ],
+      });
+    });
+
     it("given a ruleset-only nature error, when validateConfig is called, then the nature failure is preserved", () => {
       const ruleset = new ValidatingRuleset();
       ruleset.setInvalidPokemon("charizard-1", [

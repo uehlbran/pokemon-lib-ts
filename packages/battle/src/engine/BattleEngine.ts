@@ -234,6 +234,20 @@ export class BattleEngine implements BattleEventEmitter {
   ): BattleValidationResult {
     const errors: BattleValidationIssue[] = [];
 
+    if (config.format !== "singles") {
+      return {
+        valid: false,
+        errors: [
+          BattleEngine.createBattleValidationIssue(
+            "battle",
+            "unsupported-format",
+            "format",
+            `Battle format "${config.format}" is not supported`,
+          ),
+        ],
+      };
+    }
+
     if (config.teams.length !== 2) {
       return {
         valid: false,
