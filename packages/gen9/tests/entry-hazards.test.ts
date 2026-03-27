@@ -741,7 +741,7 @@ describe("applyGen9EntryHazards", () => {
     // This is tested here indirectly -- the hazard list for Gen 9 excludes it
     const ruleset = new Gen9Ruleset();
     const hazards = ruleset.getAvailableHazards();
-    expect(hazards).not.toContain("gmax-steelsurge");
+    expect(hazards).not.toContain(CORE_HAZARD_IDS.gmaxSteelsurge);
     expect(hazards).toContain(HAZARDS.stealthRock);
     expect(hazards).toContain(HAZARDS.spikes);
     expect(hazards).toContain(HAZARDS.toxicSpikes);

@@ -267,7 +267,7 @@ describe("Gen9Ruleset -- inherited BaseRuleset behaviors", () => {
   it("given Gen9Ruleset, when getAvailableHazards(), then does NOT include gmax-steelsurge (Dynamax removed)", () => {
     // Source: Bulbapedia -- G-Max Steelsurge was a Gen 8 Dynamax-exclusive hazard
     // Dynamax was removed in Gen 9, so G-Max Steelsurge is not available
-    expect(ruleset.getAvailableHazards()).not.toContain("gmax-steelsurge");
+    expect(ruleset.getAvailableHazards()).not.toContain(HAZARDS.gmaxSteelsurge);
   });
 
   it("given Gen9Ruleset, when getCritRateTable(), then returns [24, 8, 2, 1] (Gen 6+ table)", () => {

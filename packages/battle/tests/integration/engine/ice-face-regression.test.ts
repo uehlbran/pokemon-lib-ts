@@ -5,6 +5,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createFriendship,
   createIvs,
@@ -101,7 +102,7 @@ describe("Bug #890 - Gen 8 Ice Face pre-damage blocking", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     expect(defender.pokemon.currentHp).toBe(startingHp);
-    expect(defender.volatileStatuses.has("ice-face-broken")).toBe(true);
+    expect(defender.volatileStatuses.has(CORE_VOLATILE_IDS.iceFaceBroken)).toBe(true);
 
     const damageEvents = events.filter((event) => event.type === "damage" && event.side === 1);
     expect(damageEvents).toHaveLength(1);

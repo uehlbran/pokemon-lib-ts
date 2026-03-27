@@ -15,7 +15,12 @@
  * Source: Showdown data/abilities.ts -- Gen 8 ability handlers
  * Source: Bulbapedia -- Sword/Shield battle mechanics
  */
-import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BATTLE_EFFECT_TARGETS,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -179,7 +184,11 @@ function createAbilityContext(overrides: {
   opponent?: ActivePokemon;
   turnsOnField?: number;
   seed?: number;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: string;
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
   volatiles?: Map<string, unknown>;
 }): AbilityContext {
   const hp = overrides.maxHp ?? 200;
@@ -478,8 +487,8 @@ describe("Gen 8 getEndOfTurnOrder (Bug C2)", () => {
       EOT.safeguardCountdown,
       EOT.tailwindCountdown,
       EOT.trickRoomCountdown,
-      "magic-room-countdown",
-      "wonder-room-countdown",
+      EOT.magicRoomCountdown,
+      EOT.wonderRoomCountdown,
       EOT.gravityCountdown,
       EOT.slowStartCountdown,
       EOT.terrainCountdown,
@@ -578,7 +587,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
 
   it("given Disguise already broken, when move hits, then damage passes through unchanged", () => {
     // Source: Showdown data/abilities.ts -- disguise: only blocks once
-    const volatiles = new Map<string, unknown>([["disguise-broken", true]]);
+    const volatiles = new Map<string, unknown>([[VOLATILES.disguiseBroken, true]]);
     const defender = createOnFieldPokemon({
       ability: ABILITIES.disguise,
       hp: 200,
@@ -617,7 +626,7 @@ describe("Gen 8 capLethalDamage (Bug C3)", () => {
     const state = createBattleState();
 
     ruleset.capLethalDamage!(500, defender, attacker, move, state);
-    expect(defender.volatileStatuses.has("disguise-broken")).toBe(true);
+    expect(defender.volatileStatuses.has(VOLATILES.disguiseBroken)).toBe(true);
   });
 
   // ---- Disguise priority over Sturdy ----

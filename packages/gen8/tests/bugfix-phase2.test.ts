@@ -6,6 +6,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createIvs,
 } from "@pokemon-lib-ts/core";
@@ -168,8 +169,7 @@ const TYPES = CORE_TYPE_IDS;
 const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
 const GEN8_DATA = createGen8DataManager();
 const TACKLE_MOVE = GEN8_DATA.getMove(MOVES.tackle);
-// Synthetic volatile used by the bugfix harness; no owned Gen 8 id exists for this internal state.
-const DISGUISE_BROKEN = "disguise-broken" as const;
+const DISGUISE_BROKEN = CORE_VOLATILE_IDS.disguiseBroken;
 const ruleset = new Gen8Ruleset(GEN8_DATA);
 
 // ===========================================================================

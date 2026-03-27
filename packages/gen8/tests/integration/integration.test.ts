@@ -4,6 +4,7 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type {
   EntryHazardType,
   MoveData,
@@ -17,11 +18,14 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
+  CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createIvs,
   createMoveSlot,
@@ -76,16 +80,16 @@ const TYPES = CORE_TYPE_IDS;
 const STATUS = CORE_STATUS_IDS;
 const TERRAIN = CORE_TERRAIN_IDS;
 const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
+const VOLATILES = CORE_VOLATILE_IDS;
+const HAZARDS = CORE_HAZARD_IDS;
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
 const DEFAULT_NATURE = DATA_MANAGER.getNature(GEN8_NATURE_IDS.hardy).id;
 
-// Internal Gulp Missile form markers are not exported from gen8 today.
-const GULP_MISSILE_GULPING = "gulp-missile-gulping" as const;
-const GULP_MISSILE_GORGING = "gulp-missile-gorging" as const;
+const GULP_MISSILE_GULPING = VOLATILES.gulpMissileGulping;
+const GULP_MISSILE_GORGING = VOLATILES.gulpMissileGorging;
 const GULPING_FORM = "gulping" as const;
 const GORGING_FORM = "gorging" as const;
-// G-Max Steelsurge is a hazard id used by entry hazards but is not exported in the Gen 8 reference ids.
-const GMAX_STEELSURGE_HAZARD = "gmax-steelsurge" as const;
+const GMAX_STEELSURGE_HAZARD = HAZARDS.gmaxSteelsurge;
 
 let nextTestUid = 0;
 function createTestUid() {
@@ -637,13 +641,17 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
 
     // Should have chip-damage effect: floor(200 / 4) = 50
     // Source: Showdown data/abilities.ts -- Gulp Missile: 1/4 max HP
-    const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
+    const chipEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+    );
     expect(chipEffect).toBeDefined();
     expect((chipEffect as any).value).toBe(50);
 
     // Should have defense drop
     const statEffect = result.effects.find(
-      (e) => e.effectType === "stat-change" && (e as any).stat === "defense",
+      (e) =>
+        e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+        (e as any).stat === CORE_STAT_IDS.defense,
     );
     expect(statEffect).toBeDefined();
     expect((statEffect as any).stages).toBe(-1);
