@@ -121,10 +121,10 @@ const NO_ACTIVATION: AbilityResult = {
  * Routes to the appropriate sub-module based on the trigger type and ability ID.
  * Each sub-module handles a category of abilities:
  *
- *   - **Damage** (Gen6AbilitiesDamage): on-damage-calc (attackers like Sheer Force,
- *     Technician, Tough Claws, Strong Jaw, Mega Launcher, Pixilate, Aerilate,
- *     Refrigerate, Parental Bond; defenders like Multiscale, Solid Rock, Fur Coat)
- *     and on-damage-taken immunity (Sturdy OHKO block)
+ *   - **Damage** (Gen6AbilitiesDamage): ruleset-local on-damage-calc handling
+ *     (attackers like Sheer Force, Technician, Tough Claws, Strong Jaw, Mega Launcher,
+ *     Pixilate, Aerilate, Refrigerate, Parental Bond; defenders like Multiscale,
+ *     Solid Rock, Fur Coat) plus on-damage-taken immunity (Sturdy OHKO block)
  *   - **Stat** (Gen6AbilitiesStat): on-priority-check (Prankster, Gale Wings),
  *     on-before-move (Protean), on-after-move-used (Moxie), on-stat-change
  *     (Defiant, Competitive, Contrary, Simple), on-damage-taken (Justified,
@@ -137,10 +137,14 @@ const NO_ACTIVATION: AbilityResult = {
  *     Flower Veil), on-accuracy-check (Victory Star)
  *   - **Remaining** (Gen6AbilitiesRemaining): on-turn-end (Zen Mode, Harvest, Healer),
  *     on-switch-in (Frisk, reveals all foes in Gen 6), passive-immunity (Telepathy, Oblivious),
- *     on-damage-calc (Friend Guard, Serene Grace without Secret Power exclusion)
+ *     ruleset-local on-damage-calc handling (Friend Guard, Serene Grace without Secret Power exclusion)
  *
  * For triggers handled by multiple sub-modules, we try each in order and return
  * the first activation.
+ *
+ * Note: this dispatcher is generation-owned. BattleEngine does not directly
+ * dispatch `on-damage-calc`; Gen 6 damage code opts into that trigger locally
+ * when evaluating damage modifiers.
  *
  * @param trigger - The ability lifecycle trigger
  * @param ctx - Full ability context (pokemon, opponent, state, rng, move, etc.)

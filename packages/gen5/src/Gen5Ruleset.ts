@@ -444,6 +444,8 @@ export class Gen5Ruleset extends BaseRuleset {
    * Gen 5 ability effect dispatch.
    * Delegates to the Gen5Abilities master dispatcher, which routes to
    * Damage/Stat/Switch/Remaining sub-modules based on trigger type.
+   * `on-damage-calc` remains a generation-local damage-pipeline trigger rather
+   * than a direct BattleEngine lifecycle dispatch.
    *
    * Source: references/pokemon-showdown/data/mods/gen5/abilities.ts
    * Source: references/pokemon-showdown/data/abilities.ts
