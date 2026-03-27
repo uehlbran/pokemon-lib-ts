@@ -14,8 +14,8 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
-  CORE_TYPE_IDS,
   CORE_STAT_IDS,
+  CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createEvs,
   createIvs,
@@ -638,9 +638,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.attack)).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.attack,
+      ),
+    ).toBe(true);
     expect(result.effects.some((e: any) => e.type === ITEM_EFFECT_TYPES.consume)).toBe(true);
   });
 
@@ -656,9 +658,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.defense)).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.defense,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Salac Berry with HP at 25%, when stat-boost-between-turns fires, then Speed boost + consume", () => {
@@ -672,9 +676,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.speed)).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.speed,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Petaya Berry with HP at 10%, when stat-boost-between-turns fires, then Sp. Atk boost + consume", () => {
@@ -739,9 +745,11 @@ describe("#683 — Stat-pinch berries trigger via stat-boost-between-turns", () 
     const result = applyGen7HeldItem(ITEM_TRIGGERS.statBoostBetweenTurns, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.some((e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.attack)).toBe(
-      true,
-    );
+    expect(
+      result.effects.some(
+        (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STATS.attack,
+      ),
+    ).toBe(true);
   });
 
   it("given Pokemon holding Leftovers at 25% HP, when stat-boost-between-turns fires, then no activation (not a stat-pinch berry)", () => {

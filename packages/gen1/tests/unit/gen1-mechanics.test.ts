@@ -6,6 +6,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -74,7 +75,7 @@ function createSyntheticTrappingMove(): MoveData {
     // Synthetic probe: Gen 1 move data does not currently encode the trapping
     // volatile on Wrap directly, but executeMoveEffect coverage here needs the
     // trapping handler path rather than the raw data record.
-    effect: { type: "volatile-status" as const, status: VOLATILES.bound, chance: 100 },
+    effect: { type: CORE_MOVE_EFFECT_TYPES.volatileStatus, status: VOLATILES.bound, chance: 100 },
   });
 }
 
@@ -571,7 +572,9 @@ describe("Fixed and level damage moves", () => {
     const result = ruleset.executeMoveEffect(context);
     // Assert
     const dragonRageDamage =
-      DRAGON_RAGE.effect?.type === "fixed-damage" ? DRAGON_RAGE.effect.damage : null;
+      DRAGON_RAGE.effect?.type === CORE_MOVE_EFFECT_TYPES.fixedDamage
+        ? DRAGON_RAGE.effect.damage
+        : null;
     expect(result.customDamage?.amount).toBe(dragonRageDamage);
   });
 

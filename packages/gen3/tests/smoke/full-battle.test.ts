@@ -3,9 +3,8 @@ import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   ALL_NATURES,
-  CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
-  CORE_GENDERS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -20,6 +19,7 @@ import {
   GEN3_SPECIES_IDS,
   Gen3Ruleset,
 } from "../../src";
+import { createGen3TestPokemon } from "../helpers/createGen3TestPokemon";
 
 /**
  * Gen 3 Full Battle Integration Tests
@@ -55,39 +55,38 @@ function createGen3Pokemon(
   nickname?: string,
   overrides?: Partial<PokemonInstance>,
 ): PokemonInstance {
-  return {
-    uid: `gen3-${speciesId}-${level}-${++uidCounter}`,
+  const pokemon = createGen3TestPokemon({
     speciesId,
-    nickname: nickname ?? null,
     level,
-    experience: 0,
-    nature: DEFAULT_NATURE,
-    ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 },
-    evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
-    currentHp: 300,
-    moves: moveIds.map((id) => {
-      const moveData = dataManager.getMove(id);
-      return {
-        moveId: id,
-        currentPP: moveData.pp,
-        maxPP: moveData.pp,
-        ppUps: 0,
-      };
-    }),
-    ability: "",
-    abilitySlot: CORE_ABILITY_SLOTS.normal1,
-    heldItem: null,
-    status: null,
-    friendship: 70,
-    gender: CORE_GENDERS.male,
-    isShiny: false,
-    metLocation: "littleroot-town",
-    metLevel: level,
-    originalTrainer: "Brendan",
-    originalTrainerId: 12345,
-    pokeball: GEN3_ITEM_IDS.pokeBall,
-    ...overrides,
-  };
+    moveIds,
+    nickname: nickname ?? null,
+    nature: (overrides?.nature as PokemonInstance["nature"] | undefined) ?? DEFAULT_NATURE,
+    ability: overrides?.ability,
+    currentHp: overrides?.currentHp ?? 300,
+    friendship: overrides?.friendship ?? 70,
+    status: overrides?.status,
+    gender: overrides?.gender,
+    heldItem: overrides?.heldItem,
+    metLocation: overrides?.metLocation ?? "littleroot-town",
+    originalTrainer: overrides?.originalTrainer ?? "Brendan",
+    originalTrainerId: overrides?.originalTrainerId ?? 12345,
+    pokeball: overrides?.pokeball ?? GEN3_ITEM_IDS.pokeBall,
+    calculatedStats: overrides?.calculatedStats,
+  });
+
+  pokemon.uid = `gen3-${speciesId}-${level}-${++uidCounter}`;
+  pokemon.nickname = nickname ?? null;
+  if (overrides?.metLevel !== undefined) {
+    pokemon.metLevel = overrides.metLevel;
+  }
+  if (overrides?.experience !== undefined) {
+    pokemon.experience = overrides.experience;
+  }
+  if (overrides?.isShiny !== undefined) {
+    pokemon.isShiny = overrides.isShiny;
+  }
+
+  return pokemon;
 }
 
 function createBattle(
@@ -287,16 +286,16 @@ function createDrizzleTeam(): PokemonInstance[] {
 }
 
 /**
- * Team with Swift Swim (Horsea) and Rain Dance support.
- * Source: pret/pokeemerald — Horsea/Seadra have Swift Swim
+ * Team with Swift Swim and Rain Dance support.
+ * Source: pret/pokeemerald — Kingdra has Swift Swim in Gen 3
  */
 function createSwiftSwimTeam(): PokemonInstance[] {
   return [
     createGen3Pokemon(
-      GEN3_SPECIES_IDS.seadra,
+      GEN3_SPECIES_IDS.kingdra,
       50,
       [GEN3_MOVE_IDS.surf, GEN3_MOVE_IDS.rainDance, GEN3_MOVE_IDS.iceBeam, GEN3_MOVE_IDS.toxic],
-      "Seadra",
+      "Kingdra",
       {
         ability: GEN3_ABILITY_IDS.swiftSwim,
       },
@@ -604,7 +603,11 @@ describe("Gen 3 Ability Integration", () => {
     const events = engine.getEventLog();
     const statEvents = events.filter((e) => e.type === "stat-change");
     const intimidateEvent = statEvents.find(
-      (e) => e.type === "stat-change" && e.stat === "attack" && e.stages === -1 && e.side === 1,
+      (e) =>
+        e.type === "stat-change" &&
+        e.stat === CORE_STAT_IDS.attack &&
+        e.stages === -1 &&
+        e.side === 1,
     );
     // Intimidate must have fired and must have targeted side 1 (the opponent, Blaziken)
     expect(intimidateEvent).not.toBeNull();
@@ -697,7 +700,7 @@ describe("Gen 3 Ability Integration", () => {
     // Assert: After turn 1, Speed Boost should NOT fire (first-turn skip per decomp)
     const events = engine.getEventLog();
     const speedBoostEvents = events.filter(
-      (e) => e.type === "stat-change" && e.stat === "speed" && e.stages === 1,
+      (e) => e.type === "stat-change" && e.stat === CORE_STAT_IDS.speed && e.stages === 1,
     );
     expect(speedBoostEvents.length).toBe(0);
   });
@@ -747,7 +750,7 @@ describe("Gen 3 Ability Integration", () => {
     // Assert: After turn 2, exactly one Speed Boost event (from turn 2 end-of-turn)
     const events = engine.getEventLog();
     const speedBoostEvents = events.filter(
-      (e) => e.type === "stat-change" && e.stat === "speed" && e.stages === 1,
+      (e) => e.type === "stat-change" && e.stat === CORE_STAT_IDS.speed && e.stages === 1,
     );
     expect(speedBoostEvents.length).toBe(1);
 

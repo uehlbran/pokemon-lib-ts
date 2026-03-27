@@ -1,4 +1,5 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -18,7 +19,6 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   createGen7DataManager,
   GEN7_ABILITY_IDS,
@@ -694,7 +694,11 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given non-Triage ability with healing move, then priority bonus is 0", () => {
       // Only Triage provides this bonus
       expect(
-        getTriagePriorityBonus(abilityIds.adaptability, moveIds.drainPunch, moveEffectTypeIds.drain),
+        getTriagePriorityBonus(
+          abilityIds.adaptability,
+          moveIds.drainPunch,
+          moveEffectTypeIds.drain,
+        ),
       ).toBe(0);
     });
 

@@ -8,6 +8,7 @@ import type {
   ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -733,7 +734,7 @@ describe("#263 Intimidate blocked by Substitute", () => {
     const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
-    expect(result.effects[0].effectType).toBe("stat-change");
+    expect(result.effects[0].effectType).toBe(BATTLE_ABILITY_EFFECT_TYPES.statChange);
   });
 });
 

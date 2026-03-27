@@ -40,6 +40,7 @@ import {
   CORE_GENDERS,
   CORE_HAZARD_IDS,
   CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -374,7 +375,7 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     category: SPECIAL_MOVE_CATEGORY,
     power: 80,
     accuracy: 100,
-    effect: { type: "custom" as const, handler: MOVES.futureSight },
+    effect: { type: CORE_MOVE_EFFECT_TYPES.custom, handler: MOVES.futureSight },
   });
 
   it("given Future Sight is used, when executeMoveEffect runs, then futureAttack is scheduled for 2 turns", () => {
@@ -441,7 +442,7 @@ describe("Gen 2 Sleep Talk: sleep precondition enforcement", () => {
     category: dataManager.getMove(MOVES.sleepTalk).category,
     power: null,
     accuracy: null,
-    effect: { type: "custom" as const, handler: MOVES.sleepTalk },
+    effect: { type: CORE_MOVE_EFFECT_TYPES.custom, handler: MOVES.sleepTalk },
   });
 
   it("given the attacker is asleep and has usable moves, when Sleep Talk runs, then a recursive move is chosen", () => {
@@ -630,7 +631,7 @@ describe("Gen 2 Rollout: escalating base power", () => {
       type: TYPES.rock,
       category: PHYSICAL_MOVE_CATEGORY,
       power: 30,
-      effect: { type: "custom" as const, handler: MOVES.rollout },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.custom, handler: MOVES.rollout },
     });
     const attacker = createOnFieldPokemon({
       moves: [createResolvedMoveSlot(MOVES.rollout), createResolvedMoveSlot(MOVES.tackle)],
@@ -676,7 +677,7 @@ describe("Gen 2 Counter: reflects all physical-type damage", () => {
   const counterMove = createSyntheticMove(MOVES.counter, {
     category: PHYSICAL_MOVE_CATEGORY,
     power: null,
-    effect: { type: "custom" as const, handler: MOVES.counter },
+    effect: { type: CORE_MOVE_EFFECT_TYPES.custom, handler: MOVES.counter },
   });
 
   it("given a Normal-type move dealt 40 damage last turn, when Counter is used, then deals 80 damage", () => {
@@ -744,7 +745,7 @@ describe("Gen 2 Disable mechanic", () => {
     category: dataManager.getMove(MOVES.disable).category,
     power: null,
     accuracy: 55,
-    effect: { type: "custom" as const, handler: MOVES.disable },
+    effect: { type: CORE_MOVE_EFFECT_TYPES.custom, handler: MOVES.disable },
   });
 
   it("given the defender's last used move was Tackle, when Disable is used, then Tackle is disabled", () => {

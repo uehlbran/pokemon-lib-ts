@@ -1,4 +1,5 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, type BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { Gender, MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -264,7 +265,11 @@ function createAbilityContext(opts: {
   gender?: Gender;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   substituteHp?: number;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: string;
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
 }): AbilityContext {
   const state = createBattleState();
   const pokemon = createOnFieldPokemon({
@@ -1506,7 +1511,9 @@ describe("handleGen5SwitchAbility passive-immunity -- Sand Rush", () => {
     const result = handleGen5SwitchAbility(TRIGGER_IDS.passiveImmunity, ctx);
 
     // Just confirm it remains a no-op, not a stat-change hook.
-    expect(result.effects.every((e) => e.effectType !== "stat-change")).toBe(true);
+    expect(
+      result.effects.every((e) => e.effectType !== BATTLE_ABILITY_EFFECT_TYPES.statChange),
+    ).toBe(true);
   });
 });
 

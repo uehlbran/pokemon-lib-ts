@@ -26,7 +26,11 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
+  CORE_MOVE_TARGET_IDS,
+  CORE_PROTECT_EFFECT_VARIANTS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -633,7 +637,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Arrange: Use a high chance that will pass with the seeded rng
     const defender = createActivePokemonFixture({ types: NORMAL_TYPES });
     const move = createScenarioMove({
-      effect: { type: "status-chance", status: CORE_STATUS_IDS.paralysis, chance: 100 },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: CORE_STATUS_IDS.paralysis,
+        chance: 100,
+      },
     });
     const ctx = createMoveEffectContextFixture({ defender, move });
     // Act
@@ -646,7 +654,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Arrange
     const defender = createActivePokemonFixture({ types: NORMAL_TYPES });
     const move = createScenarioMove({
-      effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 0 },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: CORE_STATUS_IDS.burn,
+        chance: 0,
+      },
     });
     const ctx = createMoveEffectContextFixture({ defender, move });
     // Act
@@ -666,7 +678,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
       pokemon: defenderPokemon,
     });
     const move = createScenarioMove({
-      effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 100 },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: CORE_STATUS_IDS.burn,
+        chance: 100,
+      },
     });
     const ctx = createMoveEffectContextFixture({ defender, move });
     // Act
@@ -679,7 +695,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     // Arrange
     const defender = createActivePokemonFixture({ types: FIRE_TYPES });
     const move = createScenarioMove({
-      effect: { type: "status-chance", status: CORE_STATUS_IDS.burn, chance: 100 },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: CORE_STATUS_IDS.burn,
+        chance: 100,
+      },
     });
     const ctx = createMoveEffectContextFixture({ defender, move });
     // Act
@@ -730,7 +750,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const move = createScenarioMove({
       effect: {
         type: "stat-change",
-        changes: [{ stat: "attack", stages: -1 }],
+        changes: [{ stat: CORE_STAT_IDS.attack, stages: -1 }],
         target: "foe",
         chance: 100,
       },
@@ -742,7 +762,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     expect(result.statChanges).toHaveLength(1);
     expect(result.statChanges[0]).toEqual({
       target: "defender",
-      stat: "attack",
+      stat: CORE_STAT_IDS.attack,
       stages: -1,
     });
   });
@@ -752,7 +772,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const move = createScenarioMove({
       effect: {
         type: "stat-change",
-        changes: [{ stat: "defense", stages: 1 }],
+        changes: [{ stat: CORE_STAT_IDS.defense, stages: 1 }],
         target: "self",
         chance: 100,
       },
@@ -764,7 +784,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     expect(result.statChanges).toHaveLength(1);
     expect(result.statChanges[0]).toEqual({
       target: "attacker",
-      stat: "defense",
+      stat: CORE_STAT_IDS.defense,
       stages: 1,
     });
   });
@@ -775,7 +795,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
       effect: {
         type: "stat-change",
         changes: [
-          { stat: "attack", stages: 2 },
+          { stat: CORE_STAT_IDS.attack, stages: 2 },
           { stat: "speed", stages: 2 },
         ],
         target: "self",
@@ -902,7 +922,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
             target: "foe",
             chance: 100,
           },
-          { type: "status-chance", status: CORE_STATUS_IDS.paralysis, chance: 100 },
+          {
+            type: CORE_MOVE_EFFECT_TYPES.statusChance,
+            status: CORE_STATUS_IDS.paralysis,
+            chance: 100,
+          },
         ],
       },
     });
@@ -919,7 +943,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a fixed-damage effect, when executing, then no side-effects are recorded (handled by damage calc)", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "fixed-damage", damage: 40 },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.fixedDamage, damage: 40 },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -932,7 +956,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a level-damage effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "level-damage" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.levelDamage },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -944,7 +968,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given an ohko effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "ohko" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -956,7 +980,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a damage effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "damage" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.damage },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -968,7 +992,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a volatile-status (confusion) effect, when executing, then no primary status is inflicted", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "volatile-status", status: CORE_VOLATILE_IDS.confusion, chance: 100 },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.volatileStatus,
+        status: CORE_VOLATILE_IDS.confusion,
+        chance: 100,
+      },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -980,7 +1008,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a weather effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "weather", weather: CORE_WEATHER_IDS.sun, turns: 5 },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.weather, weather: CORE_WEATHER_IDS.sun, turns: 5 },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -992,7 +1020,11 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a terrain effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "terrain", terrain: CORE_TERRAIN_IDS.electric, turns: 5 },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.terrain,
+        terrain: CORE_TERRAIN_IDS.electric,
+        turns: 5,
+      },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1004,7 +1036,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given an entry-hazard effect, when executing, then no side-effects are recorded (N/A in Gen 1)", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "entry-hazard", hazard: CORE_HAZARD_IDS.stealthRock },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.entryHazard, hazard: CORE_HAZARD_IDS.stealthRock },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1016,7 +1048,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a remove-hazards effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "remove-hazards", method: "spin" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.removeHazards, method: "spin" },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1028,7 +1060,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a screen effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "screen", screen: CORE_SCREEN_IDS.reflect, turns: 5 },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.screen, screen: CORE_SCREEN_IDS.reflect, turns: 5 },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1040,7 +1072,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a multi-hit effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "multi-hit", min: 2, max: 5 },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.multiHit, min: 2, max: 5 },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1052,7 +1084,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a two-turn effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "two-turn", firstTurn: "fly" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.twoTurn, firstTurn: GEN1_MOVE_IDS.fly },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1064,7 +1096,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a switch-out effect, when executing, then no side-effects are recorded (engine-handled)", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "switch-out", target: "self" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.switchOut, target: CORE_MOVE_TARGET_IDS.self },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1076,7 +1108,10 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a protect effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "protect", variant: "standard" },
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.protect,
+        variant: CORE_PROTECT_EFFECT_VARIANTS.standard,
+      },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act
@@ -1088,7 +1123,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
   it("given a custom effect, when executing, then no side-effects are recorded", () => {
     // Arrange
     const move = createScenarioMove({
-      effect: { type: "custom", handler: "metronome" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.custom, handler: GEN1_MOVE_IDS.metronome },
     });
     const ctx = createMoveEffectContextFixture({ move });
     // Act

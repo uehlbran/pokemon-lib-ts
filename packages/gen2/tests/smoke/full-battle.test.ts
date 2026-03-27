@@ -6,6 +6,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
   createDvs,
@@ -57,21 +58,21 @@ describe("Gen 2 Full Battle Integration", () => {
       GEN2_MOVE_IDS.synthesis,
     ],
     umbreon: [
-      GEN2_MOVE_IDS.crunch,
+      GEN2_MOVE_IDS.pursuit,
       GEN2_MOVE_IDS.psychic,
       GEN2_MOVE_IDS.shadowBall,
       GEN2_MOVE_IDS.rest,
     ],
     umbreonDark: [
-      GEN2_MOVE_IDS.crunch,
+      GEN2_MOVE_IDS.pursuit,
       GEN2_MOVE_IDS.shadowBall,
       GEN2_MOVE_IDS.rest,
-      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.quickAttack,
     ],
     steelix: [
       GEN2_MOVE_IDS.ironTail,
       GEN2_MOVE_IDS.earthquake,
-      GEN2_MOVE_IDS.bodySlam,
+      GEN2_MOVE_IDS.slam,
       GEN2_MOVE_IDS.rockThrow,
     ],
     tyranitar: [
@@ -84,7 +85,7 @@ describe("Gen 2 Full Battle Integration", () => {
       GEN2_MOVE_IDS.psychic,
       GEN2_MOVE_IDS.confusion,
       GEN2_MOVE_IDS.recover,
-      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.reflect,
     ],
     mewtwo: [
       GEN2_MOVE_IDS.psychic,
@@ -100,9 +101,9 @@ describe("Gen 2 Full Battle Integration", () => {
     ],
     gengar: [
       GEN2_MOVE_IDS.shadowBall,
-      GEN2_MOVE_IDS.crunch,
       GEN2_MOVE_IDS.hypnosis,
-      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.dreamEater,
+      GEN2_MOVE_IDS.nightShade,
     ],
     snorlax: [
       GEN2_MOVE_IDS.bodySlam,
@@ -119,8 +120,8 @@ describe("Gen 2 Full Battle Integration", () => {
     gengarUtility: [
       GEN2_MOVE_IDS.shadowBall,
       GEN2_MOVE_IDS.confuseRay,
-      GEN2_MOVE_IDS.shadowBall,
-      GEN2_MOVE_IDS.tackle,
+      GEN2_MOVE_IDS.nightShade,
+      GEN2_MOVE_IDS.hypnosis,
     ],
   } as const;
 
@@ -141,6 +142,7 @@ describe("Gen 2 Full Battle Integration", () => {
 
   const GEN2_MOVE_NAMES = {
     flamethrower: dataManager.getMove(GEN2_MOVE_IDS.flamethrower).displayName,
+    pursuit: dataManager.getMove(GEN2_MOVE_IDS.pursuit).displayName,
     thunderPunch: dataManager.getMove(GEN2_MOVE_IDS.thunderPunch).displayName,
     earthquake: dataManager.getMove(GEN2_MOVE_IDS.earthquake).displayName,
     fireBlast: dataManager.getMove(GEN2_MOVE_IDS.fireBlast).displayName,
@@ -162,9 +164,17 @@ describe("Gen 2 Full Battle Integration", () => {
     confusion: dataManager.getMove(GEN2_MOVE_IDS.confusion).displayName,
     recover: dataManager.getMove(GEN2_MOVE_IDS.recover).displayName,
     tackle: dataManager.getMove(GEN2_MOVE_IDS.tackle).displayName,
+    reflect: dataManager.getMove(GEN2_MOVE_IDS.reflect).displayName,
     hypnosis: dataManager.getMove(GEN2_MOVE_IDS.hypnosis).displayName,
     confuseRay: dataManager.getMove(GEN2_MOVE_IDS.confuseRay).displayName,
     hyperBeam: dataManager.getMove(GEN2_MOVE_IDS.hyperBeam).displayName,
+    dreamEater: dataManager.getMove(GEN2_MOVE_IDS.dreamEater).displayName,
+    nightShade: dataManager.getMove(GEN2_MOVE_IDS.nightShade).displayName,
+    slam: dataManager.getMove(GEN2_MOVE_IDS.slam).displayName,
+    quickAttack: dataManager.getMove(GEN2_MOVE_IDS.quickAttack).displayName,
+    wingAttack: dataManager.getMove(GEN2_MOVE_IDS.wingAttack).displayName,
+    haze: dataManager.getMove(GEN2_MOVE_IDS.haze).displayName,
+    toxic: dataManager.getMove(GEN2_MOVE_IDS.toxic).displayName,
   } as const;
 
   const GEN2_WEATHER_IDS = {
@@ -172,8 +182,6 @@ describe("Gen 2 Full Battle Integration", () => {
     rain: CORE_WEATHER_IDS.rain,
   } as const;
 
-  const GEN2_DEFAULT_MET_LOCATION = "unknown" as const;
-  const GEN2_DEFAULT_ORIGINAL_TRAINER = "Test Trainer" as const;
   const GEN2_BATTLE_FORMAT = "singles" as const;
   const GEN2_WEATHER_SAND_DAMAGE_SOURCE = "weather-sand" as const;
 
@@ -214,10 +222,10 @@ describe("Gen 2 Full Battle Integration", () => {
       friendship: createFriendship(species.baseFriendship),
       gender: species.genderRatio === null ? CORE_GENDERS.genderless : CORE_GENDERS.male,
       isShiny: false,
-      metLocation: GEN2_DEFAULT_MET_LOCATION,
+      metLocation: CORE_POKEMON_DEFAULTS.metLocation,
       metLevel: level,
-      originalTrainer: GEN2_DEFAULT_ORIGINAL_TRAINER,
-      originalTrainerId: 12345,
+      originalTrainer: CORE_POKEMON_DEFAULTS.originalTrainer,
+      originalTrainerId: CORE_POKEMON_DEFAULTS.originalTrainerId,
       pokeball: GEN2_ITEM_IDS.pokeBall,
       ...overrides,
     };
@@ -771,25 +779,35 @@ describe("Gen 2 Full Battle Integration", () => {
   // --- Type Effectiveness Tests ---
 
   it("given Gen 2, when a Dark move hits a Psychic type, then it is super effective (2x)", () => {
-    // Arrange: Umbreon (Dark) uses Crunch vs Alakazam (Psychic)
+    // Arrange: Umbreon (Dark) uses Pursuit vs Alakazam (Psychic)
     // In Gen 2, Dark type is super effective against Psychic
     const darkAttacker = createGen2Pokemon(
       GEN2_SPECIES_IDS.umbreon,
       50,
-      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.pursuit,
+        GEN2_MOVE_IDS.shadowBall,
+        GEN2_MOVE_IDS.rest,
+        GEN2_MOVE_IDS.quickAttack,
+      ],
       GEN2_SPECIES_NAMES.umbreon,
     );
     const psychicDefender = createGen2Pokemon(
       GEN2_SPECIES_IDS.alakazam,
       50,
-      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.psychic,
+        GEN2_MOVE_IDS.confusion,
+        GEN2_MOVE_IDS.recover,
+        GEN2_MOVE_IDS.reflect,
+      ],
       GEN2_SPECIES_NAMES.alakazam,
     );
     const engine = createBattle([darkAttacker], [psychicDefender], 100);
 
     // Act
     engine.start();
-    // Umbreon uses Crunch (dark) against Alakazam (psychic)
+    // Umbreon uses Pursuit (dark) against Alakazam (psychic)
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Tackle (normal)
 
@@ -803,7 +821,7 @@ describe("Gen 2 Full Battle Integration", () => {
     expect(damageEvents).toContainEqual(
       expect.objectContaining({
         pokemon: GEN2_SPECIES_NAMES.alakazam,
-        source: GEN2_MOVE_IDS.crunch,
+        source: GEN2_MOVE_IDS.pursuit,
       }),
     );
   });
@@ -814,13 +832,23 @@ describe("Gen 2 Full Battle Integration", () => {
     const psychicAttacker = createGen2Pokemon(
       GEN2_SPECIES_IDS.alakazam,
       50,
-      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.psychic,
+        GEN2_MOVE_IDS.confusion,
+        GEN2_MOVE_IDS.recover,
+        GEN2_MOVE_IDS.reflect,
+      ],
       GEN2_SPECIES_NAMES.alakazam,
     );
     const darkDefender = createGen2Pokemon(
       GEN2_SPECIES_IDS.umbreon,
       50,
-      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.pursuit,
+        GEN2_MOVE_IDS.shadowBall,
+        GEN2_MOVE_IDS.rest,
+        GEN2_MOVE_IDS.quickAttack,
+      ],
       GEN2_SPECIES_NAMES.umbreon,
     );
     const engine = createBattle([psychicAttacker], [darkDefender], 100);
@@ -828,7 +856,7 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // Psychic
-    engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Tackle
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Quick Attack
 
     // Assert
     const events = engine.getEventLog();
@@ -853,16 +881,21 @@ describe("Gen 2 Full Battle Integration", () => {
       50,
       [
         GEN2_MOVE_IDS.shadowBall,
-        GEN2_MOVE_IDS.crunch,
         GEN2_MOVE_IDS.hypnosis,
-        GEN2_MOVE_IDS.tackle,
+        GEN2_MOVE_IDS.dreamEater,
+        GEN2_MOVE_IDS.nightShade,
       ],
       GEN2_SPECIES_NAMES.gengar,
     );
     const psychicDefender = createGen2Pokemon(
       GEN2_SPECIES_IDS.alakazam,
       50,
-      [GEN2_MOVE_IDS.psychic, GEN2_MOVE_IDS.confusion, GEN2_MOVE_IDS.recover, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.psychic,
+        GEN2_MOVE_IDS.confusion,
+        GEN2_MOVE_IDS.recover,
+        GEN2_MOVE_IDS.reflect,
+      ],
       GEN2_SPECIES_NAMES.alakazam,
     );
     const engine = createBattle([ghostAttacker], [psychicDefender], 100);
@@ -870,7 +903,7 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // Shadow Ball (ghost)
-    engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Tackle
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Reflect
 
     // Assert
     const events = engine.getEventLog();
@@ -906,7 +939,7 @@ describe("Gen 2 Full Battle Integration", () => {
       [
         GEN2_MOVE_IDS.ironTail,
         GEN2_MOVE_IDS.earthquake,
-        GEN2_MOVE_IDS.bodySlam,
+        GEN2_MOVE_IDS.slam,
         GEN2_MOVE_IDS.rockThrow,
       ],
       GEN2_SPECIES_NAMES.steelix,
@@ -916,7 +949,7 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // Flamethrower
-    engine.submitAction(1, { type: "move", side: 1, moveIndex: 2 }); // Body Slam
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 2 }); // Slam
 
     // Assert
     const events = engine.getEventLog();
@@ -952,7 +985,7 @@ describe("Gen 2 Full Battle Integration", () => {
       [
         GEN2_MOVE_IDS.ironTail,
         GEN2_MOVE_IDS.earthquake,
-        GEN2_MOVE_IDS.bodySlam,
+        GEN2_MOVE_IDS.slam,
         GEN2_MOVE_IDS.rockThrow,
       ],
       GEN2_SPECIES_NAMES.steelix,
@@ -962,7 +995,7 @@ describe("Gen 2 Full Battle Integration", () => {
     // Act
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // Body Slam (normal)
-    engine.submitAction(1, { type: "move", side: 1, moveIndex: 2 }); // Body Slam
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 2 }); // Slam
 
     // Assert
     const events = engine.getEventLog();
@@ -1129,7 +1162,12 @@ describe("Gen 2 Full Battle Integration", () => {
     const pokemon = createGen2Pokemon(
       GEN2_SPECIES_IDS.umbreon,
       50,
-      [GEN2_MOVE_IDS.crunch, GEN2_MOVE_IDS.shadowBall, GEN2_MOVE_IDS.rest, GEN2_MOVE_IDS.tackle],
+      [
+        GEN2_MOVE_IDS.pursuit,
+        GEN2_MOVE_IDS.shadowBall,
+        GEN2_MOVE_IDS.rest,
+        GEN2_MOVE_IDS.quickAttack,
+      ],
       GEN2_SPECIES_NAMES.umbreon,
       { heldItem: GEN2_ITEM_IDS.berry },
     );
@@ -1203,12 +1241,7 @@ describe("Gen 2 Full Battle Integration", () => {
     const pokemon = createGen2Pokemon(
       GEN2_SPECIES_IDS.crobat,
       50,
-      [
-        GEN2_MOVE_IDS.crunch,
-        GEN2_MOVE_IDS.confuseRay,
-        GEN2_MOVE_IDS.shadowBall,
-        GEN2_MOVE_IDS.tackle,
-      ],
+      [GEN2_MOVE_IDS.wingAttack, GEN2_MOVE_IDS.confuseRay, GEN2_MOVE_IDS.haze, GEN2_MOVE_IDS.toxic],
       GEN2_SPECIES_NAMES.crobat,
     );
     const engine = createBattle([pokemon], [pokemon], 42);

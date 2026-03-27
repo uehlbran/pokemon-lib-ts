@@ -4,6 +4,7 @@ import type {
   BattleState,
   DamageContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonType,
@@ -1050,8 +1051,8 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
       const result = applyGen3Ability(triggerIds.onSwitchIn, ctx);
       expect(result.activated).toBe(true);
       expect(result.effects.length).toBe(1);
-      expect(result.effects[0]!.effectType).toBe("stat-change");
-      expect(result.effects[0]!.target).toBe("opponent");
+      expect(result.effects[0]!.effectType).toBe(BATTLE_ABILITY_EFFECT_TYPES.statChange);
+      expect(result.effects[0]!.target).toBe(BATTLE_EFFECT_TARGETS.opponent);
       expect(result.messages[0]).toBe("Gyarados's Intimidate cut Machamp's Attack!");
     });
 

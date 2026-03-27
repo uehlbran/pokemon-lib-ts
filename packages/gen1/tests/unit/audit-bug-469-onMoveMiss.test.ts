@@ -12,6 +12,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_NATURE_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -126,7 +127,7 @@ function createCanonicalMove(id: string, handler?: string): MoveData {
   const sourceMove = dataManager.getMove(id);
   return {
     ...sourceMove,
-    effect: handler ? { type: "custom" as const, handler } : sourceMove.effect,
+    effect: handler ? { type: CORE_MOVE_EFFECT_TYPES.custom, handler } : sourceMove.effect,
     id,
   } as MoveData;
 }

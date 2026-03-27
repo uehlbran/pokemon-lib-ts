@@ -17,8 +17,10 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_HAZARD_IDS,
+  CORE_POKEMON_DEFAULTS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createFriendship,
   createIvs,
@@ -49,7 +51,7 @@ const DEFAULT_SPECIES = dataManager.getSpecies(SPECIES.bulbasaur);
 const DEFAULT_NATURE = dataManager.getNature(GEN5_NATURE_IDS.hardy).id;
 const DEFAULT_FRIENDSHIP = createFriendship(0);
 const DEFAULT_POKEBALL = ITEMS.pokeBall;
-const HAZARD_STATUS_SOURCE = "hazard-status-source";
+const HAZARD_STATUS_SOURCE = CORE_VOLATILE_IDS.hazardStatusSource;
 
 /**
  * Bughunt batch 2 regression tests.
@@ -87,7 +89,7 @@ function createCanonicalPokemonInstance(overrides: {
     friendship: DEFAULT_FRIENDSHIP,
     gender: overrides.gender ?? CORE_GENDERS.male,
     isShiny: false,
-    metLocation: "test",
+    metLocation: CORE_POKEMON_DEFAULTS.metLocation,
     originalTrainer: "Test",
     originalTrainerId: 0,
     pokeball: DEFAULT_POKEBALL,

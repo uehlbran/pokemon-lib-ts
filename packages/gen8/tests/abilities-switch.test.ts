@@ -1,4 +1,5 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   AbilityTrigger,
@@ -14,7 +15,9 @@ import {
   CORE_GENDERS,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
+  CORE_POKEMON_DEFAULTS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
@@ -141,7 +144,7 @@ function createSyntheticPokemonInstance(overrides: {
       gender: overrides.gender ?? CORE_GENDERS.male,
       heldItem: overrides.heldItem ?? null,
       friendship: species.baseFriendship,
-      metLocation: "test",
+      metLocation: CORE_POKEMON_DEFAULTS.metLocation,
       originalTrainer: "Test",
       originalTrainerId: 0,
       pokeball: GEN8_ITEM_IDS.pokeBall,
@@ -253,7 +256,11 @@ function createAbilityContext(opts: {
   substituteHp?: number;
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   gender?: (typeof CORE_GENDERS)[keyof typeof CORE_GENDERS];
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: string;
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
 }): AbilityContext {
   const state = createBattleState();
   if (opts.rng) {
@@ -529,7 +536,9 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Mirror Armor`, () => {
   it(`given mirror-armor and self-inflicted stat drop, when checking, then does not ${CORE_SCREEN_IDS.reflect}`, () => {
     // Source: Showdown data/abilities.ts -- Mirror Armor only reflects opponent-caused drops
     // Self-inflicted drops (e.g. Close Combat, Superpower) are not reflected
-    expect(shouldMirrorArmorReflect(GEN8_ABILITY_IDS.mirrorArmor, -1, "self")).toBe(false);
+    expect(
+      shouldMirrorArmorReflect(GEN8_ABILITY_IDS.mirrorArmor, -1, BATTLE_EFFECT_TARGETS.self),
+    ).toBe(false);
   });
 
   it(`given mirror-armor and stat boost (positive stages), when checking, then does not ${CORE_SCREEN_IDS.reflect}`, () => {
@@ -699,13 +708,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Wandering Spirit`, () => {
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(2);
     expect(result.effects[0]).toEqual({
-      effectType: "ability-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       newAbility: CORE_ABILITY_IDS.intimidate,
     });
     expect(result.effects[1]).toEqual({
-      effectType: "ability-change",
-      target: "opponent",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.abilityChange,
+      target: BATTLE_EFFECT_TARGETS.opponent,
       newAbility: GEN8_ABILITY_IDS.wanderingSpirit,
     });
   });
@@ -764,13 +773,13 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Perish Body`, () => {
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(2);
     expect(result.effects[0]).toEqual({
-      effectType: "volatile-inflict",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+      target: BATTLE_EFFECT_TARGETS.self,
       volatile: CORE_MOVE_IDS.perishSong,
     });
     expect(result.effects[1]).toEqual({
-      effectType: "volatile-inflict",
-      target: "opponent",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.volatileInflict,
+      target: BATTLE_EFFECT_TARGETS.opponent,
       volatile: CORE_MOVE_IDS.perishSong,
     });
     expect(result.messages).toContain(`Both Pokemon will faint in 3 turns!`);
@@ -812,8 +821,8 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Libero / Protean`, () => {
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
     expect(result.effects[0]).toEqual({
-      effectType: "type-change",
-      target: "self",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+      target: BATTLE_EFFECT_TARGETS.self,
       types: [CORE_TYPE_IDS.fire],
     });
     expect(result.messages[0]).toContain("Libero");
@@ -1023,9 +1032,9 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Intrepid Sword / Dauntless Shield`, 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "attack",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.attack,
       stages: 1,
     });
     expect(result.messages[0]).toContain("Intrepid Sword");
@@ -1045,9 +1054,9 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Intrepid Sword / Dauntless Shield`, 
     expect(result.activated).toBe(true);
     expect(result.effects).toHaveLength(1);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "self",
-      stat: "defense",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.self,
+      stat: CORE_STAT_IDS.defense,
       stages: 1,
     });
     expect(result.messages[0]).toContain("Dauntless Shield");
@@ -1073,9 +1082,9 @@ describe(`Gen ${GEN8_SPECIES_IDS.wartortle} Switch-in Abilities (carry-forward)`
 
     expect(result.activated).toBe(true);
     expect(result.effects[0]).toEqual({
-      effectType: "stat-change",
-      target: "opponent",
-      stat: "attack",
+      effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+      target: BATTLE_EFFECT_TARGETS.opponent,
+      stat: CORE_STAT_IDS.attack,
       stages: -1,
     });
   });

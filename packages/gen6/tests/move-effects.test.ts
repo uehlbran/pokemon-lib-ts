@@ -4,6 +4,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_TARGET_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   SeededRandom,
@@ -384,7 +385,9 @@ describe("Gen6 isBlockedByMatBlock", () => {
 
   it("given self-targeting move with protect flag, when checking, then NOT blocked", () => {
     // Source: Showdown line 11421 -- if (move.target === 'self' || ...) return;
-    expect(isBlockedByMatBlock(CORE_MOVE_CATEGORIES.physical, true, "self")).toBe(false);
+    expect(
+      isBlockedByMatBlock(CORE_MOVE_CATEGORIES.physical, true, CORE_MOVE_TARGET_IDS.self),
+    ).toBe(false);
   });
 
   it("given move without protect flag, when checking, then NOT blocked", () => {
@@ -438,17 +441,23 @@ describe("Gen6 isBlockedByCraftyShield", () => {
 
   it("given status move targeting self, when checking, then NOT blocked", () => {
     // Source: Showdown line 3274 -- if (['self', 'all'].includes(move.target)) return;
-    expect(isBlockedByCraftyShield(CORE_MOVE_CATEGORIES.status, "self")).toBe(false);
+    expect(isBlockedByCraftyShield(CORE_MOVE_CATEGORIES.status, CORE_MOVE_TARGET_IDS.self)).toBe(
+      false,
+    );
   });
 
   it("given status move targeting all, when checking, then NOT blocked", () => {
     // Source: Showdown line 3274 -- if (['self', 'all'].includes(move.target)) return;
-    expect(isBlockedByCraftyShield(CORE_MOVE_CATEGORIES.status, "all")).toBe(false);
+    expect(isBlockedByCraftyShield(CORE_MOVE_CATEGORIES.status, CORE_MOVE_TARGET_IDS.all)).toBe(
+      false,
+    );
   });
 
   it("given status move targeting entire-field, when checking, then NOT blocked", () => {
     // Source: Showdown -- 'all' maps to our 'entire-field' for field-wide moves
-    expect(isBlockedByCraftyShield(CORE_MOVE_CATEGORIES.status, "entire-field")).toBe(false);
+    expect(
+      isBlockedByCraftyShield(CORE_MOVE_CATEGORIES.status, CORE_MOVE_TARGET_IDS.entireField),
+    ).toBe(false);
   });
 
   it("given physical move targeting normal, when checking, then NOT blocked", () => {

@@ -16,6 +16,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -582,7 +583,7 @@ describe("Regression #392: OHKO moves use level-based accuracy (base accuracy + 
   function makeOhkoMove(): MoveData {
     return createMove(TYPES.normal, 0, MOVES.fissure, {
       accuracy: 30, // base accuracy for OHKO moves (Fissure, Horn Drill, Guillotine)
-      effect: { type: "ohko" },
+      effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
     });
   }
 

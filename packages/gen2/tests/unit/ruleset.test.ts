@@ -22,9 +22,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TYPES,
-  CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
-  CORE_STAT_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -81,7 +79,6 @@ const {
 const { adamant, hardy } = CORE_NATURE_IDS;
 const { charcoal, mysteryBerry, quickClaw } = GEN2_ITEM_IDS;
 const { quickAttack, tackle } = GEN2_MOVE_IDS;
-const { attack } = CORE_STAT_IDS;
 const {
   custom,
   damage,
@@ -91,11 +88,9 @@ const {
   ohko,
   removeHazards,
   screen,
-  statChange,
   terrain,
   twoTurn,
 } = CORE_MOVE_EFFECT_TYPES;
-const { self } = CORE_MOVE_EFFECT_TARGETS;
 const TEST_DATA_MANAGER = createGen2DataManager();
 function createMoveSlotFixture(
   moveId: string,

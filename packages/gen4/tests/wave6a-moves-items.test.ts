@@ -7,6 +7,7 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createMoveSlot,
@@ -300,7 +301,7 @@ describe("Acupressure", () => {
     expect(result.statChanges[0].target).toBe("attacker");
     expect(result.statChanges[0].stages).toBe(2);
     // First boostable stat alphabetically in our array is "attack"
-    expect(result.statChanges[0].stat).toBe("attack");
+    expect(result.statChanges[0].stat).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given all stats are at +6, when Acupressure is used, then it fails", () => {
@@ -351,7 +352,7 @@ describe("Acupressure", () => {
     const result = executeGen4MoveEffect(ctx);
 
     expect(result.statChanges).toHaveLength(1);
-    expect(result.statChanges[0].stat).toBe("speed");
+    expect(result.statChanges[0].stat).toBe(CORE_STAT_IDS.speed);
     expect(result.statChanges[0].stages).toBe(2);
   });
 });

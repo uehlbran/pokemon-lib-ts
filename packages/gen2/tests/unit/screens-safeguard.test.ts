@@ -4,8 +4,12 @@ import type {
   DamageContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
+  CORE_MOVE_EFFECT_TYPES,
+  CORE_POKEMON_DEFAULTS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -94,9 +98,9 @@ function createOnFieldPokemon(opts: {
     evs: { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0 },
     heldItem: opts.heldItem ?? null,
     friendship: 0,
-    metLocation: "",
-    originalTrainer: "",
-    originalTrainerId: 0,
+    metLocation: CORE_POKEMON_DEFAULTS.metLocation,
+    originalTrainer: CORE_POKEMON_DEFAULTS.originalTrainer,
+    originalTrainerId: CORE_POKEMON_DEFAULTS.originalTrainerId,
     pokeball: ITEMS.pokeBall,
   } as Partial<PokemonCreationOptions>);
 
@@ -690,10 +694,10 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // Growl-like effect: stat-change targeting defender
       const statChangeEffect = {
-        type: "stat-change" as const,
-        target: "opponent" as const,
+        type: CORE_MOVE_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.opponent,
         chance: 100,
-        changes: [{ stat: "attack" as const, stages: -1 }],
+        changes: [{ stat: CORE_STAT_IDS.attack, stages: -1 }],
       };
       const move = createSyntheticMove(MOVES.growl, {});
       const result = createEmptyResult();
@@ -710,7 +714,7 @@ describe("Gen 2 Screens and Safeguard", () => {
 
       // Stat changes should still be applied — Safeguard does not block them
       expect(result.statChanges).toHaveLength(1);
-      expect(result.statChanges[0]!.stat).toBe("attack");
+      expect(result.statChanges[0]!.stat).toBe(CORE_STAT_IDS.attack);
       expect(result.statChanges[0]!.stages).toBe(-1);
     });
   });
@@ -745,7 +749,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       const result = createEmptyResult();
 
       const screenEffect = {
-        type: "screen" as const,
+        type: CORE_MOVE_EFFECT_TYPES.screen,
         screen: SCREENS.reflect as ScreenType,
         turns: 5,
       };
@@ -762,7 +766,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       expect(result.screenSet).toEqual({
         screen: SCREENS.reflect,
         turnsLeft: 5,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       });
     });
 
@@ -789,7 +793,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       const result = createEmptyResult();
 
       const screenEffect = {
-        type: "screen" as const,
+        type: CORE_MOVE_EFFECT_TYPES.screen,
         screen: SCREENS.lightScreen as ScreenType,
         turns: 5,
       };
@@ -806,7 +810,7 @@ describe("Gen 2 Screens and Safeguard", () => {
       expect(result.screenSet).toEqual({
         screen: SCREENS.lightScreen,
         turnsLeft: 5,
-        side: "attacker",
+        side: BATTLE_EFFECT_TARGETS.attacker,
       });
     });
   });
