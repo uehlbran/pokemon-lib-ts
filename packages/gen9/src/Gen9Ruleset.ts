@@ -441,6 +441,9 @@ export class Gen9Ruleset extends BaseRuleset {
    * Gen 9 ability dispatch.
    *
    * Delegates to the Gen 9 ability handler which routes to:
+   * `on-damage-calc` remains a generation-local damage-pipeline trigger rather
+   * than a direct BattleEngine lifecycle dispatch.
+   *
    *   - Gen9AbilitiesStat: Protosynthesis, Quark Drive
    *   - Gen9AbilitiesNew: Toxic Chain, Good as Gold, Embody Aspect, Mycelium Might,
    *     Supreme Overlord, Intrepid Sword/Dauntless Shield (nerfed), Protean/Libero (nerfed)

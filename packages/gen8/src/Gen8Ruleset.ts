@@ -394,6 +394,9 @@ export class Gen8Ruleset extends BaseRuleset {
    * Gen 8 ability dispatch.
    *
    * Routes triggers to the appropriate Gen 8 ability handler module.
+   * `on-damage-calc` remains a generation-local damage-pipeline trigger rather
+   * than a direct BattleEngine lifecycle dispatch.
+   *
    * Covers all Gen 7 carryforward abilities plus new Gen 8 abilities:
    *   - on-switch-in: Intimidate, weather, Screen Cleaner, Neutralizing Gas,
    *     Intrepid Sword, Dauntless Shield, etc. (switch handler + stat handler)

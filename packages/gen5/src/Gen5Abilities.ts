@@ -76,8 +76,9 @@ const NO_ACTIVATION: AbilityResult = {
  * Routes to the appropriate sub-module based on the trigger type and ability ID.
  * Each sub-module handles a category of abilities:
  *
- *   - **Damage** (Gen5AbilitiesDamage): on-damage-calc (attackers like Sheer Force,
- *     Technician; defenders like Multiscale, Solid Rock) and on-damage-taken immunity
+ *   - **Damage** (Gen5AbilitiesDamage): ruleset-local on-damage-calc handling
+ *     (attackers like Sheer Force, Technician; defenders like Multiscale, Solid Rock)
+ *     plus on-damage-taken immunity
  *     (Sturdy OHKO block)
  *   - **Stat** (Gen5AbilitiesStat): on-priority-check (Prankster), on-after-move-used
  *     (Moxie), on-stat-change (Defiant, Contrary, Simple), on-damage-taken
@@ -89,10 +90,14 @@ const NO_ACTIVATION: AbilityResult = {
  *     on-accuracy-check (Victory Star), trapping (Shadow Tag, Arena Trap)
  *   - **Remaining** (Gen5AbilitiesRemaining): on-turn-end (Zen Mode, Harvest, Healer),
  *     on-switch-in (Frisk), passive-immunity (Telepathy, Oblivious, Keen Eye),
- *     on-damage-calc (Friend Guard, Serene Grace)
+ *     ruleset-local on-damage-calc handling (Friend Guard, Serene Grace)
  *
  * For triggers handled by multiple sub-modules (e.g., on-damage-taken is in both
  * Damage and Stat), we try each in order and return the first activation.
+ *
+ * Note: this dispatcher is generation-owned. BattleEngine does not directly
+ * dispatch `on-damage-calc`; Gen 5 damage code opts into that trigger locally
+ * when evaluating damage modifiers.
  *
  * @param trigger - The ability lifecycle trigger
  * @param ctx - Full ability context (pokemon, opponent, state, rng, move, etc.)

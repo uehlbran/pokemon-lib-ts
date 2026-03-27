@@ -55,10 +55,11 @@ function createAbilityTriggerAuditEngine(ruleset: AbilityTriggerAuditRuleset): B
 }
 
 describe("BattleEngine ability trigger contract", () => {
-  it("given a normal damaging move, when the engine resolves the turn, then it never dispatches on-damage-calc through applyAbility", () => {
+  it("given a normal damaging move, when the engine resolves the turn, then ordinary BattleEngine move resolution does not dispatch on-damage-calc through applyAbility", () => {
     // Source: BattleEngine executeMove path on current main dispatches lifecycle hooks like
-    // passive-immunity, on-damage-taken, and on-contact, but never calls applyAbility with
-    // on-damage-calc. Damage-calc ability handling remains generation-owned.
+    // passive-immunity, on-damage-taken, and on-contact during ordinary move resolution,
+    // but it does not call applyAbility with on-damage-calc there. Damage-calc ability
+    // handling remains generation-owned.
     const ruleset = new AbilityTriggerAuditRuleset();
     const engine = createAbilityTriggerAuditEngine(ruleset);
     engine.start();

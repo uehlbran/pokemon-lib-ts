@@ -258,6 +258,9 @@ export class Gen6Ruleset extends BaseRuleset {
    * Gen 6 ability dispatch.
    *
    * Routes ability triggers to Gen 6 ability sub-modules via the master dispatcher.
+   * `on-damage-calc` remains a generation-local damage-pipeline trigger rather
+   * than a direct BattleEngine lifecycle dispatch.
+   *
    * Handles all Gen 5 carry-forward abilities plus Gen 6 newcomers:
    *   - Tough Claws, Strong Jaw, Mega Launcher (damage-calc)
    *   - Fur Coat (defender damage-calc)

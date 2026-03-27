@@ -251,6 +251,9 @@ export class Gen7Ruleset extends BaseRuleset {
    * Gen 7 ability dispatch.
    *
    * Routes to sub-modules by trigger type:
+   * `on-damage-calc` remains a generation-local damage-pipeline trigger rather
+   * than a direct BattleEngine lifecycle dispatch.
+   *
    *   - on-switch-in: Surge abilities (Electric/Grassy/Psychic/Misty Surge)
    *   - on-damage-calc: damage modifiers (Tough Claws, Sheer Force, etc.)
    *   - on-damage-taken: damage immunity (Sturdy), stat triggers (Justified,
