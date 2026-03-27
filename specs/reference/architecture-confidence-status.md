@@ -42,6 +42,8 @@ The architecture-confidence work is split into three execution tracks:
 | Mega Evolution data duplication (`Gen6MegaEvolution` / `Gen7MegaEvolution`) | Medium/High | Open issue `#767` | Duplicate data makes behavior drift and public inconsistency more likely | High | Consolidate shared mega stone data behind a single owned surface |
 | On-damage-calc contract boundary (`battle` + `gen*` rulesets) | High | Open issue `#994` | Unclear boundary encourages direct mutation and hidden coupling | High | Make damage-calc contract explicit before broader pipeline refactors |
 
+_Line-count snapshot metadata: command `wc -l packages/battle/src/engine/BattleEngine.ts packages/battle/src/ruleset/BaseRuleset.ts packages/gen1/src/Gen1Ruleset.ts packages/gen4/src/Gen4MoveEffects.ts packages/gen5/src/Gen5DamageCalc.ts packages/gen6/src/Gen6DamageCalc.ts packages/gen7/src/Gen7DamageCalc.ts packages/gen8/src/Gen8DamageCalc.ts packages/gen9/src/Gen9DamageCalc.ts packages/gen8/src/Gen8Items.ts packages/gen9/src/Gen9Items.ts`, commit `f48eec0c`, date `2026-03-27`, artifact `none`._
+
 ## Current Evidence Inputs
 
 - Open issues:
