@@ -8,12 +8,15 @@ import {
   DataManager,
 } from "@pokemon-lib-ts/core";
 import { createGen1DataManager, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
+import { createGen4DataManager, GEN4_ITEM_IDS } from "@pokemon-lib-ts/gen4";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { MockRuleset } from "../../helpers/mock-ruleset";
+
+const THUNDER_WAVE_ID = "thunder-wave";
 
 /**
  * Creates a DataManager with moves of different categories for testing
@@ -22,6 +25,7 @@ import { MockRuleset } from "../../helpers/mock-ruleset";
 function createMoveAvailabilityDataManager(): DataManager {
   const dm = new DataManager();
   const gen1DataManager = createGen1DataManager();
+  const gen4DataManager = createGen4DataManager();
 
   const createSyntheticMoveForAvailability = (
     id: string,
@@ -82,7 +86,7 @@ function createMoveAvailabilityDataManager(): DataManager {
         90,
       ),
       createSyntheticMoveForAvailability(
-        CORE_MOVE_IDS.thunderWave,
+        THUNDER_WAVE_ID,
         "Thunder Wave",
         CORE_MOVE_CATEGORIES.status,
         CORE_TYPE_IDS.electric,
@@ -93,6 +97,7 @@ function createMoveAvailabilityDataManager(): DataManager {
         CORE_MOVE_CATEGORIES.status,
       ),
     ],
+    items: [gen4DataManager.getItem(GEN4_ITEM_IDS.choiceBand)],
     typeChart: gen1DataManager.getTypeChart(),
   });
 
@@ -124,7 +129,7 @@ function createTauntTestEngine() {
       moves: [
         { moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         { moveId: CORE_MOVE_IDS.thunderbolt, currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: CORE_MOVE_IDS.thunderWave, currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: THUNDER_WAVE_ID, currentPP: 20, maxPP: 20, ppUps: 0 },
         { moveId: CORE_MOVE_IDS.swordsDance, currentPP: 20, maxPP: 20, ppUps: 0 },
       ],
       calculatedStats: {
@@ -182,7 +187,7 @@ function createChoiceLockTestEngine() {
       moves: [
         { moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 },
         { moveId: CORE_MOVE_IDS.thunderbolt, currentPP: 15, maxPP: 15, ppUps: 0 },
-        { moveId: CORE_MOVE_IDS.thunderWave, currentPP: 20, maxPP: 20, ppUps: 0 },
+        { moveId: THUNDER_WAVE_ID, currentPP: 20, maxPP: 20, ppUps: 0 },
         { moveId: CORE_MOVE_IDS.swordsDance, currentPP: 20, maxPP: 20, ppUps: 0 },
       ],
       calculatedStats: {
@@ -250,7 +255,7 @@ describe("Taunt move availability", () => {
     expect(thunderbolt!.disabled).toBe(false);
 
     // thunder-wave (status) and swords-dance (status) should be disabled
-    const thunderWave = moves.find((m) => m.moveId === CORE_MOVE_IDS.thunderWave);
+    const thunderWave = moves.find((m) => m.moveId === THUNDER_WAVE_ID);
     expect(thunderWave!.disabled).toBe(true);
     expect(thunderWave!.disabledReason).toBe("Blocked by Taunt");
 
@@ -302,7 +307,7 @@ describe("Choice lock move availability", () => {
     expect(thunderbolt!.disabled).toBe(true);
     expect(thunderbolt!.disabledReason).toBe("Locked by Choice item");
 
-    const thunderWave = moves.find((m) => m.moveId === CORE_MOVE_IDS.thunderWave);
+    const thunderWave = moves.find((m) => m.moveId === THUNDER_WAVE_ID);
     expect(thunderWave!.disabled).toBe(true);
     expect(thunderWave!.disabledReason).toBe("Locked by Choice item");
 

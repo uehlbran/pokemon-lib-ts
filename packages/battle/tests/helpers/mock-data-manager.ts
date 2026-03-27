@@ -9,11 +9,17 @@ import type {
 import { ALL_NATURES, CORE_TYPE_IDS, DataManager } from "@pokemon-lib-ts/core";
 import { createGen1DataManager, GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager, GEN2_ITEM_IDS, GEN2_MOVE_IDS } from "@pokemon-lib-ts/gen2";
-import { createGen4DataManager, GEN4_ABILITY_IDS, GEN4_MOVE_IDS } from "@pokemon-lib-ts/gen4";
+import { createGen3DataManager, GEN3_ABILITY_IDS, GEN3_ITEM_IDS } from "@pokemon-lib-ts/gen3";
+import { createGen4DataManager, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "@pokemon-lib-ts/gen4";
+import { createGen5DataManager, GEN5_ITEM_IDS } from "@pokemon-lib-ts/gen5";
+import { createGen6DataManager, GEN6_ITEM_IDS } from "@pokemon-lib-ts/gen6";
 
 const GEN1_DATA_MANAGER = createGen1DataManager();
 const GEN2_DATA_MANAGER = createGen2DataManager();
+const GEN3_DATA_MANAGER = createGen3DataManager();
 const GEN4_DATA_MANAGER = createGen4DataManager();
+const GEN5_DATA_MANAGER = createGen5DataManager();
+const GEN6_DATA_MANAGER = createGen6DataManager();
 
 const EXP_SHARE_ITEM: ItemData = {
   id: "exp-share",
@@ -57,15 +63,15 @@ function getMockSpecies(): PokemonSpeciesData[] {
   return [
     {
       ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard),
-      abilities: { ...GEN4_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard).abilities },
+      abilities: { ...GEN3_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard).abilities },
     },
     {
       ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise),
-      abilities: { ...GEN4_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise).abilities },
+      abilities: { ...GEN3_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise).abilities },
     },
     {
       ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu),
-      abilities: { ...GEN4_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu).abilities },
+      abilities: { ...GEN3_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.pikachu).abilities },
     },
   ];
 }
@@ -90,12 +96,32 @@ function getMockItems(): ItemData[] {
   return [
     GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.pokeBall),
     GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.ultraBall),
+    GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.leftovers),
+    GEN2_DATA_MANAGER.getItem(GEN2_ITEM_IDS.mysteryBerry),
+    GEN3_DATA_MANAGER.getItem(GEN3_ITEM_IDS.choiceBand),
+    GEN3_DATA_MANAGER.getItem(GEN3_ITEM_IDS.quickClaw),
+    GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.blackSludge),
+    GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.custapBerry),
+    GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.flameOrb),
+    GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.focusSash),
+    GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.toxicOrb),
+    GEN5_DATA_MANAGER.getItem(GEN5_ITEM_IDS.airBalloon),
+    GEN6_DATA_MANAGER.getItem(GEN6_ITEM_IDS.weaknessPolicy),
     EXP_SHARE_ITEM,
   ];
 }
 
 function getMockAbilities(): AbilityData[] {
-  return [GEN4_DATA_MANAGER.getAbility(GEN4_ABILITY_IDS.blaze)];
+  return [
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.blaze),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.drizzle),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.drought),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.intimidate),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.speedBoost),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.static),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.thickFat),
+    GEN3_DATA_MANAGER.getAbility(GEN3_ABILITY_IDS.torrent),
+  ];
 }
 
 function getMockNatures(): NatureData[] {

@@ -1223,7 +1223,7 @@ describe("BattleEngine — advanced scenarios", () => {
         createBattlePokemon(GEN9_SPECIES_IDS.charizard, "charizard-1", "Charizard", 120, {
           moves: [
             {
-              moveId: "nonexistent-move",
+              moveId: CORE_MOVE_IDS.tackle,
               currentPP: 35,
               maxPP: 35,
               ppUps: 0,
@@ -1235,6 +1235,12 @@ describe("BattleEngine — advanced scenarios", () => {
 
       const { engine, events } = createEngine({ team1 });
       engine.start();
+      engine.state.sides[0].active[0]!.pokemon.moves[0] = {
+        moveId: "nonexistent-move",
+        currentPP: 35,
+        maxPP: 35,
+        ppUps: 0,
+      };
 
       // Act
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

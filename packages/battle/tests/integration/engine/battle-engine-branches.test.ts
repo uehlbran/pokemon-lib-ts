@@ -433,13 +433,14 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(MOCK_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          moves: [createSyntheticMissingMoveSlot()],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
           currentHp: 200,
         }),
       ];
 
       const { engine, events } = createEngine({ team1 });
       engine.start();
+      engine.state.sides[0].active[0]!.pokemon.moves[0] = createSyntheticMissingMoveSlot();
 
       // Act
       const moves = engine.getAvailableMoves(0);
@@ -459,7 +460,7 @@ describe("BattleEngine — branch coverage", () => {
           uid: "charizard-1",
           nickname: "Charizard",
           moves: [
-            createSyntheticMissingMoveSlot(),
+            createMockMoveSlot(CORE_MOVE_IDS.tackle),
             createMockMoveSlot(GEN1_MOVE_IDS.scratch, { currentPP: 20, maxPP: 20 }),
           ],
           currentHp: 200,
@@ -468,6 +469,7 @@ describe("BattleEngine — branch coverage", () => {
 
       const { engine, events } = createEngine({ team1 });
       engine.start();
+      engine.state.sides[0].active[0]!.pokemon.moves[0] = createSyntheticMissingMoveSlot();
 
       const active = engine.state.sides[0].active[0];
       expect(active).not.toBeNull();
@@ -501,7 +503,7 @@ describe("BattleEngine — branch coverage", () => {
         createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          moves: [createSyntheticMissingMoveSlot({ currentPP: 35, maxPP: 35 })],
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle, { currentPP: 35, maxPP: 35 })],
           calculatedStats: {
             hp: 200,
             attack: 100,
@@ -516,6 +518,10 @@ describe("BattleEngine — branch coverage", () => {
 
       const { engine, events } = createEngine({ team2 });
       engine.start();
+      engine.state.sides[1].active[0]!.pokemon.moves[0] = createSyntheticMissingMoveSlot({
+        currentPP: 35,
+        maxPP: 35,
+      });
 
       // Simulate the turn state the engine would have when resolving Sucker Punch.
       (engine as any).currentTurnActions = [
