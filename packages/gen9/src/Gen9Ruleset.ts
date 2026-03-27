@@ -760,7 +760,13 @@ export class Gen9Ruleset extends BaseRuleset {
     return checkPsychicTerrainPriorityBlock(terrainType, movePriority, defender, state);
   }
 
-  checkPranksterDarkImmunity(
+  /**
+   * Gen 9 Prankster-vs-Dark immunity check.
+   *
+   * Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
+   * Source: Bulbapedia "Prankster" Gen 7+ -- "Status moves fail against Dark-type targets"
+   */
+  override checkPranksterDarkImmunity(
     attacker: ActivePokemon,
     defender: ActivePokemon,
     move: MoveData,
