@@ -107,6 +107,68 @@ test("accepts classified still-needed branches", () => {
   assert.equal(result.isValid, true);
 });
 
+test("requires retirement for superseded branches before more work starts", () => {
+  const currentEntries = [
+    {
+      branch: "fix/old-approach",
+      path: "/repo/.worktrees/fix-old-approach",
+      head: "def",
+      mergedIntoMain: false,
+    },
+  ];
+  const ledger = {
+    version: 1,
+    generatedAt: "2026-03-27T00:00:00.000Z",
+    entries: [
+      {
+        ...currentEntries[0],
+        status: "superseded",
+        retired: false,
+        notes: "Replaced by fix/new-approach",
+      },
+    ],
+  };
+
+  const result = validateReconciliationLedger({
+    ledger,
+    currentEntries,
+  });
+
+  assert.equal(result.isValid, false);
+  assert.match(result.errors[0] ?? "", /Retire stale task branches/i);
+});
+
+test("requires retirement for discarded branches before more work starts", () => {
+  const currentEntries = [
+    {
+      branch: "feat/abandoned",
+      path: "/repo/.worktrees/feat-abandoned",
+      head: "ghi",
+      mergedIntoMain: false,
+    },
+  ];
+  const ledger = {
+    version: 1,
+    generatedAt: "2026-03-27T00:00:00.000Z",
+    entries: [
+      {
+        ...currentEntries[0],
+        status: "discard",
+        retired: false,
+        notes: "No longer needed",
+      },
+    ],
+  };
+
+  const result = validateReconciliationLedger({
+    ledger,
+    currentEntries,
+  });
+
+  assert.equal(result.isValid, false);
+  assert.match(result.errors[0] ?? "", /Retire stale task branches/i);
+});
+
 test("resets carried-forward status when a branch head changes", () => {
   const currentEntries = [
     {

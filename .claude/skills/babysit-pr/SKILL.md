@@ -18,10 +18,12 @@ Use this after creating a PR. Do not open a second implementation PR while this 
 2. Check required CI:
    `gh pr checks <number>`
 3. Inspect review threads and top-level comments:
+
    ```bash
    gh api repos/{owner}/{repo}/pulls/<number>/comments
    gh api repos/{owner}/{repo}/issues/<number>/comments
    ```
+
 4. For every review thread:
    - validate whether the bug still exists in current code
    - fix or explain

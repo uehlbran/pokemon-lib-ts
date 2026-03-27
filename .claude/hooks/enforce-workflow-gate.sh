@@ -6,9 +6,11 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || C
 FIRST_LINE=$(printf '%s\n' "$COMMAND" | head -1 | sed 's/^[[:space:]]*//')
 BASE="${CLAUDE_PROJECT_DIR:-.}"
 
-if printf '%s\n' "$FIRST_LINE" | grep -qE '^git[[:space:]]+worktree[[:space:]]+add([[:space:]]|$)'; then
+check_workflow_gates() {
+  local context="$1"
+
   if ! (cd "$BASE" && node scripts/check-reconciliation.mjs >/dev/null); then
-    echo "BLOCKED: reconcile existing local task work before creating another worktree." >&2
+    echo "BLOCKED: reconcile existing local task work before creating another $context." >&2
     (cd "$BASE" && node scripts/check-reconciliation.mjs)
     exit 2
   fi
@@ -18,20 +20,14 @@ if printf '%s\n' "$FIRST_LINE" | grep -qE '^git[[:space:]]+worktree[[:space:]]+a
     (cd "$BASE" && node scripts/check-active-pr.mjs --action start-task)
     exit 2
   fi
+}
+
+if printf '%s\n' "$FIRST_LINE" | grep -qE '^git[[:space:]]+worktree[[:space:]]+add([[:space:]]|$)'; then
+  check_workflow_gates "worktree"
 fi
 
 if printf '%s\n' "$FIRST_LINE" | grep -qE '^git[[:space:]]+(checkout[[:space:]]+-b|switch[[:space:]]+-c)([[:space:]]|$)'; then
-  if ! (cd "$BASE" && node scripts/check-reconciliation.mjs >/dev/null); then
-    echo "BLOCKED: reconcile existing local task work before creating another branch." >&2
-    (cd "$BASE" && node scripts/check-reconciliation.mjs)
-    exit 2
-  fi
-
-  if ! (cd "$BASE" && node scripts/check-active-pr.mjs --action start-task >/dev/null); then
-    echo "BLOCKED: another PR is still active." >&2
-    (cd "$BASE" && node scripts/check-active-pr.mjs --action start-task)
-    exit 2
-  fi
+  check_workflow_gates "branch"
 fi
 
 if printf '%s\n' "$FIRST_LINE" | grep -qE '^gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)'; then

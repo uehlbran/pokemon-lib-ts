@@ -85,6 +85,24 @@ test("blocks CodeRabbit review-in-progress comments unless an explicit bypass ex
   assert.equal(result.blockingCodeRabbitComments.length, 1);
 });
 
+test("blocks CodeRabbit review-in-progress comments from the alternate login", () => {
+  const result = validatePullRequestFeedback({
+    prAuthorLogin: "author",
+    reviewThreads: [],
+    issueComments: [
+      {
+        id: 95,
+        authorLogin: "coderabbitai",
+        body: "CodeRabbit review in progress.",
+        createdAt: "2026-03-27T10:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.blockingCodeRabbitComments.length, 1);
+});
+
 test("accepts an explicit CodeRabbit bypass comment", () => {
   const result = validatePullRequestFeedback({
     prAuthorLogin: "author",
@@ -129,4 +147,58 @@ test("accepts acknowledgements with equal timestamps when the ack comment id is 
   });
 
   assert.equal(result.isValid, true);
+});
+
+test("ignores acknowledgement markers from non-authors", () => {
+  const result = validatePullRequestFeedback({
+    prAuthorLogin: "author",
+    reviewThreads: [],
+    issueComments: [
+      {
+        id: 55,
+        authorLogin: "qodo-bot",
+        body: "Looks fine.",
+        createdAt: "2026-03-27T10:00:00.000Z",
+      },
+      {
+        id: 56,
+        authorLogin: "reviewer",
+        body: "Ack comment 55: reviewed and no action needed.",
+        createdAt: "2026-03-27T10:05:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.unacknowledgedIssueComments.length, 1);
+});
+
+test("only applies bypass state to the specific acknowledged comment line", () => {
+  const result = validatePullRequestFeedback({
+    prAuthorLogin: "author",
+    reviewThreads: [],
+    issueComments: [
+      {
+        id: 90,
+        authorLogin: "coderabbitai[bot]",
+        body: "CodeRabbit review in progress.",
+        createdAt: "2026-03-27T10:00:00.000Z",
+      },
+      {
+        id: 91,
+        authorLogin: "qodo-bot",
+        body: "Qodo summary.",
+        createdAt: "2026-03-27T10:00:01.000Z",
+      },
+      {
+        id: 92,
+        authorLogin: "author",
+        body: "Ack comment 90: waiting.\nAck comment 91: bypass because CodeRabbit is rate-limited.",
+        createdAt: "2026-03-27T10:05:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.blockingCodeRabbitComments.length, 1);
 });

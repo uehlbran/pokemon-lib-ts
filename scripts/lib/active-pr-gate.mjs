@@ -43,6 +43,8 @@ export function validateActivePrState({ marker, action, currentBranch, pullReque
     };
   }
 
+  // Unknown actions pass validation intentionally for forward compatibility.
+  // Only explicitly gated actions are blocked by the active-PR serialization.
   return {
     isValid: true,
     shouldClearMarker: false,

@@ -48,3 +48,15 @@ test("clears stale markers once the tracked PR is no longer open", () => {
   assert.equal(result.isValid, true);
   assert.equal(result.shouldClearMarker, true);
 });
+
+test("clears stale markers once the tracked PR is closed without merge", () => {
+  const result = validateActivePrState({
+    marker: { prNumber: 101, branch: "fix/current" },
+    action: "start-task",
+    currentBranch: "main",
+    pullRequest: { state: "CLOSED", headRefName: "fix/current" },
+  });
+
+  assert.equal(result.isValid, true);
+  assert.equal(result.shouldClearMarker, true);
+});

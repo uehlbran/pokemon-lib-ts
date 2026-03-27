@@ -1,29 +1,32 @@
 const ACK_PATTERN = /(?:^|\n)\s*Ack comment (\d+):/gi;
-const BYPASS_PATTERN =
-  /(?:^|\n)\s*Ack comment (\d+):.*\bbypass\b.*\b(?:rate[- ]limited|stuck|broken)\b/i;
+const ACK_LINE_PATTERN = /(?:^|\n)\s*Ack comment (\d+):([^\n]*)/gi;
+const BYPASS_REASON_PATTERN = /\bbypass\b.*\b(?:rate[- ]limited|stuck|broken)\b/i;
 const CODE_RABBIT_LOGINS = new Set(["coderabbitai[bot]", "coderabbitai"]);
 
 function isAckComment(body) {
   return typeof body === "string" && body.match(ACK_PATTERN) !== null;
 }
 
-function collectAcknowledgements(issueComments) {
+function collectAcknowledgements(issueComments, prAuthorLogin) {
   const acknowledgements = new Map();
 
   for (const comment of issueComments) {
+    if (comment.authorLogin !== prAuthorLogin) {
+      continue;
+    }
+
     if (typeof comment.body !== "string") {
       continue;
     }
 
-    const matches = [...comment.body.matchAll(ACK_PATTERN)];
+    const matches = [...comment.body.matchAll(ACK_LINE_PATTERN)];
     if (matches.length === 0) {
       continue;
     }
 
-    const isBypass = BYPASS_PATTERN.test(comment.body);
-
     for (const match of matches) {
       const commentId = Number(match[1]);
+      const isBypass = BYPASS_REASON_PATTERN.test(match[2] ?? "");
       const existing = acknowledgements.get(commentId) ?? [];
       existing.push({
         id: comment.id,
@@ -81,7 +84,7 @@ export function validatePullRequestFeedback({ reviewThreads, issueComments, prAu
     (thread) => thread.isResolved === false && thread.totalCount <= 1,
   );
 
-  const acknowledgements = collectAcknowledgements(issueComments);
+  const acknowledgements = collectAcknowledgements(issueComments, prAuthorLogin);
   const unacknowledgedIssueComments = [];
   const blockingCodeRabbitComments = [];
 

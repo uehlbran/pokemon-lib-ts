@@ -29,20 +29,26 @@ export function createReconciliationLedger({ existingLedger, currentEntries, gen
     entries: currentEntries.map((entry) => {
       const existingEntry = existingEntries.get(entry.branch);
       const defaultStatus = entry.mergedIntoMain ? "merged-equivalent" : "unclassified";
+      const existingStatus = existingEntry?.status;
       const headChanged = existingEntry?.head !== undefined && existingEntry.head !== entry.head;
       const mergeStateChanged =
         existingEntry?.mergedIntoMain !== undefined &&
         existingEntry.mergedIntoMain !== entry.mergedIntoMain;
       const shouldResetClassification = headChanged || mergeStateChanged;
+      const normalizedStatus =
+        entry.mergedIntoMain &&
+        (existingStatus === undefined ||
+          existingStatus === "unclassified" ||
+          existingStatus === "still-needed")
+          ? "merged-equivalent"
+          : (existingStatus ?? defaultStatus);
 
       return {
         branch: entry.branch,
         path: entry.path,
         head: entry.head,
         mergedIntoMain: entry.mergedIntoMain,
-        status: shouldResetClassification
-          ? defaultStatus
-          : (existingEntry?.status ?? defaultStatus),
+        status: shouldResetClassification ? defaultStatus : normalizedStatus,
         retired: shouldResetClassification ? false : (existingEntry?.retired ?? false),
         notes: shouldResetClassification ? "" : (existingEntry?.notes ?? ""),
       };

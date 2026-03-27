@@ -46,9 +46,17 @@ const { activePrPath } = getWorkflowStatePaths(gitCommonDir);
 
 if (event === "create") {
   const currentBranch = runGit(["branch", "--show-current"]);
-  const pullRequest = JSON.parse(
-    runGh(["pr", "view", currentBranch, "--json", "number,state,headRefName,url"]),
-  );
+  let pullRequest;
+
+  try {
+    pullRequest = JSON.parse(
+      runGh(["pr", "view", currentBranch, "--json", "number,state,headRefName,url"]),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Could not fetch PR for branch '${currentBranch}': ${message}`);
+    process.exit(1);
+  }
 
   if (pullRequest.state === "OPEN") {
     writeJsonFile(activePrPath, {
