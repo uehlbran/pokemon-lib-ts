@@ -1453,6 +1453,167 @@ describe("Gen 7 Mold Breaker vs Filter/Solid Rock/Prism Armor", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Sunsteel Strike and Moongeist Beam ability bypass
+// ---------------------------------------------------------------------------
+
+describe("Gen 7 signature moves bypass target abilities", () => {
+  it("given Sunsteel Strike against a target with Filter, then defensive ability reduction is ignored", () => {
+    // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
+    // Source: Showdown data/abilities.ts -- Filter: breakable: 1 (Mold Breaker ignores)
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Iron Head baseDamage 37 × Filter 0.75 × type 2 = 51 final damage;
+    // Sunsteel Strike baseDamage 46 × type 2 = 86 final damage.
+    const ironHead = GEN7_DATA.getMove(MOVE_IDS.ironHead);
+    const sunsteelStrike = GEN7_DATA.getMove(MOVE_IDS.sunsteelStrike);
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      types: [TYPE_IDS.ice],
+      ability: ABILITY_IDS.filter,
+    });
+
+    const normalMoveCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ attack: 100 }),
+      defender,
+      move: ironHead,
+      seed: 42,
+    });
+    const sunsteelCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ attack: 100 }),
+      defender,
+      move: sunsteelStrike,
+      seed: 42,
+    });
+
+    const normalMove = calculateGen7Damage(normalMoveCtx, typeChart);
+    const sunsteel = calculateGen7Damage(sunsteelCtx, typeChart);
+
+    expect(normalMove.damage).toBe(51);
+    expect(normalMove.breakdown?.baseDamage).toBe(37);
+    expect(normalMove.breakdown?.abilityMultiplier).toBe(0.75);
+    expect(sunsteel.damage).toBe(86);
+    expect(sunsteel.breakdown?.baseDamage).toBe(46);
+    expect(sunsteel.breakdown?.abilityMultiplier).toBe(1);
+  });
+
+  it("given Moongeist Beam against Wonder Guard at neutral effectiveness, then neutral damage still lands", () => {
+    // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
+    // Source: Showdown data/abilities.ts -- Wonder Guard blocks non-SE moves
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Shadow Ball baseDamage 54 is reduced to 0 by Wonder Guard;
+    // Moongeist Beam baseDamage 68 resolves to 63 final damage with neutral effectiveness.
+    const shadowBall = GEN7_DATA.getMove(MOVE_IDS.shadowBall);
+    const moongeistBeam = GEN7_DATA.getMove(MOVE_IDS.moongeistBeam);
+    const defender = createOnFieldPokemon({
+      spDefense: 100,
+      types: [TYPE_IDS.grass],
+      ability: ABILITY_IDS.wonderGuard,
+    });
+
+    const normalMoveCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ spAttack: 150 }),
+      defender,
+      move: shadowBall,
+      seed: 42,
+    });
+    const moongeistCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ spAttack: 150 }),
+      defender,
+      move: moongeistBeam,
+      seed: 42,
+    });
+
+    const normalMove = calculateGen7Damage(normalMoveCtx, typeChart);
+    const moongeist = calculateGen7Damage(moongeistCtx, typeChart);
+
+    expect(normalMove.damage).toBe(0);
+    expect(normalMove.breakdown?.baseDamage).toBe(54);
+    expect(normalMove.breakdown?.abilityMultiplier).toBe(0);
+    expect(moongeist.damage).toBe(63);
+    expect(moongeist.breakdown?.baseDamage).toBe(68);
+    expect(moongeist.breakdown?.abilityMultiplier).toBe(1);
+  });
+
+  it("given Moongeist Beam against Unaware, when the attacker is at +2 SpA, then the boost is preserved", () => {
+    // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
+    // Source: Showdown data/abilities.ts -- unaware is breakable by Mold Breaker-style effects
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Shadow Ball vs Unaware uses stage 0 for 50 final damage;
+    // Moongeist Beam bypasses Unaware, keeps the +2 stage, and deals 125 final damage.
+    const shadowBall = GEN7_DATA.getMove(MOVE_IDS.shadowBall);
+    const moongeistBeam = GEN7_DATA.getMove(MOVE_IDS.moongeistBeam);
+    const unawareDefender = createOnFieldPokemon({
+      spDefense: 100,
+      types: [TYPE_IDS.grass],
+      ability: ABILITY_IDS.unaware,
+    });
+    const boostedAttacker = createOnFieldPokemon({ spAttack: 150 });
+    boostedAttacker.statStages.spAttack = 2;
+    const shadowUnaware = calculateGen7Damage(
+      createDamageContext({
+        attacker: boostedAttacker,
+        defender: unawareDefender,
+        move: shadowBall,
+        seed: 42,
+      }),
+      typeChart,
+    );
+    const moongeistUnaware = calculateGen7Damage(
+      createDamageContext({
+        attacker: boostedAttacker,
+        defender: unawareDefender,
+        move: moongeistBeam,
+        seed: 42,
+      }),
+      typeChart,
+    );
+    expect(shadowUnaware.damage).toBe(50);
+    expect(shadowUnaware.breakdown?.baseDamage).toBe(54);
+    expect(moongeistUnaware.damage).toBe(125);
+    expect(moongeistUnaware.breakdown?.baseDamage).toBe(134);
+  });
+
+  it("given Sunsteel Strike against Simple, when the defender is at +2 Defense, then Simple doubling is ignored", () => {
+    // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
+    // Source: Showdown data/abilities.ts -- simple is breakable by Mold Breaker-style effects
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Iron Head vs Simple uses doubled +4 defense stages for 24 final damage;
+    // Sunsteel Strike bypasses Simple, uses the raw +2 stage, and deals 44 final damage.
+    const ironHead = GEN7_DATA.getMove(MOVE_IDS.ironHead);
+    const sunsteelStrike = GEN7_DATA.getMove(MOVE_IDS.sunsteelStrike);
+    const simpleDefender = createOnFieldPokemon({
+      defense: 100,
+      types: [TYPE_IDS.ice],
+      ability: ABILITY_IDS.simple,
+    });
+    simpleDefender.statStages.defense = 2;
+    const attacker = createOnFieldPokemon({ attack: 100 });
+    const ironHeadSimple = calculateGen7Damage(
+      createDamageContext({
+        attacker,
+        defender: simpleDefender,
+        move: ironHead,
+        seed: 42,
+      }),
+      typeChart,
+    );
+    const sunsteelSimple = calculateGen7Damage(
+      createDamageContext({
+        attacker,
+        defender: simpleDefender,
+        move: sunsteelStrike,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(ironHeadSimple.damage).toBe(24);
+    expect(ironHeadSimple.breakdown?.baseDamage).toBe(13);
+    expect(sunsteelSimple.damage).toBe(44);
+    expect(sunsteelSimple.breakdown?.baseDamage).toBe(24);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Expert Belt test
 // ---------------------------------------------------------------------------
 

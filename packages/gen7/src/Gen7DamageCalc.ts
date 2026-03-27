@@ -164,6 +164,15 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
  */
 const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
+// Signature moves that ignore target ability effects in Gen 7.
+// Source: Showdown data/moves.ts -- moongeistbeam / sunsteelstrike: ignoreAbility
+// Reused by the existing defensive-ability bypass path (same behavior model as
+// Mold Breaker/Teravolt/Turboblaze in this module).
+export const ABILITY_IGNORING_MOVES: ReadonlySet<string> = new Set([
+  GEN7_MOVE_IDS.moongeistBeam,
+  GEN7_MOVE_IDS.sunsteelStrike,
+]);
+
 // ---- Recoil Detection Helper ----
 
 /**
@@ -178,6 +187,14 @@ function hasRecoilEffect(effect: MoveEffect | null): boolean {
     return effect.effects.some((e) => e.type === "recoil");
   }
   return false;
+}
+
+function attackerAbilityIsMoldBreaker(ability: string | null | undefined): boolean {
+  return (
+    ability === CORE_ABILITY_IDS.moldBreaker ||
+    ability === CORE_ABILITY_IDS.teravolt ||
+    ability === CORE_ABILITY_IDS.turboblaze
+  );
 }
 
 // ---- Sheer Force Eligible Check ----
@@ -363,6 +380,7 @@ function getAttackStat(
   isPhysical: boolean,
   isCrit: boolean,
   defender?: ActivePokemon,
+  bypassesDefensiveAbilities = false,
 ): number {
   const statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   const stats = attacker.pokemon.calculatedStats;
@@ -464,7 +482,13 @@ function getAttackStat(
 
   // Apply stat stages (with Simple/Unaware adjustments)
   const statKey2 = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
-  const stage = getEffectiveStatStage(attacker, statKey2, defender);
+  const stage = getEffectiveStatStage(
+    attacker,
+    statKey2,
+    defender,
+    "offense",
+    bypassesDefensiveAbilities,
+  );
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown -- crit ignores negative attack stages
@@ -491,6 +515,7 @@ function getDefenseStat(
   isCrit: boolean,
   weather: string | null,
   attacker?: ActivePokemon,
+  bypassesDefensiveAbility?: boolean,
   ignoreDefenseStages?: boolean,
 ): number {
   const statKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
@@ -530,13 +555,11 @@ function getDefenseStat(
 
   // Marvel Scale: 1.5x physical Defense when statused
   // Source: Showdown data/abilities.ts -- Marvel Scale
-  const moldBreaker =
-    attacker?.ability === "mold-breaker" ||
-    attacker?.ability === "teravolt" ||
-    attacker?.ability === "turboblaze";
+  const bypassesDefenderAbility =
+    bypassesDefensiveAbility === true || attackerAbilityIsMoldBreaker(attacker?.ability);
   if (
     isPhysical &&
-    !moldBreaker &&
+    !bypassesDefenderAbility &&
     defender.ability === CORE_ABILITY_IDS.marvelScale &&
     defender.pokemon.status !== null
   ) {
@@ -545,7 +568,7 @@ function getDefenseStat(
 
   // Fur Coat: 2x physical Defense
   // Source: Showdown data/abilities.ts -- Fur Coat onModifyDef
-  if (isPhysical && !moldBreaker && defender.ability === GEN7_ABILITY_IDS.furCoat) {
+  if (isPhysical && !bypassesDefenderAbility && defender.ability === GEN7_ABILITY_IDS.furCoat) {
     baseStat = baseStat * 2;
   }
 
@@ -564,7 +587,7 @@ function getDefenseStat(
   // Source: Showdown data/abilities.ts -- Flower Gift
   if (
     !isPhysical &&
-    !moldBreaker &&
+    !bypassesDefenderAbility &&
     weather === CORE_WEATHER_IDS.sun &&
     defender.ability === GEN7_ABILITY_IDS.flowerGift
   ) {
@@ -573,7 +596,13 @@ function getDefenseStat(
 
   // Stat stages
   const defStatKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, CORE_STAT_IDS.defense);
+  const stage = getEffectiveStatStage(
+    defender,
+    defStatKey,
+    attacker,
+    "defense",
+    bypassesDefenderAbility,
+  );
 
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
@@ -801,12 +830,13 @@ export function calculateGen7Damage(
 
   // Dry Skin fire weakness: 1.25x base power for Fire moves against Dry Skin
   // Source: Showdown data/abilities.ts -- Dry Skin (priority 17)
-  const moldBreaker =
+  const bypassesDefensiveAbilities =
     attackerAbility === CORE_ABILITY_IDS.moldBreaker ||
     attackerAbility === CORE_ABILITY_IDS.teravolt ||
-    attackerAbility === CORE_ABILITY_IDS.turboblaze;
+    attackerAbility === CORE_ABILITY_IDS.turboblaze ||
+    ABILITY_IGNORING_MOVES.has(move.id);
   if (
-    !moldBreaker &&
+    !bypassesDefensiveAbilities &&
     defenderAbility === CORE_ABILITY_IDS.drySkin &&
     effectiveMoveType === CORE_TYPE_IDS.fire
   ) {
@@ -995,7 +1025,7 @@ export function calculateGen7Damage(
     defender.pokemon.heldItem === CORE_ITEM_IDS.ironBall &&
     effectiveMoveType === CORE_TYPE_IDS.ground;
 
-  if (!moldBreaker) {
+  if (!bypassesDefensiveAbilities) {
     const immuneType = ABILITY_TYPE_IMMUNITIES[defenderAbility];
     if (immuneType && effectiveMoveType === immuneType) {
       const isLevitateGrounded =
@@ -1024,7 +1054,14 @@ export function calculateGen7Damage(
   const isPhysical = move.category === "physical";
 
   // Get effective stats
-  let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender);
+  let attack = getAttackStat(
+    attacker,
+    effectiveMoveType,
+    isPhysical,
+    isCrit,
+    defender,
+    bypassesDefensiveAbilities,
+  );
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
   const IGNORE_DEFENSE_STAGE_MOVES: ReadonlySet<string> = new Set([
@@ -1033,14 +1070,22 @@ export function calculateGen7Damage(
     "darkest-lariat",
   ]);
   const ignoreDefStages = IGNORE_DEFENSE_STAGE_MOVES.has(move.id);
-  const defense = getDefenseStat(defender, isPhysical, isCrit, weather, attacker, ignoreDefStages);
+  const defense = getDefenseStat(
+    defender,
+    isPhysical,
+    isCrit,
+    weather,
+    attacker,
+    bypassesDefensiveAbilities,
+    ignoreDefStages,
+  );
 
   let abilityMultiplier = 1;
 
   // Thick Fat: halves the attacker's effective stat for fire/ice moves
   // Source: Showdown -- Thick Fat
   if (
-    !moldBreaker &&
+    !bypassesDefensiveAbilities &&
     defenderAbility === GEN7_ABILITY_IDS.thickFat &&
     (effectiveMoveType === CORE_TYPE_IDS.fire || effectiveMoveType === CORE_TYPE_IDS.ice)
   ) {
@@ -1051,7 +1096,7 @@ export function calculateGen7Damage(
   // Heatproof: halves fire damage
   // Source: Showdown data/abilities.ts -- Heatproof
   if (
-    !moldBreaker &&
+    !bypassesDefensiveAbilities &&
     defenderAbility === GEN7_ABILITY_IDS.heatproof &&
     effectiveMoveType === CORE_TYPE_IDS.fire
   ) {
@@ -1200,7 +1245,11 @@ export function calculateGen7Damage(
 
   // Wonder Guard: only super-effective moves hit
   // Source: Showdown data/abilities.ts -- Wonder Guard
-  if (!moldBreaker && defenderAbility === CORE_ABILITY_IDS.wonderGuard && effectiveness < 2) {
+  if (
+    !bypassesDefensiveAbilities &&
+    defenderAbility === CORE_ABILITY_IDS.wonderGuard &&
+    effectiveness < 2
+  ) {
     return {
       damage: 0,
       effectiveness,
@@ -1262,7 +1311,7 @@ export function calculateGen7Damage(
   // Both have flags: { breakable: 1 } in Showdown -- bypassed by Mold Breaker.
   // Source: Showdown data/abilities.ts -- Filter/Solid Rock: flags: { breakable: 1 }
   if (
-    !moldBreaker &&
+    !bypassesDefensiveAbilities &&
     (defenderAbility === GEN7_ABILITY_IDS.filter ||
       defenderAbility === GEN7_ABILITY_IDS.solidRock) &&
     effectiveness > 1
