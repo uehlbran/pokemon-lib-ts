@@ -11,8 +11,8 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
+import { GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9/data";
 import { describe, expect, it } from "vitest";
-import { GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "../../../../gen9/src/data";
 import { BATTLE_SOURCE_IDS } from "../../../src";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";

@@ -1,7 +1,7 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_IDS, CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { GEN9_ITEM_IDS } from "@pokemon-lib-ts/gen9/data";
 import { describe, expect, it } from "vitest";
-import { GEN9_ITEM_IDS } from "../../../../gen9/src/data";
 import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "../../../src";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
