@@ -259,15 +259,17 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       const defender = createOnFieldPokemon({
         types: [CORE_TYPE_IDS.dark],
       });
-
-      const blocked = ruleset.checkPranksterDarkImmunity(
+      const move = dataManager.getMove(moveIds.willOWisp);
+      const result = ruleset.getPreExecutionMoveFailure(
         attacker,
         defender,
-        dataManager.getMove(moveIds.willOWisp),
-        dataManager.getMove(moveIds.willOWisp).target,
+        move,
+        createBattleState(createSide(0, [attacker]), createSide(1, [defender])),
       );
 
-      expect(blocked).toBe(true);
+      expect(result).toEqual({
+        reason: "blocked by Dark-type immunity",
+      });
     },
   );
 
@@ -284,14 +286,15 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         types: [CORE_TYPE_IDS.normal],
       });
 
-      const blocked = ruleset.checkPranksterDarkImmunity(
+      const move = dataManager.getMove(moveIds.willOWisp);
+      const result = ruleset.getPreExecutionMoveFailure(
         attacker,
         defender,
-        dataManager.getMove(moveIds.willOWisp),
-        dataManager.getMove(moveIds.willOWisp).target,
+        move,
+        createBattleState(createSide(0, [attacker]), createSide(1, [defender])),
       );
 
-      expect(blocked).toBe(false);
+      expect(result).toBeNull();
     },
   );
 
@@ -309,14 +312,14 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       });
       const agility = dataManager.getMove(moveIds.agility);
 
-      const blocked = ruleset.checkPranksterDarkImmunity(
+      const result = ruleset.getPreExecutionMoveFailure(
         attacker,
         defender,
         agility,
-        agility.target,
+        createBattleState(createSide(0, [attacker]), createSide(1, [defender])),
       );
 
-      expect(blocked).toBe(false);
+      expect(result).toBeNull();
     },
   );
 });

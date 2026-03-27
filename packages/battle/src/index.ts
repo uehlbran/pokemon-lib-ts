@@ -124,6 +124,7 @@ export type {
   HazardSystem,
   ItemSystem,
   MoveSystem,
+  PreExecutionMoveFailure,
   StatCalculator,
   StatusSystem,
   SwitchSystem,

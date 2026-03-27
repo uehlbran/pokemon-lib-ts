@@ -62,6 +62,7 @@ import type {
   ExpRecipient,
   ExpRecipientSelectionContext,
   GenerationRuleset,
+  PreExecutionMoveFailure,
 } from "./GenerationRuleset";
 import { hasGoFirstItemActivated } from "./GoFirstItemActivation";
 
@@ -363,6 +364,35 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return result;
   }
 
+  getPreExecutionMoveFailure(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    move: MoveData,
+    state: BattleState,
+  ): PreExecutionMoveFailure | null {
+    const naturalPriority = move.priority ?? 0;
+    if (naturalPriority > 0 && this.shouldBlockPriorityMove(attacker, move, defender, state)) {
+      return { reason: "blocked by terrain" };
+    }
+
+    return null;
+  }
+
+  /**
+   * Terrain-priority interaction hook (Psychic Terrain).
+   *
+   * Gen 3-6: no priority-move blocking from terrain.
+   * Gen 7+: override in gen rulesets to block when terrain is active.
+   */
+  shouldBlockPriorityMove(
+    _actor: ActivePokemon,
+    _move: MoveData,
+    _defender: ActivePokemon,
+    _state: BattleState,
+  ): boolean {
+    return false;
+  }
+
   /**
    * Default: no moves can hit a semi-invulnerable target.
    * The caller may still pass the generic `"charging"` marker for two-turn moves
@@ -422,20 +452,6 @@ export abstract class BaseRuleset implements GenerationRuleset {
     _state: BattleState,
   ): { reflected: true; messages: string[] } | null {
     return null;
-  }
-
-  /**
-   * Default: no Prankster-vs-Dark immunity. Gen 7+ rulesets override this.
-   *
-   * Source: Showdown data/abilities.ts -- prankster Dark-type immunity starts in Gen 7
-   */
-  checkPranksterDarkImmunity(
-    _attacker: ActivePokemon,
-    _defender: ActivePokemon,
-    _move: MoveData,
-    _moveTarget: MoveData["target"],
-  ): boolean {
-    return false;
   }
 
   // Burn: Gen 7+ default (1/16 max HP); Gen 3-6 must override (1/8 max HP)

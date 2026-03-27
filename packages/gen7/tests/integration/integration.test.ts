@@ -502,6 +502,34 @@ describe("Integration: Psychic Terrain priority blocking", () => {
 // ===========================================================================
 
 describe("Integration: Prankster vs Dark-type immunity", () => {
+  it("given a Gen 7 ruleset and a Prankster status move into a Dark-type defender, then pre-execution failure is returned", () => {
+    // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
+    // Source: Bulbapedia "Prankster" Gen 7 -- "Status moves fail against Dark-type targets"
+    const ruleset = new Gen7Ruleset();
+    const attacker = createSyntheticOnFieldPokemon({
+      ability: ABILITIES.prankster,
+      moveIds: [MOVES.thunderWave],
+      nickname: "Whimsicott",
+      types: [TYPES.grass, TYPES.fairy],
+    });
+    const defender = createSyntheticOnFieldPokemon({
+      nickname: "Umbreon",
+      types: [TYPES.dark],
+    });
+    const thunderWave = getCanonicalMove(MOVES.thunderWave);
+
+    const result = ruleset.getPreExecutionMoveFailure(
+      attacker,
+      defender,
+      thunderWave,
+      createSyntheticBattleState(),
+    );
+
+    expect(result).toEqual({
+      reason: "blocked by Dark-type immunity",
+    });
+  });
+
   it("given Prankster user using status move vs Dark-type, move is blocked", () => {
     // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
     // Source: Bulbapedia "Prankster" Gen 7 -- "Status moves fail against Dark-type targets"

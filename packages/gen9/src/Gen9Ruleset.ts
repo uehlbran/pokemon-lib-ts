@@ -16,6 +16,7 @@ import type {
   ItemResult,
   MoveEffectContext,
   MoveEffectResult,
+  PreExecutionMoveFailure,
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -766,17 +767,23 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
    * Source: Bulbapedia "Prankster" Gen 7+ -- "Status moves fail against Dark-type targets"
    */
-  override checkPranksterDarkImmunity(
+  override getPreExecutionMoveFailure(
     attacker: ActivePokemon,
     defender: ActivePokemon,
     move: MoveData,
-    moveTarget: MoveData["target"],
-  ): boolean {
-    return isPranksterBlockedByDarkType(
-      attacker.ability,
-      move.category,
-      defender.types,
-      moveTarget,
-    );
+    state: BattleState,
+  ): PreExecutionMoveFailure | null {
+    const baseFailure = super.getPreExecutionMoveFailure(attacker, defender, move, state);
+    if (baseFailure) {
+      return baseFailure;
+    }
+
+    if (
+      isPranksterBlockedByDarkType(attacker.ability, move.category, defender.types, move.target)
+    ) {
+      return { reason: "blocked by Dark-type immunity" };
+    }
+
+    return null;
   }
 }

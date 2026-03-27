@@ -38,6 +38,13 @@ import type { BattleAction } from "../events/BattleAction";
 import type { ActivePokemon, BattleSide } from "../state/BattleSide";
 import type { BattleState } from "../state/BattleState";
 
+export interface PreExecutionMoveFailure {
+  /** Human-readable explanation for why the move failed before execution. */
+  readonly reason: string;
+  /** Optional message events to emit before the move-fail event. */
+  readonly messages?: readonly string[];
+}
+
 // ─── Sub-interfaces (ISP: Interface Segregation Principle) ───────────────────
 // Consumers that only need one aspect of the ruleset can type-narrow to the
 // relevant sub-interface (e.g., pass only `DamageSystem` to a damage calculator).
@@ -161,21 +168,19 @@ export interface DamageSystem {
   ): boolean;
 
   /**
-   * Returns `true` if a Prankster-boosted status move should fail against the defender.
+   * Returns a generic pre-execution failure for the move, or `null` when the move
+   * is allowed to continue toward reflection/accuracy/damage handling.
    *
-   * Gen 7+: Dark-type targets are immune to status moves that gained priority from Prankster.
-   * Called by the engine before move execution so the move fails on the real execution path,
-   * not just during turn-order calculation.
-   *
-   * Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
-   * Source: Bulbapedia "Prankster" Gen 7+ -- status moves fail against Dark-type targets
+   * This keeps the battle engine generation-agnostic while still allowing
+   * generation rulesets to own mechanic-specific early failures such as
+   * Psychic Terrain priority blocking and Gen 7+ Prankster-vs-Dark immunity.
    */
-  checkPranksterDarkImmunity?(
+  getPreExecutionMoveFailure?(
     attacker: ActivePokemon,
     defender: ActivePokemon,
     move: MoveData,
-    moveTarget: MoveData["target"],
-  ): boolean;
+    state: BattleState,
+  ): PreExecutionMoveFailure | null;
 
   /**
    * Returns `true` if the given move, when used by the given actor, can bypass Protect-type

@@ -15,6 +15,7 @@ import type {
   ExpContext,
   ItemContext,
   ItemResult,
+  PreExecutionMoveFailure,
   TerrainEffectResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
@@ -278,18 +279,24 @@ export class Gen8Ruleset extends BaseRuleset {
     return super.getAbilityPriorityBoost(active, moveData, state);
   }
 
-  override checkPranksterDarkImmunity(
+  override getPreExecutionMoveFailure(
     attacker: ActivePokemon,
     defender: ActivePokemon,
     move: MoveData,
-    moveTarget: MoveData["target"],
-  ): boolean {
-    return isPranksterBlockedByDarkType(
-      attacker.ability,
-      move.category,
-      defender.types,
-      moveTarget,
-    );
+    state: BattleState,
+  ): PreExecutionMoveFailure | null {
+    const baseFailure = super.getPreExecutionMoveFailure(attacker, defender, move, state);
+    if (baseFailure) {
+      return baseFailure;
+    }
+
+    if (
+      isPranksterBlockedByDarkType(attacker.ability, move.category, defender.types, move.target)
+    ) {
+      return { reason: "blocked by Dark-type immunity" };
+    }
+
+    return null;
   }
 
   /**
