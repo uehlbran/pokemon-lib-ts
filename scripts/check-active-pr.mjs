@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { validateActivePrState } from "./lib/active-pr-gate.mjs";
+import { ALLOWED_ACTIVE_PR_ACTIONS, validateActivePrState } from "./lib/active-pr-gate.mjs";
 import { getWorkflowStatePaths, readJsonFile, removeFile } from "./lib/workflow-state.mjs";
 
 function getOptionValue(args, name) {
@@ -32,6 +32,13 @@ function runGh(args) {
 }
 
 const action = getOptionValue(process.argv.slice(2), "--action") ?? "start-task";
+if (!ALLOWED_ACTIVE_PR_ACTIONS.has(action)) {
+  console.error(
+    `Invalid --action '${action}'. Expected one of: ${[...ALLOWED_ACTIVE_PR_ACTIONS].join(", ")}.`,
+  );
+  process.exit(1);
+}
+
 const gitCommonDir = runGit(["rev-parse", "--git-common-dir"]);
 const currentBranch = runGit(["branch", "--show-current"]);
 const { activePrPath } = getWorkflowStatePaths(gitCommonDir);
@@ -70,8 +77,6 @@ if (!marker) {
     );
     process.exit(1);
   }
-
-  process.exit(0);
 }
 
 let pullRequest = null;

@@ -23,6 +23,7 @@ function runGh(args) {
 
 function fetchReviewThreads({ owner, repo, prNumber }) {
   const threads = [];
+  let prAuthorLogin = "";
   let hasNextPage = true;
   let afterCursor = null;
 
@@ -60,13 +61,17 @@ function fetchReviewThreads({ owner, repo, prNumber }) {
     );
 
     const pullRequest = response.data.repository.pullRequest;
+    if (!prAuthorLogin) {
+      prAuthorLogin = pullRequest.author?.login ?? "";
+    }
+
     const reviewThreads = pullRequest.reviewThreads;
     threads.push(...reviewThreads.nodes);
     hasNextPage = reviewThreads.pageInfo.hasNextPage;
     afterCursor = reviewThreads.pageInfo.endCursor;
   }
 
-  return threads;
+  return { threads, prAuthorLogin };
 }
 
 const providedPrNumber = getOptionValue(process.argv.slice(2), "--pr");
@@ -83,21 +88,6 @@ if (!prNumber) {
 const repository = JSON.parse(runGh(["repo", "view", "--json", "nameWithOwner"])).nameWithOwner;
 const [owner, repo] = repository.split("/");
 
-const pullRequestData = JSON.parse(
-  runGh([
-    "api",
-    "graphql",
-    "-f",
-    `query={
-      repository(owner: "${owner}", name: "${repo}") {
-        pullRequest(number: ${prNumber}) {
-          author { login }
-        }
-      }
-    }`,
-  ]),
-);
-
 const issueComments = JSON.parse(
   runGh(["api", "--paginate", `repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`]),
 ).map((comment) => ({
@@ -108,8 +98,9 @@ const issueComments = JSON.parse(
   url: comment.html_url ?? "",
 }));
 
+const { threads: rawReviewThreads, prAuthorLogin } = fetchReviewThreads({ owner, repo, prNumber });
 const reviewThreads =
-  fetchReviewThreads({ owner, repo, prNumber }).map((thread) => ({
+  rawReviewThreads.map((thread) => ({
     isResolved: thread.isResolved,
     totalCount: thread.comments.totalCount,
     path: thread.comments.nodes[0]?.path ?? "unknown file",
@@ -119,7 +110,7 @@ const reviewThreads =
 const result = validatePullRequestFeedback({
   reviewThreads,
   issueComments,
-  prAuthorLogin: pullRequestData.data.repository.pullRequest.author?.login ?? "",
+  prAuthorLogin,
 });
 
 if (!result.isValid) {

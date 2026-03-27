@@ -43,18 +43,14 @@ function collectAcknowledgements(issueComments, prAuthorLogin) {
 function isAfterComment(entry, commentId, createdAt) {
   const entryTime = Date.parse(entry.createdAt);
   const commentTime = Date.parse(createdAt);
+  const entryTimestamp = Number.isNaN(entryTime) ? entry.createdAt : String(entryTime);
+  const commentTimestamp = Number.isNaN(commentTime) ? createdAt : String(commentTime);
 
-  if (!Number.isNaN(entryTime) && !Number.isNaN(commentTime)) {
-    if (entryTime > commentTime) {
-      return true;
-    }
-
-    if (entryTime < commentTime) {
-      return false;
-    }
-  } else if (entry.createdAt > createdAt) {
+  if (entryTimestamp > commentTimestamp) {
     return true;
-  } else if (entry.createdAt < createdAt) {
+  }
+
+  if (entryTimestamp < commentTimestamp) {
     return false;
   }
 

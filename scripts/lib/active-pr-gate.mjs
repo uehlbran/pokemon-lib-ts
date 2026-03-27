@@ -1,3 +1,5 @@
+export const ALLOWED_ACTIVE_PR_ACTIONS = new Set(["start-task", "pr-create"]);
+
 export function validateActivePrState({ marker, action, currentBranch, pullRequest }) {
   if (!marker) {
     return {
@@ -43,11 +45,9 @@ export function validateActivePrState({ marker, action, currentBranch, pullReque
     };
   }
 
-  // Unknown actions pass validation intentionally for forward compatibility.
-  // Only explicitly gated actions are blocked by the active-PR serialization.
   return {
-    isValid: true,
+    isValid: false,
     shouldClearMarker: false,
-    error: null,
+    error: `Invalid active PR action '${action}'. Expected one of: ${[...ALLOWED_ACTIVE_PR_ACTIONS].join(", ")}.`,
   };
 }

@@ -204,6 +204,40 @@ test("resets carried-forward status when a branch head changes", () => {
   assert.equal(ledger.entries[0]?.notes, "");
 });
 
+test("normalizes stale still-needed status for branches already merged into main", () => {
+  const currentEntries = [
+    {
+      branch: "fix/example",
+      path: "/repo/.worktrees/fix-example",
+      head: "abc",
+      mergedIntoMain: true,
+    },
+  ];
+
+  const ledger = createReconciliationLedger({
+    existingLedger: {
+      version: 1,
+      generatedAt: "2026-03-26T00:00:00.000Z",
+      entries: [
+        {
+          branch: "fix/example",
+          path: "/repo/.worktrees/fix-example",
+          head: "abc",
+          mergedIntoMain: true,
+          status: "still-needed",
+          retired: false,
+          notes: "stale classification",
+        },
+      ],
+    },
+    currentEntries,
+    generatedAt: "2026-03-27T00:00:00.000Z",
+  });
+
+  assert.equal(ledger.entries[0]?.status, "merged-equivalent");
+  assert.equal(ledger.entries[0]?.retired, false);
+});
+
 test("rejects stale merged-equivalent entries when the current branch is no longer merged", () => {
   const currentEntries = [
     {

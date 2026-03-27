@@ -64,6 +64,7 @@ export function validateReconciliationLedger({ ledger, currentEntries }) {
       unclassifiedEntries: [],
       pendingRetirement: [],
       invalidStatuses: [],
+      inconsistentEntries: [],
       errors: [],
     };
   }
@@ -75,6 +76,7 @@ export function validateReconciliationLedger({ ledger, currentEntries }) {
       unclassifiedEntries: [],
       pendingRetirement: [],
       invalidStatuses: [],
+      inconsistentEntries: [],
       errors: [
         "Backlog reconciliation is required before starting another task. Run node scripts/reconcile-worktrees.mjs --write.",
       ],

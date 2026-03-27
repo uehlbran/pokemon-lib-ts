@@ -60,3 +60,15 @@ test("clears stale markers once the tracked PR is closed without merge", () => {
   assert.equal(result.isValid, true);
   assert.equal(result.shouldClearMarker, true);
 });
+
+test("rejects unknown active PR actions", () => {
+  const result = validateActivePrState({
+    marker: { prNumber: 101, branch: "fix/current" },
+    action: "oops",
+    currentBranch: "fix/current",
+    pullRequest: { state: "OPEN", headRefName: "fix/current" },
+  });
+
+  assert.equal(result.isValid, false);
+  assert.match(result.error ?? "", /Invalid active PR action/i);
+});

@@ -20,6 +20,7 @@ fi
 if printf '%s\n' "$FIRST_LINE" | grep -qE '^gh[[:space:]]+pr[[:space:]]+(merge|close)([[:space:]]|$)'; then
   cd "$BASE" || exit 1
   node scripts/sync-active-pr.mjs --event finish
+  exit $?
 fi
 
 exit 0
