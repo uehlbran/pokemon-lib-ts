@@ -1,6 +1,6 @@
 # Gen7 Implementation Status
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-27
 **Overall estimate:** 100% complete (all waves merged — PR #703 final)
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/08-gen7.md`
@@ -105,7 +105,7 @@
 | Item | Reason |
 |------|--------|
 | Ultra Burst (Necrozma) | Distinct gimmick from Z-Moves; not yet implemented — see #788 |
-| Spectral Thief / Photon Geyser / Sunsteel Strike / Moongeist Beam | Move effects not yet implemented — see #789 |
+| Spectral Thief | Move effect not yet implemented — see #789 |
 | Doubles mechanics | Doubles initiative — engine doesn't support doubles |
 
 ---
@@ -129,6 +129,8 @@ None. All tracked bugs closed.
 - PR #752: Deep bughunt — EoT order adds `magic-room-countdown`, `wonder-room-countdown`, `gravity-countdown`, `slow-start-countdown`; Z-Move through Protect deals 0.25x via `hitThroughProtect`; Disguise `capLethalDamage` marks `disguise-broken` volatile; canBypassProtect delegation (closes #735 #736 #739 #741)
 - #785: Bughunt wave 2 — Rayquaza mega (Dragon Ascent), Disguise non-lethal via expanded capLethalDamage, Beast Boost/Moxie on-after-move-used, pinch berries EoT, Focus Sash capLethalDamage (closes #701 #687 #688 #683 #725)
 - PR #786: Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage (closes #757)
+- PR #1054: Sunsteel Strike / Moongeist Beam now ignore target abilities through the shared Mold Breaker-style bypass path (partial close for #789)
+- PR #1055: Sunsteel Strike / Moongeist Beam now also bypass Battle Armor / Shell Armor crit immunity through the same shared signature-move ignore-ability set
 
 ## PR History
 

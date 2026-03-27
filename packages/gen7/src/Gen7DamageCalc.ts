@@ -165,7 +165,7 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
 const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
 // Signature moves that ignore target ability effects in Gen 7.
-// Source: Showdown data/moves.ts -- moongeistbeam / sunsteelstrike: ignoreAbility
+// Source: Showdown data/moves.ts -- photongeyser / moongeistbeam / sunsteelstrike: ignoreAbility
 // Reused by the existing defensive-ability bypass path (same behavior model as
 // Mold Breaker/Teravolt/Turboblaze in this module).
 export const ABILITY_IGNORING_MOVES: ReadonlySet<string> = new Set([
