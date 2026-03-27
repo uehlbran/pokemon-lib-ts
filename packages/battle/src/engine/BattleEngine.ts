@@ -3,7 +3,6 @@ import type {
   DataManager,
   ItemData,
   MoveData,
-  PokemonInstance,
   PokemonSpeciesData,
   PrimaryStatus,
   SemiInvulnerableVolatile,
