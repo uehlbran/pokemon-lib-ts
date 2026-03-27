@@ -304,9 +304,8 @@ describe("Gen 1 Substitute: selective status interactions", () => {
       types: [TYPES.normal],
       substituteHp: 40,
     });
-    // When brokeSubstitute is true, engine already decided the hit went into the sub.
-    // The ruleset's status-chance handler doesn't check substituteHp directly —
-    // the engine passes brokeSubstitute in context. Simulate a hit that hit the sub.
+    // Source: battle engine substitute flow — secondary effects stay blocked while the hit is
+    // still treated as a Substitute hit. This case keeps the Substitute alive (`substituteHp > 0`).
     const context = createMoveEffectContext({
       move: guaranteedParalysisProbe,
       defender: defenderWithSub,
@@ -314,6 +313,31 @@ describe("Gen 1 Substitute: selective status interactions", () => {
       brokeSubstitute: false, // sub still alive
     });
     const result = ruleset.executeMoveEffect(context);
+    expect(result.statusInflicted).toBeNull();
+  });
+
+  it("given a hit breaks Substitute, when a damaging move's secondary status resolves, then statusInflicted is still null", () => {
+    // Source: battle engine substitute flow — the substitute-breaking hit is still a Substitute hit,
+    // so secondary effects remain blocked even though `substituteHp` is already 0 at effect time.
+    const guaranteedParalysisProbe = createSyntheticMoveFrom(getCanonicalMove(MOVES.thunder), {
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: STATUSES.paralysis,
+        chance: 100,
+      },
+    });
+    const context = createMoveEffectContext({
+      move: guaranteedParalysisProbe,
+      defender: createSyntheticOnFieldPokemon({
+        types: [TYPES.normal],
+        substituteHp: 0,
+      }),
+      damage: 40,
+      brokeSubstitute: true,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
     expect(result.statusInflicted).toBeNull();
   });
 

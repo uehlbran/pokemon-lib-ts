@@ -1214,7 +1214,12 @@ export class Gen1Ruleset implements GenerationRuleset {
     move: MoveData,
     status?: PrimaryStatus,
   ): boolean {
-    if (context.defender.substituteHp <= 0 || move.flags.bypassSubstitute) {
+    if (move.flags.bypassSubstitute) {
+      return false;
+    }
+
+    const hitSubstitute = context.defender.substituteHp > 0 || context.brokeSubstitute;
+    if (!hitSubstitute) {
       return false;
     }
 
