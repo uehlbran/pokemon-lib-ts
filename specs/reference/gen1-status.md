@@ -1,6 +1,6 @@
 # Gen1 Implementation Status
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-26
 **Overall estimate:** ~100% complete (all known mechanics implemented)
 **Architecture:** Implements `GenerationRuleset` directly (NOT BaseRuleset — too mechanically different)
 
@@ -130,7 +130,7 @@
 - `BattleEngine.executeMoveById` private method for PP-free recursive execution
 
 ### Data & Validation
-- 151 species, 164 moves loaded
+- 151 species, 165 moves loaded
 - Physical/special split by type (`isGen1PhysicalType`)
 - `validatePokemon()`: level 1-100, species 1-151, 1-4 moves, no held items
 - EXP gain via `calculateExpGainClassic()`
@@ -162,3 +162,4 @@
 | #482 | test/gen1 | Harden 4 audit test issues — seeded assertions, engine integration, Disable, Substitute |
 | #485 | test/gen1 | Fix tautological tests, weak assertions, add regression tests |
 | #521 | feat/gen1 | Add opt-in badge stat boosts (#195) — `Gen1BadgeBoosts` + `Gen1RulesetOptions.badgeBoosts` |
+| #1039 | chore/correctness-confidence-phase2 | Tighten Gen 1 Substitute status behavior against ground-truth exceptions, replace flag-only Substitute tests with ruleset-path assertions, and close the stale Gen 1 doc/test drift tracked in #908 and #915 |

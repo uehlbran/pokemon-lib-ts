@@ -2,7 +2,7 @@
  * Gen 1 Edge Case and Interaction Regression Tests
  *
  * Covers:
- *   - Substitute: status moves blocked, multi-hit rules
+ *   - Substitute: selective status interactions, multi-hit rules
  *   - Confusion self-hit: uses pokemon's own Defense stat (NOT opponent's)
  *   - Confusion self-hit + Substitute: confusionSelfHitTargetsOpponentSub() returns true
  *   - Counter: only Normal/Fighting, Ghost immunity
@@ -221,67 +221,123 @@ function createMoveEffectContext(overrides: Partial<MoveEffectContext> = {}): Mo
 }
 
 // ---------------------------------------------------------------------------
-// Substitute: status moves blocked
+// Substitute: selective status interactions
 // ---------------------------------------------------------------------------
 
-describe("Gen 1 Substitute: status moves are blocked", () => {
-  // Source: pret/pokered — Substitute blocks dedicated status moves (burn, paralysis,
-  // sleep, poison, confusion all fail vs Substitute).
-  // The engine enforces this; the ruleset signals it through shouldMoveHitSubstitute().
-  // We verify the ruleset says Substitute does NOT block moves with bypassSubstitute=false,
-  // and DOES bypass for moves with bypassSubstitute=true.
-
-  it("given defender has Substitute, when checking a normal damaging move, then doesMoveBypassSubstitute returns false", () => {
-    // Source: gen1-ground-truth.md §7 — Substitute blocks ordinary moves normally
-    // Non-bypass moves interact with (i.e., are blocked by or absorbed by) the Substitute.
-    const moveData = createSyntheticMoveFrom(getCanonicalMove(MOVES.tackle), {
-      flags: { ...DEFAULT_MOVE_FLAGS, bypassSubstitute: false },
+describe("Gen 1 Substitute: selective status interactions", () => {
+  it("given defender has Substitute, when Sleep Powder resolves, then the ruleset still inflicts sleep", () => {
+    // Source: gen1-ground-truth.md §7 — Substitute does NOT block sleep from status moves.
+    const defenderWithSubstitute = createSyntheticOnFieldPokemon({
+      substituteHp: 40,
+      types: [TYPES.normal],
     });
-    // The Gen1Ruleset does not expose doesMoveBypassSubstitute directly —
-    // it's handled through the flags. Confirm bypassSubstitute flag is false on a normal move.
-    expect(moveData.flags.bypassSubstitute).toBe(false);
+    const context = createMoveEffectContext({
+      move: getCanonicalMove(MOVES.sleepPowder),
+      defender: defenderWithSubstitute,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBe(STATUSES.sleep);
   });
 
-  it("given defender has Substitute, when a status move with bypassSubstitute=true is used, then the move flag reflects bypass intent", () => {
-    // Source: pret/pokered — Certain moves like Transform bypass Substitute.
-    // The flag bypassSubstitute=true on a move signals the engine that the move
-    // reaches the target behind the Substitute.
-    const transformMove = createSyntheticMoveFrom(getCanonicalMove(MOVES.transform), {
-      flags: { ...DEFAULT_MOVE_FLAGS, bypassSubstitute: true },
+  it("given defender has Substitute, when Thunder Wave resolves, then the ruleset still inflicts paralysis", () => {
+    // Source: gen1-ground-truth.md §7 — Substitute does NOT block paralysis from status moves.
+    const defenderWithSubstitute = createSyntheticOnFieldPokemon({
+      substituteHp: 40,
+      types: [TYPES.normal],
     });
-    expect(transformMove.flags.bypassSubstitute).toBe(true);
+    const context = createMoveEffectContext({
+      move: getCanonicalMove(MOVES.thunderWave),
+      defender: defenderWithSubstitute,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statusInflicted).toBe(STATUSES.paralysis);
   });
 
-  it("given defender has Substitute with HP=40, when a status-chance effect triggers on a move that hit the sub, then statusInflicted is null (sub absorbed the hit)", () => {
-    // Source: pret/pokered engine/battle/core.asm — When a move hits a Substitute,
-    // secondary status effects DO NOT apply (the sub absorbed the hit).
-    // In Gen 1, damaging moves that break the sub STILL don't apply their status effect.
-    // The engine passes brokeSubstitute=true in that case.
-    const thunderMove = createSyntheticMoveFrom(getCanonicalMove(MOVES.thunder), {
-      effect: { type: CORE_MOVE_EFFECT_TYPES.statusChance, status: STATUSES.paralysis, chance: 30 },
+  it("given defender has Substitute, when Smokescreen resolves, then foe-targeted stat drops are blocked", () => {
+    // Source: gen1-ground-truth.md §7 — Substitute blocks foe-targeted stat changes here.
+    const defenderWithSubstitute = createSyntheticOnFieldPokemon({
+      substituteHp: 40,
+      types: [TYPES.normal],
+    });
+    const context = createMoveEffectContext({
+      move: getCanonicalMove(MOVES.smokescreen),
+      defender: defenderWithSubstitute,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.statChanges).toEqual([]);
+  });
+
+  it("given defender has Substitute, when Confuse Ray resolves, then confusion is blocked", () => {
+    // Source: gen1-ground-truth.md §7 — Substitute blocks confusion from status moves.
+    const defenderWithSubstitute = createSyntheticOnFieldPokemon({
+      substituteHp: 40,
+      types: [TYPES.normal],
+    });
+    const context = createMoveEffectContext({
+      move: getCanonicalMove(MOVES.confuseRay),
+      defender: defenderWithSubstitute,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.volatileInflicted).toBeNull();
+  });
+
+  it("given defender has Substitute with HP=40, when a damaging move's secondary status resolves, then statusInflicted is null", () => {
+    // Source: gen1-ground-truth.md §7 — Substitute blocks secondary status effects from moves
+    // that hit the substitute. Use a synthetic 100% status proc so the assertion is independent
+    // of RNG and proves the substitute-blocking branch directly.
+    const guaranteedParalysisProbe = createSyntheticMoveFrom(getCanonicalMove(MOVES.thunder), {
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: STATUSES.paralysis,
+        chance: 100,
+      },
     });
     const defenderWithSub = createSyntheticOnFieldPokemon({
       types: [TYPES.normal],
       substituteHp: 40,
     });
-    // When brokeSubstitute is true, engine already decided the hit went into the sub.
-    // The ruleset's status-chance handler doesn't check substituteHp directly —
-    // the engine passes brokeSubstitute in context. Simulate a hit that hit the sub.
+    // Source: battle engine substitute flow — secondary effects stay blocked while the hit is
+    // still treated as a Substitute hit. This case keeps the Substitute alive (`substituteHp > 0`).
     const context = createMoveEffectContext({
-      move: thunderMove,
+      move: guaranteedParalysisProbe,
       defender: defenderWithSub,
       damage: 40, // hit absorbed by sub
       brokeSubstitute: false, // sub still alive
     });
     const result = ruleset.executeMoveEffect(context);
-    // Status check on a defender with a substitute: the engine would have set
-    // damage to 0 for the real Pokemon. Here we test that the status proc
-    // in theory could roll but defender doesn't have any immunity.
-    // In practice the engine won't call executeMoveEffect for this case — this
-    // test verifies that the secondary effect chance is correctly evaluated
-    // (may or may not fire depending on RNG seed 42 roll for 30% chance).
-    // At seed 42, the 30% threshold is 76 (floor(30*256/100)); seed 42 typically
-    // rolls above 76 — we simply confirm the result type is correct.
+    expect(result.statusInflicted).toBeNull();
+  });
+
+  it("given a hit breaks Substitute, when a damaging move's secondary status resolves, then statusInflicted is still null", () => {
+    // Source: battle engine substitute flow — the substitute-breaking hit is still a Substitute hit,
+    // so secondary effects remain blocked even though `substituteHp` is already 0 at effect time.
+    const guaranteedParalysisProbe = createSyntheticMoveFrom(getCanonicalMove(MOVES.thunder), {
+      effect: {
+        type: CORE_MOVE_EFFECT_TYPES.statusChance,
+        status: STATUSES.paralysis,
+        chance: 100,
+      },
+    });
+    const context = createMoveEffectContext({
+      move: guaranteedParalysisProbe,
+      defender: createSyntheticOnFieldPokemon({
+        types: [TYPES.normal],
+        substituteHp: 0,
+      }),
+      damage: 40,
+      brokeSubstitute: true,
+    });
+
+    const result = ruleset.executeMoveEffect(context);
+
     expect(result.statusInflicted).toBeNull();
   });
 
@@ -921,51 +977,5 @@ describe("Gen 1 1/256 miss bug", () => {
       state: createBattleState(),
     });
     expect(result).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Substitute + status moves: status moves fail vs Substitute
-// ---------------------------------------------------------------------------
-
-describe("Gen 1 Substitute blocks status moves", () => {
-  // Source: pret/pokered — Substitute blocks dedicated status moves.
-  // When the defender has substituteHp > 0, the engine routes status moves to
-  // fail (they cannot penetrate the Substitute). Burn, paralysis, sleep,
-  // poison, confusion from status moves all fail against a Substitute.
-  //
-  // These tests verify the ruleset-level signals — the flag-based check
-  // means moves with bypassSubstitute=false do NOT bypass the Substitute.
-
-  it("given a status-only sleep move without bypassSubstitute flag, then it cannot bypass Substitute", () => {
-    // Source: pret/pokered — Sleep Powder, Hypnosis, etc. fail vs Substitute.
-    const sleepMove = createSyntheticMoveFrom(getCanonicalMove(MOVES.sleepPowder), {
-      flags: { ...DEFAULT_MOVE_FLAGS, bypassSubstitute: false },
-    });
-    expect(sleepMove.flags.bypassSubstitute).toBe(false);
-  });
-
-  it("given a status-only paralysis move without bypassSubstitute flag, then it cannot bypass Substitute", () => {
-    // Source: pret/pokered — Thunder Wave fails vs Substitute.
-    const thunderWave = createSyntheticMoveFrom(getCanonicalMove(MOVES.thunderWave), {
-      flags: { ...DEFAULT_MOVE_FLAGS, bypassSubstitute: false },
-    });
-    expect(thunderWave.flags.bypassSubstitute).toBe(false);
-  });
-
-  it("given a status-only accuracy-drop move without bypassSubstitute flag, then it cannot bypass Substitute", () => {
-    // Source: pret/pokered — dedicated status moves like Smokescreen also fail vs Substitute.
-    const accuracyDropMove = createSyntheticMoveFrom(getCanonicalMove(MOVES.smokescreen), {
-      flags: { ...DEFAULT_MOVE_FLAGS, bypassSubstitute: false },
-    });
-    expect(accuracyDropMove.flags.bypassSubstitute).toBe(false);
-  });
-
-  it("given a status-only confuse move without bypassSubstitute flag, then it cannot bypass Substitute", () => {
-    // Source: pret/pokered — Confuse Ray fails vs Substitute.
-    const confuseRay = createSyntheticMoveFrom(getCanonicalMove(MOVES.confuseRay), {
-      flags: { ...DEFAULT_MOVE_FLAGS, bypassSubstitute: false },
-    });
-    expect(confuseRay.flags.bypassSubstitute).toBe(false);
   });
 });
