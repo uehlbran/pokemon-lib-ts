@@ -1,5 +1,10 @@
 import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_TRIGGER_IDS, CORE_MOVE_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  CORE_STAT_IDS,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { BATTLE_EFFECT_TARGETS, BattleEngine } from "../../../src";
 import type {
@@ -86,12 +91,24 @@ class TrackingPreDamageRuleset extends MockRuleset {
   }> = [];
 
   readonly onDamageTakenDefenseStages: number[] = [];
+  readonly preDamageRngRolls: number[] = [];
+  readonly onDamageTakenRngRolls: number[] = [];
 
   private consumedPreDamageHook = false;
   private forceImmuneHit = false;
+  private forceBlockedHit = false;
+  private consumePreDamageRng = false;
 
   setForceImmuneHit(forceImmuneHit: boolean): void {
     this.forceImmuneHit = forceImmuneHit;
+  }
+
+  setForceBlockedHit(forceBlockedHit: boolean): void {
+    this.forceBlockedHit = forceBlockedHit;
+  }
+
+  setConsumePreDamageRng(consumePreDamageRng: boolean): void {
+    this.consumePreDamageRng = consumePreDamageRng;
   }
 
   override calculateDamage(context: DamageContext): DamageResult {
@@ -108,6 +125,15 @@ class TrackingPreDamageRuleset extends MockRuleset {
       return {
         damage: 0,
         effectiveness: 0,
+        isCrit: context.isCrit,
+        randomFactor: 1,
+      };
+    }
+
+    if (this.forceBlockedHit && context.attacker.pokemon.uid === "charizard-1") {
+      return {
+        damage: 0,
+        effectiveness: 1,
         isCrit: context.isCrit,
         randomFactor: 1,
       };
@@ -133,6 +159,9 @@ class TrackingPreDamageRuleset extends MockRuleset {
       return null;
     }
     this.consumedPreDamageHook = true;
+    if (this.consumePreDamageRng) {
+      this.preDamageRngRolls.push(context.rng.int(1, 100));
+    }
 
     return {
       ...NO_OP_PRE_DAMAGE_RESULT,
@@ -161,6 +190,9 @@ class TrackingPreDamageRuleset extends MockRuleset {
       context.pokemon.pokemon.uid === "blastoise-1"
     ) {
       this.onDamageTakenDefenseStages.push(context.pokemon.statStages.defense);
+      if (this.consumePreDamageRng) {
+        this.onDamageTakenRngRolls.push(context.rng.int(1, 100));
+      }
     }
     return { activated: false, effects: [], messages: [] };
   }
@@ -255,5 +287,62 @@ describe("BattleEngine pre-damage move-effect hook", () => {
 
     const statChangeEvents = events.filter((event) => event.type === "stat-change");
     expect(statChangeEvents).toHaveLength(0);
+  });
+
+  it("given an effective hit that is still blocked before damage, when a move resolves, then the pre-damage hook is skipped", () => {
+    const ruleset = new TrackingPreDamageRuleset();
+    ruleset.setForceBlockedHit(true);
+    const { engine, events } = createEngine(ruleset);
+
+    engine.start();
+    events.length = 0;
+    ruleset.damageSnapshots.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const charizardSnapshots = ruleset.damageSnapshots.filter(
+      (snapshot) => snapshot.attacker === "charizard-1",
+    );
+    expect(charizardSnapshots).toEqual([
+      {
+        attacker: "charizard-1",
+        defender: "blastoise-1",
+        attackStage: 0,
+        defenseStage: 0,
+        randomRoll: charizardSnapshots[0]?.randomRoll ?? 85,
+      },
+    ]);
+
+    const statChangeEvents = events.filter((event) => event.type === "stat-change");
+    expect(statChangeEvents).toHaveLength(0);
+  });
+
+  it("given a pre-damage hook that consumes RNG, when damage is recomputed, then the main RNG stream is not rewound", () => {
+    const ruleset = new TrackingPreDamageRuleset();
+    ruleset.setConsumePreDamageRng(true);
+    const { engine } = createEngine(ruleset);
+
+    engine.start();
+    engine.state.sides[1].active[0]!.statStages.defense = 2;
+    ruleset.damageSnapshots.length = 0;
+    ruleset.preDamageRngRolls.length = 0;
+    ruleset.onDamageTakenRngRolls.length = 0;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const expectedRng = new SeededRandom(12345);
+    const expectedDamageRoll = expectedRng.int(85, 100);
+    const expectedPreDamageRoll = expectedRng.int(1, 100);
+    const expectedOnDamageTakenRoll = expectedRng.int(1, 100);
+
+    const charizardSnapshots = ruleset.damageSnapshots.filter(
+      (snapshot) => snapshot.attacker === "charizard-1",
+    );
+    expect(charizardSnapshots[0]?.randomRoll).toBe(expectedDamageRoll);
+    expect(charizardSnapshots[1]?.randomRoll).toBe(expectedDamageRoll);
+    expect(ruleset.preDamageRngRolls).toEqual([expectedPreDamageRoll]);
+    expect(ruleset.onDamageTakenRngRolls).toEqual([expectedOnDamageTakenRoll]);
   });
 });

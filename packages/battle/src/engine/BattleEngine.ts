@@ -32,7 +32,7 @@ import {
   BATTLE_ITEM_EFFECT_VALUES,
 } from "../constants/effect-protocol";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
-import type { AvailableMove, BattleConfig, MoveEffectResult } from "../context/types";
+import type { AvailableMove, BattleConfig, DamageResult, MoveEffectResult } from "../context/types";
 import type { BattleAction, ItemAction, MoveAction, RunAction } from "../events/BattleAction";
 import { isMoveLikeAction } from "../events/BattleAction";
 import type { BattleEvent, BattleEventEmitter, BattleEventListener } from "../events/BattleEvent";
@@ -118,6 +118,19 @@ interface BatonPassState {
 
 interface PendingSelfSwitchState {
   readonly batonPass: boolean;
+}
+
+interface PreDamageResolutionParams {
+  readonly attacker: ActivePokemon;
+  readonly defender: ActivePokemon;
+  readonly attackerSide: 0 | 1;
+  readonly defenderSide: 0 | 1;
+  readonly move: MoveData;
+  readonly damageResult: DamageResult;
+  readonly damageRngState: number;
+  readonly isCrit: boolean;
+  readonly hitThroughProtect?: boolean;
+  readonly defenderSelectedMove?: { id: string; category: MoveData["category"] } | null;
 }
 /**
  * The core battle engine. Manages the battle state machine, delegates
@@ -2235,45 +2248,24 @@ export class BattleEngine implements BattleEventEmitter {
         }
       }
 
-      const preDamageEffectResult =
-        result.effectiveness !== 0
-          ? (this.ruleset.executePreDamageMoveEffect?.({
-              attacker: actor,
-              defender,
-              move: effectiveMoveData,
-              damage: result.damage,
-              state: this.state,
-              rng: this.state.rng,
-              defenderSelectedMove,
-            }) ?? null)
-          : null;
+      const preDamageResolution = this.resolvePreDamageMoveEffect({
+        attacker: actor,
+        defender,
+        attackerSide: action.side,
+        defenderSide: defenderSide as 0 | 1,
+        move: effectiveMoveData,
+        damageResult: result,
+        damageRngState,
+        isCrit,
+        hitThroughProtect,
+        defenderSelectedMove,
+      });
 
-      if (preDamageEffectResult !== null) {
-        this.processEffectResult(
-          preDamageEffectResult,
-          actor,
-          defender,
-          action.side,
-          defenderSide as 0 | 1,
-        );
-        if (this.state.ended) {
-          actor.lastMoveUsed = moveData.id;
-          actor.movedThisTurn = true;
-          return;
-        }
-
-        // Recompute from the same RNG checkpoint so pre-damage state changes
-        // affect this hit without consuming an extra damage roll.
-        this.state.rng.setState(damageRngState);
-        result = this.ruleset.calculateDamage({
-          attacker: actor,
-          defender,
-          move: effectiveMoveData,
-          state: this.state,
-          rng: this.state.rng,
-          isCrit,
-          hitThroughProtect,
-        });
+      result = preDamageResolution.result;
+      if (preDamageResolution.ended) {
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
       }
 
       damage = result.damage;
@@ -2682,6 +2674,65 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private shouldRunPreDamageMoveEffect(result: DamageResult): boolean {
+    return result.damage > 0 && result.effectiveness !== 0;
+  }
+
+  private createReplayRng(state: number): SeededRandom {
+    const replayRng = new SeededRandom(0);
+    replayRng.setState(state);
+    return replayRng;
+  }
+
+  private resolvePreDamageMoveEffect(params: PreDamageResolutionParams): {
+    readonly result: DamageResult;
+    readonly ended: boolean;
+  } {
+    if (!this.shouldRunPreDamageMoveEffect(params.damageResult)) {
+      return { result: params.damageResult, ended: false };
+    }
+
+    const preDamageEffectResult =
+      this.ruleset.executePreDamageMoveEffect?.({
+        attacker: params.attacker,
+        defender: params.defender,
+        move: params.move,
+        damage: params.damageResult.damage,
+        state: this.state,
+        rng: this.state.rng,
+        defenderSelectedMove: params.defenderSelectedMove,
+      }) ?? null;
+
+    if (preDamageEffectResult === null) {
+      return { result: params.damageResult, ended: false };
+    }
+
+    this.processEffectResult(
+      preDamageEffectResult,
+      params.attacker,
+      params.defender,
+      params.attackerSide,
+      params.defenderSide,
+    );
+    if (this.state.ended) {
+      return { result: params.damageResult, ended: true };
+    }
+
+    const replayRng = this.createReplayRng(params.damageRngState);
+    return {
+      result: this.ruleset.calculateDamage({
+        attacker: params.attacker,
+        defender: params.defender,
+        move: params.move,
+        state: this.state,
+        rng: replayRng,
+        isCrit: params.isCrit,
+        hitThroughProtect: params.hitThroughProtect,
+      }),
+      ended: false,
+    };
+  }
+
   /**
    * Execute a move identified by its move ID rather than a move slot index.
    * Used for recursive moves (Mirror Move, Metronome) that call a move not in
@@ -2738,6 +2789,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Damage calculation (for damaging moves)
     let damage = 0;
     let brokeSubstitute = false;
+    const defenderSelectedMove = this.getDefenderSelectedMove(defenderSide);
     if (moveData.category !== "status" && moveData.power !== null) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
@@ -2746,7 +2798,8 @@ export class BattleEngine implements BattleEventEmitter {
         rng: this.state.rng,
         defender,
       });
-      const result = this.ruleset.calculateDamage({
+      const damageRngState = this.state.rng.getState();
+      let result = this.ruleset.calculateDamage({
         attacker: actor,
         defender,
         move: moveData,
@@ -2774,6 +2827,27 @@ export class BattleEngine implements BattleEventEmitter {
           return; // Move fully absorbed — skip damage, effects, items
         }
       }
+
+      const preDamageResolution = this.resolvePreDamageMoveEffect({
+        attacker: actor,
+        defender,
+        attackerSide: actorSide,
+        defenderSide,
+        move: moveData,
+        damageResult: result,
+        damageRngState,
+        isCrit,
+        defenderSelectedMove,
+      });
+
+      result = preDamageResolution.result;
+      if (preDamageResolution.ended) {
+        actor.lastMoveUsed = moveId;
+        actor.movedThisTurn = true;
+        return;
+      }
+
+      damage = result.damage;
 
       if (result.effectiveness !== 1) {
         this.emit({ type: "effectiveness", multiplier: result.effectiveness });
@@ -2926,7 +3000,7 @@ export class BattleEngine implements BattleEventEmitter {
       state: this.state,
       rng: this.state.rng,
       brokeSubstitute,
-      defenderSelectedMove: this.getDefenderSelectedMove(defenderSide),
+      defenderSelectedMove,
     });
 
     this.processEffectResult(effectResult, actor, defender, actorSide, defenderSide);
