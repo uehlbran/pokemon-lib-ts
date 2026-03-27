@@ -7,6 +7,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "./.claude/hooks/enforce-workflow-gate.sh"
+          },
+          {
+            "type": "command",
             "command": "./.claude/hooks/enforce-review-gate.sh"
           },
           {
@@ -33,6 +37,10 @@
       {
         "matcher": "Bash",
         "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/sync-active-pr-marker.sh"
+          },
           {
             "type": "command",
             "command": "./.claude/hooks/cleanup-review-marker.sh"

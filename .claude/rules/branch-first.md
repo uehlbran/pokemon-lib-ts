@@ -4,6 +4,13 @@ Before editing ANY repo file, run `/start-task <branch-name>` to create a
 fresh task-owned worktree from `origin/main` and register it for this session.
 The root checkout is not for task work.
 
+Branch-first now depends on reconcile-first:
+- if existing local task branches/worktrees are not reconciled, creating another
+  task branch is blocked
+- if another PR is already active, creating another task branch is blocked
+- use the local `PROGRESS.md` ledger plus the reconciliation workflow to
+  classify existing work before starting the next slice
+
 The `enforce-branch-first.sh` hook BLOCKS Edit/Write calls on repo files
 until `/start-task` has been run. This prevents wasted tokens from editing
 on the wrong branch.
