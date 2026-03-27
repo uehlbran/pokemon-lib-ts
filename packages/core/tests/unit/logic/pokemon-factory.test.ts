@@ -9,6 +9,7 @@ import {
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_POKEMON_DEFAULTS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   NATURES_BY_ID,
 } from "../../../src";
@@ -519,7 +520,14 @@ describe("createPokemonInstance", () => {
     const instance = createPokemonInstance(species, 50, rng);
 
     // Assert
-    const stats = ["hp", "attack", "defense", "spAttack", "spDefense", "speed"] as const;
+    const stats = [
+      CORE_STAT_IDS.hp,
+      CORE_STAT_IDS.attack,
+      CORE_STAT_IDS.defense,
+      CORE_STAT_IDS.spAttack,
+      CORE_STAT_IDS.spDefense,
+      CORE_STAT_IDS.speed,
+    ] as const;
     for (const stat of stats) {
       expect(instance.evs[stat]).toBe(0);
     }

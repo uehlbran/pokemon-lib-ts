@@ -34,5 +34,6 @@ export {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  CORE_Z_MOVE_EFFECT_IDS,
 } from "./reference-ids";
 export { GEN6_TYPE_CHART } from "./type-chart-data";

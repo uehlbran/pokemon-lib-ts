@@ -274,6 +274,14 @@ export const CORE_MOVE_EFFECT_TYPES = {
   weather: "weather",
 } as const;
 
+export const CORE_Z_MOVE_EFFECT_IDS = {
+  clearNegativeBoost: "clearnegativeboost",
+  crit2: "crit2",
+  heal: "heal",
+  healReplacement: "healreplacement",
+  redirect: "redirect",
+} as const;
+
 export const CORE_PROTECT_EFFECT_VARIANTS = {
   banefulBunker: "baneful-bunker",
   burningBulwark: "burning-bulwark",
