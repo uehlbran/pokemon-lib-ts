@@ -44,6 +44,7 @@ describe("@pokemon-lib-ts/gen9 public API barrel", () => {
   const internalExports = getNamedExports(internalFile);
 
   it("exports only the stable Gen 9 consumer entrypoints from the root barrel", () => {
+    // Source: packages/gen9/src/index.ts -- stable root barrel contract for external consumers.
     expect(rootExports).toEqual([
       "createGen9DataManager",
       "Gen9Ruleset",
@@ -53,6 +54,7 @@ describe("@pokemon-lib-ts/gen9 public API barrel", () => {
   });
 
   it("moves stable data access to the ./data subpath", () => {
+    // Source: packages/gen9/src/data/index.ts -- owned data subpath contract for ids and type chart.
     expect(dataSource).toContain('export * from "./reference-ids.js";');
     expect(dataSource).toContain(
       'export { GEN9_TYPE_CHART, GEN9_TYPES } from "../Gen9TypeChart.js";',
@@ -61,6 +63,7 @@ describe("@pokemon-lib-ts/gen9 public API barrel", () => {
   });
 
   it("moves low-level helpers and mechanics constants to the ./internal subpath", () => {
+    // Source: packages/gen9/src/internal.ts -- internal helper barrel owns the low-level test/mechanics surface.
     expect(rootExports).not.toContain("handleGen9StatAbility");
     expect(rootExports).not.toContain("executeGen9MoveEffect");
     expect(rootExports).not.toContain("GEN9_CRIT_RATE_TABLE");
@@ -70,6 +73,7 @@ describe("@pokemon-lib-ts/gen9 public API barrel", () => {
   });
 
   it("adds an explicit ./internal package export alongside root and ./data", () => {
+    // Source: packages/gen9/package.json#exports -- published package subpath contract.
     expect(packageJson.exports).toHaveProperty(".");
     expect(packageJson.exports).toHaveProperty("./data");
     expect(packageJson.exports).toHaveProperty("./internal");

@@ -6,8 +6,7 @@ export {
   GEN9_STAT_ABILITY_SPEED_MULTIPLIER,
   GEN9_STAT_ABILITY_STANDARD_MULTIPLIER,
 } from "./constants/mechanics.js";
-export { createGen9DataManager } from "./data/index.js";
-export * from "./data/reference-ids.js";
+export * from "./data/index.js";
 export { handleGen9Ability } from "./Gen9Abilities.js";
 export {
   applyGen9DauntlessShieldBoost,
@@ -152,7 +151,6 @@ export {
   TERRAIN_DEFAULT_TURNS,
   TERRAIN_EXTENDED_TURNS,
 } from "./Gen9Terrain.js";
-export { GEN9_TYPE_CHART, GEN9_TYPES } from "./Gen9TypeChart.js";
 export {
   ABILITY_WEATHER_TURNS,
   applyGen9WeatherEffects,

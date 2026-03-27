@@ -19,13 +19,8 @@ import {
   type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen9DataManager,
-  GEN9_ABILITY_IDS,
-  GEN9_ITEM_IDS,
-  GEN9_NATURE_IDS,
-  GEN9_SPECIES_IDS,
-} from "../src/data";
+import { createGen9DataManager } from "../src";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_NATURE_IDS, GEN9_SPECIES_IDS } from "../src/data";
 import {
   getWeatherDuration,
   handleGen9SwitchAbility,
