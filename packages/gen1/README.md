@@ -6,7 +6,7 @@ Gen 1 (Red/Blue/Yellow) battle mechanics and complete Pokemon data.
 
 - **Gen1Ruleset** — implements `GenerationRuleset` directly (not extending BaseRuleset)
 - **151 Pokemon** with accurate Gen 1 base stats (unified Special stat)
-- **164 moves** with type-based physical/special categorization
+- **165 moves** with type-based physical/special categorization
 - **15-type chart** with the Ghost vs Psychic immunity bug
 - **Gen 1 mechanics**: speed-based crit rate, Focus Energy bug, 1/256 miss glitch, permanent freeze, Hyper Beam no-recharge-on-KO
 

@@ -130,7 +130,7 @@
 - `BattleEngine.executeMoveById` private method for PP-free recursive execution
 
 ### Data & Validation
-- 151 species, 164 moves loaded
+- 151 species, 165 moves loaded
 - Physical/special split by type (`isGen1PhysicalType`)
 - `validatePokemon()`: level 1-100, species 1-151, 1-4 moves, no held items
 - EXP gain via `calculateExpGainClassic()`

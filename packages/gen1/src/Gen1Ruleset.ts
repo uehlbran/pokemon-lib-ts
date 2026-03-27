@@ -44,6 +44,7 @@ import type {
 import {
   CORE_ABILITY_SLOTS,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   calculateExpGainClassic,
@@ -533,6 +534,9 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     switch (effect.type) {
       case "status-chance": {
+        if (this.isBlockedBySubstitute(context, move)) {
+          break;
+        }
         // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
         // Roll: random(0..255) < floor(chance * 256 / 100)
         // e.g. 10% chance = threshold 25, probability = 25/256 ~ 9.77%
@@ -550,6 +554,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       }
 
       case "status-guaranteed": {
+        if (this.isBlockedBySubstitute(context, move, effect.status)) {
+          break;
+        }
         if (!defender.pokemon.status) {
           if (this.canInflictStatus(effect.status, defender)) {
             result.statusInflicted = effect.status;
@@ -578,6 +585,13 @@ export class Gen1Ruleset implements GenerationRuleset {
             effect.target === BATTLE_EFFECT_TARGETS.self
               ? BATTLE_EFFECT_TARGETS.attacker
               : BATTLE_EFFECT_TARGETS.defender;
+
+          if (
+            resolvedTarget === BATTLE_EFFECT_TARGETS.defender &&
+            this.isBlockedBySubstitute(context, move)
+          ) {
+            continue;
+          }
 
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Mist
           // Mist blocks all foe-targeted stat drops. If the defender has Mist active,
@@ -701,6 +715,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       }
 
       case "volatile-status": {
+        if (this.isBlockedBySubstitute(context, move)) {
+          break;
+        }
         // In Gen 1: Confusion, Bind, Wrap, etc.
         if (effect.status === "confusion") {
           // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
@@ -1186,6 +1203,22 @@ export class Gen1Ruleset implements GenerationRuleset {
         result.messages.push("But it failed!");
         break;
     }
+  }
+
+  /**
+   * Source: specs/reference/gen1-ground-truth.md §7 — Substitute blocks most non-bypass
+   * status effects, but sleep and paralysis from status moves still land in Gen 1.
+   */
+  private isBlockedBySubstitute(
+    context: MoveEffectContext,
+    move: MoveData,
+    status?: PrimaryStatus,
+  ): boolean {
+    if (context.defender.substituteHp <= 0 || move.flags.bypassSubstitute) {
+      return false;
+    }
+
+    return status !== CORE_STATUS_IDS.sleep && status !== CORE_STATUS_IDS.paralysis;
   }
 
   /**
