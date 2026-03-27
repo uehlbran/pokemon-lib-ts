@@ -75,7 +75,7 @@ describe("runDataSuite", () => {
         addedDate: "2026-03-27",
       },
       {
-        id: "gen1:data:typeChart:normal-to-normal:effectiveness",
+        id: "gen1:data:type-chart:normal-to-normal:effectiveness",
         gen: 1,
         suite: "data",
         description: "Synthetic stale disagreement for a value that now matches",
@@ -93,13 +93,13 @@ describe("runDataSuite", () => {
 
     expect(result.matchedKnownDisagreements).toEqual(["gen1:data:species:bulbasaur:types"]);
     expect(result.staleDisagreements).toEqual([
-      "gen1:data:typeChart:normal-to-normal:effectiveness",
+      "gen1:data:type-chart:normal-to-normal:effectiveness",
     ]);
     expect(result.notes).toContain(
       "Known disagreement matched registry: gen1:data:species:bulbasaur:types",
     );
     expect(result.notes).toContain(
-      "Stale disagreement detected: gen1:data:typeChart:normal-to-normal:effectiveness",
+      "Stale disagreement detected: gen1:data:type-chart:normal-to-normal:effectiveness",
     );
     expect(result.failures).toContain("Gen 1: type count mismatch (ours=1, expected=15)");
     expect(

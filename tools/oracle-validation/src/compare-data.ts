@@ -148,7 +148,7 @@ export function runDataSuite(
       const oracleValue = oracleAttacker.effectiveness[oracleDefender.name];
 
       oracleChecks.push({
-        id: buildCheckId(generation, "typeChart", `${attacker}-to-${defender}`, "effectiveness"),
+        id: buildCheckId(generation, "type-chart", `${attacker}-to-${defender}`, "effectiveness"),
         suite: DATA_SUITE_NAME,
         description: `Type effectiveness ${attacker} -> ${defender} matches the oracle`,
         ourValue: ours,
@@ -157,7 +157,11 @@ export function runDataSuite(
     }
   }
 
-  const resolvedOracleChecks = resolveOracleChecks(oracleChecks, knownDisagreements);
+  const resolvedOracleChecks = resolveOracleChecks(
+    DATA_SUITE_NAME,
+    oracleChecks,
+    knownDisagreements,
+  );
   failures.push(...resolvedOracleChecks.failures);
   notes.push(
     ...resolvedOracleChecks.matchedKnownDisagreements.map(

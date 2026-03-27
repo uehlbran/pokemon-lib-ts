@@ -358,6 +358,41 @@ describe("disagreement registry", () => {
     expect(() => loadKnownOracleBugs(generation, tempRoot)).toThrow("Invalid registry schema");
   });
 
+  it("given a disagreement id with control characters, when loading known disagreements, then schema validation fails", () => {
+    const generation = getGeneration(1);
+    const tempRoot = createTempRegistryRoot();
+    const disagreementDir = join(
+      tempRoot,
+      "tools",
+      "oracle-validation",
+      "data",
+      "known-disagreements",
+    );
+    const oracleDataDir = join(tempRoot, "tools", "oracle-validation", "data");
+
+    writeFileSync(
+      join(disagreementDir, "gen1-known-disagreements.json"),
+      JSON.stringify([
+        {
+          id: "bad\nid",
+          gen: 1,
+          suite: "data",
+          description: "newline in id",
+          ourValue: 1,
+          oracleValue: 2,
+          resolution: "cartridge-accurate",
+          source: "pret/example",
+          sourceUrl: "https://example.com/source",
+          oracleVersion: "@pkmn/data@0.10.7",
+          addedDate: "2026-03-27",
+        },
+      ]),
+    );
+    writeFileSync(join(oracleDataDir, "known-oracle-bugs.json"), "[]");
+
+    expect(() => loadKnownDisagreements(generation, tempRoot)).toThrow("Invalid registry schema");
+  });
+
   it("given duplicate disagreement ids in the same gen file, when loading known disagreements, then it throws", () => {
     const generation = getGeneration(1);
     const tempRoot = createTempRegistryRoot({
@@ -384,6 +419,7 @@ describe("disagreement registry", () => {
 
   it("given oracle checks that match a known disagreement entry, when resolving oracle checks, then it records the matched disagreement without failing", () => {
     const result = resolveOracleChecks(
+      "data",
       [
         {
           id: "gen1-ghost-psychic",
@@ -413,6 +449,7 @@ describe("disagreement registry", () => {
 
   it("given a known disagreement whose current values now match the oracle, when resolving oracle checks, then it marks the disagreement as stale", () => {
     const result = resolveOracleChecks(
+      "data",
       [
         {
           id: "gen1-ghost-psychic",
@@ -444,6 +481,7 @@ describe("disagreement registry", () => {
 
   it("given a registry entry that the current suite did not emit, when resolving oracle checks, then it fails loudly instead of silently dropping the disagreement", () => {
     const result = resolveOracleChecks(
+      "data",
       [],
       [
         makeKnownDisagreement({
@@ -467,6 +505,7 @@ describe("disagreement registry", () => {
 
   it("given an oracle mismatch with no registry entry, when resolving oracle checks, then it fails as a new disagreement", () => {
     const result = resolveOracleChecks(
+      "data",
       [
         {
           id: "gen1-new-mismatch",
@@ -484,5 +523,25 @@ describe("disagreement registry", () => {
     expect(result.failures).toEqual([
       "NEW DISAGREEMENT DETECTED: gen1-new-mismatch — investigate before adding to known-disagreements file (suite=data, ours=0, oracle=2)",
     ]);
+  });
+
+  it("given a registry entry for a different suite, when resolving data-suite oracle checks, then it ignores the unrelated disagreement instead of flagging it as unexercised", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [],
+      [
+        makeKnownDisagreement({
+          id: "gen1-ground-truth-only",
+          suite: "groundTruth",
+          gen: 1,
+        }),
+      ],
+    );
+
+    expect(result).toEqual({
+      failures: [],
+      matchedKnownDisagreements: [],
+      staleDisagreements: [],
+    });
   });
 });

@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+const disagreementIdPattern = /^[a-z0-9:-]+$/;
 
 function isValidCalendarDate(value: string): boolean {
   if (!isoDatePattern.test(value)) {
@@ -40,7 +41,10 @@ export const knownDisagreementResolutionSchema = z.enum([
 ]);
 
 export const knownDisagreementSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z
+    .string()
+    .min(1)
+    .regex(disagreementIdPattern, "Expected disagreement id to match [a-z0-9:-]+"),
   gen: z.number().int().min(1).max(9),
   suite: z.string().min(1),
   description: z.string().min(1),
@@ -54,7 +58,10 @@ export const knownDisagreementSchema = z.strictObject({
 });
 
 export const knownOracleBugSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z
+    .string()
+    .min(1)
+    .regex(disagreementIdPattern, "Expected disagreement id to match [a-z0-9:-]+"),
   gen: z.number().int().min(1).max(9),
   description: z.string().min(1),
   oracleValue: z.unknown(),
@@ -69,7 +76,10 @@ export const knownDisagreementsFileSchema = z.array(knownDisagreementSchema);
 export const knownOracleBugsFileSchema = z.array(knownOracleBugSchema);
 
 export const oracleCheckSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z
+    .string()
+    .min(1)
+    .regex(disagreementIdPattern, "Expected disagreement id to match [a-z0-9:-]+"),
   suite: z.string().min(1),
   description: z.string().min(1),
   ourValue: z.unknown(),
@@ -206,14 +216,18 @@ function formatValue(value: unknown): string {
 }
 
 export function resolveOracleChecks(
+  suite: string,
   checks: readonly OracleCheck[],
   knownDisagreements: readonly KnownDisagreement[],
 ): ResolvedOracleChecks {
   const failures: string[] = [];
   const matchedKnownDisagreements: string[] = [];
   const staleDisagreements: string[] = [];
+  const relevantKnownDisagreements = knownDisagreements.filter(
+    (disagreement) => disagreement.suite === suite,
+  );
   const knownDisagreementsById = new Map(
-    knownDisagreements.map((disagreement) => [disagreement.id, disagreement] as const),
+    relevantKnownDisagreements.map((disagreement) => [disagreement.id, disagreement] as const),
   );
   const exercisedKnownDisagreements = new Set<string>();
 
@@ -254,7 +268,7 @@ export function resolveOracleChecks(
     );
   }
 
-  for (const knownDisagreement of knownDisagreements) {
+  for (const knownDisagreement of relevantKnownDisagreements) {
     if (!exercisedKnownDisagreements.has(knownDisagreement.id)) {
       failures.push(
         `KNOWN DISAGREEMENT NOT EXERCISED: ${knownDisagreement.id} — current suite output did not emit this check id`,
