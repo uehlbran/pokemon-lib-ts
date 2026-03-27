@@ -110,6 +110,13 @@ export function isGen5Grounded(pokemon: ActivePokemon, gravityActive: boolean): 
   // so we cast. The combat move handler uses the same cast pattern.
   if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.smackDown as VolatileStatus)) return true;
 
+  // Airborne semi-invulnerable charge turns are not grounded.
+  // Source: BattleEngine two-turn move handling -- `flying` and `shadow-force-charging`
+  //   volatiles represent the airborne / phased-out charge turn state for Fly/Bounce and
+  //   Shadow Force respectively.
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.flying)) return false;
+  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.shadowForceCharging)) return false;
+
   // Flying-type is not grounded
   if (pokemon.types.includes(CORE_TYPE_IDS.flying)) return false;
 
