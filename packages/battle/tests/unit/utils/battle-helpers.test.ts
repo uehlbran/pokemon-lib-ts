@@ -179,17 +179,19 @@ describe("BattleHelpers", () => {
           fireFlyingTypes,
         ),
       ).toThrow("terastallized Pokemon must provide teraType");
+    });
 
-      expect(() =>
-        createOnFieldPokemon(
-          createTestPokemon(6, 50, {
-            terastallized: true,
-            teraType: CORE_TYPE_IDS.grass,
-          }),
-          0,
-          fireFlyingTypes,
-        ),
-      ).toThrow("terastallized Pokemon must provide teraTypes");
+    it("given a terastallized pokemon with only teraType persisted, when createOnFieldPokemon is called, then the active defensive typing falls back to that teraType", () => {
+      const pokemon = createTestPokemon(6, 50, {
+        terastallized: true,
+        teraType: CORE_TYPE_IDS.grass,
+      });
+
+      const active = createOnFieldPokemon(pokemon, 0, fireFlyingTypes);
+
+      expect(active.isTerastallized).toBe(true);
+      expect(active.teraType).toBe(CORE_TYPE_IDS.grass);
+      expect(active.types).toEqual([CORE_TYPE_IDS.grass]);
     });
   });
 
@@ -226,13 +228,6 @@ describe("BattleHelpers", () => {
     it("given missing or duplicated active team slots, when createBattleSide is called, then it rejects the inconsistent side", () => {
       const pokemon = createTestPokemon(6, 50);
       const active = createOnFieldPokemon(pokemon, 0, fireFlyingTypes);
-
-      expect(() =>
-        createBattleSide({
-          index: 0,
-          active: [active],
-        }),
-      ).toThrow("active[0] requires a matching team entry");
 
       expect(() =>
         createBattleSide({

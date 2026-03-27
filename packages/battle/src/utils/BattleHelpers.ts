@@ -60,14 +60,8 @@ function assertResolvedFormState(pokemon: PokemonInstance): void {
     throw new Error("mega-evolved Pokemon must provide both megaTypes and megaAbility");
   }
 
-  if (pokemon.terastallized) {
-    if (pokemon.teraType === undefined) {
-      throw new Error("terastallized Pokemon must provide teraType");
-    }
-
-    if (!pokemon.teraTypes || pokemon.teraTypes.length === 0) {
-      throw new Error("terastallized Pokemon must provide teraTypes");
-    }
+  if (pokemon.terastallized && pokemon.teraType === undefined) {
+    throw new Error("terastallized Pokemon must provide teraType");
   }
 }
 
@@ -135,7 +129,9 @@ export function createOnFieldPokemon(
   const teraResolvedTypes: PokemonType[] =
     isTerastallized && pokemon.teraTypes && pokemon.teraTypes.length > 0
       ? ([...pokemon.teraTypes] as PokemonType[])
-      : resolvedTypes;
+      : isTerastallized && teraType
+        ? [teraType]
+        : resolvedTypes;
   assertValidTypeList(teraResolvedTypes, "resolvedTypes");
 
   return {
@@ -189,18 +185,15 @@ export function createBattleSide(options: {
   for (const [slotIndex, activePokemon] of active.entries()) {
     if (activePokemon === null) continue;
     assertIntegerInRange(activePokemon.teamSlot, `active[${slotIndex}].teamSlot`, { min: 0 });
-    if (team.length === 0) {
-      throw new Error(`active[${slotIndex}] requires a matching team entry`);
+    if (activeTeamSlots.has(activePokemon.teamSlot)) {
+      throw new Error(`team slot ${activePokemon.teamSlot} cannot be active more than once`);
     }
-    if (activePokemon.teamSlot >= team.length) {
+    if (team.length > 0 && activePokemon.teamSlot >= team.length) {
       throw new Error(
         `active[${slotIndex}].teamSlot ${activePokemon.teamSlot} is outside team size ${team.length}`,
       );
     }
-    if (activeTeamSlots.has(activePokemon.teamSlot)) {
-      throw new Error(`team slot ${activePokemon.teamSlot} cannot be active more than once`);
-    }
-    if (team[activePokemon.teamSlot]?.uid !== activePokemon.pokemon.uid) {
+    if (team.length > 0 && team[activePokemon.teamSlot]?.uid !== activePokemon.pokemon.uid) {
       throw new Error(
         `active[${slotIndex}] must reference the Pokemon at team slot ${activePokemon.teamSlot}`,
       );
@@ -210,7 +203,7 @@ export function createBattleSide(options: {
 
   const faintCount = options.faintCount ?? 0;
   assertIntegerInRange(faintCount, "faintCount", { min: 0 });
-  if (faintCount > team.length) {
+  if (team.length > 0 && faintCount > team.length) {
     throw new Error(`faintCount ${faintCount} cannot exceed team size ${team.length}`);
   }
 
