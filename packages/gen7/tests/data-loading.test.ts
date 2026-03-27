@@ -199,7 +199,7 @@ describe("Gen 7 DataManager -- data loading", () => {
     // Source: tools/data-importer/src/import-gen.ts -- form entries are not emitted as standalone
     // runtime species rows today, so only the National Dex id 105 is loadable.
     const dm = createGen7DataManager();
-    expect(() => dm.getSpecies(10115)).toThrow("Species with id 10115 not found");
+    expect(() => dm.getSpecies(10115)).toThrow(/Species with id 10115/);
   });
 
   it("given gen7 data, when looking up Zeraora, then type is Electric", () => {

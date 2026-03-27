@@ -3627,6 +3627,9 @@ describe("Gen 7 attack stat item coverage", () => {
     // Source: Showdown data/items.ts -- Thick Club: 2x Atk for Cubone/Marowak.
     // Source: the shipped runtime species model keys Marowak by National Dex id 105, not a
     // separate regional-form runtime species id.
+    // Base-damage derivation at L50, 50 BP, 100 Atk vs 100 Def:
+    // without item: floor(floor(22 * 50 * 100 / 100) / 50) + 2 = 24
+    // with Thick Club: floor(floor(22 * 50 * 200 / 100) / 50) + 2 = 46
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({
         speciesId: SPECIES_IDS.marowak,
@@ -3648,6 +3651,39 @@ describe("Gen 7 attack stat item coverage", () => {
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    expect(with_.breakdown?.baseDamage).toBe(46);
+    expect(without.breakdown?.baseDamage).toBe(24);
+    expect(with_.damage).toBeGreaterThan(without.damage);
+  });
+
+  it("given Cubone with Thick Club using physical move, then attack doubled via National Dex species id 104", () => {
+    // Source: Showdown data/items.ts -- Thick Club: 2x Atk for Cubone/Marowak.
+    // Base-damage derivation at L50, 50 BP, 100 Atk vs 100 Def:
+    // without item: floor(floor(22 * 50 * 100 / 100) / 50) + 2 = 24
+    // with Thick Club: floor(floor(22 * 50 * 200 / 100) / 50) + 2 = 46
+    const ctx = createDamageContext({
+      attacker: createOnFieldPokemon({
+        speciesId: SPECIES_IDS.cubone,
+        attack: 100,
+        heldItem: ITEM_IDS.thickClub,
+        types: [TYPE_IDS.ground],
+      }),
+      defender: createOnFieldPokemon({}),
+      move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
+    });
+    const ctxNo = createDamageContext({
+      attacker: createOnFieldPokemon({
+        speciesId: SPECIES_IDS.cubone,
+        attack: 100,
+        types: [TYPE_IDS.ground],
+      }),
+      defender: createOnFieldPokemon({}),
+      move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
+    });
+    const with_ = calculateGen7Damage(ctx, typeChart);
+    const without = calculateGen7Damage(ctxNo, typeChart);
+    expect(with_.breakdown?.baseDamage).toBe(46);
+    expect(without.breakdown?.baseDamage).toBe(24);
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
