@@ -12,6 +12,7 @@ import type {
   BattleState,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ITEM_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
@@ -28,7 +29,9 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -79,6 +82,9 @@ const DEFAULT_MOVE = DATA_MANAGER.getMove(MOVE_IDS.tackle);
 const DEFAULT_NATURE_ID = DATA_MANAGER.getNature(GEN7_NATURE_IDS.hardy).id;
 const DEFAULT_POKEBALL = ITEM_IDS.pokeBall;
 const DEFAULT_ABILITY_SLOT = CORE_ABILITY_SLOTS.normal1;
+const ITEM_EFFECT_TYPES = BATTLE_ITEM_EFFECT_TYPES;
+const MOVE_EFFECT_TYPES = CORE_MOVE_EFFECT_TYPES;
+const STAT_IDS = CORE_STAT_IDS;
 
 // ---------------------------------------------------------------------------
 // Helper factories (same pattern as abilities-nerfs.test.ts)
@@ -283,7 +289,11 @@ function createAbilityContext(overrides: {
   movedThisTurn?: boolean;
   status?: PrimaryStatus | null;
   heldItem?: (typeof ITEM_IDS)[keyof typeof ITEM_IDS] | null;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: (typeof STAT_IDS)[keyof typeof STAT_IDS];
+    stages: number;
+    source: "self" | "opponent";
+  };
   state?: BattleState;
   speciesId?: (typeof GEN7_SPECIES_IDS)[keyof typeof GEN7_SPECIES_IDS];
   gender?: (typeof GENDER_IDS)[keyof typeof GENDER_IDS];
@@ -1278,7 +1288,7 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.sturdy,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move: createSyntheticMove({ effect: { type: "ohko" } as any }),
+        move: createSyntheticMove({ effect: { type: MOVE_EFFECT_TYPES.ohko } as any }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1299,7 +1309,7 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.none,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move: createSyntheticMove({ effect: { type: "ohko" } as any }),
+        move: createSyntheticMove({ effect: { type: MOVE_EFFECT_TYPES.ohko } as any }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1640,9 +1650,11 @@ describe("Gen7Items coverage gaps", () => {
       });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
-        true,
-      );
+      expect(
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.attack,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -1657,7 +1669,9 @@ describe("Gen7Items coverage gaps", () => {
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(
-        result.effects.some((e: any) => e.type === "stat-boost" && e.value === "defense"),
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.defense,
+        ),
       ).toBe(true);
     });
   });
@@ -1673,7 +1687,9 @@ describe("Gen7Items coverage gaps", () => {
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
       expect(
-        result.effects.some((e: any) => e.type === "stat-boost" && e.value === "spDefense"),
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.spDefense,
+        ),
       ).toBe(true);
     });
   });
@@ -1701,9 +1717,11 @@ describe("Gen7Items coverage gaps", () => {
       });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
-        true,
-      );
+      expect(
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.attack,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -1764,9 +1782,11 @@ describe("Gen7Items coverage gaps", () => {
       });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects.some((e: any) => e.type === "stat-boost" && e.value === "attack")).toBe(
-        true,
-      );
+      expect(
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.attack,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -1781,7 +1801,11 @@ describe("Gen7Items coverage gaps", () => {
       });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects.some((e: any) => e.value === "defense")).toBe(true);
+      expect(
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.defense,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -1796,7 +1820,11 @@ describe("Gen7Items coverage gaps", () => {
       });
       const result = applyGen7HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects.some((e: any) => e.value === "speed")).toBe(true);
+      expect(
+        result.effects.some(
+          (e: any) => e.type === ITEM_EFFECT_TYPES.statBoost && e.value === STAT_IDS.speed,
+        ),
+      ).toBe(true);
     });
   });
 

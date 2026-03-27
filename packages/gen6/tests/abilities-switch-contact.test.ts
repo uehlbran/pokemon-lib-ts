@@ -1,4 +1,10 @@
-import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import {
+  type AbilityContext,
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  type BattleSide,
+  type BattleState,
+} from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   MoveData,
@@ -8,6 +14,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_TRIGGER_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -262,7 +269,11 @@ function createAbilityContext(opts: {
   volatiles?: Map<string, { turnsLeft: number; data?: Record<string, unknown> }>;
   rngNext?: number;
   maxHp?: number;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: (typeof CORE_STAT_IDS)[keyof typeof CORE_STAT_IDS];
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
 }): AbilityContext {
   const state = createBattleState();
   const pokemon = createOnFieldPokemon({
@@ -420,10 +431,12 @@ describe("Intimidate", () => {
     });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
-    const statEffect = result.effects.find((e) => e.effectType === "stat-change");
-    expect(statEffect?.stat).toBe("attack");
+    const statEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    );
+    expect(statEffect?.stat).toBe(CORE_STAT_IDS.attack);
     expect(statEffect?.stages).toBe(-1);
-    expect(statEffect?.target).toBe("opponent");
+    expect(statEffect?.target).toBe(BATTLE_EFFECT_TARGETS.opponent);
   });
 
   it("given Intimidate, when opponent has a Substitute active, then does not activate", () => {
@@ -481,7 +494,9 @@ describe("Regenerator", () => {
     });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchOut, ctx);
     expect(result.activated).toBe(true);
-    const healEffect = result.effects.find((e) => e.effectType === "heal");
+    const healEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.heal,
+    );
     expect(healEffect?.value).toBe(100);
   });
 
@@ -495,7 +510,9 @@ describe("Regenerator", () => {
     });
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchOut, ctx);
     expect(result.activated).toBe(true);
-    const healEffect = result.effects.find((e) => e.effectType === "heal");
+    const healEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.heal,
+    );
     // Math.max(1, Math.floor(1 / 3)) = Math.max(1, 0) = 1
     expect(healEffect?.value).toBe(1);
   });
@@ -778,8 +795,10 @@ describe("Rattled (on-damage-taken)", () => {
     });
     const result = handleGen6SwitchAbility(TRIGGERS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
-    const statEffect = result.effects.find((e) => e.effectType === "stat-change");
-    expect(statEffect?.stat).toBe("speed");
+    const statEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    );
+    expect(statEffect?.stat).toBe(CORE_STAT_IDS.speed);
     expect(statEffect?.stages).toBe(1);
   });
 
@@ -1019,7 +1038,9 @@ describe("Water Absorb (passive-immunity)", () => {
     });
     const result = handleGen6SwitchAbility(TRIGGERS.passiveImmunity, ctx);
     expect(result.activated).toBe(true);
-    const healEffect = result.effects.find((e) => e.effectType === "heal");
+    const healEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.heal,
+    );
     expect(healEffect?.value).toBe(50);
   });
 
@@ -1047,8 +1068,10 @@ describe("Sap Sipper (passive-immunity)", () => {
     });
     const result = handleGen6SwitchAbility(TRIGGERS.passiveImmunity, ctx);
     expect(result.activated).toBe(true);
-    const statEffect = result.effects.find((e) => e.effectType === "stat-change");
-    expect(statEffect?.stat).toBe("attack");
+    const statEffect = result.effects.find(
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange,
+    );
+    expect(statEffect?.stat).toBe(CORE_STAT_IDS.attack);
     expect(statEffect?.stages).toBe(1);
   });
 
