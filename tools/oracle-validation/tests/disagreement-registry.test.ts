@@ -85,4 +85,29 @@ describe("disagreement registry", () => {
       "Known-disagreement file for Gen 1 contains mismatched entry wrong-gen-entry with gen=2",
     );
   });
+
+  it("given malformed registry JSON, when loading known oracle bugs, then the error includes the file path", () => {
+    const generation = generations.find((candidate) => candidate.gen === 1);
+    expect(generation).toBeDefined();
+
+    const tempRoot = mkdtempSync(join(tmpdir(), "oracle-registry-"));
+    const disagreementDir = join(
+      tempRoot,
+      "tools",
+      "oracle-validation",
+      "data",
+      "known-disagreements",
+    );
+    const oracleDataDir = join(tempRoot, "tools", "oracle-validation", "data");
+    const oracleBugPath = join(oracleDataDir, "known-oracle-bugs.json");
+
+    mkdirSync(disagreementDir, { recursive: true });
+    mkdirSync(oracleDataDir, { recursive: true });
+    writeFileSync(join(disagreementDir, "gen1-known-disagreements.json"), "[]");
+    writeFileSync(oracleBugPath, "{not-json");
+
+    expect(() => loadKnownOracleBugs(generation!, tempRoot)).toThrow(
+      `Failed to parse JSON at ${oracleBugPath}:`,
+    );
+  });
 });

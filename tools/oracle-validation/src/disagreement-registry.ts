@@ -49,8 +49,30 @@ export type KnownDisagreement = z.infer<typeof knownDisagreementSchema>;
 export type KnownOracleBug = z.infer<typeof knownOracleBugSchema>;
 export type DisagreementRegistrySummary = z.infer<typeof disagreementRegistrySummarySchema>;
 
+const registryFileCache = new Map<string, unknown>();
+
 function readJsonFile(path: string): unknown {
-  return JSON.parse(readFileSync(path, "utf8"));
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse JSON at ${path}: ${message}`);
+  }
+}
+
+function loadRegistryFile<T>(path: string, schema: z.ZodType<T>): T {
+  const cached = registryFileCache.get(path);
+  if (cached !== undefined) {
+    return cached as T;
+  }
+
+  const parsed = schema.safeParse(readJsonFile(path));
+  if (!parsed.success) {
+    throw new Error(`Invalid registry schema at ${path}: ${parsed.error.message}`);
+  }
+
+  registryFileCache.set(path, parsed.data);
+  return parsed.data;
 }
 
 export function loadKnownDisagreements(
@@ -66,7 +88,7 @@ export function loadKnownDisagreements(
     `gen${generation.gen}-known-disagreements.json`,
   );
 
-  const disagreements = knownDisagreementsFileSchema.parse(readJsonFile(path));
+  const disagreements = loadRegistryFile(path, knownDisagreementsFileSchema);
   const mismatchedEntry = disagreements.find((entry) => entry.gen !== generation.gen);
   if (mismatchedEntry) {
     throw new Error(
@@ -82,7 +104,7 @@ export function loadKnownOracleBugs(
   repoRoot: string,
 ): KnownOracleBug[] {
   const path = join(repoRoot, "tools", "oracle-validation", "data", "known-oracle-bugs.json");
-  const bugs = knownOracleBugsFileSchema.parse(readJsonFile(path));
+  const bugs = loadRegistryFile(path, knownOracleBugsFileSchema);
   return bugs.filter((entry) => entry.gen === generation.gen);
 }
 
