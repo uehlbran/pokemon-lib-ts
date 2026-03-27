@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runDataSuite } from "./compare-data.js";
+import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runStatsSuite } from "./compare-stats.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
 import { formatRunnerOutput } from "./reporter.js";
@@ -65,21 +66,6 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   return suites;
 }
 
-/**
- * Build a skipped suite result with a human-readable reason.
- */
-function makeSkip(reason: string): SuiteResult {
-  return {
-    status: "skip",
-    suitePassed: false,
-    failed: 0,
-    skipped: 1,
-    failures: [],
-    notes: [],
-    skipReason: reason,
-  };
-}
-
 async function main(): Promise<void> {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const { suites, gen } = parseArgs(process.argv.slice(2));
@@ -98,9 +84,7 @@ async function main(): Promise<void> {
         } else if (suite === "stats") {
           suiteResults[suite] = runStatsSuite(generation);
         } else if (suite === "groundTruth") {
-          suiteResults[suite] = makeSkip(
-            "Ground-truth scenario harness not implemented in this initial slice",
-          );
+          suiteResults[suite] = runGroundTruthSuite(generation, repoRoot);
         }
       }
 
