@@ -33,9 +33,9 @@ Confidence levels:
 ### Current weaknesses
 
 - Repo confidence is uneven: high raw counts do not imply every high-risk interaction is strongly proven.
-- The planned oracle/compliance system now has an initial fast-path runner, but the ground-truth and broader parity slices are still missing.
+- The oracle/compliance system now has an initial fast-path runner, but curated ground-truth scenarios, known-disagreement tracking, and broader parity slices are still missing.
 - Replay validation is still Gen 1-centric via `tools/replay-parser`; it is not yet a cross-gen confidence layer.
-- Several open issues still identify correctness gaps in `core`, `gen1`, and later-gen interaction logic.
+- Several open issues still identify correctness gaps in runtime identity, packaging, and missing mechanic coverage.
 - Branch-heavy modules remain concentrated in the same mechanic hotspots where regressions are most likely.
 
 ## Authority Model
@@ -50,6 +50,8 @@ Showdown comparison is therefore:
 - a differential regression detector for Gen 1-4
 - a stronger oracle for Gen 5-9
 
+Showdown parity is not the success criterion for Gen 1-4. For those gens, cartridge-accurate behavior wins when the authoritative local/source evidence disagrees with Showdown.
+
 ## Behavioral Gap Matrix (Initial Seed)
 
 | Area | Packages | Current Confidence | Evidence | Next Action |
@@ -59,9 +61,11 @@ Showdown comparison is therefore:
 | Queued-action invalidation on forced switch | battle | `weak` | Forced-switch tests exist, but confidence is implicit rather than represented as a first-class ordering row | Add direct invalidation/order rows tied to concrete engine tests |
 | Base end-of-turn ordering | battle | `strong` | BaseRuleset and engine suites cover default handler ordering and confusion/countdown paths directly | Keep strong local confidence and extend later to trace/oracle validation |
 | Gen-specific end-of-turn ordering | battle + gen1-9 | `weak` to `strong` mixed | Engine and per-gen suites cover many handlers, but there is no maintained per-generation order matrix | Build per-gen ordering matrix against tests + source notes |
-| Hazard / grounded / semi-invulnerable interactions | gen5-9 | `weak` | Open issue `#800`; multiple historical bughunt fixes across gen5-9 | Audit tests against current rulesets and identify remaining blind spots |
-| Invalid runtime-state rejection | core + battle | `weak` | Live factory/runtime-state risk still exists, but several older issues now need revalidation against current main before they remain gap rows | Audit creation/validation surfaces and split live bugs from stale issue history |
-| Gen 1 cartridge deltas | gen1 | `strong` to `weak` mixed | Strong ground-truth/replay assets exist, but open issues `#906-#915` show stale docs/weak assertions remain | Audit all open Gen1 correctness/testing issues against actual tests |
+| Hazard / grounded / semi-invulnerable interactions | gen5-9 | `weak` | Multiple historical bughunt fixes landed across gen5-9, but there is still no maintained confidence row tying those interactions to current test evidence | Audit tests against current rulesets and identify remaining blind spots |
+| Data legality / packaging / canonical runtime identity | core + gen1 | `weak` | Open issues `#1014`, `#905`, and `#897` show runtime identity, packaging, and published-consumer confidence gaps still exist | Tighten runtime identity coverage, package-surface checks, and published-install/documentation validation |
+| Invalid runtime-state rejection | core + battle | `weak` | Runtime-state creation still spans `createPokemonInstance`, battle wrappers, and generated fixtures without a full confidence matrix | Audit creation/validation surfaces and convert live invariants into direct regression rows |
+| Gen 1 cartridge-only mechanics still outside confidence closure | gen1 | `weak` | Gen 1 has the strongest ground-truth assets, but `#530` remains open for the badge boost glitch | Keep Gen 1 cartridge rows visible and add explicit badge-boost confidence coverage before claiming closure |
+| Cross-gen generation-specific move / ability / gimmick gaps | gen4-9 | `weak` | Open issues `#793`, `#788`, `#789`, `#1059`, and `#1060` show real singles mechanic surfaces still missing or still treated as live confidence debt; doubles-only gaps stay tracked separately | Separate missing singles mechanics from deferred doubles mechanics and cover the live singles gaps first |
 | Replay / external differential validation | repo-wide | `none` beyond Gen1 | `tools/replay-parser` currently focuses on Gen 1 structural validation | Expand plan from Gen1-only precedent into fast compliance path |
 | Oracle/compliance harness | repo-wide | `weak` | Fast path now runs `data` + `stats` for Gen 1-3 with generation-aware normalizations; ground-truth scenarios and broader parity slices are still missing | Extend from fast path to curated ground-truth scenarios and broader package coverage |
 | Battle event/state trace consistency | battle | `weak` | Serialization/event tests exist, but there is still no generic trace validator or replay-backed event oracle | Define trace invariants and feed them into the compliance program |
@@ -83,14 +87,35 @@ Showdown comparison is therefore:
 
 ## Open-Issue Signals Driving This Program
 
-Highest-signal open issues already aligned with this effort:
-- `#895` core DataManager stale entity retention (needs revalidation against current implementation)
-- `#898` accuracy/evasion stage multiplier correctness (needs revalidation against current implementation)
-- `#899-#903` Pokemon creation/runtime-state contradictions
-- `#904` gender calculation bug (needs revalidation against current implementation)
-- `#906-#915` Gen 1 stale docs / weak assertions / missing-confidence problems
-- `#800-#802` grounded / Quick Draw / Prankster correctness gaps
-- `#762`, `#767`, `#772`, `#780`, `#994`, `#1026` architecture/public-surface cleanup
+### Issue Classification
+
+Correctness / confidence gaps:
+- `#1014` regional-form species ids are unsupported in the runtime species model
+- `#905` Gen 1 `./data` exports are not packaged
+- `#897` core README install guidance points to an unpublished package path
+- `#530` Gen 1 badge boost glitch remains unimplemented
+
+Missing mechanic coverage:
+- `#793` Forecast type change missing in Gen 4-9
+- `#788` Ultra Burst missing in Gen 7
+- `#789`, `#1059`, and `#1060` capture the remaining Spectral Thief / Gen 7 move-effect confidence debt still present in the open issue tracker
+
+Deferred doubles-only coverage debt:
+- `#626` Parental Bond doubles edge case remains deferred to doubles support
+- `#141` Plus/Minus remains open, but is also deferred with doubles support
+
+Architecture confidence:
+- `#762` Gen 5-9 damage calculators are still god functions
+- `#767` Mega stone data is still duplicated across Gen 6 and Gen 7
+- `#772` package barrels still expose unstable internal helpers alongside consumer API
+- `#780` `Gen4MoveEffects` is still a god function
+- `#994` on-damage-calc contract boundary is still implicit
+
+Lower-priority or adjacent docs / cleanup debt:
+- `#818`, `#1015`, `#773`, `#1008`, `#1011`, `#1024`
+
+Historical drivers now treated as revalidated/closed rather than live matrix rows:
+- older issue ranges such as `#800-#802`, `#895`, `#898-#904`, and `#906-#915` were useful to seed this program, but they are no longer the active issue set on current `main`
 
 ## Compliance Rollout Status
 
@@ -101,6 +126,33 @@ Current status:
   - replay validation
   - replay parser tool
 - Fast path is implemented in `tools/oracle-validation`
+
+### Authority Handling
+
+- Gen 1-3: pret-first, with Showdown used only as a differential regression detector
+- Gen 4: authority-tagged mixed mode, where pret decomp wins when the relevant battle logic is decompiled and trustworthy; otherwise Showdown + Bulbapedia are the fallback
+- Gen 5-9: Showdown is the primary operational oracle, with Bulbapedia cross-check
+- Every disagreement must be classified as one of:
+  - our bug
+  - cartridge-accurate deviation
+  - oracle bug
+  - unresolved investigation
+
+### Fast Path Status
+
+Implemented now:
+- `tools/oracle-validation`
+- `npm run oracle:fast`
+- data parity scaffolding
+- stat parity scaffolding
+- ground-truth suite wiring, currently exercised by the Gen 1 dataset and runner path
+
+Still missing from visible confidence:
+- curated ground-truth scenario coverage
+- known-disagreement registry wired into the status surface
+- replay / trace parity beyond the Gen 1 precedent
+- full Gen 4 authority tagging in the compliance results
+- broader mechanics / gimmicks / terrain suites from the compliance spec
 
 Planned initial slice:
 - data parity
@@ -125,14 +177,22 @@ First target scope:
 - `packages/battle/src/utils/*`
 
 First concrete targets:
-- `packages/core/src/logic/stat-stages.ts`
-- `packages/core/src/logic/stat-inputs.ts`
-- `packages/core/src/logic/pokemon-factory.ts`
-- `packages/core/src/data/data-manager.ts`
+- `packages/core/src/logic/stat-stages.ts` — do formula and stage-bounds tests kill the obvious branch mutations?
+- `packages/core/src/logic/stat-inputs.ts` — do invalid-state constructors/validators actually reject malformed inputs?
+- `packages/core/src/logic/pokemon-factory.ts` — do Pokemon creation paths reject contradictory runtime identity/state?
+- `packages/core/src/data/data-manager.ts` — do canonical lookup invariants hold when ids or packages drift?
 - `packages/core/src/logic/experience.ts`
-- `packages/battle/src/ruleset/BaseRuleset.ts`
-- `packages/battle/src/ruleset/GenerationRegistry.ts`
-- `packages/battle/src/ruleset/cloneGenerationRuleset.ts`
+- `packages/battle/src/ruleset/BaseRuleset.ts` — do shared ordering/helper branches have real falsification coverage?
+- `packages/battle/src/ruleset/GenerationRegistry.ts` — does ruleset lookup/wiring fail loudly on bad registrations?
+- `packages/battle/src/ruleset/cloneGenerationRuleset.ts` — does generation cloning preserve the expected ruleset identity/behavior?
+
+## Default Next PR Sequence
+
+1. Expand the confidence matrices and live issue mapping on current `main`
+2. Close the highest-risk `core` / `battle` ordering and validation gaps
+3. Widen Gen 1 cartridge-confidence rows around the remaining open mechanic debt
+4. Extend the oracle fast path with curated ground-truth scenarios
+5. Establish the first mutation baseline for `core` + `battle`
 
 ## Next Updates Required
 
