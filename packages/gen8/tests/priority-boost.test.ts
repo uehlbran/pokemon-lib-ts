@@ -233,17 +233,17 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
     () => {
       const quickDrawUser = createOnFieldPokemon({
         ability: abilityIds.quickDraw,
-        speed: 50,
+        speed: 50, // Slower so the opponent would act first if Quick Draw does not apply.
         moves: [createScenarioMoveSlot(moveIds.willOWisp)],
       });
       const opponent = createOnFieldPokemon({
-        speed: 200,
+        speed: 200, // Faster baseline priority-0 attacker for the no-activation contract.
         moves: [createScenarioMoveSlot(moveIds.tackle)],
       });
 
       const sideA = createBattleSide({ index: 0, active: [quickDrawUser] });
       const sideB = createBattleSide({ index: 1, active: [opponent] });
-      const rng = makeRng(0.5, true);
+      const rng = makeRng(0.5, true); // Force the 30% check true to prove status moves still do not get Quick Draw.
       const state = createBattleState({ generation: 8, sides: [sideA, sideB], rng });
 
       const actions: BattleAction[] = [
@@ -254,17 +254,18 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
       expect(ordered[0].type).toBe("move");
+      // Source: Quick Draw only applies to attacking moves, so the faster side 1 attacker keeps turn order here.
       expect((ordered[0] as { side: number }).side).toBe(1);
     },
   );
 
-  it("uses only one Quick Draw chance roll during turn-order resolution", () => {
+  it("given Quick Draw user with a non-status move, when resolving turn order, then exactly one Quick Draw chance roll is consumed", () => {
     let chanceCalls = 0;
     const rng = {
       next: () => 0.5,
       int: () => 1,
       chance: () => {
-        chanceCalls += 1;
+        chanceCalls += 1; // Contract under test: Quick Draw should consult chance() only once per action.
         return true;
       },
       pick: <T>(arr: readonly T[]) => arr[0] as T,
@@ -275,11 +276,11 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
 
     const quickDrawUser = createOnFieldPokemon({
       ability: abilityIds.quickDraw,
-      speed: 50,
+      speed: 50, // Slower so Quick Draw must provide the within-bracket jump ahead.
       moves: [createScenarioMoveSlot(moveIds.tackle)],
     });
     const opponent = createOnFieldPokemon({
-      speed: 200,
+      speed: 200, // Faster same-priority attacker that would otherwise move first.
       moves: [createScenarioMoveSlot(moveIds.tackle)],
     });
 
@@ -294,7 +295,9 @@ describe("Gen8Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
 
     const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
+    // Source: Quick Draw moves first within its priority bracket, so the side 0 attacker should lead after activation.
     expect((ordered[0] as { side: number }).side).toBe(0);
+    // Source: Gen 8 now routes Quick Draw only through the go-first lane, so turn ordering consumes a single chance() roll.
     expect(chanceCalls).toBe(1);
   });
 });
