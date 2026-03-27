@@ -3094,10 +3094,6 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     const side = this.state.sides[action.side];
-    if (side === undefined) {
-      this.emit({ type: "message", text: `Invalid side ${action.side} for item use.` });
-      return;
-    }
     // Determine target pokemon — default to active slot 0
     const targetSlot = action.target ?? 0;
 
