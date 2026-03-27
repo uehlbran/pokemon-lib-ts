@@ -228,7 +228,7 @@ describe("Gen 8 DataManager -- data loading", () => {
     // Source: tools/data-importer/src/import-gen.ts -- form entries are not emitted as standalone
     // runtime species rows today, so only the National Dex id 105 is loadable.
     const dm = createGen8DataManager();
-    expect(() => dm.getSpecies(10115)).toThrow("Species with id 10115 not found");
+    expect(() => dm.getSpecies(10115)).toThrow(/Species with id 10115/);
   });
 
   it("given gen8 data, when looking up Eternatus, then types are Poison/Dragon", () => {

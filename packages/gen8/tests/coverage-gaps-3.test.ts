@@ -590,6 +590,9 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
   it(`given Cubone (speciesId=104) holds ${CORE_ITEM_IDS.thickClub}, when using physical move, then doubled Attack damage`, () => {
     // Source: Showdown data/items.ts -- Thick Club doubles Attack for Cubone/Marowak.
     // Regional-form species ids are tracked separately from the current National Dex model.
+    // Base-damage derivation at L50, 65 BP, 100 Atk vs 100 Def:
+    // without item: floor(floor(22 * 65 * 100 / 100) / 50) + 2 = 30
+    // with Thick Club: floor(floor(22 * 65 * 200 / 100) / 50) + 2 = 59
     const cubone = createSyntheticOnFieldPokemon({
       speciesId: SP.cubone,
       attack: 100,
@@ -605,17 +608,20 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
     const defender = createSyntheticOnFieldPokemon({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_65();
 
-    const dmgThickClub = calcDmg(createDamageContext({ attacker: cubone, defender, move })).damage;
-    const dmgNoItem = calcDmg(
-      createDamageContext({ attacker: cuboneNoItem, defender, move }),
-    ).damage;
+    const thickClubResult = calcDmg(createDamageContext({ attacker: cubone, defender, move }));
+    const noItemResult = calcDmg(createDamageContext({ attacker: cuboneNoItem, defender, move }));
 
-    expect(dmgThickClub).toBeGreaterThan(dmgNoItem);
+    expect(thickClubResult.breakdown?.baseDamage).toBe(59);
+    expect(noItemResult.breakdown?.baseDamage).toBe(30);
+    expect(thickClubResult.damage).toBeGreaterThan(noItemResult.damage);
   });
 
   it(`given Marowak (speciesId=105) holds ${CORE_ITEM_IDS.thickClub}, when using physical move, then doubled Attack damage`, () => {
     // Source: Showdown data/items.ts -- Thick Club doubles Attack for Cubone/Marowak.
     // The shipped runtime species model uses National Dex ids, so Marowak remains speciesId 105.
+    // Base-damage derivation at L50, 65 BP, 100 Atk vs 100 Def:
+    // without item: floor(floor(22 * 65 * 100 / 100) / 50) + 2 = 30
+    // with Thick Club: floor(floor(22 * 65 * 200 / 100) / 50) + 2 = 59
     const marowak = createSyntheticOnFieldPokemon({
       speciesId: SP.marowak,
       attack: 100,
@@ -631,12 +637,12 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
     const defender = createSyntheticOnFieldPokemon({ defense: 100 });
     const move = SYNTHETIC_NORMAL_PHYSICAL_65();
 
-    const dmgThickClub = calcDmg(createDamageContext({ attacker: marowak, defender, move })).damage;
-    const dmgNoItem = calcDmg(
-      createDamageContext({ attacker: marowakNoItem, defender, move }),
-    ).damage;
+    const thickClubResult = calcDmg(createDamageContext({ attacker: marowak, defender, move }));
+    const noItemResult = calcDmg(createDamageContext({ attacker: marowakNoItem, defender, move }));
 
-    expect(dmgThickClub).toBeGreaterThan(dmgNoItem);
+    expect(thickClubResult.breakdown?.baseDamage).toBe(59);
+    expect(noItemResult.breakdown?.baseDamage).toBe(30);
+    expect(thickClubResult.damage).toBeGreaterThan(noItemResult.damage);
   });
 
   it(`given non-Cubone/Marowak pokemon holds ${CORE_ITEM_IDS.thickClub}, when using physical move, then no boost`, () => {
