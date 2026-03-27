@@ -30,7 +30,7 @@ The architecture-confidence work is split into three execution tracks:
 ## Hotspot Matrix
 
 | Area | Current Risk | Evidence | Why It Matters | Public API Risk | Suggested Direction |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- |
 | `packages/battle/src/engine/BattleEngine.ts` | Critical | `6133` LOC on current `main`; many ordering and event responsibilities are centralized | Ordering bugs, branch interaction regressions, and event/state drift are hard to falsify in a giant engine | Medium | Continue extracting deterministic sub-pipelines and make ordering contracts separately testable |
 | `packages/battle/src/ruleset/BaseRuleset.ts` | High | `1222` LOC on current `main`; central shared defaults affect Gen3+ | Shared logic bugs cascade across multiple gens | Low | Split validation, turn-order, and shared mechanic helpers into narrower units |
 | `packages/gen1/src/Gen1Ruleset.ts` | High | `2059` LOC; Gen1 direct ruleset owns many cartridge-specific branches | Large direct ruleset makes ground-truth deltas and stale test assumptions easy to miss | Low | Factor cartridge-specific subsystems into smaller helpers without losing Gen1 ownership |
