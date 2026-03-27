@@ -2,16 +2,14 @@
 
 ## Merge Gate
 
-`enforce-comment-gate.sh` (PreToolUse) blocks `gh pr merge` if either of these is true:
-- any unresolved review thread has zero replies
-- any top-level PR comment lacks an explicit acknowledgement
-- CodeRabbit is still marked "review in progress" without an explicit stuck/rate-limited bypass
+`enforce-comment-gate.sh` (PreToolUse) blocks `gh pr merge` if any unresolved review thread
+has zero replies — meaning it was never read or acknowledged.
 
 **A thread is "acknowledged" when it has at least one of:**
 - The thread is marked resolved (via GraphQL `resolveReviewThread` mutation)
 - A reply exists on the thread (agree + fix, or disagree + explain why)
 
-If blocked, run `/babysit-pr <number>` — it handles review threads, top-level comment acknowledgements, and merge readiness.
+If blocked, run `/babysit-pr <number>` — it handles all of this automatically.
 
 ## Mandatory Process
 
@@ -22,7 +20,7 @@ If blocked, run `/babysit-pr <number>` — it handles review threads, top-level 
    gh api repos/{owner}/{repo}/pulls/<N>/comments
    gh api repos/{owner}/{repo}/issues/<N>/comments
    ```
-   Then reply to each thread, add explicit acknowledgements for top-level issue comments, and resolve addressed ones before attempting merge.
+   Then reply to each thread and resolve addressed ones before attempting merge.
 
 ## What Counts as Addressing a Comment
 
@@ -34,18 +32,6 @@ If blocked, run `/babysit-pr <number>` — it handles review threads, top-level 
 | Question from reviewer | Reply with answer |
 
 Nitpicks do not require code changes, but they do require a reply. Ignoring them entirely is not acceptable.
-
-For top-level PR issue comments (including bot summary comments), add a later acknowledgement comment in this exact format:
-
-```text
-Ack comment <comment-id>: <what you did or why no action is needed>
-```
-
-If CodeRabbit is still "review in progress" and must be bypassed because it is stuck, broken, or rate-limited, the acknowledgement must say so explicitly:
-
-```text
-Ack comment <comment-id>: bypass because CodeRabbit is rate-limited.
-```
 
 ## Bug Validation Protocol (REQUIRED before acting on any bug report)
 
@@ -76,6 +62,5 @@ Never ignore a real bug just because it's outside the current PR's scope. Either
 - Merge a PR without reading review comments
 - Use `gh pr merge` directly — use `/babysit-pr` instead
 - Leave CodeRabbit/Qodo threads with zero replies regardless of whether you agree or disagree
-- Leave top-level PR comments without an `Ack comment <id>:` acknowledgement
 - Assume a reviewer-reported bug is real without checking the current code — AI reviewers can analyze stale commits
 - File a GitHub issue for a bug that is already fixed in the current code

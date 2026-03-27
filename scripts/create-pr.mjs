@@ -40,7 +40,6 @@ if (!title || !bodyFile) {
 }
 
 runNodeScript("scripts/check-worktree.mjs");
-runNodeScript("scripts/check-active-pr.mjs", ["--action", "pr-create"]);
 
 const body = readFileSync(bodyFile, "utf8");
 const prBodyResult = validatePullRequestBody(body);

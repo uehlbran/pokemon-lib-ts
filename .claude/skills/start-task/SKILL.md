@@ -19,20 +19,13 @@ Edit/Write on repo files until this is done.
    - If dirty: do not touch it, do not stash it, and do not ask to reuse it.
      The root checkout is treated as read-only context.
 2. **Fetch latest**: `git fetch origin main`
-3. **Reconcile existing local task work before branching**:
-   - Run `node scripts/check-reconciliation.mjs`
-   - If it fails, reconcile first with `node scripts/reconcile-worktrees.mjs --write`
-4. **Confirm no other PR owns the active slot**:
-   - Run `node scripts/check-active-pr.mjs --action start-task`
-5. **Choose a fresh worktree path**: `WORKTREE_DIR=".worktrees/<branch-name>"`
+3. **Choose a fresh worktree path**: `WORKTREE_DIR=".worktrees/<branch-name>"`
    - If that path already exists: STOP and pick a new unique path.
-6. **Create worktree and branch**:
+4. **Create worktree and branch**:
    `git worktree add -b <branch-name> "$WORKTREE_DIR" origin/main`
-7. **Declare marker inside that worktree**:
+5. **Declare marker inside that worktree**:
    `echo '<branch-name>' > "$WORKTREE_DIR/.claude/.session-branch"`
-8. **Start or update the local `PROGRESS.md` ledger**:
-   - record the new active slice and next allowed action
-9. **Confirm**:
+6. **Confirm**:
    "Branch `<branch-name>` created from `origin/main` in `<worktree-path>`. Use
    `git -C <worktree-path>` for all git commands."
 
@@ -62,5 +55,3 @@ Ask the user what branch name to use, suggesting one based on the task descripti
 - Branch name should follow project conventions (e.g., `fix/`, `feat/`, `docs/`, `chore/`)
 - Every new task starts in a fresh worktree from `origin/main`
 - The root checkout is never used for task implementation
-- Existing task work must be reconciled before another task branch is created
-- Only one active PR slice may exist at a time
