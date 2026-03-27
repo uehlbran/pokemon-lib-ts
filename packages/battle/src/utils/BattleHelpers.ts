@@ -132,7 +132,14 @@ export function createOnFieldPokemon(
       : isTerastallized && teraType
         ? [teraType]
         : resolvedTypes;
-  assertValidTypeList(teraResolvedTypes, "resolvedTypes");
+  const resolvedTypeSource = isTerastallized
+    ? pokemon.teraTypes && pokemon.teraTypes.length > 0
+      ? "teraTypes"
+      : "teraType"
+    : isMega && pokemon.megaTypes
+      ? "megaTypes"
+      : "baseTypes";
+  assertValidTypeList(teraResolvedTypes, resolvedTypeSource);
 
   return {
     pokemon,

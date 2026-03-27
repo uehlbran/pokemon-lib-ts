@@ -114,6 +114,31 @@ describe("BattleHelpers", () => {
       ).toThrow("baseTypes cannot contain duplicate types");
     });
 
+    it("given invalid persisted Mega or Tera type lists, when createOnFieldPokemon is called, then the error points at the persisted source field", () => {
+      expect(() =>
+        createOnFieldPokemon(
+          createTestPokemon(6, 50, {
+            megaAbility: CORE_ABILITY_IDS.solarPower,
+            megaTypes: [CORE_TYPE_IDS.fire, CORE_TYPE_IDS.fire],
+          }),
+          0,
+          fireFlyingTypes,
+        ),
+      ).toThrow("megaTypes cannot contain duplicate types");
+
+      expect(() =>
+        createOnFieldPokemon(
+          createTestPokemon(6, 50, {
+            terastallized: true,
+            teraType: CORE_TYPE_IDS.grass,
+            teraTypes: [CORE_TYPE_IDS.grass, CORE_TYPE_IDS.grass],
+          }),
+          0,
+          fireFlyingTypes,
+        ),
+      ).toThrow("teraTypes cannot contain duplicate types");
+    });
+
     it("given a caller-owned base types array, when createOnFieldPokemon is called, then the ActivePokemon gets its own copy", () => {
       const pokemon = createTestPokemon(6, 50);
       const types: PokemonType[] = [...fireFlyingTypes];
