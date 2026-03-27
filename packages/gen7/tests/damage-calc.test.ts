@@ -1460,6 +1460,8 @@ describe("Gen 7 signature moves bypass target abilities", () => {
   it("given Sunsteel Strike against a target with Filter, then defensive ability reduction is ignored", () => {
     // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
     // Source: Showdown data/abilities.ts -- Filter: breakable: 1 (Mold Breaker ignores)
+    const ironHead = GEN7_DATA.getMove(MOVE_IDS.ironHead);
+    const sunsteelStrike = GEN7_DATA.getMove(MOVE_IDS.sunsteelStrike);
     const defender = createOnFieldPokemon({
       defense: 100,
       types: [TYPE_IDS.ice],
@@ -1469,25 +1471,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
     const normalMoveCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender,
-      move: createSyntheticMove({
-        id: MOVE_IDS.ironHead,
-        type: TYPE_IDS.steel,
-        category: MOVE_CATEGORIES.physical,
-        power: 100,
-        flags: { contact: true },
-      }),
+      move: ironHead,
       seed: 42,
     });
     const sunsteelCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender,
-      move: createSyntheticMove({
-        id: MOVE_IDS.sunsteelStrike,
-        type: TYPE_IDS.steel,
-        category: MOVE_CATEGORIES.physical,
-        power: 100,
-        flags: { contact: true },
-      }),
+      move: sunsteelStrike,
       seed: 42,
     });
 
@@ -1501,6 +1491,8 @@ describe("Gen 7 signature moves bypass target abilities", () => {
   it("given Moongeist Beam against Wonder Guard at neutral effectiveness, then neutral damage still lands", () => {
     // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
     // Source: Showdown data/abilities.ts -- Wonder Guard blocks non-SE moves
+    const shadowBall = GEN7_DATA.getMove(MOVE_IDS.shadowBall);
+    const moongeistBeam = GEN7_DATA.getMove(MOVE_IDS.moongeistBeam);
     const defender = createOnFieldPokemon({
       spDefense: 100,
       types: [TYPE_IDS.grass],
@@ -1510,23 +1502,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
     const normalMoveCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 150 }),
       defender,
-      move: createSyntheticMove({
-        id: MOVE_IDS.shadowBall,
-        type: TYPE_IDS.ghost,
-        category: MOVE_CATEGORIES.special,
-        power: 100,
-      }),
+      move: shadowBall,
       seed: 42,
     });
     const moongeistCtx = createDamageContext({
       attacker: createOnFieldPokemon({ spAttack: 150 }),
       defender,
-      move: createSyntheticMove({
-        id: MOVE_IDS.moongeistBeam,
-        type: TYPE_IDS.ghost,
-        category: MOVE_CATEGORIES.special,
-        power: 100,
-      }),
+      move: moongeistBeam,
       seed: 42,
     });
 
