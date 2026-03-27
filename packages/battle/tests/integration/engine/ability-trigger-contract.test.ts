@@ -57,7 +57,7 @@ function createAbilityTriggerAuditEngine(ruleset: AbilityTriggerAuditRuleset): B
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
-          ability: CORE_ABILITY_IDS.torrent,
+          ability: CORE_ABILITY_IDS.blaze,
           moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
         }),
       ],
