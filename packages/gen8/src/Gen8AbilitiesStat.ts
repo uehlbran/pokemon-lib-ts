@@ -1,6 +1,11 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
-import { CORE_STAT_IDS, CORE_TYPE_IDS, type MoveCategory } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  type MoveCategory,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Gen 8 stat-modifying, priority, and KO-trigger ability handlers.
@@ -166,6 +171,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       // Source: Showdown data/abilities.ts -- quickdraw: onFractionalPriority, 30% chance
       // Source: Bulbapedia "Quick Draw" -- "30% chance to move first in its priority bracket"
       if (!ctx.move) return INACTIVE;
+      if (ctx.move.category === CORE_MOVE_CATEGORIES.status) return INACTIVE;
       // Use RNG to check for 30% activation
       if (!ctx.rng.chance(0.3)) return INACTIVE;
       const name = getName(ctx);

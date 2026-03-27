@@ -323,6 +323,22 @@ describe(`isGen8G${CORE_MOVE_IDS.round}ed`, () => {
     expect(result).toBe(false);
   });
 
+  it(`given gravityActive=true and pokemon has airborne ${CORE_VOLATILE_IDS.flying} volatile, then returns grounded=true`, () => {
+    // Source: Showdown sim/pokemon.ts -- gravity overrides airborne semi-invulnerable states
+    const volatiles = new Map([[CORE_VOLATILE_IDS.flying, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], volatiles });
+    const result = isGen8Grounded(pokemon, true);
+    expect(result).toBe(true);
+  });
+
+  it(`given gravityActive=true and pokemon has airborne ${CORE_VOLATILE_IDS.shadowForceCharging} volatile, then returns grounded=true`, () => {
+    // Source: Showdown sim/pokemon.ts -- gravity overrides airborne semi-invulnerable states
+    const volatiles = new Map([[CORE_VOLATILE_IDS.shadowForceCharging, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.ghost], volatiles });
+    const result = isGen8Grounded(pokemon, true);
+    expect(result).toBe(true);
+  });
+
   it(`given normal-type pokemon with no items or volatiles, then returns ${CORE_TYPE_IDS.ground}ed=true`, () => {
     // Source: Showdown sim/pokemon.ts -- default case: non-flying/non-levitate is grounded
     const pokemon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal] });
