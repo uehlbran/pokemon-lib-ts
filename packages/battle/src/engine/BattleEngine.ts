@@ -42,6 +42,7 @@ import type {
   MoveAction,
   RunAction,
 } from "../events";
+import { isMoveLikeAction } from "../events/BattleAction";
 import type {
   BattleGimmickType,
   ExpRecipient,
@@ -1642,7 +1643,7 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Skip if this side's Pokemon was phased out (Roar/Whirlwind) earlier this turn.
       // The replacement should not execute the phased-out Pokemon's queued action.
-      if (action.type === "move" && this.phasedSides.has(action.side)) {
+      if (isMoveLikeAction(action) && this.phasedSides.has(action.side)) {
         continue;
       }
 

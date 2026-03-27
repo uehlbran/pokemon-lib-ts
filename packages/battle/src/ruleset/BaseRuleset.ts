@@ -54,7 +54,7 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "../context";
-import type { BattleAction } from "../events/BattleAction";
+import { type BattleAction, isMoveLikeAction } from "../events/BattleAction";
 import type { ActivePokemon, BattleSide } from "../state/BattleSide";
 import type { BattleState } from "../state/BattleState";
 import type {
@@ -207,41 +207,48 @@ export abstract class BaseRuleset implements GenerationRuleset {
       if (actionA.type === "switch" && actionB.type !== "switch") return -1;
       if (actionB.type === "switch" && actionA.type !== "switch") return 1;
 
-      // Item usage goes before moves
-      if (actionA.type === "item" && actionB.type === "move") return -1;
-      if (actionB.type === "item" && actionA.type === "move") return 1;
+      // Item usage goes before move-like combat actions
+      if (actionA.type === "item" && isMoveLikeAction(actionB)) return -1;
+      if (actionB.type === "item" && isMoveLikeAction(actionA)) return 1;
 
-      // Run goes before moves
-      if (actionA.type === "run" && actionB.type === "move") return -1;
-      if (actionB.type === "run" && actionA.type === "move") return 1;
+      // Run goes before move-like combat actions
+      if (actionA.type === "run" && isMoveLikeAction(actionB)) return -1;
+      if (actionB.type === "run" && isMoveLikeAction(actionA)) return 1;
 
-      // For moves, compare priority then speed
-      if (actionA.type === "move" && actionB.type === "move") {
+      // For move-like combat actions, compare priority then speed.
+      // Recharge occupies the user's normal combat slot even though it does not execute move data.
+      if (isMoveLikeAction(actionA) && isMoveLikeAction(actionB)) {
         const sideA = state.sides[actionA.side];
         const sideB = state.sides[actionB.side];
         const activeA = sideA?.active[0];
         const activeB = sideB?.active[0];
         if (!activeA || !activeB) return 0;
 
-        const moveSlotA = activeA.pokemon.moves[actionA.moveIndex];
-        const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
-        if (!moveSlotA || !moveSlotB) return 0;
-
         let priorityA = 0;
         let priorityB = 0;
         let moveDataA: MoveData | undefined;
         let moveDataB: MoveData | undefined;
-        try {
-          moveDataA = this.dataManager.getMove(moveSlotA.moveId);
-          priorityA = moveDataA.priority;
-        } catch {
-          /* default 0 */
+
+        if (actionA.type === "move") {
+          const moveSlotA = activeA.pokemon.moves[actionA.moveIndex];
+          if (!moveSlotA) return 0;
+          try {
+            moveDataA = this.dataManager.getMove(moveSlotA.moveId);
+            priorityA = moveDataA.priority;
+          } catch {
+            /* default 0 */
+          }
         }
-        try {
-          moveDataB = this.dataManager.getMove(moveSlotB.moveId);
-          priorityB = moveDataB.priority;
-        } catch {
-          /* default 0 */
+
+        if (actionB.type === "move") {
+          const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
+          if (!moveSlotB) return 0;
+          try {
+            moveDataB = this.dataManager.getMove(moveSlotB.moveId);
+            priorityB = moveDataB.priority;
+          } catch {
+            /* default 0 */
+          }
         }
 
         // Ability-based priority boosts (Prankster, Gale Wings, Triage, etc.)
@@ -259,8 +266,8 @@ export abstract class BaseRuleset implements GenerationRuleset {
         if (priorityA !== priorityB) return priorityB - priorityA; // higher priority first
 
         // Quick Claw / go-first item: activated holders go first within same priority bracket
-        const qcA = quickClawActivated.has(a.idx);
-        const qcB = quickClawActivated.has(b.idx);
+        const qcA = actionA.type === "move" && quickClawActivated.has(a.idx);
+        const qcB = actionB.type === "move" && quickClawActivated.has(b.idx);
         if (qcA && !qcB) return -1;
         if (qcB && !qcA) return 1;
 
