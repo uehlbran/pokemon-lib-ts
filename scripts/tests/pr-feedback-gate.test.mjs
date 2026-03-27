@@ -107,3 +107,26 @@ test("accepts an explicit CodeRabbit bypass comment", () => {
 
   assert.equal(result.isValid, true);
 });
+
+test("accepts acknowledgements with equal timestamps when the ack comment id is later", () => {
+  const result = validatePullRequestFeedback({
+    prAuthorLogin: "author",
+    reviewThreads: [],
+    issueComments: [
+      {
+        id: 55,
+        authorLogin: "qodo-bot",
+        body: "Looks fine.",
+        createdAt: "2026-03-27T10:00:00.000Z",
+      },
+      {
+        id: 56,
+        authorLogin: "author",
+        body: "Ack comment 55: reviewed and no action needed.",
+        createdAt: "2026-03-27T10:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(result.isValid, true);
+});

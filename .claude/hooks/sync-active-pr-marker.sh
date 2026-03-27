@@ -12,12 +12,14 @@ if [ "$SUCCESS" != "true" ]; then
 fi
 
 if printf '%s\n' "$FIRST_LINE" | grep -qE '^gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)'; then
-  (cd "$BASE" && node scripts/sync-active-pr.mjs --event create >/dev/null 2>&1 || true)
-  exit 0
+  cd "$BASE" || exit 1
+  node scripts/sync-active-pr.mjs --event create
+  exit $?
 fi
 
 if printf '%s\n' "$FIRST_LINE" | grep -qE '^gh[[:space:]]+pr[[:space:]]+(merge|close)([[:space:]]|$)'; then
-  (cd "$BASE" && node scripts/sync-active-pr.mjs --event finish >/dev/null 2>&1 || true)
+  cd "$BASE" || exit 1
+  node scripts/sync-active-pr.mjs --event finish
 fi
 
 exit 0

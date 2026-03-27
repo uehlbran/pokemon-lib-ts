@@ -29,15 +29,22 @@ export function createReconciliationLedger({ existingLedger, currentEntries, gen
     entries: currentEntries.map((entry) => {
       const existingEntry = existingEntries.get(entry.branch);
       const defaultStatus = entry.mergedIntoMain ? "merged-equivalent" : "unclassified";
+      const headChanged = existingEntry?.head !== undefined && existingEntry.head !== entry.head;
+      const mergeStateChanged =
+        existingEntry?.mergedIntoMain !== undefined &&
+        existingEntry.mergedIntoMain !== entry.mergedIntoMain;
+      const shouldResetClassification = headChanged || mergeStateChanged;
 
       return {
         branch: entry.branch,
         path: entry.path,
         head: entry.head,
         mergedIntoMain: entry.mergedIntoMain,
-        status: existingEntry?.status ?? defaultStatus,
-        retired: existingEntry?.retired ?? false,
-        notes: existingEntry?.notes ?? "",
+        status: shouldResetClassification
+          ? defaultStatus
+          : (existingEntry?.status ?? defaultStatus),
+        retired: shouldResetClassification ? false : (existingEntry?.retired ?? false),
+        notes: shouldResetClassification ? "" : (existingEntry?.notes ?? ""),
       };
     }),
   };
@@ -73,6 +80,7 @@ export function validateReconciliationLedger({ ledger, currentEntries }) {
   const unclassifiedEntries = [];
   const pendingRetirement = [];
   const invalidStatuses = [];
+  const inconsistentEntries = [];
 
   for (const entry of currentEntries) {
     const ledgerEntry = ledgerEntries.get(entry.branch);
@@ -84,6 +92,16 @@ export function validateReconciliationLedger({ ledger, currentEntries }) {
 
     if (!RECONCILIATION_STATUSES.includes(ledgerEntry.status)) {
       invalidStatuses.push(ledgerEntry);
+      continue;
+    }
+
+    if (ledgerEntry.head !== entry.head || ledgerEntry.mergedIntoMain !== entry.mergedIntoMain) {
+      inconsistentEntries.push({ ledgerEntry, currentEntry: entry });
+      continue;
+    }
+
+    if (ledgerEntry.status === "merged-equivalent" && ledgerEntry.mergedIntoMain !== true) {
+      inconsistentEntries.push({ ledgerEntry, currentEntry: entry });
       continue;
     }
 
@@ -126,12 +144,19 @@ export function validateReconciliationLedger({ ledger, currentEntries }) {
     );
   }
 
+  if (inconsistentEntries.length > 0) {
+    errors.push(
+      `Reconciliation ledger is stale for: ${inconsistentEntries.map(({ currentEntry }) => currentEntry.branch).join(", ")}. Re-run node scripts/reconcile-worktrees.mjs --write.`,
+    );
+  }
+
   return {
     isValid: errors.length === 0,
     missingEntries,
     unclassifiedEntries,
     pendingRetirement,
     invalidStatuses,
+    inconsistentEntries,
     errors,
   };
 }

@@ -106,3 +106,69 @@ test("accepts classified still-needed branches", () => {
 
   assert.equal(result.isValid, true);
 });
+
+test("resets carried-forward status when a branch head changes", () => {
+  const currentEntries = [
+    {
+      branch: "fix/example",
+      path: "/repo/.worktrees/fix-example",
+      head: "def",
+      mergedIntoMain: false,
+    },
+  ];
+
+  const ledger = createReconciliationLedger({
+    existingLedger: {
+      version: 1,
+      generatedAt: "2026-03-26T00:00:00.000Z",
+      entries: [
+        {
+          branch: "fix/example",
+          path: "/repo/.worktrees/fix-example",
+          head: "abc",
+          mergedIntoMain: true,
+          status: "merged-equivalent",
+          retired: true,
+          notes: "old classification",
+        },
+      ],
+    },
+    currentEntries,
+    generatedAt: "2026-03-27T00:00:00.000Z",
+  });
+
+  assert.equal(ledger.entries[0]?.status, "unclassified");
+  assert.equal(ledger.entries[0]?.retired, false);
+  assert.equal(ledger.entries[0]?.notes, "");
+});
+
+test("rejects stale merged-equivalent entries when the current branch is no longer merged", () => {
+  const currentEntries = [
+    {
+      branch: "fix/example",
+      path: "/repo/.worktrees/fix-example",
+      head: "abc",
+      mergedIntoMain: false,
+    },
+  ];
+  const ledger = {
+    version: 1,
+    generatedAt: "2026-03-27T00:00:00.000Z",
+    entries: [
+      {
+        ...currentEntries[0],
+        status: "merged-equivalent",
+        retired: true,
+        notes: "",
+      },
+    ],
+  };
+
+  const result = validateReconciliationLedger({
+    ledger,
+    currentEntries,
+  });
+
+  assert.equal(result.isValid, false);
+  assert.match(result.errors[0] ?? "", /stale/i);
+});

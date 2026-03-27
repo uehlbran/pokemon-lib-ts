@@ -26,6 +26,7 @@ function collectAcknowledgements(issueComments) {
       const commentId = Number(match[1]);
       const existing = acknowledgements.get(commentId) ?? [];
       existing.push({
+        id: comment.id,
         createdAt: comment.createdAt,
         isBypass,
       });
@@ -36,14 +37,35 @@ function collectAcknowledgements(issueComments) {
   return acknowledgements;
 }
 
+function isAfterComment(entry, commentId, createdAt) {
+  const entryTime = Date.parse(entry.createdAt);
+  const commentTime = Date.parse(createdAt);
+
+  if (!Number.isNaN(entryTime) && !Number.isNaN(commentTime)) {
+    if (entryTime > commentTime) {
+      return true;
+    }
+
+    if (entryTime < commentTime) {
+      return false;
+    }
+  } else if (entry.createdAt > createdAt) {
+    return true;
+  } else if (entry.createdAt < createdAt) {
+    return false;
+  }
+
+  return typeof entry.id === "number" && entry.id > commentId;
+}
+
 function hasAcknowledgementAfter(acknowledgements, commentId, createdAt) {
   const entries = acknowledgements.get(commentId) ?? [];
-  return entries.some((entry) => entry.createdAt > createdAt);
+  return entries.some((entry) => isAfterComment(entry, commentId, createdAt));
 }
 
 function hasBypassAfter(acknowledgements, commentId, createdAt) {
   const entries = acknowledgements.get(commentId) ?? [];
-  return entries.some((entry) => entry.createdAt > createdAt && entry.isBypass);
+  return entries.some((entry) => entry.isBypass && isAfterComment(entry, commentId, createdAt));
 }
 
 function isCodeRabbitInProgress(comment) {

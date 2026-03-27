@@ -76,6 +76,9 @@ try {
   if (pullRequest.state !== "OPEN") {
     removeFile(activePrPath);
   }
-} catch {
-  removeFile(activePrPath);
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`Could not verify active PR marker during finish sync: ${message}`);
+  console.error("Keeping the existing active PR marker until PR state can be verified.");
+  process.exit(1);
 }

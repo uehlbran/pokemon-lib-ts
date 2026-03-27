@@ -21,6 +21,54 @@ function runGh(args) {
   return result.stdout.trim();
 }
 
+function fetchReviewThreads({ owner, repo, prNumber }) {
+  const threads = [];
+  let hasNextPage = true;
+  let afterCursor = null;
+
+  while (hasNextPage) {
+    const afterClause = afterCursor ? `, after: "${afterCursor}"` : "";
+    const response = JSON.parse(
+      runGh([
+        "api",
+        "graphql",
+        "-f",
+        `query={
+          repository(owner: "${owner}", name: "${repo}") {
+            pullRequest(number: ${prNumber}) {
+              author { login }
+              reviewThreads(first: 100${afterClause}) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                nodes {
+                  isResolved
+                  comments(first: 2) {
+                    totalCount
+                    nodes {
+                      path
+                      author { login }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`,
+      ]),
+    );
+
+    const pullRequest = response.data.repository.pullRequest;
+    const reviewThreads = pullRequest.reviewThreads;
+    threads.push(...reviewThreads.nodes);
+    hasNextPage = reviewThreads.pageInfo.hasNextPage;
+    afterCursor = reviewThreads.pageInfo.endCursor;
+  }
+
+  return threads;
+}
+
 const providedPrNumber = getOptionValue(process.argv.slice(2), "--pr");
 const inferredPrNumber = providedPrNumber
   ? null
@@ -44,18 +92,6 @@ const pullRequestData = JSON.parse(
       repository(owner: "${owner}", name: "${repo}") {
         pullRequest(number: ${prNumber}) {
           author { login }
-          reviewThreads(first: 100) {
-            nodes {
-              isResolved
-              comments(first: 2) {
-                totalCount
-                nodes {
-                  path
-                  author { login }
-                }
-              }
-            }
-          }
         }
       }
     }`,
@@ -63,7 +99,7 @@ const pullRequestData = JSON.parse(
 );
 
 const issueComments = JSON.parse(
-  runGh(["api", `repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`]),
+  runGh(["api", "--paginate", `repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`]),
 ).map((comment) => ({
   id: comment.id,
   authorLogin: comment.user?.login ?? "",
@@ -73,7 +109,7 @@ const issueComments = JSON.parse(
 }));
 
 const reviewThreads =
-  pullRequestData.data.repository.pullRequest.reviewThreads.nodes.map((thread) => ({
+  fetchReviewThreads({ owner, repo, prNumber }).map((thread) => ({
     isResolved: thread.isResolved,
     totalCount: thread.comments.totalCount,
     path: thread.comments.nodes[0]?.path ?? "unknown file",

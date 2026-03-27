@@ -38,6 +38,39 @@ const { activePrPath } = getWorkflowStatePaths(gitCommonDir);
 const marker = readJsonFile(activePrPath);
 
 if (!marker) {
+  const openPullRequests = JSON.parse(
+    runGh(["pr", "list", "--state", "open", "--json", "number,headRefName,url"]),
+  );
+
+  if (openPullRequests.length === 0) {
+    process.exit(0);
+  }
+
+  const currentBranchPullRequest = openPullRequests.find(
+    (pullRequest) => pullRequest.headRefName === currentBranch,
+  );
+
+  if (action === "pr-create") {
+    if (currentBranchPullRequest) {
+      console.error(
+        `An open PR already exists for '${currentBranch}': ${currentBranchPullRequest.url}. Keep working in that PR instead of opening another.`,
+      );
+      process.exit(1);
+    }
+
+    console.error(
+      `Another PR is already open and the active PR marker is missing. Reconcile the marker before opening a new PR: ${openPullRequests[0].url}`,
+    );
+    process.exit(1);
+  }
+
+  if (action === "start-task") {
+    console.error(
+      `A task PR is already open and the active PR marker is missing. Reconcile the marker before starting another task: ${openPullRequests[0].url}`,
+    );
+    process.exit(1);
+  }
+
   process.exit(0);
 }
 
