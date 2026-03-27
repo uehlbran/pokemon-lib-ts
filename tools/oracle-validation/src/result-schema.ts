@@ -4,7 +4,7 @@ export const suiteStatusSchema = z.enum(["pass", "fail", "skip"]);
 
 export const suiteResultSchema = z.object({
   status: suiteStatusSchema,
-  passed: z.number().int().nonnegative(),
+  suitePassed: z.boolean(),
   failed: z.number().int().nonnegative(),
   skipped: z.number().int().nonnegative(),
   failures: z.array(z.string()),

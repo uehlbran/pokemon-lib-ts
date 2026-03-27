@@ -52,6 +52,9 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
 
   const oracle = ORACLE_GENERATIONS.get(generation.gen);
   const oracleSpecies = normalizeOracleSpecies(generation);
+  const oracleSpeciesById = new Map(
+    oracleSpecies.map((species) => [normalizeSpeciesId(species.id), species] as const),
+  );
   const oracleTypeNames = [...oracle.types]
     .map((type) => type.name.toLowerCase())
     .filter((type) => type !== "???");
@@ -63,10 +66,8 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
     );
   }
 
-  for (const species of localPokemon.slice(0, 50)) {
-    const oracleSpeciesEntry = oracleSpecies.find(
-      (candidate) => normalizeSpeciesId(candidate.id) === normalizeSpeciesId(species.name),
-    );
+  for (const species of localPokemon) {
+    const oracleSpeciesEntry = oracleSpeciesById.get(normalizeSpeciesId(species.name));
     if (!oracleSpeciesEntry) {
       failures.push(`Gen ${generation.gen}: species ${species.name} missing from oracle data`);
       continue;
@@ -99,8 +100,8 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
     );
   }
 
-  for (const attacker of localTypes.slice(0, 6)) {
-    for (const defender of localTypes.slice(0, 6)) {
+  for (const attacker of localTypes) {
+    for (const defender of localTypes) {
       const ours = localTypeChart[attacker]?.[defender];
       if (typeof ours !== "number") {
         failures.push(`Gen ${generation.gen}: missing type-chart entry ${attacker} -> ${defender}`);
@@ -110,7 +111,7 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
 
   return {
     status: failures.length === 0 ? "pass" : "fail",
-    passed: failures.length === 0 ? 1 : 0,
+    suitePassed: failures.length === 0,
     failed: failures.length,
     skipped: 0,
     failures,

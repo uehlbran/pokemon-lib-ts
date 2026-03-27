@@ -11,7 +11,7 @@ export function formatRunnerOutput(output: RunnerOutput): string {
     for (const [suite, result] of Object.entries(generation.suites) as [string, SuiteResult][]) {
       const suffix = result.skipReason ? ` — ${result.skipReason}` : "";
       lines.push(
-        `  ${suite}: ${result.status} (passed=${result.passed}, failed=${result.failed}, skipped=${result.skipped})${suffix}`,
+        `  ${suite}: ${result.status} (suitePassed=${result.suitePassed}, failed=${result.failed}, skipped=${result.skipped})${suffix}`,
       );
 
       for (const failure of result.failures) {

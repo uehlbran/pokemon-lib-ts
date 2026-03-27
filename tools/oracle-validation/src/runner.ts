@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runDataSuite } from "./compare-data.js";
 import { runStatsSuite } from "./compare-stats.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
@@ -7,7 +8,16 @@ import { formatRunnerOutput } from "./reporter.js";
 import { type GenerationResult, runnerOutputSchema, type SuiteResult } from "./result-schema.js";
 
 type SupportedSuite = "data" | "stats" | "groundTruth" | "fast";
+const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
+  "data",
+  "stats",
+  "groundTruth",
+  "fast",
+]);
 
+/**
+ * Parse CLI arguments for the oracle runner.
+ */
 function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
   const suites: SupportedSuite[] = [];
   let gen: number | undefined;
@@ -15,9 +25,14 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--suite") {
-      const value = argv[index + 1] as SupportedSuite | undefined;
+      const value = argv[index + 1];
       if (!value) throw new Error("Missing value after --suite");
-      suites.push(value);
+      if (!SUPPORTED_SUITES.has(value as SupportedSuite)) {
+        throw new Error(
+          `Invalid --suite value "${value}". Expected one of: ${[...SUPPORTED_SUITES].join(", ")}`,
+        );
+      }
+      suites.push(value as SupportedSuite);
       index += 1;
       continue;
     }
@@ -26,6 +41,9 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
       const value = argv[index + 1];
       if (!value) throw new Error("Missing value after --gen");
       gen = Number.parseInt(value, 10);
+      if (!Number.isInteger(gen) || gen < 0) {
+        throw new Error(`Invalid --gen value "${value}". Expected a non-negative integer.`);
+      }
       index += 1;
     }
   }
@@ -36,6 +54,9 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
   };
 }
 
+/**
+ * Expand composite suite aliases into concrete suite runs.
+ */
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   if (suites.includes("fast")) {
     return ["data", "stats", "groundTruth"];
@@ -44,10 +65,13 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   return suites;
 }
 
+/**
+ * Build a skipped suite result with a human-readable reason.
+ */
 function makeSkip(reason: string): SuiteResult {
   return {
     status: "skip",
-    passed: 0,
+    suitePassed: false,
     failed: 0,
     skipped: 1,
     failures: [],
@@ -57,7 +81,7 @@ function makeSkip(reason: string): SuiteResult {
 }
 
 async function main(): Promise<void> {
-  const repoRoot = resolve(dirname(new URL(import.meta.url).pathname), "../../..");
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const { suites, gen } = parseArgs(process.argv.slice(2));
   const expandedSuites = expandSuites(suites);
   const generations = discoverImplementedGenerations(repoRoot).filter(

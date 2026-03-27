@@ -91,7 +91,7 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
   if (generation.gen > 3) {
     return {
       status: "skip",
-      passed: 0,
+      suitePassed: false,
       failed: 0,
       skipped: 1,
       failures: [],
@@ -128,6 +128,12 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
     const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
     const nature = dataManager.getNature(CORE_NATURE_IDS.hardy) as NatureData;
     const stats = calculateAllStats(createGen3Pokemon(species.id, tackle.pp), species, nature);
+    // Source: Bulbapedia stat formula + Gen 3 Charizard base stats.
+    // Assumptions: level 50, Hardy nature (neutral), IVs 31, EVs 0.
+    // Charizard base stats are HP 78 / Sp. Atk 109 / Speed 100, so:
+    // HP = floor(((2*78 + 31) * 50) / 100) + 50 + 10 = 153
+    // Sp. Atk = floor(((2*109 + 31) * 50) / 100) + 5 = 129
+    // Speed = floor(((2*100 + 31) * 50) / 100) + 5 = 120
     if (stats.hp !== 153 || stats.spAttack !== 129 || stats.speed !== 120) {
       failures.push(
         `Gen 3: expected level 50 Hardy Charizard stats hp=153/spAttack=129/speed=120, got hp=${stats.hp}/spAttack=${stats.spAttack}/speed=${stats.speed}`,
@@ -137,7 +143,7 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
 
   return {
     status: failures.length === 0 ? "pass" : "fail",
-    passed: failures.length === 0 ? 1 : 0,
+    suitePassed: failures.length === 0,
     failed: failures.length,
     skipped: 0,
     failures,

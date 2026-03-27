@@ -86,7 +86,9 @@ export function determineGender(genderRatio: number, rng: SeededRandom): Gender 
   if (genderRatio === 100) return CORE_GENDERS.male;
 
   // Source: species gender ratios are encoded in 12.5% steps on cartridge-facing data surfaces.
-  // Using 8 slots preserves 12.5 / 87.5 exactly instead of rounding to whole percentages.
+  // Bulbapedia documents the discrete ratio buckets as 100% / 87.5% / 75% / 50% / 25% / 12.5% / 0%.
+  // The species schema in this repo stores those as percent-male values, so we project back onto 8
+  // cartridge buckets to preserve exact 12.5% and 87.5% behavior instead of rounding to whole percents.
   const maleThreshold = Math.round((genderRatio / 100) * 8);
   return rng.int(1, 8) <= maleThreshold ? CORE_GENDERS.male : CORE_GENDERS.female;
 }
