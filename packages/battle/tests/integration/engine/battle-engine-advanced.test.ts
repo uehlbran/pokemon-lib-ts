@@ -13,6 +13,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9";
 import { describe, expect, it } from "vitest";
+import { BATTLE_SOURCE_IDS } from "../../../src";
 import type { BattleConfig, MoveEffectContext, MoveEffectResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -1114,7 +1115,7 @@ describe("BattleEngine — advanced scenarios", () => {
 
       // Assert
       const recoilDamage = events.filter(
-        (e) => e.type === "damage" && "source" in e && e.source === "recoil",
+        (e) => e.type === "damage" && "source" in e && e.source === BATTLE_SOURCE_IDS.recoil,
       );
       expect(
         recoilDamage.map((event) => ({
@@ -1130,14 +1131,14 @@ describe("BattleEngine — advanced scenarios", () => {
           side: 0,
           pokemon: "Charizard",
           amount: 10,
-          source: "recoil",
+          source: BATTLE_SOURCE_IDS.recoil,
         },
         {
           type: "damage",
           side: 1,
           pokemon: "Blastoise",
           amount: 10,
-          source: "recoil",
+          source: BATTLE_SOURCE_IDS.recoil,
         },
       ]);
     });
@@ -1175,8 +1176,8 @@ describe("BattleEngine — advanced scenarios", () => {
           source: event.source,
         })),
       ).toEqual([
-        { side: 0, pokemon: "Charizard", amount: 3, source: "move-effect" },
-        { side: 1, pokemon: "Blastoise", amount: 10, source: "move-effect" },
+        { side: 0, pokemon: "Charizard", amount: 3, source: BATTLE_SOURCE_IDS.moveEffect },
+        { side: 1, pokemon: "Blastoise", amount: 10, source: BATTLE_SOURCE_IDS.moveEffect },
       ]);
     });
   });

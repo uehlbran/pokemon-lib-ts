@@ -31,6 +31,7 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
@@ -98,6 +99,7 @@ const ITEM_TRIGGERS = CORE_ITEM_TRIGGER_IDS;
 const GENDERS = CORE_GENDERS;
 const ABILITY_SLOTS = CORE_ABILITY_SLOTS;
 const MOVE_CATEGORIES = CORE_MOVE_CATEGORIES;
+const MOVE_EFFECT_TYPES = CORE_MOVE_EFFECT_TYPES;
 const defaultSpecies = gen8Data.getSpecies(SPECIES.bulbasaur);
 const defaultNature = gen8Data.getNature(CORE_NATURE_IDS.hardy).id;
 const defaultFriendship = createFriendship(defaultSpecies.baseFriendship);
@@ -590,7 +592,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Unburden volatile should be set
       expect(attacker.volatileStatuses.has(VOLATILES.unburden)).toBe(true);
       // gem-used volatile should be set
-      expect(attacker.volatileStatuses.has("gem-used")).toBe(true);
+      expect(attacker.volatileStatuses.has(VOLATILES.gemUsed)).toBe(true);
       // Damage should be higher than without gem (gem provides 1.3x power boost)
       // Exact seeded value (seed=42): with Normal Gem=66
       expect(result.damage).toBe(66);
@@ -638,7 +640,7 @@ describe(`Gen8DamageCalc cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Gem consumed but no Unburden (wrong ability)
       expect(attacker.pokemon.heldItem).toBe(null);
       expect(attacker.volatileStatuses.has(VOLATILES.unburden)).toBe(false);
-      expect(attacker.volatileStatuses.has("gem-used")).toBe(true);
+      expect(attacker.volatileStatuses.has(VOLATILES.gemUsed)).toBe(true);
     });
   });
 
@@ -1219,7 +1221,7 @@ describe(`Gen8Items cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       // Source: Gen8Items.ts -- handleBeforeMove only handles metronome
       const pokemon = createOnFieldPokemon({ heldItem: CORE_ITEM_IDS.leftovers });
       const ctx = createItemContext({ pokemon, move: createCanonicalMove() });
-      const result = applyGen8HeldItem("before-move", ctx);
+      const result = applyGen8HeldItem(ITEM_TRIGGERS.beforeMove, ctx);
       expect(result.activated).toBe(false);
     });
   });
@@ -1467,7 +1469,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
           {
             baseMoveId: MOVES.strength,
             power: null,
-            effect: { type: "ohko" } as MoveEffect,
+            effect: { type: MOVE_EFFECT_TYPES.ohko } as MoveEffect,
           },
         ),
       });
@@ -1494,12 +1496,16 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
     it(`given ${GEN8_ABILITY_IDS.parentalBond} with multi-hit effect, when checking eligibility, then returns false`, () => {
       // Source: Showdown data/abilities.ts -- multi-hit moves not doubled by Parental Bond
-      expect(isParentalBondEligible(GEN8_ABILITY_IDS.parentalBond, 80, "multi-hit")).toBe(false);
+      expect(
+        isParentalBondEligible(GEN8_ABILITY_IDS.parentalBond, 80, MOVE_EFFECT_TYPES.multiHit),
+      ).toBe(false);
     });
 
     it(`given ${GEN8_ABILITY_IDS.parentalBond} with a non-multi-hit effect, when checking eligibility, then returns true`, () => {
       // Source: Showdown data/abilities.ts -- non-multi-hit damaging moves are eligible
-      expect(isParentalBondEligible(GEN8_ABILITY_IDS.parentalBond, 80, "drain")).toBe(true);
+      expect(
+        isParentalBondEligible(GEN8_ABILITY_IDS.parentalBond, 80, MOVE_EFFECT_TYPES.drain),
+      ).toBe(true);
     });
   });
 
@@ -1879,7 +1885,9 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
     });
 
     it(`given non-Sturdy ability, when checking OHKO ${GEN8_MOVE_IDS.block}, then returns false`, () => {
-      expect(sturdyBlocksOHKO(CORE_ABILITY_IDS.blaze, { type: "ohko" } as MoveEffect)).toBe(false);
+      expect(
+        sturdyBlocksOHKO(CORE_ABILITY_IDS.blaze, { type: MOVE_EFFECT_TYPES.ohko } as MoveEffect),
+      ).toBe(false);
     });
 
     it(`given Sturdy with null effect, when checking OHKO ${GEN8_MOVE_IDS.block}, then returns false`, () => {

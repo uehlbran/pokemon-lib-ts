@@ -6,6 +6,7 @@ import type {
   DamageContext,
   ItemContext,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   AbilityTrigger,
@@ -24,6 +25,7 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -80,6 +82,7 @@ const DEFAULT_TYPE = CORE_TYPE_IDS.electric;
 const DEFAULT_LEVEL = 50;
 const PRIMARY_STATUS = CORE_STATUS_IDS;
 const VOLATILE_IDS = CORE_VOLATILE_IDS;
+const STAT_IDS = CORE_STAT_IDS;
 const LEVITATE_NAME = dataManager.getAbility(abilityIds.levitate).displayName;
 const WONDER_GUARD_NAME = dataManager.getAbility(abilityIds.wonderGuard).displayName;
 const DEFAULT_TACKLE = dataManager.getMove(moveIds.tackle);
@@ -267,7 +270,11 @@ function createAbilityContext(opts: {
   move?: MoveData;
   turnsOnField?: number;
   nickname?: string;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: {
+    stat: string;
+    stages: number;
+    source: typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
+  };
   state?: BattleState;
   currentHp?: number;
   maxHp?: number;
@@ -533,7 +540,7 @@ describe("Contrary -- reverses all stat changes (boosts AND drops)", () => {
     const ctx = createAbilityContext({
       ability: abilityIds.contrary,
       trigger: abilityTriggerIds.onStatChange,
-      statChange: { stat: "spAttack", stages: -2, source: "self" },
+      statChange: { stat: STAT_IDS.spAttack, stages: -2, source: BATTLE_EFFECT_TARGETS.self },
     });
     const result = handleGen5StatAbility(ctx);
 
@@ -551,7 +558,7 @@ describe("Simple -- doubles all stat changes (boosts AND drops)", () => {
     const ctx = createAbilityContext({
       ability: abilityIds.simple,
       trigger: abilityTriggerIds.onStatChange,
-      statChange: { stat: "attack", stages: 1, source: "self" },
+      statChange: { stat: STAT_IDS.attack, stages: 1, source: BATTLE_EFFECT_TARGETS.self },
     });
     expect(handleGen5StatAbility(ctx).activated).toBe(true);
   });
@@ -588,7 +595,8 @@ describe("Defiant -- +2 Attack when opponent lowers any stat", () => {
 
       expect(result.activated).toBe(true);
       const atkBoost = result.effects.find(
-        (e) => e.effectType === "stat-change" && e.stat === "attack",
+        (e) =>
+          e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && e.stat === STAT_IDS.attack,
       );
       expect(atkBoost).toBeDefined();
       expect(atkBoost?.stages).toBe(2);
@@ -643,7 +651,8 @@ describe("Moxie -- +1 Attack after KOing a Pokemon", () => {
 
       expect(result.activated).toBe(true);
       const atkBoost = result.effects.find(
-        (e) => e.effectType === "stat-change" && e.stat === "attack",
+        (e) =>
+          e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && e.stat === STAT_IDS.attack,
       );
       expect(atkBoost?.stages).toBe(1);
     },
