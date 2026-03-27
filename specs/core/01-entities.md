@@ -959,7 +959,13 @@ export interface AbilityData {
   /** Description of the ability's effect */
   readonly description: string;
 
-  /** When this ability activates — used by the battle engine to register handlers */
+  /**
+   * Trigger identifiers used across the battle engine lifecycle and
+   * generation-owned ruleset pipelines.
+   *
+   * Some triggers, such as `on-damage-calc`, are evaluated inside generation
+   * damage-calculation code rather than being dispatched directly by BattleEngine.
+   */
   readonly triggers: readonly AbilityTrigger[];
 
   /** Generation this ability was introduced */
@@ -982,7 +988,7 @@ export type AbilityTrigger =
   | 'on-after-move-hit'      // Rough Skin, Iron Barbs, Flame Body
   | 'on-after-move-used'     // Moxie (after KO), Magician
   | 'on-damage-taken'        // Sturdy, Multiscale, Disguise
-  | 'on-damage-calc'         // Huge Power, Hustle, Sand Force (modifies damage)
+  | 'on-damage-calc'         // Huge Power, Hustle, Sand Force (ruleset-local damage pipeline; not a direct BattleEngine dispatch)
   | 'on-stat-change'         // Clear Body, Competitive, Defiant
   | 'on-status-inflicted'    // Immunity, Limber, Vital Spirit
   | 'on-weather-change'      // Sand Rush, Swift Swim, Chlorophyll

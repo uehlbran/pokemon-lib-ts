@@ -115,7 +115,8 @@ Missing singles mechanic gaps:
 - `#788` Ultra Burst missing in Gen 7
 
 Open tracker overlap requiring cleanup:
-- `#789`, `#1059`, and `#1060` still exist in the tracker, but current `main` already contains the Spectral Thief pre-damage implementation and regression coverage. These now represent stale umbrella/split issue overlap rather than live matrix evidence.
+- `#789` remains as the umbrella tracker for the remaining Gen 7 move-effect tail.
+- `#1059` and `#1060` were stale duplicate follow-ups for Spectral Thief and were closed on 2026-03-27 after re-verifying the landed pre-damage implementation and regression coverage on current `main`.
 
 Deferred doubles-only coverage debt:
 - `#626` Parental Bond doubles edge case remains deferred to doubles support
@@ -126,7 +127,6 @@ Architecture / API confidence debt:
 - `#767` Mega stone data is still duplicated across Gen 6 and Gen 7
 - `#772` package barrels still expose unstable internal helpers alongside consumer API
 - `#780` `Gen4MoveEffects` is still a god function
-- `#994` on-damage-calc contract boundary is still implicit
 
 Docs / code-quality cleanup:
 - `#818`, `#1015`, `#773`

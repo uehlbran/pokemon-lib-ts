@@ -534,7 +534,13 @@ export interface AbilityContext {
   readonly state: BattleState;
   /** PRNG instance for any ability rolls */
   readonly rng: SeededRandom;
-  /** The lifecycle event that caused this ability to fire (e.g., `"on-switch-in"`, `"on-damage"`) */
+  /**
+   * The trigger id being evaluated for this ability.
+   *
+   * Most values come from BattleEngine lifecycle dispatch (`on-switch-in`,
+   * `on-damage-taken`, etc.), while some triggers like `on-damage-calc` are
+   * ruleset-local and only used by generation damage pipelines.
+   */
   readonly trigger: AbilityTrigger;
   /** The move involved in the trigger, if applicable */
   readonly move?: MoveData;

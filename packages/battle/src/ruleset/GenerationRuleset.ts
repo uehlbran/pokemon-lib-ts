@@ -407,6 +407,12 @@ export interface AbilitySystem {
   hasAbilities(): boolean;
   /**
    * Apply an ability's effect at the appropriate trigger point.
+   *
+   * BattleEngine dispatches only engine-owned lifecycle hooks here
+   * (`on-switch-in`, `on-damage-taken`, `on-contact`, etc.). Ruleset-local
+   * triggers such as `on-damage-calc` remain owned by generation damage modules
+   * and are not invoked directly by BattleEngine.
+   *
    * No-ops for Gen 1-2.
    */
   applyAbility(trigger: AbilityTrigger, context: AbilityContext): AbilityResult;

@@ -25,7 +25,7 @@ The architecture-confidence work is split into three execution tracks:
    - examples: `#772`, `#767`
 3. Contract-boundary cleanup
    - implicit cross-package seams where hidden mutation or unclear ownership lowers confidence
-   - example: `#994`
+   - current focus: make trigger ownership explicit before larger pipeline refactors
 
 ## Hotspot Matrix
 
@@ -40,7 +40,7 @@ The architecture-confidence work is split into three execution tracks:
 | `packages/gen5-9/src/GenNAbilities*` | High | Dense switch-heavy files across Damage/Switch/Stat/Remaining modules | Ability dispatch drives ordering and modifier behavior; current shape encourages brittle trigger branches | Medium | Move toward trigger-keyed dispatch tables with smaller handlers |
 | Package export surfaces (`packages/*/src/index.ts`) | High | Open issue `#772`; current gen packages still export broad mixed public/internal surfaces | Public repo users can couple to unstable internal surfaces; refactors become riskier | Critical | Separate public consumer API from internal helper exports |
 | Mega Evolution data duplication (`Gen6MegaEvolution` / `Gen7MegaEvolution`) | Medium/High | Open issue `#767` | Duplicate data makes behavior drift and public inconsistency more likely | High | Consolidate shared mega stone data behind a single owned surface |
-| On-damage-calc contract boundary (`battle` + `gen*` rulesets) | High | Open issue `#994` | Unclear boundary encourages direct mutation and hidden coupling | High | Make damage-calc contract explicit before broader pipeline refactors |
+| On-damage-calc contract boundary (`battle` + `gen*` rulesets) | Medium | Clarified in docs/tests on 2026-03-27 | Trigger ownership is now explicit: BattleEngine owns lifecycle dispatch, while `on-damage-calc` remains generation-local | Medium | Revisit only if later damage-pipeline refactors change the boundary |
 
 _Line-count snapshot metadata: command `wc -l packages/battle/src/engine/BattleEngine.ts packages/battle/src/ruleset/BaseRuleset.ts packages/gen1/src/Gen1Ruleset.ts packages/gen4/src/Gen4MoveEffects.ts packages/gen5/src/Gen5DamageCalc.ts packages/gen6/src/Gen6DamageCalc.ts packages/gen7/src/Gen7DamageCalc.ts packages/gen8/src/Gen8DamageCalc.ts packages/gen9/src/Gen9DamageCalc.ts packages/gen8/src/Gen8Items.ts packages/gen9/src/Gen9Items.ts`, commit `f48eec0c`, date `2026-03-27`, artifact `none`._
 
@@ -51,7 +51,6 @@ _Line-count snapshot metadata: command `wc -l packages/battle/src/engine/BattleE
   - `#762`
   - `#772`
   - `#767`
-  - `#994`
 - LOC snapshots across hotspot files in `packages/*/src`, plus the issue-backed hotspot list above
 - Existing status docs, especially `battle-status.md`
 
@@ -66,21 +65,19 @@ High/critical hotspots should move when one or more of these are true:
 ## Default PR Sequencing
 
 1. `battle` engine / ruleset seams that directly improve ordering confidence
-2. `core` / `battle` contract-boundary cleanup, especially `#994`
-3. `gen4` move-effects split (`#780`)
-4. `gen5-9` damage-pipeline decomposition (`#762`)
-5. public export cleanup (`#772`)
-6. shared Mega Evolution data cleanup (`#767`)
+2. `gen4` move-effects split (`#780`)
+3. `gen5-9` damage-pipeline decomposition (`#762`)
+4. public export cleanup (`#772`)
+5. shared Mega Evolution data cleanup (`#767`)
 
 ## First Refactor Candidates
 
 1. `BattleEngine` ordering/resolution helpers that can be extracted without changing public behavior
 2. `BaseRuleset` shared validation and shared turn-order helpers
-3. Explicit on-damage-calc contract cleanup (`#994`) before broader damage-pipeline work
-4. `Gen4MoveEffects` effect-family extraction (`#780`)
-5. `Gen5-9` damage pipelines into explicit modifier stages (`#762`)
-6. Public export cleanup to separate consumer API from internals (`#772`)
-7. Shared Mega Evolution data consolidation before more Gen 6/7 Mega surface growth (`#767`)
+3. `Gen4MoveEffects` effect-family extraction (`#780`)
+4. `Gen5-9` damage pipelines into explicit modifier stages (`#762`)
+5. Public export cleanup to separate consumer API from internals (`#772`)
+6. Shared Mega Evolution data consolidation before more Gen 6/7 Mega surface growth (`#767`)
 
 ## Non-Goals
 
