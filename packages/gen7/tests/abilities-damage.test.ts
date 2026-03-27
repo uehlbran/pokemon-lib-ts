@@ -5,6 +5,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_MECHANIC_MULTIPLIERS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -566,7 +567,9 @@ describe("Gen 7 Damage Abilities", () => {
 
     it("given Parental Bond with a multi-hit move, then isParentalBondEligible returns false", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: not multi-hit
-      expect(isParentalBondEligible(abilityIds.parentalBond, 100, "multi-hit")).toBe(false);
+      expect(
+        isParentalBondEligible(abilityIds.parentalBond, 100, CORE_MOVE_EFFECT_TYPES.multiHit),
+      ).toBe(false);
     });
 
     it("given Parental Bond handler with a powered move, then returns activated:true", () => {
@@ -585,7 +588,7 @@ describe("Gen 7 Damage Abilities", () => {
   describe("Sturdy", () => {
     it("given an OHKO move, when Sturdy blocks it, then returns movePrevented:true", () => {
       // Source: Showdown data/abilities.ts -- sturdy: blocks OHKO moves
-      const ohkoEffect: MoveEffect = { type: "ohko" };
+      const ohkoEffect: MoveEffect = { type: CORE_MOVE_EFFECT_TYPES.ohko };
       const ctx = createAbilityContext({
         ability: abilityIds.sturdy,
         move: createSyntheticMoveFrom(dataManager.getMove(moveIds.fissure), { effect: ohkoEffect }),
@@ -608,12 +611,15 @@ describe("Gen 7 Damage Abilities", () => {
     });
 
     it("given sturdyBlocksOHKO with OHKO effect, then returns true", () => {
-      const ohkoEffect: MoveEffect = { type: "ohko" };
+      const ohkoEffect: MoveEffect = { type: CORE_MOVE_EFFECT_TYPES.ohko };
       expect(sturdyBlocksOHKO(abilityIds.sturdy, ohkoEffect)).toBe(true);
     });
 
     it("given sturdyBlocksOHKO with non-OHKO effect, then returns false", () => {
-      const normalEffect: MoveEffect = { type: "recoil", recoilPercent: 25 };
+      const normalEffect: MoveEffect = {
+        type: CORE_MOVE_EFFECT_TYPES.recoil,
+        recoilPercent: 25,
+      };
       expect(sturdyBlocksOHKO(abilityIds.sturdy, normalEffect)).toBe(false);
     });
   });

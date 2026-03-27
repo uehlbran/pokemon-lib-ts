@@ -9,6 +9,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -449,7 +450,9 @@ describe("Gen 8 Damage Abilities", () => {
 
     it("given Parental Bond and a multi-hit move, when checking eligibility, then returns false", () => {
       // Source: Showdown data/abilities.ts -- parentalbond: excluded for multi-hit
-      expect(isParentalBondEligible(abilityIds.parentalBond, 50, "multi-hit")).toBe(false);
+      expect(
+        isParentalBondEligible(abilityIds.parentalBond, 50, CORE_MOVE_EFFECT_TYPES.multiHit),
+      ).toBe(false);
     });
 
     it("given Parental Bond and a zero-power move, when checking eligibility, then returns false", () => {
@@ -691,7 +694,7 @@ describe("Gen 8 Damage Abilities", () => {
 
     it("given Sturdy and an OHKO move, when checking block, then returns true", () => {
       // Source: Showdown data/abilities.ts -- sturdy onTryHit
-      const ohkoEffect: MoveEffect = { type: "ohko" };
+      const ohkoEffect: MoveEffect = { type: CORE_MOVE_EFFECT_TYPES.ohko };
       expect(sturdyBlocksOHKO(abilityIds.sturdy, ohkoEffect)).toBe(true);
     });
 
@@ -703,7 +706,7 @@ describe("Gen 8 Damage Abilities", () => {
       const ctx = createAbilityContext({
         ability: abilityIds.sturdy,
         move: createSyntheticMoveFrom(createCanonicalMove(moveIds.tackle), {
-          effect: { type: "ohko" },
+          effect: { type: CORE_MOVE_EFFECT_TYPES.ohko },
         }),
       });
       const result = handleGen8DamageImmunityAbility(ctx);
