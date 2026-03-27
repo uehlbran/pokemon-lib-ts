@@ -5,7 +5,7 @@ import {
   DataManager,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN8_ABILITY_IDS } from "../src";
+import { GEN8_ABILITY_IDS } from "../src/data";
 import {
   GEN8_CRIT_MULTIPLIER,
   GEN8_CRIT_RATE_PROBABILITIES,

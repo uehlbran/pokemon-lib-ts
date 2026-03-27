@@ -14,13 +14,13 @@ import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@poke
 import type { SeededRandom } from "@pokemon-lib-ts/core";
 import { CORE_STATUS_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { Gen8Ruleset } from "../src";
 import {
   createGen8DataManager,
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-  Gen8Ruleset,
-} from "../src";
+} from "../src/data";
 
 const STATUSES = CORE_STATUS_IDS;
 const TYPES = CORE_TYPE_IDS;

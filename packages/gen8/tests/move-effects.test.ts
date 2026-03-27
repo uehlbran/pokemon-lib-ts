@@ -25,7 +25,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import {
   AURORA_VEIL_DEFAULT_TURNS,
   AURORA_VEIL_LIGHT_CLAY_TURNS,

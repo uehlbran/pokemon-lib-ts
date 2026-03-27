@@ -38,8 +38,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-  getMaxMoveName,
-} from "../../src";
+} from "../../src/data";
 import { handleGen8StatAbility } from "../../src/Gen8AbilitiesStat";
 import {
   getGulpMissileResult,
@@ -54,6 +53,7 @@ import {
 } from "../../src/Gen8EntryHazards";
 import { getGMaxMoveDisplayName, getGMaxMoveId } from "../../src/Gen8GMaxMoves";
 import { GEN8_TYPE_CHART } from "../../src/Gen8TypeChart";
+import { getMaxMoveName } from "../../src/internal";
 
 /**
  * Gen 8 Wave 9 integration tests.

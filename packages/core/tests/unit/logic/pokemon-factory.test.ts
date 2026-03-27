@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GEN2_ITEM_IDS } from "../../../../gen2/src";
-import { createGen8DataManager, GEN8_SPECIES_IDS } from "../../../../gen8/src";
+import { createGen8DataManager, GEN8_SPECIES_IDS } from "../../../../gen8/src/data";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,

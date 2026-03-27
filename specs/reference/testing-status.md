@@ -96,7 +96,7 @@ Metric provenance: the LOC / `switch` / `if` counts below were measured at commi
 
 | Hotspot | Risk | Evidence | Suggested Refactor Direction |
 | --- | --- | --- | --- |
-| Large package export surfaces | Medium/High | Open issue `#772`; Gen 9 now has a dedicated `./internal` helper entrypoint and a narrowed root barrel, but other packages still mix stable consumer entrypoints with internal helpers | Continue separating public consumer API from internal helper exports and tighten root/gen barrel contracts package by package |
+| Large package export surfaces | Medium | Gen 8 and Gen 9 now have dedicated `./internal` helper entrypoints plus narrowed root barrels; broader package-surface cleanup can continue only if future packages accumulate the same consumer/internal mixing pattern again | Keep new generation package barrels on the stable-root plus `./data`/`./internal` split and resist re-expanding root consumer surfaces |
 
 ## Open-Issue Signals Driving This Program
 
@@ -124,7 +124,6 @@ Deferred doubles-only coverage debt:
 Architecture / API confidence debt:
 - `#762` Gen 4-9 damage calculators are still god functions
 - `#767` Mega stone data is still duplicated across Gen 6 and Gen 7
-- `#772` package barrels still expose unstable internal helpers alongside consumer API outside the narrowed Gen 9 slice
 - `#780` `Gen4MoveEffects` is still a god function
 
 Docs / code-quality cleanup:

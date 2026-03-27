@@ -7,7 +7,7 @@ import {
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "../src";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "../src/data";
 import {
   ABILITY_WEATHER_TURNS,
   applyGen8WeatherEffects,

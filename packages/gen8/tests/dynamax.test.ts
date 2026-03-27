@@ -14,7 +14,7 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-
+import { createGen8DataManager, GEN8_MOVE_IDS, GEN8_SPECIES_IDS } from "../src/data/index.js";
 import {
   DYNAMAX_IMMUNE_SPECIES,
   DYNAMAX_TURNS,
@@ -23,7 +23,6 @@ import {
   getDynamaxMaxHp,
   getUndynamaxedHp,
 } from "../src/Gen8Dynamax.js";
-import { createGen8DataManager, GEN8_MOVE_IDS, GEN8_SPECIES_IDS } from "../src/index.js";
 
 // --- Test Helpers ---
 

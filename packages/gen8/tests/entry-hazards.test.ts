@@ -9,7 +9,7 @@ import {
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "../src";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "../src/data";
 import {
   applyGen8EntryHazards,
   applyGen8GMaxSteelsurge,

@@ -38,7 +38,7 @@ The architecture-confidence work is split into three execution tracks:
 | `packages/gen5-9/src/GenNDamageCalc.ts` | Critical | Open issue `#762`; current line counts: Gen5 `1080`, Gen6 `1249`, Gen7 `1526`, Gen8 `1453`, Gen9 `1591` | Modifier-order, immunity, and gimmick logic can hide in giant pipelines; one bug can affect many interactions | Medium | Decompose into staged modifier pipeline with smaller pure helpers |
 | `packages/gen5-9/src/GenNItems.ts` | High | Current line counts remain large, including Gen8 `1860` and Gen9 `1916` | Item-trigger logic is interaction-dense and easy to regress, especially with on-hit/on-turn-end branching | Medium | Split by trigger and item family; reduce giant item switches |
 | `packages/gen5-9/src/GenNAbilities*` | High | Dense switch-heavy files across Damage/Switch/Stat/Remaining modules | Ability dispatch drives ordering and modifier behavior; current shape encourages brittle trigger branches | Medium | Move toward trigger-keyed dispatch tables with smaller handlers |
-| Package export surfaces (`packages/*/src/index.ts`) | High | Open issue `#772`; Gen 9 now has a dedicated `./internal` helper entrypoint plus a narrower root barrel, but other gen packages still export broad mixed public/internal surfaces | Public repo users can couple to unstable internal surfaces; refactors remain riskier until the pattern is propagated | Critical | Continue separating public consumer API from internal helper exports package by package |
+| Package export surfaces (`packages/*/src/index.ts`) | Medium | Gen 8 and Gen 9 now use dedicated `./internal` helper entrypoints plus narrower root barrels, closing the concrete public/internal export-mixing case tracked in `#772` | Public repo users now have a clear consumer-vs-internal split in the two cited hotspot packages; keep new generation surfaces aligned with that pattern | Medium | Preserve the stable-root plus `./data`/`./internal` pattern for future package work rather than re-opening broad barrels |
 | Mega Evolution data duplication (`Gen6MegaEvolution` / `Gen7MegaEvolution`) | Medium/High | Open issue `#767` | Duplicate data makes behavior drift and public inconsistency more likely | High | Consolidate shared mega stone data behind a single owned surface |
 | On-damage-calc contract boundary (`battle` + `gen*` rulesets) | Medium | Clarified in docs plus engine/ruleset regression coverage on 2026-03-27 | Trigger ownership is explicit: ordinary BattleEngine lifecycle dispatch excludes `on-damage-calc`, while generation damage code can still invoke it locally | Medium | Revisit only if later damage-pipeline refactors change the boundary |
 
@@ -49,7 +49,6 @@ _Line-count snapshot metadata: command `wc -l packages/battle/src/engine/BattleE
 - Open issues:
   - `#780`
   - `#762`
-  - `#772`
   - `#767`
 - LOC snapshots across hotspot files in `packages/*/src`, plus the issue-backed hotspot list above
 - Existing status docs, especially `battle-status.md`
@@ -67,8 +66,7 @@ High/critical hotspots should move when one or more of these are true:
 1. `battle` engine / ruleset seams that directly improve ordering confidence
 2. `gen4` move-effects split (`#780`)
 3. `gen5-9` damage-pipeline decomposition (`#762`)
-4. public export cleanup (`#772`)
-5. shared Mega Evolution data cleanup (`#767`)
+4. shared Mega Evolution data cleanup (`#767`)
 
 ## First Refactor Candidates
 
@@ -76,8 +74,7 @@ High/critical hotspots should move when one or more of these are true:
 2. `BaseRuleset` shared validation and shared turn-order helpers
 3. `Gen4MoveEffects` effect-family extraction (`#780`)
 4. `Gen5-9` damage pipelines into explicit modifier stages (`#762`)
-5. Public export cleanup to separate consumer API from internals (`#772`)
-6. Shared Mega Evolution data consolidation before more Gen 6/7 Mega surface growth (`#767`)
+5. Shared Mega Evolution data consolidation before more Gen 6/7 Mega surface growth (`#767`)
 
 ## Non-Goals
 

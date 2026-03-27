@@ -30,6 +30,7 @@ import {
   type PokemonType,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
+import { describe, expect, it } from "vitest";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
@@ -37,8 +38,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-} from "@pokemon-lib-ts/gen8";
-import { describe, expect, it } from "vitest";
+} from "../src/data";
 import { applyGen8HeldItem, getItemDamageModifier, getPinchBerryThreshold } from "../src/Gen8Items";
 import { GEN8_TEST_VALUES } from "./helpers/reference-data";
 

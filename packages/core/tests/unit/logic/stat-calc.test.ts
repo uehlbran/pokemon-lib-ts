@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createGen8DataManager, GEN8_SPECIES_IDS } from "../../../../gen8/src";
+import { createGen8DataManager, GEN8_SPECIES_IDS } from "../../../../gen8/src/data";
 import {
   ALL_NATURES,
   CORE_ABILITY_IDS,

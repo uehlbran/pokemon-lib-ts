@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GEN4_ITEM_IDS } from "../../../../gen4/src";
-import { GEN8_ITEM_IDS } from "../../../../gen8/src";
+import { GEN8_ITEM_IDS } from "../../../../gen8/src/data";
 import { CORE_TYPE_IDS } from "../../../src";
 import {
   BASE_PINCH_ABILITY_TYPES,
