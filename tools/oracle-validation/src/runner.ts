@@ -84,7 +84,7 @@ async function main(): Promise<void> {
         } else if (suite === "stats") {
           suiteResults[suite] = runStatsSuite(generation);
         } else if (suite === "groundTruth") {
-          suiteResults[suite] = runGroundTruthSuite(generation);
+          suiteResults[suite] = runGroundTruthSuite(generation, repoRoot);
         }
       }
 

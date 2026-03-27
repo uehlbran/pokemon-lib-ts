@@ -87,6 +87,12 @@ type DerivedStatCase = z.infer<typeof derivedStatCaseSchema>;
 type CritRateCase = z.infer<typeof critRateCaseSchema>;
 type GroundTruthCase = z.infer<typeof groundTruthCaseSchema>;
 type GroundTruthDataset = z.infer<typeof groundTruthDatasetSchema>;
+type LoadedTypeChart = Record<string, Record<string, number>>;
+
+interface GroundTruthSuiteContext {
+  readonly dataManager: ReturnType<typeof createGen1DataManager>;
+  readonly typeChart: LoadedTypeChart;
+}
 
 function makeSkip(reason: string): SuiteResult {
   return {
@@ -97,6 +103,15 @@ function makeSkip(reason: string): SuiteResult {
     failures: [],
     notes: [],
     skipReason: reason,
+  };
+}
+
+function createGroundTruthSuiteContext(generation: ImplementedGeneration): GroundTruthSuiteContext {
+  return {
+    dataManager: createGen1DataManager(),
+    typeChart: JSON.parse(
+      readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
+    ) as LoadedTypeChart,
   };
 }
 
@@ -153,11 +168,8 @@ export function loadGroundTruthDataset(repoRoot: string): GroundTruthDataset {
 
 function evaluateTypeChartCase(
   testCase: TypeChartCase,
-  generation: ImplementedGeneration,
+  typeChart: LoadedTypeChart,
 ): string | null {
-  const typeChart = JSON.parse(
-    readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
-  ) as Record<string, Record<string, number>>;
   if (!(testCase.attackerType in typeChart)) {
     return `${testCase.id}: unknown attacker type ${testCase.attackerType} (${testCase.source})`;
   }
@@ -180,8 +192,10 @@ function evaluateTypeChartCase(
   return null;
 }
 
-function evaluateDerivedStatCase(testCase: DerivedStatCase): string | null {
-  const dataManager = createGen1DataManager();
+function evaluateDerivedStatCase(
+  testCase: DerivedStatCase,
+  dataManager: ReturnType<typeof createGen1DataManager>,
+): string | null {
   try {
     const species = dataManager.getSpeciesByName(testCase.speciesName);
     const pokemon = createGen1OraclePokemon(testCase);
@@ -236,12 +250,15 @@ function evaluateCritRateCase(testCase: CritRateCase): string | null {
   return null;
 }
 
-function evaluateCase(testCase: GroundTruthCase, generation: ImplementedGeneration): string | null {
+function evaluateCase(
+  testCase: GroundTruthCase,
+  context: GroundTruthSuiteContext,
+): string | null {
   if (testCase.kind === "typeChart") {
-    return evaluateTypeChartCase(testCase, generation);
+    return evaluateTypeChartCase(testCase, context.typeChart);
   }
   if (testCase.kind === "derivedStat") {
-    return evaluateDerivedStatCase(testCase);
+    return evaluateDerivedStatCase(testCase, context.dataManager);
   }
   return evaluateCritRateCase(testCase);
 }
@@ -255,8 +272,9 @@ export function runGroundTruthSuite(
   }
 
   const dataset = loadGroundTruthDataset(repoRoot);
+  const context = createGroundTruthSuiteContext(generation);
   const failures = dataset.cases
-    .map((testCase) => evaluateCase(testCase, generation))
+    .map((testCase) => evaluateCase(testCase, context))
     .filter((failure): failure is string => failure !== null);
 
   return {
