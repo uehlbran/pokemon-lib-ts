@@ -1,8 +1,8 @@
 #!/bin/bash
 # PreToolUse: Block gh pr merge unless all actionable PR comments are addressed.
 #
-# Fails open on infrastructure errors (no jq, no gh, GraphQL failure) to avoid permanently
-# blocking merges due to tooling issues.
+# This hook is intentionally fail-closed. Missing PR context or comment-gate errors are treated as
+# merge blockers rather than silently allowing bypass.
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || COMMAND=""

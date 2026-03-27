@@ -9,7 +9,8 @@ unresolved or if any actionable top-level PR comment still lacks an author ackno
 enough for merge.
 
 **A top-level PR comment is addressed only when there is a later PR conversation reply from the
-author** describing the fix, rationale, or linked follow-up issue.
+author that links the specific comment URL** and describes the fix, rationale, or linked follow-up
+issue.
 
 If blocked, inspect the review threads and reply to or resolve each unaddressed thread before
 retrying the merge.

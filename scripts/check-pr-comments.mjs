@@ -117,11 +117,12 @@ function isActionableIssueComment(comment, prAuthor) {
   );
 }
 
-function hasLaterAuthorAcknowledgement(comment, allComments, prAuthor) {
+function hasLinkedAuthorAcknowledgement(comment, allComments, prAuthor) {
   return allComments.some(
     (candidate) =>
       candidate.user?.login === prAuthor &&
-      new Date(candidate.created_at).getTime() > new Date(comment.created_at).getTime(),
+      new Date(candidate.created_at).getTime() > new Date(comment.created_at).getTime() &&
+      candidate.body?.includes(comment.html_url),
   );
 }
 
@@ -153,7 +154,7 @@ function main() {
 
   const unacknowledgedTopLevelComments = issueComments
     .filter((comment) => isActionableIssueComment(comment, prAuthor))
-    .filter((comment) => !hasLaterAuthorAcknowledgement(comment, issueComments, prAuthor))
+    .filter((comment) => !hasLinkedAuthorAcknowledgement(comment, issueComments, prAuthor))
     .map((comment) => ({
       id: comment.id,
       url: comment.html_url,
