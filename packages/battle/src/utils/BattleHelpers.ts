@@ -27,6 +27,44 @@ const DEFAULT_TEST_POKEMON_STATS = Object.freeze({
   speed: 100,
 });
 
+function assertIntegerInRange(
+  value: number,
+  name: string,
+  options: { min?: number; max?: number } = {},
+): void {
+  if (!Number.isInteger(value)) {
+    throw new Error(`${name} must be an integer`);
+  }
+  if (options.min !== undefined && value < options.min) {
+    throw new Error(`${name} must be >= ${options.min}`);
+  }
+  if (options.max !== undefined && value > options.max) {
+    throw new Error(`${name} must be <= ${options.max}`);
+  }
+}
+
+function assertValidTypeList(types: PokemonType[], name: string): void {
+  if (types.length < 1 || types.length > 2) {
+    throw new Error(`${name} must contain 1 or 2 types`);
+  }
+  const uniqueTypeCount = new Set(types).size;
+  if (uniqueTypeCount !== types.length) {
+    throw new Error(`${name} cannot contain duplicate types`);
+  }
+}
+
+function assertResolvedFormState(pokemon: PokemonInstance): void {
+  const hasMegaTypes = pokemon.megaTypes !== undefined;
+  const hasMegaAbility = pokemon.megaAbility !== undefined;
+  if (hasMegaTypes !== hasMegaAbility) {
+    throw new Error("mega-evolved Pokemon must provide both megaTypes and megaAbility");
+  }
+
+  if (pokemon.terastallized && pokemon.teraType === undefined) {
+    throw new Error("terastallized Pokemon must provide teraType");
+  }
+}
+
 /** Create a PokemonSnapshot from an ActivePokemon (public-facing info only) */
 export function createPokemonSnapshot(active: ActivePokemon): PokemonSnapshot {
   return {
@@ -61,6 +99,10 @@ export function createOnFieldPokemon(
   teamSlot: number,
   baseTypes: PokemonType[],
 ): ActivePokemon {
+  assertIntegerInRange(teamSlot, "teamSlot", { min: 0 });
+  assertValidTypeList(baseTypes, "baseTypes");
+  assertResolvedFormState(pokemon);
+
   // If this Pokemon previously mega-evolved (megaTypes and megaAbility are set on the
   // PokemonInstance), restore them. Volatile state (stat stages, etc.) is reset as normal
   // on switch-in, but mega form identity persists because it is stored on the PokemonInstance.
@@ -87,7 +129,17 @@ export function createOnFieldPokemon(
   const teraResolvedTypes: PokemonType[] =
     isTerastallized && pokemon.teraTypes && pokemon.teraTypes.length > 0
       ? ([...pokemon.teraTypes] as PokemonType[])
-      : resolvedTypes;
+      : isTerastallized && teraType
+        ? [teraType]
+        : resolvedTypes;
+  const resolvedTypeSource = isTerastallized
+    ? pokemon.teraTypes && pokemon.teraTypes.length > 0
+      ? "teraTypes"
+      : "teraType"
+    : isMega && pokemon.megaTypes
+      ? "megaTypes"
+      : "baseTypes";
+  assertValidTypeList(teraResolvedTypes, resolvedTypeSource);
 
   return {
     pokemon,
@@ -133,18 +185,47 @@ export function createBattleSide(options: {
   gimmickUsed?: boolean;
   trainer?: BattleSide["trainer"];
 }): BattleSide {
+  const team = [...(options.team ?? [])];
+  const active = [...(options.active ?? [])];
+  const activeTeamSlots = new Set<number>();
+
+  for (const [slotIndex, activePokemon] of active.entries()) {
+    if (activePokemon === null) continue;
+    assertIntegerInRange(activePokemon.teamSlot, `active[${slotIndex}].teamSlot`, { min: 0 });
+    if (activeTeamSlots.has(activePokemon.teamSlot)) {
+      throw new Error(`team slot ${activePokemon.teamSlot} cannot be active more than once`);
+    }
+    if (team.length > 0 && activePokemon.teamSlot >= team.length) {
+      throw new Error(
+        `active[${slotIndex}].teamSlot ${activePokemon.teamSlot} is outside team size ${team.length}`,
+      );
+    }
+    if (team.length > 0 && team[activePokemon.teamSlot]?.uid !== activePokemon.pokemon.uid) {
+      throw new Error(
+        `active[${slotIndex}] must reference the Pokemon at team slot ${activePokemon.teamSlot}`,
+      );
+    }
+    activeTeamSlots.add(activePokemon.teamSlot);
+  }
+
+  const faintCount = options.faintCount ?? 0;
+  assertIntegerInRange(faintCount, "faintCount", { min: 0 });
+  if (team.length > 0 && faintCount > team.length) {
+    throw new Error(`faintCount ${faintCount} cannot exceed team size ${team.length}`);
+  }
+
   return {
     index: options.index,
     trainer: options.trainer ?? null,
-    team: [...(options.team ?? [])],
-    active: [...(options.active ?? [])],
+    team,
+    active,
     hazards: [...(options.hazards ?? [])],
     screens: [...(options.screens ?? [])],
     tailwind: options.tailwind ?? { active: false, turnsLeft: 0 },
     luckyChant: options.luckyChant ?? { active: false, turnsLeft: 0 },
     wish: options.wish ?? null,
     futureAttack: options.futureAttack ?? null,
-    faintCount: options.faintCount ?? 0,
+    faintCount,
     gimmickUsed: options.gimmickUsed ?? false,
   };
 }
@@ -169,12 +250,29 @@ export function createBattleState(options?: {
   ended?: boolean;
   winner?: BattleState["winner"];
 }): BattleState {
+  const sides = options?.sides ?? [createBattleSide({ index: 0 }), createBattleSide({ index: 1 })];
+  if (sides.length !== 2 || sides[0].index !== 0 || sides[1].index !== 1) {
+    throw new Error("sides must be a [side0, side1] pair with indices 0 and 1");
+  }
+  assertIntegerInRange(options?.turnNumber ?? 1, "turnNumber", { min: 1 });
+  assertIntegerInRange(options?.fleeAttempts ?? 0, "fleeAttempts", { min: 0 });
+  if (!(options?.ended ?? false) && (options?.winner ?? null) !== null) {
+    throw new Error("winner cannot be set before the battle has ended");
+  }
+  if ((options?.format ?? "singles") === "singles") {
+    for (const side of sides) {
+      if (side.active.length > 1) {
+        throw new Error("singles battle state cannot have more than one active Pokemon per side");
+      }
+    }
+  }
+
   return {
     phase: options?.phase ?? "turn-end",
     generation: options?.generation ?? 1,
     format: options?.format ?? "singles",
     turnNumber: options?.turnNumber ?? 1,
-    sides: options?.sides ?? [createBattleSide({ index: 0 }), createBattleSide({ index: 1 })],
+    sides,
     weather: options?.weather ?? null,
     terrain: options?.terrain ?? null,
     trickRoom: options?.trickRoom ?? { active: false, turnsLeft: 0 },
