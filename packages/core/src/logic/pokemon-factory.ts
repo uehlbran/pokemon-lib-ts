@@ -1,7 +1,8 @@
 import { ALL_NATURES, CORE_ABILITY_SLOTS, CORE_GENDERS, CORE_POKEMON_DEFAULTS } from "../constants";
 import { CORE_ABILITY_IDS } from "../constants/reference-ids";
+import { getSpeciesMovePpResolver } from "../data/species-move-pp-resolver";
 import type { Gender } from "../entities/gender";
-import type { MoveSlot } from "../entities/move";
+import type { MoveData, MoveSlot } from "../entities/move";
 import type { NatureId } from "../entities/nature";
 import type { AbilitySlot, PokemonCreationOptions, PokemonInstance } from "../entities/pokemon";
 import type { Learnset, PokemonSpeciesData } from "../entities/species";
@@ -11,6 +12,9 @@ import { createFriendship } from "./friendship-inputs";
 import { createEvs, createIvs, MAX_IV, MIN_IV } from "./stat-inputs";
 
 const NATURE_IDS: readonly NatureId[] = ALL_NATURES.map((nature) => nature.id);
+type MovePpResolver = (moveId: string) => number;
+type MoveSlotSeed = PokemonCreationOptions["moves"][number];
+
 function cloneMutableStatBlock(block: StatBlock): MutableStatBlock {
   return {
     hp: block.hp,
@@ -20,6 +24,32 @@ function cloneMutableStatBlock(block: StatBlock): MutableStatBlock {
     spDefense: block.spDefense,
     speed: block.speed,
   };
+}
+
+function cloneMoveSlot(slot: MoveSlot): MoveSlot {
+  return {
+    moveId: slot.moveId,
+    currentPP: slot.currentPP,
+    maxPP: slot.maxPP,
+    ppUps: slot.ppUps,
+  };
+}
+
+function isMoveSlot(seed: MoveSlotSeed): seed is MoveSlot {
+  return typeof seed !== "string" && "currentPP" in seed && "maxPP" in seed && "ppUps" in seed;
+}
+
+function resolveMoveSlotSeed(
+  seed: MoveSlotSeed,
+  movePpResolver?: MovePpResolver,
+): Pick<MoveData, "id" | "pp"> | MoveSlot {
+  if (typeof seed === "string") {
+    if (!movePpResolver) {
+      throw new Error(`Cannot create move slot for move "${seed}" without canonical PP data`);
+    }
+    return { id: seed, pp: movePpResolver(seed) };
+  }
+  return seed;
 }
 
 function createRandomIvs(rng: SeededRandom): StatBlock {
@@ -116,23 +146,48 @@ export function determineGender(genderRatio: number, rng: SeededRandom): Gender 
 }
 
 /**
- * Get the default moveset for a Pokemon at a given level.
+ * Get the default moveset for a Pokemon at a given level using canonical PP metadata.
  * Takes the latest 4 level-up moves at or below the level.
  */
-export function getDefaultMoves(learnset: Learnset, level: number): MoveSlot[] {
+export function getDefaultMoves(
+  learnset: Learnset,
+  level: number,
+  movePpResolver?: MovePpResolver,
+): MoveSlot[] {
   const eligible = learnset.levelUp
     .filter((m) => m.level <= level)
     .reverse()
     .slice(0, 4);
 
-  return eligible.map((m) => createMoveSlot(m.move));
+  if (eligible.length === 0) {
+    return [];
+  }
+  if (!movePpResolver) {
+    throw new Error("Cannot create default move slots without canonical PP data");
+  }
+
+  return eligible.map((m) => createMoveSlot(m.move, movePpResolver(m.move)));
 }
 
 /**
  * Create a MoveSlot with full PP.
  */
-export function createMoveSlot(moveId: string, pp?: number, ppUps = 0): MoveSlot {
-  const maxPP = pp ? Math.floor(pp * (1 + 0.2 * ppUps)) : 0;
+export function createMoveSlot(move: Pick<MoveData, "id" | "pp">, ppUps?: number): MoveSlot;
+export function createMoveSlot(moveId: string, pp: number, ppUps?: number): MoveSlot;
+export function createMoveSlot(
+  moveOrId: string | Pick<MoveData, "id" | "pp">,
+  ppOrPpUps?: number,
+  maybePpUps = 0,
+): MoveSlot {
+  const moveId = typeof moveOrId === "string" ? moveOrId : moveOrId.id;
+  const basePp = typeof moveOrId === "string" ? ppOrPpUps : moveOrId.pp;
+  const ppUps = typeof moveOrId === "string" ? maybePpUps : (ppOrPpUps ?? 0);
+
+  if (basePp === undefined) {
+    throw new Error(`Cannot create move slot for move "${moveId}" without canonical PP data`);
+  }
+
+  const maxPP = Math.floor(basePp * (1 + 0.2 * ppUps));
   return {
     moveId,
     currentPP: maxPP,
@@ -197,10 +252,16 @@ export function createPokemonInstance(
       `Invalid move count ${options.moves.length}; Pokemon must have between 1 and 4 moves`,
     );
   }
+  const movePpResolver = options?.movePpResolver ?? getSpeciesMovePpResolver(species) ?? undefined;
   const moves =
     options?.moves && options.moves.length > 0
-      ? options.moves.map((moveId) => createMoveSlot(moveId))
-      : getDefaultMoves(species.learnset, level);
+      ? options.moves.map((move) => {
+          const resolvedMove = resolveMoveSlotSeed(move, movePpResolver);
+          return isMoveSlot(resolvedMove)
+            ? cloneMoveSlot(resolvedMove)
+            : createMoveSlot(resolvedMove);
+        })
+      : getDefaultMoves(species.learnset, level, movePpResolver);
   if (moves.length < 1 || moves.length > 4) {
     if (moves.length === 0) {
       throw new Error(`No eligible moves for species "${species.name}" at level ${level}`);

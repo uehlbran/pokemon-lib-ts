@@ -76,6 +76,7 @@ function makeScriptedRng(script: {
 
 const dataManager = createGen8DataManager();
 const canonicalCharizardSpecies = dataManager.getSpecies(GEN8_SPECIES_IDS.charizard);
+const resolveCanonicalMovePp = (moveId: string) => dataManager.getMove(moveId).pp;
 const syntheticLevelUpLearnset: Learnset = {
   levelUp: [
     { level: 1, move: CORE_MOVE_IDS.growl },
@@ -118,6 +119,18 @@ function createSpeciesWithAbilities(
 
 function createSpeciesWithTypes(types: PokemonSpeciesData["types"]): PokemonSpeciesData {
   return createSyntheticSpeciesData({ types });
+}
+
+function createPokemonInstanceForTest(
+  species: PokemonSpeciesData,
+  level: number,
+  rng: SeededRandom,
+  options?: Parameters<typeof createPokemonInstance>[3],
+) {
+  return createPokemonInstance(species, level, rng, {
+    movePpResolver: resolveCanonicalMovePp,
+    ...options,
+  });
 }
 
 const ADAMANT_NATURE = getNatureById(CORE_NATURE_IDS.adamant);
@@ -223,7 +236,7 @@ describe("getDefaultMoves", () => {
 
   it("given a learnset and level 50, when called, then returns the latest 4 level-up moves", () => {
     // Arrange / Act
-    const moves = getDefaultMoves(learnset, 50);
+    const moves = getDefaultMoves(learnset, 50, resolveCanonicalMovePp);
 
     // Assert
     expect(moves).toHaveLength(4);
@@ -231,11 +244,16 @@ describe("getDefaultMoves", () => {
     expect(moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
     expect(moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
     expect(moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
+    // Source: canonical Gen 8 move data for Swift/Thunderbolt/Flamethrower/Surf PP.
+    expect(moves[0]?.maxPP).toBe(dataManager.getMove(CORE_MOVE_IDS.swift).pp);
+    expect(moves[1]?.maxPP).toBe(dataManager.getMove(CORE_MOVE_IDS.thunderbolt).pp);
+    expect(moves[2]?.maxPP).toBe(dataManager.getMove(CORE_MOVE_IDS.flamethrower).pp);
+    expect(moves[3]?.maxPP).toBe(dataManager.getMove(CORE_MOVE_IDS.surf).pp);
   });
 
   it("given a learnset and level 7, when called, then returns only 3 eligible moves", () => {
     // Arrange / Act
-    const moves = getDefaultMoves(learnset, 7);
+    const moves = getDefaultMoves(learnset, 7, resolveCanonicalMovePp);
 
     // Assert
     expect(moves).toHaveLength(3);
@@ -246,7 +264,7 @@ describe("getDefaultMoves", () => {
 
   it("given a learnset and level 1, when called, then returns only level-1 moves", () => {
     // Arrange / Act
-    const moves = getDefaultMoves(learnset, 1);
+    const moves = getDefaultMoves(learnset, 1, resolveCanonicalMovePp);
 
     // Assert
     expect(moves).toHaveLength(2);
@@ -256,7 +274,7 @@ describe("getDefaultMoves", () => {
 
   it("given a learnset with many moves and a high level, when called, then caps at 4 moves", () => {
     // Arrange / Act
-    const moves = getDefaultMoves(learnset, 100);
+    const moves = getDefaultMoves(learnset, 100, resolveCanonicalMovePp);
 
     // Assert
     expect(moves).toHaveLength(4);
@@ -267,7 +285,7 @@ describe("getDefaultMoves", () => {
     const emptyLearnset: Learnset = { levelUp: [], tm: [], egg: [], tutor: [] };
 
     // Act
-    const moves = getDefaultMoves(emptyLearnset, 50);
+    const moves = getDefaultMoves(emptyLearnset, 50, resolveCanonicalMovePp);
 
     // Assert
     expect(moves).toHaveLength(0);
@@ -283,25 +301,26 @@ describe("getDefaultMoves", () => {
     };
 
     // Act
-    const moves = getDefaultMoves(highLevelLearnset, 5);
+    const moves = getDefaultMoves(highLevelLearnset, 5, resolveCanonicalMovePp);
 
     // Assert
     expect(moves).toHaveLength(0);
+  });
+
+  it("given eligible moves but no PP resolver, when called, then it throws instead of fabricating zero-PP slots", () => {
+    expect(() => getDefaultMoves(learnset, 50)).toThrow(
+      "Cannot create default move slots without canonical PP data",
+    );
   });
 });
 
 // --- createMoveSlot ---
 
 describe("createMoveSlot", () => {
-  it("given a moveId with no PP, when called, then creates a slot with 0 PP", () => {
-    // Arrange / Act
-    const slot = createMoveSlot(CORE_MOVE_IDS.flamethrower);
-
-    // Assert
-    expect(slot.moveId).toBe(CORE_MOVE_IDS.flamethrower);
-    expect(slot.currentPP).toBe(0);
-    expect(slot.maxPP).toBe(0);
-    expect(slot.ppUps).toBe(0);
+  it("given a move id without PP metadata, when called, then it throws instead of fabricating a zero-PP slot", () => {
+    expect(() => createMoveSlot(CORE_MOVE_IDS.flamethrower as never)).toThrow(
+      `Cannot create move slot for move "${CORE_MOVE_IDS.flamethrower}" without canonical PP data`,
+    );
   });
 
   it("given a moveId with PP specified, when called, then creates a slot with full PP", () => {
@@ -347,6 +366,18 @@ describe("createMoveSlot", () => {
     expect(slot.maxPP).toBe(8);
     expect(slot.currentPP).toBe(8);
   });
+
+  it("given canonical move metadata, when called, then it derives PP from the canonical record", () => {
+    const flamethrower = dataManager.getMove(CORE_MOVE_IDS.flamethrower);
+
+    const slot = createMoveSlot(flamethrower);
+
+    // Source: Flamethrower's canonical PP is 15 in the Gen 8 move data bundle.
+    expect(slot.moveId).toBe(CORE_MOVE_IDS.flamethrower);
+    expect(slot.maxPP).toBe(flamethrower.pp);
+    expect(slot.currentPP).toBe(flamethrower.pp);
+    expect(slot.ppUps).toBe(0);
+  });
 });
 
 // --- createPokemonInstance ---
@@ -362,7 +393,7 @@ describe("createPokemonInstance", () => {
       chances: [false],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     // Derived from determineGender: 87.5% male uses a 7-of-8 threshold on the cartridge ratio scale.
     // Derived from generateUid: concatenates two zero-padded 32-bit hex values.
@@ -403,7 +434,7 @@ describe("createPokemonInstance", () => {
       chances: [false],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.ivs).toEqual({
       hp: 5,
@@ -423,7 +454,7 @@ describe("createPokemonInstance", () => {
       chances: [false],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.nature).toBe(TIMID_NATURE.id);
   });
@@ -436,7 +467,7 @@ describe("createPokemonInstance", () => {
       chances: [false],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.gender).toBe(CORE_GENDERS.female);
   });
@@ -447,7 +478,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     // Assert
     expect(instance.gender).toBe(CORE_GENDERS.genderless);
@@ -459,7 +490,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     // Assert
     expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze); // Only one normal ability
@@ -474,7 +505,7 @@ describe("createPokemonInstance", () => {
       chances: [true, false],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
     expect(instance.ability).toBe(CORE_ABILITY_IDS.intimidate);
@@ -489,7 +520,7 @@ describe("createPokemonInstance", () => {
       chances: [false],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.isShiny).toBe(false);
   });
@@ -503,7 +534,7 @@ describe("createPokemonInstance", () => {
       chances: [true],
     });
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.isShiny).toBe(true);
   });
@@ -514,7 +545,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 36, rng);
+    const instance = createPokemonInstanceForTest(species, 36, rng);
 
     // Assert - level 36: eligible moves up to 36 are swift(21), thunderbolt(17), flamethrower(10), surf(7)
     expect(instance.moves).toHaveLength(4);
@@ -528,7 +559,7 @@ describe("createPokemonInstance", () => {
     const species = createSyntheticSpeciesData();
     const rng = new SeededRandom(42);
 
-    const instance = createPokemonInstance(species, 36, rng, { moves: [] });
+    const instance = createPokemonInstanceForTest(species, 36, rng, { moves: [] });
 
     expect(instance.moves).toHaveLength(4);
     expect(instance.moves[0]?.moveId).toBe(CORE_MOVE_IDS.swift);
@@ -542,7 +573,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     expect(() =>
-      createPokemonInstance(species, 36, rng, {
+      createPokemonInstanceForTest(species, 36, rng, {
         moves: [
           CORE_MOVE_IDS.growl,
           CORE_MOVE_IDS.tackle,
@@ -560,7 +591,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     // Assert
     const stats = [
@@ -585,7 +616,7 @@ describe("createPokemonInstance", () => {
     const customMetLocation = species.spriteKey;
 
     // Act
-    const instance = createPokemonInstance(species, 100, rng, {
+    const instance = createPokemonInstanceForTest(species, 100, rng, {
       nature: ADAMANT_NATURE.id,
       ivs: customIvs,
       evs: customEvs,
@@ -640,8 +671,8 @@ describe("createPokemonInstance", () => {
     const rng2 = new SeededRandom(42);
 
     // Act
-    const instance1 = createPokemonInstance(species, 50, rng1);
-    const instance2 = createPokemonInstance(species, 50, rng2);
+    const instance1 = createPokemonInstanceForTest(species, 50, rng1);
+    const instance2 = createPokemonInstanceForTest(species, 50, rng2);
 
     // Assert
     expect(instance1).toEqual(instance2);
@@ -653,7 +684,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     expect(() =>
-      createPokemonInstance(species, 50, rng, {
+      createPokemonInstanceForTest(species, 50, rng, {
         abilitySlot: CORE_ABILITY_SLOTS.hidden,
       }),
     ).toThrow(`Invalid ability slot "${CORE_ABILITY_SLOTS.hidden}" for species "${species.name}"`);
@@ -665,7 +696,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     expect(() =>
-      createPokemonInstance(species, 50, rng, {
+      createPokemonInstanceForTest(species, 50, rng, {
         abilitySlot: CORE_ABILITY_SLOTS.normal2,
       }),
     ).toThrow(`Invalid ability slot "${CORE_ABILITY_SLOTS.normal2}" for species "${species.name}"`);
@@ -675,7 +706,7 @@ describe("createPokemonInstance", () => {
     const species = createSpeciesWithAbilities(DUAL_NORMAL_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    const instance = createPokemonInstance(species, 50, rng, {
+    const instance = createPokemonInstanceForTest(species, 50, rng, {
       abilitySlot: CORE_ABILITY_SLOTS.normal2,
     });
 
@@ -688,7 +719,7 @@ describe("createPokemonInstance", () => {
     const species = createSpeciesWithAbilities(NO_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     expect(instance.ability).toBe(CORE_ABILITY_IDS.none);
     expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
@@ -698,7 +729,7 @@ describe("createPokemonInstance", () => {
     const species = createSpeciesWithAbilities(NO_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    const instance = createPokemonInstance(species, 50, rng, {
+    const instance = createPokemonInstanceForTest(species, 50, rng, {
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
     });
 
@@ -717,7 +748,7 @@ describe("createPokemonInstance", () => {
     });
     const rng = new SeededRandom(42);
 
-    expect(() => createPokemonInstance(species, 50, rng)).toThrow(
+    expect(() => createPokemonInstanceForTest(species, 50, rng)).toThrow(
       `No eligible moves for species "${species.name}" at level 50`,
     );
   });
@@ -728,7 +759,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     // Assert
     expect(instance.teraType).toBe(CORE_TYPE_IDS.fire);
@@ -740,7 +771,7 @@ describe("createPokemonInstance", () => {
     const rng = new SeededRandom(42);
 
     // Act
-    const instance = createPokemonInstance(species, 50, rng);
+    const instance = createPokemonInstanceForTest(species, 50, rng);
 
     // Assert
     expect(instance.dynamaxLevel).toBe(0);

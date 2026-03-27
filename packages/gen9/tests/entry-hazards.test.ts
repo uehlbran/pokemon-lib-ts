@@ -108,7 +108,7 @@ function createSyntheticOnFieldPokemon(overrides: {
       ivs: createIvs(),
       evs: createEvs(),
       currentHp: overrides.currentHp ?? hp,
-      moves: [createMoveSlot(TACKLE.id)],
+      moves: [createMoveSlot(TACKLE)],
       ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,

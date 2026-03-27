@@ -1,5 +1,5 @@
 import type { Gender } from "./gender";
-import type { MoveSlot } from "./move";
+import type { MoveData, MoveSlot } from "./move";
 import type { NatureId } from "./nature";
 import type { MutableStatBlock, StatBlock } from "./stats";
 import type { PrimaryStatus } from "./status";
@@ -199,7 +199,20 @@ export interface PokemonCreationOptions {
   abilitySlot: AbilitySlot;
   gender: Gender;
   isShiny: boolean;
-  moves: string[]; // Move IDs — if empty, uses latest level-up moves
+  /**
+   * Explicit moves for the created Pokemon.
+   * - `string`: move id, resolved through canonical move metadata
+   * - `MoveSlot`: fully specified slot, used as-is
+   * - `{ id, pp }`: canonical move metadata seed
+   *
+   * If empty, uses latest level-up moves.
+   */
+  moves: Array<string | MoveSlot | Pick<MoveData, "id" | "pp">>;
+  /**
+   * Optional explicit PP resolver for string move ids when the species did not
+   * come from a DataManager-backed canonical data bundle.
+   */
+  movePpResolver: (moveId: string) => number;
   heldItem: string | null;
   friendship: number;
   metLocation: string;

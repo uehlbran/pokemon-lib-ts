@@ -1,8 +1,13 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": "../..",
     "outDir": "dist",
-    "rootDir": "src",
+    "paths": {
+      "@pokemon-lib-ts/battle/utils": ["packages/battle/src/utils/index.ts"],
+      "@pokemon-lib-ts/*": ["packages/*/src/index.ts"]
+    },
+    "rootDir": "../..",
     "composite": false
   },
   "include": ["src"],

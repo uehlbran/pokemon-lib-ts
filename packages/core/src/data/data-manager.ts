@@ -7,6 +7,7 @@ import type {
   PokemonSpeciesData,
   TypeChart,
 } from "../entities";
+import { attachSpeciesMovePpResolver } from "./species-move-pp-resolver";
 import type { RawDataObjects } from "./types";
 
 /**
@@ -54,6 +55,10 @@ export class DataManager {
     // Load moves
     for (const move of data.moves) {
       movesById.set(move.id, move);
+    }
+
+    for (const species of data.pokemon) {
+      attachSpeciesMovePpResolver(species, movesById);
     }
 
     // Load abilities (optional)

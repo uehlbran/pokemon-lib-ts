@@ -23,6 +23,11 @@ const MOVES = CORE_MOVE_IDS;
 const STATUS = CORE_STATUS_IDS;
 const VOLATILES = CORE_VOLATILE_IDS;
 const SPECIES = GEN3_SPECIES_IDS;
+const DEFAULT_DATA_MANAGER = createMockDataManager();
+
+function createCanonicalMoveSlot(moveId: string) {
+  return createMoveSlot(DEFAULT_DATA_MANAGER.getMove(moveId));
+}
 
 function createEngine(overrides?: {
   seed?: number;
@@ -38,7 +43,7 @@ function createEngine(overrides?: {
     createTestPokemon(SPECIES.charizard, 50, {
       uid: "charizard-1",
       nickname: "Charizard",
-      moves: [createMoveSlot(MOVES.tackle), createMoveSlot(MOVES.thunderbolt)],
+      moves: [createCanonicalMoveSlot(MOVES.tackle), createCanonicalMoveSlot(MOVES.thunderbolt)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -52,7 +57,7 @@ function createEngine(overrides?: {
     createTestPokemon(SPECIES.pikachu, 50, {
       uid: "pikachu-1",
       nickname: "Pikachu",
-      moves: [createMoveSlot(MOVES.quickAttack)],
+      moves: [createCanonicalMoveSlot(MOVES.quickAttack)],
       calculatedStats: {
         hp: 100,
         attack: 80,
@@ -69,7 +74,7 @@ function createEngine(overrides?: {
     createTestPokemon(SPECIES.blastoise, 50, {
       uid: "blastoise-1",
       nickname: "Blastoise",
-      moves: [createMoveSlot(MOVES.tackle)],
+      moves: [createCanonicalMoveSlot(MOVES.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -83,7 +88,7 @@ function createEngine(overrides?: {
     createTestPokemon(SPECIES.charizard, 50, {
       uid: "charizard-2",
       nickname: "Charizard2",
-      moves: [createMoveSlot(MOVES.tackle)],
+      moves: [createCanonicalMoveSlot(MOVES.tackle)],
       calculatedStats: {
         hp: 200,
         attack: 100,
@@ -222,7 +227,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-starter",
         nickname: "CharStarter",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -237,7 +242,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.pikachu, 50, {
         uid: "pikachu-replacement",
         nickname: "PikaReplace",
-        moves: [createMoveSlot(MOVES.quickAttack)],
+        moves: [createCanonicalMoveSlot(MOVES.quickAttack)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -255,7 +260,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.blastoise, 50, {
         uid: "blastoise-starter",
         nickname: "BlastStarter",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -270,7 +275,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.charizard, 50, {
         uid: "charizard-replacement",
         nickname: "CharReplace",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -356,7 +361,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.charizard, 50, {
         uid: "starter-1",
         nickname: "Starter1",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -371,7 +376,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.pikachu, 50, {
         uid: "fast-replacement",
         nickname: "FastReplace",
-        moves: [createMoveSlot(MOVES.quickAttack)],
+        moves: [createCanonicalMoveSlot(MOVES.quickAttack)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -388,7 +393,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.blastoise, 50, {
         uid: "starter-2",
         nickname: "Starter2",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -403,7 +408,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.charizard, 50, {
         uid: "slow-replacement",
         nickname: "SlowReplace",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -465,7 +470,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.charizard, 50, {
         uid: "starter-1",
         nickname: "Starter1",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -480,7 +485,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.pikachu, 50, {
         uid: "side-0-replacement",
         nickname: "Side0Replace",
-        moves: [createMoveSlot(MOVES.quickAttack)],
+        moves: [createCanonicalMoveSlot(MOVES.quickAttack)],
         calculatedStats: {
           hp: 100,
           attack: 80,
@@ -497,7 +502,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.blastoise, 50, {
         uid: "starter-2",
         nickname: "Starter2",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 100,
           attack: 100,
@@ -512,7 +517,7 @@ describe("Bug #150: double-KO switch-in ability targeting", () => {
       createTestPokemon(SPECIES.charizard, 50, {
         uid: "side-1-replacement",
         nickname: "Side1Replace",
-        moves: [createMoveSlot(MOVES.tackle)],
+        moves: [createCanonicalMoveSlot(MOVES.tackle)],
         calculatedStats: {
           hp: 200,
           attack: 100,

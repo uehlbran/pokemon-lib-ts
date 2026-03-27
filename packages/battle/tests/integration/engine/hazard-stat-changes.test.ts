@@ -1,6 +1,7 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_HAZARD_IDS,
+  CORE_MOVE_IDS,
   CORE_STAT_IDS,
   createPokemonInstance,
   SeededRandom,
@@ -32,7 +33,9 @@ function createBattlePokemonFixture(
 ): PokemonInstance {
   const species = dataManager.getSpecies(speciesId);
   return {
-    ...createPokemonInstance(species, 50, new SeededRandom(seed)),
+    ...createPokemonInstance(species, 50, new SeededRandom(seed), {
+      moves: [dataManager.getMove(CORE_MOVE_IDS.tackle)],
+    }),
     uid,
   };
 }
