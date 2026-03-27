@@ -5,13 +5,8 @@ import {
   CORE_TYPE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import {
-  createGen9DataManager,
-  GEN9_ABILITY_IDS,
-  GEN9_ITEM_IDS,
-  GEN9_MOVE_IDS,
-  GEN9_SPECIES_IDS,
-} from "../src";
+import { createGen9DataManager } from "../src";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_MOVE_IDS, GEN9_SPECIES_IDS } from "../src/data";
 
 const dataManager = createGen9DataManager();
 const abilityIds = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS } as const;

@@ -35,32 +35,34 @@ import {
   GEN9_MOVE_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import {
-  canToxicChainApply,
-  EMBODY_ASPECT_BOOSTS,
   getSupremeOverlordFloatMultiplier,
   getSupremeOverlordMultiplier,
   handleDauntlessShieldGen9,
-  handleEmbodyAspect,
   handleGen9DauntlessShield,
-  handleGen9DauntlessShieldTrigger,
   handleGen9IntrepidSword,
+  handleGen9Protean,
+  handleIntrepidSwordGen9,
+  handleProteanGen9,
+  SUPREME_OVERLORD_TABLE,
+} from "../src/Gen9AbilitiesNew";
+import {
+  canToxicChainApply,
+  EMBODY_ASPECT_BOOSTS,
+  handleEmbodyAspect,
+  handleGen9DauntlessShieldTrigger,
   handleGen9IntrepidSwordTrigger,
   handleGen9NewAbility,
-  handleGen9Protean,
   handleGen9ProteanTrigger,
   handleGoodAsGold,
-  handleIntrepidSwordGen9,
   handleMyceliumMight,
-  handleProteanGen9,
   handleToxicChain,
   hasMyceliumMightPriorityReduction,
   isBlockedByGoodAsGold,
   isEmbodyAspect,
   isMyceliumMightBypassingAbility,
-  SUPREME_OVERLORD_TABLE,
-} from "../src/Gen9AbilitiesNew";
+} from "../src/internal";
 
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS };
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };

@@ -26,21 +26,22 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen9DataManager, Gen9Ruleset } from "../src";
+import {
+  GEN9_ABILITY_IDS,
+  GEN9_ITEM_IDS,
+  GEN9_MOVE_IDS,
+  GEN9_NATURE_IDS,
+  GEN9_SPECIES_IDS,
+} from "../src/data";
 import {
   calculateRevivalHp,
   calculateSaltCureDamage,
   calculateShedTailCost,
   canUseRevivalBlessing,
   canUseShedTail,
-  createGen9DataManager,
   executeGen9MoveEffect,
   findRevivalTarget,
-  GEN9_ABILITY_IDS,
-  GEN9_ITEM_IDS,
-  GEN9_MOVE_IDS,
-  GEN9_NATURE_IDS,
-  GEN9_SPECIES_IDS,
-  Gen9Ruleset,
   getLastRespectsPower,
   getRageFistPower,
   handleMakeItRain,
@@ -50,7 +51,7 @@ import {
   handleTeraBlast,
   handleTidyUp,
   shouldApplyStellarDebuff,
-} from "../src";
+} from "../src/internal";
 
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS };
 const END_OF_TURN = CORE_END_OF_TURN_EFFECT_IDS;

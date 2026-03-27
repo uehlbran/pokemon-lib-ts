@@ -1,5 +1,5 @@
 import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
-import { GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9";
+import { GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9/data";
 import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "../../../src";
 import type { BattleConfig, ItemContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";

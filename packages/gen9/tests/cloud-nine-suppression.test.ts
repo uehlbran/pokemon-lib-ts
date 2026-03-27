@@ -36,7 +36,7 @@ import {
   GEN9_MOVE_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import { calculateGen9Damage } from "../src/Gen9DamageCalc";
 import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 import {

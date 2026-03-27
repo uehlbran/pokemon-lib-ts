@@ -33,7 +33,7 @@ import {
   NEUTRAL_NATURES,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "../src";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "../src/data";
 import {
   applyGen9TerrainEffects,
   checkGen9TerrainStatusImmunity,
@@ -44,7 +44,7 @@ import {
   isSurgeAbility,
   TERRAIN_DEFAULT_TURNS,
   TERRAIN_EXTENDED_TURNS,
-} from "../src/Gen9Terrain";
+} from "../src/internal";
 
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN9_ABILITY_IDS };
 const ITEMS = { ...CORE_ITEM_IDS, ...GEN9_ITEM_IDS };

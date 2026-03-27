@@ -17,17 +17,14 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { createGen9DataManager, Gen9Ruleset } from "../src";
+import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "../src/data";
 import {
-  createGen9DataManager,
-  GEN9_ABILITY_IDS,
   GEN9_CRIT_MULTIPLIER,
   GEN9_CRIT_RATE_PROBABILITIES,
   GEN9_CRIT_RATE_TABLE,
   GEN9_CRIT_RATES,
-  GEN9_ITEM_IDS,
-  GEN9_SPECIES_IDS,
-  Gen9Ruleset,
-} from "../src";
+} from "../src/internal";
 
 const dataManager = createGen9DataManager();
 const ruleset = new Gen9Ruleset(dataManager);

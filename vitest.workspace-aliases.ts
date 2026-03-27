@@ -52,6 +52,14 @@ export function workspaceTestAliases(): Alias[] {
       replacement: workspacePackage("./packages/gen8/src/index.ts"),
     },
     {
+      find: "@pokemon-lib-ts/gen9/data",
+      replacement: workspacePackage("./packages/gen9/src/data/index.ts"),
+    },
+    {
+      find: "@pokemon-lib-ts/gen9/internal",
+      replacement: workspacePackage("./packages/gen9/src/internal.ts"),
+    },
+    {
       find: "@pokemon-lib-ts/gen9",
       replacement: workspacePackage("./packages/gen9/src/index.ts"),
     },

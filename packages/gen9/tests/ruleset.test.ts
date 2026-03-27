@@ -24,7 +24,8 @@ import {
   DataManager,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN9_MOVE_IDS, Gen9Ruleset, Gen9Terastallization } from "../src";
+import { Gen9Ruleset, Gen9Terastallization } from "../src";
+import { GEN9_MOVE_IDS } from "../src/data";
 
 const HAZARDS = CORE_HAZARD_IDS;
 const MOVES = { ...CORE_MOVE_IDS, ...GEN9_MOVE_IDS };

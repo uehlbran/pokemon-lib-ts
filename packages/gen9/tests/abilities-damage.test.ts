@@ -55,7 +55,15 @@ import {
   GEN9_MOVE_IDS,
   GEN9_NATURE_IDS,
   GEN9_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
+import {
+  handleGen9DauntlessShield,
+  handleGen9IntrepidSword,
+  handleGen9ProteanTypeChange,
+  SUPREME_OVERLORD_TABLE,
+} from "../src/Gen9AbilitiesDamage";
+import { calculateGen9Damage, pokeRound } from "../src/Gen9DamageCalc";
+import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
 import {
   getAteAbilityOverride,
   getFluffyModifier,
@@ -72,18 +80,12 @@ import {
   getToughClawsMultiplier,
   handleGen9DamageCalcAbility,
   handleGen9DamageImmunityAbility,
-  handleGen9DauntlessShield,
-  handleGen9IntrepidSword,
-  handleGen9ProteanTypeChange,
   hasSheerForceEligibleEffect,
   isParentalBondEligible,
   isSheerForceEligibleMove,
-  SUPREME_OVERLORD_TABLE,
   sheerForceSuppressesLifeOrb,
   sturdyBlocksOHKO,
-} from "../src/Gen9AbilitiesDamage";
-import { calculateGen9Damage, pokeRound } from "../src/Gen9DamageCalc";
-import { GEN9_TYPE_CHART } from "../src/Gen9TypeChart";
+} from "../src/internal";
 
 // Source: Showdown damage engine fixed-point arithmetic uses 2^12 as the identity modifier.
 const FIXED_POINT_IDENTITY = CORE_FIXED_POINT.identity;
