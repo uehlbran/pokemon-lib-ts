@@ -19,7 +19,7 @@ export const generationResultSchema = z.object({
 });
 
 export const runnerOutputSchema = z.object({
-  timestamp: z.string(),
+  timestamp: z.string().datetime(),
   suitesRequested: z.array(z.string()),
   generations: z.array(generationResultSchema),
 });
