@@ -524,17 +524,30 @@ describe("createPokemonInstance", () => {
     expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
   });
 
-  it("given moves option is an empty array, when called, then it uses the default level-up moves", () => {
+  it("given moves option is an empty array, when called, then it throws instead of creating an invalid move list", () => {
     const species = createSyntheticSpeciesData();
     const rng = new SeededRandom(42);
 
-    const instance = createPokemonInstance(species, 36, rng, { moves: [] });
+    expect(() => createPokemonInstance(species, 36, rng, { moves: [] })).toThrow(
+      "Invalid move count 0; Pokemon must have between 1 and 4 moves",
+    );
+  });
 
-    expect(instance.moves).toHaveLength(4);
-    expect(instance.moves[0]?.moveId).toBe(CORE_MOVE_IDS.swift);
-    expect(instance.moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
-    expect(instance.moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
-    expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
+  it("given moves option has more than four entries, when called, then it throws instead of creating an invalid move list", () => {
+    const species = createSyntheticSpeciesData();
+    const rng = new SeededRandom(42);
+
+    expect(() =>
+      createPokemonInstance(species, 36, rng, {
+        moves: [
+          CORE_MOVE_IDS.growl,
+          CORE_MOVE_IDS.tackle,
+          CORE_MOVE_IDS.surf,
+          CORE_MOVE_IDS.flamethrower,
+          CORE_MOVE_IDS.thunderbolt,
+        ],
+      }),
+    ).toThrow("Invalid move count 5; Pokemon must have between 1 and 4 moves");
   });
 
   it("given a species, when called with default EVs, then all EVs are 0", () => {
@@ -630,34 +643,28 @@ describe("createPokemonInstance", () => {
     expect(instance1).toEqual(instance2);
   });
 
-  it("given a species with no hidden ability, when abilitySlot is hidden, then falls back to normal1", () => {
+  it("given a species with no hidden ability, when abilitySlot is hidden, then it throws instead of silently downgrading the slot", () => {
     // Arrange
     const species = createSpeciesWithAbilities(NO_HIDDEN_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    // Act
-    const instance = createPokemonInstance(species, 50, rng, {
-      abilitySlot: CORE_ABILITY_SLOTS.hidden,
-    });
-
-    // Assert
-    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
-    expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
+    expect(() =>
+      createPokemonInstance(species, 50, rng, {
+        abilitySlot: CORE_ABILITY_SLOTS.hidden,
+      }),
+    ).toThrow(`Invalid ability slot "${CORE_ABILITY_SLOTS.hidden}" for species "${species.name}"`);
   });
 
-  it("given a species with one normal ability, when abilitySlot is normal2, then falls back to normal1", () => {
+  it("given a species with one normal ability, when abilitySlot is normal2, then it throws instead of silently downgrading the slot", () => {
     // Arrange
     const species = createSpeciesWithAbilities(SINGLE_NORMAL_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    // Act
-    const instance = createPokemonInstance(species, 50, rng, {
-      abilitySlot: CORE_ABILITY_SLOTS.normal2,
-    });
-
-    // Assert
-    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
-    expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
+    expect(() =>
+      createPokemonInstance(species, 50, rng, {
+        abilitySlot: CORE_ABILITY_SLOTS.normal2,
+      }),
+    ).toThrow(`Invalid ability slot "${CORE_ABILITY_SLOTS.normal2}" for species "${species.name}"`);
   });
 
   it("given a species with two normal abilities, when abilitySlot is normal2, then uses the second normal ability", () => {

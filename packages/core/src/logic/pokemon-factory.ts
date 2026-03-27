@@ -41,6 +41,17 @@ function normalizeEvs(evs?: PokemonCreationOptions["evs"]): MutableStatBlock {
   return cloneMutableStatBlock(evs ? createEvs(evs) : createEvs());
 }
 
+function hasAbilityForSlot(species: PokemonSpeciesData, slot: AbilitySlot): boolean {
+  switch (slot) {
+    case CORE_ABILITY_SLOTS.normal1:
+      return species.abilities.normal[0] !== undefined;
+    case CORE_ABILITY_SLOTS.normal2:
+      return species.abilities.normal[1] !== undefined;
+    case CORE_ABILITY_SLOTS.hidden:
+      return species.abilities.hidden !== null;
+  }
+}
+
 /**
  * Generate a unique ID from the PRNG.
  */
@@ -148,23 +159,38 @@ export function createPokemonInstance(
   const gender = options?.gender ?? determineGender(species.genderRatio, rng);
 
   // Pick ability
-  const abilitySlot =
-    options?.abilitySlot ??
-    (species.abilities.normal.length > 1
-      ? rng.chance(0.5)
-        ? CORE_POKEMON_DEFAULTS.abilitySlot
-        : CORE_ABILITY_SLOTS.normal2
-      : CORE_POKEMON_DEFAULTS.abilitySlot);
-  const resolvedAbility = resolveAbilityForSlot(species, abilitySlot);
+  let resolvedAbility: { ability: string; abilitySlot: AbilitySlot };
+  if (options?.abilitySlot !== undefined) {
+    if (!hasAbilityForSlot(species, options.abilitySlot)) {
+      throw new Error(
+        `Invalid ability slot "${options.abilitySlot}" for species "${species.name}"`,
+      );
+    }
+    resolvedAbility = resolveAbilityForSlot(species, options.abilitySlot);
+  } else {
+    const selectedSlot =
+      species.abilities.normal.length > 1
+        ? rng.chance(0.5)
+          ? CORE_POKEMON_DEFAULTS.abilitySlot
+          : CORE_ABILITY_SLOTS.normal2
+        : CORE_POKEMON_DEFAULTS.abilitySlot;
+    resolvedAbility = resolveAbilityForSlot(species, selectedSlot);
+  }
 
   // Determine shininess
   const isShiny = options?.isShiny ?? rng.chance(CORE_POKEMON_DEFAULTS.shinyChance);
 
   // Select moves -- latest 4 level-up moves at or below this level
-  const moves =
-    options?.moves && options.moves.length > 0
-      ? options.moves.map((moveId) => createMoveSlot(moveId))
-      : getDefaultMoves(species.learnset, level);
+  if (options?.moves !== undefined) {
+    if (options.moves.length < 1 || options.moves.length > 4) {
+      throw new Error(
+        `Invalid move count ${options.moves.length}; Pokemon must have between 1 and 4 moves`,
+      );
+    }
+  }
+  const moves = options?.moves
+    ? options.moves.map((moveId) => createMoveSlot(moveId))
+    : getDefaultMoves(species.learnset, level);
   const evs = normalizeEvs(options?.evs);
 
   const uid = generateUid(rng);
