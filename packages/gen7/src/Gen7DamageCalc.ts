@@ -165,6 +165,7 @@ const PINCH_ABILITY_TYPES = BASE_PINCH_ABILITY_TYPES;
 const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 
 // Signature moves that ignore target ability effects in Gen 7.
+// Source: Showdown data/moves.ts -- moongeistbeam / sunsteelstrike: ignoreAbility
 // Reused by the existing defensive-ability bypass path (same behavior model as
 // Mold Breaker/Teravolt/Turboblaze in this module).
 const ABILITY_IGNORING_MOVES: ReadonlySet<string> = new Set([
@@ -379,6 +380,7 @@ function getAttackStat(
   isPhysical: boolean,
   isCrit: boolean,
   defender?: ActivePokemon,
+  bypassesDefensiveAbilities = false,
 ): number {
   const statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   const stats = attacker.pokemon.calculatedStats;
@@ -480,7 +482,13 @@ function getAttackStat(
 
   // Apply stat stages (with Simple/Unaware adjustments)
   const statKey2 = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
-  const stage = getEffectiveStatStage(attacker, statKey2, defender);
+  const stage = getEffectiveStatStage(
+    attacker,
+    statKey2,
+    defender,
+    "offense",
+    bypassesDefensiveAbilities,
+  );
 
   // On crit: ignore negative attack stages (use 0 instead), keep positive
   // Source: Showdown -- crit ignores negative attack stages
@@ -588,7 +596,13 @@ function getDefenseStat(
 
   // Stat stages
   const defStatKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
-  const stage = getEffectiveStatStage(defender, defStatKey, attacker, CORE_STAT_IDS.defense);
+  const stage = getEffectiveStatStage(
+    defender,
+    defStatKey,
+    attacker,
+    "defense",
+    bypassesDefenderAbility,
+  );
 
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
@@ -1040,7 +1054,14 @@ export function calculateGen7Damage(
   const isPhysical = move.category === "physical";
 
   // Get effective stats
-  let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, defender);
+  let attack = getAttackStat(
+    attacker,
+    effectiveMoveType,
+    isPhysical,
+    isCrit,
+    defender,
+    bypassesDefensiveAbilities,
+  );
   // Chip Away / Sacred Sword / Darkest Lariat: ignore target's defense stat stages
   // Source: Showdown data/moves.ts -- chipaway/sacredsword/darkestlariat: { ignoreDefensive: true }
   const IGNORE_DEFENSE_STAGE_MOVES: ReadonlySet<string> = new Set([
