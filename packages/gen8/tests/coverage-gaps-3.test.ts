@@ -2,7 +2,8 @@
  * Targeted branch-coverage tests for Gen 8 Wave 9 — batch 3.
  *
  * Covers previously-uncovered branches in Gen8DamageCalc.ts:
- *   1. isGen8Grounded  — gravity, iron-ball, smackdown, magnet-rise, telekinesis, klutz
+ *   1. isGen8Grounded  — gravity, iron-ball, smackdown, magnet-rise, telekinesis, klutz,
+ *                        airborne semi-invulnerable volatiles
  *   2. getAttackStat   — huge-power, pure-power, gorilla-tactics, choice-band/specs (klutz),
  *                        deep-sea-tooth, light-ball, thick-club, hustle, guts, slow-start,
  *                        defeatist (HP > 50%), crit + negative attack stage
@@ -300,6 +301,24 @@ describe(`isGen8G${CORE_MOVE_IDS.round}ed`, () => {
     // Source: Showdown data/moves.ts -- Telekinesis applies the telekinesis volatile and ungrounds the target.
     const volatiles = new Map([[TELEKINESIS_VOLATILE, { turnsLeft: 3 }]]);
     const pokemon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], volatiles });
+    const result = isGen8Grounded(pokemon, false);
+    expect(result).toBe(false);
+  });
+
+  it(`given pokemon has airborne ${CORE_VOLATILE_IDS.flying} volatile, when checking grounded, then returns false`, () => {
+    // Source: BattleEngine.ts -- Fly/Bounce set the shared airborne volatile
+    // Source: Showdown sim/pokemon.ts -- airborne semi-invulnerable users are not grounded
+    const volatiles = new Map([[CORE_VOLATILE_IDS.flying, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.normal], volatiles });
+    const result = isGen8Grounded(pokemon, false);
+    expect(result).toBe(false);
+  });
+
+  it(`given pokemon has airborne ${CORE_VOLATILE_IDS.shadowForceCharging} volatile, when checking grounded, then returns false`, () => {
+    // Source: BattleEngine.ts -- Shadow Force / Phantom Force share the disappearing airborne volatile
+    // Source: Showdown sim/pokemon.ts -- airborne semi-invulnerable users are not grounded
+    const volatiles = new Map([[CORE_VOLATILE_IDS.shadowForceCharging, { turnsLeft: 1 }]]);
+    const pokemon = createSyntheticOnFieldPokemon({ types: [CORE_TYPE_IDS.ghost], volatiles });
     const result = isGen8Grounded(pokemon, false);
     expect(result).toBe(false);
   });
