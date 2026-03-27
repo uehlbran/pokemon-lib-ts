@@ -169,9 +169,26 @@ const ABILITY_TYPE_IMMUNITIES = BASE_ABILITY_TYPE_IMMUNITIES;
 // Reused by the existing defensive-ability bypass path (same behavior model as
 // Mold Breaker/Teravolt/Turboblaze in this module).
 export const ABILITY_IGNORING_MOVES: ReadonlySet<string> = new Set([
+  GEN7_MOVE_IDS.photonGeyser,
   GEN7_MOVE_IDS.moongeistBeam,
   GEN7_MOVE_IDS.sunsteelStrike,
 ]);
+
+function getPhotonGeyserCategory(attacker: ActivePokemon): "physical" | "special" {
+  const stats = attacker.pokemon.calculatedStats;
+  const attack = stats?.attack ?? 100;
+  const spAttack = stats?.spAttack ?? 100;
+  const attackStage = Math.max(-6, Math.min(6, attacker.statStages.attack ?? 0));
+  const spAttackStage = Math.max(-6, Math.min(6, attacker.statStages.spAttack ?? 0));
+  const attackForCategory = Math.floor(attack * getStatStageMultiplier(attackStage));
+  const spAttackForCategory = Math.floor(spAttack * getStatStageMultiplier(spAttackStage));
+
+  // Source: Showdown data/moves.ts -- photongeyser onModifyMove compares
+  // getStat('atk', false, true) > getStat('spa', false, true), which includes
+  // raw stage-adjusted attacking stats while excluding ModifyBoost / ModifyAtk /
+  // ModifySpA effects such as Simple, burn, Choice items, or Slow Start.
+  return attackForCategory > spAttackForCategory ? "physical" : "special";
+}
 
 // ---- Recoil Detection Helper ----
 
@@ -696,15 +713,18 @@ export function calculateGen7Damage(
   typeChart: TypeChartLookup,
 ): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
+  const effectiveCategory =
+    move.id === GEN7_MOVE_IDS.photonGeyser ? getPhotonGeyserCategory(attacker) : move.category;
 
   // 1. Status moves / power=0 -> no damage
   // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
-  if (move.category === "status" || move.power === null || move.power === 0) {
+  if (effectiveCategory === "status" || move.power === null || move.power === 0) {
     return {
       damage: 0,
       effectiveness: 1,
       isCrit: false,
       randomFactor: 1,
+      effectiveCategory,
     };
   }
 
@@ -1051,7 +1071,7 @@ export function calculateGen7Damage(
 
   // ---- Physical/Special determination ----
 
-  const isPhysical = move.category === "physical";
+  const isPhysical = effectiveCategory === "physical";
 
   // Get effective stats
   let attack = getAttackStat(
@@ -1240,6 +1260,7 @@ export function calculateGen7Damage(
         otherMultiplier: 1,
         finalDamage: 0,
       },
+      effectiveCategory,
     };
   }
 
@@ -1268,6 +1289,7 @@ export function calculateGen7Damage(
         otherMultiplier: 1,
         finalDamage: 0,
       },
+      effectiveCategory,
     };
   }
 
@@ -1499,5 +1521,6 @@ export function calculateGen7Damage(
     isCrit,
     randomFactor,
     breakdown,
+    effectiveCategory,
   };
 }
