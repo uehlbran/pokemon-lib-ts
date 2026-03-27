@@ -197,9 +197,10 @@ export function createPokemonInstance(
       `Invalid move count ${options.moves.length}; Pokemon must have between 1 and 4 moves`,
     );
   }
-  const moves = options?.moves && options.moves.length > 0
-    ? options.moves.map((moveId) => createMoveSlot(moveId))
-    : getDefaultMoves(species.learnset, level);
+  const moves =
+    options?.moves && options.moves.length > 0
+      ? options.moves.map((moveId) => createMoveSlot(moveId))
+      : getDefaultMoves(species.learnset, level);
   if (moves.length < 1 || moves.length > 4) {
     if (moves.length === 0) {
       throw new Error(`No eligible moves for species "${species.name}" at level ${level}`);
