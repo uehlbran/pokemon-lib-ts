@@ -5,8 +5,14 @@ import {
   BATTLE_ABILITY_EFFECT_TYPES,
   BATTLE_EFFECT_TARGETS,
 } from "@pokemon-lib-ts/battle";
-import type { MoveCategory } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import type { MoveCategory, MoveTarget } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_TARGET_IDS,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+} from "@pokemon-lib-ts/core";
+import { GEN7_ABILITY_IDS } from "./data/reference-ids.js";
 
 /**
  * Gen 7 stat-modifying, priority, and KO-trigger ability handlers.
@@ -248,10 +254,25 @@ export function isPranksterBlockedByDarkType(
   attackerAbility: string,
   moveCategory: MoveCategory,
   defenderTypes: readonly string[],
+  moveTarget: MoveTarget,
 ): boolean {
-  if (attackerAbility !== "prankster") return false;
-  if (moveCategory !== "status") return false;
-  return defenderTypes.includes("dark");
+  if (attackerAbility !== GEN7_ABILITY_IDS.prankster) return false;
+  if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
+  if (!targetsOpposingPokemon(moveTarget)) return false;
+  return defenderTypes.includes(CORE_TYPE_IDS.dark);
+}
+
+function targetsOpposingPokemon(moveTarget: MoveTarget): boolean {
+  switch (moveTarget) {
+    case CORE_MOVE_TARGET_IDS.adjacentFoe:
+    case "all-adjacent-foes":
+    case "all-foes":
+    case "random-foe":
+    case "any":
+      return true;
+    default:
+      return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

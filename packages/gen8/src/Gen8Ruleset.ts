@@ -47,7 +47,7 @@ import {
 import { createGen8DataManager } from "./data/index.js";
 import { GEN8_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen8DamageImmunityAbility } from "./Gen8AbilitiesDamage.js";
-import { handleGen8StatAbility } from "./Gen8AbilitiesStat.js";
+import { handleGen8StatAbility, isPranksterBlockedByDarkType } from "./Gen8AbilitiesStat.js";
 import {
   handleGen8SwitchAbility,
   isIceFaceActive,
@@ -276,6 +276,20 @@ export class Gen8Ruleset extends BaseRuleset {
       return 0;
     }
     return super.getAbilityPriorityBoost(active, moveData, state);
+  }
+
+  override checkPranksterDarkImmunity(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    move: MoveData,
+    moveTarget: MoveData["target"],
+  ): boolean {
+    return isPranksterBlockedByDarkType(
+      attacker.ability,
+      move.category,
+      defender.types,
+      moveTarget,
+    );
   }
 
   /**

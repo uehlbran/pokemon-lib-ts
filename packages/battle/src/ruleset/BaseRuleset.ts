@@ -424,6 +424,20 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return null;
   }
 
+  /**
+   * Default: no Prankster-vs-Dark immunity. Gen 7+ rulesets override this.
+   *
+   * Source: Showdown data/abilities.ts -- prankster Dark-type immunity starts in Gen 7
+   */
+  checkPranksterDarkImmunity(
+    _attacker: ActivePokemon,
+    _defender: ActivePokemon,
+    _move: MoveData,
+    _moveTarget: MoveData["target"],
+  ): boolean {
+    return false;
+  }
+
   // Burn: Gen 7+ default (1/16 max HP); Gen 3-6 must override (1/8 max HP)
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
     const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;

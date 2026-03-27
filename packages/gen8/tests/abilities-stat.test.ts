@@ -352,19 +352,45 @@ describe("Gen 8 Stat Abilities", () => {
       // Source: Showdown data/abilities.ts -- prankster: Dark targets block
       // Source: Bulbapedia "Prankster" Gen 7+ -- "status moves fail against Dark-type targets"
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.dark]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.dark],
+          createCanonicalMove(moveIds.thunderWave).target,
+        ),
       ).toBe(true);
     });
 
     it("given Prankster and a status move targeting non-Dark type, when checking block, then returns false", () => {
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.fire]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.fire],
+          createCanonicalMove(moveIds.thunderWave).target,
+        ),
       ).toBe(false);
     });
 
     it("given Prankster and a physical move targeting Dark type, when checking block, then returns false", () => {
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.physical, [typeIds.dark]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.physical,
+          [typeIds.dark],
+          createCanonicalMove(moveIds.tackle).target,
+        ),
+      ).toBe(false);
+    });
+
+    it("given Prankster and a self-targeting status move, when checking block, then returns false", () => {
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.dark],
+          createCanonicalMove(moveIds.agility).target,
+        ),
       ).toBe(false);
     });
 
