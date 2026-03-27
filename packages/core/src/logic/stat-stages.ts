@@ -127,11 +127,8 @@ export function getStatStageMultiplier(stage: number): number {
  * | +6    | 9/3 = 3.00 |
  */
 export function getAccuracyEvasionMultiplier(stage: number): number {
-  const clamped = Math.max(-6, Math.min(6, stage));
-  if (clamped >= 0) {
-    return (3 + clamped) / 3;
-  }
-  return 3 / (3 - clamped);
+  const { num, den } = getAccuracyStageRatio(stage);
+  return num / den;
 }
 
 /**

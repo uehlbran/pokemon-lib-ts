@@ -1,4 +1,5 @@
 import { ALL_NATURES, CORE_ABILITY_SLOTS, CORE_GENDERS, CORE_POKEMON_DEFAULTS } from "../constants";
+import { CORE_ABILITY_IDS } from "../constants/reference-ids";
 import type { Gender } from "../entities/gender";
 import type { MoveSlot } from "../entities/move";
 import type { NatureId } from "../entities/nature";
@@ -40,6 +41,28 @@ function normalizeEvs(evs?: PokemonCreationOptions["evs"]): MutableStatBlock {
   return cloneMutableStatBlock(evs ? createEvs(evs) : createEvs());
 }
 
+function hasAbilityForSlot(species: PokemonSpeciesData, slot: AbilitySlot): boolean {
+  switch (slot) {
+    case CORE_ABILITY_SLOTS.normal1:
+      return species.abilities.normal[0] !== undefined;
+    case CORE_ABILITY_SLOTS.normal2:
+      return species.abilities.normal[1] !== undefined;
+    case CORE_ABILITY_SLOTS.hidden:
+      return species.abilities.hidden !== null;
+  }
+}
+
+function speciesHasAnyAbilities(species: PokemonSpeciesData): boolean {
+  return species.abilities.normal.length > 0 || species.abilities.hidden !== null;
+}
+
+function isValidExplicitAbilitySlot(species: PokemonSpeciesData, slot: AbilitySlot): boolean {
+  if (!speciesHasAnyAbilities(species)) {
+    return slot === CORE_ABILITY_SLOTS.normal1;
+  }
+  return hasAbilityForSlot(species, slot);
+}
+
 /**
  * Generate a unique ID from the PRNG.
  */
@@ -50,16 +73,29 @@ function generateUid(rng: SeededRandom): string {
 }
 
 /**
- * Get the ability ID for a given ability slot.
+ * Resolve the actual ability and slot for a given requested ability slot.
  */
-function getAbilityForSlot(species: PokemonSpeciesData, slot: AbilitySlot): string {
+function resolveAbilityForSlot(
+  species: PokemonSpeciesData,
+  slot: AbilitySlot,
+): { ability: string; abilitySlot: AbilitySlot } {
   if (slot === CORE_ABILITY_SLOTS.hidden && species.abilities.hidden) {
-    return species.abilities.hidden;
+    return { ability: species.abilities.hidden, abilitySlot: CORE_ABILITY_SLOTS.hidden };
   }
   if (slot === CORE_ABILITY_SLOTS.normal2 && species.abilities.normal.length > 1) {
-    return species.abilities.normal[1] as string;
+    return {
+      ability: species.abilities.normal[1] as string,
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    };
   }
-  return species.abilities.normal[0] as string;
+  const primaryAbility = species.abilities.normal[0];
+  if (primaryAbility) {
+    return { ability: primaryAbility, abilitySlot: CORE_ABILITY_SLOTS.normal1 };
+  }
+  if (species.abilities.hidden) {
+    return { ability: species.abilities.hidden, abilitySlot: CORE_ABILITY_SLOTS.hidden };
+  }
+  return { ability: CORE_ABILITY_IDS.none, abilitySlot: CORE_ABILITY_SLOTS.normal1 };
 }
 
 /**
@@ -70,7 +106,13 @@ export function determineGender(genderRatio: number, rng: SeededRandom): Gender 
   if (genderRatio === -1) return CORE_GENDERS.genderless;
   if (genderRatio === 0) return CORE_GENDERS.female;
   if (genderRatio === 100) return CORE_GENDERS.male;
-  return rng.int(1, 100) <= genderRatio ? CORE_GENDERS.male : CORE_GENDERS.female;
+
+  // Source: species gender ratios are encoded in 12.5% steps on cartridge-facing data surfaces.
+  // Bulbapedia documents the discrete ratio buckets as 100% / 87.5% / 75% / 50% / 25% / 12.5% / 0%.
+  // The species schema in this repo stores those as percent-male values, so we project back onto 8
+  // cartridge buckets to preserve exact 12.5% and 87.5% behavior instead of rounding to whole percents.
+  const maleThreshold = Math.round((genderRatio / 100) * 8);
+  return rng.int(1, 8) <= maleThreshold ? CORE_GENDERS.male : CORE_GENDERS.female;
 }
 
 /**
@@ -128,22 +170,43 @@ export function createPokemonInstance(
   const gender = options?.gender ?? determineGender(species.genderRatio, rng);
 
   // Pick ability
-  const abilitySlot =
-    options?.abilitySlot ??
-    (species.abilities.normal.length > 1
-      ? rng.chance(0.5)
-        ? CORE_POKEMON_DEFAULTS.abilitySlot
-        : CORE_ABILITY_SLOTS.normal2
-      : CORE_POKEMON_DEFAULTS.abilitySlot);
-  const ability = getAbilityForSlot(species, abilitySlot);
+  let resolvedAbility: { ability: string; abilitySlot: AbilitySlot };
+  if (options?.abilitySlot !== undefined) {
+    if (!isValidExplicitAbilitySlot(species, options.abilitySlot)) {
+      throw new Error(
+        `Invalid ability slot "${options.abilitySlot}" for species "${species.name}"`,
+      );
+    }
+    resolvedAbility = resolveAbilityForSlot(species, options.abilitySlot);
+  } else {
+    const selectedSlot =
+      species.abilities.normal.length > 1
+        ? rng.chance(0.5)
+          ? CORE_POKEMON_DEFAULTS.abilitySlot
+          : CORE_ABILITY_SLOTS.normal2
+        : CORE_POKEMON_DEFAULTS.abilitySlot;
+    resolvedAbility = resolveAbilityForSlot(species, selectedSlot);
+  }
 
   // Determine shininess
   const isShiny = options?.isShiny ?? rng.chance(CORE_POKEMON_DEFAULTS.shinyChance);
 
   // Select moves -- latest 4 level-up moves at or below this level
-  const moves = options?.moves
-    ? options.moves.map((moveId) => createMoveSlot(moveId))
-    : getDefaultMoves(species.learnset, level);
+  if (options?.moves !== undefined && options.moves.length > 4) {
+    throw new Error(
+      `Invalid move count ${options.moves.length}; Pokemon must have between 1 and 4 moves`,
+    );
+  }
+  const moves =
+    options?.moves && options.moves.length > 0
+      ? options.moves.map((moveId) => createMoveSlot(moveId))
+      : getDefaultMoves(species.learnset, level);
+  if (moves.length < 1 || moves.length > 4) {
+    if (moves.length === 0) {
+      throw new Error(`No eligible moves for species "${species.name}" at level ${level}`);
+    }
+    throw new Error(`Invalid move count ${moves.length}; Pokemon must have between 1 and 4 moves`);
+  }
   const evs = normalizeEvs(options?.evs);
 
   const uid = generateUid(rng);
@@ -159,8 +222,8 @@ export function createPokemonInstance(
     evs,
     currentHp: CORE_POKEMON_DEFAULTS.currentHp,
     moves,
-    ability,
-    abilitySlot,
+    ability: resolvedAbility.ability,
+    abilitySlot: resolvedAbility.abilitySlot,
     heldItem: options?.heldItem ?? null,
     status: null,
     friendship: createFriendship(options?.friendship ?? species.baseFriendship),

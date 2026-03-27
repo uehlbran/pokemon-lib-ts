@@ -1,0 +1,24 @@
+{
+  "name": "oracle-validation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "oracle:data": "tsx src/runner.ts --suite data",
+    "oracle:stats": "tsx src/runner.ts --suite stats",
+    "oracle:groundtruth": "tsx src/runner.ts --suite groundTruth",
+    "oracle:fast": "tsx src/runner.ts --suite fast",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@pkmn/data": "0.10.7",
+    "@pkmn/dex": "0.10.7",
+    "@pkmn/sim": "0.10.7",
+    "@smogon/calc": "0.11.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "vitest": "^2.0.0"
+  }
+}

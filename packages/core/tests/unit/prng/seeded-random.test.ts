@@ -162,6 +162,12 @@ describe("SeededRandom", () => {
 
       expect(new Set(picks)).toEqual(new Set(values));
     });
+
+    it("given an empty array, when pick() is called, then it throws instead of returning undefined", () => {
+      const rng = new SeededRandom(DETERMINISTIC_SEEDS.primary);
+
+      expect(() => rng.pick([])).toThrow("Cannot pick from an empty array");
+    });
   });
 
   describe("shuffle()", () => {

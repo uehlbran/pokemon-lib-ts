@@ -136,6 +136,10 @@ const SINGLE_NORMAL_ABILITY_SET = {
   normal: [CORE_ABILITY_IDS.blaze],
   hidden: CORE_ABILITY_IDS.solarPower,
 } as const;
+const NO_ABILITY_SET = {
+  normal: [],
+  hidden: null,
+} as const;
 
 // --- determineGender ---
 
@@ -173,22 +177,30 @@ describe("determineGender", () => {
     expect(gender).toBe(CORE_GENDERS.female);
   });
 
-  it("given mixed genderRatio (87.5), when the roll is at the male threshold, then returns male", () => {
-    // Derived from determineGender: male iff rng.int(1, 100) <= genderRatio.
-    const rng = makeScriptedRng({ ints: [87] });
+  it("given mixed genderRatio (87.5), when the roll is at the 7/8 male threshold, then returns male", () => {
+    // Source: cartridge-facing ratios are in 12.5% steps.
+    // 87.5% male = 7 of 8 rolls map to male.
+    const rng = makeScriptedRng({ ints: [7] });
 
     const gender = determineGender(87.5, rng);
 
     expect(gender).toBe(CORE_GENDERS.male);
   });
 
-  it("given mixed genderRatio (87.5), when the roll is above the male threshold, then returns female", () => {
-    // Derived from determineGender: male iff rng.int(1, 100) <= genderRatio.
-    const rng = makeScriptedRng({ ints: [88] });
+  it("given mixed genderRatio (87.5), when the roll is above the 7/8 male threshold, then returns female", () => {
+    // Source: cartridge-facing ratios are in 12.5% steps.
+    // 87.5% male leaves exactly 1 of 8 rolls as female.
+    const rng = makeScriptedRng({ ints: [8] });
 
     const gender = determineGender(87.5, rng);
 
     expect(gender).toBe(CORE_GENDERS.female);
+  });
+
+  it("given mixed genderRatio (12.5), when the first 1/8 roll is used, then returns male and all other rolls return female", () => {
+    // Source: 12.5% male = 1 of 8 rolls map to male.
+    expect(determineGender(12.5, makeScriptedRng({ ints: [1] }))).toBe(CORE_GENDERS.male);
+    expect(determineGender(12.5, makeScriptedRng({ ints: [2] }))).toBe(CORE_GENDERS.female);
   });
 });
 
@@ -343,15 +355,16 @@ describe("createPokemonInstance", () => {
   it("given a species and scripted defaults, when called, then creates the exact default instance fields", () => {
     const species = createSyntheticSpeciesData();
     const rng = makeScriptedRng({
-      // Source: createPokemonInstance rolls six IVs, then determineGender, then generateUid twice.
-      ints: [31, 0, 15, 20, 25, 30, 87, 0x12345678, 0x9abcdef0],
+      // Source: createPokemonInstance rolls six IVs, then determineGender on the 1..8 cartridge ratio scale,
+      // then generateUid twice.
+      ints: [31, 0, 15, 20, 25, 30, 7, 0x12345678, 0x9abcdef0],
       picks: [ADAMANT_NATURE.id],
       chances: [false],
     });
 
     const instance = createPokemonInstance(species, 50, rng);
 
-    // Derived from determineGender: male iff rng.int(1, 100) <= genderRatio.
+    // Derived from determineGender: 87.5% male uses a 7-of-8 threshold on the cartridge ratio scale.
     // Derived from generateUid: concatenates two zero-padded 32-bit hex values.
     expect(instance.speciesId).toBe(canonicalCharizardSpecies.id);
     expect(instance.level).toBe(50);
@@ -385,7 +398,7 @@ describe("createPokemonInstance", () => {
   it("given a species and scripted IV rolls, when called with default IVs, then uses those exact IVs", () => {
     const species = createSyntheticSpeciesData();
     const rng = makeScriptedRng({
-      ints: [5, 10, 15, 20, 25, 30, 40, 0, 1],
+      ints: [5, 10, 15, 20, 25, 30, 4, 0, 1],
       picks: [BOLD_NATURE.id],
       chances: [false],
     });
@@ -405,7 +418,7 @@ describe("createPokemonInstance", () => {
   it("given a species and a scripted nature pick, when called, then uses that exact nature", () => {
     const species = createSyntheticSpeciesData();
     const rng = makeScriptedRng({
-      ints: [0, 0, 0, 0, 0, 0, 87, 0, 1],
+      ints: [0, 0, 0, 0, 0, 0, 7, 0, 1],
       picks: [TIMID_NATURE.id],
       chances: [false],
     });
@@ -418,7 +431,7 @@ describe("createPokemonInstance", () => {
   it("given a species with 87.5% male ratio and a scripted female roll, when called, then returns female", () => {
     const species = createSpeciesWithGenderRatio(87.5);
     const rng = makeScriptedRng({
-      ints: [0, 0, 0, 0, 0, 0, 88, 0, 1],
+      ints: [0, 0, 0, 0, 0, 0, 8, 0, 1],
       picks: [HARDY_NATURE.id],
       chances: [false],
     });
@@ -456,7 +469,7 @@ describe("createPokemonInstance", () => {
   it("given a species with two normal abilities and a true ability roll, when called, then selects normal1", () => {
     const species = createSpeciesWithAbilities(DUAL_NORMAL_ABILITY_SET);
     const rng = makeScriptedRng({
-      ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
+      ints: [0, 0, 0, 0, 0, 0, 4, 0, 1],
       picks: [HARDY_NATURE.id],
       chances: [true, false],
     });
@@ -470,7 +483,7 @@ describe("createPokemonInstance", () => {
   it("given a species and a false shiny roll, when called with default shiny odds, then is not shiny", () => {
     const species = createSyntheticSpeciesData();
     const rng = makeScriptedRng({
-      ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
+      ints: [0, 0, 0, 0, 0, 0, 4, 0, 1],
       picks: [HARDY_NATURE.id],
       // Source: createPokemonInstance uses rng.chance(1 / 4096) for default shiny odds.
       chances: [false],
@@ -484,7 +497,7 @@ describe("createPokemonInstance", () => {
   it("given a species and a true shiny roll, when called with default shiny odds, then is shiny", () => {
     const species = createSyntheticSpeciesData();
     const rng = makeScriptedRng({
-      ints: [0, 0, 0, 0, 0, 0, 50, 0, 1],
+      ints: [0, 0, 0, 0, 0, 0, 4, 0, 1],
       picks: [HARDY_NATURE.id],
       // Source: createPokemonInstance uses rng.chance(1 / 4096) for default shiny odds.
       chances: [true],
@@ -509,6 +522,36 @@ describe("createPokemonInstance", () => {
     expect(instance.moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
     expect(instance.moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
     expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
+  });
+
+  it("given moves option is an empty array, when called, then it falls back to the latest level-up moves", () => {
+    const species = createSyntheticSpeciesData();
+    const rng = new SeededRandom(42);
+
+    const instance = createPokemonInstance(species, 36, rng, { moves: [] });
+
+    expect(instance.moves).toHaveLength(4);
+    expect(instance.moves[0]?.moveId).toBe(CORE_MOVE_IDS.swift);
+    expect(instance.moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
+    expect(instance.moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
+    expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
+  });
+
+  it("given moves option has more than four entries, when called, then it throws instead of creating an invalid move list", () => {
+    const species = createSyntheticSpeciesData();
+    const rng = new SeededRandom(42);
+
+    expect(() =>
+      createPokemonInstance(species, 36, rng, {
+        moves: [
+          CORE_MOVE_IDS.growl,
+          CORE_MOVE_IDS.tackle,
+          CORE_MOVE_IDS.surf,
+          CORE_MOVE_IDS.flamethrower,
+          CORE_MOVE_IDS.thunderbolt,
+        ],
+      }),
+    ).toThrow("Invalid move count 5; Pokemon must have between 1 and 4 moves");
   });
 
   it("given a species, when called with default EVs, then all EVs are 0", () => {
@@ -604,32 +647,28 @@ describe("createPokemonInstance", () => {
     expect(instance1).toEqual(instance2);
   });
 
-  it("given a species with no hidden ability, when abilitySlot is hidden, then falls back to normal1", () => {
+  it("given a species with no hidden ability, when abilitySlot is hidden, then it throws instead of silently downgrading the slot", () => {
     // Arrange
     const species = createSpeciesWithAbilities(NO_HIDDEN_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    // Act
-    const instance = createPokemonInstance(species, 50, rng, {
-      abilitySlot: CORE_ABILITY_SLOTS.hidden,
-    });
-
-    // Assert
-    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
+    expect(() =>
+      createPokemonInstance(species, 50, rng, {
+        abilitySlot: CORE_ABILITY_SLOTS.hidden,
+      }),
+    ).toThrow(`Invalid ability slot "${CORE_ABILITY_SLOTS.hidden}" for species "${species.name}"`);
   });
 
-  it("given a species with one normal ability, when abilitySlot is normal2, then falls back to normal1", () => {
+  it("given a species with one normal ability, when abilitySlot is normal2, then it throws instead of silently downgrading the slot", () => {
     // Arrange
     const species = createSpeciesWithAbilities(SINGLE_NORMAL_ABILITY_SET);
     const rng = new SeededRandom(42);
 
-    // Act
-    const instance = createPokemonInstance(species, 50, rng, {
-      abilitySlot: CORE_ABILITY_SLOTS.normal2,
-    });
-
-    // Assert
-    expect(instance.ability).toBe(CORE_ABILITY_IDS.blaze);
+    expect(() =>
+      createPokemonInstance(species, 50, rng, {
+        abilitySlot: CORE_ABILITY_SLOTS.normal2,
+      }),
+    ).toThrow(`Invalid ability slot "${CORE_ABILITY_SLOTS.normal2}" for species "${species.name}"`);
   });
 
   it("given a species with two normal abilities, when abilitySlot is normal2, then uses the second normal ability", () => {
@@ -643,6 +682,44 @@ describe("createPokemonInstance", () => {
     // Derived from getAbilityForSlot: normal2 maps to abilities.normal[1] when present.
     expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal2);
     expect(instance.ability).toBe(CORE_ABILITY_IDS.static);
+  });
+
+  it("given a species with no abilities, when called, then it emits the canonical none ability instead of undefined", () => {
+    const species = createSpeciesWithAbilities(NO_ABILITY_SET);
+    const rng = new SeededRandom(42);
+
+    const instance = createPokemonInstance(species, 50, rng);
+
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.none);
+    expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
+  });
+
+  it("given a species with no abilities, when abilitySlot is normal1, then it keeps the neutral slot and none ability", () => {
+    const species = createSpeciesWithAbilities(NO_ABILITY_SET);
+    const rng = new SeededRandom(42);
+
+    const instance = createPokemonInstance(species, 50, rng, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    });
+
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.none);
+    expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
+  });
+
+  it("given a species with no eligible level-up moves, when no explicit moves are supplied, then it throws instead of creating an invalid move list", () => {
+    const species = createSyntheticSpeciesData({
+      learnset: {
+        levelUp: [],
+        tm: [],
+        egg: [],
+        tutor: [],
+      },
+    });
+    const rng = new SeededRandom(42);
+
+    expect(() => createPokemonInstance(species, 50, rng)).toThrow(
+      `No eligible moves for species "${species.name}" at level 50`,
+    );
   });
 
   it("given a species, when called with default teraType, then uses first species type", () => {
