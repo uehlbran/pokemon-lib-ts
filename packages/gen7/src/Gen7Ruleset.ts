@@ -43,6 +43,7 @@ import {
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
 import { createGen7DataManager } from "./data/index.js";
+import { GEN7_ABILITY_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
 import {
   handleGen7DamageCalcAbility,
   handleGen7DamageImmunityAbility,
@@ -66,6 +67,15 @@ import {
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
 import { applyGen7WeatherEffects, isWeatherSuppressedOnFieldGen7 } from "./Gen7Weather.js";
 import { Gen7ZMove } from "./Gen7ZMove.js";
+
+const ABILITY_IGNORING_MOVES = new Set<string>([
+  GEN7_MOVE_IDS.moongeistBeam,
+  GEN7_MOVE_IDS.sunsteelStrike,
+]);
+
+function moveIgnoresDefenderAbility(move: MoveData): boolean {
+  return ABILITY_IGNORING_MOVES.has(move.id);
+}
 
 /**
  * Gen 7 (Sun/Moon/Ultra Sun/Ultra Moon) ruleset.
@@ -383,13 +393,15 @@ export class Gen7Ruleset extends BaseRuleset {
     const maxHp = defender.pokemon.calculatedStats?.hp ?? defender.pokemon.currentHp;
     const currentHp = defender.pokemon.currentHp;
     const name = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
+    const bypassesDefenderAbility = moveIgnoresDefenderAbility(move);
 
     // 1. Disguise: block damage entirely if Disguise hasn't broken
     // Disguise checks BEFORE Sturdy (higher priority in Showdown: priority 1 vs -30)
     // Gen 7: NO chip damage on Disguise break
     // Source: Showdown data/abilities.ts -- disguise onDamage priority 1
     if (
-      defender.ability === "disguise" &&
+      !bypassesDefenderAbility &&
+      defender.ability === GEN7_ABILITY_IDS.disguise &&
       !defender.volatileStatuses.has(CORE_VOLATILE_IDS.disguiseBroken) &&
       move.category !== "status"
     ) {
@@ -404,7 +416,12 @@ export class Gen7Ruleset extends BaseRuleset {
     }
 
     // 2. Sturdy (ability) -- priority -30
-    if (defender.ability === "sturdy" && currentHp === maxHp && damage >= currentHp) {
+    if (
+      !bypassesDefenderAbility &&
+      defender.ability === CORE_ABILITY_IDS.sturdy &&
+      currentHp === maxHp &&
+      damage >= currentHp
+    ) {
       return {
         damage: maxHp - 1,
         survived: true,

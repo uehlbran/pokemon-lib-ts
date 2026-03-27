@@ -52,6 +52,8 @@ const END_OF_TURN_EFFECT_IDS = CORE_END_OF_TURN_EFFECT_IDS;
 const GEN7_DATA = createGen7DataManager();
 const DEFAULT_SPECIES = GEN7_DATA.getSpecies(GEN7_SPECIES_IDS.pikachu);
 const DEFAULT_MOVE = GEN7_DATA.getMove(MOVE_IDS.tackle);
+const MOONGEIST_BEAM_MOVE = GEN7_DATA.getMove(MOVE_IDS.moongeistBeam);
+const SUNSTEEL_STRIKE_MOVE = GEN7_DATA.getMove(MOVE_IDS.sunsteelStrike);
 const STATUS_SLEEP = STATUS_IDS.sleep;
 const DEFAULT_LEVEL = 50;
 const TAILWIND_TURNS = 4;
@@ -807,6 +809,90 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
     );
     expect(result.damage).toBe(100);
     expect(result.survived).toBe(false);
+  });
+
+  it("given defender with Sturdy at full HP and Sunsteel Strike lethal damage, when capping, then Sturdy is ignored", () => {
+    // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
+    const defender = createSyntheticActive({
+      ability: ABILITY_IDS.sturdy,
+      hp: 200,
+      currentHp: 200,
+    }) as any;
+    const attacker = createSyntheticActive();
+    const result = ruleset.capLethalDamage(
+      300,
+      defender,
+      attacker,
+      SUNSTEEL_STRIKE_MOVE as any,
+      {} as BattleState,
+    );
+    expect(result.damage).toBe(300);
+    expect(result.survived).toBe(false);
+  });
+
+  it("given defender with Sturdy at full HP and Moongeist Beam lethal damage, when capping, then Sturdy is ignored", () => {
+    // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
+    const defender = createSyntheticActive({
+      ability: ABILITY_IDS.sturdy,
+      hp: 200,
+      currentHp: 200,
+    }) as any;
+    const attacker = createSyntheticActive();
+    const result = ruleset.capLethalDamage(
+      300,
+      defender,
+      attacker,
+      MOONGEIST_BEAM_MOVE as any,
+      {} as BattleState,
+    );
+    expect(result.damage).toBe(300);
+    expect(result.survived).toBe(false);
+  });
+});
+
+// ===========================================================================
+// capLethalDamage — Disguise bypass
+// ===========================================================================
+
+describe("Gen7Ruleset — capLethalDamage (Disguise bypass)", () => {
+  it("given Mimikyu with intact Disguise hit by Sunsteel Strike, when capping, then Disguise is ignored", () => {
+    // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
+    const defender = createSyntheticActive({
+      ability: ABILITY_IDS.disguise,
+      hp: 200,
+      currentHp: 200,
+    }) as any;
+    const attacker = createSyntheticActive();
+    const result = ruleset.capLethalDamage(
+      120,
+      defender,
+      attacker,
+      SUNSTEEL_STRIKE_MOVE as any,
+      {} as BattleState,
+    );
+    expect(result.damage).toBe(120);
+    expect(result.survived).toBe(false);
+    expect(defender.volatileStatuses.has(VOLATILE_IDS.disguiseBroken)).toBe(false);
+  });
+
+  it("given Mimikyu with intact Disguise hit by Moongeist Beam, when capping, then Disguise is ignored", () => {
+    // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
+    const defender = createSyntheticActive({
+      ability: ABILITY_IDS.disguise,
+      hp: 200,
+      currentHp: 200,
+    }) as any;
+    const attacker = createSyntheticActive();
+    const result = ruleset.capLethalDamage(
+      120,
+      defender,
+      attacker,
+      MOONGEIST_BEAM_MOVE as any,
+      {} as BattleState,
+    );
+    expect(result.damage).toBe(120);
+    expect(result.survived).toBe(false);
+    expect(defender.volatileStatuses.has(VOLATILE_IDS.disguiseBroken)).toBe(false);
   });
 });
 
