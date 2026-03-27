@@ -84,8 +84,9 @@ export interface PokemonSpeciesData {
 
   /**
    * Regional forms (Alolan, Galarian, Hisuian, Paldean).
-   * Each regional form is essentially a separate species entry
-   * but linked to the original via this field.
+   * The shipped runtime species model still keys `speciesId` by National Dex id,
+   * so this field is metadata about alternate forms rather than a promise that
+   * each regional form is exposed through its own runtime species entry.
    */
   readonly regionalForms?: readonly RegionalFormData[];
 }
@@ -205,7 +206,11 @@ export interface RegionalFormData {
   /** Region identifier */
   readonly region: "alola" | "galar" | "hisui" | "paldea";
 
-  /** Species ID of the regional form (PokeAPI assigns separate IDs) */
+  /**
+   * PokeAPI species id for the regional form metadata.
+   * The shipped runtime model does not currently expose these as separate
+   * `PokemonInstance.speciesId` values.
+   */
   readonly formSpeciesId: number;
 
   /** Types of the regional form */

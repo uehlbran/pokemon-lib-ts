@@ -613,6 +613,32 @@ describe(`getAttackStat — ability and item buffs (via calculateGen${GEN8_SPECI
     expect(dmgThickClub).toBeGreaterThan(dmgNoItem);
   });
 
+  it(`given Marowak (speciesId=105) holds ${CORE_ITEM_IDS.thickClub}, when using physical move, then doubled Attack damage`, () => {
+    // Source: Showdown data/items.ts -- Thick Club doubles Attack for Cubone/Marowak.
+    // The shipped runtime species model uses National Dex ids, so Marowak remains speciesId 105.
+    const marowak = createSyntheticOnFieldPokemon({
+      speciesId: SP.marowak,
+      attack: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: CORE_ITEM_IDS.thickClub,
+    });
+    const marowakNoItem = createSyntheticOnFieldPokemon({
+      speciesId: SP.marowak,
+      attack: 100,
+      ability: CORE_ABILITY_IDS.none,
+      heldItem: null,
+    });
+    const defender = createSyntheticOnFieldPokemon({ defense: 100 });
+    const move = SYNTHETIC_NORMAL_PHYSICAL_65();
+
+    const dmgThickClub = calcDmg(createDamageContext({ attacker: marowak, defender, move })).damage;
+    const dmgNoItem = calcDmg(
+      createDamageContext({ attacker: marowakNoItem, defender, move }),
+    ).damage;
+
+    expect(dmgThickClub).toBeGreaterThan(dmgNoItem);
+  });
+
   it(`given non-Cubone/Marowak pokemon holds ${CORE_ITEM_IDS.thickClub}, when using physical move, then no boost`, () => {
     // Source: Showdown data/items.ts -- Thick Club only boosts Cubone/Marowak in the
     // current shipped species-id model (National Dex ids 104 and 105).

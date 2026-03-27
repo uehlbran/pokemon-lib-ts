@@ -424,8 +424,10 @@ function getAttackStat(
 
   // Thick Club: 2x Attack for Cubone (104) / Marowak (105)
   // Source: Showdown data/items.ts -- Thick Club
-  // The shipped species model uses National Dex ids and does not yet expose
-  // regional-form species entries through `speciesId`; tracked separately.
+  // The shipped runtime species model uses National Dex ids and does not yet expose
+  // regional-form species entries through `speciesId`; tracked separately. The current Gen 9
+  // data bundle also does not ship Cubone/Marowak species entries, so this path is mainly
+  // relevant for synthetic/manual runtime instances rather than canonical loaded species data.
   if (
     !attackerHasKlutz &&
     isPhysical &&

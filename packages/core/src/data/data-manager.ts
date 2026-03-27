@@ -112,6 +112,8 @@ export class DataManager {
    *
    * @param id - National Pokédex number (e.g., 1 for Bulbasaur, 151 for Mew).
    *   Valid range depends on the generation (Gen 1: 1–151, Gen 2: 1–251, etc.).
+   *   Regional forms are currently represented as metadata on the National Dex
+   *   species entry, not as separate runtime species ids.
    * @returns The species data object.
    * @throws If no species with the given ID exists in the loaded data.
    */
