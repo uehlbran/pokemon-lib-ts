@@ -33,7 +33,7 @@ Confidence levels:
 ### Current weaknesses
 
 - Repo confidence is uneven: high raw counts do not imply every high-risk interaction is strongly proven.
-- The oracle/compliance system now has an initial fast-path runner, but curated ground-truth scenarios, known-disagreement tracking, and broader parity slices are still missing.
+- The oracle/compliance system now has an initial fast-path runner plus registry scaffolding for known disagreements and oracle bugs, but curated ground-truth scenarios, disagreement matching/staleness checks, and broader parity slices are still missing.
 - Replay validation is still Gen 1-centric via `tools/replay-parser`; it is not yet a cross-gen confidence layer.
 - Several open issues still identify correctness gaps in runtime identity, packaging, and missing mechanic coverage.
 - Branch-heavy modules remain concentrated in the same mechanic hotspots where regressions are most likely.
@@ -149,7 +149,7 @@ Implemented now:
 
 Still missing from visible confidence:
 - curated ground-truth scenario coverage
-- known-disagreement registry wired into the status surface
+- disagreement matching and staleness detection wired into the status surface
 - replay / trace parity beyond the Gen 1 precedent
 - full Gen 4 authority tagging in the compliance results
 - broader mechanics / gimmicks / terrain suites from the compliance spec

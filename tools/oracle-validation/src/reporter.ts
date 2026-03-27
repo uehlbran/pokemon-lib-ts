@@ -7,6 +7,9 @@ export function formatRunnerOutput(output: RunnerOutput): string {
 
   for (const generation of output.generations) {
     lines.push(`Gen ${generation.gen} (${generation.packageName})`);
+    lines.push(
+      `  registry: knownDisagreements=${generation.registry.knownDisagreements.length}, knownOracleBugs=${generation.registry.knownOracleBugs.length}`,
+    );
 
     for (const [suite, result] of Object.entries(generation.suites) as [string, SuiteResult][]) {
       const suffix = result.skipReason ? ` — ${result.skipReason}` : "";

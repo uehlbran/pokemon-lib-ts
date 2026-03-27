@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { suiteResultSchema } from "../src/result-schema.js";
+import { generationResultSchema, suiteResultSchema } from "../src/result-schema.js";
 
 describe("suiteResultSchema", () => {
   it("rejects skipReason on pass results", () => {
@@ -37,6 +37,48 @@ describe("suiteResultSchema", () => {
       skipped: 1,
       failures: [],
       skipReason: "oracle unavailable",
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+});
+
+describe("generationResultSchema", () => {
+  it("requires disagreement registry metadata", () => {
+    const parsed = generationResultSchema.safeParse({
+      gen: 1,
+      packageName: "@pokemon-lib-ts/gen1",
+      suites: {
+        data: {
+          status: "pass",
+          suitePassed: true,
+          failed: 0,
+          skipped: 0,
+          failures: [],
+        },
+      },
+    });
+
+    expect(parsed.success).toBe(false);
+  });
+
+  it("accepts disagreement registry metadata", () => {
+    const parsed = generationResultSchema.safeParse({
+      gen: 1,
+      packageName: "@pokemon-lib-ts/gen1",
+      suites: {
+        data: {
+          status: "pass",
+          suitePassed: true,
+          failed: 0,
+          skipped: 0,
+          failures: [],
+        },
+      },
+      registry: {
+        knownDisagreements: [],
+        knownOracleBugs: [],
+      },
     });
 
     expect(parsed.success).toBe(true);

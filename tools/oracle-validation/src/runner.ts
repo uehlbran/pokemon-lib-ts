@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { runDataSuite } from "./compare-data.js";
 import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runStatsSuite } from "./compare-stats.js";
+import { loadDisagreementRegistrySummary } from "./disagreement-registry.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
 import { formatRunnerOutput } from "./reporter.js";
 import { type GenerationResult, runnerOutputSchema, type SuiteResult } from "./result-schema.js";
@@ -92,6 +93,7 @@ async function main(): Promise<void> {
         gen: generation.gen,
         packageName: generation.packageName,
         suites: suiteResults,
+        registry: loadDisagreementRegistrySummary(generation, repoRoot),
       };
     },
   );

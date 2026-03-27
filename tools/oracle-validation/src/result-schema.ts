@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { disagreementRegistrySummarySchema } from "./disagreement-registry.js";
 
 export const suiteStatusSchema = z.enum(["pass", "fail", "skip"]);
 
@@ -67,6 +68,7 @@ export const generationResultSchema = z.object({
   gen: z.number().int().min(1).max(9),
   packageName: z.string(),
   suites: z.record(z.string(), suiteResultSchema),
+  registry: disagreementRegistrySummarySchema,
 });
 
 export const runnerOutputSchema = z.object({
