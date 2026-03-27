@@ -52,7 +52,7 @@ _Line-count snapshot metadata: command `wc -l packages/battle/src/engine/BattleE
   - `#772`
   - `#767`
   - `#994`
-- Local branch-density scan across `packages/*/src`
+- LOC snapshots across hotspot files in `packages/*/src`, plus the issue-backed hotspot list above
 - Existing status docs, especially `battle-status.md`
 
 ## Blocking Evidence
