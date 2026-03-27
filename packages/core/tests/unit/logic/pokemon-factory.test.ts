@@ -524,13 +524,17 @@ describe("createPokemonInstance", () => {
     expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
   });
 
-  it("given moves option is an empty array, when called, then it throws instead of creating an invalid move list", () => {
+  it("given moves option is an empty array, when called, then it falls back to the latest level-up moves", () => {
     const species = createSyntheticSpeciesData();
     const rng = new SeededRandom(42);
 
-    expect(() => createPokemonInstance(species, 36, rng, { moves: [] })).toThrow(
-      "Invalid move count 0; Pokemon must have between 1 and 4 moves",
-    );
+    const instance = createPokemonInstance(species, 36, rng, { moves: [] });
+
+    expect(instance.moves).toHaveLength(4);
+    expect(instance.moves[0]?.moveId).toBe(CORE_MOVE_IDS.swift);
+    expect(instance.moves[1]?.moveId).toBe(CORE_MOVE_IDS.thunderbolt);
+    expect(instance.moves[2]?.moveId).toBe(CORE_MOVE_IDS.flamethrower);
+    expect(instance.moves[3]?.moveId).toBe(CORE_MOVE_IDS.surf);
   });
 
   it("given moves option has more than four entries, when called, then it throws instead of creating an invalid move list", () => {
@@ -688,6 +692,34 @@ describe("createPokemonInstance", () => {
 
     expect(instance.ability).toBe(CORE_ABILITY_IDS.none);
     expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
+  });
+
+  it("given a species with no abilities, when abilitySlot is normal1, then it keeps the neutral slot and none ability", () => {
+    const species = createSpeciesWithAbilities(NO_ABILITY_SET);
+    const rng = new SeededRandom(42);
+
+    const instance = createPokemonInstance(species, 50, rng, {
+      abilitySlot: CORE_ABILITY_SLOTS.normal1,
+    });
+
+    expect(instance.ability).toBe(CORE_ABILITY_IDS.none);
+    expect(instance.abilitySlot).toBe(CORE_ABILITY_SLOTS.normal1);
+  });
+
+  it("given a species with no eligible level-up moves, when no explicit moves are supplied, then it throws instead of creating an invalid move list", () => {
+    const species = createSyntheticSpeciesData({
+      learnset: {
+        levelUp: [],
+        tm: [],
+        egg: [],
+        tutor: [],
+      },
+    });
+    const rng = new SeededRandom(42);
+
+    expect(() => createPokemonInstance(species, 50, rng)).toThrow(
+      `No eligible moves for species "${species.name}" at level 50`,
+    );
   });
 
   it("given a species, when called with default teraType, then uses first species type", () => {

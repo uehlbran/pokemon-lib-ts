@@ -52,6 +52,17 @@ function hasAbilityForSlot(species: PokemonSpeciesData, slot: AbilitySlot): bool
   }
 }
 
+function speciesHasAnyAbilities(species: PokemonSpeciesData): boolean {
+  return species.abilities.normal.length > 0 || species.abilities.hidden !== null;
+}
+
+function isValidExplicitAbilitySlot(species: PokemonSpeciesData, slot: AbilitySlot): boolean {
+  if (!speciesHasAnyAbilities(species)) {
+    return slot === CORE_ABILITY_SLOTS.normal1;
+  }
+  return hasAbilityForSlot(species, slot);
+}
+
 /**
  * Generate a unique ID from the PRNG.
  */
@@ -161,7 +172,7 @@ export function createPokemonInstance(
   // Pick ability
   let resolvedAbility: { ability: string; abilitySlot: AbilitySlot };
   if (options?.abilitySlot !== undefined) {
-    if (!hasAbilityForSlot(species, options.abilitySlot)) {
+    if (!isValidExplicitAbilitySlot(species, options.abilitySlot)) {
       throw new Error(
         `Invalid ability slot "${options.abilitySlot}" for species "${species.name}"`,
       );
@@ -181,16 +192,20 @@ export function createPokemonInstance(
   const isShiny = options?.isShiny ?? rng.chance(CORE_POKEMON_DEFAULTS.shinyChance);
 
   // Select moves -- latest 4 level-up moves at or below this level
-  if (options?.moves !== undefined) {
-    if (options.moves.length < 1 || options.moves.length > 4) {
-      throw new Error(
-        `Invalid move count ${options.moves.length}; Pokemon must have between 1 and 4 moves`,
-      );
-    }
+  if (options?.moves !== undefined && options.moves.length > 4) {
+    throw new Error(
+      `Invalid move count ${options.moves.length}; Pokemon must have between 1 and 4 moves`,
+    );
   }
-  const moves = options?.moves
+  const moves = options?.moves && options.moves.length > 0
     ? options.moves.map((moveId) => createMoveSlot(moveId))
     : getDefaultMoves(species.learnset, level);
+  if (moves.length < 1 || moves.length > 4) {
+    if (moves.length === 0) {
+      throw new Error(`No eligible moves for species "${species.name}" at level ${level}`);
+    }
+    throw new Error(`Invalid move count ${moves.length}; Pokemon must have between 1 and 4 moves`);
+  }
   const evs = normalizeEvs(options?.evs);
 
   const uid = generateUid(rng);
