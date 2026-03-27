@@ -247,8 +247,16 @@ function isSheerForceEligibleMove(effect: MoveEffect | null, moveId: string): bo
  * Source: Showdown sim/pokemon.ts -- isGrounded()
  * Source: Bulbapedia -- grounding mechanics
  */
+const AIRBORNE_SEMI_INVULNERABLE: ReadonlySet<VolatileStatus> = new Set([
+  CORE_VOLATILE_IDS.flying,
+  CORE_VOLATILE_IDS.shadowForceCharging,
+]);
+
 export function isGen9Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
+  for (const volatile of AIRBORNE_SEMI_INVULNERABLE) {
+    if (pokemon.volatileStatuses.has(volatile)) return false;
+  }
   if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
   const itemsSuppressed =

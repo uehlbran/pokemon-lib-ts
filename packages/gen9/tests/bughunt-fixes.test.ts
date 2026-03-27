@@ -14,10 +14,13 @@
 
 import type {
   ActivePokemon,
+  BattleConfig,
+  BattleEvent,
   BattleSide,
   BattleState,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
+import { BattleEngine } from "@pokemon-lib-ts/battle";
 import {
   createOnFieldPokemon as createBattleOnFieldPokemon,
   createTestPokemon,
@@ -35,6 +38,7 @@ import {
   CORE_VOLATILE_IDS,
   createEvs,
   createIvs,
+  createMoveSlot,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -138,6 +142,11 @@ function getCanonicalMove(id: string): MoveData {
   return DATA_MANAGER.getMove(id);
 }
 
+function createCanonicalMoveSlot(moveId: string) {
+  const move = DATA_MANAGER.getMove(moveId);
+  return createMoveSlot(move.id, move.pp);
+}
+
 function createSyntheticPokemonInstance(overrides?: Partial<PokemonInstance>): PokemonInstance {
   return {
     uid: "test-uid",
@@ -217,6 +226,62 @@ function createBattleState(overrides?: {
     rng: new SeededRandom(42),
     sides,
   } as unknown as BattleState;
+}
+
+function createGen9Engine(overrides?: {
+  team1?: PokemonInstance[];
+  team2?: PokemonInstance[];
+  seed?: number;
+}) {
+  const events: BattleEvent[] = [];
+  const config: BattleConfig = {
+    generation: 9,
+    format: "singles",
+    teams: [
+      overrides?.team1 ?? [
+        createTestPokemon(SPECIES.murkrow, 50, {
+          uid: "murkrow-1",
+          nickname: "Murkrow",
+          ability: ABILITIES.prankster,
+          abilitySlot: CORE_ABILITY_SLOTS.hidden,
+          moves: [createCanonicalMoveSlot(MOVES.thunderWave)],
+          calculatedStats: {
+            hp: 120,
+            attack: 85,
+            defense: 60,
+            spAttack: 85,
+            spDefense: 60,
+            speed: 80,
+          },
+          currentHp: 120,
+        }),
+      ],
+      overrides?.team2 ?? [
+        createTestPokemon(SPECIES.umbreon, 50, {
+          uid: "umbreon-1",
+          nickname: "Umbreon",
+          ability: ABILITIES.synchronize,
+          abilitySlot: CORE_ABILITY_SLOTS.normal1,
+          moves: [createCanonicalMoveSlot(MOVES.tackle)],
+          calculatedStats: {
+            hp: 180,
+            attack: 70,
+            defense: 110,
+            spAttack: 60,
+            spDefense: 130,
+            speed: 70,
+          },
+          currentHp: 180,
+        }),
+      ],
+    ],
+    seed: overrides?.seed ?? 12345,
+  };
+
+  const engine = new BattleEngine(config, new Gen9Ruleset(DATA_MANAGER), DATA_MANAGER);
+  engine.on((event) => events.push(event));
+
+  return { engine, events };
 }
 
 // ---------------------------------------------------------------------------
@@ -789,4 +854,33 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
 
     expect(blocked).toBe(false);
   });
+});
+
+// ---------------------------------------------------------------------------
+// #802 — Prankster status moves fail against Dark-type targets
+// ---------------------------------------------------------------------------
+
+describe("Bug #802: Prankster status moves fail against Dark-type targets", () => {
+  it(
+    "given a Prankster user targeting a Dark-type defender with a status move, " +
+      "when the turn resolves, then the move fails on the execution path",
+    () => {
+      // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves.
+      // Source: Bulbapedia "Prankster" Gen 7+ -- status moves fail against Dark-type targets.
+      const { engine, events } = createGen9Engine();
+
+      engine.start();
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, target: 1 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0, target: 0 });
+
+      expect(engine.state.sides[1].active[0]?.pokemon.status).toBeNull();
+      expect(events).toContainEqual({
+        type: "move-fail",
+        side: 0,
+        pokemon: "Murkrow",
+        move: MOVES.thunderWave,
+        reason: "blocked by Dark-type immunity",
+      });
+    },
+  );
 });

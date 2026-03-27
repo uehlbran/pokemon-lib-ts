@@ -43,7 +43,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { createGen9DataManager } from "./data/index.js";
 import { GEN9_ABILITY_IDS, GEN9_MOVE_IDS } from "./data/reference-ids.js";
-import { handleGen9Ability } from "./Gen9Abilities.js";
+import { handleGen9Ability, isPranksterBlockedByDarkType } from "./Gen9Abilities.js";
 import { GEN9_CRIT_MULTIPLIER, GEN9_CRIT_RATE_TABLE } from "./Gen9CritCalc.js";
 import { calculateGen9Damage } from "./Gen9DamageCalc.js";
 import { applyGen9EntryHazards } from "./Gen9EntryHazards.js";
@@ -758,5 +758,13 @@ export class Gen9Ruleset extends BaseRuleset {
     const terrainType = state.terrain?.type ?? null;
     const movePriority = move.priority ?? 0;
     return checkPsychicTerrainPriorityBlock(terrainType, movePriority, defender, state);
+  }
+
+  checkPranksterDarkImmunity(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    move: MoveData,
+  ): boolean {
+    return isPranksterBlockedByDarkType(attacker.ability, move.category, defender.types);
   }
 }

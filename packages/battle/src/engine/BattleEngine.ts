@@ -2175,6 +2175,21 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // Gen 7+: Prankster-boosted status moves fail against Dark-type targets.
+    // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
+    if (this.ruleset.checkPranksterDarkImmunity?.(actor, defender, effectiveMoveData)) {
+      this.emit({
+        type: "move-fail",
+        side: action.side,
+        pokemon: getPokemonName(actor),
+        move: effectiveMoveData.id,
+        reason: "blocked by Dark-type immunity",
+      });
+      actor.lastMoveUsed = moveData.id;
+      actor.movedThisTurn = true;
+      return;
+    }
+
     // Magic Bounce / shouldReflectMove check (Gen 5+)
     // If the defender's ability reflects the move, skip normal execution and
     // re-execute the move with attacker/defender swapped.

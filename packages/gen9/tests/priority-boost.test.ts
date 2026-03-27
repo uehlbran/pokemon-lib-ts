@@ -6,6 +6,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_TYPE_IDS,
   createEvs,
   createIvs,
   createMoveSlot,
@@ -242,6 +243,53 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
       // Opponent (side 1) should go first since Prankster doesn't boost physical
       expect(ordered[0].type).toBe("move");
       expect((ordered[0] as { side: number }).side).toBe(1);
+    },
+  );
+
+  it(
+    "given Prankster user with a status move targeting a Dark-type defender, " +
+      "when checking Gen9Ruleset Prankster immunity, then the move is blocked",
+    () => {
+      // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves.
+      // Source: Bulbapedia "Prankster" Gen 7+ -- status moves fail against Dark-type targets.
+      const attacker = createOnFieldPokemon({
+        ability: abilityIds.prankster,
+        moves: [createCanonicalMoveSlot(moveIds.willOWisp)],
+      });
+      const defender = createOnFieldPokemon({
+        types: [CORE_TYPE_IDS.dark],
+      });
+
+      const blocked = ruleset.checkPranksterDarkImmunity(
+        attacker,
+        defender,
+        dataManager.getMove(moveIds.willOWisp),
+      );
+
+      expect(blocked).toBe(true);
+    },
+  );
+
+  it(
+    "given Prankster user with a status move targeting a non-Dark defender, " +
+      "when checking Gen9Ruleset Prankster immunity, then the move is allowed",
+    () => {
+      // Source: Showdown data/abilities.ts -- only Dark-type targets block Prankster-boosted status moves.
+      const attacker = createOnFieldPokemon({
+        ability: abilityIds.prankster,
+        moves: [createCanonicalMoveSlot(moveIds.willOWisp)],
+      });
+      const defender = createOnFieldPokemon({
+        types: [CORE_TYPE_IDS.normal],
+      });
+
+      const blocked = ruleset.checkPranksterDarkImmunity(
+        attacker,
+        defender,
+        dataManager.getMove(moveIds.willOWisp),
+      );
+
+      expect(blocked).toBe(false);
     },
   );
 });

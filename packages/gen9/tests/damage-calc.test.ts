@@ -2480,6 +2480,20 @@ describe("isGen9Grounded", () => {
     expect(isGen9Grounded(pokemon, false)).toBe(false);
   });
 
+  it("given Pokemon with airborne Fly/Bounce volatile, when checking, then is NOT grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- airborne semi-invulnerable users are not grounded
+    const volatiles = new Map([[VOLATILES.flying, { turnsLeft: 1 }]]);
+    const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
+    expect(isGen9Grounded(pokemon, false)).toBe(false);
+  });
+
+  it("given Pokemon with Shadow Force charging volatile, when checking, then is NOT grounded", () => {
+    // Source: Showdown sim/pokemon.ts -- Shadow Force/Phantom Force users are airborne semi-invulnerable
+    const volatiles = new Map([[VOLATILES.shadowForceCharging, { turnsLeft: 1 }]]);
+    const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
+    expect(isGen9Grounded(pokemon, false)).toBe(false);
+  });
+
   it("given Levitate Pokemon, when checking, then is NOT grounded", () => {
     // Source: Showdown -- Levitate prevents grounding
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], ability: ABILITIES.levitate });

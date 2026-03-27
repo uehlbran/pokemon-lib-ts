@@ -1,5 +1,11 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
-import { type AbilityTrigger, CORE_ABILITY_TRIGGER_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
+import {
+  type AbilityTrigger,
+  CORE_ABILITY_TRIGGER_IDS,
+  CORE_MOVE_CATEGORIES,
+  CORE_TYPE_IDS,
+  type MoveCategory,
+} from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen9NewAbility, isEmbodyAspect } from "./Gen9AbilitiesNew.js";
 import { handleGen9StatAbility } from "./Gen9AbilitiesStat.js";
@@ -95,7 +101,7 @@ function handleCarryForwardPriorityCheck(ctx: AbilityContext): AbilityResult {
     case "prankster": {
       // +1 priority to status moves
       // Source: Showdown data/abilities.ts -- move.category === 'Status'
-      if (ctx.move.category !== "status") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return NO_ACTIVATION;
       return {
         activated: true,
         effects: [],
@@ -133,6 +139,16 @@ function handleCarryForwardPriorityCheck(ctx: AbilityContext): AbilityResult {
     default:
       return NO_ACTIVATION;
   }
+}
+
+export function isPranksterBlockedByDarkType(
+  attackerAbility: string,
+  moveCategory: MoveCategory,
+  defenderTypes: readonly string[],
+): boolean {
+  if (attackerAbility !== GEN9_ABILITY_IDS.prankster) return false;
+  if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
+  return defenderTypes.includes(CORE_TYPE_IDS.dark);
 }
 
 // ---------------------------------------------------------------------------

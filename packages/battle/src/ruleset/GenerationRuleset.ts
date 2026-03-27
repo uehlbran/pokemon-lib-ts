@@ -161,6 +161,22 @@ export interface DamageSystem {
   ): boolean;
 
   /**
+   * Returns `true` if a Prankster-boosted status move should fail against the defender.
+   *
+   * Gen 7+: Dark-type targets are immune to status moves that gained priority from Prankster.
+   * Called by the engine before move execution so the move fails on the real execution path,
+   * not just during turn-order calculation.
+   *
+   * Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
+   * Source: Bulbapedia "Prankster" Gen 7+ -- status moves fail against Dark-type targets
+   */
+  checkPranksterDarkImmunity?(
+    attacker: ActivePokemon,
+    defender: ActivePokemon,
+    move: MoveData,
+  ): boolean;
+
+  /**
    * Returns `true` if the given move, when used by the given actor, can bypass Protect-type
    * volatile statuses and hit the defender for reduced (0.25x) damage.
    *
