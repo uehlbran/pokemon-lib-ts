@@ -1453,6 +1453,92 @@ describe("Gen 7 Mold Breaker vs Filter/Solid Rock/Prism Armor", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Sunsteel Strike and Moongeist Beam ability bypass
+// ---------------------------------------------------------------------------
+
+describe("Gen 7 signature moves bypass target abilities", () => {
+  it("given Sunsteel Strike against a target with Filter, then defensive ability reduction is ignored", () => {
+    // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
+    // Source: Showdown data/abilities.ts -- Filter: breakable: 1 (Mold Breaker ignores)
+    const defender = createOnFieldPokemon({
+      defense: 100,
+      types: [TYPE_IDS.ice],
+      ability: ABILITY_IDS.filter,
+    });
+
+    const normalMoveCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ attack: 100 }),
+      defender,
+      move: createSyntheticMove({
+        id: MOVE_IDS.ironHead,
+        type: TYPE_IDS.steel,
+        category: MOVE_CATEGORIES.physical,
+        power: 100,
+        flags: { contact: true },
+      }),
+      seed: 42,
+    });
+    const sunsteelCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ attack: 100 }),
+      defender,
+      move: createSyntheticMove({
+        id: MOVE_IDS.sunsteelStrike,
+        type: TYPE_IDS.steel,
+        category: MOVE_CATEGORIES.physical,
+        power: 100,
+        flags: { contact: true },
+      }),
+      seed: 42,
+    });
+
+    const normalMove = calculateGen7Damage(normalMoveCtx, typeChart);
+    const sunsteel = calculateGen7Damage(sunsteelCtx, typeChart);
+
+    expect(sunsteel.damage).toBeGreaterThan(normalMove.damage);
+    expect(sunsteel.breakdown?.abilityMultiplier).toBe(1);
+  });
+
+  it("given Moongeist Beam against Wonder Guard at neutral effectiveness, then neutral damage still lands", () => {
+    // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
+    // Source: Showdown data/abilities.ts -- Wonder Guard blocks non-SE moves
+    const defender = createOnFieldPokemon({
+      spDefense: 100,
+      types: [TYPE_IDS.grass],
+      ability: ABILITY_IDS.wonderGuard,
+    });
+
+    const normalMoveCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ spAttack: 150 }),
+      defender,
+      move: createSyntheticMove({
+        id: MOVE_IDS.shadowBall,
+        type: TYPE_IDS.ghost,
+        category: MOVE_CATEGORIES.special,
+        power: 100,
+      }),
+      seed: 42,
+    });
+    const moongeistCtx = createDamageContext({
+      attacker: createOnFieldPokemon({ spAttack: 150 }),
+      defender,
+      move: createSyntheticMove({
+        id: MOVE_IDS.moongeistBeam,
+        type: TYPE_IDS.ghost,
+        category: MOVE_CATEGORIES.special,
+        power: 100,
+      }),
+      seed: 42,
+    });
+
+    const normalMove = calculateGen7Damage(normalMoveCtx, typeChart);
+    const moongeist = calculateGen7Damage(moongeistCtx, typeChart);
+
+    expect(normalMove.damage).toBe(0);
+    expect(moongeist.damage).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Expert Belt test
 // ---------------------------------------------------------------------------
 
