@@ -445,6 +445,109 @@ describe("BattleEngine surface", () => {
     });
   });
 
+  describe("input isolation", () => {
+    it("given caller-owned team members, when a full turn resolves, then the original pokemon objects stay unchanged", () => {
+      const originalMoveSlot = createMockMoveSlot(CORE_MOVE_IDS.tackle);
+      const team1 = [
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 17,
+          moves: [originalMoveSlot],
+          calculatedStats: {
+            hp: 17,
+            attack: 17,
+            defense: 17,
+            spAttack: 17,
+            spDefense: 17,
+            speed: 17,
+          },
+        }),
+      ];
+
+      const originalPokemon = team1[0]!;
+      const originalMoves = structuredClone(originalPokemon.moves);
+      const originalCalculatedStats = { ...originalPokemon.calculatedStats };
+
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(originalPokemon.currentHp).toBe(17);
+      expect(originalPokemon.moves).toEqual(originalMoves);
+      expect(originalPokemon.calculatedStats).toEqual(originalCalculatedStats);
+      expect(originalPokemon.timesAttacked).toBeUndefined();
+      expect(originalPokemon.rageFistLastHitTurns).toBeUndefined();
+    });
+
+    it("given a voluntary switch path, when the battle state changes, then the original team objects stay unchanged", () => {
+      const originalCharizardMove = createMockMoveSlot(CORE_MOVE_IDS.tackle);
+      const originalPikachuMove = createMockMoveSlot(CORE_MOVE_IDS.tackle);
+      const team1 = [
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 21,
+          moves: [originalCharizardMove],
+        }),
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          currentHp: 11,
+          moves: [originalPikachuMove],
+        }),
+      ];
+
+      const originalTeamSnapshot = structuredClone(team1);
+
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(team1).toEqual(originalTeamSnapshot);
+      expect(engine.getTeam(0)[0]).not.toBe(team1[0]);
+      expect(engine.getTeam(0)[1]).not.toBe(team1[1]);
+    });
+
+    it("given a pokemon takes damage and later switches out, when inspecting battle state, then the internal copy preserves that in-battle state without mutating the caller object", () => {
+      const team1 = [
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 33,
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+        }),
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+        }),
+      ];
+
+      const originalCharizard = team1[0]!;
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const damagedClone = engine.getTeam(0)[0]!;
+      expect(damagedClone.currentHp).toBeLessThan(damagedClone.calculatedStats.hp);
+
+      engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const benchedClone = engine.getTeam(0)[0]!;
+      expect(benchedClone.uid).toBe("charizard-1");
+      expect(benchedClone.currentHp).toBe(damagedClone.currentHp);
+      expect(originalCharizard.currentHp).toBe(33);
+    });
+  });
+
   describe("getAvailableSwitches", () => {
     it("given a team with alive benched pokemon, when getAvailableSwitches is called, then valid slots are returned", () => {
       const team1 = [
