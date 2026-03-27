@@ -257,9 +257,21 @@ export class Gen1Ruleset implements GenerationRuleset {
    * Calculate effective speed for turn order.
    * In Gen 1, paralysis reduces speed to 25%.
    */
-  private getEffectiveSpeed(active: ActivePokemon): number {
+  private requireCalculatedStats(active: ActivePokemon, context: string) {
     const stats = active.pokemon.calculatedStats;
-    const baseSpeed = stats ? stats.speed : 100;
+    if (!stats) {
+      throw new Error(`Gen1 ${context} requires calculatedStats`);
+    }
+    return stats;
+  }
+
+  private requireMaxHp(active: ActivePokemon): number {
+    return this.requireCalculatedStats(active, "max-HP calculation").hp;
+  }
+
+  private getEffectiveSpeed(active: ActivePokemon): number {
+    const stats = this.requireCalculatedStats(active, "turn-order calculation");
+    const baseSpeed = stats.speed;
 
     // Apply stat stages (integer arithmetic — Source: pret/pokered data/battle/stat_modifiers.asm)
     const speedRatio = getGen12StatStageRatio(active.statStages.speed);
@@ -649,7 +661,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       }
 
       case "heal": {
-        const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+        const maxHp = this.requireMaxHp(attacker);
         result.healAmount = Math.max(1, Math.floor(maxHp * effect.amount));
         break;
       }
@@ -847,7 +859,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered src/engine/battle/effect_commands.asm — Rest
           // Rest heals to full HP and puts the user to sleep for exactly 2 turns.
           // Fails if user is at full HP AND has no primary status condition.
-          const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+          const maxHp = this.requireMaxHp(attacker);
           const isFullHp = attacker.pokemon.currentHp >= maxHp;
           const hasStatus =
             attacker.pokemon.status !== null && attacker.pokemon.status !== undefined;
@@ -922,7 +934,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           // Source: pret/pokered SubstituteEffect + gen1-ground-truth.md
           // Creates a substitute that absorbs damage. Costs 1/4 max HP.
           // Source: pokered SubstituteEffect — cartridge uses <= comparison: if currentHP <= subCost, Substitute fails.
-          const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+          const maxHp = this.requireMaxHp(attacker);
           const subHp = Math.floor(maxHp / 4);
           if (attacker.substituteHp > 0) {
             result.messages.push("But it failed!");
@@ -1252,7 +1264,7 @@ export class Gen1Ruleset implements GenerationRuleset {
   // --- Status Conditions ---
 
   applyStatusDamage(pokemon: ActivePokemon, status: PrimaryStatus, _state: BattleState): number {
-    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    const maxHp = this.requireMaxHp(pokemon);
 
     switch (status) {
       case "burn": {
@@ -1556,9 +1568,9 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Burn halves physical attack even on confusion self-hits.
     // (Showdown gen1 conditions.ts:147-149)
     const level = pokemon.pokemon.level;
-    const calcStats = pokemon.pokemon.calculatedStats;
-    const baseAtk = calcStats?.attack ?? 50;
-    const baseDef = calcStats?.defense ?? 50;
+    const calcStats = this.requireCalculatedStats(pokemon, "confusion damage calculation");
+    const baseAtk = calcStats.attack;
+    const baseDef = calcStats.defense;
 
     // Integer stat-stage arithmetic — Source: pret/pokered data/battle/stat_modifiers.asm
     const { num: atkNum, den: atkDen } = getGen12StatStageRatio(pokemon.statStages.attack);
@@ -1908,7 +1920,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: gen1-ground-truth.md §8 — Leech Seed shares the N/16 counter with burn/poison.
     // When the toxic-counter volatile exists (set by Toxic), Leech Seed uses and increments
     // that shared counter. Without it, Leech Seed drains the standard 1/16 max HP.
-    const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
+    const maxHp = this.requireMaxHp(pokemon);
     const seedState = pokemon.volatileStatuses.get("toxic-counter");
     if (seedState) {
       const counter = (seedState.data?.counter as number) ?? 1;

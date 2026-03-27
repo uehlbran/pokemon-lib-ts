@@ -594,7 +594,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     expect(damage).toBe(0);
   });
 
-  it("given a Pokemon with no calculatedStats, when applying burn damage, then uses currentHp as fallback for max HP", () => {
+  it("given a Pokemon with no calculatedStats, when applying burn damage, then throws instead of fabricating max HP", () => {
     // Arrange
     const pokemon = createActivePokemonFixture({
       pokemon: {
@@ -604,10 +604,9 @@ describe("Gen1Ruleset applyStatusDamage", () => {
       } as PokemonInstance,
     });
     const state = makeBattleState();
-    // Act
-    const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state);
-    // Assert: floor(160 / 16) = 10
-    expect(damage).toBe(10);
+    expect(() => ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state)).toThrow(
+      /Gen1 max-HP calculation requires calculatedStats/i,
+    );
   });
 });
 
@@ -888,7 +887,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     expect(result.healAmount).toBe(100);
   });
 
-  it("given a heal effect when attacker has no calculatedStats, when executing, then uses currentHp as fallback", () => {
+  it("given a heal effect when attacker has no calculatedStats, when executing, then throws instead of fabricating max HP", () => {
     // Arrange
     const attacker = createActivePokemonFixture({
       pokemon: {
@@ -901,10 +900,9 @@ describe("Gen1Ruleset executeMoveEffect", () => {
       effect: { type: "heal", amount: 0.5 },
     });
     const ctx = createMoveEffectContextFixture({ attacker, move });
-    // Act
-    const result = ruleset.executeMoveEffect(ctx);
-    // Assert: max(1, floor(80 * 0.5)) = 40
-    expect(result.healAmount).toBe(40);
+    expect(() => ruleset.executeMoveEffect(ctx)).toThrow(
+      /Gen1 max-HP calculation requires calculatedStats/i,
+    );
   });
 
   // --- multi effect ---
@@ -1674,7 +1672,7 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     ).toThrow(/custom loader exploded/i);
   });
 
-  it("given a Pokemon with no calculatedStats, when resolving turn order, then uses default speed of 100", () => {
+  it("given a Pokemon with no calculatedStats, when resolving turn order, then throws instead of fabricating speed", () => {
     // Arrange
     const move0: BattleAction = { type: "move", side: 0, moveIndex: 0 };
     const move1: BattleAction = { type: "move", side: 1, moveIndex: 0 };
@@ -1699,10 +1697,10 @@ describe("Gen1Ruleset resolveTurnOrder", () => {
     });
     const state = makeBattleState({ side0Active: noStatsPokemon, side1Active: fastPokemon });
     const rng = new SeededRandom(42);
-    // Act
-    const ordered = ruleset.resolveTurnOrder([move0, move1], state, rng);
-    // Assert: Side 1 (speed 200) should go first since default speed is 100
-    expect(ordered[0]?.side).toBe(1);
+    // Assert: missing calculatedStats is invalid runtime state and must not be masked
+    expect(() => ruleset.resolveTurnOrder([move0, move1], state, rng)).toThrow(
+      /Gen1 turn-order calculation requires calculatedStats/i,
+    );
   });
 });
 

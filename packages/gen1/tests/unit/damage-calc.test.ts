@@ -300,6 +300,77 @@ function calcDamage(params: {
 describe("Gen 1 Damage Calculation", () => {
   // --- Basic Damage Calculation ---
 
+  it("given attacker without calculatedStats, when damage is calculated, then throws instead of fabricating attack stats", () => {
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 80,
+      defense: 60,
+      spAttack: 80,
+      spDefense: 60,
+      types: [TYPES.normal],
+    });
+    attacker.pokemon.calculatedStats = undefined;
+
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 80,
+      defense: 60,
+      spAttack: 80,
+      spDefense: 60,
+      types: [TYPES.normal],
+    });
+    const move = createPhysicalMove(50);
+    const rng = createMockRng(255);
+    const context = {
+      attacker,
+      defender,
+      move,
+      rng,
+      isCrit: false,
+      state: { sides: [] },
+    } as unknown as DamageContext;
+
+    expect(() => calculateGen1Damage(context, createNeutralTypeChart(), createSpecies())).toThrow(
+      /Gen1 damage calculation requires calculatedStats/i,
+    );
+  });
+
+  it("given defender without calculatedStats, when damage is calculated, then throws instead of fabricating defense stats", () => {
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 80,
+      defense: 60,
+      spAttack: 80,
+      spDefense: 60,
+      types: [TYPES.normal],
+    });
+
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 80,
+      defense: 60,
+      spAttack: 80,
+      spDefense: 60,
+      types: [TYPES.normal],
+    });
+    defender.pokemon.calculatedStats = undefined;
+
+    const move = createPhysicalMove(50);
+    const rng = createMockRng(255);
+    const context = {
+      attacker,
+      defender,
+      move,
+      rng,
+      isCrit: false,
+      state: { sides: [] },
+    } as unknown as DamageContext;
+
+    expect(() => calculateGen1Damage(context, createNeutralTypeChart(), createSpecies())).toThrow(
+      /Gen1 damage calculation requires calculatedStats/i,
+    );
+  });
+
   it("given known attacker/defender stats and a physical move, when calculating damage at max roll, then returns exact expected value", () => {
     // Arrange: Level 50 attacker with Attack 100, Defender with Defense 100, Power 80 move
     const params = {
