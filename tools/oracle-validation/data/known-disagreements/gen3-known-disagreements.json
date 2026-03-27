@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "gen3:data:type-chart:electric-to-steel:effectiveness",
+    "gen": 3,
+    "suite": "data",
+    "description": "Electric attacking Steel stays 0.5x on Gen 3 cartridge, but the current oracle reports neutral damage.",
+    "ourValue": 0.5,
+    "oracleValue": 1,
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+    "sourceUrl": "https://github.com/pret/pokeemerald/blob/master/src/battle_main.c",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-27"
+  },
+  {
+    "id": "gen3:data:type-chart:water-to-steel:effectiveness",
+    "gen": 3,
+    "suite": "data",
+    "description": "Water attacking Steel stays 0.5x on Gen 3 cartridge, but the current oracle reports neutral damage.",
+    "ourValue": 0.5,
+    "oracleValue": 1,
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+    "sourceUrl": "https://github.com/pret/pokeemerald/blob/master/src/battle_main.c",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-27"
+  }
+]

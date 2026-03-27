@@ -8,6 +8,7 @@ import {
   loadDisagreementRegistrySummary,
   loadKnownDisagreements,
   loadKnownOracleBugs,
+  resolveOracleChecks,
 } from "../src/disagreement-registry.js";
 import { discoverImplementedGenerations } from "../src/gen-discovery.js";
 
@@ -355,5 +356,214 @@ describe("disagreement registry", () => {
     );
 
     expect(() => loadKnownOracleBugs(generation, tempRoot)).toThrow("Invalid registry schema");
+  });
+
+  it("given a disagreement id with control characters, when loading known disagreements, then schema validation fails", () => {
+    const generation = getGeneration(1);
+    const tempRoot = createTempRegistryRoot();
+    const disagreementDir = join(
+      tempRoot,
+      "tools",
+      "oracle-validation",
+      "data",
+      "known-disagreements",
+    );
+    const oracleDataDir = join(tempRoot, "tools", "oracle-validation", "data");
+
+    writeFileSync(
+      join(disagreementDir, "gen1-known-disagreements.json"),
+      JSON.stringify([
+        {
+          id: "bad\nid",
+          gen: 1,
+          suite: "data",
+          description: "newline in id",
+          ourValue: 1,
+          oracleValue: 2,
+          resolution: "cartridge-accurate",
+          source: "pret/example",
+          sourceUrl: "https://example.com/source",
+          oracleVersion: "@pkmn/data@0.10.7",
+          addedDate: "2026-03-27",
+        },
+      ]),
+    );
+    writeFileSync(join(oracleDataDir, "known-oracle-bugs.json"), "[]");
+
+    expect(() => loadKnownDisagreements(generation, tempRoot)).toThrow("Invalid registry schema");
+  });
+
+  it("given duplicate disagreement ids in the same gen file, when loading known disagreements, then it throws", () => {
+    const generation = getGeneration(1);
+    const tempRoot = createTempRegistryRoot({
+      disagreementsByGen: {
+        1: [
+          makeKnownDisagreement({
+            id: "duplicate-id",
+            gen: 1,
+          }),
+          makeKnownDisagreement({
+            id: "duplicate-id",
+            gen: 1,
+            description: "duplicate entry",
+          }),
+        ],
+      },
+      oracleBugs: [],
+    });
+
+    expect(() => loadKnownDisagreements(generation, tempRoot)).toThrow(
+      "Known-disagreement file for Gen 1 contains duplicate ids: duplicate-id",
+    );
+  });
+
+  it("given oracle checks that match a known disagreement entry, when resolving oracle checks, then it records the matched disagreement without failing", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [
+        {
+          id: "gen1-ghost-psychic",
+          suite: "data",
+          description: "Ghost -> Psychic matches cartridge, not the oracle",
+          ourValue: 0,
+          oracleValue: 2,
+        },
+      ],
+      [
+        makeKnownDisagreement({
+          id: "gen1-ghost-psychic",
+          suite: "data",
+          gen: 1,
+          ourValue: 0,
+          oracleValue: 2,
+        }),
+      ],
+    );
+
+    expect(result).toEqual({
+      failures: [],
+      matchedKnownDisagreements: ["gen1-ghost-psychic"],
+      staleDisagreements: [],
+    });
+  });
+
+  it("given a known disagreement whose current values now match the oracle, when resolving oracle checks, then it marks the disagreement as stale", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [
+        {
+          id: "gen1-ghost-psychic",
+          suite: "data",
+          description: "Ghost -> Psychic now matches the oracle",
+          ourValue: 2,
+          oracleValue: 2,
+        },
+      ],
+      [
+        makeKnownDisagreement({
+          id: "gen1-ghost-psychic",
+          suite: "data",
+          gen: 1,
+          ourValue: 0,
+          oracleValue: 2,
+        }),
+      ],
+    );
+
+    expect(result).toEqual({
+      failures: [
+        "STALE DISAGREEMENT DETECTED: gen1-ghost-psychic — oracle now matches our implementation; remove or update the registry entry",
+      ],
+      matchedKnownDisagreements: [],
+      staleDisagreements: ["gen1-ghost-psychic"],
+    });
+  });
+
+  it("given a registry entry that the current suite did not emit, when resolving oracle checks, then it fails loudly instead of silently dropping the disagreement", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [],
+      [
+        makeKnownDisagreement({
+          id: "gen1-missing-check",
+          suite: "data",
+          gen: 1,
+          ourValue: 0,
+          oracleValue: 2,
+        }),
+      ],
+    );
+
+    expect(result).toEqual({
+      failures: [
+        "KNOWN DISAGREEMENT NOT EXERCISED: gen1-missing-check — current suite output did not emit this check id",
+      ],
+      matchedKnownDisagreements: [],
+      staleDisagreements: [],
+    });
+  });
+
+  it("given an oracle mismatch with no registry entry, when resolving oracle checks, then it fails as a new disagreement", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [
+        {
+          id: "gen1-new-mismatch",
+          suite: "data",
+          description: "New mismatch",
+          ourValue: 0,
+          oracleValue: 2,
+        },
+      ],
+      [],
+    );
+
+    expect(result.matchedKnownDisagreements).toEqual([]);
+    expect(result.staleDisagreements).toEqual([]);
+    expect(result.failures).toEqual([
+      "NEW DISAGREEMENT DETECTED: gen1-new-mismatch — investigate before adding to known-disagreements file (suite=data, ours=0, oracle=2)",
+    ]);
+  });
+
+  it("given a non-json oracle value, when resolving a new disagreement, then it reports the mismatch instead of throwing during formatting", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [
+        {
+          id: "gen1-bigint-mismatch",
+          suite: "data",
+          description: "BigInt mismatch",
+          ourValue: 1n,
+          oracleValue: 2n,
+        },
+      ],
+      [],
+    );
+
+    expect(result.matchedKnownDisagreements).toEqual([]);
+    expect(result.staleDisagreements).toEqual([]);
+    expect(result.failures).toEqual([
+      "NEW DISAGREEMENT DETECTED: gen1-bigint-mismatch — investigate before adding to known-disagreements file (suite=data, ours=1n, oracle=2n)",
+    ]);
+  });
+
+  it("given a registry entry for a different suite, when resolving data-suite oracle checks, then it ignores the unrelated disagreement instead of flagging it as unexercised", () => {
+    const result = resolveOracleChecks(
+      "data",
+      [],
+      [
+        makeKnownDisagreement({
+          id: "gen1-ground-truth-only",
+          suite: "groundTruth",
+          gen: 1,
+        }),
+      ],
+    );
+
+    expect(result).toEqual({
+      failures: [],
+      matchedKnownDisagreements: [],
+      staleDisagreements: [],
+    });
   });
 });

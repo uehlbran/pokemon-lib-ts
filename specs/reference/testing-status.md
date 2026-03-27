@@ -33,7 +33,7 @@ Confidence levels:
 ### Current weaknesses
 
 - Repo confidence is uneven: high raw counts do not imply every high-risk interaction is strongly proven.
-- The oracle/compliance system now has an initial fast-path runner plus registry scaffolding for known disagreements and oracle bugs, but curated ground-truth scenarios, disagreement matching/staleness checks, and broader parity slices are still missing.
+- The oracle/compliance system now has an initial fast-path runner plus registry scaffolding for known disagreements and oracle bugs, and the data fast path now resolves matched/stale disagreement ids against the registry. Curated ground-truth scenarios and broader parity slices are still missing.
 - Replay validation is still Gen 1-centric via `tools/replay-parser`; it is not yet a cross-gen confidence layer.
 - Several open issues still identify correctness gaps in runtime identity, packaging, and missing mechanic coverage.
 - Branch-heavy modules remain concentrated in the same mechanic hotspots where regressions are most likely.
@@ -67,7 +67,7 @@ Showdown parity is not the success criterion for Gen 1-4. For those gens, cartri
 | Gen 1 cartridge-only mechanics still outside confidence closure | gen1 | `weak` | Gen 1 has the strongest ground-truth assets, but `#530` remains open for the badge boost glitch | Keep Gen 1 cartridge rows visible and add explicit badge-boost confidence coverage before claiming closure |
 | Cross-gen generation-specific move / ability / gimmick gaps | gen4-9 | `weak` | Open issues `#793`, `#788`, `#789`, `#1059`, and `#1060` show real singles mechanic surfaces still missing or still treated as live confidence debt; doubles-only gaps stay tracked separately | Separate missing singles mechanics from deferred doubles mechanics and cover the live singles gaps first |
 | Replay / external differential validation | repo-wide | `none` beyond Gen1 | `tools/replay-parser` currently focuses on Gen 1 structural validation | Expand plan from Gen1-only precedent into fast compliance path |
-| Oracle/compliance harness | repo-wide | `weak` | Fast path now runs `data` + `stats` for Gen 1-3 with generation-aware normalizations; ground-truth scenarios and broader parity slices are still missing | Extend from fast path to curated ground-truth scenarios and broader package coverage |
+| Oracle/compliance harness | repo-wide | `weak` | Fast path now runs `data` + `stats` for Gen 1-3 with generation-aware normalizations, and the data suite reports matched/stale registry disagreements; curated ground-truth scenarios and broader parity slices are still missing | Extend from fast path to curated ground-truth scenarios and broader package coverage |
 | Battle event/state trace consistency | battle | `weak` | Serialization/event tests exist, but there is still no generic trace validator or replay-backed event oracle | Define trace invariants and feed them into the compliance program |
 
 ## Architecture Confidence Matrix (Initial Seed)
@@ -146,10 +146,10 @@ Implemented now:
 - data parity scaffolding
 - stat parity scaffolding
 - ground-truth suite wiring, currently exercised by the Gen 1 dataset and runner path
+- disagreement matching and stale-disagreement reporting for the current data-suite fast path
 
 Still missing from visible confidence:
 - curated ground-truth scenario coverage
-- disagreement matching and staleness detection wired into the status surface
 - replay / trace parity beyond the Gen 1 precedent
 - full Gen 4 authority tagging in the compliance results
 - broader mechanics / gimmicks / terrain suites from the compliance spec

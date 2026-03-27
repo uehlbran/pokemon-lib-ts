@@ -96,6 +96,9 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
       skipped: 1,
       failures: [],
       notes: [],
+      matchedKnownDisagreements: [],
+      staleDisagreements: [],
+      oracleChecks: [],
       skipReason: "Initial fast path only implements Gen 1-3 stat checks",
     };
   }
@@ -148,5 +151,8 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
     skipped: 0,
     failures,
     notes: [],
+    matchedKnownDisagreements: [],
+    staleDisagreements: [],
+    oracleChecks: [],
   };
 }

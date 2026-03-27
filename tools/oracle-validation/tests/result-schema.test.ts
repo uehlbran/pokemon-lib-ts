@@ -55,6 +55,9 @@ describe("generationResultSchema", () => {
           failed: 0,
           skipped: 0,
           failures: [],
+          matchedKnownDisagreements: [],
+          staleDisagreements: [],
+          oracleChecks: [],
         },
       },
     });
@@ -73,12 +76,16 @@ describe("generationResultSchema", () => {
           failed: 0,
           skipped: 0,
           failures: [],
+          matchedKnownDisagreements: [],
+          staleDisagreements: [],
+          oracleChecks: [],
         },
       },
       registry: {
         knownDisagreements: [],
         knownOracleBugs: [],
       },
+      staleDisagreements: [],
     });
 
     expect(parsed.success).toBe(true);

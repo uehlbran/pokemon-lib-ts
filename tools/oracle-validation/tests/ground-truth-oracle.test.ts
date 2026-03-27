@@ -40,6 +40,9 @@ describe("runGroundTruthSuite", () => {
       skipped: 1,
       failures: [],
       notes: [],
+      matchedKnownDisagreements: [],
+      staleDisagreements: [],
+      oracleChecks: [],
       skipReason: "Ground-truth dataset only implemented for Gen 1 in the initial oracle slice",
     });
   });

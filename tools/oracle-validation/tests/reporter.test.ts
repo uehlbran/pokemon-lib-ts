@@ -18,6 +18,9 @@ describe("formatRunnerOutput", () => {
               skipped: 0,
               failures: [],
               notes: [],
+              matchedKnownDisagreements: ["cartridge-priority"],
+              staleDisagreements: [],
+              oracleChecks: [],
             },
           },
           registry: {
@@ -50,10 +53,14 @@ describe("formatRunnerOutput", () => {
               },
             ],
           },
+          staleDisagreements: ["stale-data-check"],
         },
       ],
     });
 
-    expect(output).toContain("  registry: knownDisagreements=1, knownOracleBugs=1");
+    expect(output).toContain(
+      "  registry: knownDisagreements=1, knownOracleBugs=1, staleDisagreements=1",
+    );
+    expect(output).toContain("    known-disagreement: cartridge-priority");
   });
 });

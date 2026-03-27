@@ -78,10 +78,11 @@ async function main(): Promise<void> {
   const generationResults: GenerationResult[] = generations.map(
     (generation: ImplementedGeneration) => {
       const suiteResults: Record<string, SuiteResult> = {};
+      const registry = loadDisagreementRegistrySummary(generation, repoRoot);
 
       for (const suite of expandedSuites) {
         if (suite === "data") {
-          suiteResults[suite] = runDataSuite(generation);
+          suiteResults[suite] = runDataSuite(generation, registry.knownDisagreements);
         } else if (suite === "stats") {
           suiteResults[suite] = runStatsSuite(generation);
         } else if (suite === "groundTruth") {
@@ -93,7 +94,10 @@ async function main(): Promise<void> {
         gen: generation.gen,
         packageName: generation.packageName,
         suites: suiteResults,
-        registry: loadDisagreementRegistrySummary(generation, repoRoot),
+        registry,
+        staleDisagreements: [
+          ...new Set(Object.values(suiteResults).flatMap((result) => result.staleDisagreements)),
+        ].sort(),
       };
     },
   );

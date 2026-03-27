@@ -8,7 +8,7 @@ export function formatRunnerOutput(output: RunnerOutput): string {
   for (const generation of output.generations) {
     lines.push(`Gen ${generation.gen} (${generation.packageName})`);
     lines.push(
-      `  registry: knownDisagreements=${generation.registry.knownDisagreements.length}, knownOracleBugs=${generation.registry.knownOracleBugs.length}`,
+      `  registry: knownDisagreements=${generation.registry.knownDisagreements.length}, knownOracleBugs=${generation.registry.knownOracleBugs.length}, staleDisagreements=${generation.staleDisagreements.length}`,
     );
 
     for (const [suite, result] of Object.entries(generation.suites) as [string, SuiteResult][]) {
@@ -17,6 +17,12 @@ export function formatRunnerOutput(output: RunnerOutput): string {
         `  ${suite}: ${result.status} (suitePassed=${result.suitePassed}, failed=${result.failed}, skipped=${result.skipped})${suffix}`,
       );
 
+      for (const knownDisagreement of result.matchedKnownDisagreements) {
+        lines.push(`    known-disagreement: ${knownDisagreement}`);
+      }
+      for (const staleDisagreement of result.staleDisagreements) {
+        lines.push(`    stale-disagreement: ${staleDisagreement}`);
+      }
       for (const failure of result.failures) {
         lines.push(`    failure: ${failure}`);
       }

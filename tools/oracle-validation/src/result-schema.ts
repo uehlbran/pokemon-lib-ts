@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { disagreementRegistrySummarySchema } from "./disagreement-registry.js";
+import { disagreementRegistrySummarySchema, oracleCheckSchema } from "./disagreement-registry.js";
 
 export const suiteStatusSchema = z.enum(["pass", "fail", "skip"]);
 
@@ -11,6 +11,9 @@ export const suiteResultSchema = z
     skipped: z.number().int().nonnegative(),
     failures: z.array(z.string()),
     notes: z.array(z.string()).default([]),
+    matchedKnownDisagreements: z.array(z.string()).default([]),
+    staleDisagreements: z.array(z.string()).default([]),
+    oracleChecks: z.array(oracleCheckSchema).default([]),
     skipReason: z.string().optional(),
   })
   .superRefine((value, ctx) => {
@@ -69,6 +72,7 @@ export const generationResultSchema = z.object({
   packageName: z.string(),
   suites: z.record(z.string(), suiteResultSchema),
   registry: disagreementRegistrySummarySchema,
+  staleDisagreements: z.array(z.string()).default([]),
 });
 
 export const runnerOutputSchema = z.object({

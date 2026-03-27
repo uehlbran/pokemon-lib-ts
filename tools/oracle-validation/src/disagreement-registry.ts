@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { inspect, isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+const disagreementIdPattern = /^[a-z0-9:-]+$/;
 
 function isValidCalendarDate(value: string): boolean {
   if (!isoDatePattern.test(value)) {
@@ -39,7 +41,10 @@ export const knownDisagreementResolutionSchema = z.enum([
 ]);
 
 export const knownDisagreementSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z
+    .string()
+    .min(1)
+    .regex(disagreementIdPattern, "Expected disagreement id to match [a-z0-9:-]+"),
   gen: z.number().int().min(1).max(9),
   suite: z.string().min(1),
   description: z.string().min(1),
@@ -53,7 +58,10 @@ export const knownDisagreementSchema = z.strictObject({
 });
 
 export const knownOracleBugSchema = z.strictObject({
-  id: z.string().min(1),
+  id: z
+    .string()
+    .min(1)
+    .regex(disagreementIdPattern, "Expected disagreement id to match [a-z0-9:-]+"),
   gen: z.number().int().min(1).max(9),
   description: z.string().min(1),
   oracleValue: z.unknown(),
@@ -67,6 +75,17 @@ export const knownOracleBugSchema = z.strictObject({
 export const knownDisagreementsFileSchema = z.array(knownDisagreementSchema);
 export const knownOracleBugsFileSchema = z.array(knownOracleBugSchema);
 
+export const oracleCheckSchema = z.strictObject({
+  id: z
+    .string()
+    .min(1)
+    .regex(disagreementIdPattern, "Expected disagreement id to match [a-z0-9:-]+"),
+  suite: z.string().min(1),
+  description: z.string().min(1),
+  ourValue: z.unknown(),
+  oracleValue: z.unknown(),
+});
+
 export const disagreementRegistrySummarySchema = z.object({
   knownDisagreements: knownDisagreementsFileSchema,
   knownOracleBugs: knownOracleBugsFileSchema,
@@ -74,6 +93,7 @@ export const disagreementRegistrySummarySchema = z.object({
 
 export type KnownDisagreement = z.infer<typeof knownDisagreementSchema>;
 export type KnownOracleBug = z.infer<typeof knownOracleBugSchema>;
+export type OracleCheck = z.infer<typeof oracleCheckSchema>;
 export type DisagreementRegistrySummary = z.infer<typeof disagreementRegistrySummarySchema>;
 
 const registryFileCache = new Map<string, unknown>();
@@ -149,6 +169,20 @@ export function loadKnownDisagreements(
     );
   }
 
+  const duplicateIds = new Set<string>();
+  const seenIds = new Set<string>();
+  for (const disagreement of disagreements) {
+    if (seenIds.has(disagreement.id)) {
+      duplicateIds.add(disagreement.id);
+    }
+    seenIds.add(disagreement.id);
+  }
+  if (duplicateIds.size > 0) {
+    throw new Error(
+      `Known-disagreement file for Gen ${generation.gen} contains duplicate ids: ${[...duplicateIds].sort().join(", ")}`,
+    );
+  }
+
   return disagreements;
 }
 
@@ -169,4 +203,86 @@ export function loadDisagreementRegistrySummary(
     knownDisagreements: loadKnownDisagreements(generation, repoRoot),
     knownOracleBugs: loadKnownOracleBugs(generation, repoRoot),
   });
+}
+
+interface ResolvedOracleChecks {
+  readonly failures: string[];
+  readonly matchedKnownDisagreements: string[];
+  readonly staleDisagreements: string[];
+}
+
+function formatValue(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return inspect(value, { depth: 3 });
+  }
+}
+
+export function resolveOracleChecks(
+  suite: string,
+  checks: readonly OracleCheck[],
+  knownDisagreements: readonly KnownDisagreement[],
+): ResolvedOracleChecks {
+  const failures: string[] = [];
+  const matchedKnownDisagreements: string[] = [];
+  const staleDisagreements: string[] = [];
+  const relevantKnownDisagreements = knownDisagreements.filter(
+    (disagreement) => disagreement.suite === suite,
+  );
+  const knownDisagreementsById = new Map(
+    relevantKnownDisagreements.map((disagreement) => [disagreement.id, disagreement] as const),
+  );
+  const exercisedKnownDisagreements = new Set<string>();
+
+  for (const check of checks) {
+    const knownDisagreement = knownDisagreementsById.get(check.id);
+    const valuesNowMatch = isDeepStrictEqual(check.ourValue, check.oracleValue);
+
+    if (!knownDisagreement) {
+      if (!valuesNowMatch) {
+        failures.push(
+          `NEW DISAGREEMENT DETECTED: ${check.id} — investigate before adding to known-disagreements file (suite=${check.suite}, ours=${formatValue(check.ourValue)}, oracle=${formatValue(check.oracleValue)})`,
+        );
+      }
+      continue;
+    }
+
+    exercisedKnownDisagreements.add(check.id);
+
+    if (valuesNowMatch) {
+      staleDisagreements.push(check.id);
+      failures.push(
+        `STALE DISAGREEMENT DETECTED: ${check.id} — oracle now matches our implementation; remove or update the registry entry`,
+      );
+      continue;
+    }
+
+    if (
+      knownDisagreement.suite === check.suite &&
+      isDeepStrictEqual(knownDisagreement.ourValue, check.ourValue) &&
+      isDeepStrictEqual(knownDisagreement.oracleValue, check.oracleValue)
+    ) {
+      matchedKnownDisagreements.push(check.id);
+      continue;
+    }
+
+    failures.push(
+      `KNOWN DISAGREEMENT CHANGED: ${check.id} — registry suite=${knownDisagreement.suite} ours=${formatValue(knownDisagreement.ourValue)} oracle=${formatValue(knownDisagreement.oracleValue)}; current suite=${check.suite} ours=${formatValue(check.ourValue)} oracle=${formatValue(check.oracleValue)}`,
+    );
+  }
+
+  for (const knownDisagreement of relevantKnownDisagreements) {
+    if (!exercisedKnownDisagreements.has(knownDisagreement.id)) {
+      failures.push(
+        `KNOWN DISAGREEMENT NOT EXERCISED: ${knownDisagreement.id} — current suite output did not emit this check id`,
+      );
+    }
+  }
+
+  return {
+    failures,
+    matchedKnownDisagreements,
+    staleDisagreements,
+  };
 }
