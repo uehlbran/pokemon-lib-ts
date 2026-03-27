@@ -24,7 +24,7 @@ import {
   GEN8_ITEM_IDS,
   GEN8_MOVE_IDS,
   GEN8_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import {
   getTriagePriorityBonus,
   handleGen8StatAbility,

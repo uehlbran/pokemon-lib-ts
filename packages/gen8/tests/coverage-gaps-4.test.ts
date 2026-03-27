@@ -55,7 +55,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 

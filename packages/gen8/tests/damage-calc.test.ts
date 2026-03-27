@@ -23,7 +23,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import {
   calculateGen8Damage,
   isGen8Grounded,

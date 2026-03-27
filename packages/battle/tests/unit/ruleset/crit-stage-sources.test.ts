@@ -2,7 +2,7 @@ import type { Generation, MoveData, PokemonType, TypeChart } from "@pokemon-lib-
 import { CORE_MOVE_CATEGORIES, CORE_MOVE_IDS, CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "@pokemon-lib-ts/gen1";
 import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS } from "@pokemon-lib-ts/gen4";
-import { GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "@pokemon-lib-ts/gen8";
+import { GEN8_ITEM_IDS, GEN8_SPECIES_IDS } from "@pokemon-lib-ts/gen8/data";
 import { describe, expect, it } from "vitest";
 import type { DamageContext, DamageResult } from "../../../src/context";
 import { BaseRuleset } from "../../../src/ruleset/BaseRuleset";

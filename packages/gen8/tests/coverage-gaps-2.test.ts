@@ -32,7 +32,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-} from "../src";
+} from "../src/data";
 import { handleGen8StatAbility } from "../src/Gen8AbilitiesStat";
 import { handleGen8SwitchAbility } from "../src/Gen8AbilitiesSwitch";
 import { calculateGen8Damage } from "../src/Gen8DamageCalc";

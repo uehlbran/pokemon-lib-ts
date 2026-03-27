@@ -12,14 +12,14 @@ import {
   createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
+import { Gen8Ruleset } from "@pokemon-lib-ts/gen8";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-  Gen8Ruleset,
-} from "@pokemon-lib-ts/gen8";
+} from "@pokemon-lib-ts/gen8/data";
 import { describe, expect, it } from "vitest";
 
 /**

@@ -38,14 +38,14 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { Gen8Ruleset } from "../src";
 import {
   createGen8DataManager,
   GEN8_ABILITY_IDS,
   GEN8_MOVE_IDS,
   GEN8_NATURE_IDS,
   GEN8_SPECIES_IDS,
-  Gen8Ruleset,
-} from "../src";
+} from "../src/data";
 
 // ---------------------------------------------------------------------------
 // Helper factories (mirrors abilities-stat.test.ts pattern)

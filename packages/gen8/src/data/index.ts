@@ -14,6 +14,9 @@ import naturesData from "../../data/natures.json";
 import pokemonData from "../../data/pokemon.json";
 import typeChartData from "../../data/type-chart.json";
 
+export { GEN8_TYPE_CHART, GEN8_TYPES } from "../Gen8TypeChart.js";
+export * from "./reference-ids.js";
+
 /**
  * Creates a `DataManager` pre-loaded with complete Gen 8 data:
  * ~905 Pokemon (#001-#905, including Galarian/Hisuian forms),
