@@ -382,6 +382,7 @@ describe("Gen 7 Ability Nerfs", () => {
     });
 
     it("given Prankster user using a self-targeting status move vs Dark-type, then NOT blocked", () => {
+      // Source: Showdown data/abilities.ts -- Dark-type immunity only applies to opposing-Pokemon targets.
       const agility = dataManager.getMove(moveIds.agility);
       expect(
         isPranksterBlockedByDarkType(
