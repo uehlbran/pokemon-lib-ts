@@ -10,14 +10,14 @@ function isValidCalendarDate(value: string): boolean {
     return false;
   }
 
-  const match = /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})$/.exec(value);
-  if (!match?.groups) {
+  const [yearText, monthText, dayText] = value.split("-");
+  if (yearText === undefined || monthText === undefined || dayText === undefined) {
     return false;
   }
 
-  const year = Number.parseInt(match.groups.year!, 10);
-  const month = Number.parseInt(match.groups.month!, 10);
-  const day = Number.parseInt(match.groups.day!, 10);
+  const year = Number.parseInt(yearText, 10);
+  const month = Number.parseInt(monthText, 10);
+  const day = Number.parseInt(dayText, 10);
   const candidate = new Date(Date.UTC(year, month - 1, day));
 
   return (
