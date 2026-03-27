@@ -138,6 +138,13 @@ interface PreDamageResolutionParams {
  * a stream of BattleEvents for UI/logging consumers.
  */
 export class BattleEngine implements BattleEventEmitter {
+  private static readonly STABLE_CHECKPOINT_PHASES: ReadonlySet<BattlePhase> = new Set([
+    "battle-start",
+    "action-select",
+    "switch-prompt",
+    "battle-end",
+  ]);
+
   // ─── State mutation model ───────────────────────────────────────────────────
   // BattleState is the source of truth. It is mutated in-place during turn
   // resolution. Events (BattleEvent[]) are emitted as notifications for UI/replay
@@ -1285,6 +1292,7 @@ export class BattleEngine implements BattleEventEmitter {
       parsed.state.generation,
       ruleset,
     );
+    BattleEngine.assertDeserializablePhase(parsed.state.phase);
     BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
     BattleEngine.relinkRestoredActivePokemon(parsed.state);
 
@@ -1376,7 +1384,19 @@ export class BattleEngine implements BattleEventEmitter {
     return engine;
   }
 
+  private static assertDeserializablePhase(phase: BattlePhase): void {
+    if (BattleEngine.STABLE_CHECKPOINT_PHASES.has(phase)) {
+      return;
+    }
+
+    throw new Error(
+      `BattleEngine.deserialize cannot restore phase ${phase}; save only from stable checkpoint phases`,
+    );
+  }
+
   private static relinkRestoredActivePokemon(state: BattleState): void {
+    const expectedActiveSlotsPerSide = state.phase === "battle-start" ? 0 : 1;
+
     for (const side of state.sides) {
       if (!Array.isArray(side.active)) {
         throw new Error(
@@ -1384,14 +1404,18 @@ export class BattleEngine implements BattleEventEmitter {
         );
       }
 
-      if (side.active.length > 1) {
+      if (side.active.length !== expectedActiveSlotsPerSide) {
         throw new Error(
-          `BattleEngine.deserialize: singles battle cannot restore ${side.active.length} active slots on side ${side.index}`,
+          `BattleEngine.deserialize: phase ${state.phase} requires ${expectedActiveSlotsPerSide} active slot(s) on side ${side.index}, got ${side.active.length}`,
         );
       }
 
       for (const active of side.active) {
-        if (!active) continue;
+        if (!active || typeof active !== "object") {
+          throw new Error(
+            `BattleEngine.deserialize: side ${side.index} has invalid active slot payload`,
+          );
+        }
 
         if (!Number.isInteger(active.teamSlot) || active.teamSlot < 0) {
           throw new Error(
@@ -1434,14 +1458,7 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private assertSerializablePhase(): void {
-    const stableCheckpointPhases: ReadonlySet<BattlePhase> = new Set([
-      "battle-start",
-      "action-select",
-      "switch-prompt",
-      "battle-end",
-    ]);
-
-    if (stableCheckpointPhases.has(this.state.phase)) {
+    if (BattleEngine.STABLE_CHECKPOINT_PHASES.has(this.state.phase)) {
       return;
     }
 

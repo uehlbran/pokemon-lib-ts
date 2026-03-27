@@ -297,6 +297,24 @@ describe("BattleEngine.deserialize", () => {
     ).toThrow('BattleEngine.deserialize: battle format "triples" is not supported');
   });
 
+  it("given a serialized battle with a non-checkpoint phase, when deserialized, then it rejects the lossy snapshot instead of restoring transient turn state", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        phase: string;
+      };
+    };
+    parsed.state.phase = "turn-resolve";
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow(
+      "BattleEngine.deserialize cannot restore phase turn-resolve; save only from stable checkpoint phases",
+    );
+  });
+
   it("given a restored battle, when the active pokemon changes and later switches out and back in, then the restored team instance keeps the post-load HP and PP state", () => {
     const { dataManager, engine, ruleset } = createSwitchPromptBattleWithBench();
 
@@ -364,7 +382,46 @@ describe("BattleEngine.deserialize", () => {
 
     expect(() =>
       BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
-    ).toThrow("BattleEngine.deserialize: singles battle cannot restore 2 active slots on side 0");
+    ).toThrow(
+      "BattleEngine.deserialize: phase action-select requires 1 active slot(s) on side 0, got 2",
+    );
+  });
+
+  it("given a serialized checkpoint phase with a null active slot payload, when deserialized, then it rejects the malformed singles active shape", () => {
+    const { engine } = createTestEngine();
+    engine.start();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: unknown[];
+        }>;
+      };
+    };
+    parsed.state.sides[0].active[0] = null;
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow("BattleEngine.deserialize: side 0 has invalid active slot payload");
+  });
+
+  it("given a serialized battle-start snapshot with active slots still present, when deserialized, then it rejects the impossible checkpoint shape", () => {
+    const { engine } = createTestEngine();
+
+    const parsed = JSON.parse(engine.serialize()) as {
+      state: {
+        sides: Array<{
+          active: unknown[];
+        }>;
+      };
+    };
+    parsed.state.sides[0].active = [{ teamSlot: 0, pokemon: { uid: "charizard-1" } }];
+
+    expect(() =>
+      BattleEngine.deserialize(JSON.stringify(parsed), new MockRuleset(), createMockDataManager()),
+    ).toThrow(
+      "BattleEngine.deserialize: phase battle-start requires 0 active slot(s) on side 0, got 1",
+    );
   });
 
   it("given a serialized battle with an invalid active pokemon payload, when deserialized, then it rejects the malformed save with a deterministic error", () => {
