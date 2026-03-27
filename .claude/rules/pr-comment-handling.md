@@ -9,13 +9,14 @@ has zero replies — meaning it was never read or acknowledged.
 - The thread is marked resolved (via GraphQL `resolveReviewThread` mutation)
 - A reply exists on the thread (agree + fix, or disagree + explain why)
 
-If blocked, run `/babysit-pr <number>` — it handles all of this automatically.
+If blocked, inspect the review threads and reply to or resolve each unaddressed thread before
+retrying the merge.
 
 ## Mandatory Process
 
-1. After creating a PR, always use `/babysit-pr <number>` for the full lifecycle.
-2. Do NOT run `gh pr merge` directly — the comment gate will block it if threads are unaddressed.
-3. If you must assess comments manually:
+1. After creating a PR, monitor review comments until the PR is merged or closed.
+2. `gh pr merge` is allowed only after every review thread has been acknowledged.
+3. To assess comments manually:
    ```bash
    gh api repos/{owner}/{repo}/pulls/<N>/comments
    gh api repos/{owner}/{repo}/issues/<N>/comments
@@ -60,7 +61,7 @@ Never ignore a real bug just because it's outside the current PR's scope. Either
 ## Never
 
 - Merge a PR without reading review comments
-- Use `gh pr merge` directly — use `/babysit-pr` instead
+- Merge a PR while any review thread still has zero replies
 - Leave CodeRabbit/Qodo threads with zero replies regardless of whether you agree or disagree
 - Assume a reviewer-reported bug is real without checking the current code — AI reviewers can analyze stale commits
 - File a GitHub issue for a bug that is already fixed in the current code

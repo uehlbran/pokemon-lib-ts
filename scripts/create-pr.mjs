@@ -39,8 +39,6 @@ if (!title || !bodyFile) {
   process.exit(1);
 }
 
-runNodeScript("scripts/check-worktree.mjs");
-
 const body = readFileSync(bodyFile, "utf8");
 const prBodyResult = validatePullRequestBody(body);
 if (!prBodyResult.isValid) {

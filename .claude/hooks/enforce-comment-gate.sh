@@ -35,7 +35,7 @@ if [ -z "$PR_NUMBER" ]; then
 fi
 
 if [ -z "$PR_NUMBER" ]; then
-  echo "ERROR: Could not determine PR number from command. Use: /babysit-pr <number>" >&2
+  echo "ERROR: Could not determine PR number from command. Run gh pr merge <number>." >&2
   echo "  The comment gate requires a PR number to check review threads." >&2
   exit 1
 fi
@@ -99,7 +99,7 @@ if [ "$UNADDRESSED" -gt 0 ]; then
   echo "" >&2
   echo "$DETAILS" >&2
   echo "" >&2
-  echo "To fix: run /babysit-pr $PR_NUMBER" >&2
+  echo "To fix: reply to each unresolved thread on PR #$PR_NUMBER, then resolve the threads you addressed." >&2
   echo "  Each thread needs at least a reply (fix + resolve, or explain why it doesn't apply + resolve)." >&2
   exit 2
 fi

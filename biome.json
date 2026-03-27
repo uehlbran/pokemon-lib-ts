@@ -49,8 +49,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/build",
-      "!**/coverage",
-      "!.claude/worktrees"
+      "!**/coverage"
     ]
   }
 }

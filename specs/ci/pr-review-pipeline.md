@@ -10,7 +10,7 @@ GitHub Actions and Qodo are advisory only and are not relied on as the verificat
 
 ## Required Local Flow
 
-1. Start in a fresh task-owned worktree from `origin/main`.
+1. Start from an up-to-date local branch based on `origin/main`.
 2. Run `npm run verify:local`.
 3. Execute `replay:*` commands explicitly when replay validation or simulation confidence checks are relevant.
 4. Invoke `npm run test:slow` manually when broad smoke coverage is warranted.

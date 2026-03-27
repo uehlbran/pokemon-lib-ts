@@ -24,8 +24,6 @@ const steps = [
   ["changeset gate", ["run", "changeset:check"]],
 ];
 
-runNodeScript("scripts/check-worktree.mjs");
-
 if (!existsSync("node_modules")) {
   console.log("\n==> bootstrap dependencies");
   const bootstrap = spawnSync("npm", ["ci"], { stdio: "inherit" });

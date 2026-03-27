@@ -18,15 +18,6 @@
             "command": "./.claude/hooks/enforce-comment-gate.sh"
           }
         ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.claude/hooks/enforce-branch-first.sh"
-          }
-        ]
       }
     ],
     "PostToolUse": [
@@ -36,16 +27,6 @@
           {
             "type": "command",
             "command": "./.claude/hooks/cleanup-review-marker.sh"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.claude/hooks/session-start-branch-reminder.sh"
           }
         ]
       }

@@ -2,7 +2,7 @@
 
 ## Before ANY mutating git command (commit, rebase, merge, reset, checkout)
 1. Run `git branch --show-current` and confirm it matches the branch you intend to modify
-2. If a worktree exists for this task, use `git -C <worktree-path>` for ALL git commands — never bare `git`
+2. Run `git status --short` and confirm you understand the local state before mutating history
 
 ## After ANY rebase, merge, or reset
 1. Run `git log --oneline -5` and confirm the result looks correct
