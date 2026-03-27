@@ -1,0 +1,138 @@
+{
+  "gen": 1,
+  "authority": "pret/pokered",
+  "cases": [
+    {
+      "id": "type-ghost-vs-psychic",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["psychic"],
+      "expected": 0,
+      "source": "specs/reference/gen1-ground-truth.md §2",
+      "note": "Gen 1 cartridge bug: Ghost does not hit Psychic."
+    },
+    {
+      "id": "type-poison-vs-bug",
+      "kind": "typeChart",
+      "attackerType": "poison",
+      "defenderTypes": ["bug"],
+      "expected": 2,
+      "source": "specs/reference/gen1-ground-truth.md §2",
+      "note": "This matchup changed in Gen 2."
+    },
+    {
+      "id": "type-bug-vs-poison",
+      "kind": "typeChart",
+      "attackerType": "bug",
+      "defenderTypes": ["poison"],
+      "expected": 2,
+      "source": "specs/reference/gen1-ground-truth.md §2",
+      "note": "This matchup changed in Gen 2."
+    },
+    {
+      "id": "type-ice-vs-fire",
+      "kind": "typeChart",
+      "attackerType": "ice",
+      "defenderTypes": ["fire"],
+      "expected": 1,
+      "source": "specs/reference/gen1-ground-truth.md §2",
+      "note": "Ice is neutral into Fire in Gen 1."
+    },
+    {
+      "id": "stats-charizard-l50-max-dv-zero-stat-exp",
+      "kind": "derivedStat",
+      "speciesName": "charizard",
+      "level": 50,
+      "dvs": {
+        "attack": 15,
+        "defense": 15,
+        "speed": 15,
+        "special": 15
+      },
+      "statExp": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special": 0,
+        "speed": 0
+      },
+      "expected": {
+        "hp": 153,
+        "attack": 104,
+        "defense": 98,
+        "special": 129,
+        "speed": 120
+      },
+      "source": "specs/reference/gen1-ground-truth.md §1",
+      "note": "HP DV is derived from the other four DVs; Special is unified."
+    },
+    {
+      "id": "stats-charizard-l50-max-dv-max-stat-exp",
+      "kind": "derivedStat",
+      "speciesName": "charizard",
+      "level": 50,
+      "dvs": {
+        "attack": 15,
+        "defense": 15,
+        "speed": 15,
+        "special": 15
+      },
+      "statExp": {
+        "hp": 65535,
+        "attack": 65535,
+        "defense": 65535,
+        "special": 65535,
+        "speed": 65535
+      },
+      "expected": {
+        "hp": 185,
+        "attack": 136,
+        "defense": 130,
+        "special": 161,
+        "speed": 152
+      },
+      "source": "specs/reference/gen1-ground-truth.md §1",
+      "note": "Max Gen 1 stat-exp contribution is floor(ceil(sqrt(65535)) / 4) = 63."
+    },
+    {
+      "id": "crit-mewtwo-normal",
+      "kind": "critRate",
+      "attackerBaseSpeed": 130,
+      "hasFocusEnergy": false,
+      "isHighCritMove": false,
+      "expected": 0.25390625,
+      "source": "specs/reference/gen1-ground-truth.md §4",
+      "note": "Normal crit rate is floor(baseSpeed / 2) / 256."
+    },
+    {
+      "id": "crit-chansey-normal",
+      "kind": "critRate",
+      "attackerBaseSpeed": 50,
+      "hasFocusEnergy": false,
+      "isHighCritMove": false,
+      "expected": 0.09765625,
+      "source": "specs/reference/gen1-ground-truth.md §4",
+      "note": "Chansey normal crit rate example from the ground-truth doc."
+    },
+    {
+      "id": "crit-speed100-focus-energy-bug",
+      "kind": "critRate",
+      "attackerBaseSpeed": 100,
+      "hasFocusEnergy": true,
+      "isHighCritMove": false,
+      "expected": 0.046875,
+      "source": "specs/reference/gen1-ground-truth.md §4",
+      "note": "Focus Energy bug quarters the normal crit chance after flooring."
+    },
+    {
+      "id": "crit-speed80-high-crit",
+      "kind": "critRate",
+      "attackerBaseSpeed": 80,
+      "hasFocusEnergy": false,
+      "isHighCritMove": true,
+      "expected": 0.99609375,
+      "source": "specs/reference/gen1-ground-truth.md §4",
+      "note": "High-crit moves clamp to 255/256 at sufficiently high base Speed."
+    }
+  ]
+}
