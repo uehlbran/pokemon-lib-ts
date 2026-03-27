@@ -7,6 +7,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
+  CORE_STAT_IDS,
   createEvs,
   createFriendship,
   createIvs,
@@ -192,28 +193,28 @@ describe("getNatureModifier", () => {
   // stats are 1.1x, hindered stats are 0.9x, and neutral stats are 1.0x.
   it("should return 1.1 for boosted stat", () => {
     // Source: hard-coded nature multipliers in the stat calculator
-    expect(getNatureModifier(TIMID, "speed")).toBe(1.1);
+    expect(getNatureModifier(TIMID, CORE_STAT_IDS.speed)).toBe(1.1);
   });
 
   it("should return 0.9 for hindered stat", () => {
     // Source: hard-coded nature multipliers in the stat calculator
-    expect(getNatureModifier(TIMID, "attack")).toBe(0.9);
+    expect(getNatureModifier(TIMID, CORE_STAT_IDS.attack)).toBe(0.9);
   });
 
   it("should return 1.0 for neutral stats", () => {
     // Source: hard-coded nature multipliers in the stat calculator
-    expect(getNatureModifier(TIMID, "defense")).toBe(1.0);
-    expect(getNatureModifier(TIMID, "spAttack")).toBe(1.0);
-    expect(getNatureModifier(TIMID, "spDefense")).toBe(1.0);
+    expect(getNatureModifier(TIMID, CORE_STAT_IDS.defense)).toBe(1.0);
+    expect(getNatureModifier(TIMID, CORE_STAT_IDS.spAttack)).toBe(1.0);
+    expect(getNatureModifier(TIMID, CORE_STAT_IDS.spDefense)).toBe(1.0);
   });
 
   it("should return 1.0 for all stats with a neutral nature", () => {
     // Source: hard-coded nature multipliers in the stat calculator
-    expect(getNatureModifier(HARDY, "attack")).toBe(1.0);
-    expect(getNatureModifier(HARDY, "defense")).toBe(1.0);
-    expect(getNatureModifier(HARDY, "spAttack")).toBe(1.0);
-    expect(getNatureModifier(HARDY, "spDefense")).toBe(1.0);
-    expect(getNatureModifier(HARDY, "speed")).toBe(1.0);
+    expect(getNatureModifier(HARDY, CORE_STAT_IDS.attack)).toBe(1.0);
+    expect(getNatureModifier(HARDY, CORE_STAT_IDS.defense)).toBe(1.0);
+    expect(getNatureModifier(HARDY, CORE_STAT_IDS.spAttack)).toBe(1.0);
+    expect(getNatureModifier(HARDY, CORE_STAT_IDS.spDefense)).toBe(1.0);
+    expect(getNatureModifier(HARDY, CORE_STAT_IDS.speed)).toBe(1.0);
   });
 });
 

@@ -19,12 +19,19 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   type PokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { GEN4_SPECIES_IDS } from "@pokemon-lib-ts/gen4";
 import { describe, expect, it } from "vitest";
+import {
+  BATTLE_ABILITY_EFFECT_TYPES,
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_SOURCE_IDS,
+} from "../../../src";
 import type {
   AbilityContext,
   AbilityResult,
@@ -313,7 +320,7 @@ describe("weather-healing EoT slot", () => {
 
     // Both sides should have been healed by 10
     const healEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "ability",
+      (e) => e.type === "heal" && "source" in e && e.source === BATTLE_SOURCE_IDS.ability,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -332,7 +339,14 @@ describe("speed-boost EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.speedBoost];
     ruleset.setAbilityResult({
       activated: true,
-      effects: [{ effectType: "stat-change", target: "self", stat: "speed", stages: 1 }],
+      effects: [
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.speed,
+          stages: 1,
+        },
+      ],
       messages: [],
     });
 
@@ -394,7 +408,13 @@ describe("poison-heal EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.poisonHeal];
     ruleset.setAbilityResult({
       activated: true,
-      effects: [{ effectType: "heal", target: "self", value: 15 }],
+      effects: [
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+          target: BATTLE_EFFECT_TARGETS.self,
+          value: 15,
+        },
+      ],
       messages: [],
     });
 
@@ -415,7 +435,7 @@ describe("poison-heal EoT slot", () => {
     expect(turnEndCalls.length).toBeGreaterThanOrEqual(1);
 
     const healEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "ability",
+      (e) => e.type === "heal" && "source" in e && e.source === BATTLE_SOURCE_IDS.ability,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
   });
@@ -428,7 +448,13 @@ describe("bad-dreams EoT slot", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.badDreams];
     ruleset.setAbilityResult({
       activated: true,
-      effects: [{ effectType: "chip-damage", target: "opponent", value: 20 }],
+      effects: [
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+          target: BATTLE_EFFECT_TARGETS.opponent,
+          value: 20,
+        },
+      ],
       messages: [],
     });
 
@@ -444,7 +470,7 @@ describe("bad-dreams EoT slot", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const damageEvents = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "ability",
+      (e) => e.type === "damage" && "source" in e && e.source === BATTLE_SOURCE_IDS.ability,
     );
     expect(damageEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -706,7 +732,13 @@ describe("processAbilityResult — heal effect type", () => {
     ];
     ruleset.setAbilityResult({
       activated: true,
-      effects: [{ effectType: "heal", target: "self", value: 20 }],
+      effects: [
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.heal,
+          target: BATTLE_EFFECT_TARGETS.self,
+          value: 20,
+        },
+      ],
       messages: [],
     });
 
@@ -721,7 +753,7 @@ describe("processAbilityResult — heal effect type", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const healEvents = events.filter(
-      (e) => e.type === "heal" && "source" in e && e.source === "ability",
+      (e) => e.type === "heal" && "source" in e && e.source === BATTLE_SOURCE_IDS.ability,
     );
     expect(healEvents.length).toBeGreaterThanOrEqual(1);
   });
@@ -734,7 +766,13 @@ describe("processAbilityResult — chip-damage effect type", () => {
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ABILITY_IDS.badDreams];
     ruleset.setAbilityResult({
       activated: true,
-      effects: [{ effectType: "chip-damage", target: "opponent", value: 20 }],
+      effects: [
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
+          target: BATTLE_EFFECT_TARGETS.opponent,
+          value: 20,
+        },
+      ],
       messages: [],
     });
 
@@ -746,7 +784,7 @@ describe("processAbilityResult — chip-damage effect type", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const damageEvents = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "ability",
+      (e) => e.type === "damage" && "source" in e && e.source === BATTLE_SOURCE_IDS.ability,
     );
     expect(damageEvents.length).toBeGreaterThanOrEqual(1);
   });
@@ -761,7 +799,13 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
     ];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "inflict-status", target: "self", status: CORE_STATUS_IDS.poison }],
+      effects: [
+        {
+          type: BATTLE_ITEM_EFFECT_TYPES.inflictStatus,
+          target: BATTLE_EFFECT_TARGETS.self,
+          status: CORE_STATUS_IDS.poison,
+        },
+      ],
       messages: [],
     });
 
@@ -778,13 +822,19 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
     expect(statusInflictEvents.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("given an item result with chip-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source 'held-item'", () => {
+  it(`given an item result with chip-damage effect, when processed, then Pokemon HP decreases and damage event is emitted with source '${BATTLE_SOURCE_IDS.heldItem}'`, () => {
     // Source: Pokemon Showdown Gen 4 mod — Black Sludge damages non-Poison types
     const ruleset = new Gen4MockRuleset();
     ruleset.getEndOfTurnOrder = (): readonly EndOfTurnEffect[] => [CORE_ITEM_IDS.blackSludge];
     ruleset.setHeldItemResult({
       activated: true,
-      effects: [{ type: "chip-damage", target: "self", value: 10 }],
+      effects: [
+        {
+          type: BATTLE_ITEM_EFFECT_TYPES.chipDamage,
+          target: BATTLE_EFFECT_TARGETS.self,
+          value: 10,
+        },
+      ],
       messages: [],
     });
 
@@ -798,7 +848,7 @@ describe("processItemResult — inflict-status and chip-damage effect types", ()
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     const heldItemDamageEvents = events.filter(
-      (e) => e.type === "damage" && "source" in e && e.source === "held-item",
+      (e) => e.type === "damage" && "source" in e && e.source === BATTLE_SOURCE_IDS.heldItem,
     );
     expect(heldItemDamageEvents.length).toBeGreaterThanOrEqual(1);
   });
