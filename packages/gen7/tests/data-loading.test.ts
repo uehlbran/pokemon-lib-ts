@@ -186,6 +186,22 @@ describe("Gen 7 DataManager -- data loading", () => {
     expect(marshadow.types).toEqual([CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.ghost]);
   });
 
+  it("given gen7 data, when looking up Marowak by National Dex id 105, then returns Marowak", () => {
+    // Source: packages/gen7/data/pokemon.json -- shipped Gen 7 data exposes Marowak at id 105.
+    // Regional-form runtime ids such as 10115 are not part of the shipped species model.
+    const dm = createGen7DataManager();
+    const marowak = dm.getSpecies(GEN7_SPECIES_IDS.marowak);
+    expect(marowak.name).toBe("marowak");
+    expect(marowak.id).toBe(105);
+  });
+
+  it("given gen7 data, when looking up Alolan Marowak form id 10115, then lookup throws", () => {
+    // Source: tools/data-importer/src/import-gen.ts -- form entries are not emitted as standalone
+    // runtime species rows today, so only the National Dex id 105 is loadable.
+    const dm = createGen7DataManager();
+    expect(() => dm.getSpecies(10115)).toThrow("Species with id 10115 not found");
+  });
+
   it("given gen7 data, when looking up Zeraora, then type is Electric", () => {
     // Source: Bulbapedia -- Zeraora (#807) is a pure Electric-type
     // Last standard Pokemon in Gen 7 National Dex

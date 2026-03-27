@@ -3623,6 +3623,34 @@ describe("Gen 7 attack stat item coverage", () => {
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
+  it("given Marowak with Thick Club using physical move, then attack doubled via National Dex species id 105", () => {
+    // Source: Showdown data/items.ts -- Thick Club: 2x Atk for Cubone/Marowak.
+    // Source: the shipped runtime species model keys Marowak by National Dex id 105, not a
+    // separate regional-form runtime species id.
+    const ctx = createDamageContext({
+      attacker: createOnFieldPokemon({
+        speciesId: SPECIES_IDS.marowak,
+        attack: 100,
+        heldItem: ITEM_IDS.thickClub,
+        types: [TYPE_IDS.ground],
+      }),
+      defender: createOnFieldPokemon({}),
+      move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
+    });
+    const ctxNo = createDamageContext({
+      attacker: createOnFieldPokemon({
+        speciesId: SPECIES_IDS.marowak,
+        attack: 100,
+        types: [TYPE_IDS.ground],
+      }),
+      defender: createOnFieldPokemon({}),
+      move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
+    });
+    const with_ = calculateGen7Damage(ctx, typeChart);
+    const without = calculateGen7Damage(ctxNo, typeChart);
+    expect(with_.damage).toBeGreaterThan(without.damage);
+  });
+
   it("given attacker with Hustle using physical move, then attack is 1.5x", () => {
     // Source: Showdown data/abilities.ts -- Hustle: 1.5x physical attack
     const ctx = createDamageContext({

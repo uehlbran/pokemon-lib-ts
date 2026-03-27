@@ -215,6 +215,22 @@ describe("Gen 8 DataManager -- data loading", () => {
     expect(zamazenta.types).toEqual([TYPES.fighting]);
   });
 
+  it("given gen8 data, when looking up Marowak by National Dex id 105, then returns Marowak", () => {
+    // Source: packages/gen8/data/pokemon.json -- shipped Gen 8 data exposes Marowak at id 105.
+    // Regional-form runtime ids such as 10115 are not part of the shipped species model.
+    const dm = createGen8DataManager();
+    const marowak = dm.getSpecies(SPECIES.marowak);
+    expect(marowak.name).toBe("marowak");
+    expect(marowak.id).toBe(105);
+  });
+
+  it("given gen8 data, when looking up Alolan Marowak form id 10115, then lookup throws", () => {
+    // Source: tools/data-importer/src/import-gen.ts -- form entries are not emitted as standalone
+    // runtime species rows today, so only the National Dex id 105 is loadable.
+    const dm = createGen8DataManager();
+    expect(() => dm.getSpecies(10115)).toThrow("Species with id 10115 not found");
+  });
+
   it("given gen8 data, when looking up Eternatus, then types are Poison/Dragon", () => {
     // Source: Bulbapedia -- Eternatus (#890) is Poison/Dragon
     const dm = createGen8DataManager();
