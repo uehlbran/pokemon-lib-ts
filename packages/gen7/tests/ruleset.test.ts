@@ -1092,6 +1092,38 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
     };
     expect(ruleset.rollCritical(context as any)).toBe(false);
   });
+
+  it("given Moongeist Beam against Battle Armor with guaranteed crit stage, when rolling crit, then Battle Armor is ignored", () => {
+    // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
+    const context = {
+      attacker: createSyntheticActive({
+        ability: ABILITY_IDS.superLuck,
+        heldItem: ITEM_IDS.scopeLens,
+        volatiles: [[VOLATILE_IDS.focusEnergy, { turnsLeft: -1 }]],
+      }),
+      defender: createSyntheticActive({ ability: ABILITY_IDS.battleArmor }),
+      move: MOONGEIST_BEAM_MOVE,
+      rng: { int: () => 1 } as unknown as SeededRandom,
+    };
+
+    expect(ruleset.rollCritical(context as any)).toBe(true);
+  });
+
+  it("given Sunsteel Strike against Shell Armor with guaranteed crit stage, when rolling crit, then Shell Armor is ignored", () => {
+    // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
+    const context = {
+      attacker: createSyntheticActive({
+        ability: ABILITY_IDS.superLuck,
+        heldItem: ITEM_IDS.scopeLens,
+        volatiles: [[VOLATILE_IDS.focusEnergy, { turnsLeft: -1 }]],
+      }),
+      defender: createSyntheticActive({ ability: ABILITY_IDS.shellArmor }),
+      move: SUNSTEEL_STRIKE_MOVE,
+      rng: { int: () => 1 } as unknown as SeededRandom,
+    };
+
+    expect(ruleset.rollCritical(context as any)).toBe(true);
+  });
 });
 
 // ===========================================================================
