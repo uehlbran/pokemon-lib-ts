@@ -658,7 +658,15 @@ export interface PokemonCreationOptions {
   abilitySlot: 'normal1' | 'normal2' | 'hidden';
   gender: Gender;
   isShiny: boolean;
-  moves: string[];           // Move IDs — if empty, uses latest level-up moves
+  moves: Array<string | MoveSlot | Pick<MoveData, 'id' | 'pp'>>;
+  // Explicit moves:
+  // - string: move id resolved through canonical move metadata
+  // - MoveSlot: fully specified slot, used as-is
+  // - { id, pp }: canonical move metadata seed
+  // If empty, uses latest level-up moves.
+  movePpResolver: (moveId: string) => number;
+  // Optional PP resolver for string move ids when the species did not come
+  // from a DataManager-backed canonical data bundle.
   heldItem: string | null;
   friendship: number;
   metLocation: string;

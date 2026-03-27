@@ -124,7 +124,7 @@ function createSyntheticOnFieldPokemon(overrides: {
   pokemon.uid = `gen8-synthetic-${species.id}`;
   pokemon.nickname = null;
   pokemon.currentHp = overrides.currentHp ?? hp;
-  pokemon.moves = [createMoveSlot(M.tackle)];
+  pokemon.moves = [createMoveSlot(DATA_MANAGER.getMove(M.tackle))];
   pokemon.ability = overrides.ability ?? CORE_ABILITY_IDS.none;
   pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.status = overrides.status ?? null;

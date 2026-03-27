@@ -118,7 +118,7 @@ function createPokemonInstance(overrides: {
     ivs: createIvs(),
     evs: createEvs(),
     currentHp: overrides.currentHp ?? maxHp,
-    moves: [createMoveSlot(MOVES.tackle)],
+    moves: [createMoveSlot(DATA_MANAGER.getMove(MOVES.tackle))],
     ability: overrides.ability ?? ABILITIES.none,
     abilitySlot: CORE_ABILITY_SLOTS.normal1,
     heldItem: overrides.heldItem ?? null,
