@@ -1286,6 +1286,7 @@ export class BattleEngine implements BattleEventEmitter {
       ruleset,
     );
     BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
+    BattleEngine.relinkRestoredActivePokemon(parsed.state);
 
     const restoredSwitchPromptState = BattleEngine.restoreSwitchPromptState(
       parsed.state,
@@ -1373,6 +1374,63 @@ export class BattleEngine implements BattleEventEmitter {
     engine.restoreBattleGimmickState(parsed.gimmickState);
 
     return engine;
+  }
+
+  private static relinkRestoredActivePokemon(state: BattleState): void {
+    for (const side of state.sides) {
+      if (!Array.isArray(side.active)) {
+        throw new Error(
+          `BattleEngine.deserialize: side ${side.index} has invalid active slots payload`,
+        );
+      }
+
+      if (side.active.length > 1) {
+        throw new Error(
+          `BattleEngine.deserialize: singles battle cannot restore ${side.active.length} active slots on side ${side.index}`,
+        );
+      }
+
+      for (const active of side.active) {
+        if (!active) continue;
+
+        if (!Number.isInteger(active.teamSlot) || active.teamSlot < 0) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon has invalid teamSlot ${active.teamSlot} on side ${side.index}`,
+          );
+        }
+
+        const teamPokemon = side.team[active.teamSlot];
+        if (!teamPokemon) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon teamSlot ${active.teamSlot} is missing on side ${side.index}`,
+          );
+        }
+
+        if (
+          !active.pokemon ||
+          typeof active.pokemon !== "object" ||
+          typeof active.pokemon.uid !== "string"
+        ) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon has invalid pokemon payload on side ${side.index}`,
+          );
+        }
+
+        if (typeof teamPokemon.uid !== "string") {
+          throw new Error(
+            `BattleEngine.deserialize: team slot ${active.teamSlot} has invalid pokemon payload on side ${side.index}`,
+          );
+        }
+
+        if (active.pokemon.uid !== teamPokemon.uid) {
+          throw new Error(
+            `BattleEngine.deserialize: active Pokemon uid "${active.pokemon.uid}" does not match team slot ${active.teamSlot} uid "${teamPokemon.uid}" on side ${side.index}`,
+          );
+        }
+
+        active.pokemon = teamPokemon;
+      }
+    }
   }
 
   private assertSerializablePhase(): void {
