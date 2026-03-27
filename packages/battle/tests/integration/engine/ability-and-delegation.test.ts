@@ -2,10 +2,12 @@ import type { AbilityTrigger, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it, vi } from "vitest";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "../../../src";
 import type { AbilityContext, AbilityResult, BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -198,9 +200,9 @@ describe("Bug 2A: switch-in ability processing", () => {
             activated: true,
             effects: [
               {
-                effectType: "stat-change",
-                target: "opponent" as const,
-                stat: "attack" as const,
+                effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+                target: BATTLE_EFFECT_TARGETS.opponent,
+                stat: CORE_STAT_IDS.attack,
                 stages: -1,
               },
             ],
@@ -221,7 +223,7 @@ describe("Bug 2A: switch-in ability processing", () => {
 
       // Verify stat-change event was emitted
       const statChangeEvents = events.filter(
-        (e) => e.type === "stat-change" && "stat" in e && e.stat === "attack",
+        (e) => e.type === "stat-change" && "stat" in e && e.stat === CORE_STAT_IDS.attack,
       );
       expect(statChangeEvents.length).toBeGreaterThanOrEqual(1);
 
@@ -243,9 +245,9 @@ describe("Bug 2A: switch-in ability processing", () => {
             activated: true,
             effects: [
               {
-                effectType: "stat-change",
-                target: "opponent" as const,
-                stat: "attack" as const,
+                effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+                target: BATTLE_EFFECT_TARGETS.opponent,
+                stat: CORE_STAT_IDS.attack,
                 stages: -1,
               },
             ],
@@ -362,14 +364,14 @@ describe("Bug 2A: switch-in ability processing", () => {
 
       ruleset.setAbilityHandler((_trigger, ctx) => {
         if (ctx.pokemon.pokemon.ability === CORE_ABILITY_IDS.intimidate) {
-          callOrder.push(ctx.pokemon.pokemon.ability ?? "unknown");
+          callOrder.push(ctx.pokemon.pokemon.ability);
           return {
             activated: true,
             effects: [
               {
-                effectType: "stat-change",
-                target: "opponent" as const,
-                stat: "attack" as const,
+                effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+                target: BATTLE_EFFECT_TARGETS.opponent,
+                stat: CORE_STAT_IDS.attack,
                 stages: -1,
               },
             ],

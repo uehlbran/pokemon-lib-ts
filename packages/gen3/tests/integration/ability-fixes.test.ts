@@ -16,6 +16,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_NATURE_IDS,
+  CORE_STAT_IDS,
   type CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
@@ -62,6 +63,7 @@ const TRIGGERS = CORE_ABILITY_TRIGGER_IDS;
 const ABILITIES = GEN3_ABILITY_IDS;
 const MOVES = GEN3_MOVE_IDS;
 const SPECIES = GEN3_SPECIES_IDS;
+const STATS = CORE_STAT_IDS;
 const DEFAULT_SPECIES = DATA_MANAGER.getSpecies(SPECIES.bulbasaur);
 const DEFAULT_NATURE_ID = DATA_MANAGER.getNature(CORE_NATURE_IDS.hardy).id;
 const DEFAULT_TACKLE_MOVE = DATA_MANAGER.getMove(MOVES.tackle);
@@ -321,55 +323,55 @@ describe("Gen 3 Stat-Drop Immunity Abilities (#345)", () => {
     it("given Clear Body, when checking any stat drop, then returns true (blocks all drops)", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:6987-6993
       //   ABILITY_CLEAR_BODY blocks all opponent-caused stat drops
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "attack")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "defense")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "spAttack")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "spDefense")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "speed")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, "accuracy")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, STATS.attack)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, STATS.defense)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, STATS.spAttack)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, STATS.spDefense)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, STATS.speed)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.clearBody, STATS.accuracy)).toBe(true);
     });
 
     // --- White Smoke ---
     it("given White Smoke, when checking any stat drop, then returns true (blocks all drops)", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:6987-6993
       //   ABILITY_WHITE_SMOKE blocks all opponent-caused stat drops (same as Clear Body)
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, "attack")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, "defense")).toBe(true);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, "speed")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, STATS.attack)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, STATS.defense)).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.whiteSmoke, STATS.speed)).toBe(true);
     });
 
     // --- Hyper Cutter ---
     it("given Hyper Cutter, when checking Attack drop, then returns true", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:7014-7021
       //   ABILITY_HYPER_CUTTER blocks Attack drops only
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "attack")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, STATS.attack)).toBe(true);
     });
 
     it("given Hyper Cutter, when checking non-Attack drop, then returns false", () => {
       // Source: pret/pokeemerald — Hyper Cutter only protects Attack
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "defense")).toBe(false);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "speed")).toBe(false);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, "spAttack")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, STATS.defense)).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, STATS.speed)).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.hyperCutter, STATS.spAttack)).toBe(false);
     });
 
     // --- Keen Eye ---
     it("given Keen Eye, when checking Accuracy drop, then returns true", () => {
       // Source: pret/pokeemerald src/battle_script_commands.c:7023-7030
       //   ABILITY_KEEN_EYE blocks Accuracy drops only
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "accuracy")).toBe(true);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, STATS.accuracy)).toBe(true);
     });
 
     it("given Keen Eye, when checking non-Accuracy drop, then returns false", () => {
       // Source: pret/pokeemerald — Keen Eye only protects Accuracy
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "attack")).toBe(false);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "defense")).toBe(false);
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, "evasion")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, STATS.attack)).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, STATS.defense)).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.keenEye, STATS.evasion)).toBe(false);
     });
 
     // --- No blocking ability ---
     it("given no blocking ability, when checking any stat drop, then returns false", () => {
-      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.blaze, "attack")).toBe(false);
-      expect(isGen3StatDropBlocked("", "attack")).toBe(false);
+      expect(isGen3StatDropBlocked(GEN3_ABILITY_IDS.blaze, STATS.attack)).toBe(false);
+      expect(isGen3StatDropBlocked("", STATS.attack)).toBe(false);
     });
   });
 

@@ -1,4 +1,5 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
@@ -7,7 +8,9 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_NATURE_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
@@ -194,7 +197,7 @@ function createAbilityContext(overrides: {
   opponent?: ActivePokemon;
   turnsOnField?: number;
   seed?: number;
-  statChange?: { stat: string; stages: number; source: "self" | "opponent" };
+  statChange?: { stat: string; stages: number; source: keyof typeof BATTLE_EFFECT_TARGETS };
 }): AbilityContext {
   const hp = overrides.maxHp ?? 200;
   return {
@@ -232,7 +235,11 @@ describe("Gen 8 Stat Abilities", () => {
 
     it("given a drain-type effect, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/abilities.ts -- triage: move.flags.heal
-      const bonus = getTriagePriorityBonus(abilityIds.triage, "some-drain-move", "drain");
+      const bonus = getTriagePriorityBonus(
+        abilityIds.triage,
+        "some-drain-move",
+        CORE_MOVE_EFFECT_TYPES.drain,
+      );
       expect(bonus).toBe(3);
     });
 
@@ -263,7 +270,11 @@ describe("Gen 8 Stat Abilities", () => {
     it("given non-allowlisted move with effectType heal, when Triage is active, then returns +3 priority bonus", () => {
       // Source: Showdown data/abilities.ts -- triage: move.flags.heal check
       // Verifies the effectType "heal" fallback for future moves not yet in the HEALING_MOVES allowlist
-      const bonus = getTriagePriorityBonus(abilityIds.triage, "custom-heal-move", "heal");
+      const bonus = getTriagePriorityBonus(
+        abilityIds.triage,
+        "custom-heal-move",
+        CORE_MOVE_EFFECT_TYPES.heal,
+      );
       expect(bonus).toBe(3);
     });
 
@@ -397,7 +408,12 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "self", stat: "attack", stages: 1 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.attack,
+          stages: 1,
+        },
       ]);
     });
 
@@ -447,7 +463,12 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "self", stat: "defense", stages: 1 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.defense,
+          stages: 1,
+        },
       ]);
     });
 
@@ -461,9 +482,9 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({
-        effectType: "stat-change",
-        target: "self",
-        stat: "defense",
+        effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+        target: BATTLE_EFFECT_TARGETS.self,
+        stat: CORE_STAT_IDS.defense,
         stages: 1,
       });
     });
@@ -493,7 +514,12 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "opponent", stat: "speed", stages: -1 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.opponent,
+          stat: CORE_STAT_IDS.speed,
+          stages: -1,
+        },
       ]);
     });
 
@@ -551,7 +577,12 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "self", stat: "speed", stages: 6 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.speed,
+          stages: 6,
+        },
       ]);
     });
 
@@ -564,7 +595,12 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "self", stat: "speed", stages: 6 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.speed,
+          stages: 6,
+        },
       ]);
     });
 
@@ -655,8 +691,18 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "self", stat: "defense", stages: -1 },
-        { effectType: "stat-change", target: "self", stat: "speed", stages: 2 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.defense,
+          stages: -1,
+        },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.speed,
+          stages: 2,
+        },
       ]);
     });
 
@@ -682,7 +728,12 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "stat-change", target: "self", stat: "defense", stages: 1 },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          stat: CORE_STAT_IDS.defense,
+          stages: 1,
+        },
       ]);
     });
   });
@@ -702,7 +753,11 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "type-change", target: "self", types: [flamethrowerMove.type] },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          types: [flamethrowerMove.type],
+        },
       ]);
     });
 
@@ -719,7 +774,11 @@ describe("Gen 8 Stat Abilities", () => {
       const result = handleGen8StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toEqual([
-        { effectType: "type-change", target: "self", types: [thunderboltMove.type] },
+        {
+          effectType: BATTLE_ABILITY_EFFECT_TYPES.typeChange,
+          target: BATTLE_EFFECT_TARGETS.self,
+          types: [thunderboltMove.type],
+        },
       ]);
     });
 
@@ -745,7 +804,13 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
   // Source: Bulbapedia "Moody" -- "From Generation VIII onwards, Moody can no longer
   //   raise or lower Accuracy or Evasion"
 
-  const ELIGIBLE_STATS = ["attack", "defense", "spAttack", "spDefense", "speed"] as const;
+  const ELIGIBLE_STATS = [
+    CORE_STAT_IDS.attack,
+    CORE_STAT_IDS.defense,
+    CORE_STAT_IDS.spAttack,
+    CORE_STAT_IDS.spDefense,
+    CORE_STAT_IDS.speed,
+  ] as const;
 
   it("given Moody in Gen 8, when on-turn-end fires with all stats at 0, then raises one of the 5 eligible stats by 2", () => {
     // Source: Showdown data/abilities.ts -- Moody onResidual: boost one of [atk,def,spa,spd,spe] by +2
@@ -759,14 +824,14 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
     expect(result.activated).toBe(true);
     const raiseEffect = result.effects.find(
-      (e) => e.effectType === "stat-change" && (e as any).stages === 2,
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
     );
     expect(raiseEffect).toBeDefined();
     const raisedStat = (raiseEffect as any).stat;
     expect(ELIGIBLE_STATS).toContain(raisedStat);
     // Accuracy and evasion must NOT be raised by Gen 8 Moody
-    expect(raisedStat).not.toBe("accuracy");
-    expect(raisedStat).not.toBe("evasion");
+    expect(raisedStat).not.toBe(CORE_STAT_IDS.accuracy);
+    expect(raisedStat).not.toBe(CORE_STAT_IDS.evasion);
   });
 
   it("given Moody in Gen 8, when on-turn-end fires, then lowers one of the 5 eligible stats by 1", () => {
@@ -780,14 +845,14 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
     expect(result.activated).toBe(true);
     const lowerEffect = result.effects.find(
-      (e) => e.effectType === "stat-change" && (e as any).stages === -1,
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === -1,
     );
     expect(lowerEffect).toBeDefined();
     const loweredStat = (lowerEffect as any).stat;
     expect(ELIGIBLE_STATS).toContain(loweredStat);
     // Accuracy and evasion must NOT be lowered by Gen 8 Moody either
-    expect(loweredStat).not.toBe("accuracy");
-    expect(loweredStat).not.toBe("evasion");
+    expect(loweredStat).not.toBe(CORE_STAT_IDS.accuracy);
+    expect(loweredStat).not.toBe(CORE_STAT_IDS.evasion);
   });
 
   it("given Moody in Gen 8, when on-turn-end fires, then raised stat and lowered stat are different", () => {
@@ -800,10 +865,10 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const result = handleGen8StatAbility(ctx);
 
     const raiseEffect = result.effects.find(
-      (e) => e.effectType === "stat-change" && (e as any).stages === 2,
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
     );
     const lowerEffect = result.effects.find(
-      (e) => e.effectType === "stat-change" && (e as any).stages === -1,
+      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === -1,
     );
     expect(raiseEffect).toBeDefined();
     expect(lowerEffect).toBeDefined();
@@ -828,10 +893,10 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const result = handleGen8StatAbility(ctx);
     if (result.activated) {
       const raiseEffect = result.effects.find(
-        (e) => e.effectType === "stat-change" && (e as any).stages === 2,
+        (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
       );
       if (raiseEffect) {
-        expect((raiseEffect as any).stat).toBe("speed");
+        expect((raiseEffect as any).stat).toBe(CORE_STAT_IDS.speed);
       }
     }
   });
@@ -842,7 +907,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     // Source: Bulbapedia "Moody" -- "From Generation VIII onwards, Moody can no longer
     //   raise or lower Accuracy or Evasion. This changed in Generation VIII."
     // This test runs 100 seeds to confirm accuracy/evasion never appear in Gen 8 Moody pool.
-    const INELIGIBLE_STATS = ["accuracy", "evasion"];
+    const INELIGIBLE_STATS = [CORE_STAT_IDS.accuracy, CORE_STAT_IDS.evasion];
     for (let seed = 0; seed < 100; seed++) {
       const ctx = createAbilityContext({
         ability: abilityIds.moody,
@@ -851,7 +916,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
       });
       const result = handleGen8StatAbility(ctx);
       for (const effect of result.effects) {
-        if (effect.effectType === "stat-change") {
+        if (effect.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange) {
           const stat = (effect as any).stat as string;
           expect(INELIGIBLE_STATS).not.toContain(stat);
         }

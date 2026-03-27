@@ -5,6 +5,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -43,6 +44,9 @@ const RAIN = CORE_WEATHER_IDS.rain;
 const SUN = CORE_WEATHER_IDS.sun;
 const SAND = CORE_WEATHER_IDS.sand;
 const HAIL_WEATHER = CORE_WEATHER_IDS.hail;
+
+const MOVE_EFFECT_CUSTOM = CORE_MOVE_EFFECT_TYPES.custom;
+const MOVE_EFFECT_REMOVE_HAZARDS = CORE_MOVE_EFFECT_TYPES.removeHazards;
 
 const BURN = CORE_STATUS_IDS.burn;
 const PARALYSIS = CORE_STATUS_IDS.paralysis;
@@ -1750,7 +1754,7 @@ describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(RAPID_SPIN, {
-      effect: { type: "remove-hazards" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_REMOVE_HAZARDS } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2000,7 +2004,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect default case", () => {
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createSyntheticMove("future-custom-move", {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2245,7 +2249,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: ["ghost"] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(MEAN_LOOK, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2260,7 +2264,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: ["bug"] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(SPIDER_WEB, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2275,7 +2279,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(BLOCK, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2299,7 +2303,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
       nickname: "Blissey",
     });
     const move = createCanonicalMove(COVET, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 60, rng);
@@ -2315,7 +2319,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Weezing" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(EXPLOSION, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 250, rng);
@@ -2331,7 +2335,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Electrode" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(SELF_DESTRUCT, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 200, rng);
@@ -2346,7 +2350,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [POISON] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(HAZE, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2362,7 +2366,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Togetic" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(WISH, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2377,7 +2381,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Blissey" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(SAFEGUARD, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2392,7 +2396,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Clefable" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(LUCKY_CHANT, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2411,7 +2415,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: ["grass"], nickname: "Torterra" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(INGRRAIN, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2426,7 +2430,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: ["water"], nickname: "Vaporeon" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(AQUA_RING, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2445,7 +2449,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(REFRESH, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2461,7 +2465,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] }); // no status
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(REFRESH, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
@@ -2477,7 +2481,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const move = createCanonicalMove(BATON_PASS, {
-      effect: { type: "custom" } as unknown as typeof move.effect,
+      effect: { type: MOVE_EFFECT_CUSTOM } as unknown as typeof move.effect,
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);

@@ -21,7 +21,10 @@ import {
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
+  CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_NATURE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -75,8 +78,24 @@ const {
   weatherCountdown,
   weatherDamage,
 } = CORE_END_OF_TURN_EFFECT_IDS;
+const { adamant, hardy } = CORE_NATURE_IDS;
 const { charcoal, mysteryBerry, quickClaw } = GEN2_ITEM_IDS;
 const { quickAttack, tackle } = GEN2_MOVE_IDS;
+const { attack } = CORE_STAT_IDS;
+const {
+  custom,
+  damage,
+  fixedDamage,
+  levelDamage,
+  multiHit,
+  ohko,
+  removeHazards,
+  screen,
+  statChange,
+  terrain,
+  twoTurn,
+} = CORE_MOVE_EFFECT_TYPES;
+const { self } = CORE_MOVE_EFFECT_TARGETS;
 const TEST_DATA_MANAGER = createGen2DataManager();
 function createMoveSlotFixture(
   moveId: string,
@@ -104,7 +123,7 @@ function createValidationPokemonFixture(
     nickname: null,
     level: 50,
     experience: 0,
-    nature: CORE_NATURE_IDS.hardy,
+    nature: hardy,
     ivs: createDvs(),
     evs: createStatExp(),
     currentHp: 100,
@@ -1973,7 +1992,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: "rapid-spin-generic",
-        effect: { type: "remove-hazards" },
+        effect: { type: removeHazards },
       } as unknown as MoveData;
 
       // Act
@@ -2001,7 +2020,7 @@ describe("Gen2Ruleset", () => {
       );
       const rng = new SeededRandom(42);
 
-      for (const effectType of ["fixed-damage", "level-damage", "ohko", "damage"]) {
+      for (const effectType of [fixedDamage, levelDamage, ohko, damage]) {
         const move = {
           id: "test-move",
           effect: { type: effectType },
@@ -2034,7 +2053,7 @@ describe("Gen2Ruleset", () => {
       );
       const rng = new SeededRandom(42);
 
-      for (const effectType of ["terrain", "screen", "multi-hit", "two-turn"]) {
+      for (const effectType of [terrain, screen, multiHit, twoTurn]) {
         const move = {
           id: "test-move",
           effect: { type: effectType },
@@ -2075,7 +2094,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.bellyDrum,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2120,7 +2139,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.bellyDrum,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2154,7 +2173,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.rapidSpin,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2182,7 +2201,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.meanLook,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2219,7 +2238,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.spiderWeb,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2247,7 +2266,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.thief,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2280,7 +2299,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.thief,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2308,7 +2327,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.batonPass,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2346,7 +2365,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: "some-unknown-move",
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2388,7 +2407,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.explosion,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2421,7 +2440,7 @@ describe("Gen2Ruleset", () => {
       );
       const move = {
         id: GEN2_MOVE_IDS.selfDestruct,
-        effect: { type: "custom" },
+        effect: { type: custom },
       } as unknown as MoveData;
 
       // Act
@@ -2631,14 +2650,14 @@ describe("Gen2Ruleset", () => {
       const species = TEST_DATA_MANAGER.getSpecies(GEN2_SPECIES_IDS.pikachu);
       const pokemon = createValidationPokemonFixture(species, {
         friendship: 999,
-        nature: CORE_NATURE_IDS.adamant,
+        nature: adamant,
       });
 
       const result = ruleset.validatePokemon(pokemon, species);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain("friendship must be between 0 and 255");
-      expect(result.errors).toContain('Nature "adamant" is not supported in Gen 2');
+      expect(result.errors).toContain(`Nature "${adamant}" is not supported in Gen 2`);
     });
 
     it("given invalid DVs and Stat Exp, when validatePokemon runs, then bounded-domain errors are returned", () => {

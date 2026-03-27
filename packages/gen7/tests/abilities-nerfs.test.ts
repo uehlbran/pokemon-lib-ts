@@ -5,6 +5,8 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_FIXED_POINT,
   CORE_GENDERS,
+  CORE_MOVE_EFFECT_TYPES,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   createEvs,
   createIvs,
@@ -16,6 +18,7 @@ import {
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   createGen7DataManager,
   GEN7_ABILITY_IDS,
@@ -43,6 +46,9 @@ const moveIds = GEN7_MOVE_IDS;
 const natureIds = GEN7_NATURE_IDS;
 const speciesIds = GEN7_SPECIES_IDS;
 const typeIds = CORE_TYPE_IDS;
+const statIds = CORE_STAT_IDS;
+const abilityEffectTypeIds = BATTLE_ABILITY_EFFECT_TYPES;
+const moveEffectTypeIds = CORE_MOVE_EFFECT_TYPES;
 const abilityTriggers = CORE_ABILITY_TRIGGER_IDS;
 const NONE_ABILITY = CORE_ABILITY_IDS.none;
 const tackle = dataManager.getMove(moveIds.tackle);
@@ -265,8 +271,8 @@ describe("Gen 7 Ability Nerfs", () => {
       });
       const result = handleGen7DamageCalcAbility(ctx);
       expect(result.activated).toBe(true);
-      expect(result.effects[0].effectType).toBe("type-change");
-      if (result.effects[0].effectType === "type-change") {
+      expect(result.effects[0].effectType).toBe(abilityEffectTypeIds.typeChange);
+      if (result.effects[0].effectType === abilityEffectTypeIds.typeChange) {
         expect(result.effects[0].types).toEqual([typeIds.fairy]);
       }
     });
@@ -443,9 +449,9 @@ describe("Gen 7 Ability Nerfs", () => {
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toHaveLength(1);
-      expect(result.effects[0].effectType).toBe("stat-change");
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("attack");
+      expect(result.effects[0].effectType).toBe(abilityEffectTypeIds.statChange);
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.attack);
         expect(result.effects[0].stages).toBe(1);
       }
     });
@@ -464,8 +470,8 @@ describe("Gen 7 Ability Nerfs", () => {
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("speed");
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.speed);
         expect(result.effects[0].stages).toBe(1);
       }
     });
@@ -484,8 +490,8 @@ describe("Gen 7 Ability Nerfs", () => {
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("spAttack");
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.spAttack);
         expect(result.effects[0].stages).toBe(1);
       }
     });
@@ -506,8 +512,8 @@ describe("Gen 7 Ability Nerfs", () => {
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("attack");
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.attack);
       }
     });
 
@@ -558,9 +564,9 @@ describe("Gen 7 Ability Nerfs", () => {
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
       expect(result.effects).toHaveLength(1);
-      expect(result.effects[0].effectType).toBe("stat-change");
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("defense");
+      expect(result.effects[0].effectType).toBe(abilityEffectTypeIds.statChange);
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.defense);
         expect(result.effects[0].stages).toBe(1);
       }
     });
@@ -574,8 +580,8 @@ describe("Gen 7 Ability Nerfs", () => {
       });
       const result = handleGen7StatAbility(ctx);
       expect(result.activated).toBe(true);
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("defense");
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.defense);
         expect(result.effects[0].stages).toBe(1);
       }
     });
@@ -624,16 +630,16 @@ describe("Gen 7 Ability Nerfs", () => {
       expect(result.effects).toHaveLength(2);
 
       // First effect: -1 Defense
-      expect(result.effects[0].effectType).toBe("stat-change");
-      if (result.effects[0].effectType === "stat-change") {
-        expect(result.effects[0].stat).toBe("defense");
+      expect(result.effects[0].effectType).toBe(abilityEffectTypeIds.statChange);
+      if (result.effects[0].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[0].stat).toBe(statIds.defense);
         expect(result.effects[0].stages).toBe(-1);
       }
 
       // Second effect: +2 Speed (NOT +1 like Gen 5-6)
-      expect(result.effects[1].effectType).toBe("stat-change");
-      if (result.effects[1].effectType === "stat-change") {
-        expect(result.effects[1].stat).toBe("speed");
+      expect(result.effects[1].effectType).toBe(abilityEffectTypeIds.statChange);
+      if (result.effects[1].effectType === abilityEffectTypeIds.statChange) {
+        expect(result.effects[1].stat).toBe(statIds.speed);
         expect(result.effects[1].stages).toBe(2);
       }
     });
@@ -658,7 +664,9 @@ describe("Gen 7 Ability Nerfs", () => {
     it("given Triage with Drain Punch, then priority bonus is +3", () => {
       // Source: Showdown data/abilities.ts -- triage: onModifyPriority +3
       // Source: Bulbapedia "Triage" -- "+3 priority to healing moves"
-      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.drainPunch, "drain")).toBe(3);
+      expect(
+        getTriagePriorityBonus(abilityIds.triage, moveIds.drainPunch, moveEffectTypeIds.drain),
+      ).toBe(3);
     });
 
     it("given Triage with Roost (recovery move), then priority bonus is +3", () => {
@@ -668,7 +676,9 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given Triage with Giga Drain, then priority bonus is +3", () => {
       // Source: Showdown data/abilities.ts -- triage: drain moves
-      expect(getTriagePriorityBonus(abilityIds.triage, moveIds.gigaDrain, "drain")).toBe(3);
+      expect(
+        getTriagePriorityBonus(abilityIds.triage, moveIds.gigaDrain, moveEffectTypeIds.drain),
+      ).toBe(3);
     });
 
     it("given Triage with Floral Healing (Gen 7 move), then priority bonus is +3", () => {
@@ -683,7 +693,9 @@ describe("Gen 7 Ability Nerfs", () => {
 
     it("given non-Triage ability with healing move, then priority bonus is 0", () => {
       // Only Triage provides this bonus
-      expect(getTriagePriorityBonus(abilityIds.adaptability, moveIds.drainPunch, "drain")).toBe(0);
+      expect(
+        getTriagePriorityBonus(abilityIds.adaptability, moveIds.drainPunch, moveEffectTypeIds.drain),
+      ).toBe(0);
     });
 
     it("given Triage handler on-priority-check with healing move, then activated:true", () => {

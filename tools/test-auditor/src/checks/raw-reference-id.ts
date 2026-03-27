@@ -20,6 +20,8 @@ const TYPE_LITERAL_UNION_CONTEXT_RE =
   /:\s*(?:"[a-z0-9]+(?:-[a-z0-9]+)*"(?:\s*\|\s*"[^"]+")*)\s*[,);=>]/;
 const TYPE_DISCRIMINANT_CONTEXT_RE = /\btype\s*:/;
 const TYPE_ACCESS_CONTEXT_RE = /\.type\b/;
+const EVENT_ARRAY_ASSERTION_CONTEXT_RE = /\b(?:toEqual|toStrictEqual|toContainEqual)\s*\(\s*\[/;
+const EVENT_INDEX_LOOKUP_CONTEXT_RE = /\.(?:indexOf|lastIndexOf|includes)\s*\(/;
 const IGNORED_CONTEXT_RE = /\b(?:displayName|name|target|spriteKey|metLocation)\b/;
 const IGNORED_VALUES = new Set(["test"]);
 
@@ -100,7 +102,10 @@ export function checkRawReferenceIds(ctx: FileContext): Finding[] {
       if (/^\s+in\b/.test(trailingContext)) continue;
       if (
         EVENT_TYPE_IDS.has(value) &&
-        (TYPE_DISCRIMINANT_CONTEXT_RE.test(line) || TYPE_ACCESS_CONTEXT_RE.test(line))
+        (TYPE_DISCRIMINANT_CONTEXT_RE.test(line) ||
+          TYPE_ACCESS_CONTEXT_RE.test(line) ||
+          EVENT_ARRAY_ASSERTION_CONTEXT_RE.test(line) ||
+          EVENT_INDEX_LOOKUP_CONTEXT_RE.test(line))
       ) {
         continue;
       }
