@@ -1508,15 +1508,15 @@ describe("Gen 5 Items -- Metronome item", () => {
 
     // First use
     const ctx1 = createItemContext({ pokemon, move });
-    applyGen5HeldItem("before-move", ctx1);
-    const state1 = pokemon.volatileStatuses.get("metronome-count");
+    applyGen5HeldItem(ITEM_TRIGGER_IDS.beforeMove, ctx1);
+    const state1 = pokemon.volatileStatuses.get(VOLATILE_IDS.metronomeCount);
     expect(state1?.data?.count).toBe(1);
     expect(state1?.data?.moveId).toBe(MOVE_IDS.iceBeam);
 
     // Second use (same move)
     const ctx2 = createItemContext({ pokemon, move });
-    applyGen5HeldItem("before-move", ctx2);
-    const state2 = pokemon.volatileStatuses.get("metronome-count");
+    applyGen5HeldItem(ITEM_TRIGGER_IDS.beforeMove, ctx2);
+    const state2 = pokemon.volatileStatuses.get(VOLATILE_IDS.metronomeCount);
     expect(state2?.data?.count).toBe(2);
   });
 
@@ -1528,12 +1528,12 @@ describe("Gen 5 Items -- Metronome item", () => {
 
     // First use
     const ctx1 = createItemContext({ pokemon, move: move1 });
-    applyGen5HeldItem("before-move", ctx1);
+    applyGen5HeldItem(ITEM_TRIGGER_IDS.beforeMove, ctx1);
 
     // Second use (different move)
     const ctx2 = createItemContext({ pokemon, move: move2 });
-    applyGen5HeldItem("before-move", ctx2);
-    const state = pokemon.volatileStatuses.get("metronome-count");
+    applyGen5HeldItem(ITEM_TRIGGER_IDS.beforeMove, ctx2);
+    const state = pokemon.volatileStatuses.get(VOLATILE_IDS.metronomeCount);
     expect(state?.data?.count).toBe(1);
     expect(state?.data?.moveId).toBe(MOVE_IDS.thunderbolt);
   });

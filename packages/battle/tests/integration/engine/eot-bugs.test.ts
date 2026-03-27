@@ -4,12 +4,14 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   type PokemonInstance,
 } from "@pokemon-lib-ts/core";
 import { GEN2_ITEM_IDS } from "@pokemon-lib-ts/gen2";
 import { describe, expect, it } from "vitest";
+import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "../../../src";
 import type { AbilityContext, BattleConfig, EndOfTurnEffect } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -53,9 +55,9 @@ describe("Bug #484 — EoT ability deduplication", () => {
           activated: true,
           effects: [
             {
-              effectType: "stat-change" as const,
-              target: "self" as const,
-              stat: "speed" as const,
+              effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+              target: BATTLE_EFFECT_TARGETS.self,
+              stat: CORE_STAT_IDS.speed,
               stages: 1,
             },
           ],
@@ -147,7 +149,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
 
     // The speed stat-change events should also be exactly 2 (one per active Pokemon)
     const speedBoostEvents = events.filter(
-      (e) => e.type === "stat-change" && e.stat === "speed" && e.stages === 1,
+      (e) => e.type === "stat-change" && e.stat === CORE_STAT_IDS.speed && e.stages === 1,
     );
     expect(speedBoostEvents.length).toBe(2);
   });
@@ -228,7 +230,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
 
     // Speed stage for Ninjask (side 0) should be +1, not +5
     const ninjaskSpeedBoosts = events.filter(
-      (e) => e.type === "stat-change" && e.stat === "speed" && e.side === 0,
+      (e) => e.type === "stat-change" && e.stat === CORE_STAT_IDS.speed && e.side === 0,
     );
     expect(ninjaskSpeedBoosts.length).toBe(1);
   });

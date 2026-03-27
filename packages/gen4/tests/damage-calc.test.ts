@@ -16,6 +16,7 @@ import {
   CORE_MOVE_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -3267,7 +3268,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       types: [CORE_TYPE_IDS.normal],
       heldItem: GEN4_ITEM_IDS.metronome,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 2, moveId: GEN4_MOVE_IDS.strength },
     });
@@ -3301,7 +3302,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
       heldItem: GEN4_ITEM_IDS.metronome,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 6, moveId: GEN4_MOVE_IDS.strength },
     });
@@ -3331,7 +3332,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       types: [CORE_TYPE_IDS.fighting], // no STAB on normal move
       heldItem: GEN4_ITEM_IDS.metronome,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 1, moveId: GEN4_MOVE_IDS.strength },
     });
@@ -3363,7 +3364,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       types: [CORE_TYPE_IDS.fighting],
       heldItem: GEN4_ITEM_IDS.metronome,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 11, moveId: GEN4_MOVE_IDS.strength },
     });
@@ -3393,7 +3394,7 @@ describe("Gen 4 damage calc — Metronome item baseDamage boost", () => {
       types: [CORE_TYPE_IDS.fighting],
       heldItem: null, // NOT holding metronome
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 6, moveId: GEN4_MOVE_IDS.strength },
     });
@@ -3940,7 +3941,7 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
       types: [CORE_TYPE_IDS.fighting],
       heldItem: GEN4_ITEM_IDS.metronome,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 3, moveId: GEN4_MOVE_IDS.strength },
     });
@@ -3970,7 +3971,7 @@ describe("Gen 4 damage calc — Metronome item in Phase 2 (#378)", () => {
       types: [CORE_TYPE_IDS.fighting],
       heldItem: GEN4_ITEM_IDS.metronome,
     });
-    attacker.volatileStatuses.set("metronome-count", {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.metronomeCount, {
       turnsLeft: -1,
       data: { count: 2, moveId: GEN4_MOVE_IDS.strength },
     });
