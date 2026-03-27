@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 export const RECONCILIATION_STATUSES = [
   "unclassified",
   "merged-equivalent",
@@ -11,11 +13,67 @@ export function isTaskBranchEntry({ path, branch, primaryWorktree, repoRoot }) {
     return false;
   }
 
+  if (branch === "main" || branch === "master") {
+    return false;
+  }
+
   if (path === primaryWorktree) {
-    return branch !== "main" && branch !== "master";
+    return true;
   }
 
   return path.startsWith(`${repoRoot}/.worktrees/`);
+}
+
+export function getSharedRepoRoot(gitCommonDir) {
+  return resolve(gitCommonDir, "..");
+}
+
+export function parseTaskWorktreeEntries({ porcelain, repoRoot, isHeadMergedIntoMain }) {
+  const records = [];
+  let current = {};
+
+  for (const line of porcelain.split(/\r?\n/)) {
+    if (line.length === 0) {
+      if (current.path) {
+        records.push(current);
+      }
+      current = {};
+      continue;
+    }
+
+    const [key, ...rest] = line.split(" ");
+    const value = rest.join(" ");
+
+    if (key === "worktree") {
+      current.path = value;
+    } else if (key === "HEAD") {
+      current.head = value;
+    } else if (key === "branch") {
+      current.branch = value.replace("refs/heads/", "");
+    }
+  }
+
+  if (current.path) {
+    records.push(current);
+  }
+
+  const primaryWorktree = records[0]?.path ?? repoRoot;
+
+  return records
+    .filter((entry) =>
+      isTaskBranchEntry({
+        path: entry.path,
+        branch: entry.branch,
+        primaryWorktree,
+        repoRoot,
+      }),
+    )
+    .map((entry) => ({
+      branch: entry.branch,
+      path: entry.path,
+      head: entry.head,
+      mergedIntoMain: isHeadMergedIntoMain(entry.head),
+    }));
 }
 
 export function createReconciliationLedger({ existingLedger, currentEntries, generatedAt }) {

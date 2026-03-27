@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createReconciliationLedger,
+  getSharedRepoRoot,
+  isTaskBranchEntry,
+  parseTaskWorktreeEntries,
   validateReconciliationLedger,
 } from "../lib/reconciliation-gate.mjs";
 
@@ -267,4 +270,56 @@ test("rejects stale merged-equivalent entries when the current branch is no long
 
   assert.equal(result.isValid, false);
   assert.match(result.errors[0] ?? "", /stale/i);
+});
+
+test("excludes main worktrees from task-branch reconciliation even when linked", () => {
+  assert.equal(
+    isTaskBranchEntry({
+      path: "/repo/.worktrees/main-maintenance",
+      branch: "main",
+      primaryWorktree: "/repo",
+      repoRoot: "/repo",
+    }),
+    false,
+  );
+});
+
+test("derives the shared repository root from the git common dir", () => {
+  assert.equal(getSharedRepoRoot("/repo/.git"), "/repo");
+});
+
+test("parses task worktrees across sibling linked worktrees using the shared repo root", () => {
+  const entries = parseTaskWorktreeEntries({
+    porcelain: [
+      "worktree /repo",
+      "HEAD aaa111",
+      "branch refs/heads/docs/update-readmes-758",
+      "",
+      "worktree /repo/.worktrees/main-maintenance",
+      "HEAD bbb222",
+      "branch refs/heads/main",
+      "",
+      "worktree /repo/.worktrees/fix-example",
+      "HEAD ccc333",
+      "branch refs/heads/fix/example",
+      "",
+    ].join("\n"),
+    repoRoot: "/repo",
+    isHeadMergedIntoMain: (head) => head === "bbb222",
+  });
+
+  assert.deepEqual(entries, [
+    {
+      branch: "docs/update-readmes-758",
+      path: "/repo",
+      head: "aaa111",
+      mergedIntoMain: false,
+    },
+    {
+      branch: "fix/example",
+      path: "/repo/.worktrees/fix-example",
+      head: "ccc333",
+      mergedIntoMain: false,
+    },
+  ]);
 });
