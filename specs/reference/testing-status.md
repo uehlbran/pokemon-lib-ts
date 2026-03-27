@@ -87,7 +87,7 @@ Metric provenance: the LOC / `switch` / `if` counts below were measured at commi
 | `packages/gen1/src/Gen1Ruleset.ts` | High | 2059 lines, 18 `switch`, 167 `if` | Split validation, status flow, move execution helpers, and ordering/state transitions |
 | `packages/gen9/src/Gen9Items.ts` | High | 1916 lines, 10 `switch`, 120 `if` | Split by trigger/effect family; move item tables and trigger handlers into smaller modules |
 | `packages/gen8/src/Gen8Items.ts` | High | 1860 lines, 12 `switch`, 113 `if` | Split item trigger logic from item metadata/power tables |
-| `packages/gen4-9/src/Gen*DamageCalc.ts` family | High | Current main still has large damage modules across the family, including Gen 9 (1591 lines, 1 `switch`, 167 `if`), Gen 7 (1526 lines, 1 `switch`, 147 `if`), Gen 8 (1453 lines, 2 `switch`, 150 `if`), and Gen 6 (1249 lines, 1 `switch`, 130 `if`); issues `#762` and `#994` cover the broader contract/decomposition debt | Convert the damage family to explicit modifier pipeline stages with clearer pre-/post-modifier contracts |
+| `packages/gen4-9/src/Gen*DamageCalc.ts` family | High | Current main still has large damage modules across the family, including Gen 9 (1591 lines, 1 `switch`, 167 `if`), Gen 7 (1526 lines, 1 `switch`, 147 `if`), Gen 8 (1453 lines, 2 `switch`, 150 `if`), and Gen 6 (1249 lines, 1 `switch`, 130 `if`); issue `#762` covers the remaining decomposition debt after the `on-damage-calc` boundary clarification | Convert the damage family to explicit modifier pipeline stages with clearer pre-/post-modifier contracts |
 | `packages/gen7/src/Gen7Items.ts` | High | 1591 lines, 7 `switch`, 86 `if` | Split trigger logic from data tables and grouped item behavior helpers |
 | `packages/gen6/src/Gen6AbilitiesSwitch.ts` | High | 1336 lines, 27 `switch`, 78 `if` | Extract trigger-specific dispatch and per-ability handler tables |
 | `packages/gen8/src/Gen8AbilitiesSwitch.ts` | High | 1462 lines, 26 `switch`, 97 `if` | Extract per-trigger dispatch maps and reduce repeated ability routing |
@@ -116,7 +116,6 @@ Missing singles mechanic gaps:
 
 Open tracker overlap requiring cleanup:
 - `#789` remains as the umbrella tracker for the remaining Gen 7 move-effect tail.
-- `#1059` and `#1060` were stale duplicate follow-ups for Spectral Thief and were closed on 2026-03-27 after re-verifying the landed pre-damage implementation and regression coverage on current `main`.
 
 Deferred doubles-only coverage debt:
 - `#626` Parental Bond doubles edge case remains deferred to doubles support
