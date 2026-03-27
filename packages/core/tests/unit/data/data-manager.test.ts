@@ -72,6 +72,23 @@ function createMinimalData(): RawDataObjects {
   };
 }
 
+function createReorderedData(): RawDataObjects {
+  return {
+    pokemon: [charmander, bulbasaur],
+    moves: [flamethrower, tackle],
+    abilities: [overgrow],
+    items: [loadedItem],
+    natures: [hardy, adamant],
+    typeChart: {
+      ...loadedTypeChart,
+      fire: {
+        ...loadedTypeChart.fire,
+        grass: 0.5,
+      },
+    },
+  };
+}
+
 describe("DataManager", () => {
   let dm: DataManager;
 
@@ -132,6 +149,40 @@ describe("DataManager", () => {
       expect(dm.getAllMoves()).toHaveLength(2);
       expect(dm.getMove(tackle.id)).toBe(tackle);
       expect(dm.getMove(flamethrower.id)).toBe(flamethrower);
+    });
+
+    it("replaces the type chart instead of retaining values from the previous load", () => {
+      dm.loadFromObjects(createFullData());
+
+      expect(dm.getTypeChart().fire.grass).toBe(2);
+
+      dm.loadFromObjects(createReorderedData());
+
+      // Derived from createReorderedData(): Fire -> Grass is intentionally overridden to
+      // prove the second load replaces the prior type chart snapshot.
+      expect(dm.getTypeChart().fire.grass).toBe(0.5);
+      expect(dm.getTypeChart().water.fire).toBe(2);
+    });
+
+    it("preserves accessors and insertion order semantics after a reload", () => {
+      dm.loadFromObjects(createFullData());
+
+      dm.loadFromObjects(createReorderedData());
+
+      // Derived from createReorderedData(): the order is intentionally reversed so the
+      // post-reload accessors must reflect the new dataset snapshot rather than stale state.
+      expect(dm.getAllSpecies().map((species) => species.name)).toEqual([
+        charmander.name,
+        bulbasaur.name,
+      ]);
+      expect(dm.getAllMoves().map((move) => move.id)).toEqual([flamethrower.id, tackle.id]);
+      expect(dm.getAllNatures().map((nature) => nature.id)).toEqual([hardy.id, adamant.id]);
+      expect(dm.getSpecies(charmander.id)).toBe(charmander);
+      expect(dm.getSpeciesByName(bulbasaur.name)).toBe(bulbasaur);
+      expect(dm.getMove(flamethrower.id)).toBe(flamethrower);
+      expect(dm.getAbility(overgrow.id)).toBe(overgrow);
+      expect(dm.getItem(loadedItem.id)).toBe(loadedItem);
+      expect(dm.getNature(hardy.id)).toBe(hardy);
     });
   });
 
