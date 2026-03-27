@@ -52,6 +52,7 @@ const END_OF_TURN_EFFECT_IDS = CORE_END_OF_TURN_EFFECT_IDS;
 const GEN7_DATA = createGen7DataManager();
 const DEFAULT_SPECIES = GEN7_DATA.getSpecies(GEN7_SPECIES_IDS.pikachu);
 const DEFAULT_MOVE = GEN7_DATA.getMove(MOVE_IDS.tackle);
+const PHOTON_GEYSER_MOVE = GEN7_DATA.getMove(MOVE_IDS.photonGeyser);
 const MOONGEIST_BEAM_MOVE = GEN7_DATA.getMove(MOVE_IDS.moongeistBeam);
 const SUNSTEEL_STRIKE_MOVE = GEN7_DATA.getMove(MOVE_IDS.sunsteelStrike);
 const STATUS_SLEEP = STATUS_IDS.sleep;
@@ -1119,6 +1120,22 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       }),
       defender: createSyntheticActive({ ability: ABILITY_IDS.shellArmor }),
       move: SUNSTEEL_STRIKE_MOVE,
+      rng: { int: () => 1 } as unknown as SeededRandom,
+    };
+
+    expect(ruleset.rollCritical(context as any)).toBe(true);
+  });
+
+  it("given Photon Geyser against Battle Armor with guaranteed crit stage, when rolling crit, then Battle Armor is ignored", () => {
+    // Source: Showdown data/moves.ts -- photongeyser: ignoreAbility
+    const context = {
+      attacker: createSyntheticActive({
+        ability: ABILITY_IDS.superLuck,
+        heldItem: ITEM_IDS.scopeLens,
+        volatiles: [[VOLATILE_IDS.focusEnergy, { turnsLeft: -1 }]],
+      }),
+      defender: createSyntheticActive({ ability: ABILITY_IDS.battleArmor }),
+      move: PHOTON_GEYSER_MOVE,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
 

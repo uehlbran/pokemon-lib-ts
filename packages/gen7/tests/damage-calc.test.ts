@@ -1611,6 +1611,116 @@ describe("Gen 7 signature moves bypass target abilities", () => {
     expect(sunsteelSimple.damage).toBe(44);
     expect(sunsteelSimple.breakdown?.baseDamage).toBe(24);
   });
+
+  it("given Photon Geyser with higher Attack than Special Attack, when calculating damage, then it becomes physical and ignores Filter", () => {
+    // Source: Showdown data/moves.ts -- photongeyser: category becomes Physical
+    // when getStat('atk', false, true) > getStat('spa', false, true), and ignoreAbility is true.
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Psychic uses Special vs Filter and resolves to 55 final damage with baseDamage 27;
+    // Photon Geyser uses Physical, bypasses Filter, and resolves to 210 final damage with baseDamage 75.
+    const psychic = GEN7_DATA.getMove(MOVE_IDS.psychic);
+    const photonGeyser = GEN7_DATA.getMove(MOVE_IDS.photonGeyser);
+    const defender = createOnFieldPokemon({
+      defense: 90,
+      spDefense: 140,
+      types: [TYPE_IDS.fighting],
+      ability: ABILITY_IDS.filter,
+    });
+
+    const psychicResult = calculateGen7Damage(
+      createDamageContext({
+        attacker: createOnFieldPokemon({ attack: 150, spAttack: 90 }),
+        defender,
+        move: psychic,
+        seed: 42,
+      }),
+      typeChart,
+    );
+    const photonResult = calculateGen7Damage(
+      createDamageContext({
+        attacker: createOnFieldPokemon({ attack: 150, spAttack: 90 }),
+        defender,
+        move: photonGeyser,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(psychicResult.damage).toBe(55);
+    expect(psychicResult.breakdown?.baseDamage).toBe(27);
+    expect(psychicResult.breakdown?.abilityMultiplier).toBe(0.75);
+    expect(psychicResult.effectiveCategory).toBe(MOVE_CATEGORIES.special);
+    expect(photonResult.damage).toBe(210);
+    expect(photonResult.breakdown?.baseDamage).toBe(75);
+    expect(photonResult.breakdown?.abilityMultiplier).toBe(1);
+    expect(photonResult.effectiveCategory).toBe(MOVE_CATEGORIES.physical);
+  });
+
+  it("given Photon Geyser with higher Attack than Special Attack on a burned attacker, when calculating damage, then it stays physical and burn still halves damage", () => {
+    // Source: Showdown data/moves.ts -- photongeyser compares getStat(..., false, true),
+    // so burn does not change the physical/special category decision.
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Photon Geyser stays physical on an Atk 140 / SpA 100 attacker even while burned,
+    // and the physical burn penalty reduces baseDamage 58 to 40 final damage.
+    const photonGeyser = GEN7_DATA.getMove(MOVE_IDS.photonGeyser);
+    const defender = createOnFieldPokemon({
+      defense: 110,
+      spDefense: 90,
+      types: [TYPE_IDS.normal],
+    });
+
+    const result = calculateGen7Damage(
+      createDamageContext({
+        attacker: createOnFieldPokemon({
+          attack: 140,
+          spAttack: 100,
+          status: STATUS_IDS.burn,
+        }),
+        defender,
+        move: photonGeyser,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.damage).toBe(40);
+    expect(result.breakdown?.baseDamage).toBe(58);
+    expect(result.breakdown?.burnMultiplier).toBe(0.5);
+    expect(result.effectiveCategory).toBe(MOVE_CATEGORIES.physical);
+  });
+
+  it("given Photon Geyser with a raw Attack stage boost that overtakes Special Attack, when calculating damage, then it becomes physical", () => {
+    // Source: Showdown data/moves.ts -- photongeyser compares stage-adjusted
+    // getStat('atk', false, true) and getStat('spa', false, true), so raw stat
+    // stages are included in the category check.
+    // Derived from the fixed fixture below with seed 42 (random factor 0.94):
+    // Photon Geyser uses a raw +2 Attack stage, resolves as physical,
+    // and deals 112 final damage with baseDamage 80.
+    const photonGeyser = GEN7_DATA.getMove(MOVE_IDS.photonGeyser);
+    const attacker = createOnFieldPokemon({
+      attack: 80,
+      spAttack: 120,
+    });
+    attacker.statStages.attack = 2;
+
+    const result = calculateGen7Damage(
+      createDamageContext({
+        attacker,
+        defender: createOnFieldPokemon({
+          defense: 90,
+          spDefense: 140,
+          types: [TYPE_IDS.normal],
+        }),
+        move: photonGeyser,
+        seed: 42,
+      }),
+      typeChart,
+    );
+
+    expect(result.damage).toBe(112);
+    expect(result.breakdown?.baseDamage).toBe(80);
+    expect(result.effectiveCategory).toBe(MOVE_CATEGORIES.physical);
+  });
 });
 
 // ---------------------------------------------------------------------------
