@@ -20,14 +20,6 @@ try {
   markerText = "";
 }
 
-const worktreeCheck = spawnSync(process.execPath, ["scripts/check-worktree.mjs"], {
-  stdio: "inherit",
-});
-
-if (worktreeCheck.status !== 0) {
-  process.exit(worktreeCheck.status ?? 1);
-}
-
 let currentBranch = "";
 let currentCommit = "";
 

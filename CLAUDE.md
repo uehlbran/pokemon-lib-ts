@@ -37,7 +37,7 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 - **Core has zero runtime dependencies.** This is a hard rule. If you need an external library, it doesn't belong in core.
 - **The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
 - **Turn flow**: `turn-start → action selection → priority sort → turn-resolve (accuracy check → move execution → damage/effects → ability triggers) → turn-end → weather/status ticks → faint-check → next turn or game over`
-- **Branch-first (enforced by hook).** Before editing any repo file, run `/start-task <branch-name>` to create a fresh task-owned worktree from `origin/main`. The root checkout is not for task work. See `.claude/rules/branch-first.md`.
+- **Single-branch workflow.** Do task work on one normal git branch at a time in the main checkout. Do not use linked worktrees as part of the repo workflow.
 
 ## Tech Stack
 
@@ -232,7 +232,7 @@ Agents must read repo instructions before acting, not after making a mistake.
   `.claude/rules/issue-linking.md`.
 - Before creating or editing a PR: re-read `.claude/rules/issue-linking.md`,
   `.claude/rules/issue-closing-syntax.md`, and the repo PR template.
-- After creating a PR: re-read `.claude/rules/pr-comment-handling.md` and babysit the PR until
+- After creating a PR: re-read `.claude/rules/pr-comment-handling.md` and monitor the PR until
   merge. Review comments must be acknowledged, validated against the current code, and either
   fixed, replied to with rationale, or converted into a follow-up issue if they are real and out
   of scope.
@@ -275,12 +275,12 @@ Agents must read repo instructions before acting, not after making a mistake.
 Every PR requires local review before push plus a human approver:
 
 - **`/review` (required)** — runs falcon (correctness), kestrel (architecture), sentinel (security) locally. Must be run before every PR. This is the primary review gate.
-- **CodeRabbit** — inline comments, PR summary, security scan. Review findings remain advisory, but CodeRabbit completion state is a merge-process gate unless it is clearly stuck/rate-limited and explicitly bypassed. Config: `.coderabbit.yaml`
+- **CodeRabbit** — inline comments, PR summary, security scan (advisory, bonus). Config: `.coderabbit.yaml`
 - **Qodo PR-Agent** — structured review (advisory, best-effort — may be rate-limited). Legacy hosted GitHub Action.
 - **Claude Code** — deep local review via `pokemon-reviewer` subagent. Runs on push via `git pushreview`. Posts findings to PR as comments (advisory).
 - **Human** — final say on architecture and correctness. Human review is a process rule enforced via CLAUDE.md, not a branch protection setting.
 
-AI reviews are advisory on correctness, but the PR workflow still requires every comment to be acknowledged and requires CodeRabbit to finish before merge unless a stuck/rate-limited bypass is explicitly documented. See `.github/AI_REVIEWERS.md` for interaction commands.
+AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
 
 ## How to Add a New Generation
 
@@ -372,19 +372,16 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
 
 ### Branch Discipline
 
-- **Start in a fresh task-owned worktree**: `/start-task <branch>` creates one from `origin/main`. Do not do task work in the root checkout.
+- **Use one normal task branch at a time** in the main checkout. Do not create linked worktrees for routine repo work.
 - **Never reuse branch names** for unrelated work — if a branch was used in a prior PR, create a new one
 - **Use descriptive, unique names**: include the scope (e.g., `fix/gen1-crit-calc`, not `fix/gen1-corrections`)
 - **Rebase before PR**: before opening a PR, rebase onto `origin/main` to minimize conflicts
-- **Never checkout a branch owned by another worktree**: if `git checkout <branch>` fails with "already used by worktree", work in that worktree's directory instead (using `git -C <path>`) or create a new branch
 
-### Git Safety with Worktrees
+### Git Safety
 
-- **Verify before mutating.** Before any mutating git command (`rebase`, `reset`, `merge`, `commit`, `checkout`), run `git branch --show-current` (or `git -C <path> branch --show-current`) and confirm it matches the expected branch
-- **Always use `git -C <worktree-path>`** for ALL git commands when a worktree exists for the task — even read-only commands like `log` and `status`. Never run bare `git` in the main repo for worktree work
+- **Verify before mutating.** Before any mutating git command (`rebase`, `reset`, `merge`, `commit`, `checkout`), run `git branch --show-current` and confirm it matches the expected branch
 - **Verify PR state first.** Before acting on a PR, run `gh pr view <number> --json state` to confirm it's still open
 - **Post-mutation verification.** After any `rebase`/`merge`/`reset`, run `git log --oneline -5` and confirm the result matches expectations before continuing
-- **Never mutate the main worktree for PR work.** If the task involves a PR and a worktree exists, all git operations happen via `git -C <worktree-path>`, period
 
 ## PR Workflow
 
@@ -396,14 +393,10 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
   before commits/PR updates.
 - **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally.
 - **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/*/src/` or `packages/*/data/`. Creates a `.changeset/<name>.md` file; does NOT edit `package.json` or `CHANGELOG.md`. See Package Versioning above. Tests, docs, config, and `specs/` changes do not require a changeset.
-- **Reconcile first, then branch**: before creating another task branch, reconcile all existing local task work and retire stale branches. Do not accumulate implicit backlog across worktrees.
-- **Exactly one active PR slice**: if one PR is still open, in review, or awaiting merge, do not start another implementation branch.
 - **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. **Before using `Closes: N/A`**, run `gh issue list --state open --search "KEYWORDS"` with at least 2 keyword sets — only use N/A if no matching issue is found. See `.claude/rules/issue-linking.md`. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
-- **Always use `/babysit-pr <number>` after creating a PR** — mandatory. This is the ONLY sanctioned way to monitor, address comments, and merge. Do NOT run `gh pr merge` directly — the comment gate hook will block it if review threads haven't been acknowledged.
-- **`/babysit-pr` auto-merges by default** and self-polls until complete — no `/loop` wrapper needed. Use `--no-merge` to require confirmation before merging.
-- **Comment gate enforced by hook**: `enforce-comment-gate.sh` blocks `gh pr merge` if any unresolved review thread lacks a reply, if any top-level PR comment lacks an `Ack comment <id>:` acknowledgement, or if CodeRabbit is still marked in progress without a justified bypass. See `.claude/rules/pr-comment-handling.md`.
-- **HARD RULE — No comment may be ignored**: Every inline review comment must get a reply. Options: (1) fix the code and reply citing the commit, (2) reply explaining why the report is incorrect citing source authority, (3) reply that it's a real bug out of scope and file a GitHub issue with the issue number. There is no fourth option. A comment without a reply is a blocker — you cannot proceed to merge.
-- **Top-level PR comments count too**: bot summaries, human issue comments, and system comments on the PR all require a later `Ack comment <id>:` acknowledgement before merge.
+- **Track review comments until merge** — mandatory. Every review thread must be acknowledged before merging.
+- **Comment gate enforced by hook**: `enforce-comment-gate.sh` blocks `gh pr merge` if any unresolved review thread has zero replies. Every thread, including CodeRabbit/Qodo threads, needs at minimum a reply before merge. This is an acknowledgment requirement, not an approval gate. See `.claude/rules/pr-comment-handling.md`.
+- **HARD RULE — No comment may be ignored**: Every inline review comment must get a reply. Options: (1) fix the code and reply citing the commit, (2) reply explaining why the report is incorrect citing source authority, (3) reply that it's a real bug out of scope and file a GitHub issue with the issue number. There is no fourth option. AI review comments remain advisory, but a comment without a reply is still a blocker.
 - **Validate bugs before acting**: AI reviewers (CodeRabbit, Qodo) analyze the first commit. If a later fix already addressed the issue, grep/read the current code to confirm, then reply citing the fix commit. Never re-implement a fix that is already in the code, and never file a GitHub issue for a bug that no longer exists.
 - **Act autonomously.** When handling a PR, agents should:
   - Push fixes for reviewer feedback without asking permission
@@ -416,8 +409,8 @@ Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claud
   - The reviewer's feedback is ambiguous and could be interpreted multiple ways
   - A decision requires trade-offs only the user can weigh
 - **Check PR state before acting**: run `gh pr view <number> --json state` before investigating review comments or doing work on a PR. If `MERGED` or `CLOSED`, stop
-- **Never run `gh pr merge` directly** — use `/babysit-pr <number>` instead. If you must verify merge state after `/babysit-pr` completes, use `gh pr view <number> --json state` — `gh pr merge --auto` produces no output on success
-- **CodeRabbit is a merge-process gate** unless it is clearly stuck, broken, or rate-limited and that bypass is explicitly acknowledged on the PR. Qodo remains advisory, but its comments still require acknowledgement if present.
+- **Use `gh pr merge` only after review threads are handled**. If you need to verify merge state, use `gh pr view <number> --json state`.
+- **CodeRabbit and Qodo are advisory only** — do not block merge on them or rely on them as verification. Required local verification is `npm run verify:local`.
 - **`gh pr checks` exit code 8 means pending**, not failure
 - **`gh pr edit` is broken for body edits** — it calls the deprecated GitHub Projects (classic) API and errors even when only updating `--body`. Use `gh api PATCH /repos/{owner}/{repo}/pulls/{number} --field body="..."` instead whenever you need to edit a PR body after creation.
 

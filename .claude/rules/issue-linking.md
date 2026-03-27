@@ -24,10 +24,10 @@ Closes #80
 Never `Closes #50, #80` — GitHub only auto-closes the first issue.
 See `.claude/rules/issue-closing-syntax.md` for full syntax rules.
 
-## The babysit-pr skill handles this automatically
+## Manual PR edits must still link issues correctly
 
-Step 3a of `/babysit-pr` searches for related issues and adds closing keywords to the PR body.
-This is another reason to always use `/babysit-pr` for PR lifecycle management.
+If you create or edit a PR manually, search for related issues yourself and add the closing
+keywords to the PR body before requesting review.
 
 ## Why This Matters
 

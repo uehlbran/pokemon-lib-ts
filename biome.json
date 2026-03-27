@@ -43,14 +43,5 @@
     }
   ],
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": {
-    "includes": [
-      "**",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/build",
-      "!**/coverage",
-      "!.claude/worktrees"
-    ]
-  }
+  "files": { "includes": ["**", "!**/node_modules", "!**/dist", "!**/build", "!**/coverage"] }
 }

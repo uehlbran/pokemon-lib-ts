@@ -220,14 +220,12 @@ All nine generations are complete. 10,332+ tests across all packages, validated 
 
 ## Contributing
 
-Contributions welcome. Start each task in a fresh task-owned worktree from `origin/main`
-with `/start-task <branch-name>`; the root checkout is not for task work. Run
-`npm run verify:local` as the authoritative local handoff gate, use targeted package tests or
-the test-kind scripts while iterating, and reserve `npm run test:stress` for heavy manual soak
-verification. Then run
-`/review` before opening or updating a PR, and `git pushreview` after pushing. PRs get advisory
-CodeRabbit comments and may still get Qodo comments, but local verification is the source of
-truth.
+Contributions welcome. Create a normal git branch from an up-to-date `origin/main` checkout, run
+`npm run verify:local` as the authoritative local handoff gate, use targeted package tests or the
+test-kind scripts while iterating, and reserve `npm run test:stress` for heavy manual soak
+verification. Then run `/review` before opening or updating a PR, and `git pushreview` after
+pushing. PRs get advisory CodeRabbit comments and may still get Qodo comments, but local
+verification is the source of truth.
 
 ## Tech Stack
 

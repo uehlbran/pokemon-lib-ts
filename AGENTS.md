@@ -10,8 +10,8 @@ rather than inventing a parallel workflow.
 2. If you are working inside a subtree that has its own `CLAUDE.md`, read that file before
    editing in that subtree.
 3. Treat `.claude/` as the source of truth for workflow rules, review roles, and task setup.
-4. Start every new task in a fresh task-owned worktree from `origin/main`; the root checkout is
-   not for task work.
+4. Work on a normal git branch based on `origin/main`. Do not use linked worktrees for task
+   execution in this repo.
 
 ## Mandatory Instruction Discipline
 
@@ -29,19 +29,14 @@ Agents must read repo instructions before acting, not after making a mistake.
   and the repo PR template.
 - After creating a PR: re-read
   [`.claude/rules/pr-comment-handling.md`](./.claude/rules/pr-comment-handling.md)
-  and babysit the PR until merge. Review comments must be acknowledged, validated against the
-  current code, and either fixed, replied to with rationale, or converted into a follow-up issue
-  if genuinely out of scope.
+  and monitor the PR until merge. Review comments must be acknowledged, validated against the
+  current code, and either fixed, replied to with rationale, or converted into a follow-up
+  issue if genuinely out of scope.
 - Do not rely on memory for repo workflow. Re-open the relevant file before the governed action.
 
 ## Required Workflow
 
-- Branch-first is mandatory. Follow
-  [`.claude/rules/branch-first.md`](./.claude/rules/branch-first.md).
-- Claude uses `/start-task`; non-Claude agents should perform the equivalent workflow described
-  in
-  [`.claude/skills/start-task/SKILL.md`](./.claude/skills/start-task/SKILL.md).
-- Do not edit repo files until the session branch requirement has been satisfied.
+- Use one normal git branch at a time in the main checkout.
 - Local verification is authoritative: run `npm run verify:local` before PRs and other
   handoffs. Use targeted package tests or the root test-kind scripts while iterating, and use
   `npm run test:stress` only for manual soak/stability coverage.

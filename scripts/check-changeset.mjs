@@ -16,13 +16,6 @@ function runGit(args) {
 }
 
 const mergeBase = runGit(["merge-base", "HEAD", "origin/main"]);
-const worktreeCheck = spawnSync(process.execPath, ["scripts/check-worktree.mjs"], {
-  stdio: "inherit",
-});
-
-if (worktreeCheck.status !== 0) {
-  process.exit(worktreeCheck.status ?? 1);
-}
 
 if (!mergeBase) {
   console.error("Could not determine merge-base against origin/main. Run 'git fetch origin main'.");
