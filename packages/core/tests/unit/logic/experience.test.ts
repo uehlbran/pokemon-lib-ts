@@ -111,6 +111,12 @@ describe("getExpForLevel", () => {
       'Unsupported experience growth group "sideways-growth"',
     );
   });
+
+  it("given an unsupported growth-rate identifier at level 1, when querying EXP totals, then it still throws clearly", () => {
+    expect(() => getExpForLevel("sideways-growth", 1)).toThrow(
+      'Unsupported experience growth group "sideways-growth"',
+    );
+  });
 });
 
 describe("getExpToNextLevel", () => {

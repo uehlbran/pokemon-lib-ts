@@ -1057,7 +1057,6 @@ function buildTypeChart() {
     throw new Error(`No type list configured for generation ${GEN_NUM}`);
   }
 
-  const _validTypes = new Set(genTypes);
   const chart: Record<string, Record<string, number>> = {};
 
   for (const attackType of genTypes) {

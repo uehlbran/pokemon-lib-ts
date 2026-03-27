@@ -2,12 +2,14 @@
 
 ## Merge Gate
 
-`enforce-comment-gate.sh` (PreToolUse) blocks `gh pr merge` if any unresolved review thread
-has zero replies — meaning it was never read or acknowledged.
+`enforce-comment-gate.sh` (PreToolUse) blocks `gh pr merge` if any review thread is still
+unresolved or if any actionable top-level PR comment still lacks an author acknowledgment.
 
-**A thread is "acknowledged" when it has at least one of:**
-- The thread is marked resolved (via GraphQL `resolveReviewThread` mutation)
-- A reply exists on the thread (agree + fix, or disagree + explain why)
+**A review thread is addressed only when it is resolved.** A reply without resolution is not
+enough for merge.
+
+**A top-level PR comment is addressed only when there is a later PR conversation reply from the
+author** describing the fix, rationale, or linked follow-up issue.
 
 If blocked, inspect the review threads and reply to or resolve each unaddressed thread before
 retrying the merge.
@@ -15,15 +17,19 @@ retrying the merge.
 ## Mandatory Process
 
 1. After creating a PR, monitor review comments until the PR is merged or closed.
-2. `gh pr merge` is allowed only after every review thread has been acknowledged.
-3. To assess comments manually:
+2. `gh pr merge` is allowed only after every review thread has been resolved.
+3. Actionable top-level PR comments also require a later author acknowledgment comment before merge.
+4. Admin bypass is forbidden. Do not use admin merge, direct branch protection bypass, or any other
+   path that skips the comment gate.
+5. To assess comments manually:
 
    ```bash
    gh api repos/{owner}/{repo}/pulls/<N>/comments
    gh api repos/{owner}/{repo}/issues/<N>/comments
    ```
 
-   Then reply to each thread and resolve addressed ones before attempting merge.
+   Then reply to each thread, resolve addressed ones, and post a PR conversation follow-up for any
+   actionable top-level comment before attempting merge.
 
 ## What Counts as Addressing a Comment
 
@@ -33,6 +39,7 @@ retrying the merge.
 | Bug report (incorrect) | Reply citing source authority explaining why code is correct, resolve thread |
 | Nitpick / informational | Brief reply ("Noted" or "Disagree — [reason]"), resolve thread |
 | Question from reviewer | Reply with answer |
+| Top-level PR summary finding | Post a PR conversation reply with the fix or linked follow-up issue |
 
 Nitpicks do not require code changes, but they do require a reply. Ignoring them entirely is not acceptable.
 
@@ -63,7 +70,8 @@ Never ignore a real bug just because it's outside the current PR's scope. Either
 ## Never
 
 - Merge a PR without reading review comments
-- Merge a PR while any review thread still has zero replies
-- Leave CodeRabbit/Qodo threads with zero replies regardless of whether you agree or disagree
+- Merge a PR while any review thread is unresolved
+- Use admin privileges or any bypass path to merge around unresolved comments
+- Leave CodeRabbit/Qodo threads unresolved regardless of whether you agree or disagree
 - Assume a reviewer-reported bug is real without checking the current code — AI reviewers can analyze stale commits
 - File a GitHub issue for a bug that is already fixed in the current code
