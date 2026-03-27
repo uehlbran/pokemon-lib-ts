@@ -6,7 +6,7 @@ import {
   GEN8_MOVE_IDS,
   GEN8_SPECIES_IDS,
   GEN8_TYPE_CHART,
-} from "../../../../gen8/src";
+} from "../../../../gen8/src/data";
 import {
   ALL_NATURES,
   CORE_MOVE_CATEGORIES,
