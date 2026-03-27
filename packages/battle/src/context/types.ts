@@ -146,9 +146,11 @@ export interface AccuracyContext {
 
 /**
  * All inputs required when executing a move's secondary effects.
- * Passed to `GenerationRuleset.executeMoveEffect()` after the damage step for
- * normal moves, and before accuracy/damage for charge-turn setup handling on
- * two-turn moves.
+ * Passed to `GenerationRuleset.executePreDamageMoveEffect()` after a move has
+ * already passed hit/protect checks but before the damage is finalized for the
+ * current hit, or to `GenerationRuleset.executeMoveEffect()` after the damage
+ * step for normal moves and before accuracy/damage for charge-turn setup
+ * handling on two-turn moves.
  */
 export interface MoveEffectContext {
   /** The Pokémon that used the move */
@@ -157,7 +159,11 @@ export interface MoveEffectContext {
   readonly defender: ActivePokemon;
   /** The move that was used */
   readonly move: MoveData;
-  /** Damage dealt this hit (0 for status moves) */
+  /**
+   * Damage associated with this hit.
+   * For pre-damage hooks this is the preliminary projected damage from the
+   * first damage pass; for post-damage hooks it is the actual damage dealt.
+   */
   readonly damage: number;
   /** Current full battle state */
   readonly state: BattleState;

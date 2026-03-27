@@ -1,4 +1,9 @@
-import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
+import {
+  type ActivePokemon,
+  BATTLE_EFFECT_TARGETS,
+  type BattleState,
+  type MoveEffectContext,
+} from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
@@ -9,6 +14,7 @@ import {
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_MOVE_TARGET_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -30,6 +36,7 @@ import {
 import {
   calculateSpikyShieldDamage,
   executeGen7MoveEffect,
+  executeGen7PreDamageMoveEffect,
   handleDrainEffect,
   isBlockedByBanefulBunker,
   isBlockedByCraftyShield,
@@ -46,6 +53,7 @@ const itemIds = { ...CORE_ITEM_IDS, ...GEN7_ITEM_IDS } as const;
 const moveIds = { ...CORE_MOVE_IDS, ...GEN7_MOVE_IDS } as const;
 const moveCategories = CORE_MOVE_CATEGORIES;
 const moveTargetIds = CORE_MOVE_TARGET_IDS;
+const statIds = CORE_STAT_IDS;
 const typeIds = CORE_TYPE_IDS;
 const volatileIds = CORE_VOLATILE_IDS;
 const weatherIds = CORE_WEATHER_IDS;
@@ -1044,6 +1052,74 @@ describe("Gen7 executeGen7MoveEffect -- dispatch", () => {
     expect(ctx.attacker.volatileStatuses.size).toBe(0);
     expect(ctx.move.id).toBe(moveIds.protect);
   });
+
+  it("given Spectral Thief with defender positive boosts, when pre-damage dispatch runs, then it steals only positive stages", () => {
+    const ctx = createMoveEffectContext(moveIds.spectralThief, {
+      attacker: { ability: abilityIds.none },
+      defender: {
+        ability: abilityIds.none,
+        volatileStatuses: new Map(),
+      },
+    });
+    ctx.defender.statStages.attack = 2;
+    ctx.defender.statStages.defense = 1;
+    ctx.defender.statStages.spAttack = -1;
+
+    const result = executeGen7PreDamageMoveEffect(ctx);
+
+    expect(result).toEqual({
+      ...EMPTY_EFFECT_RESULT,
+      statChanges: [
+        // Spectral Thief steals the target's positive raw stages before damage.
+        // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.attack, stages: 2 },
+        { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.attack, stages: -2 },
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.defense, stages: 1 },
+        { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.defense, stages: -1 },
+      ],
+    });
+  });
+
+  it("given Spectral Thief with Simple attacker, when pre-damage dispatch runs, then it stores the raw stolen stages for the attacker", () => {
+    const ctx = createMoveEffectContext(moveIds.spectralThief, {
+      attacker: { ability: abilityIds.simple },
+      defender: { ability: abilityIds.none },
+    });
+    ctx.defender.statStages.attack = 2;
+
+    const result = executeGen7PreDamageMoveEffect(ctx);
+
+    expect(result).toEqual({
+      ...EMPTY_EFFECT_RESULT,
+      statChanges: [
+        // The repo stores raw stages and lets getEffectiveStatStage() apply Simple on read.
+        // Source: packages/battle/src/utils/statStageHelpers.ts -- Simple doubles read-side stage effects
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.attack, stages: 2 },
+        { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.attack, stages: -2 },
+      ],
+    });
+  });
+
+  it("given Spectral Thief with Contrary attacker, when pre-damage dispatch runs, then stolen boosts are inverted on the attacker while still cleared from the defender", () => {
+    const ctx = createMoveEffectContext(moveIds.spectralThief, {
+      attacker: { ability: abilityIds.contrary },
+      defender: { ability: abilityIds.none },
+    });
+    ctx.defender.statStages.spAttack = 3;
+
+    const result = executeGen7PreDamageMoveEffect(ctx);
+
+    expect(result).toEqual({
+      ...EMPTY_EFFECT_RESULT,
+      statChanges: [
+        // Contrary still inverts the stolen raw stage on write because MoveEffectResult
+        // statChanges do not pass through the on-stat-change ability pipeline.
+        // Source: packages/gen7/src/Gen7AbilitiesStat.ts -- Contrary is modeled as stat-change inversion
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.spAttack, stages: -3 },
+        { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.spAttack, stages: -3 },
+      ],
+    });
+  });
 });
 
 // ===========================================================================
@@ -1108,5 +1184,22 @@ describe("Gen7Ruleset.executeMoveEffect -- integration", () => {
     // Source: Gen7Ruleset delegates to super.executeMoveEffect which returns createBaseResult()
     expect(result.messages).toEqual([]);
     expect(result.statusInflicted).toBeNull();
+  });
+
+  it("given Gen7Ruleset, when executing Spectral Thief before damage, then returns the stolen boosts", () => {
+    const ctx = createMoveEffectContext(moveIds.spectralThief);
+    ctx.defender.statStages.speed = 2;
+
+    const result = ruleset.executePreDamageMoveEffect(ctx);
+
+    expect(result).toEqual({
+      ...EMPTY_EFFECT_RESULT,
+      statChanges: [
+        // The defender's +2 Speed is stolen as a raw +2 to the attacker and cleared from the target.
+        // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: statIds.speed, stages: 2 },
+        { target: BATTLE_EFFECT_TARGETS.defender, stat: statIds.speed, stages: -2 },
+      ],
+    });
   });
 });

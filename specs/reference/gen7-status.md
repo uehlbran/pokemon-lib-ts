@@ -105,14 +105,13 @@
 | Item | Reason |
 |------|--------|
 | Ultra Burst (Necrozma) | Distinct gimmick from Z-Moves; not yet implemented — see #788 |
-| Spectral Thief | Move effect not yet implemented — see #789 |
 | Doubles mechanics | Doubles initiative — engine doesn't support doubles |
 
 ---
 
 ## Test Coverage
 
-25 test files, 1,144 tests (as of 2026-03-22).
+25 test files, 1,178 tests (as of 2026-03-27).
 
 Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-new.test.ts`, `abilities-switch-contact.test.ts`, `aurora-veil.test.ts`, `bugfix-phase2.test.ts`, `coverage-gaps.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dual-gimmick.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `integration.test.ts`, `items.test.ts`, `mega-evolution.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`, `z-move.test.ts`, `z-move-status.test.ts`
 
@@ -131,6 +130,7 @@ None. All tracked bugs closed.
 - PR #786: Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage (closes #757)
 - PR #1054: Sunsteel Strike / Moongeist Beam now ignore target abilities through the shared Mold Breaker-style bypass path (partial close for #789)
 - PR #1055: Sunsteel Strike / Moongeist Beam now also bypass Battle Armor / Shell Armor crit immunity through the same shared signature-move ignore-ability set
+- PR #1061: Spectral Thief now steals positive boosts before damage through a shared pre-damage move-effect hook so the same hit uses the stolen stages (closes #1059)
 
 ## PR History
 
@@ -150,3 +150,4 @@ None. All tracked bugs closed.
 | #752 | fix/gen5-8-bughunt | Deep bughunt: EoT countdowns, Z-Move 0.25x through Protect, Disguise volatile, canBypassProtect (closes #735 #736 #739 #741) |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Rayquaza mega, Disguise non-lethal, Beast Boost/Moxie, pinch berries EoT, Focus Sash (closes #701 #687 #688 #683 #725) |
 | #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |
+| #1061 | fix/gen7-spectral-thief | fix: Spectral Thief boost stealing before damage via shared pre-damage move-effect hook (closes #1059) |

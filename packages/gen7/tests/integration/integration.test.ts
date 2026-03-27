@@ -5,8 +5,14 @@
  * Each test exercises at least 2 subsystems in combination.
  */
 
-import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleConfig,
+  BattleEvent,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
+import { BATTLE_GIMMICK_IDS, BattleEngine } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
@@ -17,6 +23,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -224,6 +231,28 @@ function createSyntheticBattleState(overrides?: Partial<BattleState>): BattleSta
   } as unknown as BattleState;
 }
 
+function createGen7Engine(options?: {
+  team1?: PokemonInstance[];
+  team2?: PokemonInstance[];
+  seed?: number;
+}) {
+  const ruleset = new Gen7Ruleset(dataManager);
+  const events: BattleEvent[] = [];
+  const config: BattleConfig = {
+    generation: 7,
+    format: "singles",
+    teams: [
+      options?.team1 ?? [createSyntheticPokemonInstance({ moveIds: [MOVES.tackle], speed: 120 })],
+      options?.team2 ?? [createSyntheticPokemonInstance({ moveIds: [MOVES.tackle], speed: 80 })],
+    ],
+    seed: options?.seed ?? 7,
+  };
+
+  const engine = new BattleEngine(config, ruleset, dataManager);
+  engine.on((event) => events.push(event));
+  return { engine, ruleset, events };
+}
+
 // ===========================================================================
 // Integration Scenario 1: Z-Move vs Mega team -- both gimmicks in same battle
 // ===========================================================================
@@ -314,6 +343,106 @@ describe("Integration: Z-Move vs Mega Evolution coexistence", () => {
       state,
     );
     expect(canMega).toBe(true);
+  });
+});
+
+describe("Integration: Spectral Thief", () => {
+  it("given the target has a positive Attack boost, when Spectral Thief resolves, then it steals the boost before the same hit's damage", () => {
+    const bulbasaurAbility = dataManager.getSpecies(SPECIES.bulbasaur).abilities.normal[0];
+
+    const createSpectralTeams = () => ({
+      team1: [
+        createSyntheticPokemonInstance({
+          speciesId: SPECIES.bulbasaur,
+          moveIds: [MOVES.spectralThief],
+          ability: bulbasaurAbility,
+          attack: 95,
+          defense: 100,
+          spAttack: 80,
+          spDefense: 100,
+          speed: 120,
+          hp: 200,
+          currentHp: 200,
+        }),
+      ],
+      team2: [
+        createSyntheticPokemonInstance({
+          speciesId: SPECIES.bulbasaur,
+          moveIds: [MOVES.splash],
+          ability: bulbasaurAbility,
+          attack: 100,
+          defense: 100,
+          spAttack: 80,
+          spDefense: 100,
+          speed: 80,
+          hp: 200,
+          currentHp: 200,
+        }),
+      ],
+    });
+
+    const boostedBattle = createGen7Engine(createSpectralTeams());
+    boostedBattle.engine.start();
+    const boostedDefender = boostedBattle.engine.state.sides[1].active[0];
+    if (!boostedDefender) {
+      throw new Error("Expected boosted Spectral Thief target");
+    }
+    boostedDefender.statStages.attack = 2;
+
+    boostedBattle.engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    boostedBattle.engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const baselineBattle = createGen7Engine(createSpectralTeams());
+    baselineBattle.engine.start();
+    baselineBattle.engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    baselineBattle.engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const boostedDamage = boostedBattle.events.find(
+      (event): event is Extract<BattleEvent, { type: "damage" }> =>
+        event.type === "damage" && event.side === 1,
+    );
+    const baselineDamage = baselineBattle.events.find(
+      (event): event is Extract<BattleEvent, { type: "damage" }> =>
+        event.type === "damage" && event.side === 1,
+    );
+
+    expect(boostedDamage).toBeDefined();
+    expect(baselineDamage).toBeDefined();
+    // Spectral Thief steals the target's +2 Attack before the same-hit damage calculation.
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+    expect(boostedBattle.engine.state.sides[0].active[0]?.statStages.attack).toBe(2);
+    // The stolen positive boost is cleared from the target, so its raw stage returns to 0.
+    // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+    expect(boostedDefender.statStages.attack).toBe(0);
+    expect(boostedDamage!.amount).toBeGreaterThan(baselineDamage!.amount);
+
+    const statChangeEvents = boostedBattle.events.filter((event) => event.type === "stat-change");
+    expect(statChangeEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "stat-change",
+          side: 0,
+          stat: CORE_STAT_IDS.attack,
+          // Spectral Thief steals the defender's +2 Attack as a +2 attacker stage change.
+          // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+          stages: 2,
+          // The attacker starts at 0 raw Attack stages, so the stolen +2 resolves to currentStage 2.
+          // Derivation: 0 + 2 = 2
+          currentStage: 2,
+        }),
+        expect.objectContaining({
+          type: "stat-change",
+          side: 1,
+          stat: CORE_STAT_IDS.attack,
+          // The target's stolen +2 Attack is cleared as a matching -2 stage event.
+          // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+          stages: -2,
+          // The defender started at +2 raw Attack stages, so the clearing drop resolves to 0.
+          // Derivation: 2 - 2 = 0
+          currentStage: 0,
+        }),
+      ]),
+    );
   });
 });
 

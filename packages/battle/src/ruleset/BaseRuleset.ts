@@ -358,6 +358,10 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return context.rng.int(1, 100) <= finalAccuracy;
   }
 
+  executePreDamageMoveEffect(_context: MoveEffectContext): MoveEffectResult | null {
+    return null;
+  }
+
   executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
     const result: MoveEffectResult = {
       statusInflicted: null,

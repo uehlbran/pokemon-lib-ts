@@ -10,6 +10,7 @@
  *   - Spiky Shield (carry-forward from Gen 6): Contact attackers take 1/8 max HP damage.
  *   - Mat Block (carry-forward from Gen 6): Team protect, first turn only.
  *   - Crafty Shield (carry-forward from Gen 6): Blocks status moves targeting the side.
+ *   - Spectral Thief: steals the target's positive stat stages before damage.
  *   - Two-turn moves: Fly, Dig, Dive, Sky Attack, Solar Beam, Solar Blade, Phantom Force,
  *     Shadow Force, Bounce.
  *   - Drain effects: data-driven (Giga Drain 50%, Drain Kiss 75%, etc.), with Big Root
@@ -26,10 +27,12 @@ import {
   type MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
 import {
+  type BattleStat,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_IDS,
   CORE_MOVE_TARGET_IDS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
@@ -52,6 +55,55 @@ function createBaseResult(): MoveEffectResult {
     healAmount: 0,
     switchOut: false,
     messages: [],
+  };
+}
+
+const SPECTRAL_THIEF_STEALABLE_STATS = [
+  CORE_STAT_IDS.attack,
+  CORE_STAT_IDS.defense,
+  CORE_STAT_IDS.spAttack,
+  CORE_STAT_IDS.spDefense,
+  CORE_STAT_IDS.speed,
+  CORE_STAT_IDS.accuracy,
+  CORE_STAT_IDS.evasion,
+] as const satisfies readonly BattleStat[];
+
+function handleSpectralThiefPreDamage(ctx: MoveEffectContext): MoveEffectResult | null {
+  const statChanges: Array<{
+    target: typeof BATTLE_EFFECT_TARGETS.attacker | typeof BATTLE_EFFECT_TARGETS.defender;
+    stat: BattleStat;
+    stages: number;
+  }> = [];
+
+  // Spectral Thief steals the target's positive boosts before damage. The target's
+  // raw boost stages are cleared. The attacker keeps the repo's standard raw-stage
+  // representation so Simple is still applied on read by getEffectiveStatStage() /
+  // getEffectiveSpeed(), while Contrary is still a write-side inversion in the
+  // current engine because MoveEffectResult.statChanges do not route through the
+  // on-stat-change ability hook.
+  // Source: packages/gen7/data/moves.json -- spectral-thief description
+  // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
+  for (const stat of SPECTRAL_THIEF_STEALABLE_STATS) {
+    const defenderStages = ctx.defender.statStages[stat];
+    if (defenderStages <= 0) continue;
+
+    statChanges.push({
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      stat,
+      stages: ctx.attacker.ability === GEN7_ABILITY_IDS.contrary ? -defenderStages : defenderStages,
+    });
+    statChanges.push({
+      target: BATTLE_EFFECT_TARGETS.defender,
+      stat,
+      stages: -defenderStages,
+    });
+  }
+
+  if (statChanges.length === 0) return null;
+
+  return {
+    ...createBaseResult(),
+    statChanges,
   };
 }
 
@@ -761,6 +813,14 @@ export function executeGen7MoveEffect(
   // Source: Showdown data/moves.ts -- drain: [numerator, denominator] on drain moves
   const drainResult = handleDrainEffect(ctx);
   if (drainResult !== null) return drainResult;
+
+  return null;
+}
+
+export function executeGen7PreDamageMoveEffect(ctx: MoveEffectContext): MoveEffectResult | null {
+  if (ctx.move.id === GEN7_MOVE_IDS.spectralThief) {
+    return handleSpectralThiefPreDamage(ctx);
+  }
 
   return null;
 }

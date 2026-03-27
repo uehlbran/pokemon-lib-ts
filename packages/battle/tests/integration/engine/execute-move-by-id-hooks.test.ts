@@ -76,6 +76,7 @@ class RecursiveHookRuleset extends MockRuleset {
   readonly damageAbilityTriggers: AbilityTrigger[] = [];
   readonly itemTriggers: string[] = [];
   readonly recursiveEffectCalls: string[] = [];
+  readonly recursivePreDamageCalls: string[] = [];
 
   constructor(
     private readonly options: {
@@ -112,6 +113,13 @@ class RecursiveHookRuleset extends MockRuleset {
       ...base,
       recursiveMove: this.options.recursiveMoveId,
     };
+  }
+
+  override executePreDamageMoveEffect(context: MoveEffectContext): MoveEffectResult | null {
+    if (context.move.id === this.options.recursiveMoveId) {
+      this.recursivePreDamageCalls.push(context.move.id);
+    }
+    return null;
   }
 
   override calculateDamage(context: DamageContext) {
@@ -196,6 +204,8 @@ describe("BattleEngine.executeMoveById recursive hook parity", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    // Source: executeMove() parity contract for recursive moves.
+    expect(ruleset.recursivePreDamageCalls).toEqual([CORE_MOVE_IDS.tackle]);
     // Source: executeMove() parity contract for recursive moves.
     expect(ruleset.recursiveEffectCalls).toEqual([CORE_MOVE_IDS.tackle]);
     expect(ruleset.itemTriggers).toEqual(
