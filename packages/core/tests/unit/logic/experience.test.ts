@@ -5,6 +5,7 @@ import {
   calculateExpGainClassic,
   getExpForLevel,
   getExpToNextLevel,
+  normalizeExperienceGroup,
 } from "../../../src/logic/experience";
 
 const ALL_GROUPS: ExperienceGroup[] = [
@@ -79,6 +80,36 @@ describe("getExpForLevel", () => {
     expect(getExpForLevel("medium-slow", 2)).toBe(9);
     expect(getExpForLevel("slow", 2)).toBe(10);
     expect(getExpForLevel("fluctuating", 2)).toBe(4);
+  });
+
+  it("given the PokeAPI slow-then-very-fast alias, when querying EXP totals, then it normalizes to erratic", () => {
+    // Source: PokeAPI growth-rate data — slow-then-very-fast is the erratic formula.
+    expect(normalizeExperienceGroup("slow-then-very-fast")).toBe("erratic");
+    expect(getExpForLevel("slow-then-very-fast", 50)).toBe(getExpForLevel("erratic", 50));
+    expect(getExpForLevel("slow-then-very-fast", 100)).toBe(600_000);
+  });
+
+  it("given the PokeAPI medium alias, when querying EXP totals, then it normalizes to medium-fast", () => {
+    // Source: PokeAPI growth-rate naming — medium is the medium-fast curve.
+    expect(normalizeExperienceGroup("medium")).toBe("medium-fast");
+    expect(getExpForLevel("medium", 50)).toBe(getExpForLevel("medium-fast", 50));
+    expect(getExpForLevel("medium", 100)).toBe(1_000_000);
+  });
+
+  it("given the PokeAPI fast-then-very-slow alias, when querying EXP totals, then it normalizes to fluctuating", () => {
+    // Source: PokeAPI growth-rate data — fast-then-very-slow is the fluctuating formula.
+    expect(normalizeExperienceGroup("fast-then-very-slow")).toBe("fluctuating");
+    expect(getExpForLevel("fast-then-very-slow", 50)).toBe(getExpForLevel("fluctuating", 50));
+    expect(getExpForLevel("fast-then-very-slow", 100)).toBe(1_640_000);
+  });
+
+  it("given an unsupported growth-rate identifier, when querying EXP totals, then it throws clearly", () => {
+    expect(() => normalizeExperienceGroup("sideways-growth")).toThrow(
+      'Unsupported experience growth group "sideways-growth"',
+    );
+    expect(() => getExpForLevel("sideways-growth", 50)).toThrow(
+      'Unsupported experience growth group "sideways-growth"',
+    );
   });
 });
 

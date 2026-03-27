@@ -1,4 +1,30 @@
-import type { ExperienceGroup } from "../entities/experience";
+import type { ExperienceGroup, ExperienceGroupIdentifier } from "../entities/experience";
+
+/**
+ * Normalize imported growth-rate identifiers to the 6 canonical runtime groups.
+ *
+ * Source: PokeAPI growth-rate formulas/totals — `slow-then-very-fast` matches the erratic
+ * curve and `fast-then-very-slow` matches the fluctuating curve.
+ */
+export function normalizeExperienceGroup(group: string): ExperienceGroup {
+  switch (group) {
+    case "medium":
+      return "medium-fast";
+    case "slow-then-very-fast":
+      return "erratic";
+    case "fast-then-very-slow":
+      return "fluctuating";
+    case "erratic":
+    case "fast":
+    case "medium-fast":
+    case "medium-slow":
+    case "slow":
+    case "fluctuating":
+      return group;
+    default:
+      throw new Error(`Unsupported experience growth group "${group}"`);
+  }
+}
 
 /**
  * Calculate the total experience needed to reach a given level.
@@ -11,11 +37,12 @@ import type { ExperienceGroup } from "../entities/experience";
  * @param level - Target level (1-100)
  * @returns Total cumulative EXP needed to reach this level
  */
-export function getExpForLevel(group: ExperienceGroup, level: number): number {
+export function getExpForLevel(group: ExperienceGroupIdentifier | string, level: number): number {
   if (level <= 1) return 0;
   const n = level;
+  const normalizedGroup = normalizeExperienceGroup(group);
 
-  switch (group) {
+  switch (normalizedGroup) {
     case "erratic":
       if (n <= 50) return Math.floor((n ** 3 * (100 - n)) / 50);
       if (n <= 68) return Math.floor((n ** 3 * (150 - n)) / 100);

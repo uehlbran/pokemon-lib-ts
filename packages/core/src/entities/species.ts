@@ -1,4 +1,4 @@
-import type { ExperienceGroup } from "./experience";
+import type { ExperienceGroupIdentifier } from "./experience";
 import type { Gender } from "./gender";
 import type { StatBlock } from "./stats";
 import type { Generation, PokemonType } from "./types";
@@ -35,7 +35,7 @@ export interface PokemonSpeciesData {
   readonly baseExp: number;
 
   /** Experience growth group */
-  readonly expGroup: ExperienceGroup;
+  readonly expGroup: ExperienceGroupIdentifier;
 
   /** EV yield when defeated */
   readonly evYield: Partial<StatBlock>;

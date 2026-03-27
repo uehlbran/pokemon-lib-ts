@@ -15,6 +15,7 @@ import type { Generation, Move, Specie } from "@pkmn/data";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
 import { CORE_MOVE_EFFECT_TARGETS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { normalizeImportedGrowthRate } from "./growth-rate";
 
 // ---------------------------------------------------------------------------
 // Local interfaces for typed casts
@@ -115,16 +116,6 @@ interface SpeciesMetadata {
   baseFriendship: number;
 }
 
-const GROWTH_RATE_MAP: Record<string, string> = {
-  "medium-fast": "medium-fast",
-  "medium-slow": "medium-slow",
-  medium: "medium-fast",
-  fast: "fast",
-  slow: "slow",
-  erratic: "erratic",
-  fluctuating: "fluctuating",
-};
-
 const STAT_NAME_MAP: Record<string, string> = {
   hp: "hp",
   attack: "attack",
@@ -151,7 +142,7 @@ async function fetchSpeciesMetadata(dexNum: number): Promise<SpeciesMetadata> {
   return {
     catchRate: speciesData.capture_rate,
     baseExp: pokemonData.base_experience ?? 0,
-    expGroup: GROWTH_RATE_MAP[speciesData.growth_rate.name] ?? speciesData.growth_rate.name,
+    expGroup: normalizeImportedGrowthRate(speciesData.growth_rate.name),
     evYield,
     height: pokemonData.height / 10, // dm → m
     weight: pokemonData.weight / 10, // hg → kg

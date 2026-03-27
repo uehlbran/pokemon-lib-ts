@@ -1,10 +1,16 @@
-import { CORE_HAZARD_IDS, CORE_MOVE_IDS, getExpForLevel } from "@pokemon-lib-ts/core";
+import {
+  CORE_HAZARD_IDS,
+  CORE_MOVE_IDS,
+  DataManager,
+  getExpForLevel,
+  type ExperienceGroupIdentifier,
+} from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig, EntryHazardResult, ExpContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, ExpGainEvent, LevelUpEvent } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
-import { createMockDataManager } from "../../helpers/mock-data-manager";
+import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 import { createMockMoveSlot } from "../../helpers/move-slot";
 
@@ -24,12 +30,13 @@ function createAndStartExpTestEngine(overrides?: {
   team1?: ReturnType<typeof createTestPokemon>[];
   team2?: ReturnType<typeof createTestPokemon>[];
   ruleset?: MockRuleset;
+  dataManager?: DataManager;
   isWildBattle?: boolean;
   skipFaintSetup?: boolean;
 }): { engine: BattleEngine; ruleset: MockRuleset; events: BattleEvent[] } {
   const generation = overrides?.generation ?? overrides?.ruleset?.generation ?? 1;
   const ruleset = (overrides?.ruleset ?? new MockRuleset()).setGenerationForTest(generation);
-  const dataManager = createMockDataManager();
+  const dataManager = overrides?.dataManager ?? createMockDataManager();
   const events: BattleEvent[] = [];
 
   const team1 = overrides?.team1 ?? [
@@ -72,6 +79,29 @@ function createAndStartExpTestEngine(overrides?: {
   }
 
   return { engine, ruleset, events };
+}
+
+function createAliasGrowthRateDataManager(expGroup: ExperienceGroupIdentifier): DataManager {
+  const baseDataManager = createMockDataManager();
+  const dataManager = new DataManager();
+
+  dataManager.loadFromObjects({
+    pokemon: [
+      {
+        ...baseDataManager.getSpecies(MOCK_SPECIES_IDS.charizard),
+        expGroup,
+      },
+      baseDataManager.getSpecies(MOCK_SPECIES_IDS.blastoise),
+      baseDataManager.getSpecies(MOCK_SPECIES_IDS.pikachu),
+    ],
+    moves: baseDataManager.getAllMoves(),
+    abilities: baseDataManager.getAllAbilities(),
+    items: baseDataManager.getAllItems(),
+    natures: baseDataManager.getAllNatures(),
+    typeChart: baseDataManager.getTypeChart(),
+  });
+
+  return dataManager;
 }
 
 class PhazingHazardRuleset extends MockRuleset {
@@ -208,6 +238,36 @@ describe("BattleEngine - EXP gain on faint", () => {
       for (let i = 0; i < levelUpEvents.length - 1; i++) {
         expect(levelUpEvents[i + 1].newLevel).toBe(levelUpEvents[i].newLevel + 1);
       }
+    });
+
+    it("given a participant species still uses a shipped alias growth rate, when battle EXP triggers a level-up, then the runtime normalizes it", () => {
+      // Source: PokeAPI growth-rate naming — slow-then-very-fast is the erratic formula.
+      // Fixture EXP gain from Blastoise level 30 remains 1434 in this helper battle.
+      const expForLevel51 = getExpForLevel("erratic", 51);
+      const startExp = expForLevel51 - 1434;
+
+      const team1 = [
+        createTestPokemon(6, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+          experience: startExp,
+        }),
+      ];
+
+      const { engine, events } = createAndStartExpTestEngine({
+        team1,
+        dataManager: createAliasGrowthRateDataManager("slow-then-very-fast"),
+      });
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const levelUpEvent = events.find((event): event is LevelUpEvent => event.type === "level-up");
+      if (!levelUpEvent) throw new Error("Expected a level-up event to be emitted");
+      expect(levelUpEvent.newLevel).toBe(51);
+      expect(levelUpEvent.side).toBe(0);
+      expect(levelUpEvent.pokemon).toBe("charizard-1");
     });
   });
 
