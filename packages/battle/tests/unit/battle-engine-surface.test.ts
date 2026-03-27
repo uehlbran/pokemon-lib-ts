@@ -1,4 +1,5 @@
 import {
+  CORE_ABILITY_IDS,
   CORE_MOVE_IDS,
   type DataManager,
   type PokemonInstance,
@@ -36,6 +37,12 @@ class ValidatingRuleset extends MockRuleset {
     }
 
     return { valid: true, errors: [] };
+  }
+}
+
+class AbilityAwareMockRuleset extends MockRuleset {
+  override hasAbilities(): boolean {
+    return true;
   }
 }
 
@@ -224,9 +231,179 @@ describe("BattleEngine surface", () => {
       ruleset.setInvalidPokemon("charizard-1", [`Move "${CORE_MOVE_IDS.sketch}" is not legal`]);
 
       expect(() => createTestEngine({ ruleset })).toThrow(
-        `BattleEngine: pokemon "Charizard" failed validation: Move "${CORE_MOVE_IDS.sketch}" is not legal`,
+        `BattleEngine: battle validation failed: teams[0][0]: Move "${CORE_MOVE_IDS.sketch}" is not legal`,
       );
-      expect(ruleset.validationCalls).toEqual([{ speciesId: 6, pokemonUid: "charizard-1" }]);
+      expect(ruleset.validationCalls).toEqual([
+        { speciesId: 6, pokemonUid: "charizard-1" },
+        { speciesId: 9, pokemonUid: "blastoise-1" },
+      ]);
+    });
+  });
+
+  describe("validateConfig", () => {
+    it("given a valid singles setup, when validateConfig is called, then it returns a valid result", () => {
+      const ruleset = new MockRuleset();
+      const dataManager = createMockDataManager();
+      const team1 = [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)];
+      const team2 = [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)];
+
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [team1, team2],
+          seed: 12345,
+        },
+        ruleset,
+        dataManager,
+      );
+
+      expect(result).toEqual({ valid: true, errors: [] });
+    });
+
+    it("given an unknown species id, when validateConfig is called, then it returns a structured species error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [createTestPokemon(999, 50, { uid: "missing-species" })],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "species",
+        id: "999",
+        field: "teams[0][0].speciesId",
+        message: 'Species "999" is not available in the loaded data',
+      });
+    });
+
+    it("given an unknown move id, when validateConfig is called, then it returns a structured move error", () => {
+      const dataManager = createMockDataManager();
+      const missingMoveSlot = {
+        ...createMockMoveSlot(CORE_MOVE_IDS.tackle),
+        moveId: "missing-move",
+      };
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                moves: [missingMoveSlot],
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "move",
+        id: "missing-move",
+        field: "teams[0][0].moves[0].moveId",
+        message: 'Move "missing-move" is not available in Gen 1',
+      });
+    });
+
+    it("given an unknown held item id, when validateConfig is called, then it returns a structured item error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                heldItem: "missing-item",
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "item",
+        id: "missing-item",
+        field: "teams[0][0].heldItem",
+        message: 'Item "missing-item" is not available in Gen 1',
+      });
+    });
+
+    it("given abilities are supported but the ability id is unknown, when validateConfig is called, then it returns a structured ability error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 4,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                ability: "missing-ability",
+              }),
+            ],
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, {
+                ability: CORE_ABILITY_IDS.blaze,
+              }),
+            ],
+          ],
+          seed: 12345,
+        },
+        new AbilityAwareMockRuleset().setGenerationForTest(4),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "ability",
+        id: "missing-ability",
+        field: "teams[0][0].ability",
+        message: 'Ability "missing-ability" is not available in Gen 4',
+      });
+    });
+
+    it("given a side has no pokemon, when validateConfig is called, then it returns a structured team error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [[], [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)]],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "team",
+        id: "side-0",
+        field: "teams[0]",
+        message: "Side 0 must have at least 1 Pokemon for singles battles",
+      });
     });
   });
 
@@ -269,6 +446,109 @@ describe("BattleEngine surface", () => {
 
       expect(moves[0]?.disabled).toBe(true);
       expect(moves[0]?.disabledReason).toBe("No PP remaining");
+    });
+  });
+
+  describe("input isolation", () => {
+    it("given caller-owned team members, when a full turn resolves, then the original pokemon objects stay unchanged", () => {
+      const originalMoveSlot = createMockMoveSlot(CORE_MOVE_IDS.tackle);
+      const team1 = [
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 17,
+          moves: [originalMoveSlot],
+          calculatedStats: {
+            hp: 17,
+            attack: 17,
+            defense: 17,
+            spAttack: 17,
+            spDefense: 17,
+            speed: 17,
+          },
+        }),
+      ];
+
+      const originalPokemon = team1[0]!;
+      const originalMoves = structuredClone(originalPokemon.moves);
+      const originalCalculatedStats = { ...originalPokemon.calculatedStats };
+
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(originalPokemon.currentHp).toBe(17);
+      expect(originalPokemon.moves).toEqual(originalMoves);
+      expect(originalPokemon.calculatedStats).toEqual(originalCalculatedStats);
+      expect(originalPokemon.timesAttacked).toBeUndefined();
+      expect(originalPokemon.rageFistLastHitTurns).toBeUndefined();
+    });
+
+    it("given a voluntary switch path, when the battle state changes, then the original team objects stay unchanged", () => {
+      const originalCharizardMove = createMockMoveSlot(CORE_MOVE_IDS.tackle);
+      const originalPikachuMove = createMockMoveSlot(CORE_MOVE_IDS.tackle);
+      const team1 = [
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 21,
+          moves: [originalCharizardMove],
+        }),
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          currentHp: 11,
+          moves: [originalPikachuMove],
+        }),
+      ];
+
+      const originalTeamSnapshot = structuredClone(team1);
+
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      expect(team1).toEqual(originalTeamSnapshot);
+      expect(engine.getTeam(0)[0]).not.toBe(team1[0]);
+      expect(engine.getTeam(0)[1]).not.toBe(team1[1]);
+    });
+
+    it("given a pokemon takes damage and later switches out, when inspecting battle state, then the internal copy preserves that in-battle state without mutating the caller object", () => {
+      const team1 = [
+        createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          currentHp: 33,
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+        }),
+        createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50, {
+          uid: "pikachu-1",
+          nickname: "Pikachu",
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+        }),
+      ];
+
+      const originalCharizard = team1[0]!;
+      const { engine } = createTestEngine({ team1 });
+      engine.start();
+
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const damagedClone = engine.getTeam(0)[0]!;
+      expect(damagedClone.currentHp).toBeLessThan(damagedClone.calculatedStats.hp);
+
+      engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+      const benchedClone = engine.getTeam(0)[0]!;
+      expect(benchedClone.uid).toBe("charizard-1");
+      expect(benchedClone.currentHp).toBe(damagedClone.currentHp);
+      expect(originalCharizard.currentHp).toBe(33);
     });
   });
 

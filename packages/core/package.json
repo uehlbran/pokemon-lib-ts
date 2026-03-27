@@ -18,6 +18,7 @@
   "scripts": {
     "build": "tsup",
     "test": "npm run test:unit && npm run test:integration",
+    "test:invariants": "npx vitest run tests/unit/invariants/foundation-hardening.invariant.test.ts",
     "test:unit": "node ../../scripts/run-package-tier-tests.mjs unit",
     "test:integration": "node ../../scripts/run-package-tier-tests.mjs integration",
     "test:smoke": "node ../../scripts/run-package-tier-tests.mjs smoke",

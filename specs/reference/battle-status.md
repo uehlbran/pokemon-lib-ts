@@ -1,8 +1,13 @@
 # Battle Implementation Status
 
 **Last updated:** 2026-03-27
-**Overall estimate:** ~100% complete for singles battles (EXP gain + catch mechanics merged)
+**Overall estimate:** Feature-complete for singles battles, but this page is a summary, not a correctness proof.
 **Architecture:** Pluggable gen-agnostic engine. Delegates ALL gen-specific behavior to GenerationRuleset. Depends only on @pokemon-lib-ts/core.
+
+Battle correctness claims now rely on explicit seam tests, especially:
+- `packages/battle/tests/unit/invariants/foundation-hardening.invariant.test.ts`
+- `packages/battle/tests/unit/battle-engine-surface.test.ts`
+- `packages/battle/tests/integration/engine/exp-gain.test.ts`
 
 ---
 
@@ -14,6 +19,7 @@
 - `serialize()`/`deserialize()` — full JSON-safe state serialization
 - Event emitter system (`on`/`off`/`getEventLog`/`emit`)
 - Factory `fromGeneration()` via GenerationRegistry
+- Preflight validation now rejects invalid species, moves, held items, abilities, and malformed singles setups before battle state initialization
 
 ### End-of-Turn Pipeline Helper (`packages/battle/src/engine/BattleEndOfTurnPipeline.ts` — 646 lines)
 - Extracted residual-effect dispatch order from `BattleEngine`
@@ -32,6 +38,7 @@
 ### BattleState, BattleSide, ActivePokemon
 - `BattlePhase` (8 phases), `BattleFormat` (4 formats — singles only implemented), `WeatherState`, `TerrainState`, `TurnRecord`
 - All side/active state: volatiles, stat stages, forced moves, two-turn states, gimmicks, encode/encore, disable, protect counters, future attacks, screens, hazard layers
+- Constructor/runtime isolation now keeps caller-owned `PokemonInstance` inputs out of mutable battle state; battle mutations stay on internal clones
 - Direct helper invariant coverage now pins malformed battle-wrapper rejection in `packages/battle/tests/unit/utils/battle-helpers.test.ts`, including:
   - invalid `createOnFieldPokemon()` team slots / type lists / persisted Mega-Tera state
   - invalid `createBattleSide()` active-team mismatches, duplicates, and faint-count bounds
@@ -96,6 +103,12 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
   - rejects tampered active/team UID mismatches and contradictory singles active-slot shapes
 - Tests: `deserialize.test.ts` (expanded direct restore / malformed-save coverage)
 
+### Foundation Hardening Invariants
+- `tests/unit/invariants/foundation-hardening.invariant.test.ts`
+- Explicit seam checks for:
+  - battle preflight validation
+  - caller-input non-mutation across construction, action, and switch flows
+
 ---
 
 ## STUBBED
@@ -111,6 +124,8 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 | Doubles/Triples/Rotation formats | Massive separate initiative; BattleFormat type exists |
 | Greedy AI controller | Spec'd but deferred; RandomAI is sufficient for current gens |
 | Minimax AI controller | Spec'd but deferred |
+
+This page no longer claims "no missing issues" for singles correctness. New seam regressions are expected to be caught by invariant tests and CI, not by this summary doc.
 
 ---
 

@@ -3,7 +3,6 @@ import type {
   DataManager,
   ItemData,
   MoveData,
-  PokemonInstance,
   PokemonSpeciesData,
   PrimaryStatus,
   SemiInvulnerableVolatile,
@@ -32,7 +31,14 @@ import {
   BATTLE_ITEM_EFFECT_VALUES,
 } from "../constants/effect-protocol";
 import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
-import type { AvailableMove, BattleConfig, DamageResult, MoveEffectResult } from "../context/types";
+import type {
+  AvailableMove,
+  BattleConfig,
+  BattleValidationIssue,
+  BattleValidationResult,
+  DamageResult,
+  MoveEffectResult,
+} from "../context/types";
 import type { BattleAction, ItemAction, MoveAction, RunAction } from "../events/BattleAction";
 import { isMoveLikeAction } from "../events/BattleAction";
 import type { BattleEvent, BattleEventEmitter, BattleEventListener } from "../events/BattleEvent";
@@ -198,16 +204,149 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
-  private validateBattlePokemon(pokemon: PokemonInstance, species: PokemonSpeciesData): void {
-    const validation = this.ruleset.validatePokemon(pokemon, species);
-    if (validation.valid) {
-      return;
+  private static createBattleValidationIssue(
+    entity: BattleValidationIssue["entity"],
+    id: string,
+    field: string,
+    message: string,
+  ): BattleValidationIssue {
+    return { entity, id, field, message };
+  }
+
+  private static shouldSkipRulesetValidationMessage(message: string): boolean {
+    return (
+      message.includes("is not available in Gen ") ||
+      message === "Pokemon ability is required" ||
+      message === "Pokemon move slot is empty"
+    );
+  }
+
+  private static formatBattleValidationErrors(errors: readonly BattleValidationIssue[]): string {
+    return errors.map((issue) => `${issue.field}: ${issue.message}`).join("; ");
+  }
+
+  static validateConfig(
+    config: BattleConfig,
+    ruleset: GenerationRuleset,
+    dataManager: DataManager,
+  ): BattleValidationResult {
+    const errors: BattleValidationIssue[] = [];
+
+    for (const [sideIndex, team] of config.teams.entries()) {
+      const teamField = `teams[${sideIndex}]`;
+      if (team.length < 1) {
+        errors.push(
+          BattleEngine.createBattleValidationIssue(
+            "team",
+            `side-${sideIndex}`,
+            teamField,
+            `Side ${sideIndex} must have at least 1 Pokemon for singles battles`,
+          ),
+        );
+        continue;
+      }
+
+      for (const [teamIndex, pokemon] of team.entries()) {
+        const pokemonField = `${teamField}[${teamIndex}]`;
+
+        let species: PokemonSpeciesData | null = null;
+        try {
+          species = dataManager.getSpecies(pokemon.speciesId);
+        } catch {
+          errors.push(
+            BattleEngine.createBattleValidationIssue(
+              "species",
+              String(pokemon.speciesId),
+              `${pokemonField}.speciesId`,
+              `Species "${pokemon.speciesId}" is not available in the loaded data`,
+            ),
+          );
+          continue;
+        }
+
+        for (const [moveIndex, moveSlot] of pokemon.moves.entries()) {
+          const moveField = `${pokemonField}.moves[${moveIndex}].moveId`;
+          if (!moveSlot.moveId) {
+            errors.push(
+              BattleEngine.createBattleValidationIssue(
+                "move",
+                `${pokemon.uid}:move-${moveIndex}`,
+                moveField,
+                `Move slot ${moveIndex + 1} is empty`,
+              ),
+            );
+            continue;
+          }
+
+          try {
+            dataManager.getMove(moveSlot.moveId);
+          } catch {
+            errors.push(
+              BattleEngine.createBattleValidationIssue(
+                "move",
+                moveSlot.moveId,
+                moveField,
+                `Move "${moveSlot.moveId}" is not available in Gen ${config.generation}`,
+              ),
+            );
+          }
+        }
+
+        if (pokemon.heldItem) {
+          try {
+            dataManager.getItem(pokemon.heldItem);
+          } catch {
+            errors.push(
+              BattleEngine.createBattleValidationIssue(
+                "item",
+                pokemon.heldItem,
+                `${pokemonField}.heldItem`,
+                `Item "${pokemon.heldItem}" is not available in Gen ${config.generation}`,
+              ),
+            );
+          }
+        }
+
+        if (ruleset.hasAbilities()) {
+          if (!pokemon.ability) {
+            errors.push(
+              BattleEngine.createBattleValidationIssue(
+                "ability",
+                pokemon.uid,
+                `${pokemonField}.ability`,
+                "Pokemon ability is required",
+              ),
+            );
+          } else {
+            try {
+              dataManager.getAbility(pokemon.ability);
+            } catch {
+              errors.push(
+                BattleEngine.createBattleValidationIssue(
+                  "ability",
+                  pokemon.ability,
+                  `${pokemonField}.ability`,
+                  `Ability "${pokemon.ability}" is not available in Gen ${config.generation}`,
+                ),
+              );
+            }
+          }
+        }
+
+        const validation = ruleset.validatePokemon(pokemon, species);
+        for (const message of validation.errors) {
+          if (BattleEngine.shouldSkipRulesetValidationMessage(message)) {
+            continue;
+          }
+
+          errors.push(
+            BattleEngine.createBattleValidationIssue("pokemon", pokemon.uid, pokemonField, message),
+          );
+        }
+      }
     }
 
-    const pokemonName = pokemon.nickname ?? species.displayName;
-    const errorText =
-      validation.errors.length > 0 ? validation.errors.join("; ") : "Unknown validation error";
-    throw new Error(`BattleEngine: pokemon "${pokemonName}" failed validation: ${errorText}`);
+    return { valid: errors.length === 0, errors };
   }
 
   private resetBattleGimmicks(): void {
@@ -550,6 +689,12 @@ export class BattleEngine implements BattleEventEmitter {
   constructor(config: BattleConfig, ruleset: GenerationRuleset, dataManager: DataManager) {
     BattleEngine.assertRulesetGenerationMatches("BattleEngine", config.generation, ruleset);
     BattleEngine.assertSinglesOnlyFormat("BattleEngine", config.format);
+    const battleValidation = BattleEngine.validateConfig(config, ruleset, dataManager);
+    if (!battleValidation.valid) {
+      throw new Error(
+        `BattleEngine: battle validation failed: ${BattleEngine.formatBattleValidationErrors(battleValidation.errors)}`,
+      );
+    }
     this.ruleset = ruleset;
     this.dataManager = dataManager;
 
@@ -575,8 +720,8 @@ export class BattleEngine implements BattleEventEmitter {
       ended: false,
       winner: null,
     };
-
-    // Calculate initial stats for all pokemon
+    // Calculate initial stats for all pokemon after preflight validation has confirmed
+    // the input teams can be safely cloned and initialized.
     for (const side of this.state.sides) {
       for (const pokemon of side.team) {
         const species = this.dataManager.getSpecies(pokemon.speciesId);
@@ -586,7 +731,6 @@ export class BattleEngine implements BattleEventEmitter {
               `Validate your team before starting a battle.`,
           );
         }
-        this.validateBattlePokemon(pokemon, species);
         pokemon.calculatedStats = this.ruleset.calculateStats(pokemon, species);
         pokemon.currentHp = pokemon.calculatedStats.hp;
         // Reset per-battle counters at battle initialization (NOT on switch-in).

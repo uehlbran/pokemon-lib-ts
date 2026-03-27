@@ -1032,6 +1032,24 @@ export interface ValidationResult {
   readonly errors: readonly string[];
 }
 
+export interface BattleValidationIssue {
+  /** The entity category that failed validation. */
+  readonly entity: "battle" | "team" | "pokemon" | "species" | "move" | "item" | "ability";
+  /** Identifier for the failing entity when available. */
+  readonly id: string;
+  /** Path-like field label for tooling/debugging. */
+  readonly field: string;
+  /** Human-readable validation message. */
+  readonly message: string;
+}
+
+export interface BattleValidationResult {
+  /** `true` when no preflight validation issues were found. */
+  readonly valid: boolean;
+  /** Structured hard errors that block battle initialization. */
+  readonly errors: readonly BattleValidationIssue[];
+}
+
 /**
  * Result of applying weather damage to a single Pokémon at end of turn.
  * Returned by `GenerationRuleset.applyWeatherEffects()`.

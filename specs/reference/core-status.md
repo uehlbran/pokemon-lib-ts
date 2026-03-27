@@ -1,8 +1,13 @@
 # Core Implementation Status
 
-**Last updated:** 2026-03-21
-**Overall estimate:** ~100% complete (all tracked items DONE after PR #235)
+**Last updated:** 2026-03-27
+**Overall estimate:** Feature-complete for the current core surface, but status docs are not proof of correctness.
 **Architecture:** Zero runtime dependencies. Foundation for all other packages. Implements shared logic used by all gen rulesets.
+
+Status pages are summary documents only. The real correctness bar for core seam behavior is the invariant/regression suite in:
+- `packages/core/tests/unit/invariants/foundation-hardening.invariant.test.ts`
+- `packages/core/tests/unit/data/data-manager.test.ts`
+- `packages/core/tests/unit/logic/experience.test.ts`
 
 ---
 
@@ -40,6 +45,10 @@
 
 ### EXP Curves (`packages/core/src/logic/experience.ts`)
 - All 6 growth rates: medium-fast, medium-slow, fast, slow, erratic, fluctuating
+- Runtime normalization now hardens importer aliases:
+  - `medium` -> `medium-fast`
+  - `slow-then-very-fast` -> `erratic`
+  - `fast-then-very-slow` -> `fluctuating`
 - `getExpForLevel`, `getExpToNextLevel`, `calculateExpGain` (Gen 5+), `calculateExpGainClassic` (Gen 1-4)
 - Level 100 totals verified; monotonicity property test
 - Tests: `tests/logic/experience.test.ts` (20 tests)
@@ -73,7 +82,14 @@
 ### DataManager (`packages/core/src/data/data-manager.ts`)
 - `DataManager`, `DataPaths`, `RawDataObjects`
 - `loadFromObjects` (sync), typed accessors for all entity types, collection accessors
+- Replacement semantics are now explicitly pinned: reloads replace prior registries/type chart and reject partial state on failed reloads
 - Tests: `tests/data/data-manager.test.ts` (26 tests)
+
+### Foundation Hardening Invariants
+- `tests/unit/invariants/foundation-hardening.invariant.test.ts`
+- Explicit seam checks for:
+  - DataManager replacement semantics
+  - runtime progression identifier hardening
 
 ### SeededRandom (`packages/core/src/prng/seeded-random.ts`)
 - Mulberry32 PRNG
@@ -108,8 +124,10 @@ None.
 
 ## MISSING / DEFERRED
 
-None for current scope. Deferred features:
+No major missing modules for current scope, but the old "100% complete" claim was too strong.
+Deferred / caveated:
 - Gen 1-2 specific stat formulas live in gen1/gen2 packages, not core (by design)
+- Status docs summarize scope and shipped modules; seam behavior is guarded by tests, not by this page
 
 ---
 

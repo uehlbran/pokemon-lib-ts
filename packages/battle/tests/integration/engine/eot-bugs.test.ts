@@ -19,6 +19,8 @@ import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager, MOCK_SPECIES_IDS } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
 
+const THICK_FAT_ABILITY_ID = "thick-fat";
+
 // ---------------------------------------------------------------------------
 // Bug #484: Speed Boost (and other EoT abilities) fire multiple times per turn
 // ---------------------------------------------------------------------------
@@ -98,7 +100,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
       createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
-        ability: CORE_ABILITY_IDS.thickFat,
+        ability: THICK_FAT_ABILITY_ID,
         calculatedStats: {
           hp: 200,
           attack: 100,
@@ -195,7 +197,7 @@ describe("Bug #484 — EoT ability deduplication", () => {
       createTestPokemon(MOCK_SPECIES_IDS.blastoise, 50, {
         uid: "snorlax-1",
         nickname: "Snorlax",
-        ability: CORE_ABILITY_IDS.thickFat,
+        ability: THICK_FAT_ABILITY_ID,
         calculatedStats: {
           hp: 200,
           attack: 100,

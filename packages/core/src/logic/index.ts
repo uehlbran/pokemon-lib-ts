@@ -28,6 +28,7 @@ export {
   calculateExpGainClassic,
   getExpForLevel,
   getExpToNextLevel,
+  normalizeExperienceGroup,
 } from "./experience";
 export {
   createFriendship,

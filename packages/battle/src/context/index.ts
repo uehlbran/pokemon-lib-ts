@@ -10,6 +10,8 @@ export type {
   BagItemResult,
   BattleConfig,
   BattleGimmick,
+  BattleValidationIssue,
+  BattleValidationResult,
   CatchResult,
   CritContext,
   CritContextFor,

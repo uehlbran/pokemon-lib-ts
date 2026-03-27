@@ -15,6 +15,7 @@ import type { Generation, Move, Specie } from "@pkmn/data";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
 import { CORE_MOVE_EFFECT_TARGETS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { normalizeImportedGrowthRate } from "./growth-rate";
 
 // ---------------------------------------------------------------------------
 // Local interfaces for typed casts
@@ -59,7 +60,15 @@ const DEX_RANGES: Record<number, { start: number; end: number }> = {
   9: { start: 1, end: 1025 },
 };
 
-const dexRange = DEX_RANGES[GEN_NUM];
+function getDexRange(genNum: number): { start: number; end: number } {
+  const range = DEX_RANGES[genNum];
+  if (!range) {
+    throw new Error(`No dex range configured for generation ${genNum}`);
+  }
+  return range;
+}
+
+const dexRange = getDexRange(GEN_NUM);
 const OUTPUT_DIR = path.resolve(
   import.meta.dirname ?? __dirname,
   `../../../packages/gen${GEN_NUM}/data`,
@@ -115,16 +124,6 @@ interface SpeciesMetadata {
   baseFriendship: number;
 }
 
-const GROWTH_RATE_MAP: Record<string, string> = {
-  "medium-fast": "medium-fast",
-  "medium-slow": "medium-slow",
-  medium: "medium-fast",
-  fast: "fast",
-  slow: "slow",
-  erratic: "erratic",
-  fluctuating: "fluctuating",
-};
-
 const STAT_NAME_MAP: Record<string, string> = {
   hp: "hp",
   attack: "attack",
@@ -151,12 +150,23 @@ async function fetchSpeciesMetadata(dexNum: number): Promise<SpeciesMetadata> {
   return {
     catchRate: speciesData.capture_rate,
     baseExp: pokemonData.base_experience ?? 0,
-    expGroup: GROWTH_RATE_MAP[speciesData.growth_rate.name] ?? speciesData.growth_rate.name,
+    expGroup: normalizeImportedGrowthRate(speciesData.growth_rate.name),
     evYield,
     height: pokemonData.height / 10, // dm → m
     weight: pokemonData.weight / 10, // hg → kg
     baseFriendship: speciesData.base_happiness ?? 70,
   };
+}
+
+function fractionToAmount(
+  fraction: readonly [number, number] | readonly number[],
+  source: string,
+): number {
+  const [num, den] = fraction;
+  if (num === undefined || den === undefined) {
+    throw new Error(`Invalid ${source} ratio in importer data`);
+  }
+  return num / den;
 }
 
 // ---------------------------------------------------------------------------
@@ -458,20 +468,17 @@ function buildMoveEffect(move: Move): object | null {
 
   // Heal moves
   if (move.heal) {
-    const [num, den] = move.heal;
-    return { type: "heal", amount: num / den };
+    return { type: "heal", amount: fractionToAmount(move.heal, `${move.id} heal`) };
   }
 
   // Drain moves
   if (move.drain) {
-    const [num, den] = move.drain;
-    effects.push({ type: "drain", amount: num / den });
+    effects.push({ type: "drain", amount: fractionToAmount(move.drain, `${move.id} drain`) });
   }
 
   // Recoil moves
   if (move.recoil) {
-    const [num, den] = move.recoil;
-    effects.push({ type: "recoil", amount: num / den });
+    effects.push({ type: "recoil", amount: fractionToAmount(move.recoil, `${move.id} recoil`) });
   }
 
   // Weather moves
@@ -677,7 +684,8 @@ function buildMoveEffect(move: Move): object | null {
     return { type: "multi", effects };
   }
   if (effects.length === 1) {
-    return effects[0];
+    const [singleEffect] = effects;
+    return singleEffect ?? null;
   }
 
   return null;
@@ -856,7 +864,7 @@ async function buildPokemonData() {
       // Build "to" links
       const to: EvolutionLink[] = [];
       if (hasEvos) {
-        for (const evoName of species.evos) {
+        for (const evoName of species.evos ?? []) {
           const evoSpecies = gen.species.get(evoName);
           if (evoSpecies?.exists && evoSpecies.num <= dexRange.end) {
             to.push(buildEvolutionLink(evoSpecies, gen));
@@ -1034,27 +1042,37 @@ function buildTypeChart() {
     ],
   };
 
-  // Gen 3-5 same as Gen 2
-  for (let g = 3; g <= 5; g++) GEN_TYPES[g] = GEN_TYPES[2];
-  // Gen 6-9 add fairy
-  for (let g = 6; g <= 9; g++) GEN_TYPES[g] = [...GEN_TYPES[2], "fairy"];
+  const gen2Types = GEN_TYPES[2];
+  if (!gen2Types) {
+    throw new Error("Expected Gen 2 type list to exist for importer generation setup");
+  }
 
-  const _validTypes = new Set(GEN_TYPES[GEN_NUM]);
+  // Gen 3-5 same as Gen 2
+  for (let g = 3; g <= 5; g++) GEN_TYPES[g] = gen2Types;
+  // Gen 6-9 add fairy
+  for (let g = 6; g <= 9; g++) GEN_TYPES[g] = [...gen2Types, "fairy"];
+
+  const genTypes = GEN_TYPES[GEN_NUM];
+  if (!genTypes) {
+    throw new Error(`No type list configured for generation ${GEN_NUM}`);
+  }
+
+  const _validTypes = new Set(genTypes);
   const chart: Record<string, Record<string, number>> = {};
 
-  for (const attackType of GEN_TYPES[GEN_NUM]) {
+  for (const attackType of genTypes) {
     chart[attackType] = {};
     const typeData = gen.types.get(attackType);
     if (!typeData?.exists) {
       console.warn(`  Warning: Type "${attackType}" not found`);
       // Fill with neutral
-      for (const defType of GEN_TYPES[GEN_NUM]) {
+      for (const defType of genTypes) {
         chart[attackType][defType] = 1;
       }
       continue;
     }
 
-    for (const defType of GEN_TYPES[GEN_NUM]) {
+    for (const defType of genTypes) {
       const defTypeData = gen.types.get(defType);
       if (!defTypeData?.exists) {
         chart[attackType][defType] = 1;
