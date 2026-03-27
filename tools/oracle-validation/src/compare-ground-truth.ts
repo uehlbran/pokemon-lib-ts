@@ -102,6 +102,9 @@ function makeSkip(reason: string): SuiteResult {
     skipped: 1,
     failures: [],
     notes: [],
+    matchedKnownDisagreements: [],
+    staleDisagreements: [],
+    oracleChecks: [],
     skipReason: reason,
   };
 }
@@ -282,5 +285,8 @@ export function runGroundTruthSuite(
       `Dataset: tools/oracle-validation/data/ground-truth/gen1-ground-truth.json`,
       "Gen 1 suite uses cartridge-authoritative data; later Gen 1-4 suites should treat Showdown as a differential cross-check.",
     ],
+    matchedKnownDisagreements: [],
+    staleDisagreements: [],
+    oracleChecks: [],
   };
 }

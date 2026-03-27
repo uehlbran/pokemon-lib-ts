@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "gen2:data:typeChart:electric-to-steel:effectiveness",
+    "gen": 2,
+    "suite": "data",
+    "description": "Electric attacking Steel stays 0.5x on Gen 2 cartridge, but the current oracle reports neutral damage.",
+    "ourValue": 0.5,
+    "oracleValue": 1,
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokecrystal data/types/type_matchups.asm",
+    "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/types/type_matchups.asm",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-27"
+  },
+  {
+    "id": "gen2:data:typeChart:water-to-steel:effectiveness",
+    "gen": 2,
+    "suite": "data",
+    "description": "Water attacking Steel stays 0.5x on Gen 2 cartridge, but the current oracle reports neutral damage.",
+    "ourValue": 0.5,
+    "oracleValue": 1,
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokecrystal data/types/type_matchups.asm",
+    "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/types/type_matchups.asm",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-27"
+  }
+]

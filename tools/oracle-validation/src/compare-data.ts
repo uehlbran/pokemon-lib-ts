@@ -2,6 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
+import {
+  type KnownDisagreement,
+  type OracleCheck,
+  resolveOracleChecks,
+} from "./disagreement-registry.js";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
@@ -22,6 +27,7 @@ interface OracleSpeciesRecord {
 }
 
 const ORACLE_GENERATIONS = new Generations(Dex);
+const DATA_SUITE_NAME = "data";
 
 function normalizeSpeciesId(id: string): string {
   return id.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
@@ -39,9 +45,22 @@ function normalizeOracleSpecies(generation: ImplementedGeneration): OracleSpecie
     }));
 }
 
-export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
+function buildCheckId(
+  generation: ImplementedGeneration,
+  scope: string,
+  target: string,
+  field: string,
+): string {
+  return `gen${generation.gen}:${DATA_SUITE_NAME}:${scope}:${target}:${field}`;
+}
+
+export function runDataSuite(
+  generation: ImplementedGeneration,
+  knownDisagreements: readonly KnownDisagreement[] = [],
+): SuiteResult {
   const failures: string[] = [];
   const notes: string[] = [];
+  const oracleChecks: OracleCheck[] = [];
 
   const localPokemon = JSON.parse(
     readFileSync(join(generation.dataDir, "pokemon.json"), "utf8"),
@@ -60,26 +79,36 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
     .filter((type) => type !== "???");
   const oracleFormCount = [...oracle.species].length - oracleSpecies.length;
 
-  if (localPokemon.length !== oracleSpecies.length) {
-    failures.push(
-      `Gen ${generation.gen}: species count mismatch (ours=${localPokemon.length}, oracle=${oracleSpecies.length})`,
-    );
-  }
+  oracleChecks.push({
+    id: buildCheckId(generation, "species", "base", "count"),
+    suite: DATA_SUITE_NAME,
+    description: "Base-species count matches the oracle base-species count",
+    ourValue: localPokemon.length,
+    oracleValue: oracleSpecies.length,
+  });
 
   for (const species of localPokemon) {
     const oracleSpeciesEntry = oracleSpeciesById.get(normalizeSpeciesId(species.name));
+    oracleChecks.push({
+      id: buildCheckId(generation, "species", normalizeSpeciesId(species.name), "exists"),
+      suite: DATA_SUITE_NAME,
+      description: `Species ${species.name} exists in the oracle base-species dataset`,
+      ourValue: true,
+      oracleValue: oracleSpeciesEntry !== undefined,
+    });
     if (!oracleSpeciesEntry) {
-      failures.push(`Gen ${generation.gen}: species ${species.name} missing from oracle data`);
       continue;
     }
 
     const localTypes = [...species.types];
     const oracleTypes = [...oracleSpeciesEntry.types];
-    if (localTypes.join(",") !== oracleTypes.join(",")) {
-      failures.push(
-        `Gen ${generation.gen}: species ${species.name} type mismatch (ours=${localTypes.join("/")}, oracle=${oracleTypes.join("/")})`,
-      );
-    }
+    oracleChecks.push({
+      id: buildCheckId(generation, "species", normalizeSpeciesId(species.name), "types"),
+      suite: DATA_SUITE_NAME,
+      description: `Species ${species.name} types match the oracle`,
+      ourValue: localTypes,
+      oracleValue: oracleTypes,
+    });
   }
 
   const localTypes = Object.keys(localTypeChart).sort();
@@ -105,9 +134,39 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
       const ours = localTypeChart[attacker]?.[defender];
       if (typeof ours !== "number") {
         failures.push(`Gen ${generation.gen}: missing type-chart entry ${attacker} -> ${defender}`);
+        continue;
       }
+
+      const oracleAttacker = oracle.types.get(attacker);
+      const oracleDefender = oracle.types.get(defender);
+      if (!oracleAttacker?.exists || !oracleDefender?.exists) {
+        failures.push(
+          `Gen ${generation.gen}: oracle missing type metadata for ${attacker} -> ${defender}`,
+        );
+        continue;
+      }
+      const oracleValue = oracleAttacker.effectiveness[oracleDefender.name];
+
+      oracleChecks.push({
+        id: buildCheckId(generation, "typeChart", `${attacker}-to-${defender}`, "effectiveness"),
+        suite: DATA_SUITE_NAME,
+        description: `Type effectiveness ${attacker} -> ${defender} matches the oracle`,
+        ourValue: ours,
+        oracleValue,
+      });
     }
   }
+
+  const resolvedOracleChecks = resolveOracleChecks(oracleChecks, knownDisagreements);
+  failures.push(...resolvedOracleChecks.failures);
+  notes.push(
+    ...resolvedOracleChecks.matchedKnownDisagreements.map(
+      (id) => `Known disagreement matched registry: ${id}`,
+    ),
+  );
+  notes.push(
+    ...resolvedOracleChecks.staleDisagreements.map((id) => `Stale disagreement detected: ${id}`),
+  );
 
   return {
     status: failures.length === 0 ? "pass" : "fail",
@@ -116,5 +175,8 @@ export function runDataSuite(generation: ImplementedGeneration): SuiteResult {
     skipped: 0,
     failures,
     notes,
+    matchedKnownDisagreements: resolvedOracleChecks.matchedKnownDisagreements,
+    staleDisagreements: resolvedOracleChecks.staleDisagreements,
+    oracleChecks,
   };
 }
