@@ -4,6 +4,8 @@ This directory contains reference documents created during audit and spec-verifi
 
 ## Contents
 
+- `testing-status.md` — behavioral confidence, compliance rollout, and mutation-target status
+- `architecture-confidence-status.md` — branch-density and public-surface hotspot inventory
 - `gen1-ground-truth.md` — Verified Gen 1 mechanics findings (all 28 findings applied via PR #30)
 - `gen2-ground-truth.md` — Verified Gen 2 mechanics findings (all 32 findings applied via PR #29)
 - `gen1-spec-issues.md` — Gen 1 spec issues found during audit (documents what was found and fixed)

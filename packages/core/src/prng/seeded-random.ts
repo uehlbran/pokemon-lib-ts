@@ -57,6 +57,9 @@ export class SeededRandom {
    * @throws If `array` is empty (undefined access — validate length before calling).
    */
   pick<T>(array: readonly T[]): T {
+    if (array.length === 0) {
+      throw new Error("Cannot pick from an empty array");
+    }
     return array[Math.floor(this.next() * array.length)] as T;
   }
 

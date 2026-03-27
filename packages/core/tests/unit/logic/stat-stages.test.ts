@@ -29,17 +29,20 @@ const EXPECTED_STAT_STAGE_MULTIPLIERS = [
   { stage: 6, expected: 4.0 },
 ] as const;
 
-// Source: pokeemerald accuracy/evasion stage ratios: positive stages use (3 + stage) / 3,
-// negative stages use 3 / (3 - stage).
+// Source: pokeemerald sAccuracyStageRatios / pokecrystal AccuracyLevelMultipliers.
+// The exported helper should mirror the authoritative lookup table, not the older
+// simplified 3-based approximation.
 const EXPECTED_ACCURACY_EVASION_MULTIPLIERS = [
   { stage: -6, expected: 3 / 9 },
   { stage: -3, expected: 0.5 },
   { stage: -2, expected: 0.6 },
   { stage: -1, expected: 0.75 },
   { stage: 0, expected: 1.0 },
-  { stage: 1, expected: 4 / 3 },
-  { stage: 2, expected: 5 / 3 },
+  { stage: 1, expected: 133 / 100 },
+  { stage: 2, expected: 166 / 100 },
   { stage: 3, expected: 2.0 },
+  { stage: 4, expected: 233 / 100 },
+  { stage: 5, expected: 133 / 50 },
   { stage: 6, expected: 3.0 },
 ] as const;
 
@@ -98,6 +101,14 @@ describe("getAccuracyEvasionMultiplier", () => {
 
     expect(getAccuracyEvasionMultiplier(7)).toBe(maxStageExpected);
     expect(getAccuracyEvasionMultiplier(-7)).toBeCloseTo(minStageExpected);
+  });
+
+  it("given the cartridge table-only stages +4 and +5, when getAccuracyEvasionMultiplier is called, then it matches the authoritative non-simplified values", () => {
+    // Source: pokeemerald sAccuracyStageRatios / pokecrystal AccuracyLevelMultipliers
+    // stage +4 = 233/100 = 2.33, not 7/3 ≈ 2.333...
+    // stage +5 = 133/50 = 2.66, not 8/3 ≈ 2.666...
+    expect(getAccuracyEvasionMultiplier(4)).toBe(233 / 100);
+    expect(getAccuracyEvasionMultiplier(5)).toBe(133 / 50);
   });
 });
 

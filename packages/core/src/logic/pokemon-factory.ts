@@ -1,4 +1,5 @@
 import { ALL_NATURES, CORE_ABILITY_SLOTS, CORE_GENDERS, CORE_POKEMON_DEFAULTS } from "../constants";
+import { CORE_ABILITY_IDS } from "../constants/reference-ids";
 import type { Gender } from "../entities/gender";
 import type { MoveSlot } from "../entities/move";
 import type { NatureId } from "../entities/nature";
@@ -50,16 +51,29 @@ function generateUid(rng: SeededRandom): string {
 }
 
 /**
- * Get the ability ID for a given ability slot.
+ * Resolve the actual ability and slot for a given requested ability slot.
  */
-function getAbilityForSlot(species: PokemonSpeciesData, slot: AbilitySlot): string {
+function resolveAbilityForSlot(
+  species: PokemonSpeciesData,
+  slot: AbilitySlot,
+): { ability: string; abilitySlot: AbilitySlot } {
   if (slot === CORE_ABILITY_SLOTS.hidden && species.abilities.hidden) {
-    return species.abilities.hidden;
+    return { ability: species.abilities.hidden, abilitySlot: CORE_ABILITY_SLOTS.hidden };
   }
   if (slot === CORE_ABILITY_SLOTS.normal2 && species.abilities.normal.length > 1) {
-    return species.abilities.normal[1] as string;
+    return {
+      ability: species.abilities.normal[1] as string,
+      abilitySlot: CORE_ABILITY_SLOTS.normal2,
+    };
   }
-  return species.abilities.normal[0] as string;
+  const primaryAbility = species.abilities.normal[0];
+  if (primaryAbility) {
+    return { ability: primaryAbility, abilitySlot: CORE_ABILITY_SLOTS.normal1 };
+  }
+  if (species.abilities.hidden) {
+    return { ability: species.abilities.hidden, abilitySlot: CORE_ABILITY_SLOTS.hidden };
+  }
+  return { ability: CORE_ABILITY_IDS.none, abilitySlot: CORE_ABILITY_SLOTS.normal1 };
 }
 
 /**
@@ -70,7 +84,11 @@ export function determineGender(genderRatio: number, rng: SeededRandom): Gender 
   if (genderRatio === -1) return CORE_GENDERS.genderless;
   if (genderRatio === 0) return CORE_GENDERS.female;
   if (genderRatio === 100) return CORE_GENDERS.male;
-  return rng.int(1, 100) <= genderRatio ? CORE_GENDERS.male : CORE_GENDERS.female;
+
+  // Source: species gender ratios are encoded in 12.5% steps on cartridge-facing data surfaces.
+  // Using 8 slots preserves 12.5 / 87.5 exactly instead of rounding to whole percentages.
+  const maleThreshold = Math.round((genderRatio / 100) * 8);
+  return rng.int(1, 8) <= maleThreshold ? CORE_GENDERS.male : CORE_GENDERS.female;
 }
 
 /**
@@ -135,15 +153,16 @@ export function createPokemonInstance(
         ? CORE_POKEMON_DEFAULTS.abilitySlot
         : CORE_ABILITY_SLOTS.normal2
       : CORE_POKEMON_DEFAULTS.abilitySlot);
-  const ability = getAbilityForSlot(species, abilitySlot);
+  const resolvedAbility = resolveAbilityForSlot(species, abilitySlot);
 
   // Determine shininess
   const isShiny = options?.isShiny ?? rng.chance(CORE_POKEMON_DEFAULTS.shinyChance);
 
   // Select moves -- latest 4 level-up moves at or below this level
-  const moves = options?.moves
-    ? options.moves.map((moveId) => createMoveSlot(moveId))
-    : getDefaultMoves(species.learnset, level);
+  const moves =
+    options?.moves && options.moves.length > 0
+      ? options.moves.map((moveId) => createMoveSlot(moveId))
+      : getDefaultMoves(species.learnset, level);
   const evs = normalizeEvs(options?.evs);
 
   const uid = generateUid(rng);
@@ -159,8 +178,8 @@ export function createPokemonInstance(
     evs,
     currentHp: CORE_POKEMON_DEFAULTS.currentHp,
     moves,
-    ability,
-    abilitySlot,
+    ability: resolvedAbility.ability,
+    abilitySlot: resolvedAbility.abilitySlot,
     heldItem: options?.heldItem ?? null,
     status: null,
     friendship: createFriendship(options?.friendship ?? species.baseFriendship),
