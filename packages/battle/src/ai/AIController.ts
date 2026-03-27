@@ -1,8 +1,8 @@
 import type { SeededRandom } from "@pokemon-lib-ts/core";
-import type { AvailableMove } from "../context";
-import type { BattleAction } from "../events";
-import type { GenerationRuleset } from "../ruleset";
-import type { BattleState } from "../state";
+import type { AvailableMove } from "../context/types";
+import type { BattleAction } from "../events/BattleAction";
+import type { GenerationRuleset } from "../ruleset/GenerationRuleset";
+import type { BattleState } from "../state/BattleState";
 
 /**
  * Interface for AI controllers that choose actions and switch-ins.
