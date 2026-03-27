@@ -7,7 +7,14 @@ import {
   GEN8_SPECIES_IDS,
   GEN8_TYPE_CHART,
 } from "../../../../gen8/src";
-import { ALL_NATURES, CORE_MOVE_CATEGORIES, CORE_TYPE_IDS, DataManager } from "../../../src";
+import {
+  ALL_NATURES,
+  CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  DataManager,
+} from "../../../src";
 import type { RawDataObjects } from "../../../src/data/types";
 import type { NatureData, TypeChart } from "../../../src/entities";
 
@@ -190,7 +197,7 @@ describe("DataManager", () => {
     it("returns move with effect data", () => {
       const move = dm.getMove(GEN8_MOVE_IDS.flamethrower);
       expect(move.effect).not.toBeNull();
-      expect(move.effect?.type).toBe("status-chance");
+      expect(move.effect?.type).toBe(CORE_MOVE_EFFECT_TYPES.statusChance);
     });
 
     it("throws for non-existent move", () => {
@@ -242,8 +249,8 @@ describe("DataManager", () => {
     it("given a loaded nature id, when getNature is called, then it returns the matching nature fixture", () => {
       const nature = dm.getNature(ADAMANT_NATURE.id);
       expect(nature.displayName).toBe("Adamant");
-      expect(nature.increased).toBe("attack");
-      expect(nature.decreased).toBe("spAttack");
+      expect(nature.increased).toBe(CORE_STAT_IDS.attack);
+      expect(nature.decreased).toBe(CORE_STAT_IDS.spAttack);
     });
 
     it("given a neutral nature id, when getNature is called, then both modified stats are null", () => {

@@ -1,5 +1,6 @@
-import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9";
+import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "../../../src";
 import type { BattleConfig, ItemContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, StatChangeEvent } from "../../../src/events";
@@ -46,8 +47,18 @@ class HeldItemStatBoostRuleset extends MockRuleset {
         activated: true,
         effects: [
           // Source: packages/gen9/tests/items.test.ts -- Weakness Policy raises Attack and SpAtk by 2 stages.
-          { type: "stat-boost", target: "self", value: "attack", stages: 2 },
-          { type: "stat-boost", target: "self", value: "spAttack", stages: 2 },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.attack,
+            stages: 2,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.spAttack,
+            stages: 2,
+          },
         ],
         messages: ["Weakness Policy activated!"],
       };
@@ -104,7 +115,10 @@ describe("BattleEngine held-item stat boosts", () => {
       (event): event is StatChangeEvent => event.type === "stat-change",
     );
     expect(statChangeEvents).toHaveLength(2);
-    expect(statChangeEvents.map((event) => event.stat)).toEqual(["attack", "spAttack"]);
+    expect(statChangeEvents.map((event) => event.stat)).toEqual([
+      CORE_STAT_IDS.attack,
+      CORE_STAT_IDS.spAttack,
+    ]);
     expect(statChangeEvents.map((event) => event.stages)).toEqual([2, 2]);
     expect(statChangeEvents.map((event) => event.currentStage)).toEqual([2, 2]);
 

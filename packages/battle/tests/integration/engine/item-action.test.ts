@@ -2,6 +2,7 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   createMoveSlot,
 } from "@pokemon-lib-ts/core";
@@ -232,7 +233,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
       // Assert
       const statEvent = events.find((e) => e.type === "stat-change") as StatChangeEvent | undefined;
       expect(statEvent).toBeDefined();
-      expect(statEvent!.stat).toBe("attack");
+      expect(statEvent!.stat).toBe(CORE_STAT_IDS.attack);
       expect(statEvent!.stages).toBe(2);
       // Source: starting stage 0 + 2 = 2
       expect(statEvent!.currentStage).toBe(2);

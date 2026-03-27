@@ -2,6 +2,7 @@ import type { PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -415,7 +416,7 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(defenderActive?.statStages.defense).toBe(2);
         // Assert — the reset is surfaced as a stat-change event for downstream listeners
         const attackReset = events.find(
-          (e) => e.type === "stat-change" && e.side === 0 && e.stat === "attack",
+          (e) => e.type === "stat-change" && e.side === 0 && e.stat === CORE_STAT_IDS.attack,
         );
         expect(attackReset).toBeDefined();
         expect(attackReset?.type === "stat-change" && attackReset.stages).toBe(-3);
@@ -504,7 +505,7 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.statStages.attack).toBe(1);
         // Assert — defender reset is surfaced as a stat-change event for downstream listeners
         const defenseReset = events.find(
-          (e) => e.type === "stat-change" && e.side === 1 && e.stat === "defense",
+          (e) => e.type === "stat-change" && e.side === 1 && e.stat === CORE_STAT_IDS.defense,
         );
         expect(defenseReset).toBeDefined();
         expect(defenseReset?.type === "stat-change" && defenseReset.stages).toBe(-3);
@@ -550,7 +551,7 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(statusCure).toBeDefined();
 
         const attackReset = events.find(
-          (e) => e.type === "stat-change" && e.side === 0 && e.stat === "attack",
+          (e) => e.type === "stat-change" && e.side === 0 && e.stat === CORE_STAT_IDS.attack,
         );
         expect(attackReset).toBeDefined();
         expect(attackReset?.type === "stat-change" && attackReset.stages).toBe(-2);

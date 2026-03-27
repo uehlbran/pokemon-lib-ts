@@ -1,7 +1,8 @@
 import type { PokemonInstance } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_ABILITY_IDS, CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import { GEN9_ITEM_IDS } from "@pokemon-lib-ts/gen9";
 import { describe, expect, it } from "vitest";
+import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "../../../src";
 import type { BattleConfig, ItemContext, ItemResult } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
@@ -14,7 +15,7 @@ const ITEM_IDS = GEN9_ITEM_IDS;
 const MOVE_IDS = CORE_MOVE_IDS;
 const ACTIVATION_MODES = {
   none: CORE_ABILITY_IDS.none,
-  consume: "consume",
+  consume: BATTLE_ITEM_EFFECT_TYPES.consume,
   itemActivate: "item-activate",
 } as const;
 
@@ -36,7 +37,7 @@ class GoFirstItemRuleset extends MockRuleset {
 
   override applyHeldItem(trigger: string, context: ItemContext): ItemResult {
     if (
-      trigger !== "before-turn-order" ||
+      trigger !== CORE_ITEM_TRIGGER_IDS.beforeTurnOrder ||
       context.pokemon.pokemon.uid !== this.activatingPokemonUid ||
       this.activationMode === ACTIVATION_MODES.none
     ) {
@@ -48,8 +49,8 @@ class GoFirstItemRuleset extends MockRuleset {
         activated: true,
         effects: [
           {
-            type: "consume",
-            target: "self",
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
             value: context.pokemon.pokemon.heldItem ?? ITEM_IDS.custapBerry,
           },
         ],
