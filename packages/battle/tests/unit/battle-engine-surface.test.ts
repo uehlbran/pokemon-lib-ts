@@ -1,4 +1,5 @@
 import {
+  CORE_ABILITY_IDS,
   CORE_MOVE_IDS,
   type DataManager,
   type PokemonInstance,
@@ -36,6 +37,12 @@ class ValidatingRuleset extends MockRuleset {
     }
 
     return { valid: true, errors: [] };
+  }
+}
+
+class AbilityAwareMockRuleset extends MockRuleset {
+  override hasAbilities(): boolean {
+    return true;
   }
 }
 
@@ -224,9 +231,175 @@ describe("BattleEngine surface", () => {
       ruleset.setInvalidPokemon("charizard-1", [`Move "${CORE_MOVE_IDS.sketch}" is not legal`]);
 
       expect(() => createTestEngine({ ruleset })).toThrow(
-        `BattleEngine: pokemon "Charizard" failed validation: Move "${CORE_MOVE_IDS.sketch}" is not legal`,
+        `BattleEngine: battle validation failed: teams[0][0]: Move "${CORE_MOVE_IDS.sketch}" is not legal`,
       );
-      expect(ruleset.validationCalls).toEqual([{ speciesId: 6, pokemonUid: "charizard-1" }]);
+      expect(ruleset.validationCalls).toEqual([
+        { speciesId: 6, pokemonUid: "charizard-1" },
+        { speciesId: 9, pokemonUid: "blastoise-1" },
+      ]);
+    });
+  });
+
+  describe("validateConfig", () => {
+    it("given a valid singles setup, when validateConfig is called, then it returns a valid result", () => {
+      const ruleset = new MockRuleset();
+      const dataManager = createMockDataManager();
+      const team1 = [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)];
+      const team2 = [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)];
+
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [team1, team2],
+          seed: 12345,
+        },
+        ruleset,
+        dataManager,
+      );
+
+      expect(result).toEqual({ valid: true, errors: [] });
+    });
+
+    it("given an unknown species id, when validateConfig is called, then it returns a structured species error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [createTestPokemon(999, 50, { uid: "missing-species" })],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "species",
+        id: "999",
+        field: "teams[0][0].speciesId",
+        message: 'Species "999" is not available in the loaded data',
+      });
+    });
+
+    it("given an unknown move id, when validateConfig is called, then it returns a structured move error", () => {
+      const dataManager = createMockDataManager();
+      const missingMoveSlot = {
+        ...createMockMoveSlot(CORE_MOVE_IDS.tackle),
+        moveId: "missing-move",
+      };
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                moves: [missingMoveSlot],
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "move",
+        id: "missing-move",
+        field: "teams[0][0].moves[0].moveId",
+        message: 'Move "missing-move" is not available in Gen 1',
+      });
+    });
+
+    it("given an unknown held item id, when validateConfig is called, then it returns a structured item error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                heldItem: "missing-item",
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "item",
+        id: "missing-item",
+        field: "teams[0][0].heldItem",
+        message: 'Item "missing-item" is not available in Gen 1',
+      });
+    });
+
+    it("given abilities are supported but the ability id is unknown, when validateConfig is called, then it returns a structured ability error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 4,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                ability: "missing-ability",
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, { ability: CORE_ABILITY_IDS.blaze })],
+          ],
+          seed: 12345,
+        },
+        new AbilityAwareMockRuleset().setGenerationForTest(4),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "ability",
+        id: "missing-ability",
+        field: "teams[0][0].ability",
+        message: 'Ability "missing-ability" is not available in Gen 4',
+      });
+    });
+
+    it("given a side has no pokemon, when validateConfig is called, then it returns a structured team error", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [[], [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)]],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "team",
+        id: "side-0",
+        field: "teams[0]",
+        message: "Side 0 must have at least 1 Pokemon for singles battles",
+      });
     });
   });
 

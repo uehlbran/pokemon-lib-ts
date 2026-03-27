@@ -8,6 +8,8 @@ export type {
   AccuracyContextFor,
   AvailableMove,
   BagItemResult,
+  BattleValidationIssue,
+  BattleValidationResult,
   BattleConfig,
   BattleGimmick,
   CatchResult,
