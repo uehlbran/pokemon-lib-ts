@@ -169,6 +169,15 @@ These rules govern **how** tests are written. The Testing Philosophy section abo
 - **Validation Result Naming** — prefer shared generic names like `ValidationFailure` and `ValidationResult` over repetitive type-prefixed names like `EvValidationIssue`. The validator context already tells the reader what is being validated.
 - **No Invalid Public Value Objects** — validators should remain explicit and reusable, but the normal public creation path must still reject invalid state. Do not make callers assemble invalid stat/value objects and hope a later validator catches them before use.
 
+## Architecture Confidence
+
+Architecture cleanup is a first-class correctness and public-API concern in this repo.
+
+- Branch-heavy god modules, implicit contract boundaries, and unstable export surfaces are confidence risks, not just style issues. Work in these areas is in scope when it improves correctness confidence, testability, regression-risk reduction, or public API clarity.
+- Use [specs/reference/testing-status.md](./specs/reference/testing-status.md) and [specs/reference/architecture-confidence-status.md](./specs/reference/architecture-confidence-status.md) as the shared status surfaces for deciding what to refactor next and why.
+- Known hotspot families already tracked by open issues include `#762`, `#767`, `#772`, `#780`, and `#994`. Changes in those areas should be sequenced by evidence from gaps, mutation survivors, repeated bugs, or public-API risk.
+- Style-only rewrites remain out of scope. If a refactor does not materially improve confidence or API quality, do not do it.
+
 ## Source Authority
 
 When implementing mechanics, use the following per-gen hierarchy (highest authority first):
