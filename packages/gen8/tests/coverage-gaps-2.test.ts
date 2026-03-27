@@ -12,6 +12,7 @@ import {
   CORE_GENDERS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
   createEvs,
   createFriendship,
   createIvs,
@@ -730,7 +731,7 @@ describe("Gen8DamageCalc -- Metronome consecutive boost", () => {
     // Source: Showdown data/items.ts -- Metronome: boostSteps = min(count-1, 5),
     // multiplier = 1 + boostSteps * 0.2 = 1 + 2*0.2 = 1.4
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 3 } });
+    volatiles.set(CORE_VOLATILE_IDS.metronomeCount, { turnsLeft: -1, data: { count: 3 } });
 
     const attackerWithMetronome = createOnFieldPokemon({
       heldItem: itemIds.metronome,
@@ -767,7 +768,7 @@ describe("Gen8DamageCalc -- Metronome consecutive boost", () => {
   it("given metronome holder with count=1, when dealing damage, then no boost applies (boostSteps=0)", () => {
     // Source: Showdown data/items.ts -- Metronome: boostSteps = min(1-1, 5) = 0, no boost
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 1 } });
+    volatiles.set(CORE_VOLATILE_IDS.metronomeCount, { turnsLeft: -1, data: { count: 1 } });
 
     const attackerWithMetronome = createOnFieldPokemon({
       heldItem: itemIds.metronome,
@@ -803,7 +804,7 @@ describe("Gen8DamageCalc -- Metronome consecutive boost", () => {
     // Source: Showdown data/items.ts -- Metronome: boostSteps = min(7-1, 5) = 5,
     // multiplier = 1 + 5*0.2 = 2.0
     const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>();
-    volatiles.set("metronome-count", { turnsLeft: -1, data: { count: 7 } });
+    volatiles.set(CORE_VOLATILE_IDS.metronomeCount, { turnsLeft: -1, data: { count: 7 } });
 
     const attackerWithMetronome = createOnFieldPokemon({
       heldItem: itemIds.metronome,

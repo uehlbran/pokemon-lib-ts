@@ -5,6 +5,7 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
   CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -43,7 +44,7 @@ const METRONOME_ITEM = GEN4_ITEM_IDS.metronome;
 const DEFAULT_SPECIES_ID = GEN4_SPECIES_IDS.bulbasaur;
 const DEFAULT_NATURE = GEN4_NATURE_IDS.hardy;
 const DEFAULT_POKEBALL = GEN4_ITEM_IDS.pokeBall;
-const METRONOME_COUNT_VOLATILE = "metronome-count";
+const METRONOME_COUNT_VOLATILE = CORE_VOLATILE_IDS.metronomeCount;
 
 function createMockRng(intReturnValue: number) {
   return {

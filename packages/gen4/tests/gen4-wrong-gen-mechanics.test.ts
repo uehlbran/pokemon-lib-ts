@@ -65,7 +65,7 @@ const DEFAULT_MOVE = gen4Data.getMove(CORE_MOVE_IDS.tackle);
 const DEFAULT_SPECIES = gen4Data.getSpecies(SPECIES.bidoof);
 const DEFAULT_LEVEL = 50;
 const DEFAULT_ABILITY = ABILITIES.none;
-const METRONOME_COUNT_VOLATILE = "metronome-count";
+const METRONOME_COUNT_VOLATILE = CORE_VOLATILE_IDS.metronomeCount;
 
 // No canonical Gen 4 move is exactly 90 BP Fire physical, so this stays synthetic on purpose.
 const SYNTHETIC_FIRE_90_PHYSICAL_MOVE = createSyntheticMoveFrom(MOVES.strength, {
