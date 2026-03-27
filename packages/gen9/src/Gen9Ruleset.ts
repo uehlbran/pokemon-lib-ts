@@ -764,7 +764,13 @@ export class Gen9Ruleset extends BaseRuleset {
     attacker: ActivePokemon,
     defender: ActivePokemon,
     move: MoveData,
+    moveTarget: MoveData["target"],
   ): boolean {
-    return isPranksterBlockedByDarkType(attacker.ability, move.category, defender.types);
+    return isPranksterBlockedByDarkType(
+      attacker.ability,
+      move.category,
+      defender.types,
+      moveTarget,
+    );
   }
 }

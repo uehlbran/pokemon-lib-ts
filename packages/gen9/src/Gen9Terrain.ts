@@ -72,13 +72,6 @@ export const TERRAIN_EXTENDED_TURNS = 8;
  */
 export function isGen9Grounded(pokemon: ActivePokemon, gravityActive: boolean): boolean {
   if (gravityActive) return true;
-
-  // Fly/Bounce and Shadow Force/Phantom Force keep the user airborne during charge
-  // turns and should not be treated as grounded for terrain/ground-based effects.
-  // Source: Showdown sim/pokemon.ts -- isGrounded checks airborne semi-invulnerable volatiles
-  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.flying)) return false;
-  if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.shadowForceCharging)) return false;
-
   if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) return true;
 
   const itemsSuppressed =

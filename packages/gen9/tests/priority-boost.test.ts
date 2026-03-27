@@ -264,6 +264,7 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         attacker,
         defender,
         dataManager.getMove(moveIds.willOWisp),
+        dataManager.getMove(moveIds.willOWisp).target,
       );
 
       expect(blocked).toBe(true);
@@ -287,6 +288,32 @@ describe("Gen9Ruleset.resolveTurnOrder -- Prankster priority boost (#783)", () =
         attacker,
         defender,
         dataManager.getMove(moveIds.willOWisp),
+        dataManager.getMove(moveIds.willOWisp).target,
+      );
+
+      expect(blocked).toBe(false);
+    },
+  );
+
+  it(
+    "given Prankster user with a self-targeting status move and a Dark-type opponent, " +
+      "when checking Gen9Ruleset Prankster immunity, then the move is allowed",
+    () => {
+      // Source: Showdown data/abilities.ts -- Dark immunity only applies to opposing-Pokemon targets.
+      const attacker = createOnFieldPokemon({
+        ability: abilityIds.prankster,
+        moves: [createCanonicalMoveSlot(moveIds.agility)],
+      });
+      const defender = createOnFieldPokemon({
+        types: [CORE_TYPE_IDS.dark],
+      });
+      const agility = dataManager.getMove(moveIds.agility);
+
+      const blocked = ruleset.checkPranksterDarkImmunity(
+        attacker,
+        defender,
+        agility,
+        agility.target,
       );
 
       expect(blocked).toBe(false);

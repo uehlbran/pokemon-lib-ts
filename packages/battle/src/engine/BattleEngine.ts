@@ -2177,7 +2177,14 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Gen 7+: Prankster-boosted status moves fail against Dark-type targets.
     // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
-    if (this.ruleset.checkPranksterDarkImmunity?.(actor, defender, effectiveMoveData)) {
+    if (
+      this.ruleset.checkPranksterDarkImmunity?.(
+        actor,
+        defender,
+        effectiveMoveData,
+        effectiveMoveData.target,
+      )
+    ) {
       this.emit({
         type: "move-fail",
         side: action.side,

@@ -883,4 +883,52 @@ describe("Bug #802: Prankster status moves fail against Dark-type targets", () =
       });
     },
   );
+
+  it(
+    "given a Prankster user using a self-targeting status move into a Dark-type opponent, " +
+      "when the turn resolves, then the move is not blocked by Dark-type immunity",
+    () => {
+      // Source: Showdown data/abilities.ts -- the Dark-type check uses the actual move target.
+      // Self-targeting status moves like Protect are not blocked just because the opponent is Dark-type.
+      const { engine, events } = createGen9Engine({
+        team1: [
+          createTestPokemon(SPECIES.murkrow, 50, {
+            uid: "murkrow-protect",
+            nickname: "Murkrow",
+            ability: ABILITIES.prankster,
+            abilitySlot: CORE_ABILITY_SLOTS.hidden,
+            moves: [createCanonicalMoveSlot(MOVES.protect)],
+            calculatedStats: {
+              hp: 120,
+              attack: 85,
+              defense: 60,
+              spAttack: 85,
+              spDefense: 60,
+              speed: 80,
+            },
+            currentHp: 120,
+          }),
+        ],
+      });
+
+      engine.start();
+      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0, target: 1 });
+      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0, target: 0 });
+
+      expect(events).toContainEqual({
+        type: "move-start",
+        side: 0,
+        pokemon: "Murkrow",
+        move: MOVES.protect,
+      });
+      expect(events).not.toContainEqual(
+        expect.objectContaining({
+          type: "move-fail",
+          side: 0,
+          move: MOVES.protect,
+          reason: "blocked by Dark-type immunity",
+        }),
+      );
+    },
+  );
 });

@@ -3,8 +3,10 @@ import {
   type AbilityTrigger,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
+  CORE_MOVE_TARGET_IDS,
   CORE_TYPE_IDS,
   type MoveCategory,
+  type MoveTarget,
 } from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS } from "./data/reference-ids.js";
 import { handleGen9NewAbility, isEmbodyAspect } from "./Gen9AbilitiesNew.js";
@@ -145,10 +147,25 @@ export function isPranksterBlockedByDarkType(
   attackerAbility: string,
   moveCategory: MoveCategory,
   defenderTypes: readonly string[],
+  moveTarget: MoveTarget,
 ): boolean {
   if (attackerAbility !== GEN9_ABILITY_IDS.prankster) return false;
   if (moveCategory !== CORE_MOVE_CATEGORIES.status) return false;
+  if (!targetsOpposingPokemon(moveTarget)) return false;
   return defenderTypes.includes(CORE_TYPE_IDS.dark);
+}
+
+function targetsOpposingPokemon(moveTarget: MoveTarget): boolean {
+  switch (moveTarget) {
+    case CORE_MOVE_TARGET_IDS.adjacentFoe:
+    case "all-adjacent-foes":
+    case "all-foes":
+    case "random-foe":
+    case "any":
+      return true;
+    default:
+      return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -174,6 +174,7 @@ export interface DamageSystem {
     attacker: ActivePokemon,
     defender: ActivePokemon,
     move: MoveData,
+    moveTarget: MoveData["target"],
   ): boolean;
 
   /**

@@ -312,45 +312,84 @@ describe("Gen 7 Ability Nerfs", () => {
       // Source: Showdown data/abilities.ts -- Prankster Gen 7: dark targets immune to boosted status
       // Source: Bulbapedia "Prankster" Gen 7 -- "status moves fail against Dark-type targets"
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.dark]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.dark],
+          growl.target,
+        ),
       ).toBe(true);
     });
 
     it("given Prankster user using a status move vs Dark/Fairy-type, then blocked (partial Dark typing)", () => {
       // Source: Showdown data/abilities.ts -- checks if target has Dark type
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [
-          typeIds.dark,
-          typeIds.fairy,
-        ]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.dark, typeIds.fairy],
+          growl.target,
+        ),
       ).toBe(true);
     });
 
     it("given Prankster user using a physical move vs Dark-type, then NOT blocked (non-status)", () => {
       // Source: Showdown data/abilities.ts -- only status moves are blocked
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.physical, [typeIds.dark]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.physical,
+          [typeIds.dark],
+          tackle.target,
+        ),
       ).toBe(false);
     });
 
     it("given Prankster user using a special move vs Dark-type, then NOT blocked (non-status)", () => {
       // Source: Showdown data/abilities.ts -- only status moves are blocked
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.special, [typeIds.dark]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.special,
+          [typeIds.dark],
+          flamethrower.target,
+        ),
       ).toBe(false);
     });
 
     it("given Prankster user using a status move vs Normal-type, then NOT blocked (non-Dark)", () => {
       // Source: Showdown data/abilities.ts -- only Dark-type targets
       expect(
-        isPranksterBlockedByDarkType(abilityIds.prankster, moveCategories.status, [typeIds.normal]),
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          moveCategories.status,
+          [typeIds.normal],
+          growl.target,
+        ),
       ).toBe(false);
     });
 
     it("given non-Prankster ability using status move vs Dark-type, then NOT blocked", () => {
       // Only Prankster triggers this check
       expect(
-        isPranksterBlockedByDarkType(abilityIds.keenEye, moveCategories.status, [typeIds.dark]),
+        isPranksterBlockedByDarkType(
+          abilityIds.keenEye,
+          moveCategories.status,
+          [typeIds.dark],
+          growl.target,
+        ),
+      ).toBe(false);
+    });
+
+    it("given Prankster user using a self-targeting status move vs Dark-type, then NOT blocked", () => {
+      const agility = dataManager.getMove(moveIds.agility);
+      expect(
+        isPranksterBlockedByDarkType(
+          abilityIds.prankster,
+          agility.category,
+          [typeIds.dark],
+          agility.target,
+        ),
       ).toBe(false);
     });
 

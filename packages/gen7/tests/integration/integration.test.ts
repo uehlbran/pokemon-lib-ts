@@ -505,34 +505,45 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
   it("given Prankster user using status move vs Dark-type, move is blocked", () => {
     // Source: Showdown data/abilities.ts -- prankster: Dark targets block boosted status moves
     // Source: Bulbapedia "Prankster" Gen 7 -- "Status moves fail against Dark-type targets"
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
-      TYPES.dark,
-    ]);
+    const blocked = isPranksterBlockedByDarkType(
+      ABILITIES.prankster,
+      MOVE_CATEGORIES.status,
+      [TYPES.dark],
+      getCanonicalMove(MOVES.thunderWave).target,
+    );
     expect(blocked).toBe(true);
   });
 
   it("given Prankster user using physical move vs Dark-type, move is NOT blocked", () => {
     // Source: Showdown -- Prankster only blocks status moves
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.physical, [
-      TYPES.dark,
-    ]);
+    const blocked = isPranksterBlockedByDarkType(
+      ABILITIES.prankster,
+      MOVE_CATEGORIES.physical,
+      [TYPES.dark],
+      getCanonicalMove(MOVES.tackle).target,
+    );
     expect(blocked).toBe(false);
   });
 
   it("given Prankster user using status move vs Dark/Fire dual type, move is blocked", () => {
     // Source: Showdown -- Dark-type check doesn't care about secondary type
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
-      TYPES.dark,
-      TYPES.fire,
-    ]);
+    const blocked = isPranksterBlockedByDarkType(
+      ABILITIES.prankster,
+      MOVE_CATEGORIES.status,
+      [TYPES.dark, TYPES.fire],
+      getCanonicalMove(MOVES.thunderWave).target,
+    );
     expect(blocked).toBe(true);
   });
 
   it("given non-Prankster user using status move vs Dark-type, move is NOT blocked", () => {
     // Source: Showdown -- immunity only applies to Prankster-boosted moves
-    const blocked = isPranksterBlockedByDarkType(ABILITIES.none, MOVE_CATEGORIES.status, [
-      TYPES.dark,
-    ]);
+    const blocked = isPranksterBlockedByDarkType(
+      ABILITIES.none,
+      MOVE_CATEGORIES.status,
+      [TYPES.dark],
+      getCanonicalMove(MOVES.thunderWave).target,
+    );
     expect(blocked).toBe(false);
   });
 
@@ -560,11 +571,25 @@ describe("Integration: Prankster vs Dark-type immunity", () => {
     expect(priorityResult.activated).toBe(true);
 
     // Dark-type check also blocks
-    const darkBlocked = isPranksterBlockedByDarkType(ABILITIES.prankster, MOVE_CATEGORIES.status, [
-      TYPES.dark,
-      TYPES.fire,
-    ]);
+    const darkBlocked = isPranksterBlockedByDarkType(
+      ABILITIES.prankster,
+      MOVE_CATEGORIES.status,
+      [TYPES.dark, TYPES.fire],
+      getCanonicalMove(MOVES.thunderWave).target,
+    );
     expect(darkBlocked).toBe(true);
+  });
+
+  it("given Prankster user using a self-targeting status move vs Dark-type, move is NOT blocked", () => {
+    // Source: Showdown data/abilities.ts -- the Dark-type immunity only applies to opposing targets.
+    const agility = getCanonicalMove(MOVES.agility);
+    const blocked = isPranksterBlockedByDarkType(
+      ABILITIES.prankster,
+      agility.category,
+      [TYPES.dark],
+      agility.target,
+    );
+    expect(blocked).toBe(false);
   });
 });
 

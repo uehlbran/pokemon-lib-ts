@@ -433,6 +433,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
     _attacker: ActivePokemon,
     _defender: ActivePokemon,
     _move: MoveData,
+    _moveTarget: MoveData["target"],
   ): boolean {
     return false;
   }
