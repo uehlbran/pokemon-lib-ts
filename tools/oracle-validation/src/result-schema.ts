@@ -18,11 +18,13 @@ export const suiteResultSchema = z
         !value.suitePassed ||
         value.failed !== 0 ||
         value.skipped !== 0 ||
-        value.failures.length !== 0
+        value.failures.length !== 0 ||
+        (value.skipReason !== undefined && value.skipReason.trim().length > 0)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "pass status requires suitePassed=true, failed=0, skipped=0, and no failures",
+          message:
+            "pass status requires suitePassed=true, failed=0, skipped=0, no failures, and no skipReason",
         });
       }
     }
@@ -32,11 +34,13 @@ export const suiteResultSchema = z
         value.suitePassed ||
         value.failed === 0 ||
         value.failures.length === 0 ||
-        value.skipped !== 0
+        value.skipped !== 0 ||
+        (value.skipReason !== undefined && value.skipReason.trim().length > 0)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "fail status requires suitePassed=false, skipped=0, and at least one failure",
+          message:
+            "fail status requires suitePassed=false, skipped=0, at least one failure, and no skipReason",
         });
       }
     }
