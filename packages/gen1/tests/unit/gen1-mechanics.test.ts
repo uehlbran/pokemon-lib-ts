@@ -546,6 +546,40 @@ describe("OHKO moves (Fissure, Guillotine, Horn Drill)", () => {
     expect(result).toBe(false);
   });
 
+  it("given OHKO accuracy checks with missing calculatedStats, when doesMoveHit evaluates the speed gate, then it throws instead of fabricating speed", () => {
+    const attacker = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        calculatedStats: undefined,
+      } as PokemonInstance,
+    });
+    const defender = createSyntheticOnFieldPokemon({
+      pokemon: {
+        ...createSyntheticOnFieldPokemon().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 200,
+        },
+      } as PokemonInstance,
+    });
+    const state = createBattleState();
+    const guaranteedHitRng = { int: () => 0 } as unknown as SeededRandom;
+
+    expect(() =>
+      ruleset.doesMoveHit({
+        attacker,
+        defender,
+        move: FISSURE,
+        state,
+        rng: guaranteedHitRng,
+      }),
+    ).toThrow(/Gen1 turn-order calculation requires calculatedStats/i);
+  });
+
   it("given OHKO effect move, when executeMoveEffect is called, then customDamage equals defender's current HP", () => {
     // Arrange
     const defender = createSyntheticOnFieldPokemon({

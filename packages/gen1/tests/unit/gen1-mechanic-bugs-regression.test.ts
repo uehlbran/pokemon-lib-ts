@@ -1211,6 +1211,21 @@ describe("#414 — Substitute + confusion: confusion self-hit bypasses Substitut
     // Assert
     expect(damage).toBe(35);
   });
+
+  it("given Gen 1 ruleset, when calculateConfusionDamage is called without calculatedStats, then throws instead of fabricating Attack and Defense", () => {
+    const pokemon = createActivePokemon({
+      pokemon: {
+        ...createActivePokemon().pokemon,
+        calculatedStats: undefined,
+      } as PokemonInstance,
+    });
+    const state = createBattleState();
+    const rng = new SeededRandom(0);
+
+    expect(() => ruleset.calculateConfusionDamage(pokemon, state, rng)).toThrow(
+      /Gen1 confusion damage calculation requires calculatedStats/i,
+    );
+  });
 });
 
 // ============================================================================

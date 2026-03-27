@@ -35,6 +35,14 @@ export function isGen1PhysicalType(moveType: PokemonType): boolean {
   return (GEN1_PHYSICAL_TYPES as readonly string[]).includes(moveType);
 }
 
+function requireCalculatedStats(pokemon: ActivePokemon) {
+  const stats = pokemon.pokemon.calculatedStats;
+  if (!stats) {
+    throw new Error("Gen1 damage calculation requires calculatedStats");
+  }
+  return stats;
+}
+
 /**
  * Get the effective attack stat for a move in Gen 1.
  * Physical types use Attack; special types use SpAttack (which equals Special).
@@ -47,18 +55,17 @@ function getAttackStat(
 ): number {
   const physical = isGen1PhysicalType(moveType);
   const statKey = physical ? "attack" : "spAttack";
-  const stats = attacker.pokemon.calculatedStats;
+  const stats = requireCalculatedStats(attacker);
 
   if (isCrit) {
     // Source: pret/pokered engine/battle/core.asm:4060-4071 GetDamageVarsForPlayerAttack
     // On critical hits, loads from wPartyMon1Attack (unmodified party data), not wBattleMonAttack
     // (which has burn halving applied). Therefore burn does NOT affect crits in Gen 1.
     // Critical hits use the unmodified stat (ignore stat stages AND burn).
-    const baseStat = stats ? stats[statKey] : 100;
-    return baseStat;
+    return stats[statKey];
   }
 
-  const baseStat = stats ? stats[statKey] : 100;
+  const baseStat = stats[statKey];
   const stage = physical ? attacker.statStages.attack : attacker.statStages.spAttack;
   // Source: pret/pokered data/battle/stat_modifiers.asm — integer table (num/den), not float approximation
   // e.g. stage -1: 66/100 (integer) vs 2/3 (float). floor(150*66/100)=99 vs floor(150*0.6667)=100.
@@ -101,14 +108,14 @@ function getDefenseStat(
 ): number {
   const physical = isGen1PhysicalType(moveType);
   const statKey = physical ? "defense" : "spDefense";
-  const stats = defender.pokemon.calculatedStats;
+  const stats = requireCalculatedStats(defender);
 
   if (isCrit) {
     // Source: gen1-ground-truth.md §3 — Crit ignores ALL stat stages, Reflect, Light Screen
-    return Math.max(1, stats ? stats[statKey] : 100);
+    return Math.max(1, stats[statKey]);
   }
 
-  const baseStat = stats ? stats[statKey] : 100;
+  const baseStat = stats[statKey];
   const stage = physical ? defender.statStages.defense : defender.statStages.spDefense;
   // Source: pret/pokered data/battle/stat_modifiers.asm — integer table (num/den), not float approximation
   const defRatio = getGen12StatStageRatio(stage);
