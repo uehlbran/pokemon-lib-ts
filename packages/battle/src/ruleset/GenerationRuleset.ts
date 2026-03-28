@@ -1,5 +1,6 @@
 import type {
   AbilityTrigger,
+  BattleStat,
   EntryHazardType,
   Generation,
   MoveData,
@@ -299,6 +300,19 @@ export interface MoveSystem {
     defender: ActivePokemon,
     damage: number,
     move: MoveData,
+    state: BattleState,
+  ): void;
+
+  /**
+   * Called after any stat stage change in battle.
+   * Used by Gen 1 to implement the badge boost glitch (compounding re-application).
+   * Optional — default implementations do nothing.
+   * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts routine called after stat stage changes
+   */
+  onStatStageChange?(
+    pokemon: ActivePokemon,
+    stat: BattleStat,
+    newStage: number,
     state: BattleState,
   ): void;
 

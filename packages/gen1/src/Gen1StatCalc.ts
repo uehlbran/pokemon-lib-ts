@@ -1,5 +1,11 @@
-import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
-import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
+import type { ActivePokemon } from "@pokemon-lib-ts/battle";
+import type {
+  BattleStat,
+  PokemonInstance,
+  PokemonSpeciesData,
+  StatBlock,
+} from "@pokemon-lib-ts/core";
+import { CORE_STAT_IDS, calculateStatExpContribution } from "@pokemon-lib-ts/core";
 
 // Source: pret/pokered engine/battle/core.asm — badge stat boost table
 // Boulder Badge → Attack, Thunder Badge → Defense, Soul Badge → Speed, Volcano Badge → Special
@@ -18,7 +24,6 @@ export interface Gen1BadgeBoosts {
  */
 export function applyGen1BadgeBoosts(stats: StatBlock, badges: Gen1BadgeBoosts): StatBlock {
   // Source: pret/pokered engine/battle/core.asm — ApplyBadgeStatBoosts caps at MAX_STAT_VALUE (999)
-  const MAX_STAT_VALUE = 999;
   let { hp, attack, defense, speed, spAttack, spDefense } = stats;
   if (badges.boulder) attack = Math.min(MAX_STAT_VALUE, Math.floor((attack * 9) / 8));
   if (badges.thunder) defense = Math.min(MAX_STAT_VALUE, Math.floor((defense * 9) / 8));
@@ -28,6 +33,47 @@ export function applyGen1BadgeBoosts(stats: StatBlock, badges: Gen1BadgeBoosts):
     spDefense = Math.min(MAX_STAT_VALUE, Math.floor((spDefense * 9) / 8)); // spDefense === spAttack in Gen 1
   }
   return { hp, attack, defense, speed, spAttack, spDefense };
+}
+
+const MAX_STAT_VALUE = 999;
+
+/**
+ * Re-applies badge boost (×9/8 per badge) to calculatedStats for the affected stat.
+ * Called after every in-battle stat stage change to implement the badge boost glitch.
+ * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+ */
+export function applyBadgeBoostGlitch(
+  pokemon: ActivePokemon,
+  stat: BattleStat,
+  badgeBoosts: Gen1BadgeBoosts,
+): void {
+  const stats = pokemon.pokemon.calculatedStats;
+  if (!stats) return;
+  // Cast through unknown to allow mutation — calculatedStats is a mutable snapshot
+  const mutable = stats as unknown as {
+    attack: number;
+    defense: number;
+    speed: number;
+    spAttack: number;
+    spDefense: number;
+  };
+  if (stat === CORE_STAT_IDS.attack && badgeBoosts.boulder) {
+    mutable.attack = Math.min(MAX_STAT_VALUE, Math.floor((mutable.attack * 9) / 8));
+  }
+  if (stat === CORE_STAT_IDS.defense && badgeBoosts.thunder) {
+    mutable.defense = Math.min(MAX_STAT_VALUE, Math.floor((mutable.defense * 9) / 8));
+  }
+  if (stat === CORE_STAT_IDS.speed && badgeBoosts.soul) {
+    mutable.speed = Math.min(MAX_STAT_VALUE, Math.floor((mutable.speed * 9) / 8));
+  }
+  if (
+    (stat === CORE_STAT_IDS.spAttack || stat === CORE_STAT_IDS.spDefense) &&
+    badgeBoosts.volcano
+  ) {
+    // Gen 1 unified Special — both spAttack and spDefense get boosted together
+    mutable.spAttack = Math.min(MAX_STAT_VALUE, Math.floor((mutable.spAttack * 9) / 8));
+    mutable.spDefense = Math.min(MAX_STAT_VALUE, Math.floor((mutable.spDefense * 9) / 8));
+  }
 }
 
 /**

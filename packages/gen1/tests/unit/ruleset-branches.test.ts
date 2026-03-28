@@ -43,7 +43,7 @@ import { describe, expect, it } from "vitest";
 import { GEN1_MOVE_IDS, GEN1_SPECIES_IDS } from "../../src";
 import { createGen1DataManager } from "../../src/data";
 import { Gen1Ruleset } from "../../src/Gen1Ruleset";
-import { applyGen1BadgeBoosts } from "../../src/Gen1StatCalc";
+import { applyBadgeBoostGlitch, applyGen1BadgeBoosts } from "../../src/Gen1StatCalc";
 
 /**
  * Gen1Ruleset Branch Coverage Tests
@@ -2806,5 +2806,238 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();
     expect(pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(false);
+  });
+});
+
+// ============================================================================
+// Badge Boost Glitch — applyBadgeBoostGlitch and Gen1Ruleset.onStatStageChange
+// ============================================================================
+
+describe("badge boost glitch", () => {
+  // ─── applyBadgeBoostGlitch unit tests ────────────────────────────────────
+
+  it("given boulder badge and base attack 100, when applyBadgeBoostGlitch called for attack, then attack becomes 112", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts: floor(100 * 9 / 8) = 112
+    // Given: a pokemon whose calculatedStats.attack was already boosted to 100
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    // When: badge boost glitch is applied for the attack stat
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.attack, { boulder: true });
+    // Then: attack is re-multiplied × 9/8 (floor) => floor(100 * 9 / 8) = 112
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(112);
+    expect(pokemon.pokemon.calculatedStats?.defense).toBe(60); // unchanged
+  });
+
+  it("given boulder badge already applied once (attack=112), when applyBadgeBoostGlitch called again, then attack becomes 126", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts compounds on re-call
+    // Simulates: initial badge boost brought attack to 112, then a stat stage change triggers
+    // another BadgeStatBoosts call → floor(112 * 9 / 8) = 126
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 112,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    // When: badge boost glitch is applied (simulating a stat stage change)
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.attack, { boulder: true });
+    // Then: floor(112 * 9 / 8) = floor(126) = 126
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(126);
+  });
+
+  it("given three stat stage changes with boulder badge (attack starts at 100), when glitch applied 3 times, then attack compounds correctly", () => {
+    // Source: pret/pokered engine/battle/core.asm — Swords Dance ×3 triggers 3 BadgeStatBoosts calls
+    // Round 1: floor(100 * 9/8) = 112
+    // Round 2: floor(112 * 9/8) = floor(126) = 126
+    // Round 3: floor(126 * 9/8) = floor(141.75) = 141
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.attack, { boulder: true });
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.attack, { boulder: true });
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.attack, { boulder: true });
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(141);
+  });
+
+  it("given a stat near 999 with soul badge, when applyBadgeBoostGlitch called for speed, then speed is capped at 999", () => {
+    // Source: pret/pokered engine/battle/core.asm — ApplyBadgeStatBoosts caps at MAX_STAT_VALUE (999)
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 995,
+        },
+      } as PokemonInstance,
+    });
+    // When: soul badge glitch is applied (floor(995 * 9/8) = 1119, capped to 999)
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.speed, { soul: true });
+    expect(pokemon.pokemon.calculatedStats?.speed).toBe(999);
+  });
+
+  it("given volcano badge and spAttack stage change, when applyBadgeBoostGlitch called, then both spAttack and spDefense are boosted", () => {
+    // Source: pret/pokered engine/battle/core.asm — Gen 1 unified Special: Volcano Badge boosts
+    // both spAttack and spDefense together when Special stat stage changes
+    // floor(100 * 9/8) = 112
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.spAttack, { volcano: true });
+    expect(pokemon.pokemon.calculatedStats?.spAttack).toBe(112);
+    expect(pokemon.pokemon.calculatedStats?.spDefense).toBe(112);
+  });
+
+  it("given volcano badge and spDefense stage change, when applyBadgeBoostGlitch called, then both spAttack and spDefense are boosted", () => {
+    // Source: pret/pokered engine/battle/core.asm — unified Special covers spDefense key too
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.spDefense, { volcano: true });
+    expect(pokemon.pokemon.calculatedStats?.spAttack).toBe(112);
+    expect(pokemon.pokemon.calculatedStats?.spDefense).toBe(112);
+  });
+
+  it("given only boulder badge, when defense stage changes and applyBadgeBoostGlitch called for defense, then defense is unchanged", () => {
+    // Source: pret/pokered engine/battle/core.asm — Boulder Badge only affects Attack
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 100,
+          defense: 80,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    // defense stage changed, but no thunder badge — defense should not be affected
+    applyBadgeBoostGlitch(pokemon, CORE_STAT_IDS.defense, { boulder: true });
+    expect(pokemon.pokemon.calculatedStats?.defense).toBe(80); // unchanged
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(100); // attack not re-boosted (wrong stat)
+  });
+
+  // ─── Gen1Ruleset.onStatStageChange integration tests ─────────────────────
+
+  it("given badgeBoostGlitch enabled with boulder badge, when onStatStageChange called for attack, then calculatedStats.attack is re-boosted", () => {
+    // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts hook fires on stat stage change
+    // Given: ruleset with glitch enabled, pokemon with attack already at 112 (one prior boost)
+    const glitchRuleset = new Gen1Ruleset({
+      badgeBoosts: { boulder: true },
+      badgeBoostGlitch: true,
+    });
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 112,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState();
+    // When: a stat stage change occurs
+    glitchRuleset.onStatStageChange(pokemon, CORE_STAT_IDS.attack, 1, state);
+    // Then: attack is re-multiplied floor(112 * 9/8) = 126
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(126);
+  });
+
+  it("given badgeBoosts set but badgeBoostGlitch NOT enabled, when onStatStageChange called, then calculatedStats are NOT modified", () => {
+    // Source: pret/pokered — opt-in glitch simulation: without badgeBoostGlitch: true, no compounding
+    const rulesetNoGlitch = new Gen1Ruleset({ badgeBoosts: { boulder: true } });
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 112,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState();
+    rulesetNoGlitch.onStatStageChange(pokemon, CORE_STAT_IDS.attack, 1, state);
+    // No compounding without the glitch flag
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(112);
+  });
+
+  it("given badgeBoostGlitch enabled but NO badgeBoosts, when onStatStageChange called, then calculatedStats are unchanged", () => {
+    // Source: pret/pokered — no badges means BadgeStatBoosts is a no-op
+    const rulesetNoBadges = new Gen1Ruleset({ badgeBoostGlitch: true });
+    const pokemon = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        calculatedStats: {
+          hp: 100,
+          attack: 80,
+          defense: 60,
+          spAttack: 80,
+          spDefense: 60,
+          speed: 120,
+        },
+      } as PokemonInstance,
+    });
+    const state = makeBattleState();
+    rulesetNoBadges.onStatStageChange(pokemon, CORE_STAT_IDS.attack, 1, state);
+    expect(pokemon.pokemon.calculatedStats?.attack).toBe(80);
   });
 });
