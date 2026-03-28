@@ -12,3 +12,4 @@ tools/repos/
 .claude/.session-branch
 references/
 PROGRESS.md
+.stryker-tmp/
