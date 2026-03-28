@@ -43,6 +43,7 @@
     },
     {
       "id": "gen3-protect-consecutive-4-tier-cap",
+      "type": "mechanic-documentation",
       "description": "Consecutive Protect/Detect uses: success rate drops to 1/2, 1/4, 1/8, then caps at 1/8",
       "attacker": { "species": "Blissey", "level": 50, "consecutiveProtects": 3 },
       "note": "Each consecutive use: 50% → 25% → 12.5% → caps. Source: pret/pokeemerald src/battle_script_commands.c ProtectCheck"
@@ -57,6 +58,7 @@
     },
     {
       "id": "gen3-weather-swift-swim-rain",
+      "type": "mechanic-documentation",
       "description": "Swift Swim doubles Speed in rain, increasing damage output via doubled speed in turn order",
       "attacker": { "species": "Kingdra", "level": 50, "ability": "Swift Swim" },
       "weather": "rain",
@@ -64,6 +66,7 @@
     },
     {
       "id": "gen3-iron-fist-boost-list",
+      "type": "mechanic-documentation",
       "description": "Iron Fist boosts punching moves by 20% — not in Gen 3 (introduced Gen 4)",
       "note": "Iron Fist was introduced in Gen 4 (Hitmonchan). Gen 3 does not have this ability. Listed here to document that boosting abilities are gen-specific. Source: pret/pokeemerald abilities.c — Iron Fist not present"
     }
