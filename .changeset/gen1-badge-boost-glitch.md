@@ -1,6 +1,6 @@
 ---
 "@pokemon-lib-ts/battle": patch
-"@pokemon-lib-ts/gen1": patch
+"@pokemon-lib-ts/gen1": minor
 ---
 
 feat(gen1): implement badge boost glitch via onStatStageChange hook
