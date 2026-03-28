@@ -30,6 +30,7 @@ import type {
 import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
+  BattleStat,
   DataManager,
   EntryHazardType,
   MoveData,
@@ -70,7 +71,7 @@ type Gen1MoveEffectSideTargetWithBoth =
   | typeof BATTLE_EFFECT_TARGETS.both;
 
 import type { Gen1BadgeBoosts } from "./Gen1StatCalc";
-import { applyGen1BadgeBoosts, calculateGen1Stats } from "./Gen1StatCalc";
+import { applyBadgeBoostGlitch, applyGen1BadgeBoosts, calculateGen1Stats } from "./Gen1StatCalc";
 import { GEN1_TYPE_CHART, GEN1_TYPES } from "./Gen1TypeChart";
 
 /**
@@ -90,6 +91,15 @@ export interface Gen1RulesetOptions {
    * Default: undefined (no badge boosts applied).
    */
   readonly badgeBoosts?: Gen1BadgeBoosts;
+  /**
+   * Opt-in badge boost glitch simulation.
+   * When true, badge boosts are re-applied to calculatedStats every time a stat stage
+   * changes in battle, compounding indefinitely (capped at 999).
+   * Requires badgeBoosts to be set — if badgeBoosts is absent, this option has no effect.
+   * Default: undefined (no compounding glitch).
+   * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+   */
+  readonly badgeBoostGlitch?: boolean;
   /**
    * Shared data manager used for move/species lookups.
    * Defaults to the bundled Gen 1 data manager.
@@ -117,9 +127,11 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   private readonly dataManager: DataManager;
   private readonly badgeBoosts?: Gen1BadgeBoosts;
+  private readonly badgeBoostGlitch: boolean;
 
   constructor(options?: Gen1RulesetOptions) {
     this.badgeBoosts = options?.badgeBoosts;
+    this.badgeBoostGlitch = options?.badgeBoostGlitch ?? false;
     this.dataManager = options?.dataManager ?? createGen1DataManager();
   }
 
@@ -138,6 +150,26 @@ export class Gen1Ruleset implements GenerationRuleset {
   calculateStats(pokemon: PokemonInstance, species: PokemonSpeciesData): StatBlock {
     const base = calculateGen1Stats(pokemon, species);
     return this.badgeBoosts ? applyGen1BadgeBoosts(base, this.badgeBoosts) : base;
+  }
+
+  /**
+   * Re-applies badge boost to ALL badge-eligible calculatedStats every time a stat stage changes.
+   * Implements the Gen 1 badge boost glitch: the BadgeStatBoosts routine runs
+   * unconditionally after any stat stage modification, compounding all badge stats.
+   * Only applies to the player's side (side 0) — badge boosts are a single-player mechanic.
+   * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+   */
+  onStatStageChange(
+    pokemon: ActivePokemon,
+    _stat: BattleStat,
+    _newStage: number,
+    state: BattleState,
+  ): void {
+    if (!this.badgeBoostGlitch || !this.badgeBoosts) return;
+    // Badge boosts are a single-player mechanic — only apply to player's pokemon (side 0)
+    const isPlayerSide = state.sides[0]?.active.includes(pokemon) ?? false;
+    if (!isPlayerSide) return;
+    applyBadgeBoostGlitch(pokemon, this.badgeBoosts);
   }
 
   getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {

@@ -1756,6 +1756,11 @@ export class BattleEngine implements BattleEventEmitter {
             stages: change.stages,
             currentStage: newStage,
           });
+          // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+          // Only fire hook when stage actually changed (guard against clamped no-ops)
+          if (newStage !== currentStage) {
+            this.ruleset.onStatStageChange?.(active, change.stat, newStage, this.state);
+          }
         }
       }
       // Source: Bulbapedia — Poison-type absorbs Toxic Spikes on switch-in
@@ -3559,6 +3564,11 @@ export class BattleEngine implements BattleEventEmitter {
         stages,
         currentStage: newStage,
       });
+      // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+      // Only fire hook when stage actually changed (guard against clamped no-ops)
+      if (newStage !== current) {
+        this.ruleset.onStatStageChange?.(target, stat, newStage, this.state);
+      }
     }
 
     // Emit result messages
@@ -4289,6 +4299,11 @@ export class BattleEngine implements BattleEventEmitter {
         stages: change.stages,
         currentStage: newStage,
       });
+      // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+      // Only fire hook when stage actually changed (guard against clamped no-ops)
+      if (newStage !== currentStage) {
+        this.ruleset.onStatStageChange?.(target, change.stat, newStage, this.state);
+      }
     }
 
     // Recoil damage
@@ -5697,6 +5712,11 @@ export class BattleEngine implements BattleEventEmitter {
               stages: boostStages,
               currentStage: newStage,
             });
+            // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+            // Only fire hook when stage actually changed (guard against clamped no-ops)
+            if (newStage !== currentStage) {
+              this.ruleset.onStatStageChange?.(pokemon, stat, newStage, this.state);
+            }
           }
           break;
         }
@@ -5799,6 +5819,11 @@ export class BattleEngine implements BattleEventEmitter {
             stages,
             currentStage: newStage,
           });
+          // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+          // Only fire hook when stage actually changed (guard against clamped no-ops)
+          if (newStage !== currentStage) {
+            this.ruleset.onStatStageChange?.(target, stat, newStage, this.state);
+          }
           break;
         }
         case BATTLE_ABILITY_EFFECT_TYPES.weatherSet: {
