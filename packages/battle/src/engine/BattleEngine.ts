@@ -113,7 +113,13 @@ const STRUGGLE_MOVE_DATA: MoveData = {
   generation: 1,
 };
 
-const BATTLE_GIMMICK_TYPES: readonly BattleGimmickType[] = ["mega", "zmove", "dynamax", "tera"];
+const BATTLE_GIMMICK_TYPES: readonly BattleGimmickType[] = [
+  "mega",
+  "zmove",
+  "dynamax",
+  "tera",
+  "ultraburst",
+];
 
 type SerializedBattleGimmickState = Partial<Record<BattleGimmickType, unknown>>;
 interface BatonPassState {
@@ -2048,24 +2054,30 @@ export class BattleEngine implements BattleEventEmitter {
         ? { ...moveData, power: moveData.power * powerMultiplier }
         : moveData;
 
-    // Handle battle gimmick activation (Mega Evolution, Z-Move, Dynamax, Tera).
+    // Handle battle gimmick activation (Mega Evolution, Z-Move, Dynamax, Tera, Ultra Burst).
     // Gimmick fires before immobilization checks — even a paralyzed Pokemon mega evolves.
     // Source: Showdown sim/battle-actions.ts — gimmick activates at start of runMove
-    // The type is passed so multi-gimmick gens (Gen 7: Mega + Z-Move) can distinguish
-    // which gimmick was requested. See issue #586.
+    // The type is passed so multi-gimmick gens (Gen 7: Mega + Z-Move + Ultra Burst) can
+    // distinguish which gimmick was requested. See issue #586.
     //
     // activatedGimmick tracks whether activation actually succeeded (canUse passed and
     // activate ran). modifyMove is only called on the activated gimmick — if canUse()
     // returned false the gimmick did not activate and the move must not be transformed.
+    //
+    // Each gimmick's modifyMove handles its own move transformation (e.g., Ultra Burst
+    // converts Photon Geyser to Light That Burns the Sky via its own modifyMove).
+    // No gen-specific sequencing logic belongs in the engine.
     let activatedGimmick: import("../context").BattleGimmick | null = null;
-    if (action.mega || action.zMove || action.dynamax || action.terastallize) {
-      const gimmickType = action.mega
-        ? "mega"
-        : action.zMove
-          ? "zmove"
-          : action.dynamax
-            ? "dynamax"
-            : "tera";
+    if (action.ultraBurst || action.mega || action.zMove || action.dynamax || action.terastallize) {
+      const gimmickType = action.ultraBurst
+        ? "ultraburst"
+        : action.mega
+          ? "mega"
+          : action.zMove
+            ? "zmove"
+            : action.dynamax
+              ? "dynamax"
+              : "tera";
       const gimmick = this.ruleset.getBattleGimmick(gimmickType);
       const side = this.state.sides[action.side];
       if (gimmick && side && gimmick.canUse(actor, side, this.state)) {
@@ -3616,6 +3628,7 @@ export class BattleEngine implements BattleEventEmitter {
       transformed: false,
       transformedSpecies: null,
       isMega: false,
+      isUltraBurst: false,
       isDynamaxed: false,
       dynamaxTurnsLeft: 0,
       teraType: null,

@@ -1356,6 +1356,14 @@ export function calculateGen7Damage(
     abilityMultiplier *= 0.75;
   }
 
+  // Neuroforce (Ultra Necrozma ability): 1.25x damage on super-effective hits.
+  // Source: Showdown data/abilities.ts -- neuroforce: onSourceModifyDamage chainModify([5120, 4096])
+  // Source: Bulbapedia "Neuroforce" -- "increases damage dealt by super-effective moves by 25%"
+  if (attackerAbility === GEN7_ABILITY_IDS.neuroforce && effectiveness > 1) {
+    baseDamage = pokeRound(baseDamage, 5120); // 1.25x (5120/4096)
+    abilityMultiplier *= 1.25;
+  }
+
   // Screens: Reflect (physical), Light Screen (special), Aurora Veil (both): 0.5x in singles
   // Aurora Veil is a new Gen 7 screen that halves both physical and special damage.
   // Screens do NOT apply on crits.
