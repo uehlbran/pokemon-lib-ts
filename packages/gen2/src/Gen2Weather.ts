@@ -1,8 +1,13 @@
 import type { BattleState, WeatherEffectResult } from "@pokemon-lib-ts/battle";
 import type { PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, CORE_WEATHER_IDS } from "@pokemon-lib-ts/core";
 
 /** Types immune to sandstorm damage in Gen 2 */
-const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel"];
+const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = [
+  CORE_TYPE_IDS.rock,
+  CORE_TYPE_IDS.ground,
+  CORE_TYPE_IDS.steel,
+];
 
 /**
  * Get the weather-based damage modifier for a move type.
@@ -23,14 +28,14 @@ const SANDSTORM_IMMUNE_TYPES: readonly PokemonType[] = ["rock", "ground", "steel
  * @returns The damage multiplier (1.5, 0.5, or 1)
  */
 export function getWeatherDamageModifier(moveType: PokemonType, weather: WeatherType): number {
-  if (weather === "rain") {
-    if (moveType === "water") return 1.5;
-    if (moveType === "fire") return 0.5;
+  if (weather === CORE_WEATHER_IDS.rain) {
+    if (moveType === CORE_TYPE_IDS.water) return 1.5;
+    if (moveType === CORE_TYPE_IDS.fire) return 0.5;
   }
 
-  if (weather === "sun") {
-    if (moveType === "fire") return 1.5;
-    if (moveType === "water") return 0.5;
+  if (weather === CORE_WEATHER_IDS.sun) {
+    if (moveType === CORE_TYPE_IDS.fire) return 1.5;
+    if (moveType === CORE_TYPE_IDS.water) return 0.5;
   }
 
   return 1;
@@ -49,7 +54,7 @@ export function getWeatherDamageModifier(moveType: PokemonType, weather: Weather
  */
 export function isWeatherImmune(types: readonly PokemonType[], weather: WeatherType): boolean {
   // Only sandstorm has immunities (because only sandstorm deals end-of-turn damage)
-  if (weather !== "sand") return false;
+  if (weather !== CORE_WEATHER_IDS.sand) return false;
 
   return types.some((type) => SANDSTORM_IMMUNE_TYPES.includes(type));
 }
@@ -68,7 +73,7 @@ export function applyGen2WeatherEffects(state: BattleState): WeatherEffectResult
   const results: WeatherEffectResult[] = [];
 
   // No weather or non-damaging weather
-  if (!state.weather || state.weather.type !== "sand") {
+  if (!state.weather || state.weather.type !== CORE_WEATHER_IDS.sand) {
     return results;
   }
 
@@ -78,7 +83,7 @@ export function applyGen2WeatherEffects(state: BattleState): WeatherEffectResult
       if (!active) continue;
 
       // Check immunity
-      if (isWeatherImmune(active.types, "sand")) continue;
+      if (isWeatherImmune(active.types, CORE_WEATHER_IDS.sand)) continue;
 
       // Calculate 1/8 max HP damage (minimum 1)
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
