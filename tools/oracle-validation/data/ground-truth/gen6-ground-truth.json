@@ -1,0 +1,123 @@
+{
+  "gen": 6,
+  "authority": "smogon/pokemon-showdown",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "type-fairy-vs-dragon-gen6",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["dragon"],
+      "expected": 2,
+      "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
+      "note": "Fairy is super-effective vs Dragon (2x). Fairy introduced in Gen 6."
+    },
+    {
+      "id": "type-fairy-vs-fire-gen6",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["fire"],
+      "expected": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
+      "note": "Fairy is not very effective vs Fire (0.5x)."
+    },
+    {
+      "id": "type-fairy-vs-poison-gen6",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["poison"],
+      "expected": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
+      "note": "Fairy is not very effective vs Poison (0.5x)."
+    },
+    {
+      "id": "type-steel-vs-fairy-gen6",
+      "kind": "typeChart",
+      "attackerType": "steel",
+      "defenderTypes": ["fairy"],
+      "expected": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
+      "note": "Steel is not very effective vs Fairy (0.5x). Steel resists Fairy."
+    },
+    {
+      "id": "type-dragon-vs-fairy-gen6",
+      "kind": "typeChart",
+      "attackerType": "dragon",
+      "defenderTypes": ["fairy"],
+      "expected": 0,
+      "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
+      "note": "Fairy is immune to Dragon-type moves (0x)."
+    },
+    {
+      "id": "type-poison-vs-fairy-gen6",
+      "kind": "typeChart",
+      "attackerType": "poison",
+      "defenderTypes": ["fairy"],
+      "expected": 2,
+      "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
+      "note": "Poison is super-effective vs Fairy (2x)."
+    },
+    {
+      "id": "knock-off-item-boost-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Knock Off deals 1.5x damage when the target is holding an item (introduced in Gen 6 — ERRATA #25)",
+      "moveId": "knock-off",
+      "expectedBoostWhenHoldingItem": 1.5,
+      "source": "Showdown sim/battle-actions.ts Gen6 — KnockOff boost ERRATA #25",
+      "note": "Knock Off 1.5x damage boost is Gen 6+. Gen 4-5 had base power 20 with no conditional boost."
+    },
+    {
+      "id": "parental-bond-second-hit-fraction-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Parental Bond second hit deals 50% of the primary hit in Gen 6 (reduced to 25% in Gen 7 — ERRATA #12)",
+      "abilityId": "parental-bond",
+      "expectedSecondHitFraction": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen6 — ParentalBond ERRATA #12",
+      "note": "Gen 6: second hit = 0.5x. Gen 7+: second hit = 0.25x (ERRATA #12)."
+    },
+    {
+      "id": "gale-wings-flying-priority-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Gale Wings gives +1 priority to ALL Flying-type moves in Gen 6 with no HP condition (ERRATA #13)",
+      "abilityId": "gale-wings",
+      "expectedPriorityBoost": 1,
+      "hpCondition": null,
+      "source": "Showdown sim/battle-actions.ts Gen6 — GaleWings ERRATA #13",
+      "note": "No HP restriction in Gen 6. The full-HP requirement was added in Gen 7 (ERRATA #13)."
+    },
+    {
+      "id": "type-count-18-fairy-added-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Gen 6 has 18 types (17 prior types plus the new Fairy type)",
+      "expectedTypeCount": 18,
+      "source": "Showdown sim/battle-actions.ts Gen6 — type chart",
+      "note": "Fairy type was added in Gen 6, bringing the total to 18 types."
+    },
+    {
+      "id": "terrain-duration-5-turns-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Terrain effects (Electric/Psychic/Misty/Grassy) last 5 turns by default in Gen 6 (8 turns with Terrain Extender)",
+      "expectedBaseDuration": 5,
+      "expectedExtendedDuration": 8,
+      "source": "Showdown sim/battle-actions.ts Gen6 — Terrain duration",
+      "note": "Terrain was introduced in Gen 6 with 5-turn base duration."
+    },
+    {
+      "id": "weather-5-turn-duration-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Ability-summoned weather lasts 5 turns in Gen 6 (8 with weather rock items), changed from Gen 5's permanent weather",
+      "expectedBaseDuration": 5,
+      "expectedExtendedDuration": 8,
+      "source": "Showdown sim/battle-actions.ts Gen6 — weather duration",
+      "note": "Gen 6 capped ability weather at 5 turns. Gen 5 had no duration limit (permanent). This affects Drizzle, Drought, Sand Stream, and Snow Warning."
+    },
+    {
+      "id": "protect-consecutive-tripling-gen6",
+      "kind": "mechanic-documentation",
+      "description": "Consecutive Protect uses reduce success rate by 1/3 each use in Gen 6: 100%, 33.3%, 11.1%, 3.7%... (ERRATA #9)",
+      "expectedSuccessRates": [1.0, 0.333, 0.111, 0.037],
+      "source": "Showdown sim/battle-actions.ts Gen6 — ProtectCheck ERRATA #9",
+      "note": "Gen 6 changed from Gen 5's halving to tripling reduction (ERRATA #9)."
+    }
+  ]
+}

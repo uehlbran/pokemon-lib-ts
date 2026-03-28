@@ -1,0 +1,206 @@
+{
+  "gen": 6,
+  "authority": "smogon/pokemon-showdown",
+  "scenarios": [
+    {
+      "id": "gen6-mega-charizard-x-atk-base-130",
+      "description": "Mega Charizard X uses its Mega forme base Attack of 130, not the base forme's 84, in damage calculations",
+      "attacker": { "species": "Charizard-Mega-X", "level": 50, "ivs": { "atk": 31 } },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Flare Blitz",
+      "expected_base_stat_atk": 130,
+      "note": "Mega Charizard X base Attack is 130 (not 84). Damage calc uses Mega form stats. Source: Showdown sim/battle-actions.ts MegaEvolution stat override"
+    },
+    {
+      "id": "gen6-mega-evolution-persists-no-revert-on-switch",
+      "type": "mechanic-documentation",
+      "description": "Mega Evolution is permanent for the battle — a Pokemon cannot revert to base form by switching out (ERRATA #18)",
+      "note": "Once Mega-Evolved, the Pokemon retains its Mega form even after switching out and back in. Source: Showdown sim/battle-actions.ts MegaEvolution persistence — ERRATA #18"
+    },
+    {
+      "id": "gen6-parental-bond-second-hit-50-percent",
+      "type": "mechanic-documentation",
+      "description": "Parental Bond's second hit deals 50% of the first hit's damage in Gen 6 (changed to 25% in Gen 7 — ERRATA #12)",
+      "attacker": { "species": "Kangaskhan-Mega", "level": 50, "ability": "Parental Bond" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Return",
+      "expected_second_hit_fraction": 0.5,
+      "note": "Parental Bond second hit = 50% in Gen 6 (not 25%). Changed to 25% in Gen 7 (ERRATA #12). Source: Showdown sim/battle-actions.ts ParentalBond Gen6"
+    },
+    {
+      "id": "gen6-fairy-vs-dragon-2x",
+      "description": "Fairy-type moves deal 2x damage to Dragon-type Pokemon (ERRATA #11)",
+      "attacker": { "species": "Gardevoir", "level": 50 },
+      "defender": { "species": "Dragonite", "level": 50 },
+      "move": "Moonblast",
+      "expected_type_effectiveness": 2,
+      "note": "Fairy is super-effective vs Dragon. Source: Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11"
+    },
+    {
+      "id": "gen6-dragon-vs-fairy-0x-immune",
+      "description": "Dragon-type moves deal 0 damage to Fairy-type Pokemon — Fairy is immune to Dragon",
+      "attacker": { "species": "Dragonite", "level": 50 },
+      "defender": { "species": "Gardevoir", "level": 50 },
+      "move": "Dragon Claw",
+      "expected_type_effectiveness": 0,
+      "note": "Fairy is immune to Dragon-type moves. Source: Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11"
+    },
+    {
+      "id": "gen6-fairy-vs-fighting-2x",
+      "description": "Fairy-type moves deal 2x damage to Fighting-type Pokemon",
+      "attacker": { "species": "Sylveon", "level": 50 },
+      "defender": { "species": "Machamp", "level": 50 },
+      "move": "Moonblast",
+      "expected_type_effectiveness": 2,
+      "note": "Fairy is super-effective vs Fighting. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    },
+    {
+      "id": "gen6-fairy-vs-dark-2x",
+      "description": "Fairy-type moves deal 2x damage to Dark-type Pokemon",
+      "attacker": { "species": "Sylveon", "level": 50 },
+      "defender": { "species": "Hydreigon", "level": 50 },
+      "move": "Moonblast",
+      "expected_type_effectiveness": 2,
+      "note": "Fairy is super-effective vs Dark. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    },
+    {
+      "id": "gen6-fairy-vs-fire-half",
+      "description": "Fairy-type moves deal 0.5x damage to Fire-type Pokemon",
+      "attacker": { "species": "Sylveon", "level": 50 },
+      "defender": { "species": "Charizard", "level": 50 },
+      "move": "Moonblast",
+      "expected_type_effectiveness": 0.5,
+      "note": "Fairy is not very effective vs Fire. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    },
+    {
+      "id": "gen6-fairy-vs-poison-half",
+      "description": "Fairy-type moves deal 0.5x damage to Poison-type Pokemon",
+      "attacker": { "species": "Sylveon", "level": 50 },
+      "defender": { "species": "Gengar", "level": 50 },
+      "move": "Moonblast",
+      "expected_type_effectiveness": 0.5,
+      "note": "Fairy is not very effective vs Poison. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    },
+    {
+      "id": "gen6-fairy-vs-steel-half",
+      "description": "Fairy-type moves deal 0.5x damage to Steel-type Pokemon (Steel resists Fairy)",
+      "attacker": { "species": "Sylveon", "level": 50 },
+      "defender": { "species": "Steelix", "level": 50 },
+      "move": "Moonblast",
+      "expected_type_effectiveness": 0.5,
+      "note": "Steel resists Fairy (0.5x). Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    },
+    {
+      "id": "gen6-knock-off-1-5x-boost-with-item",
+      "description": "Knock Off deals 1.5x damage when the target holds an item (introduced Gen 6 — ERRATA #25)",
+      "attacker": { "species": "Bisharp", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50, "item": "Leftovers" },
+      "move": "Knock Off",
+      "expected_boost": 1.5,
+      "note": "Knock Off 1.5x damage boost introduced in Gen 6 (ERRATA #25). Source: Showdown sim/battle-actions.ts KnockOff Gen6"
+    },
+    {
+      "id": "gen6-protect-consecutive-tripling-reduction",
+      "type": "mechanic-documentation",
+      "description": "Consecutive Protect uses: success rate triples-down per use in Gen 6 (1/3, 1/9, 1/27...) — ERRATA #9",
+      "note": "Gen 6 changed Protect consecutive rate from halving to tripling. Attempt 1=100%, 2=33.3%, 3=11.1%, 4=3.7%. Source: Showdown sim/battle-actions.ts ProtectCheck Gen6 — ERRATA #9"
+    },
+    {
+      "id": "gen6-gale-wings-all-flying-priority-no-hp-condition",
+      "type": "mechanic-documentation",
+      "description": "Gale Wings gives +1 priority to ALL Flying-type moves in Gen 6 with no HP condition (ERRATA #13)",
+      "attacker": { "species": "Talonflame", "level": 50, "ability": "Gale Wings" },
+      "move": "Brave Bird",
+      "expected_effective_priority": 1,
+      "note": "Gale Wings Gen 6: +1 priority for all Flying moves regardless of HP. The HP condition (HP must be full) was added in Gen 7 (ERRATA #13). Source: Showdown sim/battle-actions.ts GaleWings Gen6"
+    },
+    {
+      "id": "gen6-ate-abilities-type-change-and-boost",
+      "type": "mechanic-documentation",
+      "description": "Pixilate, Refrigerate, Aerilate, and Galvanize convert Normal-type moves to their type and boost power by 1.2x",
+      "attacker": { "species": "Sylveon", "level": 50, "ability": "Pixilate" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Hyper Voice",
+      "expected_converted_type": "fairy",
+      "expected_damage_modifier": 1.2,
+      "note": "Pixilate (and other -ate abilities): Normal moves become the ability's type and gain 1.2x power in Gen 6. Source: Showdown sim/battle-actions.ts Pixilate Gen6"
+    },
+    {
+      "id": "gen6-electric-terrain-boost-1-5x",
+      "description": "Electric Terrain boosts Electric-type moves used by grounded Pokemon by 1.5x",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Thunderbolt",
+      "terrain": "electric",
+      "expected_damage_modifier": 1.5,
+      "note": "Electric Terrain: 1.5x boost to Electric moves for grounded Pokemon. Terrain introduced Gen 6. Source: Showdown sim/battle-actions.ts ElectricTerrain"
+    },
+    {
+      "id": "gen6-terrain-duration-5-turns",
+      "type": "mechanic-documentation",
+      "description": "Terrain moves (Electric/Psychic/Misty/Grassy Terrain) last 5 turns by default, 8 turns with Terrain Extender",
+      "note": "Terrain was introduced in Gen 6. Duration: 5 turns base, 8 with Terrain Extender. Source: Showdown sim/battle-actions.ts Terrain duration Gen6"
+    },
+    {
+      "id": "gen6-sticky-web-speed-drop-on-switch",
+      "type": "mechanic-documentation",
+      "description": "Sticky Web lowers Speed by 1 stage for grounded Pokemon switching into the field (introduced Gen 6)",
+      "hazard": "sticky-web",
+      "note": "Sticky Web was introduced in Gen 6. Grounded incoming Pokemon lose -1 Speed. Source: Showdown sim/battle-actions.ts StickyWeb"
+    },
+    {
+      "id": "gen6-oblivious-blocks-taunt-and-encore",
+      "type": "mechanic-documentation",
+      "description": "Oblivious prevents the bearer from being targeted by Taunt and Encore in Gen 6",
+      "defender": { "species": "Snorlax", "level": 50, "ability": "Oblivious" },
+      "move": "Taunt",
+      "expected_immune": true,
+      "note": "Oblivious blocks Taunt and Encore starting in Gen 6. Source: Showdown sim/battle-actions.ts Oblivious Gen6"
+    },
+    {
+      "id": "gen6-stance-change-aegislash-form",
+      "type": "mechanic-documentation",
+      "description": "Aegislash switches between Shield (defensive) and Blade (offensive) form based on the move used",
+      "attacker": { "species": "Aegislash", "level": 50, "ability": "Stance Change" },
+      "note": "Stance Change: Aegislash shifts to Blade Form when using an attacking move, Shield Form when using King's Shield. Source: Showdown sim/battle-actions.ts StanceChange"
+    },
+    {
+      "id": "gen6-mega-stone-cannot-be-knocked-off",
+      "type": "mechanic-documentation",
+      "description": "Mega Stones cannot be removed by Knock Off, Thief, Trick, or Switcheroo",
+      "attacker": { "species": "Bisharp", "level": 50 },
+      "defender": { "species": "Charizard", "level": 50, "item": "Charizardite X" },
+      "move": "Knock Off",
+      "expected_item_removed": false,
+      "note": "Mega Stones are immune to item removal. Source: Showdown sim/battle-actions.ts MegaStone item removal immunity"
+    },
+    {
+      "id": "gen6-weather-5-turn-duration",
+      "type": "mechanic-documentation",
+      "description": "In Gen 6, ability-summoned weather (Drizzle/Drought/Sand Stream/Snow Warning) lasts 5 turns (changed from Gen 5's permanent weather)",
+      "note": "Gen 6 added 5-turn duration to ability-summoned weather (8 turns with weather rock items). This is a significant nerf from Gen 5. Source: Showdown sim/battle-actions.ts Gen6 weather duration"
+    },
+    {
+      "id": "gen6-defiant-stat-drop-trigger",
+      "type": "mechanic-documentation",
+      "description": "Defiant raises Attack by +2 stages when any stat is lowered by an opponent (including Intimidate)",
+      "attacker": { "species": "Bisharp", "level": 50, "ability": "Defiant" },
+      "note": "Defiant: +2 Attack on any stat drop from opponents, including Intimidate. Source: Showdown sim/battle-actions.ts Defiant"
+    },
+    {
+      "id": "gen6-poison-vs-fairy-2x",
+      "description": "Poison-type moves deal 2x damage to Fairy-type Pokemon (Fairy's weakness to Poison)",
+      "attacker": { "species": "Gengar", "level": 50 },
+      "defender": { "species": "Sylveon", "level": 50 },
+      "move": "Sludge Bomb",
+      "expected_type_effectiveness": 2,
+      "note": "Poison is super-effective vs Fairy. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    },
+    {
+      "id": "gen6-type-count-18-fairy-added",
+      "type": "mechanic-documentation",
+      "description": "Gen 6 has 18 types: the 17 from prior gens plus the newly added Fairy type",
+      "note": "Fairy type was added in Gen 6, bringing the total type count to 18. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+    }
+  ]
+}
