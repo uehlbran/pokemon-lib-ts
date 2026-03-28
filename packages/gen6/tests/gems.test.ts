@@ -180,10 +180,7 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       move: moveWithGem,
       seed: 42,
     });
-    const resultWithGem = calculateGen6Damage(
-      ctxWithGem,
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const resultWithGem = calculateGen6Damage(ctxWithGem, GEN6_TYPE_CHART);
 
     // Calculate without gem (remove item)
     const attackerNoGem = createSyntheticActivePokemon({
@@ -197,10 +194,7 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       move: moveNoGem,
       seed: 42,
     });
-    const resultNoGem = calculateGen6Damage(
-      ctxNoGem,
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const resultNoGem = calculateGen6Damage(ctxNoGem, GEN6_TYPE_CHART);
 
     // Gem damage should be higher due to 1.3x boost.
     // Derivation (seed=42, Showdown Gen 6 formula, Rock resists Normal 0.5x):
@@ -241,10 +235,7 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       move: moveWithGem,
       seed: 42,
     });
-    const resultWithGem = calculateGen6Damage(
-      ctxWithGem,
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const resultWithGem = calculateGen6Damage(ctxWithGem, GEN6_TYPE_CHART);
 
     const attackerNoGem = createSyntheticActivePokemon({
       speciesId: FIRE_SPECIES.id,
@@ -257,10 +248,7 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
       move: moveNoGem,
       seed: 42,
     });
-    const resultNoGem = calculateGen6Damage(
-      ctxNoGem,
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const resultNoGem = calculateGen6Damage(ctxNoGem, GEN6_TYPE_CHART);
 
     expect(resultNoGem.damage).toBe(25);
     expect(resultWithGem.damage).toBe(resultNoGem.damage);
@@ -281,7 +269,7 @@ describe("Gen 6 Gems -- 1.3x boost (nerfed from 1.5x in Gen 5)", () => {
     const move = TACKLE;
 
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    calculateGen6Damage(ctx, GEN6_TYPE_CHART as Record<string, Record<string, number>>);
+    calculateGen6Damage(ctx, GEN6_TYPE_CHART);
 
     expect(ctx.attacker.pokemon.heldItem).toBeNull();
   });

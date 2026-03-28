@@ -295,7 +295,7 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
     // Seed 12345 for deterministic RNG
     const sunResult = calculateGen8Damage(
       createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 12345 }),
-      GEN8_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN8_TYPE_CHART,
     );
     const noWeatherResult = calculateGen8Damage(
       createDamageContext({
@@ -305,7 +305,7 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN8_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN8_TYPE_CHART,
     );
 
     // With Cloud Nine: sun boost is suppressed, so damage equals no-weather damage
@@ -335,7 +335,7 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
 
     const rainResult = calculateGen8Damage(
       createDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 12345 }),
-      GEN8_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN8_TYPE_CHART,
     );
     const noWeatherResult = calculateGen8Damage(
       createDamageContext({
@@ -345,7 +345,7 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN8_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN8_TYPE_CHART,
     );
 
     // Without suppression: rain DOES boost Water damage
@@ -373,7 +373,7 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
 
     const rainResult = calculateGen8Damage(
       createDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 99999 }),
-      GEN8_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN8_TYPE_CHART,
     );
     const noWeatherResult = calculateGen8Damage(
       createDamageContext({
@@ -383,7 +383,7 @@ describe("Gen8 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 99999,
       }),
-      GEN8_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN8_TYPE_CHART,
     );
 
     // With Air Lock: rain boost is suppressed

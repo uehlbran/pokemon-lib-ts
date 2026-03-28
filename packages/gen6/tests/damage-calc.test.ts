@@ -212,7 +212,7 @@ function createDamageContext(overrides: {
 }
 
 // Use the Gen6 type chart for all tests
-const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN6_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // pokeRound unit tests

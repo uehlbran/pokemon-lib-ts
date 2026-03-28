@@ -249,10 +249,7 @@ describe("Gen 5 damage calc -- status moves", () => {
     const ctx = createDamageContext({
       move: createSyntheticMove({ id: MOVES.toxic, category: MOVE_CATEGORIES.status, power: null }),
     });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- status moves have power=null, return 0 damage; effectiveness stays 1 (not immune)
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(1);
@@ -263,10 +260,7 @@ describe("Gen 5 damage calc -- status moves", () => {
     const ctx = createDamageContext({
       move: createSyntheticMove({ power: 0 }),
     });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- power 0 skips all damage calc, returns 0
     expect(result.damage).toBe(0);
   });
@@ -297,10 +291,7 @@ describe("Gen 5 damage calc -- base formula", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(33);
   });
@@ -320,10 +311,7 @@ describe("Gen 5 damage calc -- base formula", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(190);
   });
 });
@@ -354,10 +342,7 @@ describe("Gen 5 damage calc -- STAB", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // STAB range: 30-36 (vs non-STAB 20-24)
     expect(result.damage).toBeGreaterThanOrEqual(30);
     expect(result.damage).toBeLessThanOrEqual(36);
@@ -384,10 +369,7 @@ describe("Gen 5 damage calc -- STAB", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Adaptability STAB range: 40-48 (vs normal STAB 30-36, vs no STAB 20-24)
     expect(result.damage).toBeGreaterThanOrEqual(40);
     expect(result.damage).toBeLessThanOrEqual(48);
@@ -411,10 +393,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Fire vs Grass = 2x (super effective)
     expect(result.effectiveness).toBe(2);
     // With STAB + SE: base 24, random 20-24, STAB -> 30-36, SE -> 60-72
@@ -434,10 +413,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Fire vs Water = 0.5x (not very effective)
     expect(result.effectiveness).toBe(0.5);
     expect(result.damage).toBeGreaterThanOrEqual(15);
@@ -454,10 +430,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Normal vs Ghost = 0x (immune); damage 0, effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
@@ -484,10 +457,7 @@ describe("Gen 5 damage calc -- critical hit", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- isCrit passthrough from ctx.isCrit
     expect(result.isCrit).toBe(true);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
@@ -509,10 +479,7 @@ describe("Gen 5 damage calc -- critical hit", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Crit + STAB fixed outcome for this seed.
     expect(result.damage).toBe(67);
   });
@@ -537,10 +504,7 @@ describe("Gen 5 damage calc -- burn penalty", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(16);
   });
@@ -565,10 +529,7 @@ describe("Gen 5 damage calc -- burn penalty", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(22);
   });
@@ -584,10 +545,7 @@ describe("Gen 5 damage calc -- burn penalty", () => {
       category: MOVE_CATEGORIES.special,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(33);
   });
@@ -632,10 +590,7 @@ describe("Gen 5 damage calc -- Gen 5 damage floor", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 });
@@ -668,10 +623,7 @@ describe("Gen 5 damage calc -- weather", () => {
       weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
     });
     const ctx = createDamageContext({ attacker, defender, move, state });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Rain-boosted fixed outcome for this seed.
     expect(result.damage).toBe(33);
   });
@@ -690,10 +642,7 @@ describe("Gen 5 damage calc -- weather", () => {
       weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = createDamageContext({ attacker, defender, move, state });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Sun-boosted fire fixed outcome for this seed.
     expect(result.damage).toBe(33);
   });
@@ -713,10 +662,7 @@ describe("Gen 5 damage calc -- weather", () => {
       weather: { type: CORE_WEATHER_IDS.sun, turnsLeft: 5, source: ABILITIES.drought },
     });
     const ctx = createDamageContext({ attacker, defender, move, state });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Sun-nerfed water fixed outcome for this seed.
     expect(result.damage).toBe(11);
   });
@@ -742,10 +688,7 @@ describe("Gen 5 damage calc -- Life Orb", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(43);
   });
@@ -785,10 +728,7 @@ describe("Gen 5 damage calc -- spread modifier", () => {
     // Override target to make it a spread move
     const spreadMoveWithTarget = { ...spreadMove, target: "all-adjacent-foes" } as MoveData;
     const ctx2 = createDamageContext({ attacker, defender, move: spreadMoveWithTarget, state });
-    const result = calculateGen5Damage(
-      ctx2,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx2, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(24);
   });
@@ -815,10 +755,7 @@ describe("Gen 5 damage calc -- Gem boost", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(48);
   });
@@ -844,10 +781,7 @@ describe("Gen 5 damage calc -- special moves", () => {
       category: MOVE_CATEGORIES.special,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: seeded RNG roll yields the exact fixed outcome for this case.
     expect(result.damage).toBe(48);
   });
@@ -873,10 +807,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- Levitate grants Ground immunity; effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
@@ -895,10 +826,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       category: MOVE_CATEGORIES.special,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown data/abilities.ts -- Water Absorb blocks Water moves; damage 0, effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
@@ -918,10 +846,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Ground vs Psychic = 1x; Mold Breaker bypasses Levitate so normal calc applies
     expect(result.damage).toBe(34);
     expect(result.effectiveness).toBe(1);
@@ -941,10 +866,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(34);
   });
 
@@ -962,10 +884,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(34);
   });
 });
@@ -989,10 +908,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(43);
   });
 
@@ -1006,10 +922,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(43);
   });
 
@@ -1026,10 +939,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(32);
   });
 
@@ -1043,10 +953,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.special,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(32);
   });
 
@@ -1060,10 +967,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(32);
   });
 
@@ -1081,10 +985,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Guts 1.5x + no burn penalty: range 29-35
     expect(result.damage).toBe(32);
   });
@@ -1107,10 +1008,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(12);
   });
 });
@@ -1133,10 +1031,7 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(15);
   });
 
@@ -1153,10 +1048,7 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
       weather: { type: CORE_WEATHER_IDS.sand, turnsLeft: 5, source: ABILITIES.sandStream },
     });
     const ctx = createDamageContext({ attacker, defender, move, state });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Fire vs Rock = 0.5x, but we care about the SpDef boost here
     // Source: Showdown type chart -- Fire vs Rock = 0.5x (not very effective)
     // Source: Gen 5 formula: levelFactor=22, power=50, spAtk=100, spDef=floor(100*1.5)=150(sand boost)
@@ -1189,10 +1081,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       weather: { type: CORE_WEATHER_IDS.rain, turnsLeft: 5, source: ABILITIES.drizzle },
     });
     const ctx = createDamageContext({ attacker, defender, move, state });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // SolarBeam is halved under rain in Gen 5; with seed=42 the exact result is 9.
     expect(result.damage).toBe(26);
   });
@@ -1209,10 +1098,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(32);
   });
 
@@ -1226,10 +1112,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 50 * 4915/4096 ~= 59 -> slightly more damage than base
     expect(result.damage).toBeGreaterThan(20);
   });
@@ -1244,10 +1127,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1266,10 +1146,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Blaze 1.5x -> Power 75
     expect(result.damage).toBe(32);
   });
@@ -1286,10 +1163,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Acrobatics doubles: 55 -> 110 BP
     expect(result.damage).toBeGreaterThan(30);
   });
@@ -1305,10 +1179,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       flags: { punch: true },
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 75 * 1.2 = 90
     expect(result.damage).toBeGreaterThan(30);
   });
@@ -1324,10 +1195,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       effect: { type: "recoil", percent: 33 },
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 80 * 1.2 = 96
     expect(result.damage).toBeGreaterThan(30);
   });
@@ -1349,10 +1217,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(32);
   });
 
@@ -1367,10 +1232,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Normal vs Fire = 1x (neutral), not super effective
     // Source: Showdown type chart -- Normal vs Fire = 1x (neutral); Normalize changed Fire move to Normal type
     expect(result.effectiveness).toBe(1);
@@ -1390,10 +1252,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 80 * 1.25 = 100
     expect(result.damage).toBeGreaterThan(30);
   });
@@ -1412,10 +1271,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 80 * 0.75 = 60
     expect(result.damage).toBe(26);
   });
@@ -1430,10 +1286,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 50 * 1.25 = 62. Fire vs Dry Skin's water-like typing isn't relevant here.
     expect(result.damage).toBeGreaterThan(20);
   });
@@ -1454,10 +1307,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Attack halved: Atk=50 effectively
     expect(result.damage).toBe(12);
   });
@@ -1472,10 +1322,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power halved: 50 -> 25
     expect(result.damage).toBe(12);
   });
@@ -1494,10 +1341,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Fire vs Normal = 1x (neutral), Wonder Guard blocks
     // Source: Showdown data/abilities.ts -- Wonder Guard: blocks all non-SE moves; damage 0
     expect(result.damage).toBe(0);
@@ -1513,10 +1357,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Fire vs Water = 0.5x, Tinted Lens doubles it back to ~1x
     // Source: Showdown type chart -- Fire vs Water = 0.5x; Tinted Lens doubles NVE damage but does not change effectiveness value
     expect(result.effectiveness).toBe(0.5);
@@ -1537,10 +1378,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // SE 2x then Filter 0.75x = effective 1.5x
     // Source: Showdown type chart -- Fire vs Grass = 2x; Filter reduces damage but does not change effectiveness value
     expect(result.effectiveness).toBe(2);
@@ -1561,10 +1399,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Fire vs Grass = 2x; Solid Rock reduces damage but does not change effectiveness value
     expect(result.effectiveness).toBe(2);
     expect(result.damage).toBeLessThan(48);
@@ -1580,10 +1415,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(33);
   });
 
@@ -1601,10 +1433,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Def 100 -> 150 from Marvel Scale
     expect(result.damage).toBe(15);
   });
@@ -1625,10 +1454,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Fire vs Grass = 2x (super effective); Expert Belt applies after
     expect(result.effectiveness).toBe(2);
     // SE 2x + Expert Belt ~1.2x
@@ -1645,10 +1471,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1662,10 +1485,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.special,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1683,10 +1503,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Without Life Orb: fixed outcome for this seed.
     expect(result.damage).toBe(22);
   });
@@ -1702,10 +1519,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- isCrit passthrough from ctx.isCrit; Sniper sets 3x modifier
     expect(result.isCrit).toBe(true);
     expect(result.damage).toBe(67);
@@ -1725,10 +1539,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown -- Magnet Rise grants Ground immunity; damage 0, effectiveness 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
@@ -1748,10 +1559,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
       category: MOVE_CATEGORIES.physical,
     });
     const ctx = createDamageContext({ attacker, defender, move });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Dragon vs Psychic = 1x, with Adamant Orb boost
     expect(result.damage).toBeGreaterThan(30);
   });
@@ -1792,10 +1600,7 @@ describe("Sheer Force power boost in damage calc", () => {
       effect: { type: "status-chance", status: STATUSES.burn, chance: 10 },
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(49);
   });
 
@@ -1826,10 +1631,7 @@ describe("Sheer Force power boost in damage calc", () => {
       effect: null,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(43);
   });
 
@@ -1859,10 +1661,7 @@ describe("Sheer Force power boost in damage calc", () => {
       effect: { type: "status-chance", status: STATUSES.burn, chance: 10 },
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(38);
   });
 });
@@ -1901,10 +1700,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(22);
   });
 
@@ -1934,10 +1730,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(63);
   });
 
@@ -1969,10 +1762,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(43);
   });
 
@@ -2004,10 +1794,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(63);
   });
 });

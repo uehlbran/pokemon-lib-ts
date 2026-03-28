@@ -287,7 +287,7 @@ describe("Gen5 Cloud Nine damage calc integration", () => {
     // Seed 12345 for deterministic RNG
     const rainResult = calculateGen5Damage(
       createDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 12345 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
     const noWeatherResult = calculateGen5Damage(
       createDamageContext({
@@ -297,7 +297,7 @@ describe("Gen5 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // With Cloud Nine: rain boost is suppressed, so damage equals no-weather damage
@@ -328,7 +328,7 @@ describe("Gen5 Cloud Nine damage calc integration", () => {
 
     const sunResult = calculateGen5Damage(
       createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 99999 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
     const noWeatherResult = calculateGen5Damage(
       createDamageContext({
@@ -338,7 +338,7 @@ describe("Gen5 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 99999,
       }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // With Air Lock: sun boost is suppressed, so damage equals no-weather damage
@@ -368,7 +368,7 @@ describe("Gen5 Cloud Nine damage calc integration", () => {
 
     const rainResult = calculateGen5Damage(
       createDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 12345 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
     const noWeatherResult = calculateGen5Damage(
       createDamageContext({
@@ -378,7 +378,7 @@ describe("Gen5 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Without suppression: rain DOES boost Water damage (should be > no-weather)

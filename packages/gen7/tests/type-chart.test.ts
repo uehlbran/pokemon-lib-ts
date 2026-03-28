@@ -65,7 +65,7 @@ describe("Gen7TypeChart", () => {
      * Helper to look up type effectiveness from the chart.
      */
     function getEffectiveness(attackType: string, defenseType: string): number {
-      const chart = GEN7_TYPE_CHART as Record<string, Record<string, number>>;
+      const chart = GEN7_TYPE_CHART;
       return chart[attackType]?.[defenseType] ?? 1;
     }
 

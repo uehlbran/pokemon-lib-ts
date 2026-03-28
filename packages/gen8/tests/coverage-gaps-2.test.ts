@@ -320,7 +320,7 @@ function createStatAbilityContext(overrides: {
   };
 }
 
-const typeChart = GEN8_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN8_TYPE_CHART;
 
 // ===========================================================================
 // 1. Gen8MaxMoves -- getMaxMovePower coverage for all power ranges

@@ -344,7 +344,7 @@ function createAbilityContext(overrides: {
   } as AbilityContext;
 }
 
-const typeChart = GEN8_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN8_TYPE_CHART;
 
 // ===========================================================================
 // PRIORITY 1: Gen8DamageCalc.ts uncovered branches

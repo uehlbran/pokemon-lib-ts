@@ -301,7 +301,7 @@ describe("Gen9 Cloud Nine damage calc integration", () => {
     // Seed 12345 for deterministic RNG
     const sunResult = calculateGen9Damage(
       createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 12345 }),
-      GEN9_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN9_TYPE_CHART,
     );
     const noWeatherResult = calculateGen9Damage(
       createDamageContext({
@@ -311,7 +311,7 @@ describe("Gen9 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN9_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN9_TYPE_CHART,
     );
 
     // With Cloud Nine: sun boost is suppressed, so damage equals no-weather damage
@@ -341,7 +341,7 @@ describe("Gen9 Cloud Nine damage calc integration", () => {
 
     const sunResult = calculateGen9Damage(
       createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 12345 }),
-      GEN9_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN9_TYPE_CHART,
     );
     const noWeatherResult = calculateGen9Damage(
       createDamageContext({
@@ -351,7 +351,7 @@ describe("Gen9 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN9_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN9_TYPE_CHART,
     );
 
     // Without suppression: sun DOES boost Fire damage

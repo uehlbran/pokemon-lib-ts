@@ -989,14 +989,8 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
         isCrit: false,
       };
 
-      const resultBase = calculateGen5Damage(
-        ctxBase,
-        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-      );
-      const resultGem = calculateGen5Damage(
-        ctxGem,
-        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-      );
+      const resultBase = calculateGen5Damage(ctxBase, GEN5_TYPE_CHART);
+      const resultGem = calculateGen5Damage(ctxGem, GEN5_TYPE_CHART);
 
       // Gem multiplies base power by 1.5 before the formula runs; final damage should be > base damage.
       // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- chainModify(1.5)
@@ -1051,7 +1045,7 @@ describe("Type Gems -- Gen 5 uses 1.5x boost (NOT Gen 6+'s 1.3x)", () => {
         rng: new SeededRandom(42),
         isCrit: false,
       };
-      calculateGen5Damage(ctx, GEN5_TYPE_CHART as Record<string, Record<string, number>>);
+      calculateGen5Damage(ctx, GEN5_TYPE_CHART);
 
       // Gem should NOT be consumed when type doesn't match
       expect(attackerWithFireGem.pokemon.heldItem).toBe(itemIds.fireGem);
@@ -1257,14 +1251,8 @@ describe("Eviolite -- 1.5x boost to Def and SpDef for NFE holders", () => {
         isCrit: false,
       };
 
-      const resultNoItem = calculateGen5Damage(
-        ctxNoItem,
-        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-      );
-      const resultEviolite = calculateGen5Damage(
-        ctxEviolite,
-        GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-      );
+      const resultNoItem = calculateGen5Damage(ctxNoItem, GEN5_TYPE_CHART);
+      const resultEviolite = calculateGen5Damage(ctxEviolite, GEN5_TYPE_CHART);
 
       // Eviolite boosts Defense by 1.5x, so damage with Eviolite must be lower
       // Source: Gen5DamageCalc.ts line ~383-384 -- floor(baseStat * 150 / 100)

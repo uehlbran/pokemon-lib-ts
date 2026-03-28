@@ -306,7 +306,7 @@ function createDamageContext(overrides: {
 }
 
 // Use the Gen9 type chart for all tests
-const typeChart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN9_TYPE_CHART;
 
 // ===========================================================================
 // 1. pokeRound unit tests
