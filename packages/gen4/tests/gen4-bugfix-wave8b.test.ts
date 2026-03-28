@@ -569,8 +569,8 @@ describe("Bug #257: Natural Gift does not set customDamage (damage goes through 
     // customDamage must NOT be set — damage goes through normal calc
     // Field is either null or undefined (both mean "no custom damage")
     expect(result.customDamage == null).toBe(true);
-    // Item should still be consumed
-    expect(result.attackerItemConsumed).toBe(true);
+    // Item should be consumed directly by the handler
+    expect(attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given attacker holds Cheri Berry and uses Natural Gift, when executing, then messages mention the berry's type and power", () => {
@@ -608,8 +608,8 @@ describe("Bug #257: Fling does not set customDamage (damage goes through normal 
     // customDamage must NOT be set — damage goes through normal calc
     // Field is either null or undefined (both mean "no custom damage")
     expect(result.customDamage == null).toBe(true);
-    // Item should still be consumed
-    expect(result.attackerItemConsumed).toBe(true);
+    // Item should be consumed directly by the handler
+    expect(attacker.pokemon.heldItem).toBeNull();
   });
 
   it("given attacker has no held item and uses Fling, when executing, then move fails", () => {

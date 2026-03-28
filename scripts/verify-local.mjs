@@ -6,6 +6,10 @@ import { existsSync } from "node:fs";
 function runStep(label, npmArgs) {
   return new Promise((resolve) => {
     const proc = spawn("npm", npmArgs, { stdio: "inherit", env: process.env });
+    proc.on("error", (err) => {
+      console.error(`\n==> FAILED: ${label} (spawn error: ${err.message})`);
+      process.exit(1);
+    });
     proc.on("close", (code) => {
       if (code !== 0) {
         console.error(`\n==> FAILED: ${label}`);

@@ -399,10 +399,12 @@ function handleNaturalGift(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: ["But it failed!"] });
   }
   const berryData = NATURAL_GIFT_TABLE[heldItem];
-  // Unburden: if attacker has Unburden, set the volatile before the engine consumes the item.
-  // The ruleset speed calc checks both the volatile AND !heldItem, so this is safe to set early.
+  // Consume the berry and activate Unburden if applicable.
+  // Null item first, then set volatile — matches all other Unburden activation sites
+  // (Knock Off, Trick, Pluck, Gen4Items berry consumption, Gen4DamageCalc resist berry).
   // Source: Bulbapedia Unburden — "Doubles the Pokemon's Speed stat when its held item is used or lost"
   // Source: Showdown Gen 4 mod — Unburden activates on any item loss
+  attacker.pokemon.heldItem = null;
   if (
     attacker.ability === GEN4_ABILITY_IDS.unburden &&
     !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
@@ -414,7 +416,6 @@ function handleNaturalGift(ctx: MoveEffectContext): MoveEffectResult {
   // base power and type in the data determine the damage output.
   // Source: Showdown Gen 4 — Natural Gift uses onModifyMove to set base power/type
   return makeResult({
-    attackerItemConsumed: true,
     messages: [`${attackerName} used Natural Gift! (${berryData.type} / ${berryData.power} BP)`],
   });
 }
@@ -438,9 +439,11 @@ function handleFling(ctx: MoveEffectContext): MoveEffectResult {
   if (flingPower === 0) {
     return makeResult({ messages: ["But it failed!"] });
   }
-  // Unburden: if attacker has Unburden, set the volatile before the engine consumes the item.
+  // Consume the item and activate Unburden if applicable.
+  // Null item first, then set volatile — matches all other Unburden activation sites.
   // Source: Bulbapedia Unburden — "Doubles the Pokemon's Speed stat when its held item is used or lost"
   // Source: Showdown Gen 4 mod — Unburden activates on any item loss
+  attacker.pokemon.heldItem = null;
   if (
     attacker.ability === GEN4_ABILITY_IDS.unburden &&
     !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
@@ -452,7 +455,6 @@ function handleFling(ctx: MoveEffectContext): MoveEffectResult {
   // base power in the data determines the damage output.
   // Source: Showdown Gen 4 — Fling uses onModifyMove to set base power
   return makeResult({
-    attackerItemConsumed: true,
     messages: [`${attackerName} flung its ${heldItem}!`],
   });
 }
