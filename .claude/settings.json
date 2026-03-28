@@ -15,7 +15,7 @@
           },
           {
             "type": "command",
-            "command": "./.claude/hooks/enforce-comment-gate.sh"
+            "command": "./.claude/hooks/remind-pr-comment-audit.sh"
           }
         ]
       }

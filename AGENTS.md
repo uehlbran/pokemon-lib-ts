@@ -31,7 +31,8 @@ Agents must read repo instructions before acting, not after making a mistake.
   [`.claude/rules/pr-comment-handling.md`](./.claude/rules/pr-comment-handling.md)
   and monitor the PR until merge. Review comments must be acknowledged, validated against the
   current code, and either fixed, replied to with rationale, or converted into a follow-up
-  issue if genuinely out of scope. Do not admin-bypass the comment gate.
+  issue if genuinely out of scope. Do not admin-bypass review-comment handling or merge around
+  unresolved comments.
 - Do not rely on memory for repo workflow. Re-open the relevant file before the governed action.
 
 ## Required Workflow
