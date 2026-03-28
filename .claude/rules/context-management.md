@@ -1,11 +1,5 @@
-# Context Management for Agents
+# Context Management
 
-When doing research or exploration involving many files:
-- Write key findings to a scratch file before moving to the next area
-- If you've read 10+ files, summarize what you've found so far before continuing
-- Prefer targeted searches (grep for a specific symbol) over broad directory reads
+**Research:** Write key findings to a scratch file before moving on. Summarize after 10+ file reads. Prefer targeted searches over broad directory reads.
 
-When doing implementation spanning multiple files:
-- Prefer the task system; if needed, write a scratch `PROGRESS.md` locally — but never `git add` it (it is in `.gitignore`)
-- Commit working code frequently rather than accumulating many uncommitted changes
-- If a task needs 15+ file reads to complete, stop and return findings so the caller can split the work
+**Implementation:** Use the task system or a local scratch `PROGRESS.md` (never `git add` it). Commit working code frequently. If a task needs 15+ file reads, stop and return findings so the caller can split the work.

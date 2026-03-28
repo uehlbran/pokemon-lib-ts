@@ -1,36 +1,17 @@
-# Issue Linking (Required Before PR Creation)
+# Issue Linking
 
-## Before Using `Closes: N/A`
-
-Agents MUST search for related open issues before declaring no issue exists. Run at least
-two searches using keywords from the PR title and branch name:
-
+Before using `Closes: N/A`, search with at least 2 keyword sets:
 ```bash
 gh issue list --state open --search "KEYWORD1" --limit 10
 gh issue list --state open --search "KEYWORD2" --limit 10
 ```
 
-Only use `Closes: N/A` if both searches return no matching issue.
+Only use `Closes: N/A` if no matching issue is found.
 
-## When a Related Issue Exists
-
-Link it with one keyword per issue, one per line:
-
+When linking, use one keyword per issue per line (see `issue-closing-syntax.md`):
 ```
 Closes #50
 Closes #80
 ```
 
-Never `Closes #50, #80` — GitHub only auto-closes the first issue.
-See `.claude/rules/issue-closing-syntax.md` for full syntax rules.
-
-## Manual PR edits must still link issues correctly
-
-If you create or edit a PR manually, search for related issues yourself and add the closing
-keywords to the PR body before requesting review.
-
-## Why This Matters
-
-PRs that use `Closes: N/A` when a related issue exists leave tracked bugs open after merge.
-The `verify-issue-closures.yml` workflow catches this post-merge and posts an alert, but
-the damage is already done — the issue stays open and may be re-implemented or cause confusion.
+This applies to both `gh pr create` and manual PR edits.
