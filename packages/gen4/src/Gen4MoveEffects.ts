@@ -723,12 +723,25 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     ];
   }
 
+  // Helper: merge base result's volatilesToClear into a sub-module result before returning.
+  // The base result carries cross-cutting effects (e.g. Destiny Bond volatile clear) that
+  // must be preserved regardless of which sub-module handles the move.
+  function withBaseEffects(sub: MoveEffectResult): MoveEffectResult {
+    if (result.volatilesToClear?.length) {
+      (sub as MutableResult).volatilesToClear = [
+        ...result.volatilesToClear,
+        ...((sub as MutableResult).volatilesToClear ?? []),
+      ];
+    }
+    return sub;
+  }
+
   // 1. Field effect moves (Stealth Rock, Toxic Spikes, Trick Room, Tailwind, Defog,
   //    Gravity, Rapid Spin, binding moves)
   const fieldResult = handleGen4FieldMove(context);
   if (fieldResult !== null) {
     applyHealBlockGate(fieldResult as MutableResult, context);
-    return fieldResult;
+    return withBaseEffects(fieldResult);
   }
 
   // 2. Status/utility moves (Taunt, Disable, Yawn, Encore, Heal Block, Embargo,
@@ -738,7 +751,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   const statusResult = handleGen4StatusMove(context);
   if (statusResult !== null) {
     applyHealBlockGate(statusResult as MutableResult, context);
-    return statusResult;
+    return withBaseEffects(statusResult);
   }
 
   // 3. Combat moves (Belly Drum, Explosion/Self-Destruct, Baton Pass, Perish Song,
@@ -747,7 +760,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   const combatResult = handleGen4CombatMove(context);
   if (combatResult !== null) {
     applyHealBlockGate(combatResult as MutableResult, context);
-    return combatResult;
+    return withBaseEffects(combatResult);
   }
 
   // 4. Behavioral overrides (Roost, Knock Off, Trick/Switcheroo, Natural Gift,
@@ -756,7 +769,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
   const behaviorResult = handleGen4BehaviorMove(context);
   if (behaviorResult !== null) {
     applyHealBlockGate(behaviorResult as MutableResult, context);
-    return behaviorResult;
+    return withBaseEffects(behaviorResult);
   }
 
   // No sub-module claimed the move.

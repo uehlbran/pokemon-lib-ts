@@ -358,8 +358,8 @@ function handleHeartSwap(ctx: MoveEffectContext): MoveEffectResult {
   const allStats: Array<keyof typeof attacker.statStages> = [
     CORE_STAT_IDS.attack,
     CORE_STAT_IDS.defense,
-    "spAttack",
-    "spDefense",
+    CORE_STAT_IDS.spAttack,
+    CORE_STAT_IDS.spDefense,
     CORE_STAT_IDS.speed,
     CORE_STAT_IDS.accuracy,
     CORE_STAT_IDS.evasion,
@@ -383,8 +383,8 @@ function handleAcupressure(ctx: MoveEffectContext): MoveEffectResult {
   const allStats: BattleStat[] = [
     CORE_STAT_IDS.attack,
     CORE_STAT_IDS.defense,
-    "spAttack",
-    "spDefense",
+    CORE_STAT_IDS.spAttack,
+    CORE_STAT_IDS.spDefense,
     CORE_STAT_IDS.speed,
     CORE_STAT_IDS.accuracy,
     CORE_STAT_IDS.evasion,
