@@ -122,7 +122,10 @@ function runGen3PlusStatCheck(gen: number): string[] {
   const dataManager = factory();
   const species = dataManager.getSpeciesByName("charizard");
   const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
-  const nature = dataManager.getNature(CORE_NATURE_IDS.hardy) as NatureData;
+  const nature = dataManager.getNature(CORE_NATURE_IDS.hardy);
+  if (!nature) {
+    return [`Gen ${gen}: Hardy nature is missing from the data manager`];
+  }
   const pokemon = createGen3PlusPokemon(species.id, tackle.pp);
   const stats = calculateAllStats(pokemon, species, nature);
 
@@ -131,10 +134,10 @@ function runGen3PlusStatCheck(gen: number): string[] {
   // Charizard base stats: HP 78 / Atk 84 / Def 78 / SpA 109 / SpD 85 / Spe 100
   // Source: Bulbapedia Charizard base stats (unchanged Gen 3-9)
   const expectedHp = expectedGen3PlusStat(78, true); // 153
-  const expectedAtk = expectedGen3PlusStat(84, false); // 92
-  const expectedDef = expectedGen3PlusStat(78, false); // 86
+  const expectedAtk = expectedGen3PlusStat(84, false); // 104
+  const expectedDef = expectedGen3PlusStat(78, false); // 98
   const expectedSpA = expectedGen3PlusStat(109, false); // 129
-  const expectedSpD = expectedGen3PlusStat(85, false); // 90
+  const expectedSpD = expectedGen3PlusStat(85, false); // 105
   const expectedSpe = expectedGen3PlusStat(100, false); // 120
 
   if (stats.hp !== expectedHp) {
