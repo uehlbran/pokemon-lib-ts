@@ -153,19 +153,23 @@ export class Gen1Ruleset implements GenerationRuleset {
   }
 
   /**
-   * Re-applies badge boost to calculatedStats every time a stat stage changes.
+   * Re-applies badge boost to ALL badge-eligible calculatedStats every time a stat stage changes.
    * Implements the Gen 1 badge boost glitch: the BadgeStatBoosts routine runs
-   * unconditionally after any stat stage modification, causing boosts to compound.
+   * unconditionally after any stat stage modification, compounding all badge stats.
+   * Only applies to the player's side (side 0) — badge boosts are a single-player mechanic.
    * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
    */
   onStatStageChange(
     pokemon: ActivePokemon,
-    stat: BattleStat,
+    _stat: BattleStat,
     _newStage: number,
-    _state: BattleState,
+    state: BattleState,
   ): void {
     if (!this.badgeBoostGlitch || !this.badgeBoosts) return;
-    applyBadgeBoostGlitch(pokemon, stat, this.badgeBoosts);
+    // Badge boosts are a single-player mechanic — only apply to player's pokemon (side 0)
+    const isPlayerSide = state.sides[0]?.active.includes(pokemon) ?? false;
+    if (!isPlayerSide) return;
+    applyBadgeBoostGlitch(pokemon, this.badgeBoosts);
   }
 
   getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {

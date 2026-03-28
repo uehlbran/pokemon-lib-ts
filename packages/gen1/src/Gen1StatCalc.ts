@@ -1,6 +1,5 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type {
-  BattleStat,
   PokemonInstance,
   PokemonSpeciesData,
   StatBlock,
@@ -38,13 +37,14 @@ export function applyGen1BadgeBoosts(stats: StatBlock, badges: Gen1BadgeBoosts):
 const MAX_STAT_VALUE = 999;
 
 /**
- * Re-applies badge boost (×9/8 per badge) to calculatedStats for the affected stat.
+ * Re-applies badge boost (×9/8 per badge) to ALL badge-eligible calculatedStats.
  * Called after every in-battle stat stage change to implement the badge boost glitch.
- * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
+ * The cartridge BadgeStatBoosts routine iterates ALL 4 badge/stat pairs unconditionally —
+ * it does NOT check which stat changed. Every call re-boosts every badge-eligible stat.
+ * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts iterates all badge/stat pairs
  */
 export function applyBadgeBoostGlitch(
   pokemon: ActivePokemon,
-  stat: BattleStat,
   badgeBoosts: Gen1BadgeBoosts,
 ): void {
   const stats = pokemon.pokemon.calculatedStats;
@@ -57,19 +57,17 @@ export function applyBadgeBoostGlitch(
     spAttack: number;
     spDefense: number;
   };
-  if (stat === CORE_STAT_IDS.attack && badgeBoosts.boulder) {
+  // BadgeStatBoosts runs all 4 pairs every invocation — not just the changed stat
+  if (badgeBoosts.boulder) {
     mutable.attack = Math.min(MAX_STAT_VALUE, Math.floor((mutable.attack * 9) / 8));
   }
-  if (stat === CORE_STAT_IDS.defense && badgeBoosts.thunder) {
+  if (badgeBoosts.thunder) {
     mutable.defense = Math.min(MAX_STAT_VALUE, Math.floor((mutable.defense * 9) / 8));
   }
-  if (stat === CORE_STAT_IDS.speed && badgeBoosts.soul) {
+  if (badgeBoosts.soul) {
     mutable.speed = Math.min(MAX_STAT_VALUE, Math.floor((mutable.speed * 9) / 8));
   }
-  if (
-    (stat === CORE_STAT_IDS.spAttack || stat === CORE_STAT_IDS.spDefense) &&
-    badgeBoosts.volcano
-  ) {
+  if (badgeBoosts.volcano) {
     // Gen 1 unified Special — both spAttack and spDefense get boosted together
     mutable.spAttack = Math.min(MAX_STAT_VALUE, Math.floor((mutable.spAttack * 9) / 8));
     mutable.spDefense = Math.min(MAX_STAT_VALUE, Math.floor((mutable.spDefense * 9) / 8));
