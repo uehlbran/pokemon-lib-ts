@@ -232,6 +232,20 @@ export class BattleEngine implements BattleEventEmitter {
   ): BattleValidationResult {
     const errors: BattleValidationIssue[] = [];
 
+    // Singles requires exactly 2 sides. The TypeScript type already enforces a 2-tuple at
+    // compile time, but runtime callers using type assertions or JS interop can bypass this.
+    if (config.teams.length !== 2) {
+      errors.push(
+        BattleEngine.createBattleValidationIssue(
+          "team",
+          "config",
+          "teams",
+          `Singles battles require exactly 2 sides; got ${config.teams.length}`,
+        ),
+      );
+      return { valid: false, errors };
+    }
+
     for (const [sideIndex, team] of config.teams.entries()) {
       const teamField = `teams[${sideIndex}]`;
       if (team.length < 1) {
@@ -302,6 +316,25 @@ export class BattleEngine implements BattleEventEmitter {
                 pokemon.heldItem,
                 `${pokemonField}.heldItem`,
                 `Item "${pokemon.heldItem}" is not available in Gen ${config.generation}`,
+              ),
+            );
+          }
+        }
+
+        // Gen 3+ introduced natures. Validate that the nature is a recognized ID when the
+        // battle generation supports them, the pokemon carries a nature field, and the
+        // DataManager has natures loaded. Skip the check when the DataManager has no natures
+        // (e.g. Gen 1-2 data managers or minimal test fixtures that omit natures intentionally).
+        if (config.generation >= 3 && pokemon.nature && dataManager.getAllNatures().length > 0) {
+          try {
+            dataManager.getNature(pokemon.nature);
+          } catch {
+            errors.push(
+              BattleEngine.createBattleValidationIssue(
+                "pokemon",
+                pokemon.uid,
+                `${pokemonField}.nature`,
+                `Nature "${pokemon.nature}" is not a recognized nature`,
               ),
             );
           }

@@ -38,9 +38,12 @@ export function normalizeExperienceGroup(group: string): ExperienceGroup {
  * @returns Total cumulative EXP needed to reach this level
  */
 export function getExpForLevel(group: ExperienceGroupIdentifier | string, level: number): number {
+  // Normalize first so alias validation (e.g. "slow-then-very-fast", "medium") runs
+  // even for the level-1 fast path. Without this ordering, an unrecognized alias at
+  // level 1 would silently return 0 instead of throwing.
+  const normalizedGroup = normalizeExperienceGroup(group);
   if (level <= 1) return 0;
   const n = level;
-  const normalizedGroup = normalizeExperienceGroup(group);
 
   switch (normalizedGroup) {
     case "erratic":

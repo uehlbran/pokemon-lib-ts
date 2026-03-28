@@ -111,6 +111,23 @@ describe("getExpForLevel", () => {
       'Unsupported experience growth group "sideways-growth"',
     );
   });
+
+  it("given an unsupported growth-rate identifier at level 1, when querying EXP, then normalization runs before the fast path and throws", () => {
+    // Source: The level-1 fast path (return 0) must not skip alias normalization.
+    // Prior to this fix, an unrecognized alias at level 1 would silently return 0
+    // instead of throwing. normalizeExperienceGroup must be called first.
+    expect(() => getExpForLevel("bad-alias", 1)).toThrow(
+      'Unsupported experience growth group "bad-alias"',
+    );
+  });
+
+  it("given the PokeAPI slow-then-very-fast alias at level 1, when querying EXP, then normalization runs before the fast path and returns 0", () => {
+    // Source: Bulbapedia — level 1 always requires 0 EXP.
+    // Alias normalization must still fire at level 1 (no silent bypass).
+    expect(getExpForLevel("slow-then-very-fast", 1)).toBe(0);
+    expect(getExpForLevel("medium", 1)).toBe(0);
+    expect(getExpForLevel("fast-then-very-slow", 1)).toBe(0);
+  });
 });
 
 describe("getExpToNextLevel", () => {

@@ -405,6 +405,138 @@ describe("BattleEngine surface", () => {
         message: "Side 0 must have at least 1 Pokemon for singles battles",
       });
     });
+
+    it("given a config with only one team side, when validateConfig is called, then it returns a team count error", () => {
+      // Singles battles require exactly 2 sides. A 1-side config is invalid at runtime
+      // even if the TypeScript type requires a 2-tuple (callers using type assertions can bypass).
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)]] as any,
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "team",
+        id: "config",
+        field: "teams",
+        message: "Singles battles require exactly 2 sides; got 1",
+      });
+    });
+
+    it("given a config with three team sides, when validateConfig is called, then it returns a team count error", () => {
+      // Over-specified configs (3+ sides) are also invalid for singles format.
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+            [createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50)],
+          ] as any,
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "team",
+        id: "config",
+        field: "teams",
+        message: "Singles battles require exactly 2 sides; got 3",
+      });
+    });
+
+    it("given a Gen 3 pokemon with an unrecognized nature, when validateConfig is called, then it returns a nature error", () => {
+      // Gen 3+ introduced natures. An invalid nature string should be caught at validation time.
+      // Source: Bulbapedia — natures were introduced in Generation III.
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 3,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                nature: "super-brave" as any,
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset().setGenerationForTest(3),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual({
+        entity: "pokemon",
+        id: "charizard-1",
+        field: "teams[0][0].nature",
+        message: 'Nature "super-brave" is not a recognized nature',
+      });
+    });
+
+    it("given a Gen 3 pokemon with a valid recognized nature, when validateConfig is called, then no nature error is reported", () => {
+      // A pokemon with a standard nature (e.g. adamant) should pass nature validation.
+      // Source: Bulbapedia — adamant is one of the 25 recognized Gen 3+ natures.
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 3,
+          format: "singles",
+          teams: [
+            [
+              createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
+                uid: "charizard-1",
+                nature: "adamant",
+              }),
+            ],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset().setGenerationForTest(3),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("given a Gen 1 pokemon with no nature concept, when validateConfig is called, then no nature error is reported", () => {
+      // Gen 1-2 have no natures. The nature field defaults to 'adamant' in createTestPokemon
+      // but nature validation should be skipped for Gen 1-2.
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [
+            [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { uid: "charizard-1" })],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
+          ],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
   });
 
   describe("getAvailableMoves", () => {
