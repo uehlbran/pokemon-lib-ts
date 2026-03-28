@@ -466,10 +466,9 @@ describe("Trick / Switcheroo", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    // Items swapped
+    // Items swapped via direct mutation (no itemTransfer — pre-mutation handles the swap)
     expect(attacker.pokemon.heldItem).toBe(ITEMS.leftovers);
     expect(defender.pokemon.heldItem).toBe(ITEMS.choiceScarf);
-    expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
     expect(result.messages).toContain("Alakazam switched items with Blissey!");
   });
 
@@ -494,10 +493,9 @@ describe("Trick / Switcheroo", () => {
 
     const result = executeGen4MoveEffect(ctx);
 
-    // Attacker gave its item away, now has nothing
+    // Attacker gave its item away, now has nothing (direct mutation, no itemTransfer)
     expect(attacker.pokemon.heldItem).toBeNull();
     expect(defender.pokemon.heldItem).toBe(ITEMS.toxicOrb);
-    expect(result.itemTransfer).toEqual({ from: "defender", to: "attacker" });
     expect(result.messages).toContain("Lopunny gave toxic-orb to Snorlax!");
   });
 

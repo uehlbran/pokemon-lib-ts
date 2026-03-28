@@ -23,7 +23,7 @@ test("given a missing review marker, when validating the review gate, then it bl
   assert.match(result.error ?? "", /Run \/review before opening a PR/);
 });
 
-test("given a stale review marker commit, when validating the review gate, then it requires a fresh review", () => {
+test("given a stale review marker commit with no ancestry info, when validating the review gate, then it requires a fresh review", () => {
   const result = validateReviewMarker({
     markerText: "feat/test-branch\nabc1234\n",
     currentBranch: "feat/test-branch",
@@ -43,4 +43,27 @@ test("given a stale review marker branch, when validating the review gate, then 
 
   assert.equal(result.isValid, false);
   assert.match(result.error ?? "", /Run \/review again/);
+});
+
+test("given a post-review commit where reviewed commit is ancestor, when validating, then it accepts", () => {
+  const result = validateReviewMarker({
+    markerText: "feat/test-branch\nabc1234\n",
+    currentBranch: "feat/test-branch",
+    currentCommit: "def5678",
+    isAncestor: true,
+  });
+
+  assert.equal(result.isValid, true);
+});
+
+test("given a post-review commit where reviewed commit is NOT ancestor (rebase), when validating, then it rejects", () => {
+  const result = validateReviewMarker({
+    markerText: "feat/test-branch\nabc1234\n",
+    currentBranch: "feat/test-branch",
+    currentCommit: "def5678",
+    isAncestor: false,
+  });
+
+  assert.equal(result.isValid, false);
+  assert.match(result.error ?? "", /not an ancestor/);
 });

@@ -32,7 +32,7 @@ import {
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
-import { getFlingPower, NATURAL_GIFT_TABLE } from "./Gen4MoveEffects";
+import { getFlingPower, NATURAL_GIFT_TABLE } from "./Gen4ItemMoveData";
 
 const ITEM_IDS = GEN4_ITEM_IDS;
 
@@ -352,13 +352,12 @@ function handleTrickSwitcheroo(ctx: MoveEffectContext): MoveEffectResult {
     messages.push(`${attackerName} gave ${attackerItem} to ${defenderName}!`);
   }
 
-  const result = makeResult({
-    itemTransfer: {
-      from: BATTLE_EFFECT_TARGETS.defender,
-      to: BATTLE_EFFECT_TARGETS.attacker,
-    },
-    messages,
-  });
+  // Pre-mutation above (lines 341-344) already handles the swap correctly for both
+  // symmetric (both have items) and asymmetric (one has item) cases.
+  // Do NOT return itemTransfer — the engine's itemTransfer path only handles one-directional
+  // transfers and would undo asymmetric swaps.
+  // Source: Showdown sim/battle-actions.ts Gen 4 — Trick directly mutates items, no engine transfer
+  const result = makeResult({ messages });
 
   // Unburden: if either Pokemon had an item and now doesn't, and has Unburden, activate it.
   // Source: Showdown Gen 4 mod — Unburden activates when item is lost via Trick/Switcheroo
@@ -400,6 +399,16 @@ function handleNaturalGift(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: ["But it failed!"] });
   }
   const berryData = NATURAL_GIFT_TABLE[heldItem];
+  // Unburden: if attacker has Unburden, set the volatile before the engine consumes the item.
+  // The ruleset speed calc checks both the volatile AND !heldItem, so this is safe to set early.
+  // Source: Bulbapedia Unburden — "Doubles the Pokemon's Speed stat when its held item is used or lost"
+  // Source: Showdown Gen 4 mod — Unburden activates on any item loss
+  if (
+    attacker.ability === GEN4_ABILITY_IDS.unburden &&
+    !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+  ) {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
+  }
   // Do NOT set customDamage — damage should go through the normal damage calc path.
   // The engine calls calculateDamage() before executeMoveEffect(), so the move's
   // base power and type in the data determine the damage output.
@@ -428,6 +437,15 @@ function handleFling(ctx: MoveEffectContext): MoveEffectResult {
   const flingPower = getFlingPower(heldItem);
   if (flingPower === 0) {
     return makeResult({ messages: ["But it failed!"] });
+  }
+  // Unburden: if attacker has Unburden, set the volatile before the engine consumes the item.
+  // Source: Bulbapedia Unburden — "Doubles the Pokemon's Speed stat when its held item is used or lost"
+  // Source: Showdown Gen 4 mod — Unburden activates on any item loss
+  if (
+    attacker.ability === GEN4_ABILITY_IDS.unburden &&
+    !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+  ) {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
   }
   // Do NOT set customDamage — damage should go through the normal damage calc path.
   // The engine calls calculateDamage() before executeMoveEffect(), so the move's

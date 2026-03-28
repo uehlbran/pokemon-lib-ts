@@ -91,7 +91,7 @@ Source: pret/pokered — there is only one special stat and one stat stage slot 
 
 Multiplier: 9/8 (1.125x), floored. **NOT applied in link battles.**
 
-**Badge boost glitch:** When any stat stage is modified in battle, badge boosts are re-applied to the modified stat, causing compounding. Can stack indefinitely until stat caps at 999.
+**Badge boost glitch:** When any stat stage is modified in battle, badge boosts are re-applied to ALL badge-eligible stats (not just the modified stat), causing cross-stat compounding. For example, using Swords Dance (Attack +2) will re-boost Attack, Defense, Speed, and Special if the player has the corresponding badges. Can stack indefinitely until stat caps at 999. Source: pokered `engine/battle/effects.asm` `BadgeStatBoosts` routine.
 
 ---
 
