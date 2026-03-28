@@ -86,9 +86,17 @@ function makeMutablePainSplitResult(): MutablePainSplitResult {
 
 function handleBellyDrum(ctx: MoveEffectContext): MoveEffectResult {
   // Lose 50% max HP, maximize Attack to +6
-  // Source: Showdown Gen 4 — Belly Drum cuts HP and maximizes Attack
+  // Fails if Attack is already +6, or if current HP <= half of max HP
+  // Source: pokeplatinum/res/battle/scripts/subscripts/subscript_belly_drum.s —
+  //   _000: CompareMonDataToValue OPCODE_EQU, BTLSCR_ATTACKER, BATTLEMON_ATTACK_STAGE, 12, _052
+  //   (BATTLEMON_ATTACK_STAGE 12 = stage +6 in the 0-12 internal scale; jump _052 = fail)
+  //   then: DivideVarByValue BTLVAR_HP_CALC_TEMP, 2
+  //   CompareMonDataToVar OPCODE_LTE, BTLSCR_ATTACKER, BATTLEMON_CUR_HP, BTLVAR_HP_CALC_TEMP, _052
   const { attacker } = ctx;
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+  if (attacker.statStages.attack >= 6) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
   const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
   const halfHp = Math.floor(maxHp / 2);
   if (attacker.pokemon.currentHp > halfHp) {
@@ -127,16 +135,43 @@ function handleBatonPass(_ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
-function handlePerishSong(_ctx: MoveEffectContext): MoveEffectResult {
-  // Both Pokemon get Perish Song volatile (3-turn countdown)
-  // Source: Showdown Gen 4 — Perish Song affects both sides
-  // Source: Bulbapedia — Perish Song: "All Pokemon that hear this song will faint in 3 turns."
+function handlePerishSong(ctx: MoveEffectContext): MoveEffectResult {
+  // Both Pokemon get Perish Song volatile (3-turn countdown), unless immune via Soundproof
+  // Source: pokeplatinum/res/battle/scripts/subscripts/subscript_perish_song_start.s —
+  //   TryPerishSong loops all battlers, skips any with ABILITY_SOUNDPROOF
+  // Source: pokeplatinum/src/battle/battle_script.c BtlCmd_TryPerishSong —
+  //   Battler_IgnorableAbility(battleCtx, attacker, i, ABILITY_SOUNDPROOF) == TRUE → skip
+  const { attacker, defender } = ctx;
+  const attackerImmune = attacker.ability === GEN4_ABILITY_IDS.soundproof;
+  const defenderImmune = defender.ability === GEN4_ABILITY_IDS.soundproof;
+
+  const messages: string[] = [];
+  if (attackerImmune) {
+    const name = attacker.pokemon.nickname ?? "The Pokemon";
+    messages.push(`${name}'s Soundproof blocks Perish Song!`);
+  }
+  if (defenderImmune) {
+    const name = defender.pokemon.nickname ?? "The foe";
+    messages.push(`${name}'s Soundproof blocks Perish Song!`);
+  }
+  if (!attackerImmune || !defenderImmune) {
+    messages.push("All Pokemon that heard the song will faint in 3 turns!");
+  }
+
   return makeResult({
-    selfVolatileInflicted: CORE_VOLATILE_IDS.perishSong,
-    selfVolatileData: { turnsLeft: 3 },
-    volatileInflicted: CORE_VOLATILE_IDS.perishSong,
-    volatileData: { turnsLeft: 3 },
-    messages: ["All Pokemon that heard the song will faint in 3 turns!"],
+    ...(attackerImmune
+      ? {}
+      : {
+          selfVolatileInflicted: CORE_VOLATILE_IDS.perishSong,
+          selfVolatileData: { turnsLeft: 3 },
+        }),
+    ...(defenderImmune
+      ? {}
+      : {
+          volatileInflicted: CORE_VOLATILE_IDS.perishSong,
+          volatileData: { turnsLeft: 3 },
+        }),
+    messages,
   });
 }
 

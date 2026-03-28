@@ -2059,10 +2059,11 @@ describe("Gen 4 executeMoveEffect — entry hazards from attacker on side 1", ()
 // ─── Belly Drum — attack already at +6 ──────────────────────────────────────
 
 describe("Gen 4 executeMoveEffect — Belly Drum with attack already maxed", () => {
-  it("given attacker at +6 attack with >50% HP, when Belly Drum used, then recoilDamage = 50% HP and statChanges has stages = 0", () => {
-    // Source: Showdown Gen 4 — Belly Drum maximizes attack; stages = 6 - current
-    // When already at +6 attack, stages = 6 - 6 = 0 (no change to stages)
-    // Covers the branch where attacker.statStages.attack is 6 (line 419)
+  it("given attacker at +6 attack with >50% HP, when Belly Drum used, then move fails with no HP cost and no stat change", () => {
+    // Belly Drum fails immediately when Attack is already at +6; no HP is spent
+    // Source: pokeplatinum/res/battle/scripts/subscripts/subscript_belly_drum.s —
+    //   CompareMonDataToValue OPCODE_EQU, BTLSCR_ATTACKER, BATTLEMON_ATTACK_STAGE, 12, _052
+    //   (BATTLEMON_ATTACK_STAGE 12 = +6 in 0-12 internal scale; _052 sets MOVE_STATUS_FAILED)
     const attacker = createActivePokemon({
       types: [CORE_TYPE_IDS.normal],
       currentHp: 200,
@@ -2077,10 +2078,8 @@ describe("Gen 4 executeMoveEffect — Belly Drum with attack already maxed", () 
 
     const result = ruleset.executeMoveEffect(context);
 
-    // Belly Drum still costs 50% HP even if attack is maxed
-    expect(result.recoilDamage).toBe(100); // floor(200/2) = 100
-    // Stages = 6 - 6 = 0 (already maxed — no additional stages added)
-    expect(result.statChanges).toContainEqual({ target: "attacker", stat: "attack", stages: 0 });
+    expect(result.recoilDamage).toBe(0);
+    expect(result.statChanges).toHaveLength(0);
   });
 });
 

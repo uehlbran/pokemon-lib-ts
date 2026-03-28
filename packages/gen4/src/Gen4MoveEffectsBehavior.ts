@@ -107,8 +107,18 @@ function applyBerryEffectToAttacker(
       result.healAmount = Math.max(1, Math.floor(maxHp / 4));
       break;
     case ITEM_IDS.lumBerry: {
+      // Lum Berry cures any primary status AND confusion
+      // Source: pokeplatinum/src/battle/battle_lib.c BattleSystem_PluckBerry —
+      //   PLUCK_EFFECT_ALL_RESTORE checks MON_CONDITION_ANY and VOLATILE_CONDITION_CONFUSION,
+      //   queuing confusion-cure subscript when attacker has it
       if (attacker.pokemon.status) {
         result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
+      }
+      if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
+        result.volatilesToClear = [
+          ...(result.volatilesToClear ?? []),
+          { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.confusion },
+        ];
       }
       break;
     }
@@ -248,12 +258,21 @@ function handleKnockOff(ctx: MoveEffectContext): MoveEffectResult {
   // Note: Directly mutates defender.pokemon.heldItem (consistent with Gen 3 pattern).
   // The itemKnockedOff flag prevents Trick/Switcheroo from re-giving an item.
   // Source: Showdown Gen 4 — itemKnockedOff flag suppresses item re-giving
-  const { attacker, defender } = ctx;
+  const { defender } = ctx;
   if (defender.pokemon.heldItem) {
+    const defenderName = defender.pokemon.nickname ?? "The foe";
+    // Sticky Hold blocks item removal from Knock Off
+    // Source: pokeplatinum/src/battle/battle_script.c BtlCmd_TryKnockOff —
+    //   if DEFENDING_MON.heldItem && Battler_IgnorableAbility(ABILITY_STICKY_HOLD) == TRUE,
+    //   print "{0}'s {1} made {2} ineffective!" and don't remove item
+    if (defender.ability === GEN4_ABILITY_IDS.stickyHold) {
+      return makeResult({
+        messages: [`${defenderName}'s Sticky Hold made Knock Off ineffective!`],
+      });
+    }
     const item = defender.pokemon.heldItem;
     defender.pokemon.heldItem = null;
     defender.itemKnockedOff = true;
-    const defenderName = defender.pokemon.nickname ?? "The foe";
     const result = makeResult({ messages: [`${defenderName} lost its ${item}!`] });
     // Unburden: if the defender had Unburden, set the volatile now that its item is gone
     // Source: Showdown Gen 4 mod — Unburden activates when item is knocked off
