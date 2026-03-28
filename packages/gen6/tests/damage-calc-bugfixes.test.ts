@@ -180,7 +180,7 @@ function createDamageContext(overrides: {
   };
 }
 
-const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN6_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // #663 — Iron Fist uses pokeRound(power, 4915) instead of Math.floor(power * 1.2)

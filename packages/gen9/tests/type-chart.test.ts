@@ -59,7 +59,7 @@ describe("Gen9TypeChart", () => {
      * ensuring test failures surface actual data problems.
      */
     function getEffectiveness(attackType: PokemonType, defenseType: PokemonType): number {
-      const chart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
+      const chart = GEN9_TYPE_CHART;
       const attackRow = chart[attackType];
       if (!attackRow) {
         throw new Error(`Attack type "${attackType}" not found in type chart`);

@@ -237,7 +237,7 @@ function createSyntheticDamageContext(overrides: {
 }
 
 // Use the Gen8 type chart for all tests
-const typeChart = GEN8_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN8_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // pokeRound unit tests

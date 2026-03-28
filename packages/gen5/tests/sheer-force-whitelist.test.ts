@@ -306,10 +306,7 @@ describe("Sheer Force + Tri Attack in damage calc", () => {
     });
     const move = dataManager.getMove(moveIds.triAttack);
     const ctx = createDamageContext({ attacker, defender, move, seed: DEFAULT_DAMAGE_SEED });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(44);
   });
 
@@ -335,10 +332,7 @@ describe("Sheer Force + Tri Attack in damage calc", () => {
     });
     const move = dataManager.getMove(moveIds.triAttack);
     const ctx = createDamageContext({ attacker, defender, move, seed: DEFAULT_DAMAGE_SEED });
-    const result = calculateGen5Damage(
-      ctx,
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
-    );
+    const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     expect(result.damage).toBe(34);
   });
 });

@@ -165,7 +165,7 @@ function createDamageContext(overrides: {
   };
 }
 
-const typeChart = GEN5_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN5_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // #757: Simple/Unaware priority order

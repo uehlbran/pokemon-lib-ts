@@ -234,13 +234,13 @@ describe("Venoshock base power doubling", () => {
 
     const poisoned = calculateGen5Damage(
       createDamageContext({ attacker, defender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const healthyDefender = createSyntheticOnFieldPokemon({ spDefense: 100 });
     const normal = calculateGen5Damage(
       createDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Poisoned damage should be exactly 2x normal damage (base power doubles 65 -> 130)
@@ -260,13 +260,13 @@ describe("Venoshock base power doubling", () => {
 
     const badlyPoisoned = calculateGen5Damage(
       createDamageContext({ attacker, defender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const healthyDefender = createSyntheticOnFieldPokemon({ spDefense: 100 });
     const normal = calculateGen5Damage(
       createDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     expect(badlyPoisoned.damage / normal.damage).toBeCloseTo(2, 0);
@@ -280,7 +280,7 @@ describe("Venoshock base power doubling", () => {
 
     const result = calculateGen5Damage(
       createDamageContext({ attacker, defender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // With paralyzed target (non-poison status), should NOT double
@@ -290,7 +290,7 @@ describe("Venoshock base power doubling", () => {
     });
     const paralyzed = calculateGen5Damage(
       createDamageContext({ attacker, defender: paralyzedDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Paralysis is NOT poison, so Venoshock should not double
@@ -323,12 +323,12 @@ describe("Hex base power doubling", () => {
 
     const normal = calculateGen5Damage(
       createDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const statusd = calculateGen5Damage(
       createDamageContext({ attacker, defender: burnedFireDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     expect(statusd.damage / normal.damage).toBeCloseTo(2, 0);
@@ -351,12 +351,12 @@ describe("Hex base power doubling", () => {
 
     const normal = calculateGen5Damage(
       createDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const paralyzed = calculateGen5Damage(
       createDamageContext({ attacker, defender: paralyzedDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     expect(paralyzed.damage / normal.damage).toBeCloseTo(2, 0);
@@ -378,12 +378,12 @@ describe("Hex base power doubling", () => {
 
     const hexDmg = calculateGen5Damage(
       createDamageContext({ attacker, defender: healthyDefender, move, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const genericDmg = calculateGen5Damage(
       createDamageContext({ attacker, defender: healthyDefender, move: genericGhost, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Without status, Hex should deal the same damage as any 50 BP Ghost move
@@ -415,12 +415,12 @@ describe("Chip Away ignoring defense stages", () => {
 
     const vsBoosted = calculateGen5Damage(
       createDamageContext({ attacker, defender: boostedDefender, move: chipAway, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const vsNormal = calculateGen5Damage(
       createDamageContext({ attacker, defender: normalDefender, move: chipAway, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Chip Away should deal the same damage regardless of defense stages
@@ -445,12 +445,12 @@ describe("Chip Away ignoring defense stages", () => {
 
     const vsDropped = calculateGen5Damage(
       createDamageContext({ attacker, defender: droppedDefender, move: chipAway, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const vsNormal = calculateGen5Damage(
       createDamageContext({ attacker, defender: normalDefender, move: chipAway, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Chip Away ignores both positive AND negative defense stages
@@ -478,12 +478,12 @@ describe("Sacred Sword ignoring defense stages", () => {
 
     const vsBoosted = calculateGen5Damage(
       createDamageContext({ attacker, defender: boostedDefender, move: sacredSword, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const vsNormal = calculateGen5Damage(
       createDamageContext({ attacker, defender: normalDefender, move: sacredSword, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Sacred Sword should deal the same damage regardless of defense stages
@@ -508,12 +508,12 @@ describe("Sacred Sword ignoring defense stages", () => {
 
     const vsBoosted = calculateGen5Damage(
       createDamageContext({ attacker, defender: boostedDefender, move: closeCombat, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     const vsNormal = calculateGen5Damage(
       createDamageContext({ attacker, defender: normalDefender, move: closeCombat, seed: 1 }),
-      GEN5_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN5_TYPE_CHART,
     );
 
     // Close Combat SHOULD be affected by the +3 Defense boost

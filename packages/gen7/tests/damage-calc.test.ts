@@ -260,7 +260,7 @@ function expectSpreadPenaltyMatchesSingleTarget(
 }
 
 // Use the Gen7 type chart for all tests
-const typeChart = GEN7_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN7_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // pokeRound unit tests

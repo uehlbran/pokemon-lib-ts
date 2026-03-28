@@ -158,7 +158,7 @@ function createDamageContext(overrides: {
   };
 }
 
-const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN6_TYPE_CHART;
 
 // ===========================================================================
 // Issue #610: Eviolite treated as non-removable by Knock Off

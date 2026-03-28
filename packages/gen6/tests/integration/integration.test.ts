@@ -262,7 +262,7 @@ function createItemContext(overrides: {
   };
 }
 
-const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN6_TYPE_CHART;
 
 // ===========================================================================
 // Integration Test Scenarios

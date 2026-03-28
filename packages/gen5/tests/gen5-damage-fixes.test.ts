@@ -192,7 +192,7 @@ function createDamageContextFixture(overrides: {
   };
 }
 
-const typeChart = GEN5_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN5_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // #643 — Type-boost items and Plates use pokeRound, not floor multiply

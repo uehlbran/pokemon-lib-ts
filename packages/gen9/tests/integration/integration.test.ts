@@ -273,7 +273,7 @@ function createDamageContext(overrides: {
   };
 }
 
-const typeChart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN9_TYPE_CHART;
 
 // ===========================================================================
 // Integration Tests

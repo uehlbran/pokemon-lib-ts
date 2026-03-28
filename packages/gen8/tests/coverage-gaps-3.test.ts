@@ -236,7 +236,7 @@ function createDamageContext(overrides: {
 
 /** Convenience wrapper: call calculateGen8Damage with the Gen 8 type chart */
 function calcDmg(ctx: DamageContext): ReturnType<typeof calculateGen8Damage> {
-  return calculateGen8Damage(ctx, GEN8_TYPE_CHART as Record<string, Record<string, number>>);
+  return calculateGen8Damage(ctx, GEN8_TYPE_CHART);
 }
 
 // ---------------------------------------------------------------------------

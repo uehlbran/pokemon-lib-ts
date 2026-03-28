@@ -59,7 +59,7 @@ import {
 import { calculateGen8Damage } from "../src/Gen8DamageCalc";
 import { GEN8_TYPE_CHART } from "../src/Gen8TypeChart";
 
-const typeChart = GEN8_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN8_TYPE_CHART;
 const gen8Data = createGen8DataManager();
 
 const ABILITIES = { ...CORE_ABILITY_IDS, ...GEN8_ABILITY_IDS } as const;

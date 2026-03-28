@@ -172,7 +172,7 @@ function createDamageContext(overrides: {
   };
 }
 
-const typeChart = GEN6_TYPE_CHART as Record<string, Record<string, number>>;
+const typeChart = GEN6_TYPE_CHART;
 
 // ---------------------------------------------------------------------------
 // Tough Claws (contact moves get ~1.3x boost)

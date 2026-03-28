@@ -332,7 +332,7 @@ function createDamageBattleState(): BattleState {
   } as unknown as BattleState;
 }
 
-const dmgTypeChart = GEN9_TYPE_CHART as Record<string, Record<string, number>>;
+const dmgTypeChart = GEN9_TYPE_CHART;
 
 describe("calculateGen9Damage — teraOriginalTypes cross-type STAB pipeline", () => {
   const tera = new Gen9Terastallization();

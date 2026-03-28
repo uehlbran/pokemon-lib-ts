@@ -291,7 +291,7 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
 
     const rainResult = calculateGen6Damage(
       createDamageContext({ attacker, defender, move: waterMove, state: rainState, seed: 12345 }),
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN6_TYPE_CHART,
     );
     const noWeatherResult = calculateGen6Damage(
       createDamageContext({
@@ -301,7 +301,7 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN6_TYPE_CHART,
     );
 
     // With Cloud Nine: rain boost is suppressed
@@ -329,7 +329,7 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
 
     const sunResult = calculateGen6Damage(
       createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 99999 }),
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN6_TYPE_CHART,
     );
     const noWeatherResult = calculateGen6Damage(
       createDamageContext({
@@ -339,7 +339,7 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 99999,
       }),
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN6_TYPE_CHART,
     );
 
     // With Air Lock: sun boost is suppressed
@@ -367,7 +367,7 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
 
     const sunResult = calculateGen6Damage(
       createDamageContext({ attacker, defender, move: fireMove, state: sunState, seed: 12345 }),
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN6_TYPE_CHART,
     );
     const noWeatherResult = calculateGen6Damage(
       createDamageContext({
@@ -377,7 +377,7 @@ describe("Gen6 Cloud Nine damage calc integration", () => {
         state: noWeatherState,
         seed: 12345,
       }),
-      GEN6_TYPE_CHART as Record<string, Record<string, number>>,
+      GEN6_TYPE_CHART,
     );
 
     // Without suppression: sun DOES boost Fire damage
