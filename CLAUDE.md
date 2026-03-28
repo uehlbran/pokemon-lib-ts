@@ -93,9 +93,11 @@ Ground-truth refs: `specs/reference/genN-ground-truth.md`. Check before implemen
 
 ## Testing
 
-TDD is mandatory: write tests before or with implementation. Test against known values from Bulbapedia/Showdown with source comments. Property-based tests for formulas. Determinism tests for PRNG. Validate against Showdown battle logs. Never mock domain logic (damage calc, stat calc, type chart).
+TDD is mandatory: Red (failing test), Green (minimum implementation), Refactor. No exceptions. Test against known values from Bulbapedia/Showdown with source comments. Property-based tests for formulas. Determinism tests for PRNG. Validate against Showdown battle logs. Never mock domain logic (damage calc, stat calc, type chart).
 
-See `.claude/rules/testing-rules.md` for detailed test authoring rules.
+Integration tests required for every MoveEffectResult field the engine processes (attackerItemConsumed, itemTransfer, statusInflicted, etc.). Handler unit tests alone are not sufficient — they cannot detect engine contract violations. Never modify existing test assertions to match changed implementations without documented justification.
+
+See `.claude/rules/testing-rules.md` and `.claude/rules/test-integrity.md` for detailed rules.
 
 ## Generation Status
 
