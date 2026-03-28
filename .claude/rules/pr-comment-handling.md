@@ -6,7 +6,9 @@ Every review thread must be replied to AND resolved before merge.
 
 ## Workflow (Batched)
 
-### Step 1: Fetch all unresolved threads (one query)
+### Step 1: Fetch all unresolved threads
+
+Use `first: 100`. If a PR has 100+ threads, paginate with `after` cursor.
 
 ```bash
 gh api graphql -f query='
@@ -14,6 +16,7 @@ gh api graphql -f query='
   repository(owner: "OWNER", name: "REPO") {
     pullRequest(number: PR_NUMBER) {
       reviewThreads(first: 100) {
+        pageInfo { hasNextPage endCursor }
         nodes { id isResolved comments(first: 1) { nodes { body } } }
       }
     }

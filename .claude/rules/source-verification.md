@@ -1,29 +1,31 @@
 # Source Verification (Mandatory)
 
-Before implementing ANY generation-specific mechanic:
+Before implementing ANY generation-specific mechanic, consult the primary source
+for that generation per the source authority hierarchy in CLAUDE.md:
 
-1. **Read the relevant pret disassembly** routine in `references/`
-   - Gen 1: `references/pokered-master/`
-   - Gen 2: `references/pokecrystal-master/`
-   - Gen 3: `references/pokeemerald-master/`
-2. **Cross-reference with Bulbapedia** article for the mechanic
-3. Do NOT rely solely on ground-truth docs (`specs/reference/genN-ground-truth.md`) -- they are summaries that can contain errors
+| Gen | Primary Source | Path / Fallback |
+|-----|---------------|-----------------|
+| 1-2 | pret disassemblies | `references/pokered-master/`, `references/pokecrystal-master/` -> Bulbapedia -> Showdown |
+| 3 | pret/pokeemerald | `references/pokeemerald-master/` -> Showdown -> Bulbapedia |
+| 4 | pret decompiled (where available) | Showdown -> Bulbapedia -> Smogon |
+| 5-9 | Pokemon Showdown | `references/pokemon-showdown/` -> Bulbapedia -> Smogon |
+
+Ground-truth docs (`specs/reference/genN-ground-truth.md`) are authoritative summaries
+but can contain errors. Always cross-reference against the primary source above.
+If the primary source and ground-truth doc disagree, the primary source wins — file
+a bug against the ground-truth doc immediately.
 
 ## Source Comments in Tests
 
 Test expectations for formulas must cite the SPECIFIC routine or article:
-- Good: `// Source: pokered engine/battle/effects.asm BadgeStatBoosts`
+- Good: `// Source: pokered engine/battle/core.asm ApplyBadgeStatBoosts`
 - Good: `// Source: Bulbapedia "Badge boost glitch" - cross-stat compounding`
+- Good: `// Source: Showdown sim/battle-actions.ts Gen 4 — Trick item swap`
 - Bad: `// Source: pokered`
 - Bad: `// Source: Bulbapedia`
 
-## Conflict Resolution
-
-If the disassembly and ground-truth doc disagree, the disassembly wins. File a bug
-against the ground-truth doc immediately.
-
 ## Never
 
-- Implement a mechanic based solely on the ground-truth summary doc
-- Write test expectations without verifying against the disassembly or Bulbapedia
+- Implement a mechanic without consulting the primary source for that generation
+- Write test expectations without verifying against the primary source or Bulbapedia
 - Use vague source citations that don't identify the specific routine or article
