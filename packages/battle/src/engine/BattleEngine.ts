@@ -1440,6 +1440,7 @@ export class BattleEngine implements BattleEventEmitter {
     );
     BattleEngine.assertDeserializablePhase(parsed.state.phase);
     BattleEngine.assertSinglesOnlyFormat("BattleEngine.deserialize", parsed.state.format);
+    BattleEngine.validateRestoredState(parsed.state);
     BattleEngine.relinkRestoredActivePokemon(parsed.state);
 
     const restoredSwitchPromptState = BattleEngine.restoreSwitchPromptState(
@@ -1538,6 +1539,24 @@ export class BattleEngine implements BattleEventEmitter {
     throw new Error(
       `BattleEngine.deserialize cannot restore phase ${phase}; save only from stable checkpoint phases`,
     );
+  }
+
+  private static validateRestoredState(state: BattleState): void {
+    if (typeof state.turnNumber !== "number" || state.turnNumber < 0) {
+      throw new Error(
+        `BattleEngine.deserialize: turnNumber must be a non-negative number, got ${state.turnNumber}`,
+      );
+    }
+
+    for (const side of state.sides) {
+      for (const pokemon of side.team) {
+        if (typeof pokemon.currentHp !== "number" || pokemon.currentHp < 0) {
+          throw new Error(
+            `BattleEngine.deserialize: Pokemon ${pokemon.uid} has invalid currentHp ${pokemon.currentHp}`,
+          );
+        }
+      }
+    }
   }
 
   private static relinkRestoredActivePokemon(state: BattleState): void {
