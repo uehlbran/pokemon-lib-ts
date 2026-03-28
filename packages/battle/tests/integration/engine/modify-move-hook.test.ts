@@ -362,9 +362,9 @@ describe("BattleGimmick.modifyMove() engine hook", () => {
     createEngine({ ruleset });
 
     // reset() must have been called once per construction (once per gimmick type attempted)
-    // The engine iterates ["mega","zmove","dynamax","tera"] but getBattleGimmick always
-    // returns the same mock, so reset fires 4 times per construction × 2 constructions = 8
-    expect(resetCallCount).toBe(8);
+    // The engine iterates ["mega","zmove","dynamax","tera","ultraburst"] but getBattleGimmick
+    // always returns the same mock, so reset fires 5 times per construction × 2 constructions = 10
+    expect(resetCallCount).toBe(10);
   });
 
   it("given a gimmick without reset(), when BattleEngine is constructed, then no error is thrown", () => {

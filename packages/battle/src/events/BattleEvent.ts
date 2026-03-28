@@ -51,6 +51,7 @@ import type { BattleFormat } from "../state";
  * - `dynamax-end` — a Pokémon reverts from Dynamax
  * - `terastallize` — a Pokémon terastallizes (Gen 9)
  * - `z-move` — a Z-Move is used (Gen 7)
+ * - `ultra-burst` — Necrozma undergoes Ultra Burst (Gen 7)
  * - `catch-attempt` — a Poké Ball is thrown in a wild battle
  * - `exp-gain` — a Pokémon gains experience points
  * - `level-up` — a Pokémon's level increases
@@ -92,6 +93,7 @@ export type BattleEvent =
   | DynamaxEndEvent
   | TerastallizeEvent
   | ZMoveEvent
+  | UltraBurstEvent
   | CatchAttemptEvent
   | ExpGainEvent
   | LevelUpEvent
@@ -579,6 +581,21 @@ export interface ZMoveEvent {
   readonly pokemon: string;
   /** Z-Move name (e.g., `"gigavolt-havoc"`) */
   readonly move: string;
+}
+
+/**
+ * Emitted when Necrozma undergoes Ultra Burst (Gen 7).
+ * Ultra Burst transforms Necrozma-Dusk-Mane or Necrozma-Dawn-Wings into
+ * Ultra Necrozma, changing its types to Psychic/Dragon and drastically
+ * boosting its stats. Only one Ultra Burst per trainer per battle.
+ */
+export interface UltraBurstEvent {
+  /** Discriminant: always `"ultra-burst"` */
+  readonly type: "ultra-burst";
+  /** Which side the Pokémon belongs to */
+  readonly side: 0 | 1;
+  /** UID of the Pokémon that underwent Ultra Burst */
+  readonly pokemon: string;
 }
 
 /**

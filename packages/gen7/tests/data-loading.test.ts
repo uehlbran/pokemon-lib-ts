@@ -13,13 +13,15 @@ describe("Gen 7 DataManager -- data loading", () => {
   // Pokemon
   // ---------------------------------------------------------------------------
 
-  it("given gen7 data files, when loading DataManager, then loads exactly 807 Pokemon", () => {
-    // Source: National Dex #001-#807 (Bulbasaur through Zeraora).
+  it("given gen7 data files, when loading DataManager, then loads exactly 810 Pokemon", () => {
+    // Source: National Dex #001-#807 (Bulbasaur through Zeraora) = 807 base-form species.
     // Meltan (#808) and Melmetal (#809) are excluded because PokeAPI does not
     // have species data for them (they are cross-game Pokemon from Pokemon GO).
-    // Source: @pkmn/data gen7 species iteration (807 base-form species)
+    // Additionally, 3 Necrozma forms required for Ultra Burst are included:
+    //   #10800 Necrozma-Dusk-Mane, #10801 Necrozma-Dawn-Wings, #10802 Ultra-Necrozma
+    // Source: @pkmn/data gen7 species iteration + Bulbapedia "Ultra Burst" form IDs
     const dm = createGen7DataManager();
-    expect(dm.getAllSpecies().length).toBe(807);
+    expect(dm.getAllSpecies().length).toBe(810);
   });
 
   it("given gen7 data files, when loading DataManager, then loads 690 moves", () => {

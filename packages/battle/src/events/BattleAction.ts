@@ -42,6 +42,12 @@ export interface MoveAction {
   readonly dynamax?: boolean;
   /** `true` to terastallize this turn (Gen 9); only valid once per battle */
   readonly terastallize?: boolean;
+  /**
+   * `true` to trigger Ultra Burst this turn (Gen 7, Necrozma only);
+   * only valid once per battle. Ultra Burst transforms Necrozma and its
+   * modifyMove converts Photon Geyser to Light That Burns the Sky.
+   */
+  readonly ultraBurst?: boolean;
 }
 
 /**

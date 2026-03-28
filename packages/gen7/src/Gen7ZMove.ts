@@ -381,6 +381,18 @@ export class Gen7ZMove implements BattleGimmick {
     return this.usedBySide.has(sideIndex);
   }
 
+  /**
+   * Mark a side's Z-Move as used without going through activate().
+   * Used by Gen7UltraBurst.activate() to consume the Z-Crystal as part of
+   * Ultra Burst activation — Ultra Necrozma's Z-Move fires in the same action.
+   *
+   * Source: Bulbapedia "Ultra Burst" -- "Necrozma can use Light That Burns the Sky
+   *   after undergoing Ultra Burst; this consumes the Ultranecrozium Z."
+   */
+  markUsed(sideIndex: 0 | 1): void {
+    this.usedBySide.add(sideIndex);
+  }
+
   // --- Private helpers ---
 
   /**
