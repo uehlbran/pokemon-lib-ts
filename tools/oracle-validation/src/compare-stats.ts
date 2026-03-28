@@ -22,6 +22,12 @@ import { calculateGen1Stats } from "../../../packages/gen1/src/Gen1StatCalc.js";
 import { createGen2DataManager } from "../../../packages/gen2/src/data/index.js";
 import { calculateGen2Stats } from "../../../packages/gen2/src/Gen2StatCalc.js";
 import { createGen3DataManager } from "../../../packages/gen3/src/data/index.js";
+import { createGen4DataManager } from "../../../packages/gen4/src/data/index.js";
+import { createGen5DataManager } from "../../../packages/gen5/src/data/index.js";
+import { createGen6DataManager } from "../../../packages/gen6/src/data/index.js";
+import { createGen7DataManager } from "../../../packages/gen7/src/data/index.js";
+import { createGen8DataManager } from "../../../packages/gen8/src/data/index.js";
+import { createGen9DataManager } from "../../../packages/gen9/src/data/index.js";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
@@ -60,7 +66,7 @@ function createGen12Pokemon(speciesId: number, tacklePp: number): PokemonInstanc
   };
 }
 
-function createGen3Pokemon(speciesId: number, tacklePp: number): PokemonInstance {
+function createGen3PlusPokemon(speciesId: number, tacklePp: number): PokemonInstance {
   return {
     uid: "oracle-fast-path",
     speciesId,
@@ -87,22 +93,78 @@ function createGen3Pokemon(speciesId: number, tacklePp: number): PokemonInstance
   };
 }
 
-export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
-  if (generation.gen > 3) {
-    return {
-      status: "skip",
-      suitePassed: false,
-      failed: 0,
-      skipped: 1,
-      failures: [],
-      notes: [],
-      matchedKnownDisagreements: [],
-      staleDisagreements: [],
-      oracleChecks: [],
-      skipReason: "Initial fast path only implements Gen 1-3 stat checks",
-    };
+// Gen 3+ stat formula (Bulbapedia):
+// HP = floor(((2*base + IV + floor(EV/4)) * level) / 100) + level + 10
+// Other = floor((floor(((2*base + IV + floor(EV/4)) * level) / 100) + 5) * natureModifier)
+// With Hardy nature (1.0), IVs 31, EVs 0:
+// HP = floor(((2*base + 31) * 50) / 100) + 50 + 10
+// Other = floor(((2*base + 31) * 50) / 100) + 5
+function expectedGen3PlusStat(baseStat: number, isHp: boolean): number {
+  const raw = Math.floor(((2 * baseStat + 31) * 50) / 100);
+  return isHp ? raw + 50 + 10 : raw + 5;
+}
+
+type DataManagerFactory = () => {
+  getSpeciesByName: (name: string) => { id: number; baseStats: Record<string, number> };
+  getMove: (id: string) => { pp: number };
+  getNature: (id: string) => NatureData | null;
+};
+
+const GEN_DATA_FACTORIES: Record<number, DataManagerFactory> = {
+  3: createGen3DataManager as DataManagerFactory,
+  4: createGen4DataManager as DataManagerFactory,
+  5: createGen5DataManager as DataManagerFactory,
+  6: createGen6DataManager as DataManagerFactory,
+  7: createGen7DataManager as DataManagerFactory,
+  8: createGen8DataManager as DataManagerFactory,
+  9: createGen9DataManager as DataManagerFactory,
+};
+
+function runGen3PlusStatCheck(gen: number): string[] {
+  const factory = GEN_DATA_FACTORIES[gen];
+  if (!factory) return [`Gen ${gen}: no data manager factory available`];
+
+  const dataManager = factory();
+  const species = dataManager.getSpeciesByName("charizard");
+  const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
+  const nature = dataManager.getNature(CORE_NATURE_IDS.hardy) as NatureData;
+  const pokemon = createGen3PlusPokemon(species.id, tackle.pp);
+  const stats = calculateAllStats(pokemon, species, nature);
+
+  const failures: string[] = [];
+
+  // Charizard base stats: HP 78 / Atk 84 / Def 78 / SpA 109 / SpD 85 / Spe 100
+  // Source: Bulbapedia Charizard base stats (unchanged Gen 3-9)
+  const expectedHp = expectedGen3PlusStat(78, true); // 153
+  const expectedAtk = expectedGen3PlusStat(84, false); // 92
+  const expectedDef = expectedGen3PlusStat(78, false); // 86
+  const expectedSpA = expectedGen3PlusStat(109, false); // 129
+  const expectedSpD = expectedGen3PlusStat(85, false); // 90
+  const expectedSpe = expectedGen3PlusStat(100, false); // 120
+
+  if (stats.hp !== expectedHp) {
+    failures.push(`Gen ${gen}: Charizard HP expected=${expectedHp}, got=${stats.hp}`);
+  }
+  if (stats.attack !== expectedAtk) {
+    failures.push(`Gen ${gen}: Charizard Atk expected=${expectedAtk}, got=${stats.attack}`);
+  }
+  if (stats.defense !== expectedDef) {
+    failures.push(`Gen ${gen}: Charizard Def expected=${expectedDef}, got=${stats.defense}`);
+  }
+  if (stats.spAttack !== expectedSpA) {
+    failures.push(`Gen ${gen}: Charizard SpA expected=${expectedSpA}, got=${stats.spAttack}`);
+  }
+  if (stats.spDefense !== expectedSpD) {
+    failures.push(`Gen ${gen}: Charizard SpD expected=${expectedSpD}, got=${stats.spDefense}`);
+  }
+  if (stats.speed !== expectedSpe) {
+    failures.push(`Gen ${gen}: Charizard Spe expected=${expectedSpe}, got=${stats.speed}`);
   }
 
+  return failures;
+}
+
+export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
   const failures: string[] = [];
 
   if (generation.gen === 1) {
@@ -110,6 +172,8 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
     const species = dataManager.getSpeciesByName("charizard");
     const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
     const stats = calculateGen1Stats(createGen12Pokemon(species.id, tackle.pp), species);
+    // Source: pokered engine/battle/core.asm — Gen 1 stat calc uses DVs + stat exp
+    // Level 50 Charizard with max DVs (15), zero stat exp: all stats must be positive
     if (stats.hp <= 0 || stats.attack <= 0 || stats.spAttack <= 0 || stats.spDefense <= 0) {
       failures.push("Gen 1: expected positive derived stats for level 50 Charizard");
     }
@@ -120,28 +184,14 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
     const species = dataManager.getSpeciesByName("charizard");
     const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
     const stats = calculateGen2Stats(createGen12Pokemon(species.id, tackle.pp), species);
+    // Source: pokecrystal engine/battle/core.asm — Gen 2 stat calc uses DVs + stat exp
     if (stats.hp <= 0 || stats.attack <= 0 || stats.spAttack <= 0) {
       failures.push("Gen 2: expected positive derived stats for level 50 Charizard");
     }
   }
 
-  if (generation.gen === 3) {
-    const dataManager = createGen3DataManager();
-    const species = dataManager.getSpeciesByName("charizard");
-    const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
-    const nature = dataManager.getNature(CORE_NATURE_IDS.hardy) as NatureData;
-    const stats = calculateAllStats(createGen3Pokemon(species.id, tackle.pp), species, nature);
-    // Source: Bulbapedia stat formula + Gen 3 Charizard base stats.
-    // Assumptions: level 50, Hardy nature (neutral), IVs 31, EVs 0.
-    // Charizard base stats are HP 78 / Sp. Atk 109 / Speed 100, so:
-    // HP = floor(((2*78 + 31) * 50) / 100) + 50 + 10 = 153
-    // Sp. Atk = floor(((2*109 + 31) * 50) / 100) + 5 = 129
-    // Speed = floor(((2*100 + 31) * 50) / 100) + 5 = 120
-    if (stats.hp !== 153 || stats.spAttack !== 129 || stats.speed !== 120) {
-      failures.push(
-        `Gen 3: expected level 50 Hardy Charizard stats hp=153/spAttack=129/speed=120, got hp=${stats.hp}/spAttack=${stats.spAttack}/speed=${stats.speed}`,
-      );
-    }
+  if (generation.gen >= 3) {
+    failures.push(...runGen3PlusStatCheck(generation.gen));
   }
 
   return {
