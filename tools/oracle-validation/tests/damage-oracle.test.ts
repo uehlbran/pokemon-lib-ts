@@ -24,11 +24,11 @@ describe("Damage Oracle Suite", () => {
         `Gen ${gen.gen} damage failures:\n${result.failures.join("\n")}`,
       ).toHaveLength(0);
 
-      // Suite must have run at least one scenario
+      // Suite must have run scenarios (status "skip" means no scenarios ran at all)
       expect(
-        result.oracleChecks.length,
-        `Gen ${gen.gen}: expected at least one oracle check, got 0`,
-      ).toBeGreaterThan(0);
+        result.status,
+        `Gen ${gen.gen}: expected suite to run scenarios, got status "skip"`,
+      ).not.toBe("skip");
     });
   }
 });

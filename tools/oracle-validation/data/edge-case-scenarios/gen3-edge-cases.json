@@ -5,7 +5,12 @@
     {
       "id": "gen3-flash-fire-boosted",
       "description": "Flash Fire boosts Fire-type moves by 1.5x when activated",
-      "attacker": { "species": "Arcanine", "level": 50, "ability": "Flash Fire", "volatile": "flash-fire" },
+      "attacker": {
+        "species": "Arcanine",
+        "level": 50,
+        "ability": "Flash Fire",
+        "volatile": "flash-fire"
+      },
       "defender": { "species": "Snorlax", "level": 50 },
       "move": "Flamethrower",
       "note": "Flash Fire: 1.5x boost to Fire moves when triggered. Source: pret/pokeemerald src/battle_script_commands.c FlashFireCheck"

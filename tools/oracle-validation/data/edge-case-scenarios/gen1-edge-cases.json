@@ -108,7 +108,12 @@
     {
       "id": "gen1-focus-energy-bug",
       "description": "Focus Energy divides crit rate by 4 (bug) instead of multiplying by 4 as documented",
-      "attacker": { "species": "Mewtwo", "level": 50, "dvs": { "atk": 15 }, "volatile": "focus-energy" },
+      "attacker": {
+        "species": "Mewtwo",
+        "level": 50,
+        "dvs": { "atk": 15 },
+        "volatile": "focus-energy"
+      },
       "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
       "move": "Psychic",
       "note": "Focus Energy bug: crit rate is floor(base_speed/2)/256 then divided by 4, not multiplied. Source: pret/pokered engine/battle/core.asm FocusEnergy CriticalHitChance"

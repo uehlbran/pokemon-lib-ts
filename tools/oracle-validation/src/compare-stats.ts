@@ -6,7 +6,6 @@ import {
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
 } from "../../../packages/core/src/constants/index.js";
-import type { DataManager } from "../../../packages/core/src/data/data-manager.js";
 import type { PokemonInstance } from "../../../packages/core/src/entities/pokemon.js";
 import { createFriendship } from "../../../packages/core/src/logic/friendship-inputs.js";
 import { createMoveSlot } from "../../../packages/core/src/logic/pokemon-factory.js";
@@ -104,7 +103,9 @@ function expectedGen3PlusStat(baseStat: number, isHp: boolean): number {
   return isHp ? raw + 50 + 10 : raw + 5;
 }
 
-const GEN_DATA_FACTORIES: Record<number, () => DataManager> = {
+type GenDataManager = ReturnType<typeof createGen3DataManager>;
+
+const GEN_DATA_FACTORIES: Partial<Record<number, () => GenDataManager>> = {
   3: createGen3DataManager,
   4: createGen4DataManager,
   5: createGen5DataManager,

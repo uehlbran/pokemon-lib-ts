@@ -17,9 +17,24 @@
       "hazard": "stealth-rock",
       "attacker_type": "rock",
       "cases": [
-        { "defender": "Charizard", "defenderTypes": ["fire", "flying"], "fraction": 0.5, "effectiveness": 4 },
-        { "defender": "Blastoise", "defenderTypes": ["water"], "fraction": 0.125, "effectiveness": 1 },
-        { "defender": "Aggron", "defenderTypes": ["steel", "rock"], "fraction": 0.03125, "effectiveness": 0.25 }
+        {
+          "defender": "Charizard",
+          "defenderTypes": ["fire", "flying"],
+          "fraction": 0.5,
+          "effectiveness": 4
+        },
+        {
+          "defender": "Blastoise",
+          "defenderTypes": ["water"],
+          "fraction": 0.125,
+          "effectiveness": 1
+        },
+        {
+          "defender": "Aggron",
+          "defenderTypes": ["steel", "rock"],
+          "fraction": 0.03125,
+          "effectiveness": 0.25
+        }
       ],
       "note": "Stealth Rock base = 1/8 * effectiveness multiplier. 4x weak → 1/2 HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRock"
     },

@@ -39,32 +39,6 @@
     "addedDate": "2026-03-28"
   },
   {
-    "id": "gen1:damage:arcanine:surf:max-roll",
-    "gen": 1,
-    "suite": "damage",
-    "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
-    "ourValue": 51,
-    "oracleValue": 49,
-    "resolution": "cartridge-accurate",
-    "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
-    "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",
-    "oracleVersion": "@smogon/calc@0.11.0",
-    "addedDate": "2026-03-28"
-  },
-  {
-    "id": "gen1:damage:blastoise:flamethrower:max-roll",
-    "gen": 1,
-    "suite": "damage",
-    "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
-    "ourValue": 53,
-    "oracleValue": 51,
-    "resolution": "cartridge-accurate",
-    "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
-    "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",
-    "oracleVersion": "@smogon/calc@0.11.0",
-    "addedDate": "2026-03-28"
-  },
-  {
     "id": "gen1:damage:blastoise:surf:max-roll",
     "gen": 1,
     "suite": "damage",
@@ -96,19 +70,6 @@
     "suite": "damage",
     "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
     "ourValue": 65,
-    "oracleValue": 51,
-    "resolution": "cartridge-accurate",
-    "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
-    "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",
-    "oracleVersion": "@smogon/calc@0.11.0",
-    "addedDate": "2026-03-28"
-  },
-  {
-    "id": "gen1:damage:clefable:flamethrower:max-roll",
-    "gen": 1,
-    "suite": "damage",
-    "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
-    "ourValue": 53,
     "oracleValue": 51,
     "resolution": "cartridge-accurate",
     "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
@@ -377,19 +338,6 @@
     "addedDate": "2026-03-28"
   },
   {
-    "id": "gen1:damage:slowbro:flamethrower:max-roll",
-    "gen": 1,
-    "suite": "damage",
-    "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
-    "ourValue": 51,
-    "oracleValue": 49,
-    "resolution": "cartridge-accurate",
-    "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
-    "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",
-    "oracleVersion": "@smogon/calc@0.11.0",
-    "addedDate": "2026-03-28"
-  },
-  {
     "id": "gen1:damage:slowbro:surf:max-roll",
     "gen": 1,
     "suite": "damage",
@@ -448,19 +396,6 @@
     "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
     "ourValue": 61,
     "oracleValue": 57,
-    "resolution": "cartridge-accurate",
-    "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
-    "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",
-    "oracleVersion": "@smogon/calc@0.11.0",
-    "addedDate": "2026-03-28"
-  },
-  {
-    "id": "gen1:damage:venusaur:sludge:max-roll",
-    "gen": 1,
-    "suite": "damage",
-    "description": "Gen 1 max-roll damage: our engine (pret formula, stat EXP=0) vs smogon/calc Gen 1-2 formula (+63 constant, max stat EXP equivalent)",
-    "ourValue": 54,
-    "oracleValue": 52,
     "resolution": "cartridge-accurate",
     "source": "pret/pokered engine/battle/core.asm \u2014 our engine uses stat EXP 0 per pret formula; smogon calcStatRBY uses +63 constant (floor(sqrt(65535)+1)/4 approximation)",
     "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",

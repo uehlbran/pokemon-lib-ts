@@ -153,6 +153,8 @@ const DATA_MANAGER_FACTORIES: Record<number, () => ReturnType<typeof createGen1D
 const MAX_ROLL_RNG = {
   next: () => 1.0,
   int: (_min: number, max: number) => max,
+  // chance() returns false so secondary effects (burn, paralysis, etc.) are never triggered.
+  // Secondary effects do not affect the damage number itself in any gen's damage calc.
   chance: () => false,
   pick: <T>(arr: readonly T[]) => arr[0] as T,
   shuffle: <T>(arr: readonly T[]) => [...arr] as T[],
@@ -429,7 +431,9 @@ function getSmogonMaxDamage(result: ReturnType<typeof calculate>): number | null
     // Single-roll array: [min, ..., max]
     const last = damage[damage.length - 1];
     if (typeof last === "number") return last;
-    // Multi-hit: [[roll1, roll2, ...], ...]
+    // Multi-hit: [[hit1-rolls], [hit2-rolls], ...] — only last hit's max roll is returned.
+    // Multi-hit moves are NOT in the candidate list; this branch exists only for type safety.
+    // If multi-hit moves are ever added, this must be changed to sum max rolls per hit.
     if (Array.isArray(last)) {
       const innerLast = last[last.length - 1];
       if (typeof innerLast === "number") return innerLast;
@@ -649,30 +653,24 @@ export function runDamageSuite(
           continue;
         }
 
-        if (ourMaxDamage === 0) {
-          // We also return 0 — could be immunity match, skip
-          notes.push(
-            `Gen ${gen}: skipping ${speciesName}+${oracleMove.moveId} — both calcs returned 0 damage`,
-          );
-          continue;
-        }
-
         // ── Tolerance check ───────────────────────────────────────────────
+        // Only register mismatches that exceed the tolerance as oracle checks.
+        // Within-tolerance differences (≤ max(2, 2% of smogon max)) are silently
+        // accepted — rounding differences between our formula and smogon's are
+        // expected and not actionable. Our calc returning 0 when smogon returns > 0
+        // exceeds the tolerance unconditionally and is always registered.
         const tolerance = Math.max(2, Math.floor(smogonMaxDamage * 0.02));
         const diff = Math.abs(ourMaxDamage - smogonMaxDamage);
         const passes = diff <= tolerance;
 
-        oracleChecks.push({
-          id: checkId,
-          suite: DAMAGE_SUITE_NAME,
-          description: `Gen ${gen}: ${speciesName} using ${oracleMove.moveName} (max-roll damage within ±${tolerance})`,
-          ourValue: ourMaxDamage,
-          oracleValue: smogonMaxDamage,
-        });
-
         if (!passes) {
-          // This will be caught by resolveOracleChecks as a NEW DISAGREEMENT
-          // unless it's in the known-disagreements registry
+          oracleChecks.push({
+            id: checkId,
+            suite: DAMAGE_SUITE_NAME,
+            description: `Gen ${gen}: ${speciesName} using ${oracleMove.moveName} (max-roll damage within ±${tolerance})`,
+            ourValue: ourMaxDamage,
+            oracleValue: smogonMaxDamage,
+          });
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

@@ -5,13 +5,22 @@
     {
       "id": "gen2-dv-system",
       "description": "HP DV derived from LSBs of Atk/Def/Spe/Spc DVs (same as Gen 1)",
-      "attacker": { "species": "Espeon", "level": 50, "dvs": { "atk": 15, "def": 14, "spe": 15, "spc": 15 } },
+      "attacker": {
+        "species": "Espeon",
+        "level": 50,
+        "dvs": { "atk": 15, "def": 14, "spe": 15, "spc": 15 }
+      },
       "note": "HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spe & 1) << 1) | (Spc & 1). With Atk=15,Def=14,Spe=15,Spc=15: HP_DV = (1<<3)|(0<<2)|(1<<1)|(1) = 11. Source: pret/pokecrystal engine/pokemon/move_mon.asm"
     },
     {
       "id": "gen2-stat-exp-sqrt",
       "description": "Stat experience uses sqrt in the formula: stat += floor(sqrt(statExp) + 1) / 4 (ERRATA #1)",
-      "attacker": { "species": "Mewtwo", "level": 50, "dvs": { "spc": 15 }, "statExp": { "spAttack": 40000 } },
+      "attacker": {
+        "species": "Mewtwo",
+        "level": 50,
+        "dvs": { "spc": 15 },
+        "statExp": { "spAttack": 40000 }
+      },
       "note": "StatExp contribution = floor(floor(sqrt(40000)) + 1) / 4 = floor(201/4) = 50. Source: pret/pokecrystal engine/pokemon/move_mon.asm StatExp calculation"
     },
     {
