@@ -14,8 +14,7 @@ import { CORE_MOVE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import type { BattleConfig } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
-import type { BattleAction, MoveAction } from "../../../src/events";
-import type { BattleEvent } from "../../../src/events";
+import type { BattleAction, BattleEvent, MoveAction } from "../../../src/events";
 import { createTestPokemon } from "../../../src/utils";
 import { createMockDataManager } from "../../helpers/mock-data-manager";
 import { MockRuleset } from "../../helpers/mock-ruleset";
@@ -32,7 +31,14 @@ function createEngine(teamSize = 1): { engine: BattleEngine; events: BattleEvent
       uid: "charizard-1",
       nickname: "Charizard",
       moves: [createMockMoveSlot(tackle)],
-      calculatedStats: { hp: 200, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 120 },
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 120,
+      },
       currentHp: 200,
     }),
   ];
@@ -42,7 +48,14 @@ function createEngine(teamSize = 1): { engine: BattleEngine; events: BattleEvent
         uid: "charizard-2",
         nickname: "Charizard2",
         moves: [createMockMoveSlot(tackle)],
-        calculatedStats: { hp: 200, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 80 },
+        calculatedStats: {
+          hp: 200,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 80,
+        },
         currentHp: 200,
       }),
     );
@@ -53,7 +66,14 @@ function createEngine(teamSize = 1): { engine: BattleEngine; events: BattleEvent
       uid: "blastoise-1",
       nickname: "Blastoise",
       moves: [createMockMoveSlot(tackle)],
-      calculatedStats: { hp: 200, attack: 100, defense: 100, spAttack: 100, spDefense: 100, speed: 80 },
+      calculatedStats: {
+        hp: 200,
+        attack: 100,
+        defense: 100,
+        spAttack: 100,
+        spDefense: 100,
+        speed: 80,
+      },
       currentHp: 200,
     }),
   ];
