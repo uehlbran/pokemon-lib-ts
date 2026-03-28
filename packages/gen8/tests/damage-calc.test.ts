@@ -791,9 +791,10 @@ describe("Gen 8 anti-Dynamax moves", () => {
     });
 
     const result = calculateGen8Damage(ctx, typeChart);
-    // With STAB: baseDamage = floor(floor(22*100*150/100)/50)+2 = floor(3300/50)+2 = 66+2 = 68
-    // After random and STAB: moderate damage
-    expect(result.damage).toBeGreaterThan(0);
+    // Source: Bulbapedia damage formula -- L50, atk=150, def=100, power=100 (Behemoth Blade), STAB (steel/steel)
+    // levelFactor = floor(2*50/5)+2 = 22; base = floor(floor(22*100*150/100)/50)+2 = floor(3300/50)+2 = 68
+    // After random roll + STAB (1.5x): damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     // Store for comparison below
     expect(result.effectiveness).toBe(1);
   });

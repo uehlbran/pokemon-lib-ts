@@ -1472,7 +1472,7 @@ describe("Ability type immunities in damage calc", () => {
     );
 
     // Gravity suppresses Levitate, so Ground hits
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(1);
   });
 
@@ -1638,7 +1638,7 @@ describe("Scrappy in damage calc", () => {
     );
 
     // Normally Normal vs Ghost = 0 (immune), but Scrappy bypasses
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(1); // Neutral after removing Ghost
   });
 
@@ -1656,7 +1656,7 @@ describe("Scrappy in damage calc", () => {
       typeChart,
     );
 
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(1);
   });
 });
@@ -1697,7 +1697,7 @@ describe("Wonder Guard in damage calc", () => {
       typeChart,
     );
 
-    expect(result.damage).toBeGreaterThan(0);
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
   });
 
@@ -1983,8 +1983,8 @@ describe("Gem consumption and Unburden in damage calc", () => {
     expect(attacker.pokemon.heldItem).toBeNull();
     // Unburden volatile set
     expect(attacker.volatileStatuses.has(unburden)).toBe(true);
-    // Damage should be > 0
-    expect(result.damage).toBeGreaterThan(0);
+    // Damage is non-zero (Gem boost applies, Normal vs Normal = neutral)
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
   it("given attacker without Unburden + gem consumed, when calculating damage, then no Unburden volatile", () => {
@@ -2032,7 +2032,8 @@ describe("Type-resist berry consumption + Unburden on defender", () => {
     expect(defender.pokemon.heldItem).toBeNull();
     // Unburden activates
     expect(defender.volatileStatuses.has(unburden)).toBe(true);
-    expect(result.damage).toBeGreaterThan(0);
+    // Damage is non-zero (Fire SE 2x vs Grass, berry halves to 1x but still hits)
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
   it("given defender with Klutz + resist berry, when calculating damage, then berry does NOT activate", () => {
@@ -2984,7 +2985,8 @@ describe("Gravity / Iron Ball type effectiveness override in damage calc", () =>
     );
 
     expect(noGravityResult.damage).toBe(0);
-    expect(gravityResult.damage).toBeGreaterThan(0);
+    // Gravity grounds Flying-type so Ground move lands; damage is non-zero
+    expect(gravityResult.damage).toBeGreaterThanOrEqual(1);
   });
 
   it("given Iron Ball defender + ground move vs Flying type, when calculating damage, then Flying immunity is removed", () => {
@@ -3401,6 +3403,7 @@ describe("Not-very-effective type effectiveness math", () => {
     );
 
     expect(result.effectiveness).toBe(0.25);
-    expect(result.damage).toBeGreaterThan(0);
+    // 0.25x is double resist but damage is still non-zero (floor(floor(damage/2)/2) >= 1)
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 });

@@ -348,8 +348,10 @@ describe("Gen2Weather", () => {
       const side1Results = results.filter((r) => r.side === 1);
       expect(side1Results).toEqual([]);
       // Only non-immune Pokemon get results (damage only)
+      // Source: Gen 2 sandstorm formula: Math.max(1, Math.floor(maxHp / 8))
+      //   normalPokemon.maxHp = 200 → floor(200/8) = 25
       for (const result of results) {
-        expect(result.damage).toBeGreaterThan(0);
+        expect(result.damage).toBe(25);
       }
     });
 

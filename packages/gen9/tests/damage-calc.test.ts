@@ -1576,7 +1576,8 @@ describe("Wonder Guard", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    // SE Water 2x vs Fire; Wonder Guard permits SE moves through; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
   });
 
@@ -2242,7 +2243,8 @@ describe("-ate abilities", () => {
     // So Pixilate changes Normal -> Fairy, and Fairy vs Dragon = 2x
     expect(result.effectiveness).toBe(2);
     expect(result.effectiveType).toBe(TYPES.fairy);
-    expect(result.damage).toBeGreaterThan(0);
+    // Pixilate converts Normal→Fairy; Fairy vs Dragon = 2x SE; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
   it("given Aerilate attacker using Normal move, when calculating, then type becomes Flying with 1.2x boost", () => {
@@ -3065,7 +3067,8 @@ describe("DamageResult structure", () => {
     });
     const result = calculateGen9Damage(ctx, typeChart);
 
-    expect(result.damage).toBeGreaterThan(0);
+    // Fire 2x SE vs Grass; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
     expect(result.isCrit).toBe(false);
     expect(result.randomFactor).toBeGreaterThanOrEqual(0.85);
@@ -3117,7 +3120,8 @@ describe("Gen9Ruleset.calculateDamage integration", () => {
       seed: 42,
     });
     const result = ruleset.calculateDamage(ctx);
-    expect(result.damage).toBeGreaterThan(0);
+    // Fire 2x SE vs Grass; delegation to calculateGen9Damage produces non-zero damage
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
   });
 });
