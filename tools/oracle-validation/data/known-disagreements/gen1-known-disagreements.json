@@ -414,5 +414,57 @@
     "sourceUrl": "https://github.com/pret/pokered/blob/master/engine/battle/core.asm",
     "oracleVersion": "@smogon/calc@0.11.0",
     "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen1:mechanics:move-priority:counter",
+    "gen": 1,
+    "suite": "mechanics",
+    "description": "Gen 1 Counter priority should be -1 (acts last, per gen1-ground-truth.md and Showdown). Our gen1 data incorrectly stores -5 (the Gen 3+ value). Data bug to be fixed separately.",
+    "ourValue": -5,
+    "oracleValue": -1,
+    "resolution": "showdown-deviation",
+    "source": "pret/pokered data/moves/moves.asm — Counter has NO_ADDITIONAL_EFFECT with power=1; gen1-ground-truth.md Priority Moves table — Counter: -1",
+    "sourceUrl": "https://github.com/pret/pokered/blob/master/data/moves/moves.asm",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen1:mechanics:move-priority:bide",
+    "gen": 1,
+    "suite": "mechanics",
+    "description": "Gen 1 Bide priority should be 0 (normal speed-based order, per pokered and Showdown). Our gen1 data incorrectly stores 1 (a Gen 3+ value). Data bug to be fixed separately.",
+    "ourValue": 1,
+    "oracleValue": 0,
+    "resolution": "showdown-deviation",
+    "source": "pret/pokered data/moves/moves.asm — BIDE_EFFECT, no priority encoding; gen1-ground-truth.md Priority Moves table — all other moves: priority 0",
+    "sourceUrl": "https://github.com/pret/pokered/blob/master/data/moves/moves.asm",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen1:mechanics:move-priority:roar",
+    "gen": 1,
+    "suite": "mechanics",
+    "description": "Gen 1 Roar has normal priority (0) — it simply fails against trainers, no speed override. Our gen1 data incorrectly stores -6 (the Gen 3+ value). Data bug to be fixed separately.",
+    "ourValue": -6,
+    "oracleValue": 0,
+    "resolution": "showdown-deviation",
+    "source": "pret/pokered data/moves/moves.asm — ROAR uses SWITCH_AND_TELEPORT_EFFECT with power=0; gen1-ground-truth.md Priority Moves table — all other moves: priority 0",
+    "sourceUrl": "https://github.com/pret/pokered/blob/master/data/moves/moves.asm",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen1:mechanics:move-priority:whirlwind",
+    "gen": 1,
+    "suite": "mechanics",
+    "description": "Gen 1 Whirlwind has normal priority (0) — it simply fails against trainers, no speed override. Our gen1 data incorrectly stores -6 (the Gen 3+ value). Data bug to be fixed separately.",
+    "ourValue": -6,
+    "oracleValue": 0,
+    "resolution": "showdown-deviation",
+    "source": "pret/pokered data/moves/moves.asm — WHIRLWIND uses SWITCH_AND_TELEPORT_EFFECT with power=0; gen1-ground-truth.md Priority Moves table — all other moves: priority 0",
+    "sourceUrl": "https://github.com/pret/pokered/blob/master/data/moves/moves.asm",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
   }
 ]
