@@ -940,7 +940,7 @@ export class BattleEngine implements BattleEventEmitter {
       throw new Error("RunAction is only valid for side 0");
     }
 
-    this.pendingActions.set(side, action);
+    this.pendingActions.set(side, { ...action } as BattleAction);
 
     // When both sides have submitted, resolve the turn
     if (this.pendingActions.size === 2) {
