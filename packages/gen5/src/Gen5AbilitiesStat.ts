@@ -1,7 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveCategory } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 5 stat-modifying and priority ability handlers.
@@ -555,5 +555,5 @@ function formatStatName(stat: string): string {
  * Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
  */
 export function isPranksterEligible(category: MoveCategory): boolean {
-  return category === "status";
+  return category === CORE_MOVE_CATEGORIES.status;
 }

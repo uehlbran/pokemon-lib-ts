@@ -1,7 +1,12 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveCategory, VolatileStatus } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "./data/reference-ids";
 
 /**
@@ -658,5 +663,5 @@ function formatStatName(stat: string): string {
  * Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
  */
 export function isPranksterEligible(category: MoveCategory): boolean {
-  return category === "status";
+  return category === CORE_MOVE_CATEGORIES.status;
 }

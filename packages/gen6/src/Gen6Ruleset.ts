@@ -37,6 +37,7 @@ import {
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
@@ -436,7 +437,7 @@ export class Gen6Ruleset extends BaseRuleset {
     // Source: Bulbapedia -- Magic Guard prevents damage from weather, poison, burn, etc.
     if (pokemon.ability === "magic-guard") return 0;
 
-    if (status === "burn") {
+    if (status === CORE_STATUS_IDS.burn) {
       // Gen 3-6: 1/8 max HP
       // Source: Showdown sim/battle-actions.ts -- Gen < 7 burn damage
       const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
@@ -535,7 +536,7 @@ export class Gen6Ruleset extends BaseRuleset {
     // Source: Bulbapedia -- Quick Feet boosts Speed 1.5x when statused
     if (active.ability === "quick-feet" && active.pokemon.status !== null) {
       effective = Math.floor(effective * 1.5);
-    } else if (active.pokemon.status === "paralysis") {
+    } else if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       // Gen 3-6: paralysis quarters speed (x0.25)
       // Source: Bulbapedia -- Paralysis: speed reduced to 25% in Gen 3-6
       effective = Math.floor(effective * 0.25);

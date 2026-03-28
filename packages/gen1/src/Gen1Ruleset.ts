@@ -43,6 +43,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
+  CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -167,7 +168,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     const { attacker, move, rng } = context;
 
     // Status moves don't crit
-    if (move.category === "status") return false;
+    if (move.category === CORE_MOVE_CATEGORIES.status) return false;
 
     const attackerSpecies = this.dataManager.getSpecies(attacker.pokemon.speciesId);
     return rollGen1Critical(attacker, move, attackerSpecies, rng);
@@ -278,7 +279,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     let effective = Math.floor((baseSpeed * speedRatio.num) / speedRatio.den);
 
     // Paralysis reduces speed to 25%
-    if (active.pokemon.status === "paralysis") {
+    if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       effective = Math.floor(effective * 0.25);
     }
 
@@ -731,7 +732,7 @@ export class Gen1Ruleset implements GenerationRuleset {
           break;
         }
         // In Gen 1: Confusion, Bind, Wrap, etc.
-        if (effect.status === "confusion") {
+        if (effect.status === CORE_VOLATILE_IDS.confusion) {
           // Source: pret/pokered engine/battle/core.asm — secondary effect chance uses 0-255 scale
           const confThreshold = Math.floor((effect.chance * 256) / 100);
           if (rng.int(0, 255) < confThreshold) {
@@ -743,7 +744,7 @@ export class Gen1Ruleset implements GenerationRuleset {
               result.volatileData = { turnsLeft: turns };
             }
           }
-        } else if (effect.status === "bound") {
+        } else if (effect.status === CORE_VOLATILE_IDS.bound) {
           // Bind, Wrap, Fire Spin, Clamp: trapping moves in Gen 1
           // No chance roll — trapping moves always trap if they hit (accuracy is the filter).
           // Duration is weighted: 37.5% × 2 turns, 37.5% × 3 turns, 12.5% × 4, 12.5% × 5
@@ -756,7 +757,7 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.volatileData = { turnsLeft: turns, data: { bindTurns: turns } };
             result.messages.push(`${defender.pokemon.nickname ?? "The target"} was trapped!`);
           }
-        } else if (effect.status === "focus-energy") {
+        } else if (effect.status === CORE_VOLATILE_IDS.focusEnergy) {
           // Source: pret/pokered — Focus Energy sets SUBSTATUS_FOCUS_ENERGY
           // Self-targeting volatile: permanent until switch-out or Haze.
           // Fails silently if already active (no duplicate volatile).
@@ -764,7 +765,7 @@ export class Gen1Ruleset implements GenerationRuleset {
             result.selfVolatileInflicted = CORE_VOLATILE_IDS.focusEnergy;
             result.selfVolatileData = { turnsLeft: -1 };
           }
-        } else if (effect.status === "leech-seed") {
+        } else if (effect.status === CORE_VOLATILE_IDS.leechSeed) {
           // Source: pret/pokered — Grass types are immune to Leech Seed
           // Defender-targeting volatile: permanent until switch-out or Haze.
           if (defender.types.includes("grass")) {
@@ -1585,7 +1586,7 @@ export class Gen1Ruleset implements GenerationRuleset {
       if (def === 0) def = 1;
     }
 
-    if (pokemon.pokemon.status === "burn") {
+    if (pokemon.pokemon.status === CORE_STATUS_IDS.burn) {
       atk = Math.floor(atk / 2);
     }
 
@@ -1604,7 +1605,7 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // Source: pokered effects.asm:1143-1147 — confusion lasts 2-5 turns (and ; inc a; inc a)
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const conf = active.volatileStatuses.get("confusion");
+    const conf = active.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
     if (!conf) return false;
     conf.turnsLeft--;
     return conf.turnsLeft > 0;
@@ -1612,7 +1613,7 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   // Source: Gen 1 bind/trapping — trapping prevents target from acting for 2-5 turns
   processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const bound = active.volatileStatuses.get("bound");
+    const bound = active.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
     if (!bound) return false;
     bound.turnsLeft--;
     return bound.turnsLeft > 0;
@@ -1741,8 +1742,8 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     // Toxic counter reset: if the Pokemon has badly-poisoned status, revert to regular poison.
     // The toxic-counter volatile is NOT restored (it was cleared above).
-    if (pokemon.pokemon.status === "badly-poisoned") {
-      pokemon.pokemon.status = "poison";
+    if (pokemon.pokemon.status === CORE_STATUS_IDS.badlyPoisoned) {
+      pokemon.pokemon.status = CORE_STATUS_IDS.poison;
     }
 
     // Gen 1: screens (Reflect / Light Screen) are cleared when the setter switches out.
@@ -1828,13 +1829,13 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Step 3: Status modifier subtraction
     // Source: pokered .checkForAilments — freeze/sleep=25, burn/para/poison=12, none=0
     let statusValue = 0;
-    if (status === "freeze" || status === "sleep") {
+    if (status === CORE_STATUS_IDS.freeze || status === CORE_STATUS_IDS.sleep) {
       statusValue = 25;
     } else if (
-      status === "burn" ||
-      status === "paralysis" ||
-      status === "poison" ||
-      status === "badly-poisoned"
+      status === CORE_STATUS_IDS.burn ||
+      status === CORE_STATUS_IDS.paralysis ||
+      status === CORE_STATUS_IDS.poison ||
+      status === CORE_STATUS_IDS.badlyPoisoned
     ) {
       statusValue = 12;
     }

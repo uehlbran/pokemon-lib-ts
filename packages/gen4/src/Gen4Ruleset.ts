@@ -33,6 +33,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -762,7 +763,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts — Quick Feet onModifySpe
     if (active.ability === "quick-feet" && active.pokemon.status !== null) {
       effective = Math.floor(effective * 1.5);
-    } else if (active.pokemon.status === "paralysis") {
+    } else if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       // Gen 3-6: paralysis quarters speed (x0.25)
       // Source: pret/pokeplatinum
       effective = Math.floor(effective * 0.25);
@@ -1116,7 +1117,10 @@ export class Gen4Ruleset extends BaseRuleset {
     // Hustle: 0.8x accuracy for physical moves
     // Gen 4 uses the per-move category (physical/special split), not type-based
     // Source: pret/pokeplatinum — Hustle accuracy penalty on physical moves
-    if (context.attacker.ability === "hustle" && context.move.category === "physical") {
+    if (
+      context.attacker.ability === "hustle" &&
+      context.move.category === CORE_MOVE_CATEGORIES.physical
+    ) {
       calc = Math.floor((calc * 80) / 100);
     }
 

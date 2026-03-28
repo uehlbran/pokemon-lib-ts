@@ -1,7 +1,7 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { VolatileStatus } from "@pokemon-lib-ts/core";
-import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { GEN6_ABILITY_IDS } from "./data/reference-ids";
 
 /**
@@ -294,7 +294,7 @@ function handleTelepathy(ctx: AbilityContext): AbilityResult {
   );
   if (!mySide || !attackerSide || mySide !== attackerSide) return NO_EFFECT;
 
-  if (ctx.move?.category === "status") return NO_EFFECT;
+  if (ctx.move?.category === CORE_MOVE_CATEGORIES.status) return NO_EFFECT;
 
   const name = getName(ctx);
   return {

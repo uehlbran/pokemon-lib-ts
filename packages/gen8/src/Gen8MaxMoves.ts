@@ -10,6 +10,7 @@
 import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { BattleStat, PokemonType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
 import {
+  CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
   CORE_TERRAIN_IDS,
   CORE_TYPE_IDS,
@@ -261,5 +262,5 @@ export function getMaxMoveSecondaryEffect(maxMoveName: string): MaxMoveEffect | 
  * @returns true if the move is a status move
  */
 export function isMaxGuard(move: { category: string }): boolean {
-  return move.category === "status";
+  return move.category === CORE_MOVE_CATEGORIES.status;
 }

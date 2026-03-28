@@ -31,6 +31,7 @@ import {
   type BattleStat,
   CORE_ABILITY_IDS,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   type PrimaryStatus,
   type VolatileStatus,
@@ -190,7 +191,7 @@ function handleScald(ctx: MoveEffectContext): MoveEffectResult {
 
   // Thaw the USER if frozen (the defrost flag handles this in the engine,
   // but we also produce the result here for completeness)
-  if (ctx.attacker.pokemon.status === "freeze") {
+  if (ctx.attacker.pokemon.status === CORE_STATUS_IDS.freeze) {
     result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
     result.messages.push(`${ctx.attacker.pokemon.nickname ?? "The attacker"} thawed out!`);
   }

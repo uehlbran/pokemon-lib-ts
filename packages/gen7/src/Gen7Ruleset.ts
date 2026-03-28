@@ -39,6 +39,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   getStatStageMultiplier,
 } from "@pokemon-lib-ts/core";
@@ -627,7 +628,7 @@ export class Gen7Ruleset extends BaseRuleset {
     // Source: Bulbapedia -- Quick Feet boosts Speed 1.5x when statused
     if (active.ability === "quick-feet" && active.pokemon.status !== null) {
       effective = Math.floor(effective * 1.5);
-    } else if (active.pokemon.status === "paralysis") {
+    } else if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       // Gen 7+: paralysis halves speed (x0.5)
       // Source: Bulbapedia -- Paralysis: speed reduced to 50% in Gen 7+
       effective = Math.floor(effective * 0.5);

@@ -8,6 +8,7 @@ import type { PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -323,7 +324,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   const { attacker, defender, move, rng, isCrit } = context;
 
   // Status moves do no damage
-  if (move.category === "status" || move.power === null || move.power === 0) {
+  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
     return {
       damage: 0,
       effectiveness: 1,

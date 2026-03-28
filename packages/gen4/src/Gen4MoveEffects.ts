@@ -40,6 +40,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_HAZARD_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -1636,7 +1637,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
 
     // Fail if the defender selected a status move (non-damaging)
     // Source: Showdown Gen 4 — Sucker Punch fails if target's move is status category
-    if (defMove.category === "status") {
+    if (defMove.category === CORE_MOVE_CATEGORIES.status) {
       result.messages.push("But it failed!");
       return result;
     }
