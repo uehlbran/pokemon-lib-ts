@@ -1,3 +1,4 @@
+import { CORE_TYPE_IDS, CORE_WEATHER_IDS } from "../constants/reference-ids";
 import type { PokemonType } from "../entities/types";
 import type { WeatherType } from "../entities/weather";
 
@@ -72,14 +73,14 @@ export function getWeatherDamageModifier(
 ): number {
   if (!weather) return 1.0;
 
-  if (weather === "rain" || weather === "heavy-rain") {
-    if (moveType === "water") return 1.5;
-    if (moveType === "fire") return weather === "heavy-rain" ? 0 : 0.5;
+  if (weather === CORE_WEATHER_IDS.rain || weather === CORE_WEATHER_IDS.heavyRain) {
+    if (moveType === CORE_TYPE_IDS.water) return 1.5;
+    if (moveType === CORE_TYPE_IDS.fire) return weather === CORE_WEATHER_IDS.heavyRain ? 0 : 0.5;
   }
 
-  if (weather === "sun" || weather === "harsh-sun") {
-    if (moveType === "fire") return 1.5;
-    if (moveType === "water") return weather === "harsh-sun" ? 0 : 0.5;
+  if (weather === CORE_WEATHER_IDS.sun || weather === CORE_WEATHER_IDS.harshSun) {
+    if (moveType === CORE_TYPE_IDS.fire) return 1.5;
+    if (moveType === CORE_TYPE_IDS.water) return weather === CORE_WEATHER_IDS.harshSun ? 0 : 0.5;
   }
 
   return 1.0;
