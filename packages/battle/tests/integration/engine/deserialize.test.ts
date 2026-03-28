@@ -68,6 +68,21 @@ function createTestEngine(overrides?: {
   return { engine, ruleset, events };
 }
 
+function createSerializableEngine(): {
+  engine: BattleEngine;
+  ruleset: MockRuleset;
+  dataManager: DataManager;
+} {
+  const ruleset = new MockRuleset();
+  const dataManager = createMockDataManager();
+  const { engine } = createTestEngine({ ruleset, dataManager });
+  engine.start();
+  // Run one turn to move to action-select (a stable checkpoint phase)
+  engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+  engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+  return { engine, ruleset, dataManager };
+}
+
 function createSwitchPromptBattleWithBench(): {
   dataManager: DataManager;
   engine: BattleEngine;
@@ -946,5 +961,29 @@ describe("BattleEngine.deserialize", () => {
     expect(events.length).toBeGreaterThanOrEqual(1);
     const hasDamageEvent = events.some((e) => e.type === "damage");
     expect(hasDamageEvent).toBe(true);
+  });
+
+  it("given a serialized battle state with negative currentHp, when deserialized, then it rejects the invalid HP value", () => {
+    const { engine, ruleset, dataManager } = createSerializableEngine();
+
+    const serialized = engine.serialize();
+    const tampered = JSON.parse(serialized);
+    tampered.state.sides[0].team[0].currentHp = -5;
+
+    expect(() => BattleEngine.deserialize(JSON.stringify(tampered), ruleset, dataManager)).toThrow(
+      "invalid currentHp",
+    );
+  });
+
+  it("given a serialized battle state with negative turnNumber, when deserialized, then it rejects the invalid turn count", () => {
+    const { engine, ruleset, dataManager } = createSerializableEngine();
+
+    const serialized = engine.serialize();
+    const tampered = JSON.parse(serialized);
+    tampered.state.turnNumber = -1;
+
+    expect(() => BattleEngine.deserialize(JSON.stringify(tampered), ruleset, dataManager)).toThrow(
+      "turnNumber must be a non-negative number",
+    );
   });
 });
