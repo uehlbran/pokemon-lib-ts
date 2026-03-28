@@ -107,11 +107,15 @@ describe("Action mutation safety — caller cannot alter queued engine behavior"
     // Submit side 1 to trigger turn resolution
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — engine should have used moveIndex 0, not 99.
-    // If the engine stored a reference to the caller's action, the mutation
-    // would cause an out-of-bounds move lookup or wrong move selection.
+    // Assert — the recorded action in turnHistory must have moveIndex 0 (original),
+    // not 99 (the post-submission mutation). This proves the clone was used.
     const state = engine.getState();
-    expect(state.turnNumber).toBeGreaterThanOrEqual(1);
+    expect(state.turnNumber).toBe(1);
+    const recordedAction = state.turnHistory[0]?.actions[0];
+    expect(recordedAction?.type).toBe("move");
+    if (recordedAction?.type === "move") {
+      expect(recordedAction.moveIndex).toBe(0);
+    }
   });
 
   it("given a SwitchAction submitted, when caller mutates switchTo after submission, then engine uses the original switchTo value", () => {
@@ -127,8 +131,14 @@ describe("Action mutation safety — caller cannot alter queued engine behavior"
 
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    // Assert — engine should have switched to team slot 1, not 999
+    // Assert — the recorded action must have switchTo 1 (original),
+    // not 999 (the post-submission mutation). This proves the clone was used.
     const state = engine.getState();
-    expect(state.turnNumber).toBeGreaterThanOrEqual(1);
+    expect(state.turnNumber).toBe(1);
+    const recordedAction = state.turnHistory[0]?.actions[0];
+    expect(recordedAction?.type).toBe("switch");
+    if (recordedAction?.type === "switch") {
+      expect(recordedAction.switchTo).toBe(1);
+    }
   });
 });
