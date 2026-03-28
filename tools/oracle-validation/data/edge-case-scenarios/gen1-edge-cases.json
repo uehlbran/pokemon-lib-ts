@@ -82,7 +82,7 @@
     },
     {
       "id": "gen1-struggle-recoil",
-      "description": "Struggle deals 50% of attacker's max HP as recoil",
+      "description": "Struggle deals damage-based recoil: floor(damage / 2), not max HP",
       "attacker": { "species": "Raichu", "level": 50, "dvs": { "atk": 15 } },
       "defender": { "species": "Vaporeon", "level": 50, "dvs": { "def": 15 } },
       "move": "Struggle",

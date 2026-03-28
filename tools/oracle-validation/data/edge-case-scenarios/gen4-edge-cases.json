@@ -5,8 +5,8 @@
     {
       "id": "gen4-physical-special-split-crunch-physical",
       "description": "Crunch became Physical in Gen 4 (was Special in Gen 1-3 via type-based split)",
-      "attacker": { "species": "Tyranitar", "level": 50, "dvs": { "atk": 31 } },
-      "defender": { "species": "Alakazam", "level": 50, "dvs": { "def": 31 } },
+      "attacker": { "species": "Tyranitar", "level": 50, "ivs": { "atk": 31 } },
+      "defender": { "species": "Alakazam", "level": 50, "ivs": { "def": 31 } },
       "move": "Crunch",
       "expected_category": "physical",
       "note": "Physical/Special split: Crunch is Dark (Special in Gen 1-3), became Physical in Gen 4. Source: pret/pokeplatinum src/battle/battle_script.c move category table"
