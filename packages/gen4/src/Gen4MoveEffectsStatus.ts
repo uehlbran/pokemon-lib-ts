@@ -235,6 +235,22 @@ function handleRest(ctx: MoveEffectContext): MoveEffectResult {
   const { attacker } = ctx;
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
   const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+
+  // Fail if already at full HP — nothing to restore.
+  // Guard: only when calculatedStats is available. When it is null (edge case where stats
+  // haven't been computed yet), maxHp falls back to currentHp and the check would always
+  // fire incorrectly, so we skip it.
+  // Source: Showdown Gen 4 — Rest fails when the user is at full HP
+  if (attacker.pokemon.calculatedStats !== null && attacker.pokemon.currentHp >= maxHp) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  // Fail if Heal Block is active — blocks all HP recovery including Rest
+  // Source: Showdown Gen 4 — Heal Block prevents Rest from being used
+  if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
+    return makeResult({ messages: [`${attackerName} can't use healing moves!`] });
+  }
+
   return makeResult({
     healAmount: maxHp,
     selfStatusInflicted: CORE_STATUS_IDS.sleep,
@@ -312,11 +328,24 @@ function handleAquaRing(ctx: MoveEffectContext): MoveEffectResult {
 }
 
 function handleRefresh(ctx: MoveEffectContext): MoveEffectResult {
-  // Cure own status
-  // Source: Showdown Gen 4 — Refresh cures burn/poison/paralysis
+  // Cure own burn, poison, or paralysis — NOT sleep or freeze
+  // Source: Bulbapedia — Refresh: "The user relaxes and lightens its body to
+  //   restore its health. It also eliminates all status conditions."
+  //   Mechanics: only cures burn, poisoning (including bad poison), and paralysis.
+  //   Sleep and freeze cannot be cured by Refresh.
+  // Source: Showdown Gen 4 — Refresh onHit: only cures brn/psn/par
   const { attacker } = ctx;
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-  if (attacker.pokemon.status) {
+  const curable = [
+    CORE_STATUS_IDS.burn,
+    CORE_STATUS_IDS.poison,
+    CORE_STATUS_IDS.badlyPoisoned,
+    CORE_STATUS_IDS.paralysis,
+  ];
+  if (
+    attacker.pokemon.status &&
+    curable.includes(attacker.pokemon.status as (typeof curable)[number])
+  ) {
     return makeResult({
       statusCuredOnly: { target: BATTLE_EFFECT_TARGETS.attacker },
       messages: [`${attackerName} cured its status condition!`],

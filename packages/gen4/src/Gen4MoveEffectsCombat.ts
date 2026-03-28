@@ -122,6 +122,7 @@ function handleBatonPass(_ctx: MoveEffectContext): MoveEffectResult {
   // Source: Showdown Gen 4 — Baton Pass
   return makeResult({
     switchOut: true,
+    batonPass: true,
     messages: [],
   });
 }

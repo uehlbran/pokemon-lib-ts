@@ -307,6 +307,16 @@ function handleTrickSwitcheroo(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: ["But it failed!"] });
   }
 
+  // Fail if either holds Griseous Orb (Giratina's form item cannot be tricked away)
+  // Source: Showdown Gen 4 — Griseous Orb is unswappable (like plates under Multitype)
+  // Source: Bulbapedia — Griseous Orb: cannot be traded, tricked, or otherwise removed
+  if (
+    attacker.pokemon.heldItem === ITEM_IDS.griseousOrb ||
+    defender.pokemon.heldItem === ITEM_IDS.griseousOrb
+  ) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
   // Perform the item swap
   // Source: Showdown Gen 4 — item swap is direct mutation
   const attackerItem = attacker.pokemon.heldItem;
@@ -420,6 +430,12 @@ function handlePluckBugBite(ctx: MoveEffectContext): MoveEffectResult {
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
   const defenderName = defender.pokemon.nickname ?? "The foe";
   const defenderItem = defender.pokemon.heldItem;
+  // Fail if defender has Sticky Hold (prevents item removal)
+  // Source: Showdown Gen 4 — Sticky Hold blocks Pluck/Bug Bite berry steal
+  // Source: Bulbapedia — Sticky Hold: "Prevents other Pokemon from removing the holder's item"
+  if (defender.ability === GEN4_ABILITY_IDS.stickyHold) {
+    return makeResult({ messages: [] });
+  }
   // Check if defender holds a berry (berry IDs end with "-berry")
   if (defenderItem?.endsWith("-berry")) {
     // Steal and consume the berry
@@ -598,6 +614,12 @@ function handleThiefCovet(ctx: MoveEffectContext): MoveEffectResult {
   const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
   const defenderName = defender.pokemon.nickname ?? "The foe";
   if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
+    // Fail if defender has Sticky Hold
+    // Source: Showdown Gen 4 — Sticky Hold blocks Thief/Covet item steal
+    // Source: Bulbapedia — Sticky Hold: "Prevents other Pokemon from removing the holder's item"
+    if (defender.ability === GEN4_ABILITY_IDS.stickyHold) {
+      return makeResult({ messages: [`${defenderName}'s Sticky Hold prevented item theft!`] });
+    }
     return makeResult({
       itemTransfer: {
         from: BATTLE_EFFECT_TARGETS.defender,
