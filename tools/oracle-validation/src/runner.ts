@@ -3,19 +3,33 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runDamageSuite } from "./compare-damage.js";
 import { runDataSuite } from "./compare-data.js";
+import { runGimmicksSuite } from "./compare-gimmicks.js";
 import { runGroundTruthSuite } from "./compare-ground-truth.js";
+import { runMechanicsSuite } from "./compare-mechanics.js";
 import { runStatsSuite } from "./compare-stats.js";
+import { runTerrainSuite } from "./compare-terrain.js";
 import { loadDisagreementRegistrySummary } from "./disagreement-registry.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
 import { formatRunnerOutput } from "./reporter.js";
 import { type GenerationResult, runnerOutputSchema, type SuiteResult } from "./result-schema.js";
 
-type SupportedSuite = "data" | "stats" | "groundTruth" | "damage" | "fast";
+type SupportedSuite =
+  | "data"
+  | "stats"
+  | "groundTruth"
+  | "damage"
+  | "mechanics"
+  | "terrain"
+  | "gimmicks"
+  | "fast";
 const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "data",
   "stats",
   "groundTruth",
   "damage",
+  "mechanics",
+  "terrain",
+  "gimmicks",
   "fast",
 ]);
 
@@ -63,7 +77,7 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
  */
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   if (suites.includes("fast")) {
-    return ["data", "stats", "groundTruth", "damage"];
+    return ["data", "stats", "groundTruth", "damage", "mechanics", "terrain", "gimmicks"];
   }
 
   return suites;
@@ -91,6 +105,12 @@ async function main(): Promise<void> {
           suiteResults[suite] = runGroundTruthSuite(generation, repoRoot);
         } else if (suite === "damage") {
           suiteResults[suite] = runDamageSuite(generation, registry.knownDisagreements);
+        } else if (suite === "mechanics") {
+          suiteResults[suite] = runMechanicsSuite(generation, registry.knownDisagreements);
+        } else if (suite === "terrain") {
+          suiteResults[suite] = runTerrainSuite(generation, registry.knownDisagreements);
+        } else if (suite === "gimmicks") {
+          suiteResults[suite] = runGimmicksSuite(generation, registry.knownDisagreements);
         }
       }
 

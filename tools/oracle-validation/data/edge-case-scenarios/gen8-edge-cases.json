@@ -1,0 +1,193 @@
+{
+  "gen": 8,
+  "authority": "smogon/pokemon-showdown",
+  "scenarios": [
+    {
+      "id": "gen8-dynamax-hp-level-0-multiplier",
+      "description": "Dynamax at level 0 multiplies max HP by 1.5x (ERRATA #19)",
+      "attacker": { "species": "Snorlax", "level": 50, "dynamaxLevel": 0 },
+      "dynamaxLevel": 0,
+      "expectedHPMultiplier": 1.5,
+      "formula": "floor(baseMaxHP * (1.5 + dynamaxLevel * 0.05))",
+      "note": "Dynamax HP: floor(baseMaxHP × (1.5 + level × 0.05)). Level 0 = 1.5×. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19"
+    },
+    {
+      "id": "gen8-dynamax-hp-level-10-multiplier",
+      "description": "Dynamax at level 10 multiplies max HP by 2.0x (ERRATA #19)",
+      "attacker": { "species": "Snorlax", "level": 50, "dynamaxLevel": 10 },
+      "dynamaxLevel": 10,
+      "expectedHPMultiplier": 2.0,
+      "formula": "floor(baseMaxHP * (1.5 + dynamaxLevel * 0.05))",
+      "note": "Dynamax HP: floor(baseMaxHP × (1.5 + level × 0.05)). Level 10 = 2.0×. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19"
+    },
+    {
+      "id": "gen8-dynamax-duration-3-turns",
+      "type": "mechanic-documentation",
+      "description": "Dynamax lasts exactly 3 turns, then the Pokemon automatically reverts",
+      "attacker": { "species": "Snorlax", "level": 50 },
+      "note": "Dynamax duration: 3 turns. Source: smogon/pokemon-showdown sim/battle-actions.ts Dynamax"
+    },
+    {
+      "id": "gen8-max-flare-90bp-fire-source-power-130",
+      "description": "Max Flare (Fire type) from a 90 BP Fire source move has 130 power (higher power table — ERRATA #20)",
+      "attacker": { "species": "Charizard", "level": 50 },
+      "move": "Flamethrower",
+      "sourceBP": 90,
+      "maxMoveType": "fire",
+      "expectedMaxMovePower": 130,
+      "note": "Max Flare uses the higher power table vs Max Knuckle/etc. 90 BP source → 130. Source: smogon/pokemon-showdown data/moves.ts ERRATA #20"
+    },
+    {
+      "id": "gen8-max-knuckle-90bp-fighting-source-power-90",
+      "description": "Max Knuckle (Fighting type) from a 90 BP Fighting source move has 90 power (lower power table — ERRATA #20)",
+      "attacker": { "species": "Machamp", "level": 50 },
+      "move": "Close Combat",
+      "sourceBP": 90,
+      "maxMoveType": "fighting",
+      "expectedMaxMovePower": 90,
+      "note": "Max Knuckle uses the lower power table vs Max Flare/etc. 90 BP source → 90. Source: smogon/pokemon-showdown data/moves.ts ERRATA #20"
+    },
+    {
+      "id": "gen8-max-flare-130plus-bp-fire-source-power-150",
+      "description": "Max Flare (Fire type) from a 130+ BP Fire source move has 150 power (higher table cap)",
+      "attacker": { "species": "Charizard", "level": 50 },
+      "move": "Blast Burn",
+      "sourceBP": 150,
+      "maxMoveType": "fire",
+      "expectedMaxMovePower": 150,
+      "note": "Max Flare power cap for 130+ BP source is 150. Source: smogon/pokemon-showdown data/moves.ts ERRATA #20"
+    },
+    {
+      "id": "gen8-g-max-wildfire-residual-no-weather",
+      "type": "mechanic-documentation",
+      "description": "G-Max Wildfire deals residual Fire damage for 4 turns and does NOT set Sunny Day weather (ERRATA #21)",
+      "attacker": { "species": "Charizard-Gmax", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "G-Max Wildfire",
+      "expectedResidualDamagePerTurn": 0.0625,
+      "expectedResidualTurns": 4,
+      "setsWeather": false,
+      "note": "G-Max Wildfire: 1/6 max HP residual fire damage for 4 turns; no weather set. Source: smogon/pokemon-showdown data/moves.ts ERRATA #21"
+    },
+    {
+      "id": "gen8-libero-protean-every-move",
+      "type": "mechanic-documentation",
+      "description": "Libero/Protean in Gen 8 activates every move (NOT once-per-switch-in — that is Gen 9 — ERRATA #23)",
+      "attacker": { "species": "Cinderace", "level": 50, "ability": "Libero" },
+      "note": "Libero Gen 8: changes type on every move. Gen 9 restricted it to once per switch-in. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #23"
+    },
+    {
+      "id": "gen8-neutralizing-gas-suppresses-all-abilities",
+      "type": "mechanic-documentation",
+      "description": "Neutralizing Gas suppresses all other Pokemon's ability effects while the bearer is active",
+      "attacker": { "species": "Weezing-Galar", "level": 50, "ability": "Neutralizing Gas" },
+      "note": "Neutralizing Gas: on-field presence suppresses all other abilities. Source: smogon/pokemon-showdown data/abilities.ts NeutralizingGas"
+    },
+    {
+      "id": "gen8-terrain-boost-1-3x",
+      "description": "Terrain boosts are 1.3x in Gen 8+ (not 1.5x — that was Gen 7 — ERRATA #17)",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Thunderbolt",
+      "terrain": "electric",
+      "expectedBoost": 1.3,
+      "note": "Electric Terrain multiplier changed from 1.5× (Gen 7) to 1.3× (Gen 8+). Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17"
+    },
+    {
+      "id": "gen8-body-press-80bp-uses-defense",
+      "description": "Body Press has 80 base power and uses the user's Defense stat for damage (ERRATA #22: NOT 130 BP)",
+      "attacker": { "species": "Corviknight", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Body Press",
+      "expectedBasePower": 80,
+      "usesStat": "defense",
+      "note": "Body Press: 80 BP, uses Defense in place of Attack for damage calc. Source: smogon/pokemon-showdown data/moves.ts ERRATA #22"
+    },
+    {
+      "id": "gen8-max-quake-raises-spdef",
+      "type": "mechanic-documentation",
+      "description": "Max Quake (Ground) raises Special Defense on the user's side by +1 stage",
+      "attacker": { "species": "Garchomp", "level": 50 },
+      "move": "Earthquake",
+      "maxMoveName": "Max Quake",
+      "expectedSideEffect": "spDefenseBoost+1",
+      "note": "Max Quake secondary effect: +1 SpDef for user's side. Source: smogon/pokemon-showdown data/moves.ts MaxQuake"
+    },
+    {
+      "id": "gen8-max-airstream-raises-speed",
+      "type": "mechanic-documentation",
+      "description": "Max Airstream (Flying) raises Speed on the user's side by +1 stage",
+      "attacker": { "species": "Corviknight", "level": 50 },
+      "move": "Brave Bird",
+      "maxMoveName": "Max Airstream",
+      "expectedSideEffect": "speedBoost+1",
+      "note": "Max Airstream secondary effect: +1 Speed for user's side. Source: smogon/pokemon-showdown data/moves.ts MaxAirstream"
+    },
+    {
+      "id": "gen8-corviknight-gmax-wind-rage-clears-hazards",
+      "type": "mechanic-documentation",
+      "description": "Corviknight's G-Max Wind Rage clears all entry hazards on the target's side",
+      "attacker": { "species": "Corviknight-Gmax", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "G-Max Wind Rage",
+      "expectedEffect": "clearHazards",
+      "note": "G-Max Wind Rage: removes Stealth Rock, Spikes, Toxic Spikes, Sticky Web from opponent's side. Source: smogon/pokemon-showdown data/moves.ts GMaxWindRage"
+    },
+    {
+      "id": "gen8-dynamax-cannot-use-mega-or-zmove",
+      "type": "mechanic-documentation",
+      "description": "A Pokemon that has used Dynamax cannot also Mega Evolve or use Z-Moves in the same battle",
+      "note": "Gimmick mutual exclusion: Dynamax, Mega Evolution, and Z-Moves cannot coexist in one battle. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen8-max-guard-blocks-most-moves",
+      "type": "mechanic-documentation",
+      "description": "Max Guard blocks all moves for one turn (similar to Protect) including some Z-Moves",
+      "attacker": { "species": "Garchomp", "level": 50 },
+      "defender": { "species": "Corviknight-Gmax", "level": 50 },
+      "move": "Max Guard",
+      "note": "Max Guard: protects for 1 turn, blocks all moves. Source: smogon/pokemon-showdown data/moves.ts MaxGuard"
+    },
+    {
+      "id": "gen8-galarian-rapidash-type-psychic-fairy",
+      "type": "mechanic-documentation",
+      "description": "Galarian Rapidash is Psychic/Fairy type (not Fire like Kantonian Rapidash)",
+      "defender": { "species": "Rapidash-Galar", "types": ["psychic", "fairy"] },
+      "note": "Galarian Rapidash: Psychic/Fairy. Source: smogon/pokemon-showdown data/pokedex.ts RapidashGalar"
+    },
+    {
+      "id": "gen8-weather-duration-5-turns",
+      "type": "mechanic-documentation",
+      "description": "Drizzle/Drought/Sandstorm/Snow Warnings set weather for 5 turns (unchanged from Gen 6)",
+      "note": "Weather duration without Damp Rock/Heat Rock etc: 5 turns in Gen 8. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen8-steel-resists-fairy",
+      "description": "Steel type resists Fairy damage (unchanged from Gen 6 when Fairy was introduced)",
+      "attacker": { "species": "Togekiss", "level": 50 },
+      "defender": { "species": "Steelix", "level": 50, "types": ["steel", "ground"] },
+      "move": "Dazzling Gleam",
+      "attackerType": "fairy",
+      "defenderTypes": ["steel"],
+      "expectedEffectiveness": 0.5,
+      "note": "Steel resists Fairy: 0.5× effectiveness. Source: smogon/pokemon-showdown data/typechart.ts"
+    },
+    {
+      "id": "gen8-stealth-rock-vs-clefairy-neutral",
+      "description": "Stealth Rock vs Clefairy (Fairy type) = neutral = 1/8 HP (Fairy added Gen 6; not super effective or resisted vs Rock)",
+      "hazard": "stealth-rock",
+      "defender": { "species": "Clefairy", "types": ["fairy"] },
+      "hazardType": "rock",
+      "expectedFraction": 0.125,
+      "note": "Fairy is neutral to Rock type chart. Stealth Rock deals 1/8 max HP. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen8-dynamax-hp-level-5-multiplier",
+      "description": "Dynamax at level 5 multiplies max HP by 1.75x",
+      "dynamaxLevel": 5,
+      "expectedHPMultiplier": 1.75,
+      "formula": "floor(baseMaxHP * (1.5 + 5 * 0.05)) = floor(baseMaxHP * 1.75)",
+      "note": "Dynamax HP formula: 1.5 + 0.05 × level. Level 5 = 1.75×. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19"
+    }
+  ]
+}

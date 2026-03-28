@@ -1,0 +1,250 @@
+{
+  "gen": 9,
+  "authority": "smogon/pokemon-showdown",
+  "scenarios": [
+    {
+      "id": "gen9-tera-stab-base-types-retained",
+      "type": "mechanic-documentation",
+      "description": "Terastallization retains 1.5× STAB for base types — Fire/Flying Charizard with Fire Tera still gets 1.5× on Flying moves (ERRATA #30)",
+      "attacker": {
+        "species": "Charizard",
+        "level": 50,
+        "teraType": "fire",
+        "types": ["fire", "flying"]
+      },
+      "move": "Hurricane",
+      "attackerType": "flying",
+      "expectedSTABOnFlyingMove": 1.5,
+      "note": "Tera STAB rule: original types keep 1.5× STAB after Terastallization. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #30"
+    },
+    {
+      "id": "gen9-tera-stab-tera-type-not-original",
+      "description": "If Tera type differs from original types, Tera type STAB = 1.5×",
+      "attacker": {
+        "species": "Charizard",
+        "level": 50,
+        "teraType": "dragon",
+        "types": ["fire", "flying"]
+      },
+      "move": "Draco Meteor",
+      "attackerType": "dragon",
+      "expectedSTABOnDragonMove": 1.5,
+      "note": "Tera type (Dragon) is not original type — provides 1.5× STAB. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen9-tera-stab-tera-type-matches-original",
+      "description": "If Tera type matches an original type, Tera type STAB = 2.0×",
+      "attacker": {
+        "species": "Charizard",
+        "level": 50,
+        "teraType": "fire",
+        "types": ["fire", "flying"]
+      },
+      "move": "Flamethrower",
+      "attackerType": "fire",
+      "expectedSTABOnFireMove": 2.0,
+      "note": "Tera type (Fire) matches original type — provides 2.0× STAB. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen9-adaptability-tera-base-type-stab",
+      "type": "mechanic-documentation",
+      "description": "Adaptability + Tera: base type STAB = 2.0×, Tera type STAB = 2.25× (NOT 3×/4× — ERRATA #26)",
+      "attacker": {
+        "species": "Eevee",
+        "level": 50,
+        "ability": "Adaptability",
+        "teraType": "normal",
+        "types": ["normal"]
+      },
+      "move": "Return",
+      "expectedBaseTypeSTAB": 2.0,
+      "expectedTeraMatchSTAB": 2.25,
+      "note": "Adaptability with Tera: base type = 2.0×, Tera match = 2.25×. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #26"
+    },
+    {
+      "id": "gen9-libero-protean-once-per-switch",
+      "type": "mechanic-documentation",
+      "description": "Libero/Protean in Gen 9 activates only once per switch-in (ERRATA #23)",
+      "attacker": { "species": "Cinderace", "level": 50, "ability": "Libero" },
+      "note": "Libero/Protean Gen 9: restricted to once per switch-in. Gen 8 activated every move. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #23"
+    },
+    {
+      "id": "gen9-stellar-tera-one-time-boost",
+      "type": "mechanic-documentation",
+      "description": "Stellar Tera type provides a one-time 2× boost per move type; Tera Blast with Stellar = 100 BP + -1 Atk/SpA after use",
+      "attacker": { "species": "Terapagos", "level": 50, "teraType": "stellar" },
+      "move": "Tera Blast",
+      "expectedTeraBlastBP": 100,
+      "expectedAfterUseEffect": "-1 Atk, -1 SpAtk",
+      "note": "Stellar Tera: one-time 2× per type used; Tera Blast 100 BP and lowers own Atk/SpA. Source: smogon/pokemon-showdown data/moves.ts"
+    },
+    {
+      "id": "gen9-salt-cure-water-steel-double-damage",
+      "description": "Salt Cure deals 1/4 max HP per turn to Water or Steel types (1/8 otherwise)",
+      "attacker": { "species": "Garganacl", "level": 50 },
+      "defender": {
+        "species": "Starmie",
+        "level": 50,
+        "types": ["water", "psychic"],
+        "volatile": "salt-cure"
+      },
+      "expectedResidualFractionWater": 0.25,
+      "expectedResidualFractionDefault": 0.125,
+      "note": "Salt Cure: 1/4 HP per turn for Water/Steel targets; 1/8 for others. Source: smogon/pokemon-showdown data/moves.ts SaltCure"
+    },
+    {
+      "id": "gen9-supreme-overlord-atk-boost-per-fainted",
+      "description": "Supreme Overlord boosts Attack and Sp. Atk by 10% per fainted ally (max 50% at 5 fainted)",
+      "attacker": {
+        "species": "Kingambit",
+        "level": 50,
+        "ability": "Supreme Overlord",
+        "faintedAllies": 3
+      },
+      "expectedAtkMultiplier": 1.3,
+      "note": "Supreme Overlord: +10% Atk and SpAtk per fainted ally. 3 fainted = 1.3×. Source: smogon/pokemon-showdown data/abilities.ts SupremeOverlord"
+    },
+    {
+      "id": "gen9-protosynthesis-speed-boost-50-percent",
+      "description": "Protosynthesis boosts Speed by 50% in Sun (other stats get 30% — ERRATA #28)",
+      "attacker": { "species": "Flutter Mane", "level": 50, "ability": "Protosynthesis" },
+      "weather": "sun",
+      "highestStat": "speed",
+      "expectedSpeedBoost": 1.5,
+      "expectedOtherStatBoost": 1.3,
+      "note": "Protosynthesis: Speed gets 50% boost, other stats get 30% in Sun. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #28"
+    },
+    {
+      "id": "gen9-protosynthesis-non-speed-boost-30-percent",
+      "description": "Protosynthesis boosts non-Speed highest stat by 30% in Sun (ERRATA #28)",
+      "attacker": { "species": "Roaring Moon", "level": 50, "ability": "Protosynthesis" },
+      "weather": "sun",
+      "highestStat": "attack",
+      "expectedAtkBoost": 1.3,
+      "note": "Protosynthesis: non-Speed highest stat gets 30% boost in Sun. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #28"
+    },
+    {
+      "id": "gen9-quark-drive-electric-terrain-boost",
+      "description": "Quark Drive works like Protosynthesis but activates in Electric Terrain instead of Sun (ERRATA #28)",
+      "attacker": { "species": "Iron Valiant", "level": 50, "ability": "Quark Drive" },
+      "terrain": "electric",
+      "highestStat": "speed",
+      "expectedSpeedBoost": 1.5,
+      "expectedOtherStatBoost": 1.3,
+      "note": "Quark Drive: Speed 50%, other stats 30% in Electric Terrain. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #28"
+    },
+    {
+      "id": "gen9-electric-terrain-boost-1-3x",
+      "description": "Electric Terrain boosts Electric moves by 1.3x in Gen 9 (NOT 1.5x — that was Gen 7 — ERRATA #17)",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Thunderbolt",
+      "terrain": "electric",
+      "expectedBoost": 1.3,
+      "note": "Electric Terrain multiplier is 1.3× in Gen 8+. Was 1.5× in Gen 7. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17"
+    },
+    {
+      "id": "gen9-orichalcum-pulse-sets-sun",
+      "type": "mechanic-documentation",
+      "description": "Orichalcum Pulse sets Sun on entry and boosts Attack by 33% in Sun; does NOT change move type (ERRATA #29)",
+      "attacker": { "species": "Koraidon", "level": 50, "ability": "Orichalcum Pulse" },
+      "expectedWeatherSet": "sun",
+      "expectedAtkBoostInSun": 1.3333,
+      "changesMovetype": false,
+      "note": "Orichalcum Pulse: Drought-like on entry + 33% Atk boost in Sun. Does not retype moves. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #29"
+    },
+    {
+      "id": "gen9-hadron-engine-sets-electric-terrain",
+      "type": "mechanic-documentation",
+      "description": "Hadron Engine sets Electric Terrain on entry and boosts Sp. Atk; does NOT change move type (ERRATA #29)",
+      "attacker": { "species": "Miraidon", "level": 50, "ability": "Hadron Engine" },
+      "expectedTerrainSet": "electric",
+      "expectedSpAtkBoostInTerrain": 1.3333,
+      "changesMovetype": false,
+      "note": "Hadron Engine: Electric Terrain on entry + 33% SpAtk boost. Does not retype moves. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #29"
+    },
+    {
+      "id": "gen9-snow-no-chip-damage",
+      "type": "mechanic-documentation",
+      "description": "Snow replaces Hail in Gen 9: no residual chip damage to non-Ice types",
+      "weather": "snow",
+      "defender": { "species": "Snorlax", "level": 50, "types": ["normal"] },
+      "expectedChipDamage": 0,
+      "note": "Gen 9 Snow: no end-of-turn damage (unlike Hail). Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen9-snow-ice-defense-boost",
+      "description": "Ice-type Pokemon gain +50% Defense in Snow weather in Gen 9",
+      "weather": "snow",
+      "defender": { "species": "Abomasnow", "level": 50, "types": ["grass", "ice"] },
+      "expectedDefenseMultiplier": 1.5,
+      "note": "Gen 9 Snow: Ice types gain 50% Defense boost. Source: smogon/pokemon-showdown data/abilities.ts"
+    },
+    {
+      "id": "gen9-purifying-salt-status-immunity",
+      "type": "mechanic-documentation",
+      "description": "Purifying Salt grants full immunity to all status conditions",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Garganacl", "level": 50, "ability": "Purifying Salt" },
+      "move": "Thunder Wave",
+      "expectedStatusInflicted": false,
+      "note": "Purifying Salt: immune to all status conditions. Source: smogon/pokemon-showdown data/abilities.ts PurifyingSalt"
+    },
+    {
+      "id": "gen9-purifying-salt-ghost-damage-halved",
+      "description": "Purifying Salt halves Ghost-type damage received",
+      "attacker": { "species": "Gengar", "level": 50 },
+      "defender": { "species": "Garganacl", "level": 50, "ability": "Purifying Salt" },
+      "move": "Shadow Ball",
+      "expectedDamageMultiplier": 0.5,
+      "note": "Purifying Salt: 0.5× modifier on Ghost-type damage. Source: smogon/pokemon-showdown data/abilities.ts PurifyingSalt"
+    },
+    {
+      "id": "gen9-terastallization-persists-full-battle",
+      "type": "mechanic-documentation",
+      "description": "Terastallization persists for the remainder of the battle after activation (like Mega Evolution)",
+      "note": "Once Terastallized, a Pokemon stays in that Tera form for the rest of the battle. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    },
+    {
+      "id": "gen9-gholdengo-make-it-rain-lowers-spatk",
+      "type": "mechanic-documentation",
+      "description": "Gholdengo's Make It Rain lowers the user's Sp. Atk by 1 stage after use",
+      "attacker": { "species": "Gholdengo", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Make It Rain",
+      "expectedSelfEffect": "spAtkDrop-1",
+      "note": "Make It Rain: Steel-type multi-target special move; -1 SpAtk to user after use. Source: smogon/pokemon-showdown data/moves.ts MakeItRain"
+    },
+    {
+      "id": "gen9-tera-charizard-fire-tera-stab-both-types",
+      "description": "Terastal Charizard (Fire Tera): 2.0× STAB on Fire moves, 1.5× STAB on Flying moves",
+      "attacker": {
+        "species": "Charizard",
+        "level": 50,
+        "teraType": "fire",
+        "types": ["fire", "flying"]
+      },
+      "cases": [
+        {
+          "move": "Flamethrower",
+          "moveType": "fire",
+          "expectedSTAB": 2.0,
+          "note": "Tera type matches original type → 2.0× STAB"
+        },
+        {
+          "move": "Hurricane",
+          "moveType": "flying",
+          "expectedSTAB": 1.5,
+          "note": "Original type retained → 1.5× STAB"
+        }
+      ],
+      "note": "Tera Charizard (Fire): Fire = 2.0× STAB (Tera match), Flying = 1.5× STAB (original retained). Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #30"
+    },
+    {
+      "id": "gen9-weather-duration-5-turns",
+      "type": "mechanic-documentation",
+      "description": "Weather duration in Gen 9 remains 5 turns base (unchanged from Gen 6)",
+      "note": "Weather base duration: 5 turns. Heat Rock/Damp Rock etc extend. Source: smogon/pokemon-showdown sim/battle-actions.ts"
+    }
+  ]
+}

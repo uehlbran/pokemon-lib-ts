@@ -1,0 +1,97 @@
+{
+  "gen": 5,
+  "authority": "smogon/pokemon-showdown",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "extremespeed-priority-gen5",
+      "kind": "movePriorityCheck",
+      "moveId": "extreme-speed",
+      "expectedPriority": 2,
+      "source": "Showdown sim/battle-actions.ts Gen5 — move priority table",
+      "note": "ExtremeSpeed +2 priority introduced in Gen 5 (ERRATA #7). Was +1 in Gen 1-4."
+    },
+    {
+      "id": "multi-hit-distribution-gen5",
+      "kind": "mechanic-documentation",
+      "description": "Multi-hit moves use 35/35/15/15 hit distribution in Gen 5",
+      "expectedHitDistribution": { "2": 0.35, "3": 0.35, "4": 0.15, "5": 0.15 },
+      "source": "Showdown sim/battle-actions.ts Gen5 — MultiHit distribution",
+      "note": "Changed from Gen 3-4's 37.5/37.5/12.5/12.5 distribution (ERRATA #10)."
+    },
+    {
+      "id": "struggle-recoil-fraction-gen5",
+      "kind": "moveRecoilCheck",
+      "moveId": "struggle",
+      "expectedRecoilFraction": 0.25,
+      "source": "Showdown sim/battle-actions.ts Gen5 — StruggleEffect",
+      "note": "Struggle recoil = floor(max_hp / 4) in Gen 5, unchanged from Gen 3-4."
+    },
+    {
+      "id": "stealth-rock-charizard-gen5",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "charizard",
+      "defenderTypes": ["fire", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen5 — StealthRockDamage",
+      "note": "Charizard is 4x weak to Rock; Stealth Rock deals 1/8 × 4 = 1/2 max HP."
+    },
+    {
+      "id": "stealth-rock-blastoise-gen5",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "blastoise",
+      "defenderTypes": ["water"],
+      "hazardType": "rock",
+      "expectedFraction": 0.125,
+      "source": "Showdown sim/battle-actions.ts Gen5 — StealthRockDamage",
+      "note": "Blastoise is neutral to Rock; Stealth Rock deals 1/8 max HP."
+    },
+    {
+      "id": "sheer-force-life-orb-suppression-gen5",
+      "kind": "mechanic-documentation",
+      "description": "Sheer Force suppresses Life Orb recoil when the used move is boosted by Sheer Force",
+      "abilityId": "sheer-force",
+      "interactingItem": "life-orb",
+      "expectedLifeOrbRecoil": false,
+      "source": "Showdown sim/battle-actions.ts Gen5 — SheerForce + LifeOrb interaction",
+      "note": "When Sheer Force activates on a move (removing secondary effects), Life Orb recoil is also suppressed. Unique Sheer Force interaction."
+    },
+    {
+      "id": "type-count-17-no-fairy-gen5",
+      "kind": "mechanic-documentation",
+      "description": "Gen 5 has exactly 17 types; Fairy type does not exist",
+      "expectedTypeCount": 17,
+      "source": "Showdown sim/battle-actions.ts Gen5 — type chart",
+      "note": "Fairy was introduced in Gen 6. Gen 5 type chart has 17 entries."
+    },
+    {
+      "id": "sturdy-ohko-survival-gen5",
+      "kind": "mechanic-documentation",
+      "description": "Sturdy in Gen 5 acts as a Focus Sash at full HP — survives any one-hit KO with 1 HP remaining",
+      "abilityId": "sturdy",
+      "expectedSurvivingHp": 1,
+      "triggerCondition": "fullHp",
+      "source": "Showdown sim/battle-actions.ts Gen5 — Sturdy",
+      "note": "Sturdy was reworked in Gen 5 from OHKO-immunity-only (Gen 3-4) to full Focus-Sash-like behavior at full HP."
+    },
+    {
+      "id": "weather-permanent-ability-gen5",
+      "kind": "mechanic-documentation",
+      "description": "Ability-summoned weather in Gen 5 has no turn limit (Drizzle, Drought, Sand Stream, Snow Warning)",
+      "expectedWeatherDuration": null,
+      "source": "Showdown sim/battle-actions.ts Gen5 — weather duration",
+      "note": "Permanent ability weather in Gen 5. Duration capped at 5 turns (8 with rock) starting in Gen 6."
+    },
+    {
+      "id": "protect-consecutive-halving-gen5",
+      "kind": "mechanic-documentation",
+      "description": "Consecutive Protect uses halve success rate each time: 100%, 50%, 25%, 12.5%...",
+      "expectedSuccessRates": [1.0, 0.5, 0.25, 0.125],
+      "source": "Showdown sim/battle-actions.ts Gen5 — ProtectCheck",
+      "note": "Gen 5 Protect uses halving. Gen 6 changed this to tripling reduction (ERRATA #9)."
+    }
+  ]
+}

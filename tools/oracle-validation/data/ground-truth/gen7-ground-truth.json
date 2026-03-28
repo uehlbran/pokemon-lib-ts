@@ -1,0 +1,127 @@
+{
+  "gen": 7,
+  "authority": "smogon/pokemon-showdown",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "z-move-power-close-combat-120bp",
+      "kind": "zMoveCheck",
+      "moveId": "close-combat",
+      "sourceBP": 120,
+      "expectedZPower": 190,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower ERRATA #15",
+      "note": "Close Combat (120 BP) → 190 Z-power via 11-range table. Not 180."
+    },
+    {
+      "id": "z-move-power-thunderbolt-90bp",
+      "kind": "zMoveCheck",
+      "moveId": "thunderbolt",
+      "sourceBP": 90,
+      "expectedZPower": 175,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Thunderbolt (90 BP) → 175 Z-power."
+    },
+    {
+      "id": "z-move-power-extreme-speed-80bp",
+      "kind": "zMoveCheck",
+      "moveId": "extreme-speed",
+      "sourceBP": 80,
+      "expectedZPower": 160,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Extreme Speed (80 BP) → 160 Z-power."
+    },
+    {
+      "id": "z-move-power-water-pulse-60bp",
+      "kind": "zMoveCheck",
+      "moveId": "water-pulse",
+      "sourceBP": 60,
+      "expectedZPower": 120,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Water Pulse (60 BP) → 120 Z-power."
+    },
+    {
+      "id": "z-move-power-fire-blast-110bp",
+      "kind": "zMoveCheck",
+      "moveId": "fire-blast",
+      "sourceBP": 110,
+      "expectedZPower": 185,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Fire Blast (110 BP) → 185 Z-power."
+    },
+    {
+      "id": "paralysis-speed-modifier-gen7",
+      "kind": "statusSpeedCheck",
+      "status": "paralysis",
+      "gen7Modifier": 0.5,
+      "expectedFormula": "floor(speed / 2)",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #14",
+      "note": "Gen 7: paralyzed Speed = floor(speed / 2) = 0.5× modifier. Was 0.75× in Gen 1-6."
+    },
+    {
+      "id": "electric-terrain-boost-gen7",
+      "kind": "terrainBoostCheck",
+      "terrain": "electric",
+      "gen7Multiplier": 1.5,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17",
+      "note": "Electric Terrain boosts Electric moves by 1.5× in Gen 7. Changed to 1.3× in Gen 8+."
+    },
+    {
+      "id": "grassy-terrain-boost-gen7",
+      "kind": "terrainBoostCheck",
+      "terrain": "grassy",
+      "gen7Multiplier": 1.5,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "Grassy Terrain boosts Grass moves by 1.5× in Gen 7."
+    },
+    {
+      "id": "parental-bond-second-hit-gen7",
+      "kind": "mechanic-documentation",
+      "mechanic": "Parental Bond",
+      "gen7SecondHitFraction": 0.25,
+      "source": "smogon/pokemon-showdown data/abilities.ts ERRATA #12",
+      "note": "Parental Bond second hit = 0.25× in Gen 7. Was 0.5× in Gen 6. ERRATA #12."
+    },
+    {
+      "id": "gale-wings-full-hp-requirement-gen7",
+      "kind": "mechanic-documentation",
+      "mechanic": "Gale Wings",
+      "gen7RequiresFullHP": true,
+      "source": "smogon/pokemon-showdown data/abilities.ts ERRATA #13",
+      "note": "Gale Wings Gen 7: +1 priority only at full HP. No HP requirement in Gen 6. ERRATA #13."
+    },
+    {
+      "id": "confusion-self-hit-chance-gen7",
+      "kind": "mechanic-documentation",
+      "mechanic": "Confusion self-hit",
+      "gen7SelfHitChance": 0.3333,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #4",
+      "note": "Confusion self-hit chance = 1/3 in Gen 7. Was 1/2 in Gen 1-6. ERRATA #4."
+    },
+    {
+      "id": "prankster-dark-type-immunity-gen7",
+      "kind": "mechanic-documentation",
+      "mechanic": "Prankster",
+      "gen7DarkTypeImmune": true,
+      "source": "smogon/pokemon-showdown data/abilities.ts Prankster",
+      "note": "Dark-type Pokemon immune to Prankster-boosted status moves. Introduced in Gen 7."
+    },
+    {
+      "id": "z-move-protect-25-percent",
+      "kind": "mechanic-documentation",
+      "mechanic": "Z-Move vs Protect",
+      "damageMultiplierThroughProtect": 0.25,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "Z-Moves deal 25% damage when target uses Protect."
+    },
+    {
+      "id": "misty-terrain-halves-dragon-gen7",
+      "kind": "terrainBoostCheck",
+      "terrain": "misty",
+      "attackerType": "dragon",
+      "expectedMultiplier": 0.5,
+      "appliesToGroundedOnly": true,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "Misty Terrain: halves Dragon-type damage vs grounded Pokemon only."
+    }
+  ]
+}
