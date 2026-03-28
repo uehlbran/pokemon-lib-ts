@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   const { suites, gen } = parseArgs(process.argv.slice(2));
   const expandedSuites = expandSuites(suites);
   const generations = discoverImplementedGenerations(repoRoot).filter(
-    (candidate: ImplementedGeneration) => (gen ? candidate.gen === gen : candidate.gen <= 3),
+    (candidate: ImplementedGeneration) => (gen !== undefined ? candidate.gen === gen : true),
   );
 
   const generationResults: GenerationResult[] = generations.map(
