@@ -337,9 +337,11 @@ describe("Gen7UltraBurst -- canUse()", () => {
     expect(ultraBurst.canUse(pokemon, side, state)).toBe(false);
   });
 
-  it("given Z-Move already used for this side, when checking canUse, then returns false", () => {
-    // Source: Showdown sim/battle-actions.ts -- canUltraBurst: zMoveUsed blocks Ultra Burst
-    // because the Z-Crystal (Ultranecrozium Z) is already consumed
+  it("given Z-Move already used for this side, when checking canUse, then returns true (independent quotas)", () => {
+    // Ultra Burst is independent of the Z-Move quota. A teammate using a Z-Move
+    // does NOT block Ultra Burst.
+    // Source: Showdown sim/battle-actions.ts canUltraBurst() — only checks species + item,
+    //   does NOT check side.zMoveUsed
     const zMove = new Gen7ZMove();
     const ultraBurst = new Gen7UltraBurst(zMove);
     const pokemon = createNecrozmaOnField({
@@ -349,10 +351,10 @@ describe("Gen7UltraBurst -- canUse()", () => {
     const side = createSyntheticBattleSide(0);
     const state = createSyntheticBattleState();
 
-    // Simulate Z-Move already used
+    // Simulate Z-Move already used by a teammate
     zMove.markUsed(0);
 
-    expect(ultraBurst.canUse(pokemon, side, state)).toBe(false);
+    expect(ultraBurst.canUse(pokemon, side, state)).toBe(true);
   });
 });
 
@@ -513,8 +515,10 @@ describe("Gen7UltraBurst -- activate()", () => {
     expect((events[0] as any).pokemon).toBe("test-necrozma");
   });
 
-  it("given Ultra Burst activates, when checking Z-Move usage, then Z-Move is marked as used", () => {
-    // Source: Showdown sim/battle-actions.ts -- Ultra Burst consumes Ultranecrozium Z (Z-Move slot)
+  it("given Ultra Burst activates, when checking Z-Move usage, then Z-Move is NOT marked as used", () => {
+    // Ultra Burst does NOT consume the Z-Move quota. They are independent gimmicks.
+    // Source: Showdown sim/battle-actions.ts runMegaEvo() — sets canUltraBurst=null
+    //   but does NOT set side.zMoveUsed=true
     const zMove = new Gen7ZMove();
     const ultraBurst = new Gen7UltraBurst(zMove);
     const pokemon = createNecrozmaOnField({
@@ -526,7 +530,7 @@ describe("Gen7UltraBurst -- activate()", () => {
 
     expect(zMove.hasUsedZMove(0)).toBe(false);
     ultraBurst.activate(pokemon, side, state);
-    expect(zMove.hasUsedZMove(0)).toBe(true);
+    expect(zMove.hasUsedZMove(0)).toBe(false);
   });
 });
 

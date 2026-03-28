@@ -109,9 +109,19 @@ export function createOnFieldPokemon(
   // Source: Gen 6 game mechanic — Mega Evolution is permanent for the rest of the battle.
   // Source: Showdown sim/battle.ts — formeChange is permanent; forme is restored on sendOut.
   const isMega = !!(pokemon.megaTypes && pokemon.megaAbility);
+  const isUltraBurst = !!(pokemon.ultraBurstTypes && pokemon.ultraBurstAbility);
   const resolvedTypes =
-    isMega && pokemon.megaTypes ? ([...pokemon.megaTypes] as PokemonType[]) : baseTypes;
-  const resolvedAbility = isMega && pokemon.megaAbility ? pokemon.megaAbility : pokemon.ability;
+    isUltraBurst && pokemon.ultraBurstTypes
+      ? ([...pokemon.ultraBurstTypes] as PokemonType[])
+      : isMega && pokemon.megaTypes
+        ? ([...pokemon.megaTypes] as PokemonType[])
+        : baseTypes;
+  const resolvedAbility =
+    isUltraBurst && pokemon.ultraBurstAbility
+      ? pokemon.ultraBurstAbility
+      : isMega && pokemon.megaAbility
+        ? pokemon.megaAbility
+        : pokemon.ability;
 
   // If this Pokemon previously Terastallized (terastallized flag set on the PokemonInstance),
   // restore Tera state. Like Mega Evolution, Terastallization is permanent for the rest of
@@ -161,7 +171,7 @@ export function createOnFieldPokemon(
     transformed: false,
     transformedSpecies: null,
     isMega,
-    isUltraBurst: false,
+    isUltraBurst,
     isDynamaxed: false,
     dynamaxTurnsLeft: 0,
     isTerastallized,

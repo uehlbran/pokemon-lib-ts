@@ -594,7 +594,7 @@ export interface UltraBurstEvent {
   readonly type: "ultra-burst";
   /** Which side the Pokémon belongs to */
   readonly side: 0 | 1;
-  /** Display name of the Pokémon that underwent Ultra Burst */
+  /** UID of the Pokémon that underwent Ultra Burst */
   readonly pokemon: string;
 }
 

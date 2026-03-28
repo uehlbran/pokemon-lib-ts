@@ -2064,11 +2064,9 @@ export class BattleEngine implements BattleEventEmitter {
     // activate ran). modifyMove is only called on the activated gimmick — if canUse()
     // returned false the gimmick did not activate and the move must not be transformed.
     //
-    // Ultra Burst (Gen 7): When action.ultraBurst is set, the Ultra Burst gimmick fires
-    // first (transforming Necrozma), then the Z-Move gimmick's modifyMove is also applied
-    // to convert the base move to Light That Burns the Sky. This models the Gen 7 mechanic
-    // where Necrozma undergoes Ultra Burst and uses the signature Z-Move simultaneously.
-    // Source: Bulbapedia "Ultra Burst" — "Ultra Necrozma can then use Light That Burns the Sky"
+    // Each gimmick's modifyMove handles its own move transformation (e.g., Ultra Burst
+    // converts Photon Geyser to Light That Burns the Sky via its own modifyMove).
+    // No gen-specific sequencing logic belongs in the engine.
     let activatedGimmick: import("../context").BattleGimmick | null = null;
     if (action.ultraBurst || action.mega || action.zMove || action.dynamax || action.terastallize) {
       const gimmickType = action.ultraBurst
@@ -2119,19 +2117,8 @@ export class BattleEngine implements BattleEventEmitter {
     // and before damage calc so the modified power/type is used in the damage formula.
     // modifyMove is only called when activation actually succeeded (activatedGimmick is set).
     // Source: Showdown sim/battle-actions.ts — Z-Move base power override happens in useMove
-    //
-    // Ultra Burst + Z-Move: When Ultra Burst fired, also apply the Z-Move gimmick's modifyMove
-    // so that the signature Z-Move (Light That Burns the Sky) is used in the same turn.
-    // The Ultra Burst gimmick's activate() already marked the Z-Move as used internally.
     if (activatedGimmick?.modifyMove) {
       effectiveMoveData = activatedGimmick.modifyMove(effectiveMoveData, actor);
-      // If Ultra Burst activated alongside a Z-Move request, also apply Z-Move transformation.
-      if (action.ultraBurst && action.zMove) {
-        const zMoveGimmick = this.ruleset.getBattleGimmick("zmove");
-        if (zMoveGimmick?.modifyMove) {
-          effectiveMoveData = zMoveGimmick.modifyMove(effectiveMoveData, actor);
-        }
-      }
     }
 
     // Pre-move checks: can the pokemon actually move?

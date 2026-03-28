@@ -151,8 +151,10 @@ export class Gen7UltraBurst implements BattleGimmick {
     if (pokemon.isUltraBurst) return false;
     if (!ULTRA_BURST_ELIGIBLE_SPECIES.has(pokemon.pokemon.speciesId)) return false;
     if (pokemon.pokemon.heldItem !== GEN7_ITEM_IDS.ultranecroziumZ) return false;
-    // Z-Move must not already be used (Ultranecrozium Z is a Z-Crystal, it's the Z-Move slot)
-    if (this.zMove.hasUsedZMove(side.index)) return false;
+    // Ultra Burst is independent of the Z-Move quota. A teammate using a Z-Move
+    // does NOT block Ultra Burst, and vice versa.
+    // Source: Showdown sim/battle-actions.ts canUltraBurst() — only checks species + item,
+    //   does NOT check side.zMoveUsed
     return true;
   }
 
@@ -236,12 +238,14 @@ export class Gen7UltraBurst implements BattleGimmick {
     // Change ability to Neuroforce
     pokemon.ability = GEN7_ABILITY_IDS.neuroforce;
 
+    // Persist Ultra Burst form to PokemonInstance so it survives switching.
+    // Same pattern as Gen6MegaEvolution storing megaTypes/megaAbility.
+    // Source: Showdown sim/battle-actions.ts — formeChange is permanent
+    pokemon.pokemon.ultraBurstTypes = [...ULTRA_NECROZMA_TYPES] as PokemonType[];
+    pokemon.pokemon.ultraBurstAbility = GEN7_ABILITY_IDS.neuroforce;
+
     // Mark as Ultra Burst
     pokemon.isUltraBurst = true;
-
-    // Mark Z-Move as used (Ultranecrozium Z is consumed by Ultra Burst)
-    // Source: Showdown sim/battle-actions.ts -- zMoveUsed = true when Ultra Burst fires
-    this.zMove.markUsed(side.index);
 
     // Mark this side as having used Ultra Burst
     this.usedBySide.add(side.index);

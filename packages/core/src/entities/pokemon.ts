@@ -125,6 +125,22 @@ export interface PokemonInstance {
   megaAbility?: string;
 
   /**
+   * Ultra Burst form types after Ultra Burst, persisted so createOnFieldPokemon can
+   * restore the correct types when Ultra Necrozma is switched back in.
+   * Set by Gen7UltraBurst.activate(). Absent on non-Ultra-Burst Pokemon.
+   * Source: Gen 7 USUM — Ultra Burst persists for the entire battle.
+   */
+  ultraBurstTypes?: PokemonType[];
+
+  /**
+   * Ultra Burst form ability after Ultra Burst, persisted so createOnFieldPokemon can
+   * restore the correct ability when Ultra Necrozma is switched back in.
+   * Set by Gen7UltraBurst.activate(). Absent on non-Ultra-Burst Pokemon.
+   * Source: Gen 7 USUM — Ultra Burst persists for the entire battle.
+   */
+  ultraBurstAbility?: string;
+
+  /**
    * Whether this Pokemon has Terastallized during this battle. Persisted so
    * createOnFieldPokemon can restore isTerastallized/teraType when a Tera'd Pokemon
    * is switched back in. Set by Gen9Terastallization.activate().

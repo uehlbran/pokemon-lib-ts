@@ -1,5 +1,5 @@
 ---
-"@pokemon-lib-ts/battle": patch
+"@pokemon-lib-ts/battle": minor
 "@pokemon-lib-ts/gen7": minor
 ---
 
