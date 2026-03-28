@@ -1,8 +1,23 @@
 /**
- * Gen 4 Move Effect Handlers
+ * Gen 4 Move Effect Master Dispatcher
  *
- * Implements all data-driven and custom move effect execution for Gen 4
- * (Diamond/Pearl/Platinum/HeartGold/SoulSilver).
+ * Routes move effect execution to the appropriate sub-module:
+ *   - Gen4MoveEffectsField: field effects (Stealth Rock, Toxic Spikes, Trick Room,
+ *     Tailwind, Defog, Gravity, Rapid Spin, binding moves)
+ *   - Gen4MoveEffectsStatus: status/utility moves (Taunt, Disable, Yawn, Encore,
+ *     Heal Block, Embargo, Worry Seed, Gastro Acid, Rest, Heal Bell/Aromatherapy,
+ *     Safeguard, Lucky Chant, Block/Mean Look/Spider Web, Ingrain, Aqua Ring,
+ *     Refresh, Destiny Bond, Wish, Haze)
+ *   - Gen4MoveEffectsCombat: combat moves (Belly Drum, Explosion/Self-Destruct,
+ *     Baton Pass, Perish Song, Pain Split, Moonlight/Morning Sun/Synthesis,
+ *     Future Sight, Whirlwind/Roar, Counter, Mirror Coat, Power/Guard/Heart Swap,
+ *     Acupressure, Ghost Curse)
+ *   - Gen4MoveEffectsBehavior: behavioral overrides (Roost, Knock Off, Trick/Switcheroo,
+ *     Natural Gift, Fling, Pluck/Bug Bite, Sucker Punch, Feint, Focus Punch,
+ *     Doom Desire, Magnet Rise, Thief/Covet)
+ *
+ * Also handles data-driven effects via applyMoveEffect() and re-exports all
+ * public functions from sub-modules.
  *
  * Key Gen 4 differences from Gen 3:
  *   - Shield Dust: blocks secondary effects on the holder (new in Gen 4)
@@ -38,17 +53,27 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import {
-  CORE_ABILITY_IDS,
-  CORE_HAZARD_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
-  CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
 } from "@pokemon-lib-ts/core";
 import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
+import { handleGen4BehaviorMove } from "./Gen4MoveEffectsBehavior";
+import { handleGen4CombatMove } from "./Gen4MoveEffectsCombat";
+import { handleGen4FieldMove } from "./Gen4MoveEffectsField";
+import { handleGen4StatusMove } from "./Gen4MoveEffectsStatus";
+
+// ---------------------------------------------------------------------------
+// Re-exports from sub-modules
+// ---------------------------------------------------------------------------
+
+export { handleGen4BehaviorMove } from "./Gen4MoveEffectsBehavior";
+export { handleGen4CombatMove } from "./Gen4MoveEffectsCombat";
+export { handleGen4FieldMove } from "./Gen4MoveEffectsField";
+export { handleGen4StatusMove } from "./Gen4MoveEffectsStatus";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -498,13 +523,14 @@ function applyMoveEffect(
     }
 
     case "custom": {
-      handleCustomEffect(move, result, context);
+      // No-op: custom move effects are handled by sub-modules in executeGen4MoveEffect
+      // before reaching applyMoveEffect. This case should never be hit in practice.
       break;
     }
 
     case "remove-hazards": {
-      // Intentionally no-op: Rapid Spin is handled via "custom" case in handleCustomEffect.
-      // Defog is handled in handleNullEffectMoves (it has effect: null in Gen 4 data).
+      // Intentionally no-op: Rapid Spin is handled in Gen4MoveEffectsField.
+      // Defog is also handled in Gen4MoveEffectsField (effect: null in Gen 4 data).
       break;
     }
 
@@ -623,721 +649,21 @@ function handleTwoTurnEffect(
 }
 
 // ---------------------------------------------------------------------------
-// Custom Move Effect Handler
+// Heal Block Gate
 // ---------------------------------------------------------------------------
 
 /**
- * Handle custom move effects specific to Gen 4.
+ * Heal Block gate: if the attacker has heal-block, prevent HP recovery.
+ * Called after both null-effect and data-driven effect handling.
  *
- * Source: Showdown sim/battle.ts Gen 4 mod
- * Source: pret/pokeplatinum — where decompiled
+ * Source: Showdown Gen 4 mod — heal-block volatile gates all healing
+ * Source: Bulbapedia — Heal Block: "prevents the target from recovering HP"
  */
-function handleCustomEffect(
-  move: MoveData,
-  result: MutableResult,
-  context: MoveEffectContext,
-): void {
-  const { attacker, defender, state } = context;
-  const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-  const defenderName = defender.pokemon.nickname ?? "The foe";
-
-  switch (move.id) {
-    case GEN4_MOVE_IDS.bellyDrum: {
-      // Lose 50% max HP, maximize Attack to +6
-      // Source: Showdown Gen 4 — Belly Drum cuts HP and maximizes Attack
-      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-      const halfHp = Math.floor(maxHp / 2);
-      if (attacker.pokemon.currentHp > halfHp) {
-        result.recoilDamage = halfHp;
-        result.statChanges.push({
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          stat: CORE_STAT_IDS.attack,
-          stages: 6 - attacker.statStages.attack,
-        });
-        result.messages.push(`${attackerName} cut its own HP and maximized Attack!`);
-      } else {
-        result.messages.push(`${attackerName} is too weak to use Belly Drum!`);
-      }
-      break;
-    }
-
-    case GEN4_MOVE_IDS.rapidSpin: {
-      // Remove leech-seed and binding volatiles from user, hazards from user's side
-      // Source: Showdown Gen 4 — Rapid Spin clears Spikes, Stealth Rock, Toxic Spikes,
-      //   Leech Seed, and Wrap/Bind
-      result.volatilesToClear = [
-        {
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          volatile: CORE_VOLATILE_IDS.leechSeed,
-        },
-        {
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          volatile: CORE_VOLATILE_IDS.bound,
-        },
-      ];
-      result.clearSideHazards = BATTLE_EFFECT_TARGETS.attacker;
-      result.messages.push(`${attackerName} blew away leech seed and spikes!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.meanLook:
-    case GEN4_MOVE_IDS.spiderWeb:
-    case GEN4_MOVE_IDS.block: {
-      // Trapping effect — prevents switching
-      // Source: Showdown Gen 4 — Mean Look / Spider Web / Block set TRAPPED flag
-      result.volatileInflicted = CORE_VOLATILE_IDS.trapped;
-      break;
-    }
-
-    case GEN4_MOVE_IDS.thief:
-    case GEN4_MOVE_IDS.covet: {
-      // Steal defender's item if user has no item
-      // Source: Showdown Gen 4 — Thief/Covet takes held item
-      if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
-        result.itemTransfer = {
-          from: BATTLE_EFFECT_TARGETS.defender,
-          to: BATTLE_EFFECT_TARGETS.attacker,
-        };
-        result.messages.push(
-          `${attackerName} stole ${defenderName}'s ${defender.pokemon.heldItem}!`,
-        );
-      }
-      break;
-    }
-
-    case GEN4_MOVE_IDS.batonPass: {
-      // Switch out preserving stat changes and volatile statuses
-      // Source: Showdown Gen 4 — Baton Pass
-      result.switchOut = true;
-      break;
-    }
-
-    case GEN4_MOVE_IDS.explosion:
-    case GEN4_MOVE_IDS.selfDestruct: {
-      // Self-KO after damage
-      // Source: Showdown Gen 4 — Explosion/Self-Destruct
-      result.selfFaint = true;
-      result.messages.push(`${attackerName} exploded!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.haze: {
-      // Reset stat stages for both Pokemon
-      // Source: Showdown Gen 4 — Haze resets all stat changes for both sides
-      result.statStagesReset = { target: BATTLE_EFFECT_TARGETS.both };
-      result.messages.push("All stat changes were eliminated!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.rest: {
-      // Full heal + self-inflict sleep
-      // Source: Showdown Gen 4 — Rest heals fully and inflicts sleep (2 turns)
-      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-      result.healAmount = maxHp;
-      result.selfStatusInflicted = CORE_STATUS_IDS.sleep;
-      result.messages.push(`${attackerName} went to sleep and became healthy!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.healBell:
-    case GEN4_MOVE_IDS.aromatherapy: {
-      // Cure all party members' status conditions (attacker's side only — not the foe's party)
-      // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
-      // Source: Bulbapedia — "Heal Bell cures all status conditions of the user and the user's party"
-      result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      const moveName = move.id === GEN4_MOVE_IDS.healBell ? "Heal Bell" : "Aromatherapy";
-      result.messages.push(`A bell chimed! ${moveName} cured the team's status!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.perishSong: {
-      // Both Pokemon get Perish Song volatile (3-turn countdown)
-      // Source: Showdown Gen 4 — Perish Song affects both sides
-      // Source: Bulbapedia — Perish Song: "All Pokemon that hear this song will faint in 3 turns."
-      result.selfVolatileInflicted = CORE_VOLATILE_IDS.perishSong;
-      result.selfVolatileData = { turnsLeft: 3 };
-      result.volatileInflicted = CORE_VOLATILE_IDS.perishSong;
-      result.volatileData = { turnsLeft: 3 };
-      result.messages.push("All Pokemon that heard the song will faint in 3 turns!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.painSplit: {
-      // Pain Split: set both sides to the average HP, capped at each Pokemon's maxHp.
-      // Uses event-stream-compatible result fields wherever possible (#311 fix).
-      //
-      // Source: Showdown Gen 4 — Pain Split sets both to floor((a + b) / 2)
-      // Source: Bulbapedia — "each have their HP set to the average of the two"
-      const attackerHp = attacker.pokemon.currentHp;
-      const defenderHp = defender.pokemon.currentHp;
-      const attackerMaxHp = attacker.pokemon.calculatedStats?.hp ?? attackerHp;
-      const defenderMaxHp = defender.pokemon.calculatedStats?.hp ?? defenderHp;
-      const average = Math.floor((attackerHp + defenderHp) / 2);
-      const newAttackerHp = Math.min(average, attackerMaxHp);
-      const newDefenderHp = Math.min(average, defenderMaxHp);
-
-      // Attacker HP change: use healAmount (gain) or recoilDamage (loss)
-      const attackerDelta = newAttackerHp - attackerHp;
-      if (attackerDelta > 0) {
-        result.healAmount = attackerDelta;
-      } else if (attackerDelta < 0) {
-        result.recoilDamage = -attackerDelta;
-      }
-
-      // Defender HP change: use customDamage (loss) or direct mutation (gain).
-      // MoveEffectResult has no "defender heal" field, so defender healing must be
-      // done via direct mutation. This is a known limitation — see #311 comment.
-      const defenderDelta = newDefenderHp - defenderHp;
-      if (defenderDelta < 0) {
-        result.customDamage = {
-          target: BATTLE_EFFECT_TARGETS.defender,
-          amount: -defenderDelta,
-          source: GEN4_MOVE_IDS.painSplit,
-        };
-      } else if (defenderDelta > 0) {
-        // FIXME: Direct mutation for defender healing — MoveEffectResult lacks a
-        // defenderHealAmount field. The engine emits no heal event for the defender.
-        // A follow-up to add defender healing to MoveEffectResult would fix this.
-        defender.pokemon.currentHp = newDefenderHp;
-      }
-
-      result.messages.push("The battlers shared their pain!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.moonlight:
-    case GEN4_MOVE_IDS.morningSun:
-    case GEN4_MOVE_IDS.synthesis: {
-      // Weather-dependent healing
-      // Source: Showdown Gen 4 — sun: 2/3, rain/sand/hail: 1/4, else: 1/2
-      // Source: Bulbapedia — Weather-based HP recovery moves
-      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-      const weather = state.weather?.type ?? null;
-      let healFraction: number;
-      if (weather === CORE_WEATHER_IDS.sun) {
-        healFraction = 2 / 3;
-      } else if (
-        weather === CORE_WEATHER_IDS.rain ||
-        weather === CORE_WEATHER_IDS.sand ||
-        weather === CORE_WEATHER_IDS.hail
-      ) {
-        healFraction = 1 / 4;
-      } else {
-        healFraction = 1 / 2;
-      }
-      result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
-      break;
-    }
-
-    case GEN4_MOVE_IDS.wish: {
-      // Schedule Wish heal — at the end of the next turn, heal active Pokemon
-      // by floor(wisher's max HP / 2).
-      // Source: Showdown data/moves.ts -- wish condition: { duration: 2, onResidual: heals floor(hp/2) }
-      // Source: Bulbapedia -- "At the end of the next turn, the Pokemon in the slot
-      //   will be restored by half the maximum HP of the Pokemon that used Wish"
-      const wisherMaxHp =
-        context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
-      result.wishSet = { healAmount: Math.floor(wisherMaxHp / 2), turnsLeft: 2 };
-      result.messages.push(`${attackerName} made a wish!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.safeguard: {
-      // Set Safeguard on attacker's side (5 turns)
-      // Source: Showdown Gen 4 — Safeguard prevents status for 5 turns
-      result.screenSet = {
-        screen: CORE_SCREEN_IDS.safeguard,
-        turnsLeft: 5,
-        side: BATTLE_EFFECT_TARGETS.attacker,
-      };
-      result.messages.push(`${attackerName}'s team became cloaked in a mystical veil!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.luckyChant: {
-      // Set Lucky Chant on attacker's side (5 turns)
-      // Source: Showdown Gen 4 — Lucky Chant prevents crits for 5 turns
-      result.screenSet = {
-        screen: CORE_SCREEN_IDS.luckyChant,
-        turnsLeft: 5,
-        side: BATTLE_EFFECT_TARGETS.attacker,
-      };
-      result.messages.push(`${attackerName}'s team is shielded from critical hits!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.ingrain: {
-      // Root into the ground — heal each turn, cannot switch
-      // Source: Showdown Gen 4 — Ingrain volatile
-      result.selfVolatileInflicted = CORE_VOLATILE_IDS.ingrain;
-      result.messages.push(`${attackerName} planted its roots!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.aquaRing: {
-      // Surround with water — heal each turn
-      // Source: Showdown Gen 4 — Aqua Ring volatile
-      result.selfVolatileInflicted = CORE_VOLATILE_IDS.aquaRing;
-      result.messages.push(`${attackerName} surrounded itself with a veil of water!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.refresh: {
-      // Cure own status
-      // Source: Showdown Gen 4 — Refresh cures burn/poison/paralysis
-      if (attacker.pokemon.status) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-        result.messages.push(`${attackerName} cured its status condition!`);
-      }
-      break;
-    }
-
-    case GEN4_MOVE_IDS.destinyBond: {
-      // Destiny Bond: if the user faints from the opponent's next move, the attacker faints too
-      // Source: Bulbapedia — "If the user faints after using Destiny Bond, the Pokemon
-      //   that KO'd it also faints"
-      // Source: Showdown Gen 4 — sets destiny-bond volatile
-      result.selfVolatileInflicted = CORE_VOLATILE_IDS.destinyBond;
-      result.messages.push(`${attackerName} is trying to take its foe down with it!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.futureSight: {
-      // Future Sight: schedules a hit 3 end-of-turns later; damage calculated at hit time in Gen 4
-      // Source: Bulbapedia — "Future Sight hits 2 turns after being used (3 EoT ticks)"
-      // Source: Showdown Gen 4 — Future Sight schedules future attack
-      const attackerSideIndex = state.sides.findIndex((side) =>
-        side.active.some((a) => a?.pokemon === attacker.pokemon),
-      );
-
-      // Fail if there's already a future attack pending on the target's side
-      // Source: Showdown Gen 4 — Future Sight fails if a future attack is already set
-      const targetSideIndex = attackerSideIndex === 0 ? 1 : 0;
-      if (state.sides[targetSideIndex].futureAttack) {
-        result.messages.push("But it failed!");
-        break;
-      }
-
-      result.futureAttack = {
-        moveId: GEN4_MOVE_IDS.futureSight,
-        turnsLeft: 3,
-        sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
-      };
-      result.messages.push(`${attackerName} foresaw an attack!`);
-      break;
-    }
-
-    default: {
-      // Unknown custom effect — no-op
-      break;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Null-Effect Move Handler
-// ---------------------------------------------------------------------------
-
-/**
- * Handle moves with `effect: null` in the Gen 4 data that still need handlers.
- *
- * These moves have null effects in the JSON data but have Gen 4-specific behaviors
- * that must be implemented in the ruleset.
- *
- * Source: Showdown sim/battle.ts Gen 4 mod
- */
-function handleNullEffectMoves(
-  moveId: string,
-  result: MutableResult,
-  context: MoveEffectContext,
-): void {
-  const { attacker, state } = context;
-  const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-
-  switch (moveId) {
-    case GEN4_MOVE_IDS.stealthRock: {
-      // Place Stealth Rock on the foe's side
-      // Source: Showdown Gen 4 — Stealth Rock entry hazard
-      // Source: Bulbapedia — Stealth Rock introduced in Gen 4
-      const attackerSideIndex = state.sides.findIndex((side) =>
-        side.active.some((a) => a?.pokemon === attacker.pokemon),
-      );
-      const targetSide = (attackerSideIndex === 0 ? 1 : 0) as 0 | 1;
-      result.hazardSet = { hazard: CORE_HAZARD_IDS.stealthRock, targetSide };
-      result.messages.push("Pointed stones float in the air around the foe!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.toxicSpikes: {
-      // Place Toxic Spikes on the foe's side
-      // Source: Showdown Gen 4 — Toxic Spikes entry hazard
-      // Source: Bulbapedia — Toxic Spikes introduced in Gen 4
-      const attackerSideIndex = state.sides.findIndex((side) =>
-        side.active.some((a) => a?.pokemon === attacker.pokemon),
-      );
-      const targetSide = (attackerSideIndex === 0 ? 1 : 0) as 0 | 1;
-      result.hazardSet = { hazard: CORE_HAZARD_IDS.toxicSpikes, targetSide };
-      result.messages.push("Poison spikes were scattered on the ground!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.trickRoom: {
-      // Toggle Trick Room: if already active, end it; otherwise start it (5 turns)
-      // Source: Showdown Gen 4 — Trick Room reverses speed order for 5 turns
-      if (context.state.trickRoom.active) {
-        // turnsLeft: 0 signals the engine to deactivate Trick Room
-        result.trickRoomSet = { turnsLeft: 0 };
-        result.messages.push("The twisted dimensions returned to normal!");
-      } else {
-        result.trickRoomSet = { turnsLeft: 5 };
-        result.messages.push("The dimensions were twisted!");
-      }
-      break;
-    }
-
-    case GEN4_MOVE_IDS.tailwind: {
-      // Set Tailwind on attacker's side (3 turns in Gen 4)
-      // Source: Showdown Gen 4 — Tailwind lasts 3 turns (including the turn it's used)
-      // Source: Bulbapedia — Tailwind duration is 3 turns in Gen 4
-      // Note: Gen 5+ extended Tailwind to 4 turns
-      result.tailwindSet = { turnsLeft: 3, side: BATTLE_EFFECT_TARGETS.attacker };
-      result.messages.push(`${attackerName} whipped up a tailwind!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.defog: {
-      // Clear defender's hazards + screens; -1 evasion on defender
-      // Source: Showdown Gen 4 — Defog clears hazards, screens, and lowers evasion
-      // Source: Bulbapedia — Defog lowers target's evasion by 1 and clears hazards
-      result.clearSideHazards = BATTLE_EFFECT_TARGETS.defender;
-      result.screensCleared = BATTLE_EFFECT_TARGETS.defender;
-      result.statChanges.push({
-        target: BATTLE_EFFECT_TARGETS.defender,
-        stat: CORE_STAT_IDS.evasion,
-        stages: -1,
-      });
-      result.messages.push("It blew away the hazards!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.roost: {
-      // Heal 50% max HP + temporarily remove Flying type for this turn
-      // Source: Showdown Gen 4 — Roost heals 50% and removes Flying type
-      // Source: Bulbapedia — Roost: the user temporarily loses its Flying type
-      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-      result.healAmount = Math.floor(maxHp / 2);
-      // Remove Flying type for this turn (if the attacker is Flying-type)
-      if (attacker.types.includes(CORE_TYPE_IDS.flying)) {
-        const newTypes = attacker.types.filter((t) => t !== CORE_TYPE_IDS.flying);
-        result.typeChange = {
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          types: newTypes.length > 0 ? newTypes : [CORE_TYPE_IDS.normal],
-        };
-      }
-      result.messages.push(`${attackerName} landed and recovered health!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.haze: {
-      // Reset stat stages for both Pokemon
-      // Source: Showdown Gen 4 — Haze resets all stat changes
-      result.statStagesReset = { target: BATTLE_EFFECT_TARGETS.both };
-      result.messages.push("All stat changes were eliminated!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.rest: {
-      // Full heal + self-inflict exactly 2-turn sleep (wakes on turn 3 and can act).
-      // The engine uses selfVolatileData.turnsLeft as a sleep duration override
-      // (see BattleEngine line ~2547-2549), so we MUST set it to avoid random rollSleepTurns().
-      // Source: Showdown Gen 4 — Rest sets sleep duration to exactly 2 turns
-      // Source: Bulbapedia — Rest: "The user goes to sleep for two turns, fully restoring its HP"
-      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-      result.healAmount = maxHp;
-      result.selfStatusInflicted = CORE_STATUS_IDS.sleep;
-      result.selfVolatileData = { turnsLeft: 2 };
-      result.messages.push(`${attackerName} went to sleep and became healthy!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.safeguard: {
-      // Set Safeguard on attacker's side (5 turns)
-      // Source: Showdown Gen 4 — Safeguard prevents status for 5 turns
-      result.screenSet = {
-        screen: CORE_SCREEN_IDS.safeguard,
-        turnsLeft: 5,
-        side: BATTLE_EFFECT_TARGETS.attacker,
-      };
-      result.messages.push(`${attackerName}'s team became cloaked in a mystical veil!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.healBell:
-    case GEN4_MOVE_IDS.aromatherapy: {
-      // Cure all party members' status conditions (attacker's side only)
-      // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
-      // Source: Bulbapedia — cures user's party, not the foe's party
-      result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      const moveName = moveId === GEN4_MOVE_IDS.healBell ? "Heal Bell" : "Aromatherapy";
-      result.messages.push(`A bell chimed! ${moveName} cured the team's status!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.wish: {
-      // Schedule Wish heal — at the end of the next turn, heal active Pokemon
-      // by floor(wisher's max HP / 2).
-      // Source: Showdown data/moves.ts -- wish condition: { duration: 2, onResidual: heals floor(hp/2) }
-      // Source: Bulbapedia -- "At the end of the next turn, the Pokemon in the slot
-      //   will be restored by half the maximum HP of the Pokemon that used Wish"
-      const wisherMaxHp2 =
-        context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
-      result.wishSet = { healAmount: Math.floor(wisherMaxHp2 / 2), turnsLeft: 2 };
-      result.messages.push(`${attackerName} made a wish!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.luckyChant: {
-      // Set Lucky Chant on attacker's side (5 turns)
-      // Source: Showdown Gen 4 — Lucky Chant prevents crits for 5 turns
-      result.screenSet = {
-        screen: CORE_SCREEN_IDS.luckyChant,
-        turnsLeft: 5,
-        side: BATTLE_EFFECT_TARGETS.attacker,
-      };
-      result.messages.push(`${attackerName}'s team is shielded from critical hits!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.block:
-    case GEN4_MOVE_IDS.meanLook:
-    case GEN4_MOVE_IDS.spiderWeb: {
-      // Trapping effect — prevents switching
-      // Source: Showdown Gen 4 — trap volatile
-      result.volatileInflicted = CORE_VOLATILE_IDS.trapped;
-      break;
-    }
-
-    case GEN4_MOVE_IDS.ingrain: {
-      // Root into the ground
-      // Source: Showdown Gen 4 — Ingrain volatile
-      result.selfVolatileInflicted = CORE_VOLATILE_IDS.ingrain;
-      result.messages.push(`${attackerName} planted its roots!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.aquaRing: {
-      // Surround with water — heal each turn
-      // Source: Showdown Gen 4 — Aqua Ring volatile
-      result.selfVolatileInflicted = CORE_VOLATILE_IDS.aquaRing;
-      result.messages.push(`${attackerName} surrounded itself with a veil of water!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.refresh: {
-      // Cure own status
-      // Source: Showdown Gen 4 — Refresh cures burn/poison/paralysis
-      if (attacker.pokemon.status) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-        result.messages.push(`${attackerName} cured its status condition!`);
-      }
-      break;
-    }
-
-    case GEN4_MOVE_IDS.explosion:
-    case GEN4_MOVE_IDS.selfDestruct: {
-      // Self-KO after damage
-      // Source: Showdown Gen 4 — Explosion/Self-Destruct
-      result.selfFaint = true;
-      result.messages.push(`${attackerName} exploded!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.covet: {
-      // Steal defender's item if user has no item
-      // Source: Showdown Gen 4 — Covet takes held item (same as Thief)
-      const { defender } = context;
-      const dName = defender.pokemon.nickname ?? "The foe";
-      if (!attacker.pokemon.heldItem && defender.pokemon.heldItem) {
-        result.itemTransfer = { from: "defender", to: "attacker" };
-        result.messages.push(`${attackerName} stole ${dName}'s ${defender.pokemon.heldItem}!`);
-      }
-      break;
-    }
-
-    case GEN4_MOVE_IDS.gravity: {
-      // Intensify gravity — engine applies the field state via gravitySet flag
-      // Source: Showdown Gen 4 — Gravity lasts 5 turns, grounds all Pokemon
-      // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Gravity_(move)
-      result.gravitySet = true;
-      result.messages.push("Gravity intensified!");
-      break;
-    }
-
-    case GEN4_MOVE_IDS.whirlwind:
-    case GEN4_MOVE_IDS.roar: {
-      // Force switch — engine handles phazing logic
-      // Source: Showdown Gen 4 — Whirlwind/Roar force random switch (onDragOut handler)
-      // Suction Cups: prevents forced switch effects (Whirlwind, Roar)
-      // Source: Bulbapedia — Suction Cups: "Prevents the Pokemon from being forced to switch out"
-      // Source: Showdown data/abilities.ts — Suction Cups onDragOut
-      const { defender: phazeDef } = context;
-      if (phazeDef.ability === GEN4_ABILITY_IDS.suctionCups) {
-        const dName = phazeDef.pokemon.nickname ?? String(phazeDef.pokemon.speciesId);
-        result.messages.push(`${dName} anchored itself with Suction Cups!`);
-        break;
-      }
-      // Ingrain: prevents forced switch (rooted Pokemon cannot be phazed)
-      // Source: Showdown Gen 4 — onDragOut checks Ingrain volatile alongside Suction Cups
-      // Source: Bulbapedia — Ingrain: "The user can't be switched out by Whirlwind, Roar, etc."
-      if (phazeDef.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) {
-        const dName = phazeDef.pokemon.nickname ?? String(phazeDef.pokemon.speciesId);
-        result.messages.push(`${dName} anchored itself with its roots!`);
-        break;
-      }
-      // Set both switchOut and forcedSwitch so the engine processes phazing correctly.
-      // switchOut alone = voluntary switch; forcedSwitch = opponent forced to swap to random Pokemon.
-      result.switchOut = true;
-      result.forcedSwitch = true;
-      break;
-    }
-
-    case GEN4_MOVE_IDS.bind:
-    case GEN4_MOVE_IDS.wrap:
-    case GEN4_MOVE_IDS.fireSpin:
-    case GEN4_MOVE_IDS.clamp:
-    case GEN4_MOVE_IDS.whirlpool:
-    case GEN4_MOVE_IDS.sandTomb:
-    case GEN4_MOVE_IDS.magmaStorm: {
-      // Binding moves: trap target for 3-6 turns (or 6 with Grip Claw).
-      // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/conditions.ts —
-      //   partiallytrapped.durationCallback: if gripclaw => 6, else this.random(3, 7)
-      //   Showdown random(3, 7) = exclusive upper bound = 3, 4, 5, or 6 turns
-      // Our rng.int() is inclusive, so rng.int(3, 6) gives the same range.
-      const { attacker: bindAtk, defender: bindDef } = context;
-      const defName = bindDef.pokemon.nickname ?? "The foe";
-      if (bindDef.volatileStatuses.has(CORE_VOLATILE_IDS.bound)) {
-        break; // Already bound
-      }
-      // Grip Claw: binding lasts 6 turns (not random)
-      // Source: Showdown Gen 4 mod conditions.ts — if gripclaw => return 6
-      const hasGripClaw =
-        bindAtk.pokemon.heldItem === ITEM_IDS.gripClaw &&
-        bindAtk.ability !== CORE_ABILITY_IDS.klutz;
-      const turnsLeft = hasGripClaw ? 6 : context.rng.int(3, 6);
-      result.volatileInflicted = CORE_VOLATILE_IDS.bound;
-      result.volatileData = { turnsLeft };
-      result.messages.push(`${defName} was squeezed by ${moveId}!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.powerSwap: {
-      // Swap Atk and SpAtk stat stages between attacker and defender.
-      // Source: Showdown Gen 4 mod — Power Swap swaps Attack and SpAtk stat boosts/drops
-      // Source: Bulbapedia — Power Swap: "The user swaps its Attack and Sp. Atk stat
-      //   changes with the target's."
-      const { attacker: pswAtk, defender: pswDef } = context;
-      const pswAtkName = pswAtk.pokemon.nickname ?? "The Pokemon";
-
-      const tempAtk = pswAtk.statStages.attack;
-      const tempSpAtk = pswAtk.statStages.spAttack;
-      pswAtk.statStages.attack = pswDef.statStages.attack;
-      pswAtk.statStages.spAttack = pswDef.statStages.spAttack;
-      pswDef.statStages.attack = tempAtk;
-      pswDef.statStages.spAttack = tempSpAtk;
-
-      result.messages.push(
-        `${pswAtkName} switched all changes to its Attack and Sp. Atk with the target!`,
-      );
-      break;
-    }
-
-    case GEN4_MOVE_IDS.guardSwap: {
-      // Swap Def and SpDef stat stages between attacker and defender.
-      // Source: Showdown Gen 4 mod — Guard Swap swaps Defense and SpDef stat boosts/drops
-      // Source: Bulbapedia — Guard Swap: "The user swaps its Defense and Sp. Def stat
-      //   changes with the target's."
-      const { attacker: gswAtk, defender: gswDef } = context;
-      const gswAtkName = gswAtk.pokemon.nickname ?? "The Pokemon";
-
-      const tempDef = gswAtk.statStages.defense;
-      const tempSpDef = gswAtk.statStages.spDefense;
-      gswAtk.statStages.defense = gswDef.statStages.defense;
-      gswAtk.statStages.spDefense = gswDef.statStages.spDefense;
-      gswDef.statStages.defense = tempDef;
-      gswDef.statStages.spDefense = tempSpDef;
-
-      result.messages.push(
-        `${gswAtkName} switched all changes to its Defense and Sp. Def with the target!`,
-      );
-      break;
-    }
-
-    case GEN4_MOVE_IDS.heartSwap: {
-      // Swap ALL stat stages between attacker and defender.
-      // Source: Showdown Gen 4 mod — Heart Swap swaps all stat stage changes
-      // Source: Bulbapedia — Heart Swap: "The user swaps all stat changes with the target."
-      const { attacker: hswAtk, defender: hswDef } = context;
-      const hswAtkName = hswAtk.pokemon.nickname ?? "The Pokemon";
-      const allStats: Array<keyof typeof hswAtk.statStages> = [
-        CORE_STAT_IDS.attack,
-        CORE_STAT_IDS.defense,
-        "spAttack",
-        "spDefense",
-        CORE_STAT_IDS.speed,
-        CORE_STAT_IDS.accuracy,
-        CORE_STAT_IDS.evasion,
-      ];
-      for (const stat of allStats) {
-        const temp = hswAtk.statStages[stat];
-        hswAtk.statStages[stat] = hswDef.statStages[stat];
-        hswDef.statStages[stat] = temp;
-      }
-      result.messages.push(`${hswAtkName} swapped all stat changes with the target!`);
-      break;
-    }
-
-    case GEN4_MOVE_IDS.counter: {
-      // Counter: returns 2x the physical damage taken this turn
-      // Source: Showdown Gen 4 sim — Counter returns double physical damage received this turn
-      // Source: Bulbapedia — "Counter deals damage equal to twice the damage dealt by the
-      //   last physical move that hit the user"
-      if (
-        attacker.lastDamageTaken <= 0 ||
-        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.physical
-      ) {
-        result.messages.push("But it failed!");
-        break;
-      }
-      result.customDamage = {
-        target: BATTLE_EFFECT_TARGETS.defender,
-        amount: attacker.lastDamageTaken * 2,
-        source: GEN4_MOVE_IDS.counter,
-      };
-      break;
-    }
-
-    case GEN4_MOVE_IDS.mirrorCoat: {
-      // Mirror Coat: returns 2x the special damage taken this turn
-      // Source: Showdown Gen 4 sim — Mirror Coat returns double special damage received this turn
-      // Source: Bulbapedia — "Mirror Coat deals damage equal to twice the damage dealt by the
-      //   last special move that hit the user"
-      if (
-        attacker.lastDamageTaken <= 0 ||
-        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.special
-      ) {
-        result.messages.push("But it failed!");
-        break;
-      }
-      result.customDamage = {
-        target: BATTLE_EFFECT_TARGETS.defender,
-        amount: attacker.lastDamageTaken * 2,
-        source: GEN4_MOVE_IDS.mirrorCoat,
-      };
-      break;
-    }
-
-    default:
-      break;
+function applyHealBlockGate(result: MutableResult, context: MoveEffectContext): void {
+  if (result.healAmount > 0 && context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
+    result.healAmount = 0;
+    const attackerName = context.attacker.pokemon.nickname ?? "The Pokemon";
+    result.messages.push(`${attackerName} is blocked from healing!`);
   }
 }
 
@@ -1349,8 +675,23 @@ function handleNullEffectMoves(
  * Execute Gen 4 move effects after the damage step.
  *
  * This is the main entry point called by Gen4Ruleset.executeMoveEffect().
- * Handles data-driven effects via applyMoveEffect(), custom-tagged effects
- * via handleCustomEffect(), and null-effect moves via handleNullEffectMoves().
+ * Routes to sub-modules in priority order, then falls back to data-driven
+ * applyMoveEffect() for moves not handled by any sub-module.
+ *
+ * Sub-module order:
+ *   1. Field effects (Stealth Rock, Toxic Spikes, Trick Room, Tailwind, Defog,
+ *      Gravity, Rapid Spin, binding moves)
+ *   2. Status moves (Taunt, Disable, Yawn, Encore, Heal Block, Embargo,
+ *      Worry Seed, Gastro Acid, Rest, Heal Bell/Aromatherapy, Safeguard,
+ *      Lucky Chant, Block/Mean Look/Spider Web, Ingrain, Aqua Ring, Refresh,
+ *      Destiny Bond, Wish, Haze)
+ *   3. Combat moves (Belly Drum, Explosion/Self-Destruct, Baton Pass,
+ *      Perish Song, Pain Split, Moonlight/Morning Sun/Synthesis, Future Sight,
+ *      Whirlwind/Roar, Counter, Mirror Coat, Power/Guard/Heart Swap, Acupressure,
+ *      Ghost Curse)
+ *   4. Behavioral overrides (Roost, Knock Off, Trick/Switcheroo, Natural Gift,
+ *      Fling, Pluck/Bug Bite, Sucker Punch, Feint, Focus Punch, Doom Desire,
+ *      Magnet Rise, Thief/Covet)
  *
  * Source: Showdown sim/battle.ts Gen 4 mod
  *
@@ -1382,648 +723,68 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
     ];
   }
 
-  // Roost: heal + temporarily remove Flying type for this turn.
-  // Roost has effect: { type: "heal", amount: 0.5 } in the Gen 4 data, so it routes
-  // through applyMoveEffect's "heal" case which only heals — it cannot set typeChange.
-  // We intercept by move ID before dispatch so both effects are applied correctly.
-  // Source: Showdown Gen 4 — Roost heals 50% and removes Flying type
-  // Source: Bulbapedia — Roost: the user temporarily loses its Flying type
-  if (context.move.id === GEN4_MOVE_IDS.roost) {
-    const { attacker } = context;
-    // Heal Block: prevent HP recovery
-    // Source: Showdown Gen 4 mod — heal-block volatile gates all healing
-    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
-      const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-      result.messages.push(`${attackerName} is blocked from healing!`);
-      return result;
+  // Helper: merge base result's volatilesToClear into a sub-module result before returning.
+  // The base result carries cross-cutting effects (e.g. Destiny Bond volatile clear) that
+  // must be preserved regardless of which sub-module handles the move.
+  function withBaseEffects(sub: MoveEffectResult): MoveEffectResult {
+    if (result.volatilesToClear?.length) {
+      (sub as MutableResult).volatilesToClear = [
+        ...result.volatilesToClear,
+        ...((sub as MutableResult).volatilesToClear ?? []),
+      ];
     }
-    const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-    // Use the data's fraction if present (0.5), otherwise default to 0.5
-    const healEffect = context.move.effect as { type: string; amount: number } | null;
-    const healFraction = healEffect?.amount ?? 0.5;
-    result.healAmount = Math.max(1, Math.floor(maxHp * healFraction));
-    if (attacker.types.includes(CORE_TYPE_IDS.flying)) {
-      const newTypes = attacker.types.filter((t) => t !== CORE_TYPE_IDS.flying);
-      result.typeChange = {
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        types:
-          newTypes.length > 0
-            ? (newTypes as readonly PokemonType[])
-            : ([CORE_TYPE_IDS.normal] as const),
-      };
-    }
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    result.messages.push(`${attackerName} landed and recovered health!`);
-    return result;
+    return sub;
   }
 
-  // Knock Off: custom handler — move data has effect: null so we handle by ID
-  // Source: Showdown Gen 4 — Knock Off removes defender's item, no damage boost in Gen 4
-  // (Gen 5+ adds 50% damage boost)
-  // Note: Directly mutates defender.pokemon.heldItem (consistent with Gen 3 pattern).
-  // The itemKnockedOff flag prevents Trick/Switcheroo from re-giving an item.
-  // Source: Showdown Gen 4 — itemKnockedOff flag suppresses item re-giving
-  if (context.move.id === GEN4_MOVE_IDS.knockOff) {
-    if (context.defender.pokemon.heldItem) {
-      const item = context.defender.pokemon.heldItem;
-      context.defender.pokemon.heldItem = null;
-      context.defender.itemKnockedOff = true;
-      const defenderName = context.defender.pokemon.nickname ?? "The foe";
-      result.messages.push(`${defenderName} lost its ${item}!`);
-      // Unburden: if the defender had Unburden, set the volatile now that its item is gone
-      // Source: Showdown Gen 4 mod — Unburden activates when item is knocked off
-      if (
-        context.defender.ability === GEN4_ABILITY_IDS.unburden &&
-        !context.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
-      ) {
-        context.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
-      }
-    }
-    return result;
+  // 1. Field effect moves (Stealth Rock, Toxic Spikes, Trick Room, Tailwind, Defog,
+  //    Gravity, Rapid Spin, binding moves)
+  const fieldResult = handleGen4FieldMove(context);
+  if (fieldResult !== null) {
+    applyHealBlockGate(fieldResult as MutableResult, context);
+    return withBaseEffects(fieldResult);
   }
 
-  // Taunt: data has volatile-status "taunt" but we need to set turnsLeft randomly for Gen 4
-  // Source: Showdown Gen 4 mod — `this.random(3, 6)` (exclusive max) = 3, 4, or 5 turns
-  // Source: Bulbapedia — "Taunt lasts for 3–5 turns in Generation IV" (fixed to 3 in Gen 5+)
-  if (context.move.id === GEN4_MOVE_IDS.taunt) {
-    result.volatileInflicted = CORE_VOLATILE_IDS.taunt;
-    result.volatileData = { turnsLeft: context.rng.int(3, 5) };
-    return result;
+  // 2. Status/utility moves (Taunt, Disable, Yawn, Encore, Heal Block, Embargo,
+  //    Worry Seed, Gastro Acid, Rest, Heal Bell/Aromatherapy, Safeguard,
+  //    Lucky Chant, Block/Mean Look/Spider Web, Ingrain, Aqua Ring, Refresh,
+  //    Destiny Bond, Wish, Haze)
+  const statusResult = handleGen4StatusMove(context);
+  if (statusResult !== null) {
+    applyHealBlockGate(statusResult as MutableResult, context);
+    return withBaseEffects(statusResult);
   }
 
-  // Disable: data has volatile-status "disable" but we need turnsLeft and target's lastMoveUsed
-  // Source: Showdown Gen 4 — Disable lasts 4-7 turns (this.random(4, 8) = exclusive upper bound)
-  // Source: Bulbapedia — "Disable disables the target's last used move for 4-7 turns in Gen 4"
-  if (context.move.id === GEN4_MOVE_IDS.disable) {
-    const { defender } = context;
-    if (!defender.lastMoveUsed) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Disable fails if the target's last move is not a current move slot or has 0 PP
-    // Source: Showdown Gen 4 — Disable fails if target's last move has 0 PP or is not in moveset
-    const moveSlot = defender.pokemon.moves.find(
-      (slot) => slot && slot.moveId === defender.lastMoveUsed,
-    );
-    if (!moveSlot || moveSlot.currentPP <= 0) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    result.volatileInflicted = CORE_VOLATILE_IDS.disable;
-    result.volatileData = {
-      turnsLeft: context.rng.int(4, 7),
-      data: { moveId: defender.lastMoveUsed },
-    };
-    return result;
+  // 3. Combat moves (Belly Drum, Explosion/Self-Destruct, Baton Pass, Perish Song,
+  //    Pain Split, Moonlight/Morning Sun/Synthesis, Future Sight, Whirlwind/Roar,
+  //    Counter, Mirror Coat, Power/Guard/Heart Swap, Acupressure, Ghost Curse)
+  const combatResult = handleGen4CombatMove(context);
+  if (combatResult !== null) {
+    applyHealBlockGate(combatResult as MutableResult, context);
+    return withBaseEffects(combatResult);
   }
 
-  // Yawn: inflict "yawn" volatile on target — sleep comes at end of next turn
-  // Source: Bulbapedia — Yawn: "causes drowsiness; the target falls asleep at the end
-  //   of the next turn"
-  // Source: Showdown Gen 4 mod — Yawn sets a 1-turn drowsy volatile
-  if (context.move.id === GEN4_MOVE_IDS.yawn) {
-    const { defender } = context;
-    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    // Yawn fails if target already has a primary status
-    if (defender.pokemon.status !== null) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Yawn fails if target already has the yawn volatile
-    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.yawn)) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Yawn fails if target has Insomnia or Vital Spirit
-    // Source: Showdown Gen 4 mod — Yawn blocked by sleep-preventing abilities
-    if (
-      defender.ability === GEN4_ABILITY_IDS.insomnia ||
-      defender.ability === GEN4_ABILITY_IDS.vitalSpirit
-    ) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    result.volatileInflicted = CORE_VOLATILE_IDS.yawn;
-    result.volatileData = { turnsLeft: 1 };
-    result.messages.push(`${defenderName} grew drowsy!`);
-    return result;
+  // 4. Behavioral overrides (Roost, Knock Off, Trick/Switcheroo, Natural Gift,
+  //    Fling, Pluck/Bug Bite, Sucker Punch, Feint, Focus Punch, Doom Desire,
+  //    Magnet Rise, Thief/Covet)
+  const behaviorResult = handleGen4BehaviorMove(context);
+  if (behaviorResult !== null) {
+    applyHealBlockGate(behaviorResult as MutableResult, context);
+    return withBaseEffects(behaviorResult);
   }
 
-  // Encore: lock target into its last used move for 4-8 turns (Gen 4)
-  // Source: Showdown Gen 4 mod — Encore duration: this.random(4, 9) (exclusive max) = 4..8 turns
-  // Source: Bulbapedia — "Encore forces the target to repeat its last used move for 2-6 turns"
-  // Note: Showdown Gen 4 uses 4-8 turns. Bulbapedia states 4-8 for Gen 4.
-  if (context.move.id === GEN4_MOVE_IDS.encore) {
-    const { defender } = context;
-    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    // Fail if target has no last move or is already Encored
-    if (!defender.lastMoveUsed || defender.volatileStatuses.has(CORE_VOLATILE_IDS.encore)) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Source: Showdown Gen 4 mod — Encore lasts 4-8 turns
-    const turnsLeft = context.rng.int(4, 8);
-    result.volatileInflicted = CORE_VOLATILE_IDS.encore;
-    result.volatileData = { turnsLeft, data: { moveId: defender.lastMoveUsed } };
-    result.messages.push(`${defenderName} got an encore!`);
-    return result;
-  }
-
-  // Heal Block: prevent HP recovery for 5 turns
-  // Source: Bulbapedia — Heal Block prevents HP recovery for 5 turns
-  // Source: Showdown Gen 4 mod — Heal Block lasts 5 turns
-  if (context.move.id === GEN4_MOVE_IDS.healBlock) {
-    const { defender } = context;
-    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    result.volatileInflicted = CORE_VOLATILE_IDS.healBlock;
-    result.volatileData = { turnsLeft: 5 };
-    result.messages.push(`${defenderName} was prevented from healing!`);
-    return result;
-  }
-
-  // Embargo: prevent item use for 5 turns
-  // Source: Bulbapedia — Embargo prevents use of held items for 5 turns
-  // Source: Showdown Gen 4 mod — Embargo lasts 5 turns
-  if (context.move.id === GEN4_MOVE_IDS.embargo) {
-    const { defender } = context;
-    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    result.volatileInflicted = CORE_VOLATILE_IDS.embargo;
-    result.volatileData = { turnsLeft: 5 };
-    result.messages.push(`${defenderName} can't use items!`);
-    return result;
-  }
-
-  // Worry Seed: change target's ability to Insomnia
-  // Source: Bulbapedia — Worry Seed: "Changes the target's Ability to Insomnia"
-  // Source: Showdown Gen 4 mod — Worry Seed fails vs Insomnia, Truant, Multitype
-  if (context.move.id === GEN4_MOVE_IDS.worrySeed) {
-    const { defender } = context;
-    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    const failAbilities = new Set<string>([
-      GEN4_ABILITY_IDS.insomnia,
-      GEN4_ABILITY_IDS.truant,
-      GEN4_ABILITY_IDS.multitype,
-    ]);
-    if (failAbilities.has(defender.ability ?? "")) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    defender.ability = GEN4_ABILITY_IDS.insomnia;
-    // If target is asleep, Insomnia immediately wakes it
-    // Source: Showdown Gen 4 mod — Worry Seed cures sleep if the new ability blocks it
-    if (defender.pokemon.status === CORE_STATUS_IDS.sleep) {
-      defender.pokemon.status = null;
-      defender.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
-      result.messages.push(`${defenderName}'s ability changed to Insomnia and it woke up!`);
-    } else {
-      result.messages.push(`${defenderName}'s ability changed to Insomnia!`);
-    }
-    return result;
-  }
-
-  // Gastro Acid: suppress target's ability (set to empty string)
-  // Source: Bulbapedia — Gastro Acid: "suppresses the target's ability"
-  // Source: Showdown Gen 4 mod — Gastro Acid fails vs Multitype
-  if (context.move.id === GEN4_MOVE_IDS.gastroAcid) {
-    const { defender } = context;
-    const defenderName = defender.pokemon.nickname ?? String(defender.pokemon.speciesId);
-    if (defender.ability === GEN4_ABILITY_IDS.multitype) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Fail if the ability is already suppressed (prevents double-application from corrupting
-    // the saved original ability). Uses loose equality to treat undefined the same as null.
-    // Source: Showdown Gen 4 mod — Gastro Acid is idempotent; second use fails
-    if (defender.suppressedAbility != null) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Save the original ability so it can be restored on switch-out
-    // Source: Showdown Gen 4 mod — Gastro Acid sets suppressedAbility; restored on switch-out
-    defender.suppressedAbility = defender.ability;
-    defender.ability = "";
-    result.messages.push(`${defenderName}'s ability was suppressed!`);
-    return result;
-  }
-
-  // Sucker Punch: fails if the target is not about to use a damaging move this turn.
-  // Sucker Punch has +1 priority so it normally resolves before the target acts.
-  // The engine populates defenderSelectedMove in MoveEffectContext with the defender's
-  // selected move and its category, allowing us to check directly.
-  //
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Sucker Punch onTry: fails if
-  //   target is not using a damaging move or has already moved
-  // Source: Bulbapedia — "Sucker Punch will fail if the target does not select a
-  //   move that deals damage, or if the target moves before the user."
-  if (context.move.id === GEN4_MOVE_IDS.suckerPunch) {
-    const { defender } = context;
-
-    // If the defender already moved this turn, Sucker Punch fails (target acted first).
-    // Source: Showdown Gen 4 — Sucker Punch fails if target already moved
-    if (defender.movedThisTurn) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // Check if the defender selected a move action this turn
-    const defMove = context.defenderSelectedMove;
-    if (!defMove) {
-      // Defender is not using a move (switching, using item, etc.) — Sucker Punch fails
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // Fail if the defender selected a status move (non-damaging)
-    // Source: Showdown Gen 4 — Sucker Punch fails if target's move is status category
-    if (defMove.category === CORE_MOVE_CATEGORIES.status) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // If we get here, Sucker Punch succeeds (damage already applied by engine)
-    return result;
-  }
-
-  // Feint: only hits if the target has Protect or Detect active.
-  // If the target is not protecting, Feint fails. If they are protecting,
-  // Feint lifts the protection and deals damage normally.
-  // Note: Detect and Protect both set the "protect" volatile in our system,
-  // so we only need to check for "protect".
-  //
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Feint: breaks Protect/Detect
-  // Source: Bulbapedia — "Feint will fail if the target has not used Protect or
-  //   Detect during the turn. If successful, it lifts the effects of those moves."
-  if (context.move.id === GEN4_MOVE_IDS.feint) {
-    const { defender } = context;
-    const hasProtect = defender.volatileStatuses.has(CORE_VOLATILE_IDS.protect);
-
-    if (!hasProtect) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // Remove the protection volatile
-    // Source: Showdown Gen 4 — Feint removes Protect/Detect volatile
-    result.volatilesToClear = [
-      { target: BATTLE_EFFECT_TARGETS.defender, volatile: CORE_VOLATILE_IDS.protect },
-    ];
-
-    const defenderName = defender.pokemon.nickname ?? "The foe";
-    result.messages.push(`${defenderName} fell for the feint!`);
-    return result;
-  }
-
-  // Focus Punch: fails if the attacker took damage this turn before moving.
-  // Focus Punch has -3 priority, so it always moves last. If the user was hit
-  // by any damaging move before it could execute, Focus Punch fails.
-  //
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Focus Punch: beforeTurn sets
-  //   "focusing" message, onTry checks if user was hit
-  // Source: Bulbapedia — "The user will lose its focus and be unable to attack
-  //   if it is hit by a damaging move before it can execute Focus Punch."
-  if (context.move.id === GEN4_MOVE_IDS.focusPunch) {
-    const { attacker } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-
-    // If the attacker took damage this turn, Focus Punch fails
-    // Source: Showdown Gen 4 — Focus Punch fails if pokemon.lastDamageTaken > 0
-    if (attacker.lastDamageTaken > 0) {
-      result.messages.push(`${attackerName} lost its focus and couldn't move!`);
-      return result;
-    }
-
-    // Otherwise Focus Punch succeeds — damage was already applied by engine
-    return result;
-  }
-
-  // Trick / Switcheroo: swap held items between attacker and defender.
-  //
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Trick/Switcheroo swap items
-  // Source: Bulbapedia — "The user swaps held items with the target"
-  // Fails if: both have no item, target has Sticky Hold, either has Multitype,
-  //   or either holds a Mail or Griseous Orb, or either had their item knocked off.
-  if (context.move.id === GEN4_MOVE_IDS.trick || context.move.id === GEN4_MOVE_IDS.switcheroo) {
-    const { attacker, defender } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    const defenderName = defender.pokemon.nickname ?? "The foe";
-
-    // Fail if either party had their item knocked off (Knock Off flag)
-    // Source: Showdown Gen 4 — itemKnockedOff flag prevents Trick/Switcheroo from re-giving items
-    if (attacker.itemKnockedOff || defender.itemKnockedOff) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // Fail if neither Pokemon is holding an item
-    // Source: Showdown Gen 4 — Trick fails if both have no item
-    if (!attacker.pokemon.heldItem && !defender.pokemon.heldItem) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // Fail if target has Sticky Hold
-    // Source: Showdown data/abilities.ts — Sticky Hold blocks item removal
-    // Source: Bulbapedia — Sticky Hold prevents item removal by the foe
-    if (defender.ability === GEN4_ABILITY_IDS.stickyHold) {
-      result.messages.push(`${defenderName}'s Sticky Hold made Trick fail!`);
-      return result;
-    }
-
-    // Fail if either has Multitype (Arceus's plates are bound)
-    // Source: Showdown Gen 4 — Trick fails if either has Multitype
-    if (
-      attacker.ability === GEN4_ABILITY_IDS.multitype ||
-      defender.ability === GEN4_ABILITY_IDS.multitype
-    ) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    // Perform the item swap
-    // Source: Showdown Gen 4 — item swap is direct mutation
-    const attackerItem = attacker.pokemon.heldItem;
-    const defenderItem = defender.pokemon.heldItem;
-    attacker.pokemon.heldItem = defenderItem;
-    defender.pokemon.heldItem = attackerItem;
-
-    result.itemTransfer = {
-      from: BATTLE_EFFECT_TARGETS.defender,
-      to: BATTLE_EFFECT_TARGETS.attacker,
-    };
-
-    if (attackerItem && defenderItem) {
-      result.messages.push(`${attackerName} switched items with ${defenderName}!`);
-    } else if (defenderItem) {
-      result.messages.push(`${attackerName} obtained ${defenderItem} from ${defenderName}!`);
-    } else if (attackerItem) {
-      result.messages.push(`${attackerName} gave ${attackerItem} to ${defenderName}!`);
-    }
-
-    // Unburden: if either Pokemon had an item and now doesn't, and has Unburden, activate it.
-    // Source: Showdown Gen 4 mod — Unburden activates when item is lost via Trick/Switcheroo
-    if (
-      attackerItem &&
-      !attacker.pokemon.heldItem &&
-      attacker.ability === GEN4_ABILITY_IDS.unburden &&
-      !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
-    ) {
-      attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
-    }
-    if (
-      defenderItem &&
-      !defender.pokemon.heldItem &&
-      defender.ability === GEN4_ABILITY_IDS.unburden &&
-      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
-    ) {
-      defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
-    }
-
-    return result;
-  }
-
-  // Doom Desire: schedule a delayed 2-turn Steel-type future attack.
-  // Identical pattern to Future Sight but with Steel type and 120 power.
-  //
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Doom Desire: future attack
-  // Source: Bulbapedia — "Doom Desire deals typeless damage 2 turns after being used.
-  //   It has 120 base power and is Steel-type in Gen 4."
-  // Note: In Gen 4, Future Sight and Doom Desire deal typeless damage at hit time
-  //   (type chart is not applied). The type is stored for completeness.
-  if (context.move.id === GEN4_MOVE_IDS.doomDesire) {
-    const { attacker, state } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    const attackerSideIndex = state.sides.findIndex((side) =>
-      side.active.some((a) => a?.pokemon === attacker.pokemon),
-    );
-
-    // Fail if there's already a future attack pending on the target's side
-    // Source: Showdown Gen 4 — Doom Desire fails if a future attack is already set
-    const targetSideIndex = attackerSideIndex === 0 ? 1 : 0;
-    if (state.sides[targetSideIndex].futureAttack) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-
-    result.futureAttack = {
-      moveId: GEN4_MOVE_IDS.doomDesire,
-      turnsLeft: 3,
-      sourceSide: (attackerSideIndex === 0 ? 0 : 1) as 0 | 1,
-    };
-    result.messages.push(`${attackerName} chose Doom Desire as its destiny!`);
-    return result;
-  }
-
-  // Magnet Rise: apply "magnet-rise" volatile to user for 5 turns.
-  // Fails if user is already under Gravity or already has Magnet Rise.
-  // Source: Showdown Gen 4 mod — Magnet Rise sets volatile on self for 5 turns
-  // Source: Bulbapedia — Magnet Rise: "The user levitates using electrically generated
-  //   magnetism for five turns." Fails under Gravity.
-  if (context.move.id === GEN4_MOVE_IDS.magnetRise) {
-    const { attacker, state } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    // Fail if Gravity is active
-    if (state.gravity?.active) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Fail if already has Magnet Rise
-    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.magnetRise)) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    result.selfVolatileInflicted = CORE_VOLATILE_IDS.magnetRise;
-    result.selfVolatileData = { turnsLeft: 5 };
-    result.messages.push(`${attackerName} levitated with electromagnetism!`);
-    return result;
-  }
-
-  // Acupressure: +2 to a random stat stage (from stats not already at +6).
-  // Source: Showdown Gen 4 mod — Acupressure boosts a random stat by 2
-  // Source: Bulbapedia — Acupressure: "Sharply raises one of the user's stats at random"
-  if (context.move.id === GEN4_MOVE_IDS.acupressure) {
-    const { attacker, rng } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    const allStats: BattleStat[] = [
-      CORE_STAT_IDS.attack,
-      CORE_STAT_IDS.defense,
-      "spAttack",
-      "spDefense",
-      CORE_STAT_IDS.speed,
-      CORE_STAT_IDS.accuracy,
-      CORE_STAT_IDS.evasion,
-    ];
-    const boostableStats = allStats.filter((stat) => attacker.statStages[stat] < 6);
-    if (boostableStats.length === 0) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    const chosenIndex = rng.int(0, boostableStats.length - 1);
-    const chosen = boostableStats[chosenIndex] as BattleStat;
-    result.statChanges.push({
-      target: BATTLE_EFFECT_TARGETS.attacker,
-      stat: chosen,
-      stages: 2,
-    });
-    result.messages.push(`${attackerName}'s ${chosen} rose sharply!`);
-    return result;
-  }
-
-  // Curse (Ghost-type): user loses 1/2 max HP, target gets "curse" volatile.
-  // Non-Ghost Curse (stat changes) is handled by data-driven effect (stat-change type).
-  // Ghost-type Curse is intercepted by ID + type check.
-  // Source: Showdown Gen 4 mod — Ghost Curse: user sacrifices 1/2 HP, target gets cursed
-  // Source: Bulbapedia — Curse: "If the user is a Ghost-type, the user loses 1/2 of its
-  //   maximum HP and the target is cursed."
-  if (context.move.id === GEN4_MOVE_IDS.curse) {
-    const { attacker, defender } = context;
-    if (attacker.types.includes(CORE_TYPE_IDS.ghost)) {
-      const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-      const defenderName = defender.pokemon.nickname ?? "The foe";
-      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-      const hpCost = Math.max(1, Math.floor(maxHp / 2));
-      // Already cursed — fail
-      if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.curse)) {
-        result.messages.push("But it failed!");
-        return result;
-      }
-      result.customDamage = {
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        amount: hpCost,
-        source: GEN4_MOVE_IDS.curse,
-      };
-      result.volatileInflicted = CORE_VOLATILE_IDS.curse;
-      result.messages.push(`${attackerName} cut its own HP and laid a curse on ${defenderName}!`);
-      return result;
-    }
-    // Non-Ghost: fall through to data-driven effect (stat changes +Atk +Def -Spd)
-  }
-
-  // Natural Gift: type + power determined by held berry, berry consumed after use.
-  // Fails if user has no held item, held item is not a berry, user has Klutz, or Embargo.
-  // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Natural_Gift_(move)
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Natural Gift type/power lookup
-  if (context.move.id === GEN4_MOVE_IDS.naturalGift) {
-    const { attacker } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    const heldItem = attacker.pokemon.heldItem;
-    // Fails if no held item, not a berry, Klutz, or Embargo
-    if (
-      !heldItem ||
-      !NATURAL_GIFT_TABLE[heldItem] ||
-      attacker.ability === GEN4_ABILITY_IDS.klutz ||
-      attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
-    ) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    const berryData = NATURAL_GIFT_TABLE[heldItem];
-    // Do NOT set customDamage — damage should go through the normal damage calc path.
-    // The engine calls calculateDamage() before executeMoveEffect(), so the move's
-    // base power and type in the data determine the damage output.
-    // Source: Showdown Gen 4 — Natural Gift uses onModifyMove to set base power/type
-    result.attackerItemConsumed = true;
-    result.messages.push(
-      `${attackerName} used Natural Gift! (${berryData.type} / ${berryData.power} BP)`,
-    );
-    return result;
-  }
-
-  // Fling: throw held item at target for damage based on item's Fling power, item consumed.
-  // Fails if user has no held item, item has no Fling power, user has Klutz, or Embargo.
-  // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Fling_(move)
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Fling power lookup
-  if (context.move.id === GEN4_MOVE_IDS.fling) {
-    const { attacker } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    const heldItem = attacker.pokemon.heldItem;
-    if (
-      !heldItem ||
-      attacker.ability === GEN4_ABILITY_IDS.klutz ||
-      attacker.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
-    ) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    const flingPower = getFlingPower(heldItem);
-    if (flingPower === 0) {
-      result.messages.push("But it failed!");
-      return result;
-    }
-    // Do NOT set customDamage — damage should go through the normal damage calc path.
-    // The engine calls calculateDamage() before executeMoveEffect(), so the move's
-    // base power in the data determines the damage output.
-    // Source: Showdown Gen 4 — Fling uses onModifyMove to set base power
-    result.attackerItemConsumed = true;
-    result.messages.push(`${attackerName} flung its ${heldItem}!`);
-    return result;
-  }
-
-  // Pluck / Bug Bite: after dealing damage, steal and activate target's berry.
-  // These are damaging moves (effect: null in data) that consume the target's berry.
-  // Source: Bulbapedia — Pluck: "steals the target's held Berry if it is holding one"
-  // Source: Bulbapedia — Bug Bite: same mechanic as Pluck
-  // Source: Showdown sim/battle-actions.ts Gen 4 — Pluck/Bug Bite berry steal
-  if (context.move.id === GEN4_MOVE_IDS.pluck || context.move.id === GEN4_MOVE_IDS.bugBite) {
-    const { attacker, defender } = context;
-    const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
-    const defenderName = defender.pokemon.nickname ?? "The foe";
-    const defenderItem = defender.pokemon.heldItem;
-    // Check if defender holds a berry (berry IDs end with "-berry")
-    if (defenderItem?.endsWith("-berry")) {
-      // Steal and consume the berry
-      const stolenBerry = defenderItem;
-      defender.pokemon.heldItem = null;
-      // Apply the berry's effect to the attacker (simulate eating it)
-      // For healing berries, we heal the attacker; for status berries, we cure attacker's status
-      applyBerryEffectToAttacker(stolenBerry, attacker, result);
-      result.messages.push(`${attackerName} stole and ate ${defenderName}'s ${stolenBerry}!`);
-      // Unburden: if the defender had Unburden, set the volatile
-      if (
-        defender.ability === GEN4_ABILITY_IDS.unburden &&
-        !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
-      ) {
-        defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
-      }
-    }
-    // Even if no berry was stolen, the move's damage already happened (effect: null)
-    return result;
-  }
-
-  // Handle null-effect moves (stealth-rock, toxic-spikes, trick-room, etc.)
+  // No sub-module claimed the move.
+  // If the move has no data-driven effect, return the base result
+  // (which may have the Destiny Bond clear applied).
   if (!context.move.effect) {
-    handleNullEffectMoves(context.move.id, result, context);
-    applyHealBlockGate(result, context);
     return result;
   }
 
+  // Fall through to data-driven effect handler
   applyMoveEffect(context.move.effect, context.move, result, context);
 
   applyHealBlockGate(result, context);
 
   return result;
-}
-
-/**
- * Heal Block gate: if the attacker has heal-block, prevent HP recovery.
- * Called after both null-effect and data-driven effect handling.
- *
- * Source: Showdown Gen 4 mod — heal-block volatile gates all healing
- * Source: Bulbapedia — Heal Block: "prevents the target from recovering HP"
- */
-function applyHealBlockGate(result: MutableResult, context: MoveEffectContext): void {
-  if (result.healAmount > 0 && context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
-    result.healAmount = 0;
-    const attackerName = context.attacker.pokemon.nickname ?? "The Pokemon";
-    result.messages.push(`${attackerName} is blocked from healing!`);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2195,121 +956,4 @@ export function getFlingPower(item: string): number {
   // All berries default to 10 power
   if (item.endsWith("-berry")) return 10;
   return 0;
-}
-
-// ---------------------------------------------------------------------------
-// Pluck / Bug Bite — Berry Effect Application
-// ---------------------------------------------------------------------------
-
-/**
- * Apply a stolen berry's effect to the attacker via Pluck/Bug Bite.
- * This simulates the attacker immediately eating the berry.
- * Only the most common berry effects are implemented.
- *
- * Source: Showdown sim/battle-actions.ts — Pluck/Bug Bite activate berry for user
- * Source: Bulbapedia — Pluck/Bug Bite: "eats it immediately, gaining its effects"
- */
-function applyBerryEffectToAttacker(
-  berry: string,
-  attacker: ActivePokemon,
-  result: MutableResult,
-): void {
-  const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
-
-  switch (berry) {
-    case ITEM_IDS.oranBerry:
-      result.healAmount = Math.min(10, maxHp - attacker.pokemon.currentHp);
-      break;
-    case ITEM_IDS.sitrusBerry:
-      result.healAmount = Math.max(1, Math.floor(maxHp / 4));
-      break;
-    case ITEM_IDS.lumBerry: {
-      if (attacker.pokemon.status) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      }
-      break;
-    }
-    case ITEM_IDS.cheriBerry:
-      if (attacker.pokemon.status === CORE_STATUS_IDS.paralysis) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      }
-      break;
-    case ITEM_IDS.chestoBerry:
-      if (attacker.pokemon.status === CORE_STATUS_IDS.sleep) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      }
-      break;
-    case ITEM_IDS.pechaBerry:
-      if (
-        attacker.pokemon.status === CORE_STATUS_IDS.poison ||
-        attacker.pokemon.status === CORE_STATUS_IDS.badlyPoisoned
-      ) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      }
-      break;
-    case ITEM_IDS.rawstBerry:
-      if (attacker.pokemon.status === CORE_STATUS_IDS.burn) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      }
-      break;
-    case ITEM_IDS.aspearBerry:
-      if (attacker.pokemon.status === CORE_STATUS_IDS.freeze) {
-        result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
-      }
-      break;
-    case ITEM_IDS.persimBerry:
-      if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.confusion)) {
-        result.volatilesToClear = [
-          ...(result.volatilesToClear ?? []),
-          {
-            target: BATTLE_EFFECT_TARGETS.attacker,
-            volatile: CORE_VOLATILE_IDS.confusion,
-          },
-        ];
-      }
-      break;
-    case ITEM_IDS.leppaBerry:
-      // Restore 10 PP to the first depleted move
-      // Source: Showdown — Leppa Berry restores 10 PP
-      break;
-    // Stat pinch berries — boost stat immediately when eaten via Pluck/Bug Bite
-    case ITEM_IDS.liechiBerry:
-      result.statChanges.push({
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        stat: CORE_STAT_IDS.attack,
-        stages: 1,
-      });
-      break;
-    case ITEM_IDS.ganlonBerry:
-      result.statChanges.push({
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        stat: CORE_STAT_IDS.defense,
-        stages: 1,
-      });
-      break;
-    case ITEM_IDS.salacBerry:
-      result.statChanges.push({
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        stat: CORE_STAT_IDS.speed,
-        stages: 1,
-      });
-      break;
-    case ITEM_IDS.petayaBerry:
-      result.statChanges.push({
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        stat: CORE_STAT_IDS.spAttack,
-        stages: 1,
-      });
-      break;
-    case ITEM_IDS.apicotBerry:
-      result.statChanges.push({
-        target: BATTLE_EFFECT_TARGETS.attacker,
-        stat: CORE_STAT_IDS.spDefense,
-        stages: 1,
-      });
-      break;
-    default:
-      // Many berries have no in-battle effect when consumed this way
-      break;
-  }
 }

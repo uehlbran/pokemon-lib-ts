@@ -546,11 +546,10 @@ describe("Curse (Ghost-type)", () => {
     const result = executeGen4MoveEffect(ctx);
 
     // HP cost = floor(200 / 2) = 100
-    expect(result.customDamage).toEqual({
-      target: "attacker",
-      amount: 100,
-      source: MOVES.curse,
-    });
+    // Uses recoilDamage (not customDamage) because Ghost Curse's HP sacrifice
+    // is a direct HP cost that bypasses substitute and survival items.
+    // Source: pokeplatinum subscript_curse_ghost.s — BATTLE_SUBSCRIPT_UPDATE_HP on ATTACKER
+    expect(result.recoilDamage).toBe(100);
     expect(result.volatileInflicted).toBe(VOLATILES.curse);
     expect(result.messages).toContain("Gengar cut its own HP and laid a curse on Snorlax!");
   });
