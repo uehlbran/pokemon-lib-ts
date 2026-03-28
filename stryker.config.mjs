@@ -3,9 +3,7 @@ export default {
   packageManager: "npm",
   reporters: ["clear-text"],
   testRunner: "vitest",
-  mutate: [
-    "packages/gen4/src/Gen4MoveEffectsBehavior.ts",
-  ],
+  mutate: ["packages/gen4/src/Gen4MoveEffectsBehavior.ts"],
   timeoutMS: 60000,
   concurrency: 1,
   tempDirName: ".stryker-tmp",
