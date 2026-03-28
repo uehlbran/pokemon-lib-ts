@@ -51,7 +51,7 @@
       "attacker": { "species": "Machamp", "level": 1, "dvs": { "atk": 15 } },
       "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
       "move": "Karate Chop",
-      "note": "Level 1 with floor((2*1/5 + 2) = 2) in step 1. Source: pret/pokered engine/battle/core.asm CalcDamage"
+      "note": "Level 1 with floor(2*1/5 + 2) = 2 in step 1. Source: pret/pokered engine/battle/core.asm CalcDamage"
     },
     {
       "id": "gen1-fixed-damage-seismic-toss",
@@ -134,6 +134,56 @@
       "move": "Thunderbolt",
       "expected_type_effectiveness": 4,
       "note": "Electric vs Water/Flying = 2x * 2x = 4x. Floor is applied after each multiplication. Source: pret/pokered engine/battle/core.asm TypeEffectiveness sequential"
+    },
+    {
+      "id": "gen1-level-100-max-stats",
+      "type": "mechanic-documentation",
+      "description": "Level 100 attacker with max DVs and Stat Exp: verify no integer overflow in damage formula",
+      "attacker": { "species": "Mewtwo", "level": 100, "dvs": { "atk": 15, "spc": 15 } },
+      "defender": { "species": "Snorlax", "level": 100, "dvs": { "def": 15 } },
+      "move": "Psychic",
+      "note": "Max-stat damage path: intermediate values fit in Gen 1's 16-bit arithmetic. Source: pret/pokered engine/battle/core.asm CalcDamage overflow path"
+    },
+    {
+      "id": "gen1-1-in-256-miss",
+      "type": "mechanic-documentation",
+      "description": "1/256 miss bug: moves with 100% accuracy still have a 1/256 chance to miss",
+      "attacker": { "species": "Raichu", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Vaporeon", "level": 50, "dvs": { "def": 15 } },
+      "move": "Thunderbolt",
+      "note": "Gen 1 accuracy formula: floor(accuracy * stage) / 256. At 100% accuracy with no modifiers = 255/256, leaving a 1/256 miss. Source: pret/pokered engine/battle/core.asm AccuracyCheck"
+    },
+    {
+      "id": "gen1-light-screen-halves-special",
+      "description": "Light Screen halves special damage (multiplies effective Special Defense by 2)",
+      "attacker": { "species": "Alakazam", "level": 50, "dvs": { "spc": 15 } },
+      "defender": {
+        "species": "Slowbro",
+        "level": 50,
+        "dvs": { "spc": 15 },
+        "screen": "light-screen"
+      },
+      "move": "Psychic",
+      "note": "Light Screen doubles the defender's special in damage calc, analogous to Reflect for physical. Source: pret/pokered engine/battle/core.asm LightScreenEffect"
+    },
+    {
+      "id": "gen1-paralysis-speed-quarter",
+      "type": "mechanic-documentation",
+      "description": "Paralysis reduces Speed to 25% of stat (floor), affecting turn order",
+      "attacker": {
+        "species": "Jolteon",
+        "level": 50,
+        "dvs": { "spe": 15 },
+        "status": "paralysis"
+      },
+      "note": "Paralysed Speed = floor(speed / 4). Affects turn order but not damage directly. Source: pret/pokered engine/battle/core.asm GetModifiedSpeed ParalysisCheck"
+    },
+    {
+      "id": "gen1-badge-boost-compounding",
+      "type": "mechanic-documentation",
+      "description": "Badge boosts (1.125x each) compound across ALL stats when Gym badges are earned — cross-stat bug",
+      "attacker": { "species": "Charizard", "level": 50, "dvs": { "atk": 15 } },
+      "note": "Each badge boost multiplies the current stat by 9/8 and applies to all stats (not just the boosted one). ERRATA #3B. Source: pret/pokered engine/battle/core.asm ApplyBadgeStatBoosts"
     }
   ]
 }
