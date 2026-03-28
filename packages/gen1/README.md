@@ -12,8 +12,13 @@ Gen 1 (Red/Blue/Yellow) battle mechanics and complete Pokemon data.
 
 ## Installation
 
+This package is not yet published to npm. Install from the monorepo:
+
 ```bash
-npm install @pokemon-lib-ts/gen1 @pokemon-lib-ts/battle @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
