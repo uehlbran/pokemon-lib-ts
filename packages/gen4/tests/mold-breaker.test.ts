@@ -216,7 +216,10 @@ describe("Mold Breaker", () => {
       );
       // Without Mold Breaker, Ground vs Levitate = 0 damage (immune)
       // With Mold Breaker, Levitate is bypassed and damage is dealt
-      expect(result.damage).toBeGreaterThan(0);
+      // Source: Gen 4 formula: levelFactor=22, power=100(Earthquake), atk=150, def=100
+      //   baseDamage = floor(floor(22*100*150/100)/50)+2 = floor(3300/50)+2 = 66+2 = 68
+      //   random roll=100: floor(68*100/100)=68; Ground vs Psychic=1x → 68
+      expect(result.damage).toBe(68);
       expect(result.effectiveness).not.toBe(0);
     });
 
@@ -257,7 +260,10 @@ describe("Mold Breaker", () => {
       );
       // Water vs Bug/Ghost is 1x (neutral) — normally blocked by Wonder Guard
       // But Mold Breaker bypasses Wonder Guard so damage goes through
-      expect(result.damage).toBeGreaterThan(0);
+      // Source: Gen 4 formula: levelFactor=22, power=80(Waterfall), atk=150, def=100
+      //   baseDamage = floor(floor(22*80*150/100)/50)+2 = floor(2640/50)+2 = 52+2 = 54
+      //   random roll=100: floor(54*100/100)=54; Water vs Bug=1x, vs Ghost=1x → 54
+      expect(result.damage).toBe(54);
       expect(result.effectiveness).toBe(1);
     });
 
@@ -320,7 +326,10 @@ describe("Mold Breaker", () => {
       );
       // Without Mold Breaker, Volt Absorb absorbs Electric moves (0 damage)
       // With Mold Breaker, Volt Absorb is bypassed
-      expect(result.damage).toBeGreaterThan(0);
+      // Source: Gen 4 formula: levelFactor=22, power=95(Thunderbolt), spAtk=150, spDef=100
+      //   baseDamage = floor(floor(22*95*150/100)/50)+2 = floor(3135/50)+2 = 62+2 = 64
+      //   random roll=100: floor(64*100/100)=64; Electric vs Water=2x → floor(64*2)=128
+      expect(result.damage).toBe(128);
       expect(result.effectiveness).toBe(2);
     });
 
@@ -404,7 +413,10 @@ describe("Mold Breaker", () => {
         createDamageContext({ attacker, defender, move }),
         GEN4_TYPE_CHART,
       );
-      expect(result.damage).toBeGreaterThan(0);
+      // Source: Gen 4 formula: levelFactor=22, power=80(Waterfall), atk=150, def=100
+      //   baseDamage = floor(floor(22*80*150/100)/50)+2 = floor(2640/50)+2 = 52+2 = 54
+      //   random roll=100: floor(54*100/100)=54; Water vs Fire=2x → floor(54*2)=108
+      expect(result.damage).toBe(108);
       expect(result.effectiveness).toBe(2);
     });
   });
@@ -420,7 +432,10 @@ describe("Mold Breaker", () => {
         createDamageContext({ attacker, defender, move }),
         GEN4_TYPE_CHART,
       );
-      expect(result.damage).toBeGreaterThan(0);
+      // Source: Gen 4 formula: levelFactor=22, power=85(Blaze Kick), atk=150, def=100
+      //   baseDamage = floor(floor(22*85*150/100)/50)+2 = floor(2805/50)+2 = 56+2 = 58
+      //   random roll=100: floor(58*100/100)=58; Fire vs Grass=2x → floor(58*2)=116
+      expect(result.damage).toBe(116);
       expect(result.effectiveness).toBe(2);
     });
   });
@@ -436,7 +451,10 @@ describe("Mold Breaker", () => {
         createDamageContext({ attacker, defender, move }),
         GEN4_TYPE_CHART,
       );
-      expect(result.damage).toBeGreaterThan(0);
+      // Source: Gen 4 formula: levelFactor=22, power=95(Thunderbolt), spAtk=150, spDef=100
+      //   baseDamage = floor(floor(22*95*150/100)/50)+2 = floor(3135/50)+2 = 62+2 = 64
+      //   random roll=100: floor(64*100/100)=64; Electric vs Normal=1x → 64
+      expect(result.damage).toBe(64);
       expect(result.effectiveness).toBe(1);
     });
   });

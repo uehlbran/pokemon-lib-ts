@@ -359,7 +359,8 @@ describe("#662 — Dry Skin pokeRound", () => {
       createDamageContext({ attacker, defender, move: fireMove, seed: 100 }),
       typeChart,
     );
-    expect(result.damage).toBeGreaterThan(0);
+    // Dry Skin 1.25x fire weakness applies (pokeRound rounds differently than floor); damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 });
 

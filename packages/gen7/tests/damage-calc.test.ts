@@ -3178,7 +3178,8 @@ describe("Gen 7 Scrappy", () => {
 
     expect(noAbil.damage).toBe(0); // Ghost immune to Normal
     expect(noAbil.effectiveness).toBe(0);
-    expect(withScrappy.damage).toBeGreaterThan(0); // Scrappy bypasses
+    // Scrappy bypasses Ghost immunity; damage is non-zero
+    expect(withScrappy.damage).toBeGreaterThanOrEqual(1);
     expect(withScrappy.effectiveness).toBe(1);
   });
 });
@@ -4185,7 +4186,8 @@ describe("Gen 7 Scrappy vs Ghost type (coverage)", () => {
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
-    expect(result.damage).toBeGreaterThan(0);
+    // Scrappy Fighting vs Ghost: immunity bypassed, treated as neutral (1x); damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(1);
   });
 });

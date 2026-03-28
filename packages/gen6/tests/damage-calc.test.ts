@@ -263,7 +263,8 @@ describe("Gen 6 base damage formula", () => {
     const result = calculateGen6Damage(ctx, typeChart);
     // Neutral effectiveness
     expect(result.effectiveness).toBe(1);
-    expect(result.damage).toBeGreaterThan(0);
+    // base = floor(floor(22*40*100/100)/50)+2 = 19; random applies; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
   it("given L100 attacker 200 Atk vs L100 defender 150 Def, 80 BP physical, when calculating, then returns known value", () => {

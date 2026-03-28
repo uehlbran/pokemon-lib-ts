@@ -297,7 +297,8 @@ describe("type-boost items use pokeRound for the shared fixed-point modifier (is
       typeChart,
     );
 
-    expect(result.damage).toBeGreaterThan(0);
+    // Charcoal boosts Fire BP 60 via pokeRound; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(pokeRound(60, CORE_FIXED_POINT.typeBoost)).toBe(72);
     expect(Math.floor((60 * CORE_FIXED_POINT.typeBoost) / CORE_FIXED_POINT.identity)).toBe(71);
   });
@@ -326,7 +327,8 @@ describe("type-boost items use pokeRound for the shared fixed-point modifier (is
       typeChart,
     );
 
-    expect(result.damage).toBeGreaterThan(0);
+    // Charcoal applies pokeRound(3, typeBoost)=4 effective BP; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
   it("given Adamant Orb boosting Dialga's Dragon move with base power 60, when calculating damage, then uses pokeRound(60, typeBoost) = 72", () => {

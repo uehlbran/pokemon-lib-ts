@@ -348,7 +348,8 @@ describe("Gen 6 Integration: Mega Evolution + Tough Claws + Damage calc", () => 
     const result = calculateGen6Damage(ctx, typeChart);
     // Fire vs Grass = 2x, Fire vs Poison = 1x, combined = 2x
     expect(result.effectiveness).toBe(2);
-    expect(result.damage).toBeGreaterThan(0);
+    // STAB + SE 2x + Tough Claws 1.3x all apply; damage is non-zero
+    expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -480,7 +481,8 @@ describe("Gen 6 Integration: King's Shield blocks contact, stat drop persists", 
     });
     const result = calculateGen6Damage(ctx, typeChart);
     expect(result.effectiveness).toBe(2);
-    expect(result.damage).toBeGreaterThan(0);
+    // Ghost SE 2x vs Psychic; Atk drop does not affect SpA-based damage
+    expect(result.damage).toBeGreaterThanOrEqual(1);
 
     // Physical move IS affected by Atk drop
     const physCtx = createDamageContext({

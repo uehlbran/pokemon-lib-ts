@@ -1159,7 +1159,12 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
     );
     // Fire vs Rock = 0.5x, but we care about the SpDef boost here
     // Source: Showdown type chart -- Fire vs Rock = 0.5x (not very effective)
-    expect(result.damage).toBeGreaterThan(0);
+    // Source: Gen 5 formula: levelFactor=22, power=50, spAtk=100, spDef=floor(100*1.5)=150(sand boost)
+    //   baseDamage = floor(floor(22*50*100/150)/50)+2 = floor(floor(110000/150)/50)+2
+    //   = floor(733/50)+2 = 14+2 = 16
+    //   random roll (seed=42) = 94: floor(16*94/100) = floor(15.04) = 15
+    //   Fire vs Rock = 0.5x: floor(15/2) = 7
+    expect(result.damage).toBe(7);
     expect(result.effectiveness).toBe(0.5);
   });
 });

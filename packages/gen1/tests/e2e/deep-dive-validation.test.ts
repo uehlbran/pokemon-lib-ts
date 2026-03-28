@@ -590,7 +590,10 @@ describe("3C: Damage Formula (exact expected values)", () => {
     // Act
     const result = calculateGen1Damage(context, chart, mewtwoBattleSpecies);
     // Assert — damage should be positive and reflect STAB
-    expect(result.damage).toBeGreaterThan(0);
+    // Source: Gen 1 damage formula with overflow path (atk 407→101, def 309→77):
+    //   floor(floor((2*100/5+2)*90*101/77)/50)+2 = floor(floor(381780/77)/50)+2 = 101
+    //   STAB: floor(101*1.5)=151; type eff 1x; roll 255/255: floor(151*255/255)=151
+    expect(result.damage).toBe(151);
     expect(Number.isInteger(result.damage)).toBe(true);
     // Exact expected damage at max roll (255/255): 151 (overflow path — atk 407→101, def 309→77)
     expect(result.damage).toBe(151);
