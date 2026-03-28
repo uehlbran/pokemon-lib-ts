@@ -21,9 +21,11 @@
  * ERRATA #30: Terastallization retains 1.5× STAB for base types even after Tera.
  */
 
+import { type KnownDisagreement, resolveOracleChecks } from "./disagreement-registry.js";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
+const GIMMICKS_SUITE_NAME = "gimmicks";
 const GIMMICK_SKIP_REASON = "No gimmicks in this generation";
 
 /**
@@ -114,7 +116,10 @@ const GEN9_GIMMICK_NOTES: readonly string[] = [
  * For gens 1-5: returns status "skip" (no gimmicks available).
  * For gen 6+: returns status "pass" with notes documenting gimmick mechanics.
  */
-export function runGimmicksSuite(generation: ImplementedGeneration): SuiteResult {
+export function runGimmicksSuite(
+  generation: ImplementedGeneration,
+  knownDisagreements: readonly KnownDisagreement[] = [],
+): SuiteResult {
   const gen = generation.gen;
 
   if (gen <= 5) {
@@ -150,15 +155,20 @@ export function runGimmicksSuite(generation: ImplementedGeneration): SuiteResult
       gimmickNotes = [`Gen ${gen}: no documented gimmick mechanics`];
   }
 
+  // Resolve against the registry to catch any misplaced known-disagreement entries
+  // (this suite performs no live comparisons, so oracleChecks is always empty)
+  const resolved = resolveOracleChecks(GIMMICKS_SUITE_NAME, [], knownDisagreements);
+  const failures = [...resolved.failures];
+
   return {
-    status: "pass",
-    suitePassed: true,
-    failed: 0,
+    status: failures.length === 0 ? "pass" : "fail",
+    suitePassed: failures.length === 0,
+    failed: failures.length,
     skipped: 0,
-    failures: [],
+    failures,
     notes: [...gimmickNotes],
-    matchedKnownDisagreements: [],
-    staleDisagreements: [],
+    matchedKnownDisagreements: resolved.matchedKnownDisagreements,
+    staleDisagreements: resolved.staleDisagreements,
     oracleChecks: [],
   };
 }

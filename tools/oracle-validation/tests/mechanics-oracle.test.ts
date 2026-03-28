@@ -29,6 +29,12 @@ describe("Mechanics Oracle Suite", () => {
         result.status,
         `Gen ${gen.gen}: expected suite to run scenarios, got status "skip"`,
       ).not.toBe("skip");
+
+      // Suite must have produced at least one oracle check (guards against silent normalization failures)
+      expect(
+        result.oracleChecks.length,
+        `Gen ${gen.gen}: expected oracle checks to be performed but got 0 — normalization may be broken`,
+      ).toBeGreaterThan(0);
     });
   }
 });

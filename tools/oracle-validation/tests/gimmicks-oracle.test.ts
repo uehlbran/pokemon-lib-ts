@@ -2,6 +2,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { runGimmicksSuite } from "../src/compare-gimmicks.js";
+import { loadDisagreementRegistrySummary } from "../src/disagreement-registry.js";
 import { discoverImplementedGenerations } from "../src/gen-discovery.js";
 
 describe("Gimmicks Documentation Suite", () => {
@@ -25,7 +26,8 @@ describe("Gimmicks Documentation Suite", () => {
       });
     } else {
       it(`Gen ${gen.gen}: gimmicks suite passes with 0 failures`, () => {
-        const result = runGimmicksSuite(gen);
+        const { knownDisagreements } = loadDisagreementRegistrySummary(gen, repoRoot);
+        const result = runGimmicksSuite(gen, knownDisagreements);
 
         // Documentation suite never has failures
         expect(
@@ -42,6 +44,8 @@ describe("Gimmicks Documentation Suite", () => {
         expect(result.status).toBe("pass");
         expect(result.suitePassed).toBe(true);
         expect(result.notes.length).toBeGreaterThan(0);
+        // Documentation suite produces no oracle comparisons
+        expect(result.oracleChecks).toHaveLength(0);
       });
     }
   }

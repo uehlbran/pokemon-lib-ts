@@ -108,9 +108,9 @@ async function main(): Promise<void> {
         } else if (suite === "mechanics") {
           suiteResults[suite] = runMechanicsSuite(generation, registry.knownDisagreements);
         } else if (suite === "terrain") {
-          suiteResults[suite] = runTerrainSuite(generation);
+          suiteResults[suite] = runTerrainSuite(generation, registry.knownDisagreements);
         } else if (suite === "gimmicks") {
-          suiteResults[suite] = runGimmicksSuite(generation);
+          suiteResults[suite] = runGimmicksSuite(generation, registry.knownDisagreements);
         }
       }
 

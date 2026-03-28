@@ -15,9 +15,11 @@
  *             NOT all damage types.
  */
 
+import { type KnownDisagreement, resolveOracleChecks } from "./disagreement-registry.js";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
+const TERRAIN_SUITE_NAME = "terrain";
 const TERRAIN_SKIP_REASON = "Terrain not available in Gen 1-5";
 
 /**
@@ -67,7 +69,10 @@ const GEN8_PLUS_TERRAIN_NOTES: readonly string[] = [
  * For gens 1-5: returns status "skip" (terrain not available).
  * For gen 6+: returns status "pass" with notes documenting terrain boost values.
  */
-export function runTerrainSuite(generation: ImplementedGeneration): SuiteResult {
+export function runTerrainSuite(
+  generation: ImplementedGeneration,
+  knownDisagreements: readonly KnownDisagreement[] = [],
+): SuiteResult {
   const gen = generation.gen;
 
   if (gen <= 5) {
@@ -94,15 +99,20 @@ export function runTerrainSuite(generation: ImplementedGeneration): SuiteResult 
     terrainNotes = GEN8_PLUS_TERRAIN_NOTES;
   }
 
+  // Resolve against the registry to catch any misplaced known-disagreement entries
+  // (this suite performs no live comparisons, so oracleChecks is always empty)
+  const resolved = resolveOracleChecks(TERRAIN_SUITE_NAME, [], knownDisagreements);
+  const failures = [...resolved.failures];
+
   return {
-    status: "pass",
-    suitePassed: true,
-    failed: 0,
+    status: failures.length === 0 ? "pass" : "fail",
+    suitePassed: failures.length === 0,
+    failed: failures.length,
     skipped: 0,
-    failures: [],
+    failures,
     notes: [...terrainNotes],
-    matchedKnownDisagreements: [],
-    staleDisagreements: [],
+    matchedKnownDisagreements: resolved.matchedKnownDisagreements,
+    staleDisagreements: resolved.staleDisagreements,
     oracleChecks: [],
   };
 }
