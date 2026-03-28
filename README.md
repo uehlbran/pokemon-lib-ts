@@ -214,7 +214,6 @@ All nine generations are complete. 10,332+ tests across all packages, validated 
 ## Documentation
 
 - [`specs/`](./specs/) — architecture specs and per-generation mechanic details
-- [`docs/TESTING.md`](./docs/TESTING.md) — testing methodology and philosophy
 - [`CREDITS.md`](./CREDITS.md) — data sources and acknowledgments
 - Package READMEs — per-package API details and quirk tables
 

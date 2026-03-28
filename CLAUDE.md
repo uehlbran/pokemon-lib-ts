@@ -37,7 +37,7 @@ Core has zero runtime dependencies. Battle depends on core. Each gen package dep
 - **Core has zero runtime dependencies.** This is a hard rule. If you need an external library, it doesn't belong in core.
 - **The battle engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
 - **Turn flow**: `turn-start → action selection → priority sort → turn-resolve (accuracy check → move execution → damage/effects → ability triggers) → turn-end → weather/status ticks → faint-check → next turn or game over`
-- **Single-branch workflow.** Do task work on one normal git branch at a time in the main checkout. Do not use linked worktrees as part of the repo workflow.
+- **Single-branch workflow.** Do task work on one normal git branch at a time in the main checkout.
 
 ## Tech Stack
 
@@ -66,372 +66,93 @@ npx vitest run         # Run tests (from package dir)
 npx vitest run --coverage  # Run with coverage
 ```
 
-### Verification Model
-
-- `npm run test` — the default suite used by local verification and PR CI. It runs unit plus
-  integration tests, excluding smoke, e2e, and stress coverage.
-- `npm run test:unit` — runs non-integration, non-smoke, non-e2e, non-stress test files.
-- `npm run test:integration` — runs `integration.test.*` files only.
-- `npm run test:smoke` — runs `smoke.test.*` files only.
-- `npm run test:e2e` — runs `e2e.test.*` files only and passes when none exist yet.
-- `npm run test:stress` — manual soak/stability/random-loop coverage for broad or
-  confidence-sensitive changes.
-- `npm run test:all` — runs the full taxonomy: unit, integration, smoke, e2e, then stress.
-- `npm run verify:local` — the local handoff gate. It runs the broader non-test checks plus
-  plain `test` before commits and PR updates.
-- `replay:*` commands remain targeted tools. Run them explicitly when replay validation or
-  simulation confidence checks are relevant.
-- `npm run test:slow` remains as a backwards-compatible alias to `npm run test:smoke`.
-
-### Biome Tips
-- `npx @biomejs/biome check --changed --since=main .` — lint only changed files (`--since=main` is required; `vcs.defaultBranch` is not set in biome.json so `--changed` alone errors)
-- `npx @biomejs/biome explain <ruleName>` — understand a rule and whether it has an auto-fix
-- `FIXABLE` tag in diagnostic output means `--write` handles it; no tag = manual fix required
-- `--write --unsafe` applies unsafe fixes (e.g. `noNonNullAssertion` rewrites `foo!` → `foo?`); always `git diff` before committing
-- `noExplicitAny` has **no auto-fix** — replace `any` with a real type manually
-- Test files (`packages/*/tests/**`, `tools/*/tests/**`) have `noNonNullAssertion` and `noExplicitAny` turned off; a diagnostic on those paths for those rules is a false alarm
+`npm run test` = unit + integration (CI default). `npm run verify:local` = handoff gate (non-test checks + test). `npm run test:slow` = alias for `test:smoke`.
 
 ## Code Style
 
-- Biome handles all formatting: spaces, indent width 2, line width 100
-- Organize imports enabled
-- Linter with recommended rules, `noExplicitAny` is error (not warn) in this project
-- No semicolons in Biome config (use Biome defaults)
-- Prefer readonly interfaces for data. Mutable versions only where needed (runtime stat blocks).
-- Use discriminated unions over class hierarchies (MoveEffect, BattleAction, BattleEvent)
-- All entity types use lowercase string literals ('fire', 'physical', 'paralysis') not UPPERCASE enums
+Biome handles all formatting (indent 2, width 100, organize imports). Prefer readonly interfaces for data. Types use lowercase string literals (`'fire'`, `'physical'`, `'paralysis'`) in discriminated unions — no UPPERCASE enums. In source code, use the centralized constants from `core/constants/reference-ids.ts` (`CORE_STATUS_IDS`, `CORE_MOVE_CATEGORIES`, `CORE_VOLATILE_IDS`, etc.) instead of raw string comparisons. `noExplicitAny` is error in src, off in test files.
+
+Biome tips: `npx @biomejs/biome check --changed --since=main .` for incremental lint. Test files (`packages/*/tests/**`, `tools/*/tests/**`) have `noNonNullAssertion` and `noExplicitAny` turned off.
 
 ## Data Sources
 
-**Primary**: Pokemon Showdown data (`@pkmn/data` / `smogon/pokemon-showdown` repo) — battle-tested, already split by generation, MIT licensed.
-**Secondary**: PokeAPI `api-data` repo — for species metadata (Pokedex entries, catch rates, egg groups, growth rates, evolution chains) that Showdown doesn't track.
-
-Data pipeline: `tools/data-importer/` transforms raw sources → per-gen JSON in `packages/genN/data/`. Generated JSON is committed to the repo and ships with npm packages.
-
-## Spec Documents
-
-Full architecture specs live in the `specs/` directory (originally created as `pokemon-project-planning/`):
-
-- `specs/core/00-architecture.md` — Monorepo structure, package configs, versioning, design principles
-- `specs/core/01-entities.md` — All TypeScript interfaces and types
-- `specs/core/02-shared-logic.md` — Stat formulas, type effectiveness, EXP curves, catch rate
-- `specs/core/03-data-pipeline.md` — PokeAPI/Showdown → per-gen JSON transformation pipeline
-- `specs/battle/00-architecture.md` — GenerationRuleset, BattleState, BattleEvent, engine API
-- `specs/battle/01-core-engine.md` — Engine implementation: turn resolution, move execution, end-of-turn
-- `specs/battle/02-gen1.md` through `specs/battle/10-gen9.md` — Per-generation mechanics
-
-These specs are reference material. Implementation may deviate where code reveals better approaches.
-
-## Testing Philosophy
-
-- Test against known values from Bulbapedia/Showdown (e.g., "level 50 Charizard with 31 HP IVs and 252 HP EVs = X HP")
-- Property-based tests for formulas (stats always positive, type effectiveness in {0, 0.25, 0.5, 1, 2, 4})
-- Determinism tests for PRNG (same seed = same sequence)
-- Snapshot tests for imported data (correct shapes and counts)
-- Validate against Showdown battle logs for battle engine correctness
-- TDD is mandatory: write the test before the implementation lands, and do not merge behavior changes until the new or updated test fails before the fix and passes after it.
-
-## Testing Rules
-
-These rules govern **how** tests are written. The Testing Philosophy section above governs **what** to test.
-
-- **Provenance Requirement** — every hardcoded expected value must have a source comment explaining where it comes from (Bulbapedia article, Showdown source, pret disassembly, or an inline formula derivation). "Run the function and check what it returns" is not a valid source.
-- **Triangulation Minimum** — every formula behavior needs at least 2 independent test cases with different inputs (Beck's rule: one test can be satisfied by a constant return; two cannot).
-- **Testing Style by Code Type** — use output-based testing for pure functions (assert return value), state-based testing for stateful objects (assert state after action), and communication-based testing (mocks/spies) only at system boundaries (external I/O, event emission). Do not mock internal domain logic.
-- **Mock Rules** — never mock domain logic (damage calc, stat calc, type chart). `MockRuleset` is for testing engine orchestration only — not for shortcuts in mechanic tests.
-- **Cross-Gen Regression** — if you change a shared utility (e.g., `gen12-shared.ts`), add tests for each consuming gen (gen1 and gen2), not just the one you're working in.
-- **Test Naming** — test names must describe the behavior and the scenario. Good: `"given a L50 Charizard with 31 HP IVs, when calculating HP stat, then returns 153"`. Bad: `"should work"`, `"calculates correctly"`, `"HP test"`. Prefer Given/When/Then framing.
-- **No Weak Assertions for Formulas** — formula tests must use `toBe()`, `toEqual()`, or `toBeCloseTo()`. Never use `toBeTruthy()`, `toBeFalsy()`, `toBeDefined()`, or `toBeGreaterThan(0)` to assert a formula result — these can pass even when the formula is completely wrong.
-- **Canonical vs Synthetic Fixtures** — when real moves, species, items, abilities, natures, or other owned data exist in the repo, load them from the owning generation data manager or owned reference surfaces. Use explicit synthetic builders only when the test intentionally diverges from canonical data.
-- **Finite-Domain Constants** — in touched code, use owned constants/reference ids for statuses, volatiles, screens, weather, terrain, types, genders, ability slots, move categories, and similar bounded-domain values instead of raw string literals when such surfaces exist.
-- **Message Assertions** — exact text assertions are allowed only when the user-facing text itself is the contract under test. Otherwise assert event shape, state, or exact result instead of substring/proxy message checks.
-- **Touched-File Gate** — a touched test file is not done unless it passes targeted Vitest coverage and the stricter static audit checks for weak assertions, raw reference ids, canonical payload duplication, placeholder sources, and ambiguous helpers.
-- **Tests-first enforcement** — if a change adds or changes behavior, the PR must show the test work landing with or before the implementation. Missing tests for behavior changes is a review finding.
-- **Reference Id Imports** — do not handwrite canonical move, item, ability, species, weather, terrain, status, volatile, or gimmick ids in tests when an exported reference surface already owns them. Import shared engine/domain ids from `@pokemon-lib-ts/core` or `@pokemon-lib-ts/battle`, and import generation-specific ids from the generation package's exported `GENN_*_IDS` modules generated from `packages/genN/data/*.json`.
-- **Owned Domain Literal Surfaces** — when core owns a shared domain literal surface (for example move categories), use that exported surface instead of re-declaring raw strings in touched tests.
-- **Owned Trigger Surfaces** — use owned exported trigger ids for real lifecycle hooks instead of hardcoding values like `"on-switch-in"`, `"on-turn-end"`, `"on-contact"`, or `"on-priority-check"` in touched tests. Invalid-trigger rejection tests may still use raw non-canonical strings when the test is explicitly proving rejection behavior.
-- **Owned Enum-Like Domain Surfaces** — apply the same rule to bounded domain literals such as genders and ability slots. Use owned shared exports like `CORE_GENDERS` and `CORE_ABILITY_SLOTS` instead of scattering `"male"` or `"normal1"` through touched code.
-- **Generation-Valid References** — when a test targets a specific generation, only use species, moves, items, abilities, forms, weather, or other scoped entities that actually exist in that generation's owned data bundle, unless the value comes from a core/battle surface that is valid across those generations. Do not borrow ids from another generation's exports just because the string matches.
-- **No Cross-Gen Semantic Backports** — shared constants do not override generation semantics. For example, Gen 1-3 damaging move category is derived from the generation's type split, not canonical per-move Gen 4+ metadata; tests must not pretend otherwise just because a later shared constant exists.
-- **Canonical Expected Values** — when an expected value already exists in an owned canonical data source, assert against that source instead of re-copying the literal into the test. Use exported type charts, generated per-gen data references, move/item metadata from the generation data manager, and core-owned numeric constants where applicable.
-- **Data-backed Fixture Defaults** — do not hardcode fixture defaults like PP, max PP, base power, accuracy, priority, species ids, or similar setup values when the owned move/species/item data already exposes them. Read them from the canonical data surface and make this retrofit retroactive for earlier test files too.
-- **Named Synthetic Scenario Inputs** — when a test needs a deliberately synthetic branch-driving value that does not come from owned data, do not leave it as an unexplained literal. Promote it to a named constant and document why that specific synthetic value is required.
-- **Validated Bounded Inputs** — bounded runtime values such as friendship, IVs, EVs, DVs, Stat Exp, ability slot, and similar per-instance inputs must go through reusable validation surfaces on the default creation path. Do not let the normal API construct invalid values like negative friendship or out-of-range stat inputs.
-- **No Duplicated Canonical Payloads** — replacing raw ids with imported constants is not enough if the test still hand-builds a canonical species, move, item, hazard, weather, or end-of-turn payload that already exists elsewhere. Load or import the owned payload instead of rebuilding it locally.
-- **Data-Backed Helpers By Default** — the same rule applies to test helpers, mock data managers, and fixture factories. Canonical records should come directly from the owning `dataManager.get*()` surface by default, and helpers must not re-declare canonical payloads when owned data already exists.
-- **No Ambiguous Canonical-vs-Synthetic Helpers** — if a helper can mean either “real canonical record” or “synthetic variant” depending on the call shape, that helper is a regression source and must be split so the distinction is explicit at both the API and the call site.
-- **Synthetic Builders Must Be Explicit** — when a test needs to diverge from owned data, use an explicitly synthetic helper such as `createSyntheticMoveFrom(baseMove, overrides)` or the equivalent object-specific builder. Do not hide synthetic overrides behind a generic `makeMove(...)` surface.
-- **Canonical Fixture Integrity** — never mutate the object returned by `dataManager.getMove()`, `getSpecies()`, `getItem()`, or similar canonical accessors in place. Clone first when a test needs a modified variant.
-- **Descriptive Local Test Names** — in generation-scoped files, prefer descriptive local names like `dataManager`, `moveIds`, `speciesIds`, `itemIds`, and `typeIds`. Do not use cryptic aliases like `M`, `A`, `T`, or `dm`, and do not repeat the generation in every local variable when the file/module already fixes it.
-- **Battle Fixture Naming** — helpers that build an on-field battle-state wrapper should use names like `createOnFieldPokemon`, not vague verbs like `makeActive`. “Active” is battle jargon for “currently on the field,” but helper names must state that explicitly.
-- **No Ambiguous `make*` Builders** — do not introduce helper names like `makeMove`, `makeState`, `makeSide`, `makePokemonInstance`, or `makeActivePokemon` in touched tests. Canonical helpers should read like canonical getters, and synthetic helpers should use explicit `create...` names that say what they build.
-- **Validated Stat Inputs** — do not keep raw inline IV/EV/DV/Stat Exp object literals as the default creation path in touched code when a validated helper surface exists. Prefer explicit creation helpers such as `createIvs`, `createEvs`, `createDvs`, and `createStatExp`, backed by reusable validators and named min/max/cap constants rather than scattered literals like `31`, `252`, `510`, `15`, or `65535`.
-- **Validation Result Naming** — prefer shared generic names like `ValidationFailure` and `ValidationResult` over repetitive type-prefixed names like `EvValidationIssue`. The validator context already tells the reader what is being validated.
-- **No Invalid Public Value Objects** — validators should remain explicit and reusable, but the normal public creation path must still reject invalid state. Do not make callers assemble invalid stat/value objects and hope a later validator catches them before use.
-
-## Architecture Confidence
-
-Architecture cleanup is a first-class correctness and public-API concern in this repo.
-
-- Branch-heavy god modules, implicit contract boundaries, and unstable export surfaces are confidence risks, not just style issues. Work in these areas is in scope when it improves correctness confidence, testability, regression-risk reduction, or public API clarity.
-- Use [specs/reference/testing-status.md](./specs/reference/testing-status.md) and [specs/reference/architecture-confidence-status.md](./specs/reference/architecture-confidence-status.md) as the shared status surfaces for deciding what to refactor next and why.
-- Known hotspot families already tracked by open issues include `#762`, `#767`, `#772`, `#780`, and `#994`. Changes in those areas should be sequenced by evidence from gaps, mutation survivors, repeated bugs, or public-API risk.
-- Style-only rewrites remain out of scope. If a refactor does not materially improve confidence or API quality, do not do it.
+**Primary**: Pokemon Showdown (`@pkmn/data`). **Secondary**: PokeAPI `api-data` repo (species metadata Showdown doesn't track). Pipeline: `tools/data-importer/` transforms raw sources into per-gen JSON in `packages/genN/data/`.
 
 ## Source Authority
 
-When implementing mechanics, use the following per-gen hierarchy (highest authority first):
+| Gen | Primary Source | Fallback |
+|-----|---------------|----------|
+| 1-2 | pret disassemblies (pokered, pokecrystal) | Bulbapedia -> Showdown -> specs |
+| 3 | pret/pokeemerald | Showdown -> Bulbapedia -> specs |
+| 4 | pret/pokeplatinum or pokeheartgold (where decompiled to C) | Showdown -> Bulbapedia -> Smogon -> specs |
+| 5-9 | Pokemon Showdown | Bulbapedia -> Smogon -> specs |
 
-**Gen 1–2:**
-1. pret disassemblies (`pret/pokered`, `pret/pokecrystal`) — actual cartridge code, final word
-2. Bulbapedia (when citing disassembly or verified testing)
-3. Smogon / Pokemon Showdown
-4. Our specs
+Design intent: cartridge-accurate. hg-engine (BluRosie/hg-engine) is NOT a valid source.
 
-**Gen 3 (Ruby/Sapphire/Emerald):**
-1. `pret/pokeemerald` disassembly — complete, usable as ground truth
-2. Pokemon Showdown (Gen 3 mod is mature and well-tested)
-3. Bulbapedia
-4. Our specs
+Ground-truth refs: `specs/reference/genN-ground-truth.md`. Check before implementing any gen-specific mechanic. Every new or modified formula must include a source comment (e.g., `// Source: pret/pokered src/engine/battle/core.asm`).
 
-**Gen 4 (Diamond/Pearl/Platinum/HeartGold/SoulSilver):**
-1. `pret/pokeplatinum` or `pret/pokeheartgold` — where the specific function has been decompiled to C with a byte-perfect match. Both repos are ~75% decompiled; verify the battle-relevant function is in C (not `.s` assembly stubs) before citing.
-2. Pokemon Showdown (Gen 4 mod) — primary fallback and authority for anything not yet decompiled
-3. Bulbapedia (cross-reference for edge cases)
-4. Smogon research threads (for disputed mechanics with cartridge testing)
-5. Our specs
+## Testing
 
-> **Note**: hg-engine (BluRosie/hg-engine) is a modding framework built on top of the HGSS ROM, not a disassembly. It must **never** be used as a source reference — it reflects modding conventions, not cartridge behavior.
+TDD is mandatory: write tests before or with implementation. Test against known values from Bulbapedia/Showdown with source comments. Property-based tests for formulas. Determinism tests for PRNG. Validate against Showdown battle logs. Never mock domain logic (damage calc, stat calc, type chart).
 
-**Gen 5–9:**
-1. Pokemon Showdown — primary authority (no complete disassemblies exist)
-2. Bulbapedia (cross-reference for edge cases)
-3. Smogon research threads (for disputed mechanics with cartridge testing)
-4. Our specs
-
-Design intent is cartridge-accurate behavior. Exception: if cartridge behavior causes a crash or undefined behavior, handle it gracefully and document the divergence in a comment.
-
-This hierarchy applies to mechanics and formulas. For raw data (species stats, move metadata), see the Data Sources section above.
-
-**Ground-truth reference documents:**
-- Currently exist: `specs/reference/gen1-ground-truth.md`, `specs/reference/gen2-ground-truth.md`
-- Will be created per gen as implementation progresses
-- Gen 3 should be sourced from `pret/pokeemerald`; Gen 4 from `pret/pokeplatinum`/`pret/pokeheartgold` (where decompiled) with Showdown fallback; Gen 5–9 primarily from Showdown with Bulbapedia cross-references
-
-When implementing a gen-specific mechanic, check the ground-truth reference first. If none exists for that gen, fall through to the hierarchy directly.
-
-## AI Agent Guidelines
-
-### Mandatory Instruction Discipline
-
-Agents must read repo instructions before acting, not after making a mistake.
-
-- Before editing repo files: read this file, any relevant subtree `CLAUDE.md`, and the specific
-  workflow rule that governs the action.
-- Before filing or editing GitHub issues: re-read `.claude/rules/bug-filing.md` and
-  `.claude/rules/issue-linking.md`.
-- Before creating or editing a PR: re-read `.claude/rules/issue-linking.md`,
-  `.claude/rules/issue-closing-syntax.md`, and the repo PR template.
-- After creating a PR: re-read `.claude/rules/pr-comment-handling.md` and monitor the PR until
-  merge. Review comments must be acknowledged, validated against the current code, and either
-  fixed, replied to with rationale, or converted into a follow-up issue if they are real and out
-  of scope.
-- Do not rely on memory for repo workflow. Re-open the relevant instruction file before the
-  governed action.
-
-### Before changing formulas or mechanics
-
-1. Check `specs/reference/genN-ground-truth.md` for the gen you're working on. If it exists, it is the authoritative source — do not deviate without a comment explaining why.
-2. If no ground-truth doc exists, consult the Source Authority hierarchy for that gen.
-3. Do not change a formula based on a spec doc alone if it contradicts the source hierarchy. Update the spec to match the authoritative source instead.
-4. Every new or modified formula must include a source comment, e.g.:
-   ```typescript
-   // Source: pret/pokered src/engine/battle/core.asm — damage formula
-   // Source: Showdown sim/battle.ts Gen 4 damage calc
-   ```
-
-### Before changing specs
-
-1. Verify the change against the source hierarchy — specs should reflect ground truth, not the other way around.
-2. If a spec contradicts an authoritative source, the spec is wrong. Fix the spec and note the correction.
-3. Do not "fix" a spec to match existing (potentially buggy) code — fix the code instead.
-
-### Before changing code
-
-1. Confirm you are on the correct branch for this gen/feature.
-2. Run the existing tests first to establish a baseline.
-3. If fixing a mechanic that affects damage output, add a regression test with a known-good value from the source hierarchy before changing anything.
-
-### General rules
-
-- When in doubt about a mechanic, look it up in the source hierarchy rather than guessing or extrapolating.
-- If you discover a discrepancy between the spec and an authoritative source, file a GitHub issue (see Bug Reporting) before or alongside fixing it.
-- Do not implement mechanics that are undocumented in both the spec and the source hierarchy — flag them for human review instead.
-- Parallelizable research (checking multiple sources) should be dispatched as concurrent subagents, not done serially.
-- After merging a PR that changes `packages/genN/src/` or `packages/genN/data/`, or closes a tracked bug: update `specs/reference/genN-status.md` (or `core-status.md` / `battle-status.md`) with the PR number, wave name, and any bug closures. Also update the Generation Status table in this file if the completion % or open bug count changes.
-
-## PR Review
-
-Every PR requires local review before push plus a human approver:
-
-- **`/review` (required)** — runs falcon (correctness), kestrel (architecture), sentinel (security) locally. Must be run before every PR. This is the primary review gate.
-- **CodeRabbit** — inline comments, PR summary, security scan (advisory, bonus). Config: `.coderabbit.yaml`
-- **Qodo PR-Agent** — structured review (advisory, best-effort — may be rate-limited). Legacy hosted GitHub Action.
-- **Claude Code** — deep local review via `pokemon-reviewer` subagent. Runs on push via `git pushreview`. Posts findings to PR as comments (advisory).
-- **Human** — final say on architecture and correctness. Human review is a process rule enforced via CLAUDE.md, not a branch protection setting.
-
-AI reviews are advisory (comments only, never formal approvals). See `.github/AI_REVIEWERS.md` for interaction commands.
-
-## How to Add a New Generation
-
-1. Create `packages/genN/` with standard package structure
-2. Generate data: `npx tsx tools/data-importer/src/import-gen.ts --gen N`
-3. Implement the ruleset:
-   - Gen 1-2: Implement `GenerationRuleset` directly (too mechanically different from Gen 3+ defaults)
-   - Gen 3-9: Extend `BaseRuleset`, override gen-specific methods
-4. Read the spec: `specs/battle/` (e.g., `02-gen1.md`, `03-gen2.md`, ... `10-gen9.md`)
-5. Write tests for every gen-specific mechanic
-6. Export from `packages/genN/src/index.ts`
-7. Create `specs/reference/genN-status.md` to track implementation progress (waves, PRs, open bugs, test coverage)
-8. Update the Generation Status table in this file
-
-> Gen 1–2 implement `GenerationRuleset` directly. Do **not** make them extend `BaseRuleset` — they are too mechanically different. Shared Gen 1–2 formulas (`gen1to2FullParalysisCheck`, `gen1to6ConfusionSelfHitRoll`, `gen1to4MultiHitRoll`, `calculateStatExpContribution`) live in `packages/core/src/logic/gen12-shared.ts` — fix them there and both gens benefit automatically. Deprecated `gen12`/`gen14`/`gen16` aliases remain source-local during the compatibility window and are tracked for removal in `#1011`.
-
-## Implementation Phases
-
-- **Phase 1** (DONE): Core + Battle + Gen 1 (simplest gen — no abilities, no held items, 151 Pokemon, 165 moves, 15-type chart). Shipped 0.1.0.
-- **Phase 2** (DONE): Gen 2 (second simplest — no abilities, adds held items, weather, Dark/Steel types, Special split). Shipped 0.2.0.
-- **Phase 3** (DONE): Gen 3–6 (sequential — each extends BaseRuleset; abilities system, items system, weather, terrain, Mega Evolution).
-- **Phase 4** (IN PROGRESS): Gen 7 (Z-Moves, Alolan Forms, Tapu terrain abilities, Ultra Burst).
-- **Phase 5** (DONE): Gen 8 (Dynamax/Gigantamax, Galarian Forms) + Gen 9 (Terastallization, Snow, new abilities/moves).
+See `.claude/rules/testing-rules.md` for detailed test authoring rules.
 
 ## Generation Status
 
-| Package | Status | Tests | Open Bugs | Key Notes |
-|---------|--------|-------|-----------|-----------|
-| core | 100% | 342 | 0 | All entity interfaces, stat calc, type effectiveness, PRNG |
-| battle | 100% (singles) | 596 | 0 | Doubles/Triples deferred |
-| gen1 | 100% | 800 | 1 (#530 badge glitch — enhancement) | All move handlers done |
-| gen2 | 100% | 757 | 0 | All engine-level bugs closed |
-| gen3 | 100% | 847 | 1 (#141 Plus/Minus — doubles) | Charge/Mud Sport/Water Sport fixed |
-| gen4 | 100% | 1,225 | 0 | Mold Breaker stat bypass fixed |
-| gen5 | 100% | 1,225 | 0 | pokeRound fixes, stat modifiers, activated:false guards |
-| gen6 | 100% | 1,135 | 0 | pokeRound fixes, stat modifiers, Stance Change, semi-invulnerable grounded |
-| gen7 | 100% | 1,144 | 0 | Disguise non-lethal, Beast Boost/Moxie, Rayquaza mega, pinch berries |
-| gen8 | 100% | 1,208 | 0 | Disguise non-lethal + chip, Choice lock Dynamax, exports fixed |
-| gen9 | 100% | 1,053 | 0 | All 8 tracked bugs closed (terrain, Focus Sash, Sturdy, Shed Tail, etc.) |
+| Package | Status | Tests | Open Bugs |
+|---------|--------|-------|-----------|
+| core | 100% | 342 | 0 |
+| battle | 100% (singles) | 596 | 0 |
+| gen1 | 100% | 800 | 1 (#530) |
+| gen2 | 100% | 757 | 0 |
+| gen3 | 100% | 847 | 1 (#141) |
+| gen4 | 100% | 1,225 | 0 |
+| gen5 | 100% | 1,225 | 0 |
+| gen6 | 100% | 1,135 | 0 |
+| gen7 | 100% | 1,144 | 0 |
+| gen8 | 100% | 1,208 | 0 |
+| gen9 | 100% | 1,053 | 0 |
 
 Full per-gen details: `specs/reference/genN-status.md`
-Ground-truth mechanical reference: `specs/reference/genN-ground-truth.md`
 
 ## Package Versioning
 
-Uses `@changesets/cli` for collision-free versioning across concurrent agents.
+Uses `@changesets/cli`. Run `/version` before creating a PR. **Agents NEVER edit `package.json` versions or `CHANGELOG.md` directly.**
 
-**On feature branches**: Run `/version` before creating a PR. This creates a `.changeset/<name>.md` file declaring which packages changed and the bump type. Changeset files are separate files that cannot conflict between branches — no more version collision when two agents touch the same package.
-
-**To release**: Run `npm run version-packages` on main. This consumes all pending changesets, bumps `package.json` versions, and generates `CHANGELOG.md` entries atomically.
-
-**Agents NEVER edit `package.json` versions or `CHANGELOG.md` directly.** Changesets handles both.
-
-Bump classification rules (used by `/version`):
-- Any `src/` bug fix → patch
-- Any new export in `src/index.ts` → minor
-- Any breaking interface change → major (pre-1.0: treated as minor)
-- Tests, docs, config, `specs/`, `.github/` only → no changeset needed
-- Data file changes (`data/*.json`) → patch
+Bump rules:
+- `src/` bug fix -> patch
+- New export in `src/index.ts` -> minor
+- Breaking interface change -> major (pre-1.0: treated as minor)
+- Tests, docs, config, `specs/`, `.github/` only -> no changeset needed
+- Data file changes (`data/*.json`) -> patch
 
 ## Model & Effort Strategy
 
-### Agent Model Tiers
-- **Opus**: Tasks requiring deep reasoning — correctness review (falcon), gen implementation (gen-implementer)
-- **Sonnet**: General-purpose — security review (sentinel), bug finding (bug-finder), architecture review (kestrel), PR review (pokemon-reviewer), test writing (battle-tester), data validation (data-validator)
-- **Haiku**: Simple checks (no current agent assignments)
+- **Opus**: Deep reasoning -- correctness review (falcon)
+- **Sonnet**: General-purpose -- gen-implementer, sentinel, bug-finder, kestrel, pokemon-reviewer, battle-tester, data-validator
+- **Haiku**: Simple checks (no current assignments)
 
-### Effort Level
-Effort is session-wide (no per-agent control). Default: `high` (set in `~/.claude/settings.json`).
-- Complex implementation/debugging sessions: `high` (default)
-- Simple config/docs/data tasks: use `/effort medium` at session start
-- Effort displays in the status line — verify before starting complex work
+Default effort: `high`. Use `/effort medium` for simple config/docs/data tasks.
+
+## PR & Git Workflow
+
+- `npm run verify:local` before opening or updating a PR
+- `/review` mandatory before PR (runs falcon + kestrel + sentinel)
+- `/version` mandatory for `src/` or `data/` changes
+- Pre-push gate: `npx @biomejs/biome check --write .`, `npm run typecheck`, `npm run test` (docs-only: biome only)
+- Comment gate: every review thread needs a reply before merge (see `rules/pr-comment-handling.md`)
+- Issue linking: `Closes #N`, one per line -- never comma-separated (see `rules/issue-closing-syntax.md`)
+- Act autonomously on PR feedback; escalate only for architectural conflicts or 2+ failed fixes
+- `gh pr edit` is broken for body edits -- use `gh api PATCH /repos/{owner}/{repo}/pulls/{number} --field body="..."` instead
+- `gh pr checks` exit code 8 = pending, not failure
+- AI reviews (CodeRabbit, Qodo) are advisory only. Validate reported bugs against current code before acting.
+- File out-of-scope bugs as GitHub issues (see `rules/bug-filing.md`)
 
 ## Agent Work Patterns
 
-### Task Sizing
-- Agent tasks should be completable within ~50% of context capacity — if a task needs 15+ file reads, split it into narrower agents
-- Explore agents: give specific search targets and file paths, not open-ended "find everything about X"
-- Implementation agents: one vertical slice per agent, not multiple features in one dispatch
-- Front-load context in agent prompts (file paths, line numbers, method names) to reduce discovery overhead
-- If an agent compacts mid-task, the fix is task sizing — break it into smaller agents, not more infrastructure
-
-### Parallelization
-- **Default to parallel.** If 2+ tasks have no data dependency between them, dispatch them as concurrent subagents in a single message — never do sequentially what can be done in parallel
-- Use subagents aggressively to offload work: research, test writing, independent implementations, file exploration, code review. This protects the main context window from bloat and reduces compaction risk
-- Examples of parallelizable work: writing tests for different modules, exploring separate areas of the codebase, implementing independent functions/classes, running build + test + typecheck, reviewing different files
-- When implementing a plan with independent steps, dispatch those steps as parallel subagents rather than executing them sequentially in the main context
-- Only serialize work when there is a true dependency (e.g., must read output of step 1 to inform step 2)
-
-### Branch Discipline
-
-- **Use one normal task branch at a time** in the main checkout. Do not create linked worktrees for routine repo work.
-- **Never reuse branch names** for unrelated work — if a branch was used in a prior PR, create a new one
-- **Use descriptive, unique names**: include the scope (e.g., `fix/gen1-crit-calc`, not `fix/gen1-corrections`)
-- **Rebase before PR**: before opening a PR, rebase onto `origin/main` to minimize conflicts
-
-### Git Safety
-
-- **Verify before mutating.** Before any mutating git command (`rebase`, `reset`, `merge`, `commit`, `checkout`), run `git branch --show-current` and confirm it matches the expected branch
-- **Verify PR state first.** Before acting on a PR, run `gh pr view <number> --json state` to confirm it's still open
-- **Post-mutation verification.** After any `rebase`/`merge`/`reset`, run `git log --oneline -5` and confirm the result matches expectations before continuing
-
-## PR Workflow
-
-- **Local verification is authoritative**: run `npm run verify:local` before opening or updating a PR.
-- **Test commands must be honest**: `npm run test` is the default unit + integration suite used
-  in PR CI and `verify:local`, `test:all` is the full taxonomy suite, and `npm run test:stress`
-  is the explicit soak/stability lane.
-- **`verify:local` is the handoff gate**: it runs the broader non-test checks plus `test`
-  before commits/PR updates.
-- **Always run `/review` before creating a PR** — mandatory. Runs falcon (correctness), kestrel (architecture), and sentinel (security) locally.
-- **Always run `/version` before creating a PR** — mandatory for any branch touching `packages/*/src/` or `packages/*/data/`. Creates a `.changeset/<name>.md` file; does NOT edit `package.json` or `CHANGELOG.md`. See Package Versioning above. Tests, docs, config, and `specs/` changes do not require a changeset.
-- **Link issues in PR body**: if the branch fixes a GitHub issue, include `Closes #<number>` (or `Fixes #<number>`) in the PR body. **Before using `Closes: N/A`**, run `gh issue list --state open --search "KEYWORDS"` with at least 2 keyword sets — only use N/A if no matching issue is found. See `.claude/rules/issue-linking.md`. **CRITICAL SYNTAX**: `Closes #50, #80` only closes #50 — each issue needs its own keyword on its own line. See `.claude/rules/issue-closing-syntax.md`.
-- **Track review comments until merge** — mandatory. Every review thread must be acknowledged before merging.
-- **Comment gate enforced by hook**: `enforce-comment-gate.sh` blocks `gh pr merge` if any unresolved review thread has zero replies. Every thread, including CodeRabbit/Qodo threads, needs at minimum a reply before merge. This is an acknowledgment requirement, not an approval gate. See `.claude/rules/pr-comment-handling.md`.
-- **HARD RULE — No comment may be ignored**: Every inline review comment must get a reply. Options: (1) fix the code and reply citing the commit, (2) reply explaining why the report is incorrect citing source authority, (3) reply that it's a real bug out of scope and file a GitHub issue with the issue number. There is no fourth option. AI review comments remain advisory, but a comment without a reply is still a blocker.
-- **Validate bugs before acting**: AI reviewers (CodeRabbit, Qodo) analyze the first commit. If a later fix already addressed the issue, grep/read the current code to confirm, then reply citing the fix commit. Never re-implement a fix that is already in the code, and never file a GitHub issue for a bug that no longer exists.
-- **Act autonomously.** When handling a PR, agents should:
-  - Push fixes for reviewer feedback without asking permission
-  - Fix CI/lint/test failures independently
-  - Resolve merge conflicts
-  - Re-request reviews after pushing fixes
-- **Only escalate when:**
-  - A reviewer requests an architectural change that conflicts with existing patterns or specs
-  - You've attempted a fix 2+ times and it's still failing
-  - The reviewer's feedback is ambiguous and could be interpreted multiple ways
-  - A decision requires trade-offs only the user can weigh
-- **Check PR state before acting**: run `gh pr view <number> --json state` before investigating review comments or doing work on a PR. If `MERGED` or `CLOSED`, stop
-- **Use `gh pr merge` only after review threads are handled**. If you need to verify merge state, use `gh pr view <number> --json state`.
-- **CodeRabbit and Qodo are advisory only** — do not block merge on them or rely on them as verification. Required local verification is `npm run verify:local`.
-- **`gh pr checks` exit code 8 means pending**, not failure
-- **`gh pr edit` is broken for body edits** — it calls the deprecated GitHub Projects (classic) API and errors even when only updating `--body`. Use `gh api PATCH /repos/{owner}/{repo}/pulls/{number} --field body="..."` instead whenever you need to edit a PR body after creation.
-
-### Pre-Push Validation (Mandatory)
-
-Before every `git push`, all agents must run the following validation gate:
-
-1. **Biome**: `npx @biomejs/biome check --write .` — auto-fixes formatting/lint. If any files are modified, stage them before pushing.
-2. **Typecheck**: `npm run typecheck` — catches TypeScript errors.
-3. **Tests**: `npm run test` — ensures the default unit + integration suite still passes.
-4. **Status docs**: If the PR touches `packages/*/src/` or `packages/*/data/`, or closes a tracked bug, verify the corresponding `specs/reference/*-status.md` has been updated with the PR number and any bug closures.
-
-If typecheck or tests fail, fix the issue and re-run before pushing. Never push failing code.
-
-**Exception:** For docs-only changes (no files under `src/` or `data/` modified), skip typecheck and test — biome check is still required.
-
-## Bug Reporting
-
-When agents discover bugs outside the scope of their current task, they must file GitHub issues
-rather than ignoring them or noting them in markdown files. See `.claude/rules/bug-filing.md` for
-the format and dedup check procedure. Use the `bug-finder` agent for proactive scanning.
-
-When a PR fixes a tracked issue, include `Closes #N` in the PR body so GitHub auto-closes the
-issue on merge. Always link PRs to the issues they resolve.
+- **Parallelize** independent work as concurrent subagents. Never do sequentially what can be done in parallel.
+- **One vertical slice per agent**, split at file boundaries. If a task needs 15+ file reads, split it.
+- **One branch at a time**, descriptive unique names (e.g., `fix/gen1-crit-calc`), rebase onto `origin/main` before PR.
+- **Verify branch** before any mutating git command (see `rules/git-safety.md`).
+- **Verify PR state** (`gh pr view <N> --json state`) before acting on a PR.
+- After merging PRs that change `packages/*/src/` or `packages/*/data/`, update `specs/reference/*-status.md`.

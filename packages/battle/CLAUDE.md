@@ -1,20 +1,12 @@
 # @pokemon-lib-ts/battle
 
-## Purpose
-
-Pluggable battle engine: BattleEngine, GenerationRuleset interface, BaseRuleset abstract class, event stream, AI controllers. The engine is generation-agnostic — all gen-specific behavior is delegated to the ruleset.
-
-**Depends on `@pokemon-lib-ts/core` only.** No gen packages, no external deps.
-
-## Cardinal Rule
-
-**The engine delegates ALL generation-specific behavior to the GenerationRuleset.** The engine never contains damage formulas, type charts, accuracy checks, or any mechanic that varies between generations. If you're tempted to add a gen-specific `if` statement to the engine, it belongs in the ruleset interface instead.
+Pluggable battle engine: BattleEngine, GenerationRuleset, BaseRuleset, event stream, AI controllers. **Depends on `@pokemon-lib-ts/core` only.** The engine delegates ALL gen-specific behavior to the ruleset — no damage formulas, type charts, or accuracy checks in the engine.
 
 ## Source Layout
 
 ```text
 src/
-  engine/    # BattleEngine — turn loop, action resolution, win condition checks
+  engine/    # BattleEngine — turn loop, action resolution, win conditions
   ruleset/   # GenerationRuleset interface, BaseRuleset abstract class
   state/     # BattleState, BattlePokemon, BattleField, side/slot structures
   events/    # BattleEvent discriminated union, event builders
@@ -26,33 +18,12 @@ src/
 
 ## Key Interfaces
 
-- **GenerationRuleset**: damage calc, stat calc, type chart, turn order, accuracy, move effects, ability triggers, weather, terrain, validation, and other battle delegation points. Each gen implements this contract directly or through `BaseRuleset`.
-- **BattleState**: Full battle snapshot — both sides, field conditions, turn count, PRNG state. Immutable between turns.
-- **BattleAction**: Discriminated union — `'move' | 'switch' | 'item' | 'run'`
-- **BattleEvent**: Discriminated union — `'damage' | 'heal' | 'status' | 'faint' | 'switch'` etc. The event stream is the engine's only output.
-
-## Turn Flow
-
-```text
-turn-start → action selection → priority sort
-  → turn-resolve (for each action):
-    → accuracy check → move execution → damage/effects → ability triggers
-  → turn-end → weather/status ticks → faint-check → next turn or game over
-```
-
-## Event-Driven Architecture
-
-The engine emits `BattleEvent[]` per turn. No UI coupling. Consumers (Phaser, CLI, Discord bot) render events however they want. The engine never logs, prints, or calls external code — it only returns events.
-
-## Testing Strategy
-
-- **Engine unit tests**: Use mock rulesets (stubs that return predictable values). Test turn flow, action resolution, win conditions.
-- **Integration tests**: Use real gen rulesets (e.g., Gen1Ruleset) to verify end-to-end battle scenarios.
-- **Determinism**: Same seed + same actions = same events. Always.
-- **Replay validation**: Compare engine output against Showdown battle logs.
-- Prefer clear Given/When/Then naming, but preserve existing test names when changing them would create churn without improving clarity.
+- **GenerationRuleset**: ~40 methods (damage calc, stat calc, type chart, turn order, accuracy, move effects, ability triggers, weather, terrain). Each gen implements this.
+- **BattleState**: Full battle snapshot — both sides, field, turn count, PRNG state.
+- **BattleAction**: Discriminated union — `'move' | 'switch' | 'item' | 'run'`.
+- **BattleEvent**: Discriminated union — `'damage' | 'heal' | 'status' | 'faint' | 'switch'` etc. The event stream is the engine's only output (no UI coupling).
 
 ## Gen Ruleset Patterns
 
-- **Gen 1-2**: Implement `GenerationRuleset` directly (too mechanically different from modern gens)
-- **Gen 3-9**: Extend `BaseRuleset` abstract class (shares ~70% of logic)
+- **Gen 1-2**: Implement `GenerationRuleset` directly (too mechanically different from Gen 3+).
+- **Gen 3-9**: Extend `BaseRuleset` abstract class (shares ~70% of logic).
