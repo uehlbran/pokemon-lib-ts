@@ -1749,12 +1749,13 @@ describe("Gen 4 executeMoveEffect — Self-Destruct", () => {
 describe("Gen 4 executeMoveEffect — applyMoveEffect no-op passthrough cases", () => {
   it("given a move with remove-hazards effect type, when executeMoveEffect called, then no hazard clearing in result (handled by engine)", () => {
     // Source: Showdown Gen 4 — remove-hazards is a no-op in applyMoveEffect;
-    // Rapid Spin uses the custom handler and Defog uses handleNullEffectMoves.
-    // This test covers the intentional no-op branch at line 368 in Gen4MoveEffects.ts.
+    // Rapid Spin and Defog are handled by the Field sub-module by move ID.
+    // This test covers the intentional no-op branch in the data-driven applyMoveEffect
+    // by using a synthetic move ID that is not recognized by any sub-module.
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
-    const move = createCanonicalMove(RAPID_SPIN, {
-      effect: { type: MOVE_EFFECT_REMOVE_HAZARDS } as unknown as typeof move.effect,
+    const move = createSyntheticMove("synthetic-remove-hazards", {
+      effect: { type: MOVE_EFFECT_REMOVE_HAZARDS } as unknown as MoveData["effect"],
     });
     const rng = createMockRng(0);
     const context = createContext(attacker, defender, move, 0, rng);
