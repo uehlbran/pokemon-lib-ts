@@ -4,7 +4,7 @@ import {
   BATTLE_ABILITY_EFFECT_TYPES,
   BATTLE_EFFECT_TARGETS,
 } from "@pokemon-lib-ts/battle";
-import { CORE_VOLATILE_IDS, type PokemonType } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_VOLATILE_IDS, type PokemonType } from "@pokemon-lib-ts/core";
 
 /**
  * Gen 7 new signature abilities.
@@ -148,7 +148,7 @@ function handleDisguise(ctx: AbilityContext): AbilityResult {
 
       // Only blocks damaging moves (not status)
       if (!ctx.move) return NO_EFFECT;
-      if (ctx.move.category === "status") return NO_EFFECT;
+      if (ctx.move.category === CORE_MOVE_CATEGORIES.status) return NO_EFFECT;
 
       // Block the damage and break the Disguise
       // Gen 7: NO chip damage to Mimikyu on Disguise break

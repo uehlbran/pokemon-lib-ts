@@ -129,7 +129,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
   switch (abilityId) {
     case "prankster": {
       if (!ctx.move) return INACTIVE;
-      if (ctx.move.category !== "status") return INACTIVE;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
       const name = getName(ctx);
       return {
         activated: true,
@@ -651,7 +651,7 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
  */
 function handleWeakArmor(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category !== "physical") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return INACTIVE;
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {
@@ -680,7 +680,7 @@ function handleWeakArmor(ctx: AbilityContext): AbilityResult {
  */
 function handleStamina(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category === "status") return INACTIVE;
+  if (ctx.move.category === CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
@@ -731,7 +731,7 @@ function handleRattled(ctx: AbilityContext): AbilityResult {
  */
 function handleCottonDown(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category === "status") return INACTIVE;
+  if (ctx.move.category === CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
@@ -1022,7 +1022,7 @@ export function isQuickDrawTrigger(abilityId: string, rngValue: number): boolean
  * Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
  */
 export function isPranksterEligible(category: MoveCategory): boolean {
-  return category === "status";
+  return category === CORE_MOVE_CATEGORIES.status;
 }
 
 // ---------------------------------------------------------------------------

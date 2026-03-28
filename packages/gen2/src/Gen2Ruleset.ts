@@ -43,6 +43,7 @@ import type {
 import {
   CORE_ABILITY_SLOTS,
   CORE_END_OF_TURN_EFFECT_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -166,7 +167,7 @@ export class Gen2Ruleset implements GenerationRuleset {
     const { attacker, move, rng } = context;
 
     // Status moves don't crit
-    if (move.category === "status") return false;
+    if (move.category === CORE_MOVE_CATEGORIES.status) return false;
 
     return rollGen2Critical(attacker, move, rng);
   }

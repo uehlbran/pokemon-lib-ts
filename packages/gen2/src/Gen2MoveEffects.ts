@@ -27,7 +27,7 @@ import type {
   SeededRandom,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES, CORE_STAT_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 import { GEN2_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen2Status } from "./Gen2Status";
 
@@ -52,7 +52,7 @@ export type MutableResult = Omit<
   volatilesToClear?: Array<{ target: MoveEffectSideTarget; volatile: VolatileStatus }>;
   /**
    * Lazy per-hit damage function. Added explicitly because the mapped type may not
-   * pick up new MoveEffectResult fields during cross-package builds in worktrees.
+   * pick up new MoveEffectResult fields during cross-package builds.
    * Source: pret/pokecrystal -- damage computed inside the hit loop, not before it.
    */
   perHitDamageFn?: ((hitIndex: number) => number) | null;
@@ -137,7 +137,7 @@ export function applyMoveEffect(
       // Check if the stat change has a chance component (0-255 scale, 1/256 failure even at 100%)
       // Only apply the secondary-effect roll for damaging moves — status moves (e.g. Swords Dance)
       // have guaranteed primary effects and must never incur the 1/256 failure.
-      if (move.category !== "status" && !rollEffectChance(effect.chance, rng)) {
+      if (move.category !== CORE_MOVE_CATEGORIES.status && !rollEffectChance(effect.chance, rng)) {
         break;
       }
       for (const change of effect.changes) {
@@ -180,7 +180,7 @@ export function applyMoveEffect(
     }
 
     case "volatile-status": {
-      if (move.category !== "status" && !rollEffectChance(effect.chance, rng)) {
+      if (move.category !== CORE_MOVE_CATEGORIES.status && !rollEffectChance(effect.chance, rng)) {
         break;
       }
       // Encore and Disable have custom failure conditions and volatile data —
@@ -429,7 +429,10 @@ export function handleCustomEffect(
       //   ret nc            ; fail if type >= SPECIAL (i.e., special type)
       // Counter works on ALL physical-type moves (type < SPECIAL): Normal, Fighting,
       // Flying, Poison, Ground, Rock, Bug, Ghost, Steel — not just Normal/Fighting.
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.physical
+      ) {
         result.messages.push("But it failed!");
         break;
       }
@@ -445,7 +448,10 @@ export function handleCustomEffect(
       // Mirror Coat reflects 2x the special damage taken back at the attacker.
       // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_MirrorCoat
       // Mirror Coat is -1 priority (handled by move data).
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "special") {
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.special
+      ) {
         result.messages.push("But it failed!");
         break;
       }

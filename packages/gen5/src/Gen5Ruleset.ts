@@ -32,6 +32,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
+  CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   DataManager,
   getStatStageMultiplier,
@@ -347,7 +348,7 @@ export class Gen5Ruleset extends BaseRuleset {
     // Source: Bulbapedia -- Magic Guard prevents damage from weather, poison, burn, etc.
     if (pokemon.ability === "magic-guard") return 0;
 
-    if (status === "burn") {
+    if (status === CORE_STATUS_IDS.burn) {
       // Gen 3-6: 1/8 max HP
       const maxHp = pokemon.pokemon.calculatedStats?.hp ?? pokemon.pokemon.currentHp;
       // Heatproof: halves burn damage (1/8 -> 1/16)
@@ -375,8 +376,8 @@ export class Gen5Ruleset extends BaseRuleset {
    * and before switch-in abilities fire.
    */
   onSwitchIn(pokemon: ActivePokemon, _state: BattleState): void {
-    if (pokemon.pokemon.status === "sleep") {
-      const sleepCounter = pokemon.volatileStatuses.get("sleep-counter");
+    if (pokemon.pokemon.status === CORE_STATUS_IDS.sleep) {
+      const sleepCounter = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
       if (sleepCounter?.data) {
         const startTime = (sleepCounter.data as Record<string, unknown>).startTime;
         if (typeof startTime === "number") {
@@ -397,18 +398,18 @@ export class Gen5Ruleset extends BaseRuleset {
    *   "return false", allowing the Pokemon to act.
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // No counter found or already at 0 -- wake up and CAN act
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Counter just reached 0 -- wake up and CAN act
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     return false; // Still sleeping -- cannot act
@@ -530,7 +531,7 @@ export class Gen5Ruleset extends BaseRuleset {
     // Quick Feet: 1.5x Speed when statused, overrides paralysis penalty
     if (active.ability === "quick-feet" && active.pokemon.status !== null) {
       effective = Math.floor(effective * 1.5);
-    } else if (active.pokemon.status === "paralysis") {
+    } else if (active.pokemon.status === CORE_STATUS_IDS.paralysis) {
       // Gen 3-6: paralysis quarters speed (x0.25)
       effective = Math.floor(effective * 0.25);
     }

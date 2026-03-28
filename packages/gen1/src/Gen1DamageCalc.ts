@@ -7,6 +7,8 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
   getGen12StatStageRatio,
   getStabModifier,
   getTypeEffectiveness,
@@ -73,7 +75,7 @@ function getAttackStat(
   let effective = Math.floor((baseStat * ratio.num) / ratio.den);
 
   // Burn halves physical attack
-  if (physical && attacker.pokemon.status === "burn") {
+  if (physical && attacker.pokemon.status === CORE_STATUS_IDS.burn) {
     effective = Math.floor(effective / 2);
   }
 
@@ -155,7 +157,7 @@ export function calculateGen1Damage(
   const { attacker, defender, move, rng, isCrit, state } = context;
 
   // Status moves do no damage
-  if (move.category === "status" || move.power === null || move.power === 0) {
+  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -257,7 +259,9 @@ export function calculateGen1Damage(
     stabMultiplier: stabMod,
     typeMultiplier: effectiveness,
     burnMultiplier:
-      isGen1PhysicalType(move.type) && attacker.pokemon.status === "burn" && !isCrit ? 0.5 : 1,
+      isGen1PhysicalType(move.type) && attacker.pokemon.status === CORE_STATUS_IDS.burn && !isCrit
+        ? 0.5
+        : 1,
     abilityMultiplier: 1,
     itemMultiplier: 1,
     otherMultiplier: 1,

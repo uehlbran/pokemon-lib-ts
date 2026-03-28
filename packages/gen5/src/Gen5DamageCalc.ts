@@ -15,7 +15,9 @@ import {
   CORE_ABILITY_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   getStabModifier,
@@ -447,7 +449,7 @@ export function calculateGen5Damage(
 
   // 1. Status moves / power=0 -> no damage
   // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
-  if (move.category === "status" || move.power === null || move.power === 0) {
+  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -569,7 +571,8 @@ export function calculateGen5Damage(
   //   base power is doubled to 130."
   if (
     move.id === "venoshock" &&
-    (defender.pokemon.status === "poison" || defender.pokemon.status === "badly-poisoned")
+    (defender.pokemon.status === CORE_STATUS_IDS.poison ||
+      defender.pokemon.status === CORE_STATUS_IDS.badlyPoisoned)
   ) {
     power = power * 2;
   }
@@ -697,7 +700,7 @@ export function calculateGen5Damage(
 
   // ---- Physical/Special determination ----
 
-  const isPhysical = move.category === "physical";
+  const isPhysical = move.category === CORE_MOVE_CATEGORIES.physical;
 
   // Get effective stats
   let attack = getAttackStat(attacker, effectiveMoveType, isPhysical, isCrit, weather, defender);
@@ -913,7 +916,7 @@ export function calculateGen5Damage(
   // Source: references/pokemon-showdown/sim/battle-actions.ts lines 1816-1820
   // Gen 5: burn penalty always applies for physical, even for Facade
   // (Facade bypass was added in Gen 6: `this.battle.gen < 6 || move.id !== 'facade'`)
-  const hasBurn = isPhysical && attacker.pokemon.status === "burn";
+  const hasBurn = isPhysical && attacker.pokemon.status === CORE_STATUS_IDS.burn;
   const gutsActive = attackerAbility === "guts" && attacker.pokemon.status !== null;
   const burnApplied = hasBurn && !gutsActive;
   const burnMultiplier = burnApplied ? 0.5 : 1;

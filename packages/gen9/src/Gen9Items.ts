@@ -1646,7 +1646,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Kee Berry: +1 Def when hit by a physical move (consumed)
     // Source: Showdown data/items.ts -- keeberry: onDamagingHit physical
     case ITEM_IDS.keeBerry: {
-      if (currentHp > 0 && damage > 0 && context.move?.category === "physical") {
+      if (currentHp > 0 && damage > 0 && context.move?.category === CORE_MOVE_CATEGORIES.physical) {
         return {
           activated: true,
           effects: [
@@ -1666,7 +1666,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
     // Maranga Berry: +1 SpDef when hit by a special move (consumed)
     // Source: Showdown data/items.ts -- marangaberry: onDamagingHit special
     case ITEM_IDS.marangaBerry: {
-      if (currentHp > 0 && damage > 0 && context.move?.category === "special") {
+      if (currentHp > 0 && damage > 0 && context.move?.category === CORE_MOVE_CATEGORIES.special) {
         return {
           activated: true,
           effects: [

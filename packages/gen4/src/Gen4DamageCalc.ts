@@ -10,6 +10,7 @@ import {
   BASE_PLATE_ITEMS,
   BASE_TYPE_BOOST_ITEMS,
   CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -568,7 +569,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
 
   // 1. Status moves / power=0 → no damage
   // Source: Showdown sim/battle.ts — status moves skip damage calc
-  if (move.category === "status" || move.power === null || move.power === 0) {
+  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -643,7 +644,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !attackerHasKlutz &&
     attacker.pokemon.heldItem === GEN4_ITEM_IDS.muscleBand &&
-    move.category === "physical"
+    move.category === CORE_MOVE_CATEGORIES.physical
   ) {
     power = Math.floor((power * 4505) / 4096);
     basePowerItemMultiplier = 4505 / 4096; // ~1.1x
@@ -651,7 +652,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !attackerHasKlutz &&
     attacker.pokemon.heldItem === GEN4_ITEM_IDS.wiseGlasses &&
-    move.category === "special"
+    move.category === CORE_MOVE_CATEGORIES.special
   ) {
     power = Math.floor((power * 4505) / 4096);
     basePowerItemMultiplier = 4505 / 4096; // ~1.1x
@@ -846,7 +847,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // In Gen 4, category is per-move, NOT per-type (unlike Gen 1-3).
   // Source: Bulbapedia — Physical/special split: "Starting in Generation IV,
   //   each individual move has its own damage category."
-  const isPhysical = move.category === "physical";
+  const isPhysical = move.category === CORE_MOVE_CATEGORIES.physical;
 
   const attackerItem = attacker.pokemon.heldItem;
 

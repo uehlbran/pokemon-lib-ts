@@ -5,7 +5,13 @@ import type {
   DamageResult,
 } from "@pokemon-lib-ts/battle";
 import type { PokemonSpeciesData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { createFriendship, getGen12StatStageRatio, getStabModifier } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STATUS_IDS,
+  createFriendship,
+  getGen12StatStageRatio,
+  getStabModifier,
+} from "@pokemon-lib-ts/core";
 
 import { getWeatherDamageModifier } from "./Gen2Weather";
 
@@ -140,7 +146,7 @@ function getAttackStat(
   }
 
   // Burn halves physical attack (unless ignored on crit)
-  if (physical && attacker.pokemon.status === "burn" && !ignoreBurn) {
+  if (physical && attacker.pokemon.status === CORE_STATUS_IDS.burn && !ignoreBurn) {
     effective = Math.floor(effective / 2);
   }
 
@@ -421,7 +427,11 @@ export function calculateGen2Damage(
   }
 
   // Status moves do no damage
-  if (move.category === "status" || dynamicPower === null || dynamicPower === 0) {
+  if (
+    move.category === CORE_MOVE_CATEGORIES.status ||
+    dynamicPower === null ||
+    dynamicPower === 0
+  ) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -577,7 +587,8 @@ export function calculateGen2Damage(
     randomMultiplier: randomFactor,
     stabMultiplier: stabMod,
     typeMultiplier: effectiveness,
-    burnMultiplier: physical && attacker.pokemon.status === "burn" && !ignoreBurn ? 0.5 : 1,
+    burnMultiplier:
+      physical && attacker.pokemon.status === CORE_STATUS_IDS.burn && !ignoreBurn ? 0.5 : 1,
     abilityMultiplier: 1, // No abilities in Gen 2
     itemMultiplier: hasTypeBoostItem(attacker, effectiveMoveType) ? 1.1 : 1,
     otherMultiplier: 1,

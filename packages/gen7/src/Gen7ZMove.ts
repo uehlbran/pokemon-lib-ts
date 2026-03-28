@@ -23,6 +23,7 @@ import type {
   BattleState,
 } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
+import { CORE_MOVE_CATEGORIES } from "@pokemon-lib-ts/core";
 
 import { getSpeciesZMoves, getZCrystalType, isSpeciesZCrystal, isZCrystal } from "./Gen7Items.js";
 
@@ -53,7 +54,7 @@ import { getSpeciesZMoves, getZCrystalType, isSpeciesZCrystal, isZCrystal } from
  */
 export function getZMovePower(move: MoveData): number {
   // Status moves do not have Z-Move power
-  if (move.category === "status") return 0;
+  if (move.category === CORE_MOVE_CATEGORIES.status) return 0;
 
   let basePower = move.power ?? 0;
 
@@ -334,7 +335,7 @@ export class Gen7ZMove implements BattleGimmick {
     const zType = getZCrystalType(heldItem);
     if (!zType || move.type !== zType) return move;
 
-    if (move.category === "status") {
+    if (move.category === CORE_MOVE_CATEGORIES.status) {
       return this.getStatusZMove(move);
     }
 
@@ -433,7 +434,7 @@ export class Gen7ZMove implements BattleGimmick {
     const zPower = SPECIES_Z_POWER[zMoveId] ?? getZMovePower(move);
 
     // Status-type species Z-Moves (like Extreme Evoboost from Eevium Z)
-    if (move.category === "status") {
+    if (move.category === CORE_MOVE_CATEGORIES.status) {
       return {
         ...move,
         id: zMoveId,

@@ -1,7 +1,12 @@
 import type { AbilityContext, AbilityEffect, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import type { MoveCategory, VolatileStatus } from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, CORE_TYPE_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN6_MOVE_IDS, GEN6_SPECIES_IDS } from "./data/reference-ids";
 
 /**
@@ -106,7 +111,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       if (!ctx.move) return INACTIVE;
       // Only boosts status moves
       // Source: Showdown data/abilities.ts -- move.category === 'Status'
-      if (ctx.move.category !== "status") return INACTIVE;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
       const name = getName(ctx);
       return {
         activated: true,
@@ -206,7 +211,7 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
         };
       }
 
-      if (ctx.move.category !== "status" && !isBladeForm) {
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status && !isBladeForm) {
         // Shield -> Blade: add blade volatile
         return {
           activated: true,
@@ -427,7 +432,7 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
  */
 function handleWeakArmor(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category !== "physical") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return INACTIVE;
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {
@@ -658,5 +663,5 @@ function formatStatName(stat: string): string {
  * Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
  */
 export function isPranksterEligible(category: MoveCategory): boolean {
-  return category === "status";
+  return category === CORE_MOVE_CATEGORIES.status;
 }

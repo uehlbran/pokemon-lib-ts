@@ -43,6 +43,7 @@ import {
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
 import { createGen8DataManager } from "./data/index.js";
@@ -644,7 +645,7 @@ export class Gen8Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts -- iceface onDamage returns 0 and marks the form broken.
     // Source: Bulbapedia "Ice Face" -- blocks the first physical move.
     if (
-      move.category === "physical" &&
+      move.category === CORE_MOVE_CATEGORIES.physical &&
       isIceFaceActive(
         defender.pokemon.speciesId,
         defender.ability,
@@ -666,7 +667,7 @@ export class Gen8Ruleset extends BaseRuleset {
     if (
       defender.ability === "disguise" &&
       !defender.volatileStatuses.has("disguise-broken") &&
-      move.category !== "status"
+      move.category !== CORE_MOVE_CATEGORIES.status
     ) {
       // Mark Disguise as broken
       defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });

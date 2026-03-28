@@ -27,6 +27,7 @@ import {
 } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   type PokemonType,
@@ -424,9 +425,9 @@ function handleWorrySeed(ctx: MoveEffectContext): MoveEffectResult {
   // Source: Showdown data/moves.ts worryseed.onHit -- cure sleep if asleep
   // Direct mutation: if the target is asleep, cure it before setting the ability.
   const messages: string[] = [];
-  if (ctx.defender.pokemon.status === "sleep") {
+  if (ctx.defender.pokemon.status === CORE_STATUS_IDS.sleep) {
     ctx.defender.pokemon.status = null as never;
-    ctx.defender.volatileStatuses.delete("sleep-counter");
+    ctx.defender.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
     messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} woke up!`);
   }
 

@@ -136,7 +136,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       if (!ctx.move) return INACTIVE;
       // Only boosts status moves
       // Source: Showdown data/abilities.ts -- move.category === 'Status'
-      if (ctx.move.category !== "status") return INACTIVE;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
       const name = getName(ctx);
       return {
         activated: true,
@@ -619,7 +619,7 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
  */
 function handleWeakArmor(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category !== "physical") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return INACTIVE;
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {
@@ -650,7 +650,7 @@ function handleWeakArmor(ctx: AbilityContext): AbilityResult {
 function handleStamina(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
   // Stamina triggers on any damaging move (physical or special)
-  if (ctx.move.category === "status") return INACTIVE;
+  if (ctx.move.category === CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   const name = getName(ctx);
   const effect: AbilityEffect = {
@@ -901,5 +901,5 @@ function formatStatName(stat: string): string {
  * Source: Showdown data/abilities.ts -- Prankster checks move.category === 'Status'
  */
 export function isPranksterEligible(category: MoveCategory): boolean {
-  return category === "status";
+  return category === CORE_MOVE_CATEGORIES.status;
 }

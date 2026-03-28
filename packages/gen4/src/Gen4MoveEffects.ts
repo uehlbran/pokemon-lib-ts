@@ -40,6 +40,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_HAZARD_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -356,7 +357,7 @@ function applyMoveEffect(
       // (e.g., Swords Dance, Dragon Dance) have guaranteed primary effects
       // Source: Showdown Gen 4 — secondary effect check only for damaging moves
       if (
-        move.category !== "status" &&
+        move.category !== CORE_MOVE_CATEGORIES.status &&
         !rollEffectChance(effect.chance, rng, attacker, defender, true)
       ) {
         break;
@@ -417,7 +418,7 @@ function applyMoveEffect(
       // For damaging moves, roll the effect chance (secondary effect)
       // For status moves (e.g., Focus Energy, Substitute), guaranteed
       if (
-        move.category !== "status" &&
+        move.category !== CORE_MOVE_CATEGORIES.status &&
         !rollEffectChance(effect.chance, rng, attacker, defender, true)
       ) {
         break;
@@ -1300,7 +1301,10 @@ function handleNullEffectMoves(
       // Source: Showdown Gen 4 sim — Counter returns double physical damage received this turn
       // Source: Bulbapedia — "Counter deals damage equal to twice the damage dealt by the
       //   last physical move that hit the user"
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.physical
+      ) {
         result.messages.push("But it failed!");
         break;
       }
@@ -1317,7 +1321,10 @@ function handleNullEffectMoves(
       // Source: Showdown Gen 4 sim — Mirror Coat returns double special damage received this turn
       // Source: Bulbapedia — "Mirror Coat deals damage equal to twice the damage dealt by the
       //   last special move that hit the user"
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "special") {
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.special
+      ) {
         result.messages.push("But it failed!");
         break;
       }
@@ -1636,7 +1643,7 @@ export function executeGen4MoveEffect(context: MoveEffectContext): MoveEffectRes
 
     // Fail if the defender selected a status move (non-damaging)
     // Source: Showdown Gen 4 — Sucker Punch fails if target's move is status category
-    if (defMove.category === "status") {
+    if (defMove.category === CORE_MOVE_CATEGORIES.status) {
       result.messages.push("But it failed!");
       return result;
     }

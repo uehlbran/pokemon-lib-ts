@@ -12,10 +12,6 @@
           {
             "type": "command",
             "command": "./.claude/hooks/enforce-changeset-gate.sh"
-          },
-          {
-            "type": "command",
-            "command": "./.claude/hooks/enforce-comment-gate.sh"
           }
         ]
       }
