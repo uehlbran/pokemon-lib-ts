@@ -8,7 +8,7 @@
  *   - Perish Song: 3-turn countdown faint for both Pokemon
  *   - Pain Split: average HP between both Pokemon
  *   - Moonlight / Morning Sun / Synthesis: weather-dependent healing
- *   - Future Sight: schedules a Steel-type hit 3 turns later (via source side)
+ *   - Future Sight / Doom Desire: schedules a delayed hit (Psychic/Steel) via source side state
  *   - Whirlwind / Roar: force defender to switch randomly (phazing)
  *   - Counter: return 2x physical damage taken
  *   - Mirror Coat: return 2x special damage taken
@@ -247,7 +247,9 @@ function handleWeatherHeal(ctx: MoveEffectContext, moveId: string): MoveEffectRe
 }
 
 function handleFutureSight(ctx: MoveEffectContext): MoveEffectResult {
-  // Future Sight: schedules a hit 3 end-of-turns later; damage calculated at hit time in Gen 4
+  // Future Sight: schedules a hit 3 end-of-turns later. In Gen 4, damage is calculated
+  // at USE time (not hit time) — BattleEngine stores launchDamage when scheduling because
+  // Gen4Ruleset.recalculatesFutureAttackDamage() returns false.
   // Source: Bulbapedia — "Future Sight hits 2 turns after being used (3 EoT ticks)"
   // Source: Showdown Gen 4 — Future Sight schedules future attack
   const { attacker, state } = ctx;
@@ -458,12 +460,13 @@ function handleGhostCurse(ctx: MoveEffectContext): MoveEffectResult {
   if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.curse)) {
     return makeResult({ messages: ["But it failed!"] });
   }
+  // HP sacrifice uses recoilDamage (direct HP subtraction) not customDamage,
+  // because customDamage routes through applyCustomDamage() which checks
+  // substitute and survival items — Ghost Curse's HP cost bypasses both.
+  // Source: pokeplatinum/res/battle/scripts/subscripts/subscript_curse_ghost.s —
+  //   HP_CALC_TEMP = -maxHP/2, BATTLE_SUBSCRIPT_UPDATE_HP on ATTACKER (direct HP change)
   return makeResult({
-    customDamage: {
-      target: BATTLE_EFFECT_TARGETS.attacker,
-      amount: hpCost,
-      source: GEN4_MOVE_IDS.curse,
-    },
+    recoilDamage: hpCost,
     volatileInflicted: CORE_VOLATILE_IDS.curse,
     messages: [`${attackerName} cut its own HP and laid a curse on ${defenderName}!`],
   });
