@@ -405,9 +405,12 @@ function calculateLocalDamage(args: LocalDamageCalcArgs): number {
  * Source: @smogon/calc Pokemon constructor — Gen 1-2 accept spc IV.
  */
 function buildSmogonPokemonGen12(gen: GenerationNum, speciesName: string): SmogonPokemon {
+  // @smogon/calc uses IVs on the 0-31 scale even for Gen 1-2.
+  // Internally: DV = floor(IV / 2). So DV=15 requires IV=30.
+  // Source: @smogon/calc src/stats.ts IVToDV: `return Math.floor(iv / 2)`
   return new SmogonPokemon(gen, speciesName, {
     level: ORACLE_LEVEL,
-    ivs: { hp: 15, atk: 15, def: 15, spa: 15, spd: 15, spe: 15, spc: 15 },
+    ivs: { hp: 30, atk: 30, def: 30, spa: 30, spd: 30, spe: 30, spc: 30 },
     evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
   });
 }
@@ -472,6 +475,7 @@ export function runDamageSuite(
   const failures: string[] = [];
   const notes: string[] = [];
   const oracleChecks: OracleCheck[] = [];
+  let totalScenariosCompared = 0;
 
   const gen = generation.gen;
   const factory = DATA_MANAGER_FACTORIES[gen];
@@ -659,6 +663,7 @@ export function runDamageSuite(
         // accepted — rounding differences between our formula and smogon's are
         // expected and not actionable. Our calc returning 0 when smogon returns > 0
         // exceeds the tolerance unconditionally and is always registered.
+        totalScenariosCompared += 1;
         const tolerance = Math.max(2, Math.floor(smogonMaxDamage * 0.02));
         const diff = Math.abs(ourMaxDamage - smogonMaxDamage);
         const passes = diff <= tolerance;
@@ -695,9 +700,9 @@ export function runDamageSuite(
     ...resolvedOracleChecks.staleDisagreements.map((id) => `Stale disagreement detected: ${id}`),
   );
 
-  const scenarioCount = oracleChecks.length;
+  const mismatchCount = oracleChecks.length;
   notes.unshift(
-    `Gen ${gen}: ran ${scenarioCount} damage oracle check${scenarioCount === 1 ? "" : "s"}`,
+    `Gen ${gen}: compared ${totalScenariosCompared} scenario${totalScenariosCompared === 1 ? "" : "s"}, ${mismatchCount} outside tolerance`,
   );
 
   return {
