@@ -1,0 +1,145 @@
+{
+  "gen": 4,
+  "authority": "pret/pokeplatinum",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "type-effectiveness-fairy-not-in-gen4",
+      "kind": "typeChart",
+      "note": "Fairy type does not exist in Gen 4. Source: pret/pokeplatinum src/data/battle/type_chart.c"
+    },
+    {
+      "id": "stealth-rock-vs-charizard",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "charizard",
+      "defenderTypes": ["fire", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.5,
+      "source": "specs/reference/gen4-status.md",
+      "note": "Charizard is 4x weak to Rock; Stealth Rock deals 1/8 × 4 = 1/2 max HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage"
+    },
+    {
+      "id": "stealth-rock-vs-blastoise",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "blastoise",
+      "defenderTypes": ["water"],
+      "hazardType": "rock",
+      "expectedFraction": 0.125,
+      "source": "specs/reference/gen4-status.md",
+      "note": "Blastoise is neutral to Rock; Stealth Rock deals 1/8 max HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage"
+    },
+    {
+      "id": "stealth-rock-vs-aggron",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "aggron",
+      "defenderTypes": ["steel", "rock"],
+      "hazardType": "rock",
+      "expectedFraction": 0.03125,
+      "source": "specs/reference/gen4-status.md",
+      "note": "Aggron is 0.25x resistant to Rock (Steel resists, Rock is neutral to self in Gen 4); Stealth Rock deals 1/8 × 0.25 = 1/32 max HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage"
+    },
+    {
+      "id": "physical-special-split-crunch",
+      "kind": "moveCategoryCheck",
+      "moveId": "crunch",
+      "expectedCategory": "physical",
+      "source": "specs/reference/gen4-status.md",
+      "note": "Crunch became Physical in Gen 4 (was Special in Gen 1-3 via type-based split). Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "physical-special-split-flamethrower",
+      "kind": "moveCategoryCheck",
+      "moveId": "flamethrower",
+      "expectedCategory": "special",
+      "source": "specs/reference/gen4-status.md",
+      "note": "Flamethrower is Special in Gen 4 (Fire type; per-move category replaces per-type split). Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "physical-special-split-earthquake",
+      "kind": "moveCategoryCheck",
+      "moveId": "earthquake",
+      "expectedCategory": "physical",
+      "source": "specs/reference/gen4-status.md",
+      "note": "Earthquake is Physical in Gen 4 (Ground type was always physical in type-split gens too). Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "physical-special-split-thunderbolt",
+      "kind": "moveCategoryCheck",
+      "moveId": "thunderbolt",
+      "expectedCategory": "special",
+      "source": "specs/reference/gen4-status.md",
+      "note": "Thunderbolt is Special in Gen 4. Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "physical-special-split-shadow-ball",
+      "kind": "moveCategoryCheck",
+      "moveId": "shadow-ball",
+      "expectedCategory": "special",
+      "source": "specs/reference/gen4-status.md",
+      "note": "Shadow Ball is Special in Gen 4 (Ghost type; was Special via type-split in Gen 1-3). Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "trick-room-priority",
+      "kind": "movePriorityCheck",
+      "moveId": "trick-room",
+      "expectedPriority": -7,
+      "source": "specs/reference/gen4-status.md §ERRATA #7",
+      "note": "Trick Room has -7 priority (moves within Trick Room in reverse speed order). Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "feint-priority-gen4",
+      "kind": "movePriorityCheck",
+      "moveId": "feint",
+      "expectedPriority": 2,
+      "source": "specs/reference/gen4-status.md §ERRATA #7",
+      "note": "Feint has +2 priority in Gen 4 (introduced in Gen 4). Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "knock-off-no-boost-gen4",
+      "kind": "movePowerCheck",
+      "moveId": "knock-off",
+      "expectedBasePower": 20,
+      "expectedBoostWhenHoldingItem": 1.0,
+      "source": "specs/reference/gen4-status.md §ERRATA #25",
+      "note": "Knock Off does NOT get 1.5x boost in Gen 4; that was introduced in Gen 6. Source: pret/pokeplatinum src/data/battle/moves_info.c"
+    },
+    {
+      "id": "pursuit-double-power-on-switch",
+      "kind": "movePowerCheck",
+      "moveId": "pursuit",
+      "expectedBasePower": 40,
+      "expectedBoostOnSwitch": 2.0,
+      "source": "specs/reference/gen4-status.md",
+      "note": "Pursuit has base power 40, doubles to 80 when target switches out. Source: pret/pokeplatinum src/battle/battle_script.c PursuitEffect"
+    },
+    {
+      "id": "iron-fist-punch-boost",
+      "kind": "abilityCheck",
+      "abilityId": "iron-fist",
+      "expectedBoost": 1.2,
+      "affectedMoves": ["mach-punch", "thunder-punch", "fire-punch", "ice-punch", "sky-uppercut"],
+      "source": "specs/reference/gen4-status.md",
+      "note": "Iron Fist boosts punching moves by 1.2x. Introduced in Gen 4. Source: pret/pokeplatinum src/battle/battle_script.c IronFist"
+    },
+    {
+      "id": "struggle-recoil-25-max-hp",
+      "kind": "moveRecoilCheck",
+      "moveId": "struggle",
+      "expectedRecoilFraction": 0.25,
+      "source": "specs/reference/gen4-status.md",
+      "note": "Struggle recoil = floor(max_hp / 4) in Gen 3+. Source: pret/pokeplatinum src/battle/battle_script.c StruggleEffect"
+    },
+    {
+      "id": "type-effectiveness-steel-vs-ghost",
+      "kind": "typeChart",
+      "attackerType": "steel",
+      "defenderTypes": ["ghost"],
+      "expected": 0.5,
+      "source": "specs/reference/gen4-status.md",
+      "note": "Steel resists Ghost in Gen 4. Source: pret/pokeplatinum src/data/battle/type_chart.c"
+    }
+  ]
+}

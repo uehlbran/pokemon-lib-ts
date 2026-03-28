@@ -155,6 +155,8 @@ Default effort: `high`. Use `/effort medium` for simple config/docs/data tasks.
 - **Parallelize** independent work as concurrent subagents. Never do sequentially what can be done in parallel.
 - **One vertical slice per agent**, split at file boundaries. If a task needs 15+ file reads, split it.
 - **One branch at a time**, descriptive unique names (e.g., `fix/gen1-crit-calc`), rebase onto `origin/main` before PR.
+- **One PR at a time.** Never start a new branch or PR while any PR is still open. Wait for full merge confirmation before starting the next task.
+- **No git worktrees.** Never use `git worktree`, `isolation: "worktree"` on Agent calls, or any worktree command. Parallel subagent work happens on the same branch split by file boundary.
 - **Verify branch** before any mutating git command (see `rules/git-safety.md`).
 - **Verify PR state** (`gh pr view <N> --json state`) before acting on a PR.
 - After merging PRs that change `packages/*/src/` or `packages/*/data/`, update `specs/reference/*-status.md`.

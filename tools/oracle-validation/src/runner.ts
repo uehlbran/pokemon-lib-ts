@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runDamageSuite } from "./compare-damage.js";
 import { runDataSuite } from "./compare-data.js";
 import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runStatsSuite } from "./compare-stats.js";
@@ -9,11 +10,12 @@ import { discoverImplementedGenerations, type ImplementedGeneration } from "./ge
 import { formatRunnerOutput } from "./reporter.js";
 import { type GenerationResult, runnerOutputSchema, type SuiteResult } from "./result-schema.js";
 
-type SupportedSuite = "data" | "stats" | "groundTruth" | "fast";
+type SupportedSuite = "data" | "stats" | "groundTruth" | "damage" | "fast";
 const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "data",
   "stats",
   "groundTruth",
+  "damage",
   "fast",
 ]);
 
@@ -61,7 +63,7 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
  */
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   if (suites.includes("fast")) {
-    return ["data", "stats", "groundTruth"];
+    return ["data", "stats", "groundTruth", "damage"];
   }
 
   return suites;
@@ -87,6 +89,8 @@ async function main(): Promise<void> {
           suiteResults[suite] = runStatsSuite(generation);
         } else if (suite === "groundTruth") {
           suiteResults[suite] = runGroundTruthSuite(generation, repoRoot);
+        } else if (suite === "damage") {
+          suiteResults[suite] = runDamageSuite(generation, registry.knownDisagreements);
         }
       }
 

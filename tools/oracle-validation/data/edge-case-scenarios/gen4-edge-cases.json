@@ -1,0 +1,70 @@
+{
+  "gen": 4,
+  "authority": "pret/pokeplatinum",
+  "scenarios": [
+    {
+      "id": "gen4-physical-special-split-crunch-physical",
+      "description": "Crunch became Physical in Gen 4 (was Special in Gen 1-3 via type-based split)",
+      "attacker": { "species": "Tyranitar", "level": 50, "ivs": { "atk": 31 } },
+      "defender": { "species": "Alakazam", "level": 50, "ivs": { "def": 31 } },
+      "move": "Crunch",
+      "expected_category": "physical",
+      "note": "Physical/Special split: Crunch is Dark (Special in Gen 1-3), became Physical in Gen 4. Source: pret/pokeplatinum src/battle/battle_script.c move category table"
+    },
+    {
+      "id": "gen4-stealth-rock-type-effectiveness-tiers",
+      "description": "Stealth Rock deals damage based on type effectiveness vs Rock: 1/32, 1/16, 1/8, 1/4, 1/2",
+      "hazard": "stealth-rock",
+      "attacker_type": "rock",
+      "cases": [
+        {
+          "defender": "Charizard",
+          "defenderTypes": ["fire", "flying"],
+          "fraction": 0.5,
+          "effectiveness": 4
+        },
+        {
+          "defender": "Blastoise",
+          "defenderTypes": ["water"],
+          "fraction": 0.125,
+          "effectiveness": 1
+        },
+        {
+          "defender": "Aggron",
+          "defenderTypes": ["steel", "rock"],
+          "fraction": 0.03125,
+          "effectiveness": 0.25
+        }
+      ],
+      "note": "Stealth Rock base = 1/8 * effectiveness multiplier. 4x weak → 1/2 HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRock"
+    },
+    {
+      "id": "gen4-trick-room-priority-minus-7",
+      "description": "Trick Room has -7 priority, moves last in the turn it is used",
+      "move": "Trick Room",
+      "expected_priority": -7,
+      "note": "Trick Room priority = -7 (ERRATA #7). Source: pret/pokeplatinum src/battle/battle_script.c move priority table"
+    },
+    {
+      "id": "gen4-protect-consecutive-4-tiers",
+      "description": "Consecutive Protect/Detect: success rate drops from 100% to 50% to 25% to 12.5%",
+      "note": "Same cap as Gen 3 — stops at 1/8 (12.5%). Source: pret/pokeplatinum src/battle/battle_script.c ProtectCheck"
+    },
+    {
+      "id": "gen4-feint-priority-plus-2",
+      "description": "Feint was introduced in Gen 4 with +2 priority (ERRATA #7)",
+      "move": "Feint",
+      "expected_priority": 2,
+      "note": "Feint has priority +2 in Gen 4. Source: pret/pokeplatinum src/battle/battle_script.c move priority table"
+    },
+    {
+      "id": "gen4-knock-off-no-boost",
+      "description": "Knock Off does NOT get 1.5x boost when target holds an item in Gen 4",
+      "attacker": { "species": "Sneasel", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50, "item": "Leftovers" },
+      "move": "Knock Off",
+      "expected_boost": 1.0,
+      "note": "Knock Off damage boost (1.5x) was introduced in Gen 6 (ERRATA #25). In Gen 4 it has base power 20 with no conditional boost. Source: pret/pokeplatinum src/battle/battle_script.c KnockOff"
+    }
+  ]
+}
