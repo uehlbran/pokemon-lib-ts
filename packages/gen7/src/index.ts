@@ -61,7 +61,6 @@ export {
   GEN7_CRIT_MULTIPLIER,
   GEN7_CRIT_RATE_PROBABILITIES,
   GEN7_CRIT_RATE_TABLE,
-  GEN7_CRIT_RATES,
 } from "./Gen7CritCalc.js";
 export {
   calculateGen7Damage,

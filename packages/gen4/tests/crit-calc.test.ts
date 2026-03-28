@@ -2,7 +2,7 @@ import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CRIT_MULTIPLIER_CLASSIC,
-  CRIT_RATES_GEN3_5,
+  CRIT_RATE_PROBABILITIES_GEN3_5,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -10,10 +10,8 @@ import {
   createGen4DataManager,
   GEN4_ABILITY_IDS,
   GEN4_CRIT_MULTIPLIER,
-  GEN4_CRIT_RATE_DENOMINATORS,
   GEN4_CRIT_RATE_PROBABILITIES,
   GEN4_CRIT_RATE_TABLE,
-  GEN4_CRIT_RATES,
   GEN4_ITEM_IDS,
   GEN4_MOVE_IDS,
   GEN4_SPECIES_IDS,
@@ -29,57 +27,56 @@ describe("Gen 4 crit calc constants", () => {
     // Source: pret/pokeplatinum — same crit table as Gen 3 and Gen 5
     // Source: pret/pokeemerald src/battle_util.c CalcCritChanceStage
     // Stage 0 (no modifiers): 1/16 chance = denominator 16
-    expect(GEN4_CRIT_RATE_DENOMINATORS[0]).toBe(16);
+    expect(GEN4_CRIT_RATE_TABLE[0]).toBe(16);
   });
 
   it("given stage 1, when checking crit rate denominator, then denominator is 8 (1/8 chance)", () => {
     // Source: pret/pokeplatinum — same crit table as Gen 3 and Gen 5
     // Stage 1 (Scope Lens or high-crit move): 1/8 chance = denominator 8
-    expect(GEN4_CRIT_RATE_DENOMINATORS[1]).toBe(8);
+    expect(GEN4_CRIT_RATE_TABLE[1]).toBe(8);
   });
 
   it("given stage 2, when checking crit rate denominator, then denominator is 4 (1/4 chance)", () => {
     // Source: pret/pokeplatinum — crit stage 2 = 1/4 chance
-    expect(GEN4_CRIT_RATE_DENOMINATORS[2]).toBe(4);
+    expect(GEN4_CRIT_RATE_TABLE[2]).toBe(4);
   });
 
   it("given stage 3, when checking crit rate denominator, then denominator is 3 (1/3 chance)", () => {
     // Source: pret/pokeplatinum — crit stage 3 = 1/3 chance
-    expect(GEN4_CRIT_RATE_DENOMINATORS[3]).toBe(3);
+    expect(GEN4_CRIT_RATE_TABLE[3]).toBe(3);
   });
 
   it("given stage 4, when checking crit rate denominator, then denominator is 2 (1/2 chance)", () => {
     // Source: pret/pokeplatinum — crit stage 4+ = 1/2 chance (max)
-    expect(GEN4_CRIT_RATE_DENOMINATORS[4]).toBe(2);
+    expect(GEN4_CRIT_RATE_TABLE[4]).toBe(2);
   });
 
-  it("given GEN4_CRIT_RATE_DENOMINATORS, when checking length, then has exactly 5 entries", () => {
+  it("given GEN4_CRIT_RATE_TABLE, when checking length, then has exactly 5 entries", () => {
     // Source: pret/pokeplatinum — 5 crit stages (0–4), same as Gen 3-5
-    expect(GEN4_CRIT_RATE_DENOMINATORS.length).toBe(5);
+    expect(GEN4_CRIT_RATE_TABLE.length).toBe(5);
   });
 
-  it("given GEN4_CRIT_RATES, when checking stage 0 probability, then probability is 1/16 = 0.0625", () => {
+  it("given GEN4_CRIT_RATE_PROBABILITIES, when checking stage 0 probability, then probability is 1/16 = 0.0625", () => {
     // Source: pret/pokeplatinum — stage 0 crit rate = 1/16
     // Derivation: 1 / 16 = 0.0625
-    expect(GEN4_CRIT_RATES[0]).toBeCloseTo(1 / 16, 5);
+    expect(GEN4_CRIT_RATE_PROBABILITIES[0]).toBeCloseTo(1 / 16, 5);
   });
 
-  it("given the canonical Gen 4 denominator table, when compared to the deprecated alias, then they are the same table", () => {
+  it("given GEN4_CRIT_RATE_TABLE, when compared to CRIT_RATE_TABLE_GEN3_5 values, then matches [16, 8, 4, 3, 2]", () => {
     // Source: issue #773 standardizes the denominator surface on GEN4_CRIT_RATE_TABLE
-    // while preserving GEN4_CRIT_RATE_DENOMINATORS for compatibility.
-    expect(GEN4_CRIT_RATE_TABLE).toBe(GEN4_CRIT_RATE_DENOMINATORS);
+    // backed by the shared core CRIT_RATE_TABLE_GEN3_5 constant.
+    expect(Array.from(GEN4_CRIT_RATE_TABLE)).toEqual([16, 8, 4, 3, 2]);
   });
 
-  it("given the canonical Gen 4 probability table, when compared to the deprecated alias, then they are the same table", () => {
+  it("given GEN4_CRIT_RATE_PROBABILITIES, when compared to CRIT_RATE_PROBABILITIES_GEN3_5, then same reference", () => {
     // Source: issue #773 standardizes the probability surface on GEN4_CRIT_RATE_PROBABILITIES
-    // while preserving GEN4_CRIT_RATES for compatibility.
-    expect(GEN4_CRIT_RATE_PROBABILITIES).toBe(GEN4_CRIT_RATES);
+    expect(GEN4_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN3_5);
   });
 
-  it("given GEN4_CRIT_RATES, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {
+  it("given GEN4_CRIT_RATE_PROBABILITIES, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {
     // Source: pret/pokeplatinum — stage 1 crit rate = 1/8
     // Derivation: 1 / 8 = 0.125
-    expect(GEN4_CRIT_RATES[1]).toBeCloseTo(1 / 8, 5);
+    expect(GEN4_CRIT_RATE_PROBABILITIES[1]).toBeCloseTo(1 / 8, 5);
   });
 
   it("given GEN4_CRIT_MULTIPLIER, when a crit lands, then damage is multiplied by 2.0", () => {
@@ -94,10 +91,10 @@ describe("Gen 4 crit calc constants", () => {
     expect(GEN4_CRIT_MULTIPLIER).toBe(CRIT_MULTIPLIER_CLASSIC);
   });
 
-  it("given GEN4_CRIT_RATES, when comparing to CRIT_RATES_GEN3_5, then table is the same reference", () => {
-    // Source: packages/core/src/logic/critical-hit.ts — CRIT_RATES_GEN3_5 is the authoritative table
+  it("given GEN4_CRIT_RATE_PROBABILITIES, when comparing to CRIT_RATE_PROBABILITIES_GEN3_5, then table is the same reference", () => {
+    // Source: packages/core/src/logic/critical-hit.ts — CRIT_RATE_PROBABILITIES_GEN3_5 is the authoritative table
     // Gen4CritCalc re-exports the core constant for convenience
-    expect(GEN4_CRIT_RATES).toBe(CRIT_RATES_GEN3_5);
+    expect(GEN4_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN3_5);
   });
 });
 

@@ -10,7 +10,6 @@ import {
   GEN8_CRIT_MULTIPLIER,
   GEN8_CRIT_RATE_PROBABILITIES,
   GEN8_CRIT_RATE_TABLE,
-  GEN8_CRIT_RATES,
 } from "../src/Gen8CritCalc";
 import { Gen8Ruleset } from "../src/Gen8Ruleset";
 
@@ -66,10 +65,9 @@ describe("Gen 8 critical hit constants", () => {
     expect(Array.from(GEN8_CRIT_RATE_PROBABILITIES)).toEqual([1 / 24, 1 / 8, 1 / 2, 1]);
   });
 
-  it("given the canonical Gen 8 probability table, when compared to its aliases, then all references match", () => {
+  it("given the canonical Gen 8 probability table, when compared to the core export, then same reference", () => {
     // Source: issue #773 standardizes the probability surface on GEN8_CRIT_RATE_PROBABILITIES
-    // while preserving GEN8_CRIT_RATES and the shared core export for compatibility.
-    expect(GEN8_CRIT_RATE_PROBABILITIES).toBe(GEN8_CRIT_RATES);
+    // backed by the shared core CRIT_RATE_PROBABILITIES_GEN6 constant.
     expect(GEN8_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN6);
   });
 

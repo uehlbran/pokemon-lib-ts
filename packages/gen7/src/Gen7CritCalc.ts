@@ -1,4 +1,8 @@
-import { CRIT_RATE_PROBABILITIES_GEN6 } from "@pokemon-lib-ts/core";
+import {
+  CRIT_MULTIPLIER_MODERN,
+  CRIT_RATE_PROBABILITIES_GEN6,
+  CRIT_RATE_TABLE_GEN6_PLUS,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Gen 7 critical hit constants.
@@ -23,16 +27,13 @@ import { CRIT_RATE_PROBABILITIES_GEN6 } from "@pokemon-lib-ts/core";
  * Source: Bulbapedia "Critical hit" Gen 7 -- rate table (same as Gen 6)
  * Source: Showdown sim/battle-actions.ts -- critRatio array
  */
-export const GEN7_CRIT_RATE_TABLE = [24, 8, 2, 1] as const;
+export const GEN7_CRIT_RATE_TABLE: typeof CRIT_RATE_TABLE_GEN6_PLUS = CRIT_RATE_TABLE_GEN6_PLUS;
 
 /**
  * Gen 7 critical hit probabilities by crit stage (0-1 values).
  * Re-exports the core Gen 6+ probability table with a gen-local name for API consistency.
  */
 export const GEN7_CRIT_RATE_PROBABILITIES = CRIT_RATE_PROBABILITIES_GEN6;
-
-/** @deprecated Use `GEN7_CRIT_RATE_PROBABILITIES`. */
-export const GEN7_CRIT_RATES = GEN7_CRIT_RATE_PROBABILITIES;
 
 /**
  * Critical hit damage multiplier in Gen 7.
@@ -42,4 +43,4 @@ export const GEN7_CRIT_RATES = GEN7_CRIT_RATE_PROBABILITIES;
  * Source: Bulbapedia "Critical hit" Gen 7 -- multiplier remains 1.5x
  * Source: Showdown sim/battle-actions.ts -- baseDamage *= move.crit ? 1.5 : 1
  */
-export const GEN7_CRIT_MULTIPLIER = 1.5;
+export const GEN7_CRIT_MULTIPLIER: typeof CRIT_MULTIPLIER_MODERN = CRIT_MULTIPLIER_MODERN;

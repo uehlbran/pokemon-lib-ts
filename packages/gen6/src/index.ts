@@ -43,7 +43,6 @@ export {
   GEN6_CRIT_MULTIPLIER,
   GEN6_CRIT_RATE_PROBABILITIES,
   GEN6_CRIT_RATE_TABLE,
-  GEN6_CRIT_RATES,
 } from "./Gen6CritCalc.js";
 export { calculateGen6Damage, pokeRound, TYPE_RESIST_BERRIES } from "./Gen6DamageCalc.js";
 export {

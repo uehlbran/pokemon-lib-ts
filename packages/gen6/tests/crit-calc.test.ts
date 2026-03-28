@@ -4,7 +4,6 @@ import {
   GEN6_CRIT_MULTIPLIER,
   GEN6_CRIT_RATE_PROBABILITIES,
   GEN6_CRIT_RATE_TABLE,
-  GEN6_CRIT_RATES,
 } from "../src/Gen6CritCalc";
 
 // ---------------------------------------------------------------------------
@@ -48,10 +47,9 @@ describe("Gen 6 critical hit constants", () => {
     expect(Array.from(GEN6_CRIT_RATE_PROBABILITIES)).toEqual([1 / 24, 1 / 8, 1 / 2, 1]);
   });
 
-  it("given the canonical Gen 6 probability table, when compared to its aliases, then all references match", () => {
+  it("given the canonical Gen 6 probability table, when compared to the core export, then same reference", () => {
     // Source: issue #773 standardizes the probability surface on GEN6_CRIT_RATE_PROBABILITIES
-    // while preserving GEN6_CRIT_RATES and the shared core export for compatibility.
-    expect(GEN6_CRIT_RATE_PROBABILITIES).toBe(GEN6_CRIT_RATES);
+    // backed by the shared core CRIT_RATE_PROBABILITIES_GEN6 constant.
     expect(GEN6_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN6);
   });
 
