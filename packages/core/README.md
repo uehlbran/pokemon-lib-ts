@@ -16,8 +16,13 @@ Core Pokemon data types, entities, and shared game logic. Zero runtime dependenc
 
 ## Installation
 
+This package is not yet published to npm. Install from the monorepo:
+
 ```bash
-npm install @pokemon-lib-ts/core
+git clone https://github.com/uehlbran/pokemon-lib-ts.git
+cd pokemon-lib-ts
+npm install
+npm run build
 ```
 
 ## Usage
