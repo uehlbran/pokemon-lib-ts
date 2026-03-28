@@ -2,6 +2,7 @@ export const BATTLE_GIMMICK_IDS = {
   dynamax: "dynamax",
   mega: "mega",
   tera: "tera",
+  ultraBurst: "ultraburst",
   zMove: "zmove",
 } as const;
 

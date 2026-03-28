@@ -42,6 +42,12 @@ export interface MoveAction {
   readonly dynamax?: boolean;
   /** `true` to terastallize this turn (Gen 9); only valid once per battle */
   readonly terastallize?: boolean;
+  /**
+   * `true` to trigger Ultra Burst this turn (Gen 7, Necrozma only);
+   * only valid once per battle; always paired with `zMove: true` to fire
+   * Light That Burns the Sky in the same turn.
+   */
+  readonly ultraBurst?: boolean;
 }
 
 /**

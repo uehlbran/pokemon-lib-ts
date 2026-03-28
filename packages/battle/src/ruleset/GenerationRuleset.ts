@@ -730,8 +730,13 @@ export interface BagItemSystem {
  * Which gimmick the player explicitly requested for this action.
  * Passed to `getBattleGimmick()` so multi-gimmick gens (e.g., Gen 7 has both
  * Mega Evolution and Z-Moves) can return the correct gimmick implementation.
+ * - `"mega"` — Mega Evolution (Gen 6+)
+ * - `"zmove"` — Z-Move (Gen 7)
+ * - `"dynamax"` — Dynamax (Gen 8)
+ * - `"tera"` — Terastallization (Gen 9)
+ * - `"ultraburst"` — Ultra Burst (Gen 7, Necrozma only)
  */
-export type BattleGimmickType = "mega" | "zmove" | "dynamax" | "tera";
+export type BattleGimmickType = "mega" | "zmove" | "dynamax" | "tera" | "ultraburst";
 
 /** Pokémon validation, EXP gain, and battle gimmick (Mega/Z-Move/Dynamax/Tera). */
 export interface ValidationSystem {

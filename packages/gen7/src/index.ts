@@ -121,6 +121,7 @@ export {
   TERRAIN_EXTENDED_TURNS,
 } from "./Gen7Terrain.js";
 export { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
+export { Gen7UltraBurst } from "./Gen7UltraBurst.js";
 export {
   ABILITY_WEATHER_TURNS,
   applyGen7WeatherEffects,

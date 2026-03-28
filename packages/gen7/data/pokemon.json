@@ -135485,5 +135485,162 @@
     "generation": 7,
     "isLegendary": false,
     "isMythical": true
+  },
+  {
+    "id": 10800,
+    "name": "necrozma-dusk-mane",
+    "displayName": "Necrozma-Dusk-Mane",
+    "types": [
+      "psychic",
+      "steel"
+    ],
+    "baseStats": {
+      "hp": 97,
+      "attack": 157,
+      "defense": 127,
+      "spAttack": 113,
+      "spDefense": 109,
+      "speed": 77
+    },
+    "abilities": {
+      "normal": [
+        "prism-armor"
+      ],
+      "hidden": null
+    },
+    "genderRatio": -1,
+    "catchRate": 3,
+    "baseExp": 314,
+    "expGroup": "slow",
+    "evYield": {
+      "attack": 3
+    },
+    "eggGroups": [
+      "undiscovered"
+    ],
+    "learnset": {
+      "levelUp": [],
+      "tm": [],
+      "egg": [],
+      "tutor": []
+    },
+    "evolution": {
+      "from": null,
+      "to": []
+    },
+    "dimensions": {
+      "height": 3.8,
+      "weight": 460
+    },
+    "spriteKey": "necrozma-dusk-mane",
+    "baseFriendship": 0,
+    "generation": 7,
+    "isLegendary": true,
+    "isMythical": false
+  },
+  {
+    "id": 10801,
+    "name": "necrozma-dawn-wings",
+    "displayName": "Necrozma-Dawn-Wings",
+    "types": [
+      "psychic",
+      "ghost"
+    ],
+    "baseStats": {
+      "hp": 97,
+      "attack": 113,
+      "defense": 109,
+      "spAttack": 157,
+      "spDefense": 127,
+      "speed": 77
+    },
+    "abilities": {
+      "normal": [
+        "prism-armor"
+      ],
+      "hidden": null
+    },
+    "genderRatio": -1,
+    "catchRate": 3,
+    "baseExp": 314,
+    "expGroup": "slow",
+    "evYield": {
+      "spAttack": 3
+    },
+    "eggGroups": [
+      "undiscovered"
+    ],
+    "learnset": {
+      "levelUp": [],
+      "tm": [],
+      "egg": [],
+      "tutor": []
+    },
+    "evolution": {
+      "from": null,
+      "to": []
+    },
+    "dimensions": {
+      "height": 4.2,
+      "weight": 350
+    },
+    "spriteKey": "necrozma-dawn-wings",
+    "baseFriendship": 0,
+    "generation": 7,
+    "isLegendary": true,
+    "isMythical": false
+  },
+  {
+    "id": 10802,
+    "name": "ultra-necrozma",
+    "displayName": "Ultra Necrozma",
+    "types": [
+      "psychic",
+      "dragon"
+    ],
+    "baseStats": {
+      "hp": 97,
+      "attack": 167,
+      "defense": 97,
+      "spAttack": 167,
+      "spDefense": 97,
+      "speed": 129
+    },
+    "abilities": {
+      "normal": [
+        "neuroforce"
+      ],
+      "hidden": null
+    },
+    "genderRatio": -1,
+    "catchRate": 255,
+    "baseExp": 340,
+    "expGroup": "slow",
+    "evYield": {
+      "attack": 1,
+      "spAttack": 2
+    },
+    "eggGroups": [
+      "undiscovered"
+    ],
+    "learnset": {
+      "levelUp": [],
+      "tm": [],
+      "egg": [],
+      "tutor": []
+    },
+    "evolution": {
+      "from": null,
+      "to": []
+    },
+    "dimensions": {
+      "height": 7.5,
+      "weight": 230
+    },
+    "spriteKey": "ultra-necrozma",
+    "baseFriendship": 0,
+    "generation": 7,
+    "isLegendary": true,
+    "isMythical": false
   }
 ]

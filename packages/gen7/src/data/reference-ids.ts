@@ -2112,4 +2112,9 @@ export const GEN7_SPECIES_IDS = {
   stakataka: 805,
   blacephalon: 806,
   zeraora: 807,
+  // Necrozma fused/Ultra forms (introduced in USUM)
+  // Source: Bulbapedia "Necrozma" -- form IDs match Showdown species data
+  necrozmaDuskMane: 10800,
+  necrozmaDawnWings: 10801,
+  ultraNecrozma: 10802,
 } as const;

@@ -161,6 +161,7 @@ export function createOnFieldPokemon(
     transformed: false,
     transformedSpecies: null,
     isMega,
+    isUltraBurst: false,
     isDynamaxed: false,
     dynamaxTurnsLeft: 0,
     isTerastallized,

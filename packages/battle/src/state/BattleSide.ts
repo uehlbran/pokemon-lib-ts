@@ -118,6 +118,8 @@ export interface ActivePokemon {
   transformedSpecies: PokemonSpeciesData | null;
   /** `true` if this Pokémon has mega evolved this battle (Gen 6+) */
   isMega: boolean;
+  /** `true` if this Pokémon has undergone Ultra Burst this battle (Gen 7) */
+  isUltraBurst: boolean;
   /** `true` if this Pokémon is currently dynamaxed (Gen 8) */
   isDynamaxed: boolean;
   /** Turns of Dynamax remaining (0 when not dynamaxed; Gen 8) */

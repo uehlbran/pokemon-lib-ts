@@ -71,6 +71,7 @@ import {
   isSurgeAbility,
 } from "./Gen7Terrain.js";
 import { GEN7_TYPE_CHART, GEN7_TYPES } from "./Gen7TypeChart.js";
+import { Gen7UltraBurst } from "./Gen7UltraBurst.js";
 import { applyGen7WeatherEffects, isWeatherSuppressedOnFieldGen7 } from "./Gen7Weather.js";
 import { Gen7ZMove } from "./Gen7ZMove.js";
 
@@ -1027,9 +1028,17 @@ export class Gen7Ruleset extends BaseRuleset {
    */
   private readonly _mega = new Gen7MegaEvolution();
 
+  /**
+   * Ultra Burst gimmick instance. Requires a reference to _zMove to mark the Z-Crystal
+   * as consumed when Ultra Burst activates (both happen in the same action).
+   * Source: Bulbapedia "Ultra Burst" -- Ultranecrozium Z consumed on Ultra Burst
+   */
+  private readonly _ultraBurst = new Gen7UltraBurst(this._zMove);
+
   override getBattleGimmick(type: BattleGimmickType): BattleGimmick | null {
     if (type === "zmove") return this._zMove;
     if (type === "mega") return this._mega;
+    if (type === "ultraburst") return this._ultraBurst;
     return null;
   }
 
