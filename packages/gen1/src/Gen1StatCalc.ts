@@ -1,10 +1,6 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
-import type {
-  PokemonInstance,
-  PokemonSpeciesData,
-  StatBlock,
-} from "@pokemon-lib-ts/core";
-import { CORE_STAT_IDS, calculateStatExpContribution } from "@pokemon-lib-ts/core";
+import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
+import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
 
 // Source: pret/pokered engine/battle/core.asm — badge stat boost table
 // Boulder Badge → Attack, Thunder Badge → Defense, Soul Badge → Speed, Volcano Badge → Special
@@ -43,10 +39,7 @@ const MAX_STAT_VALUE = 999;
  * it does NOT check which stat changed. Every call re-boosts every badge-eligible stat.
  * Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts iterates all badge/stat pairs
  */
-export function applyBadgeBoostGlitch(
-  pokemon: ActivePokemon,
-  badgeBoosts: Gen1BadgeBoosts,
-): void {
+export function applyBadgeBoostGlitch(pokemon: ActivePokemon, badgeBoosts: Gen1BadgeBoosts): void {
   const stats = pokemon.pokemon.calculatedStats;
   if (!stats) return;
   // Cast through unknown to allow mutation — calculatedStats is a mutable snapshot
