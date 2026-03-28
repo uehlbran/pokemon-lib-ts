@@ -222,9 +222,8 @@ All nine generations are complete. 10,332+ tests across all packages, validated 
 Contributions welcome. Create a normal git branch from an up-to-date `origin/main` checkout, run
 `npm run verify:local` as the authoritative local handoff gate, use targeted package tests or the
 test-kind scripts while iterating, and reserve `npm run test:stress` for heavy manual soak
-verification. Then run `/review` before opening or updating a PR, and `git pushreview` after
-pushing. PRs get advisory CodeRabbit comments and may still get Qodo comments, but local
-verification is the source of truth.
+verification. Then run `/review` before opening a PR. PRs get advisory CodeRabbit comments and
+may still get Qodo comments, but local verification is the source of truth.
 
 ## Tech Stack
 

@@ -8,7 +8,7 @@ AI reviews are **advisory only** -- they leave comments but never approve or blo
 |----------|------|---------|--------|
 | **CodeRabbit** | GitHub App (auto-runs) | `@coderabbitai review` to re-trigger | `.coderabbit.yaml` |
 | **Qodo PR-Agent** | Legacy hosted Action (advisory, may be rate-limited) | `/review` `/describe` `/improve` in PR comments | `.qodo` |
-| **Claude Code** | Local subagent via `git pushreview` | Auto on push; manual: `claude --agent pokemon-reviewer "Review the current PR"` | `.claude/agents/pokemon-reviewer.md` |
+| **Claude Code** | Local subagent (manual only) | `claude --agent pokemon-reviewer "Review the current PR"` | `.claude/agents/pokemon-reviewer.md` |
 
 ## Required Gates
 

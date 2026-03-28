@@ -569,7 +569,7 @@ describe("Bug #257: Natural Gift does not set customDamage (damage goes through 
     // customDamage must NOT be set — damage goes through normal calc
     // Field is either null or undefined (both mean "no custom damage")
     expect(result.customDamage == null).toBe(true);
-    // Item should still be consumed
+    // Item flagged for consumption by the engine (which emits item-consumed event)
     expect(result.attackerItemConsumed).toBe(true);
   });
 
@@ -608,7 +608,7 @@ describe("Bug #257: Fling does not set customDamage (damage goes through normal 
     // customDamage must NOT be set — damage goes through normal calc
     // Field is either null or undefined (both mean "no custom damage")
     expect(result.customDamage == null).toBe(true);
-    // Item should still be consumed
+    // Item flagged for consumption by the engine (which emits item-consumed event)
     expect(result.attackerItemConsumed).toBe(true);
   });
 

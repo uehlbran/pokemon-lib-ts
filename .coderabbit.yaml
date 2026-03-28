@@ -1,6 +1,6 @@
 language: en-US
 reviews:
-  profile: assertive
+  profile: chill
   request_changes_workflow: false
   high_level_summary: true
   poem: false
@@ -29,4 +29,4 @@ reviews:
     enabled: true
     drafts: false
 chat:
-  auto_reply: true
+  auto_reply: false

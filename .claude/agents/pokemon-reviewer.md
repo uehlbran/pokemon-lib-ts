@@ -1,6 +1,6 @@
 ---
 name: pokemon-reviewer
-description: Advisory PR reviewer for the pokemon-lib-ts monorepo. Posts advisory review comments via gh pr review. Use after PRs are opened — runs automatically on push via git pushreview hook. AI reviews are advisory only, never formal approvals.
+description: Advisory PR reviewer for the pokemon-lib-ts monorepo. Posts advisory review comments via gh pr review. Manual use only. AI reviews are advisory only, never formal approvals.
 model: sonnet
 color: purple
 tools: Read, Grep, Glob, Bash

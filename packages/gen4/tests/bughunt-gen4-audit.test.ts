@@ -975,6 +975,181 @@ describe("Gen4MoveEffects Trick/Switcheroo — Klutz holder can swap items", () 
 });
 
 // ===========================================================================
+// BUG: Trick/Switcheroo — asymmetric swap (only attacker has item) — Closes #1102
+// ===========================================================================
+
+describe("Gen4MoveEffects Trick/Switcheroo — asymmetric item swap", () => {
+  it("given an attacker holding an item and a defender holding nothing, when Trick is used, then attacker's item transfers to defender", () => {
+    // Source: Bulbapedia Trick — "The user swaps held items with the target"
+    // Source: Showdown Gen 4 — Trick directly mutates items; asymmetric swaps work correctly
+    // Bug: Previously itemTransfer in the result caused the engine to undo the pre-mutation swap
+    const trickMove = dataManager.getMove(GEN4_MOVE_IDS.trick);
+    expect(trickMove).toMatchObject({ id: GEN4_MOVE_IDS.trick });
+
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    attacker.pokemon.heldItem = GEN4_ITEM_IDS.choiceScarf;
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    defender.pokemon.heldItem = null;
+
+    const state = createNullState();
+    const context = {
+      attacker,
+      defender,
+      move: trickMove!,
+      damage: 0,
+      state,
+      rng: createMockRng(),
+    } as MoveEffectContext;
+
+    ruleset.executeMoveEffect(context);
+
+    // Attacker's item should be gone, defender should have it
+    expect(attacker.pokemon.heldItem).toBeNull();
+    expect(defender.pokemon.heldItem).toBe(GEN4_ITEM_IDS.choiceScarf);
+  });
+
+  it("given a defender holding an item and an attacker holding nothing, when Trick is used, then defender's item transfers to attacker", () => {
+    // Source: Bulbapedia Trick — "The user swaps held items with the target"
+    // Triangulation: opposite direction from the test above
+    const trickMove = dataManager.getMove(GEN4_MOVE_IDS.trick);
+    expect(trickMove).toMatchObject({ id: GEN4_MOVE_IDS.trick });
+
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    attacker.pokemon.heldItem = null;
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    defender.pokemon.heldItem = GEN4_ITEM_IDS.leftovers;
+
+    const state = createNullState();
+    const context = {
+      attacker,
+      defender,
+      move: trickMove!,
+      damage: 0,
+      state,
+      rng: createMockRng(),
+    } as MoveEffectContext;
+
+    ruleset.executeMoveEffect(context);
+
+    expect(attacker.pokemon.heldItem).toBe(GEN4_ITEM_IDS.leftovers);
+    expect(defender.pokemon.heldItem).toBeNull();
+  });
+});
+
+// ===========================================================================
+// BUG: Natural Gift / Fling don't trigger Unburden — Closes #1104
+// ===========================================================================
+
+describe("Gen4MoveEffects — Natural Gift and Fling trigger Unburden", () => {
+  it("given an Unburden attacker using Natural Gift, when the berry is consumed, then Unburden volatile is set", () => {
+    // Source: Bulbapedia Unburden — "Doubles the Pokemon's Speed stat when its held item is used or lost"
+    // Source: Showdown Gen 4 mod — Unburden activates on any item loss including Natural Gift
+    const naturalGiftMove = dataManager.getMove(GEN4_MOVE_IDS.naturalGift);
+    expect(naturalGiftMove).toMatchObject({ id: GEN4_MOVE_IDS.naturalGift });
+
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.unburden,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    attacker.pokemon.heldItem = GEN4_ITEM_IDS.sitrusBerry;
+
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+
+    const state = createNullState();
+    const context = {
+      attacker,
+      defender,
+      move: naturalGiftMove!,
+      damage: 0,
+      state,
+      rng: createMockRng(),
+    } as MoveEffectContext;
+
+    ruleset.executeMoveEffect(context);
+
+    expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+  });
+
+  it("given an Unburden attacker using Fling with an Iron Ball, when the item is consumed, then Unburden volatile is set", () => {
+    // Source: Bulbapedia Unburden — "Doubles the Pokemon's Speed stat when its held item is used or lost"
+    // Source: Showdown Gen 4 mod — Unburden activates on Fling item consumption
+    const flingMove = dataManager.getMove(GEN4_MOVE_IDS.fling);
+    expect(flingMove).toMatchObject({ id: GEN4_MOVE_IDS.fling });
+
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.unburden,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    attacker.pokemon.heldItem = GEN4_ITEM_IDS.ironBall;
+
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+
+    const state = createNullState();
+    const context = {
+      attacker,
+      defender,
+      move: flingMove!,
+      damage: 0,
+      state,
+      rng: createMockRng(),
+    } as MoveEffectContext;
+
+    ruleset.executeMoveEffect(context);
+
+    expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(true);
+  });
+
+  it("given an attacker WITHOUT Unburden using Natural Gift, when the berry is consumed, then no Unburden volatile is set", () => {
+    // Negative triangulation: only Unburden holders get the volatile
+    const naturalGiftMove = dataManager.getMove(GEN4_MOVE_IDS.naturalGift);
+    expect(naturalGiftMove).toMatchObject({ id: GEN4_MOVE_IDS.naturalGift });
+
+    const attacker = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+    attacker.pokemon.heldItem = GEN4_ITEM_IDS.sitrusBerry;
+
+    const defender = createActivePokemon({
+      ability: GEN4_ABILITY_IDS.blaze,
+      types: [CORE_TYPE_IDS.normal],
+    });
+
+    const state = createNullState();
+    const context = {
+      attacker,
+      defender,
+      move: naturalGiftMove!,
+      damage: 0,
+      state,
+      rng: createMockRng(),
+    } as MoveEffectContext;
+
+    ruleset.executeMoveEffect(context);
+
+    expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)).toBe(false);
+  });
+});
+
+// ===========================================================================
 // BUG-3: Sequential type effectiveness with intermediate floor per defender type
 // ===========================================================================
 

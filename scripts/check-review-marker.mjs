@@ -32,7 +32,19 @@ try {
   process.exit(1);
 }
 
-const result = validateReviewMarker({ markerText, currentBranch, currentCommit });
+// Check if the reviewed commit is an ancestor of HEAD (allows post-review commits)
+const reviewedCommit = markerText.split(/\r?\n/).map((l) => l.trim())[1] || "";
+let isAncestor = false;
+if (reviewedCommit && reviewedCommit !== currentCommit) {
+  try {
+    const check = spawnSync("git", ["merge-base", "--is-ancestor", reviewedCommit, "HEAD"]);
+    isAncestor = check.status === 0;
+  } catch {
+    isAncestor = false;
+  }
+}
+
+const result = validateReviewMarker({ markerText, currentBranch, currentCommit, isAncestor });
 
 if (!result.isValid) {
   console.error(result.error);

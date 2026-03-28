@@ -38,5 +38,4 @@ Closes #
 ## Checklist
 - [ ] Local verification passes (`npm run verify:local`)
 - [ ] `/review` run locally (falcon + kestrel + sentinel)
-- [ ] `git pushreview` run after pushing the PR
 - [ ] Tests were written first or updated before the implementation
