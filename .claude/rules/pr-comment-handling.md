@@ -1,7 +1,7 @@
 # PR Comment Handling
 
 GitHub already blocks merges with unresolved review threads. Do not add a separate local or CI
-"comment gate" on top of that. The repo rule is simpler: read every review surface, reply to every
+review-comment automation layer on top of that. The repo rule is simpler: read every review surface, reply to every
 inline comment, resolve every addressed thread, and do not merge around unresolved discussion.
 
 ## Mandatory Process
