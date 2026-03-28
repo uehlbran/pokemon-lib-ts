@@ -6,8 +6,7 @@ import {
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
 } from "../../../packages/core/src/constants/index.js";
-import { DataManager } from "../../../packages/core/src/data/data-manager.js";
-import type { NatureData } from "../../../packages/core/src/entities/nature.js";
+import type { DataManager } from "../../../packages/core/src/data/data-manager.js";
 import type { PokemonInstance } from "../../../packages/core/src/entities/pokemon.js";
 import { createFriendship } from "../../../packages/core/src/logic/friendship-inputs.js";
 import { createMoveSlot } from "../../../packages/core/src/logic/pokemon-factory.js";

@@ -1,0 +1,66 @@
+{
+  "gen": 3,
+  "authority": "pret/pokeemerald",
+  "scenarios": [
+    {
+      "id": "gen3-flash-fire-boosted",
+      "description": "Flash Fire boosts Fire-type moves by 1.5x when activated",
+      "attacker": { "species": "Arcanine", "level": 50, "ability": "Flash Fire", "volatile": "flash-fire" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Flamethrower",
+      "note": "Flash Fire: 1.5x boost to Fire moves when triggered. Source: pret/pokeemerald src/battle_script_commands.c FlashFireCheck"
+    },
+    {
+      "id": "gen3-levitate-ground-immunity",
+      "description": "Levitate grants immunity to Ground-type moves",
+      "attacker": { "species": "Golem", "level": 50 },
+      "defender": { "species": "Gengar", "level": 50, "ability": "Levitate" },
+      "move": "Earthquake",
+      "expected_type_effectiveness": 0,
+      "note": "Levitate: Ground moves deal 0 damage. Source: pret/pokeemerald src/battle_script_commands.c Levitate"
+    },
+    {
+      "id": "gen3-thick-fat-fire-ice-resist",
+      "description": "Thick Fat halves damage from Fire and Ice type moves",
+      "attacker": { "species": "Flareon", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50, "ability": "Thick Fat" },
+      "move": "Flamethrower",
+      "note": "Thick Fat: 0.5x modifier on Fire and Ice moves. Source: pret/pokeemerald src/battle_script_commands.c ThickFat"
+    },
+    {
+      "id": "gen3-multi-hit-distribution",
+      "description": "Multi-hit moves hit 2-5 times with distribution 37.5%/37.5%/12.5%/12.5%",
+      "attacker": { "species": "Cloyster", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Spike Cannon",
+      "expected_hit_distribution": { "2": 0.375, "3": 0.375, "4": 0.125, "5": 0.125 },
+      "note": "Gen 3 multi-hit: 2 hits = 37.5%, 3 = 37.5%, 4 = 12.5%, 5 = 12.5%. Source: pret/pokeemerald src/battle_script_commands.c MultiHitLoop"
+    },
+    {
+      "id": "gen3-protect-consecutive-4-tier-cap",
+      "description": "Consecutive Protect/Detect uses: success rate drops to 1/2, 1/4, 1/8, then caps at 1/8",
+      "attacker": { "species": "Blissey", "level": 50, "consecutiveProtects": 3 },
+      "note": "Each consecutive use: 50% → 25% → 12.5% → caps. Source: pret/pokeemerald src/battle_script_commands.c ProtectCheck"
+    },
+    {
+      "id": "gen3-struggle-recoil-25-percent",
+      "description": "Struggle deals 25% of attacker's max HP as recoil in Gen 3 (changed from Gen 1-2)",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Vaporeon", "level": 50 },
+      "move": "Struggle",
+      "note": "Gen 3: Recoil = floor(max_hp / 4). Gen 1-2 was floor(damage / 2). Source: pret/pokeemerald src/battle_script_commands.c StruggleRecoil"
+    },
+    {
+      "id": "gen3-weather-swift-swim-rain",
+      "description": "Swift Swim doubles Speed in rain, increasing damage output via doubled speed in turn order",
+      "attacker": { "species": "Kingdra", "level": 50, "ability": "Swift Swim" },
+      "weather": "rain",
+      "note": "Swift Swim: 2x Speed in rain. Affects turn order but not damage directly. Source: pret/pokeemerald src/battle_script_commands.c SwiftSwim"
+    },
+    {
+      "id": "gen3-iron-fist-boost-list",
+      "description": "Iron Fist boosts punching moves by 20% — not in Gen 3 (introduced Gen 4)",
+      "note": "Iron Fist was introduced in Gen 4 (Hitmonchan). Gen 3 does not have this ability. Listed here to document that boosting abilities are gen-specific. Source: pret/pokeemerald abilities.c — Iron Fist not present"
+    }
+  ]
+}

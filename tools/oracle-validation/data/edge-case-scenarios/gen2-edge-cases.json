@@ -1,0 +1,59 @@
+{
+  "gen": 2,
+  "authority": "pret/pokecrystal",
+  "scenarios": [
+    {
+      "id": "gen2-dv-system",
+      "description": "HP DV derived from LSBs of Atk/Def/Spe/Spc DVs (same as Gen 1)",
+      "attacker": { "species": "Espeon", "level": 50, "dvs": { "atk": 15, "def": 14, "spe": 15, "spc": 15 } },
+      "note": "HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spe & 1) << 1) | (Spc & 1). With Atk=15,Def=14,Spe=15,Spc=15: HP_DV = (1<<3)|(0<<2)|(1<<1)|(1) = 11. Source: pret/pokecrystal engine/pokemon/move_mon.asm"
+    },
+    {
+      "id": "gen2-stat-exp-sqrt",
+      "description": "Stat experience uses sqrt in the formula: stat += floor(sqrt(statExp) + 1) / 4 (ERRATA #1)",
+      "attacker": { "species": "Mewtwo", "level": 50, "dvs": { "spc": 15 }, "statExp": { "spAttack": 40000 } },
+      "note": "StatExp contribution = floor(floor(sqrt(40000)) + 1) / 4 = floor(201/4) = 50. Source: pret/pokecrystal engine/pokemon/move_mon.asm StatExp calculation"
+    },
+    {
+      "id": "gen2-freeze-thaw-25-256",
+      "description": "Frozen Pokemon has 25/256 (~9.77%) chance to thaw each turn",
+      "attacker": { "species": "Articuno", "level": 50 },
+      "note": "Thaw chance = 25/256 per turn on the frozen pokemon's turn. Source: pret/pokecrystal engine/battle/effect_commands.asm FreezeStatus"
+    },
+    {
+      "id": "gen2-light-ball-pikachu-spa",
+      "description": "Light Ball doubles Pikachu's Special Attack in Gen 2",
+      "attacker": { "species": "Pikachu", "level": 50, "item": "Light Ball", "dvs": { "spc": 15 } },
+      "defender": { "species": "Lapras", "level": 50, "dvs": { "spc": 15 } },
+      "move": "Thunderbolt",
+      "note": "Light Ball doubles Pikachu SpA. Source: pret/pokecrystal engine/battle/core.asm ItemEffects LightBall"
+    },
+    {
+      "id": "gen2-leftovers-heals-before-status",
+      "description": "Leftovers heals 1/16 max HP at end of turn, applied before status damage",
+      "attacker": { "species": "Snorlax", "level": 50, "item": "Leftovers", "status": "poison" },
+      "note": "Turn order: Leftovers heal → poison damage. Source: pret/pokecrystal engine/battle/core.asm EndOfTurn"
+    },
+    {
+      "id": "gen2-toxic-escalation",
+      "description": "Badly poisoned (toxic) damage escalates: 1/16 → 2/16 → 3/16 per turn",
+      "attacker": { "species": "Gengar", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50, "status": "toxic", "toxicCounter": 3 },
+      "note": "Toxic counter starts at 1, increments each turn. Damage = counter/16 * max_hp. Source: pret/pokecrystal engine/battle/effect_commands.asm ToxicEffect"
+    },
+    {
+      "id": "gen2-leech-seed-1-8-max-hp",
+      "description": "Leech Seed drains 1/8 of the target's max HP each turn",
+      "attacker": { "species": "Venusaur", "level": 50 },
+      "defender": { "species": "Lapras", "level": 50, "volatile": "leech-seed" },
+      "note": "Leech Seed drains floor(max_hp / 8). Differs from Gen 1 (1/16). Source: pret/pokecrystal engine/battle/effect_commands.asm LeechSeed"
+    },
+    {
+      "id": "gen2-sandstorm-damage-1-16",
+      "description": "Sandstorm deals 1/16 max HP per turn to non-Rock/Ground/Steel types",
+      "defender": { "species": "Charizard", "level": 50 },
+      "weather": "sand",
+      "note": "Sandstorm end-of-turn: floor(max_hp / 16) to non-immune. Rock/Ground/Steel immune. Source: pret/pokecrystal engine/battle/core.asm SandstormDamage"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "gen": 1,
+  "authority": "pret/pokered",
+  "scenarios": [
+    {
+      "id": "gen1-stab-4x-super-effective",
+      "description": "STAB + 4x super effective: Fire/Flying vs Grass/Bug - tests stacked multipliers with sequential floor (ERRATA #3C)",
+      "attacker": { "species": "Charizard", "level": 50, "dvs": { "atk": 15, "spc": 15 } },
+      "defender": { "species": "Butterfree", "level": 50, "dvs": { "def": 15 } },
+      "move": "Flamethrower",
+      "expected_type_effectiveness": 4,
+      "note": "STAB Fire vs Grass/Bug type — both 2x, sequential floor means product may differ from 4x directly. Source: pret/pokered engine/battle/core.asm TypeEffectiveness"
+    },
+    {
+      "id": "gen1-critical-hit",
+      "description": "Critical hit ignores stat stages and screens, and uses base Speed for crit rate calculation",
+      "attacker": { "species": "Mewtwo", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Slowbro", "level": 50, "dvs": { "def": 15 } },
+      "move": "Psychic",
+      "note": "Crit rate = floor(base_speed / 2) / 256. Mewtwo base Speed 130 → 65/256 ~25%. Source: pret/pokered engine/battle/core.asm CriticalHit"
+    },
+    {
+      "id": "gen1-burned-attacker-physical",
+      "description": "Burned attacker has Attack halved when calculating physical damage",
+      "attacker": { "species": "Arcanine", "level": 50, "dvs": { "atk": 15 }, "status": "burn" },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Body Slam",
+      "note": "Burn halves Attack stat in damage calc. Source: pret/pokered engine/battle/core.asm GetCurrentAttackDefense"
+    },
+    {
+      "id": "gen1-max-damage-roll",
+      "description": "Maximum damage roll uses 255/255 random factor",
+      "attacker": { "species": "Gengar", "level": 50, "dvs": { "spc": 15 } },
+      "defender": { "species": "Alakazam", "level": 50, "dvs": { "spc": 15 } },
+      "move": "Psychic",
+      "roll": 255,
+      "note": "Random factor: chosen in range [217, 255], max roll = 255. Source: pret/pokered engine/battle/core.asm RandomizeDamage"
+    },
+    {
+      "id": "gen1-min-damage-roll",
+      "description": "Minimum damage roll uses 217/255 random factor",
+      "attacker": { "species": "Gengar", "level": 50, "dvs": { "spc": 15 } },
+      "defender": { "species": "Alakazam", "level": 50, "dvs": { "spc": 15 } },
+      "move": "Psychic",
+      "roll": 217,
+      "note": "Random factor: chosen in range [217, 255], min roll = 217. Source: pret/pokered engine/battle/core.asm RandomizeDamage"
+    },
+    {
+      "id": "gen1-level-1-attacker",
+      "description": "Level 1 attacker edge case for integer division in damage formula",
+      "attacker": { "species": "Machamp", "level": 1, "dvs": { "atk": 15 } },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Karate Chop",
+      "note": "Level 1 with floor((2*1/5 + 2) = 2) in step 1. Source: pret/pokered engine/battle/core.asm CalcDamage"
+    },
+    {
+      "id": "gen1-fixed-damage-seismic-toss",
+      "description": "Seismic Toss deals damage equal to attacker level",
+      "attacker": { "species": "Hitmonlee", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Seismic Toss",
+      "expected_damage": 50,
+      "note": "Fixed damage = attacker level. Ignores type effectiveness on non-immune. Source: pret/pokered engine/battle/effect_commands.asm SeismicToss"
+    },
+    {
+      "id": "gen1-fixed-damage-dragon-rage",
+      "description": "Dragon Rage always deals 40 damage",
+      "attacker": { "species": "Dragonite", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Dragon Rage",
+      "expected_damage": 40,
+      "note": "Fixed damage = 40. Source: pret/pokered engine/battle/effect_commands.asm DragonRage"
+    },
+    {
+      "id": "gen1-fixed-damage-sonic-boom",
+      "description": "Sonic Boom always deals 20 damage",
+      "attacker": { "species": "Electrode", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Sonic Boom",
+      "expected_damage": 20,
+      "note": "Fixed damage = 20. Source: pret/pokered engine/battle/effect_commands.asm SonicBoom"
+    },
+    {
+      "id": "gen1-struggle-recoil",
+      "description": "Struggle deals 50% of attacker's max HP as recoil",
+      "attacker": { "species": "Raichu", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Vaporeon", "level": 50, "dvs": { "def": 15 } },
+      "move": "Struggle",
+      "note": "Recoil = floor(damage / 2), not max HP. Source: pret/pokered engine/battle/effect_commands.asm StruggleEffect"
+    },
+    {
+      "id": "gen1-self-destruct-explosion-defense-halved",
+      "description": "Explosion and Self-Destruct halve the target's Defense stat in the damage formula",
+      "attacker": { "species": "Gengar", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Explosion",
+      "note": "Defense is halved (floor) before damage calc. Source: pret/pokered engine/battle/core.asm CalcDamage ExplodeHalveDefense"
+    },
+    {
+      "id": "gen1-ghost-vs-psychic-immunity",
+      "description": "Ghost-type moves do 0 damage vs Psychic-type in Gen 1 (cartridge bug — immunity from table lookup order)",
+      "attacker": { "species": "Gengar", "level": 50, "dvs": { "spc": 15 } },
+      "defender": { "species": "Alakazam", "level": 50, "dvs": { "spc": 15 } },
+      "move": "Night Shade",
+      "expected_type_effectiveness": 0,
+      "note": "Ghost vs Psychic = 0x in Gen 1. This is a cartridge bug — the lookup exits early. Source: pret/pokered engine/battle/core.asm TypeEffectiveness GHOST_IMMUNITY_BUG"
+    },
+    {
+      "id": "gen1-focus-energy-bug",
+      "description": "Focus Energy divides crit rate by 4 (bug) instead of multiplying by 4 as documented",
+      "attacker": { "species": "Mewtwo", "level": 50, "dvs": { "atk": 15 }, "volatile": "focus-energy" },
+      "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
+      "move": "Psychic",
+      "note": "Focus Energy bug: crit rate is floor(base_speed/2)/256 then divided by 4, not multiplied. Source: pret/pokered engine/battle/core.asm FocusEnergy CriticalHitChance"
+    },
+    {
+      "id": "gen1-reflect-halves-physical",
+      "description": "Reflect halves physical damage (multiplies effective Defense by 2)",
+      "attacker": { "species": "Machamp", "level": 50, "dvs": { "atk": 15 } },
+      "defender": { "species": "Slowbro", "level": 50, "dvs": { "def": 15 }, "screen": "reflect" },
+      "move": "Earthquake",
+      "note": "Reflect doubles the defender's defense in damage calc. Source: pret/pokered engine/battle/core.asm ReflectEffect"
+    },
+    {
+      "id": "gen1-dual-type-sequential-effectiveness",
+      "description": "Dual-type defender: effectiveness multipliers applied sequentially with floor between each",
+      "attacker": { "species": "Charizard", "level": 50, "dvs": { "spc": 15 } },
+      "defender": { "species": "Gyarados", "level": 50, "dvs": { "def": 15 } },
+      "move": "Thunderbolt",
+      "expected_type_effectiveness": 4,
+      "note": "Electric vs Water/Flying = 2x * 2x = 4x. Floor is applied after each multiplication. Source: pret/pokered engine/battle/core.asm TypeEffectiveness sequential"
+    }
+  ]
+}
