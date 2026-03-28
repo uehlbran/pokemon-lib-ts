@@ -1,13 +1,8 @@
-# PR Comment Handling (Manual Audit Required)
+# PR Comment Handling
 
-## Why This Is Manual
-
-GitHub review state spans inline review comments, review-thread resolution state, top-level PR
-conversation comments, and review-summary comments that may not appear on the diff. Local
-automation gave false confidence by modeling only part of that surface.
-
-**Do not treat any local script, hook, or CI job as authority for whether a PR is ready to
-merge.** Manual review-state audit is mandatory.
+GitHub already blocks merges with unresolved review threads. Do not add a separate local or CI
+"comment gate" on top of that. The repo rule is simpler: read every review surface, reply to every
+inline comment, resolve every addressed thread, and do not merge around unresolved discussion.
 
 ## Mandatory Process
 
@@ -69,7 +64,7 @@ Never ignore a real bug just because it's outside the current PR's scope. Either
 
 ## Never
 
-- Merge a PR without doing the full manual audit
+- Merge a PR without doing the full review-state audit
 - Merge a PR while any review thread is unresolved
 - Merge a PR while any actionable top-level or review-summary comment is still unacknowledged
 - Use admin privileges or any bypass path to merge around unresolved comments
