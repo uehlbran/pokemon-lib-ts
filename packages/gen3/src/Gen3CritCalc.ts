@@ -1,4 +1,8 @@
-import { CRIT_MULTIPLIER_CLASSIC, CRIT_RATE_PROBABILITIES_GEN3_5 } from "@pokemon-lib-ts/core";
+import {
+  CRIT_MULTIPLIER_CLASSIC,
+  CRIT_RATE_PROBABILITIES_GEN3_5,
+  CRIT_RATE_TABLE_GEN3_5,
+} from "@pokemon-lib-ts/core";
 
 /**
  * Gen 3 critical hit rate table (denominators), indexed by stage.
@@ -20,10 +24,7 @@ import { CRIT_MULTIPLIER_CLASSIC, CRIT_RATE_PROBABILITIES_GEN3_5 } from "@pokemo
  *   - Stage 3: Focus Energy (+2 stages in Gen 3, correctly implemented unlike Gen 1 bug)
  *   - Stage 4+: Focus Energy + Scope Lens
  */
-export const GEN3_CRIT_RATE_TABLE: readonly number[] = [16, 8, 4, 3, 2] as const;
-
-/** @deprecated Use `GEN3_CRIT_RATE_TABLE`. */
-export const GEN3_CRIT_RATE_DENOMINATORS = GEN3_CRIT_RATE_TABLE;
+export const GEN3_CRIT_RATE_TABLE: typeof CRIT_RATE_TABLE_GEN3_5 = CRIT_RATE_TABLE_GEN3_5;
 
 /**
  * Gen 3 critical hit rate table as probability fractions (0–1), indexed by stage.
@@ -33,9 +34,6 @@ export const GEN3_CRIT_RATE_DENOMINATORS = GEN3_CRIT_RATE_TABLE;
  */
 export const GEN3_CRIT_RATE_PROBABILITIES: typeof CRIT_RATE_PROBABILITIES_GEN3_5 =
   CRIT_RATE_PROBABILITIES_GEN3_5;
-
-/** @deprecated Use `GEN3_CRIT_RATE_PROBABILITIES`. */
-export const GEN3_CRIT_RATES = GEN3_CRIT_RATE_PROBABILITIES;
 
 /**
  * Gen 3 critical hit damage multiplier: 2.0x (classic, unlike Gen 6+ which uses 1.5x).

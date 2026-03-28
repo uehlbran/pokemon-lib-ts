@@ -86,6 +86,36 @@ export function getCritRate(stage: number, probabilityTable: readonly number[]):
   return probabilityTable[index] as number;
 }
 
+/**
+ * Critical hit rate denominators by stage (Gen 6+).
+ *
+ * | Stage | Denominator | Rate        |
+ * |-------|-------------|-------------|
+ * | 0     | 24          | ~4.2%       |
+ * | 1     | 8           | 12.5%       |
+ * | 2     | 2           | 50%         |
+ * | 3+    | 1           | guaranteed  |
+ *
+ * Source: Bulbapedia "Critical hit" Gen 6 section
+ * Source: Showdown sim/battle-actions.ts — critRatio array
+ */
+export const CRIT_RATE_TABLE_GEN6_PLUS: readonly number[] = [24, 8, 2, 1] as const;
+
+/**
+ * Critical hit rate denominators by stage (Gen 3-5).
+ *
+ * | Stage | Denominator | Rate     |
+ * |-------|-------------|----------|
+ * | 0     | 16          | 6.25%    |
+ * | 1     | 8           | 12.5%    |
+ * | 2     | 4           | 25%      |
+ * | 3     | 3           | 33.3%    |
+ * | 4+    | 2           | 50%      |
+ *
+ * Source: pret/pokeemerald src/battle_script_commands.c:606 sCriticalHitChance = {16, 8, 4, 3, 2}
+ */
+export const CRIT_RATE_TABLE_GEN3_5: readonly number[] = [16, 8, 4, 3, 2] as const;
+
 /** Critical hit damage multiplier (Gen 6+: 1.5x)
  * Source: Showdown sim/battle-actions.ts — basePower *= 1.5 for crits in Gen 6+
  */

@@ -6,7 +6,7 @@ import {
   CORE_GENDERS,
   CORE_VOLATILE_IDS,
   CRIT_MULTIPLIER_CLASSIC,
-  CRIT_RATES_GEN3_5,
+  CRIT_RATE_PROBABILITIES_GEN3_5,
   createEvs,
   createIvs,
   createPokemonInstance,
@@ -23,10 +23,8 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   GEN5_CRIT_MULTIPLIER,
-  GEN5_CRIT_RATE_DENOMINATORS,
   GEN5_CRIT_RATE_PROBABILITIES,
   GEN5_CRIT_RATE_TABLE,
-  GEN5_CRIT_RATES,
 } from "../src/Gen5CritCalc";
 import { Gen5Ruleset } from "../src/Gen5Ruleset";
 
@@ -38,36 +36,36 @@ describe("Gen 5 crit calc constants", () => {
   it("given Gen5 crit table, when checking stage 1, then crit chance is 1/16", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts critMult = [0, 16, 8, 4, 3, 2]
     // Stage 0 in our 0-indexed table = Stage 1 in Showdown's 1-indexed table = denominator 16
-    expect(GEN5_CRIT_RATE_DENOMINATORS[0]).toBe(16);
+    expect(GEN5_CRIT_RATE_TABLE[0]).toBe(16);
   });
 
   it("given Gen5 crit table, when checking stage 2, then crit chance is 1/8", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts critMult = [0, 16, 8, 4, 3, 2]
     // Stage 1 in our table = denominator 8
-    expect(GEN5_CRIT_RATE_DENOMINATORS[1]).toBe(8);
+    expect(GEN5_CRIT_RATE_TABLE[1]).toBe(8);
   });
 
   it("given Gen5 crit table, when checking stage 3 (Focus Energy +2), then crit chance is 1/4", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts critMult = [0, 16, 8, 4, 3, 2]
     // Stage 2 in our table = denominator 4 (1/4 chance)
     // Focus Energy adds +2 stages from base 0, resulting in stage 2
-    expect(GEN5_CRIT_RATE_DENOMINATORS[2]).toBe(4);
+    expect(GEN5_CRIT_RATE_TABLE[2]).toBe(4);
   });
 
   it("given Gen5 crit table, when checking stage 4, then crit chance is 1/3", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts critMult = [0, 16, 8, 4, 3, 2]
-    expect(GEN5_CRIT_RATE_DENOMINATORS[3]).toBe(3);
+    expect(GEN5_CRIT_RATE_TABLE[3]).toBe(3);
   });
 
   it("given Gen5 crit table, when checking stage 5, then crit chance is 1/2", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts critMult = [0, 16, 8, 4, 3, 2]
     // Stage 4 in our table = denominator 2 (max stage, 1/2 chance)
-    expect(GEN5_CRIT_RATE_DENOMINATORS[4]).toBe(2);
+    expect(GEN5_CRIT_RATE_TABLE[4]).toBe(2);
   });
 
-  it("given GEN5_CRIT_RATE_DENOMINATORS, when checking length, then has exactly 5 entries", () => {
+  it("given GEN5_CRIT_RATE_TABLE, when checking length, then has exactly 5 entries", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- 5 stages (0-4 in our indexing)
-    expect(GEN5_CRIT_RATE_DENOMINATORS.length).toBe(5);
+    expect(GEN5_CRIT_RATE_TABLE.length).toBe(5);
   });
 
   it("given Gen5 crit multiplier, then is 2.0 (not 1.5)", () => {
@@ -83,34 +81,33 @@ describe("Gen 5 crit calc constants", () => {
     expect(GEN5_CRIT_MULTIPLIER).toBe(CRIT_MULTIPLIER_CLASSIC);
   });
 
-  it("given GEN5_CRIT_RATES, when checking stage 0 probability, then probability is 1/16 = 0.0625", () => {
+  it("given GEN5_CRIT_RATE_PROBABILITIES, when checking stage 0 probability, then probability is 1/16 = 0.0625", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- stage 0 crit rate = 1/16
     // Derivation: 1 / 16 = 0.0625
-    expect(GEN5_CRIT_RATES[0]).toBeCloseTo(1 / 16, 5);
+    expect(GEN5_CRIT_RATE_PROBABILITIES[0]).toBeCloseTo(1 / 16, 5);
   });
 
-  it("given the canonical Gen 5 denominator table, when compared to the deprecated alias, then they are the same table", () => {
+  it("given GEN5_CRIT_RATE_TABLE, when compared to CRIT_RATE_TABLE_GEN3_5 values, then matches [16, 8, 4, 3, 2]", () => {
     // Source: issue #773 standardizes the denominator surface on GEN5_CRIT_RATE_TABLE
-    // while preserving GEN5_CRIT_RATE_DENOMINATORS for compatibility.
-    expect(GEN5_CRIT_RATE_TABLE).toBe(GEN5_CRIT_RATE_DENOMINATORS);
+    // backed by the shared core CRIT_RATE_TABLE_GEN3_5 constant.
+    expect(Array.from(GEN5_CRIT_RATE_TABLE)).toEqual([16, 8, 4, 3, 2]);
   });
 
-  it("given the canonical Gen 5 probability table, when compared to the deprecated alias, then they are the same table", () => {
+  it("given GEN5_CRIT_RATE_PROBABILITIES, when compared to CRIT_RATE_PROBABILITIES_GEN3_5, then same reference", () => {
     // Source: issue #773 standardizes the probability surface on GEN5_CRIT_RATE_PROBABILITIES
-    // while preserving GEN5_CRIT_RATES for compatibility.
-    expect(GEN5_CRIT_RATE_PROBABILITIES).toBe(GEN5_CRIT_RATES);
+    expect(GEN5_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN3_5);
   });
 
-  it("given GEN5_CRIT_RATES, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {
+  it("given GEN5_CRIT_RATE_PROBABILITIES, when checking stage 1 probability, then probability is 1/8 = 0.125", () => {
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- stage 1 crit rate = 1/8
     // Derivation: 1 / 8 = 0.125
-    expect(GEN5_CRIT_RATES[1]).toBeCloseTo(1 / 8, 5);
+    expect(GEN5_CRIT_RATE_PROBABILITIES[1]).toBeCloseTo(1 / 8, 5);
   });
 
-  it("given GEN5_CRIT_RATES, when comparing to CRIT_RATES_GEN3_5, then table is the same reference", () => {
-    // Source: packages/core/src/logic/critical-hit.ts -- CRIT_RATES_GEN3_5 is the authoritative table
+  it("given GEN5_CRIT_RATE_PROBABILITIES, when comparing to CRIT_RATE_PROBABILITIES_GEN3_5, then table is the same reference", () => {
+    // Source: packages/core/src/logic/critical-hit.ts -- CRIT_RATE_PROBABILITIES_GEN3_5 is the authoritative table
     // Gen5CritCalc re-exports the core constant for convenience
-    expect(GEN5_CRIT_RATES).toBe(CRIT_RATES_GEN3_5);
+    expect(GEN5_CRIT_RATE_PROBABILITIES).toBe(CRIT_RATE_PROBABILITIES_GEN3_5);
   });
 });
 
