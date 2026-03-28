@@ -215,7 +215,9 @@ export class BattleEngine implements BattleEventEmitter {
 
   private static shouldSkipRulesetValidationMessage(message: string): boolean {
     return (
-      message.includes("is not available in Gen ") ||
+      (message.startsWith('Move "') && message.includes('" is not available in Gen ')) ||
+      (message.startsWith('Item "') && message.includes('" is not available in Gen ')) ||
+      (message.startsWith('Ability "') && message.includes('" is not available in Gen ')) ||
       message === "Pokemon ability is required" ||
       message === "Pokemon move slot is empty"
     );
@@ -231,6 +233,34 @@ export class BattleEngine implements BattleEventEmitter {
     dataManager: DataManager,
   ): BattleValidationResult {
     const errors: BattleValidationIssue[] = [];
+
+    if (config.format !== "singles") {
+      return {
+        valid: false,
+        errors: [
+          BattleEngine.createBattleValidationIssue(
+            "battle",
+            "unsupported-format",
+            "format",
+            `Battle format "${config.format}" is not supported`,
+          ),
+        ],
+      };
+    }
+
+    if (config.teams.length !== 2) {
+      return {
+        valid: false,
+        errors: [
+          BattleEngine.createBattleValidationIssue(
+            "team",
+            "teams-length",
+            "teams",
+            `Singles battles require exactly 2 sides, received ${config.teams.length}`,
+          ),
+        ],
+      };
+    }
 
     for (const [sideIndex, team] of config.teams.entries()) {
       const teamField = `teams[${sideIndex}]`;

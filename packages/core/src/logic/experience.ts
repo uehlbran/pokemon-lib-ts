@@ -38,9 +38,9 @@ export function normalizeExperienceGroup(group: string): ExperienceGroup {
  * @returns Total cumulative EXP needed to reach this level
  */
 export function getExpForLevel(group: ExperienceGroupIdentifier | string, level: number): number {
+  const normalizedGroup = normalizeExperienceGroup(group);
   if (level <= 1) return 0;
   const n = level;
-  const normalizedGroup = normalizeExperienceGroup(group);
 
   switch (normalizedGroup) {
     case "erratic":

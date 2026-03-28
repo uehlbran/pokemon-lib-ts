@@ -18,6 +18,7 @@ describe("normalizeImportedGrowthRate", () => {
   });
 
   it("given a canonical growth-rate name, when normalizing importer output, then it is preserved", () => {
+    // Source: core experience-group contract — medium-slow is one of the 6 canonical runtime groups.
     expect(normalizeImportedGrowthRate("medium-slow")).toBe("medium-slow");
   });
 

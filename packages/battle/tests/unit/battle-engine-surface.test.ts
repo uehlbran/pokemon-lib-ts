@@ -405,6 +405,91 @@ describe("BattleEngine surface", () => {
         message: "Side 0 must have at least 1 Pokemon for singles battles",
       });
     });
+
+    it("given a config without exactly two sides, when validateConfig is called, then it rejects the team count before side setup", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "singles",
+          teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)]],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result).toEqual({
+        valid: false,
+        errors: [
+          {
+            entity: "team",
+            id: "teams-length",
+            field: "teams",
+            message: "Singles battles require exactly 2 sides, received 1",
+          },
+        ],
+      });
+    });
+
+    it("given an unsupported format, when validateConfig is called, then it rejects the config before team validation", () => {
+      const dataManager = createMockDataManager();
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 1,
+          format: "doubles",
+          teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)]],
+          seed: 12345,
+        },
+        new MockRuleset(),
+        dataManager,
+      );
+
+      expect(result).toEqual({
+        valid: false,
+        errors: [
+          {
+            entity: "battle",
+            id: "unsupported-format",
+            field: "format",
+            message: 'Battle format "doubles" is not supported',
+          },
+        ],
+      });
+    });
+
+    it("given a ruleset-only nature error, when validateConfig is called, then the nature failure is preserved", () => {
+      const ruleset = new ValidatingRuleset();
+      ruleset.setInvalidPokemon("charizard-1", [
+        'Nature "sideways-nature" is not available in Gen 4',
+      ]);
+
+      const result = BattleEngine.validateConfig(
+        {
+          generation: 4,
+          format: "singles",
+          teams: [
+            [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, { uid: "charizard-1" })],
+            [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50, { uid: "blastoise-1" })],
+          ],
+          seed: 12345,
+        },
+        ruleset.setGenerationForTest(4),
+        createMockDataManager(),
+      );
+
+      expect(result).toEqual({
+        valid: false,
+        errors: [
+          {
+            entity: "pokemon",
+            id: "charizard-1",
+            field: "teams[0][0]",
+            message: 'Nature "sideways-nature" is not available in Gen 4',
+          },
+        ],
+      });
+    });
   });
 
   describe("getAvailableMoves", () => {
@@ -451,20 +536,23 @@ describe("BattleEngine surface", () => {
 
   describe("input isolation", () => {
     it("given caller-owned team members, when a full turn resolves, then the original pokemon objects stay unchanged", () => {
+      // Synthetic non-default values make accidental engine-side mutation visible in the caller copy.
+      const ORIGINAL_HP = 17;
+      const ORIGINAL_STAT_VALUE = 17;
       const originalMoveSlot = createMockMoveSlot(CORE_MOVE_IDS.tackle);
       const team1 = [
         createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
           uid: "charizard-1",
           nickname: "Charizard",
-          currentHp: 17,
+          currentHp: ORIGINAL_HP,
           moves: [originalMoveSlot],
           calculatedStats: {
-            hp: 17,
-            attack: 17,
-            defense: 17,
-            spAttack: 17,
-            spDefense: 17,
-            speed: 17,
+            hp: ORIGINAL_STAT_VALUE,
+            attack: ORIGINAL_STAT_VALUE,
+            defense: ORIGINAL_STAT_VALUE,
+            spAttack: ORIGINAL_STAT_VALUE,
+            spDefense: ORIGINAL_STAT_VALUE,
+            speed: ORIGINAL_STAT_VALUE,
           },
         }),
       ];
@@ -479,7 +567,7 @@ describe("BattleEngine surface", () => {
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-      expect(originalPokemon.currentHp).toBe(17);
+      expect(originalPokemon.currentHp).toBe(ORIGINAL_HP);
       expect(originalPokemon.moves).toEqual(originalMoves);
       expect(originalPokemon.calculatedStats).toEqual(originalCalculatedStats);
       expect(originalPokemon.timesAttacked).toBeUndefined();
