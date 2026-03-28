@@ -1,0 +1,231 @@
+{
+  "gen": 7,
+  "authority": "smogon/pokemon-showdown",
+  "scenarios": [
+    {
+      "id": "gen7-z-move-power-close-combat-120bp",
+      "description": "Close Combat (120 BP) converts to 190 Z-power via the 11-range Z-power table (ERRATA #15)",
+      "attacker": { "species": "Lucario", "level": 50, "item": "Fightinium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Close Combat",
+      "sourceBP": 120,
+      "expectedZPower": 190,
+      "note": "Z-Move power lookup table: 120 BP → 190. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower ERRATA #15"
+    },
+    {
+      "id": "gen7-z-move-power-thunderbolt-90bp",
+      "description": "Thunderbolt (90 BP) converts to 175 Z-power via the Z-power table",
+      "attacker": { "species": "Pikachu", "level": 50, "item": "Electrium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Thunderbolt",
+      "sourceBP": 90,
+      "expectedZPower": 175,
+      "note": "Z-Move power lookup table: 90 BP → 175. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower"
+    },
+    {
+      "id": "gen7-z-move-power-flamethrower-90bp",
+      "description": "Flamethrower (90 BP) converts to 175 Z-power",
+      "attacker": { "species": "Charizard", "level": 50, "item": "Firium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Flamethrower",
+      "sourceBP": 90,
+      "expectedZPower": 175,
+      "note": "Z-Move power lookup table: 90 BP → 175. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower"
+    },
+    {
+      "id": "gen7-z-move-power-fire-blast-110bp",
+      "description": "Fire Blast (110 BP) converts to 185 Z-power",
+      "attacker": { "species": "Charizard", "level": 50, "item": "Firium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Fire Blast",
+      "sourceBP": 110,
+      "expectedZPower": 185,
+      "note": "Z-Move power lookup table: 110 BP → 185. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower"
+    },
+    {
+      "id": "gen7-z-move-power-water-pulse-60bp",
+      "description": "Water Pulse (60 BP) converts to 120 Z-power",
+      "attacker": { "species": "Vaporeon", "level": 50, "item": "Waterium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Water Pulse",
+      "sourceBP": 60,
+      "expectedZPower": 120,
+      "note": "Z-Move power lookup table: 60 BP → 120. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower"
+    },
+    {
+      "id": "gen7-z-move-power-extreme-speed-80bp",
+      "description": "Extreme Speed (80 BP) converts to 160 Z-power",
+      "attacker": { "species": "Arcanine", "level": 50, "item": "Normalium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Extreme Speed",
+      "sourceBP": 80,
+      "expectedZPower": 160,
+      "note": "Z-Move power lookup table: 80 BP → 160. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower"
+    },
+    {
+      "id": "gen7-z-move-power-cap-140plus-bp",
+      "description": "Moves with 140+ BP cap at 200 Z-power",
+      "attacker": { "species": "Dragonite", "level": 50, "item": "Dragonium Z" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Draco Meteor",
+      "sourceBP": 130,
+      "expectedZPower": 195,
+      "note": "Z-Move power cap: 130 BP → 195; 140+ BP → 200. Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower"
+    },
+    {
+      "id": "gen7-status-z-move-grants-stat-boost",
+      "type": "mechanic-documentation",
+      "description": "Status Z-Moves grant a stat boost and do NOT become damage moves (ERRATA #16)",
+      "attacker": { "species": "Snorlax", "level": 50, "item": "Normalium Z" },
+      "defender": { "species": "Vaporeon", "level": 50 },
+      "move": "Curse",
+      "note": "Z-Curse (Snorlax) grants +1 Atk, +1 Def, +1 SpDef and remains a status move. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #16"
+    },
+    {
+      "id": "gen7-z-move-protect-25-percent",
+      "description": "Z-Moves deal 25% damage through Protect",
+      "attacker": { "species": "Lucario", "level": 50, "item": "Fightinium Z" },
+      "defender": { "species": "Snorlax", "level": 50, "volatile": "protect" },
+      "move": "Close Combat",
+      "expectedDamageMultiplierThroughProtect": 0.25,
+      "note": "Z-Moves bypass Protect at 25% power. Source: smogon/pokemon-showdown sim/battle-actions.ts ZMoveProtect"
+    },
+    {
+      "id": "gen7-electric-terrain-boost-1-5x",
+      "description": "Electric Terrain boosts Electric moves by 1.5x in Gen 7 (not 1.3x — ERRATA #17)",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Thunderbolt",
+      "terrain": "electric",
+      "expectedBoost": 1.5,
+      "note": "Electric Terrain multiplier is 1.5x in Gen 7. Changed to 1.3x in Gen 8. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17"
+    },
+    {
+      "id": "gen7-grassy-terrain-boost-1-5x",
+      "description": "Grassy Terrain boosts Grass moves by 1.5x and heals grounded Pokemon 1/16 HP per turn",
+      "attacker": { "species": "Tapu Bulu", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Energy Ball",
+      "terrain": "grassy",
+      "expectedBoost": 1.5,
+      "note": "Grassy Terrain: 1.5x Grass moves, 1/16 HP heal grounded, halves Earthquake/Bulldoze/Magnitude. Source: smogon/pokemon-showdown sim/battle-actions.ts GrassyTerrain"
+    },
+    {
+      "id": "gen7-grassy-terrain-halves-earthquake",
+      "description": "Grassy Terrain halves the power of Earthquake, Bulldoze, and Magnitude",
+      "attacker": { "species": "Garchomp", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Earthquake",
+      "terrain": "grassy",
+      "expectedBoost": 0.5,
+      "note": "Grassy Terrain: Earthquake, Bulldoze, Magnitude deal 50% damage. Source: smogon/pokemon-showdown sim/battle-actions.ts GrassyTerrain"
+    },
+    {
+      "id": "gen7-misty-terrain-halves-dragon",
+      "description": "Misty Terrain halves Dragon-type damage vs grounded Pokemon (NOT all damage)",
+      "attacker": { "species": "Dragonite", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Draco Meteor",
+      "terrain": "misty",
+      "expectedBoost": 0.5,
+      "note": "Misty Terrain: halves Dragon damage vs grounded targets only. Source: smogon/pokemon-showdown sim/battle-actions.ts MistyTerrain"
+    },
+    {
+      "id": "gen7-psychic-terrain-blocks-priority",
+      "type": "mechanic-documentation",
+      "description": "Psychic Terrain blocks priority moves targeting grounded Pokemon",
+      "attacker": { "species": "Scizor", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Bullet Punch",
+      "terrain": "psychic",
+      "note": "Psychic Terrain: priority moves targeting grounded Pokemon fail. Source: smogon/pokemon-showdown sim/battle-actions.ts PsychicTerrain"
+    },
+    {
+      "id": "gen7-parental-bond-second-hit-25-percent",
+      "description": "Parental Bond second hit deals 25% in Gen 7 (nerfed from Gen 6's 50% — ERRATA #12)",
+      "attacker": { "species": "Kangaskhan", "level": 50, "ability": "Parental Bond" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "move": "Return",
+      "expectedSecondHitFraction": 0.25,
+      "note": "Parental Bond Gen 7: second hit = 0.25× first hit. Gen 6 was 0.5×. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #12"
+    },
+    {
+      "id": "gen7-paralysis-speed-50-percent",
+      "description": "Paralysis reduces Speed by 50% in Gen 7 (was 25% reduction = 75% speed in Gen 1-6 — ERRATA #14)",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Snorlax", "level": 50, "status": "paralysis" },
+      "speedModifier": 0.5,
+      "expectedSpeedFormula": "floor(speed / 2)",
+      "note": "Gen 7: paralyzed Speed = floor(baseSpeed / 2). Previously was floor(speed * 0.75). Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #14"
+    },
+    {
+      "id": "gen7-disguise-absorbs-one-hit",
+      "type": "mechanic-documentation",
+      "description": "Disguise (Mimikyu) absorbs one hit and form changes from Disguised to Busted",
+      "attacker": { "species": "Raichu", "level": 50 },
+      "defender": { "species": "Mimikyu", "level": 50, "ability": "Disguise", "form": "disguised" },
+      "move": "Thunderbolt",
+      "note": "Disguise: absorbs first hit (ignores damage), Mimikyu changes to Busted form. Source: smogon/pokemon-showdown data/abilities.ts Disguise"
+    },
+    {
+      "id": "gen7-gale-wings-requires-full-hp",
+      "type": "mechanic-documentation",
+      "description": "Gale Wings grants +1 priority to Flying moves ONLY when user is at full HP in Gen 7 (ERRATA #13)",
+      "attacker": {
+        "species": "Talonflame",
+        "level": 50,
+        "ability": "Gale Wings",
+        "currentHP": "not-full"
+      },
+      "move": "Brave Bird",
+      "expectedPriorityBoost": 0,
+      "note": "Gale Wings Gen 7: full HP required for +1 priority. Gen 6 had no HP requirement. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #13"
+    },
+    {
+      "id": "gen7-gale-wings-full-hp-grants-priority",
+      "type": "mechanic-documentation",
+      "description": "Gale Wings grants +1 priority to Flying moves when user is at full HP",
+      "attacker": {
+        "species": "Talonflame",
+        "level": 50,
+        "ability": "Gale Wings",
+        "currentHP": "full"
+      },
+      "move": "Brave Bird",
+      "expectedPriorityBoost": 1,
+      "note": "Gale Wings Gen 7 at full HP: +1 priority granted. Source: smogon/pokemon-showdown data/abilities.ts ERRATA #13"
+    },
+    {
+      "id": "gen7-ultra-burst-necrozma",
+      "type": "mechanic-documentation",
+      "description": "Ultra Burst transforms Necrozma-Dawn/Dusk-Wings to Ultra Necrozma when holding Ultranecrozium Z",
+      "attacker": { "species": "Necrozma-Dawn-Wings", "level": 50, "item": "Ultranecrozium Z" },
+      "note": "Ultra Burst: Necrozma-DW or Necrozma-DM + Ultranecrozium Z → Ultra Necrozma. Source: smogon/pokemon-showdown data/abilities.ts UltraBurst"
+    },
+    {
+      "id": "gen7-beast-boost-raises-highest-stat",
+      "type": "mechanic-documentation",
+      "description": "Beast Boost raises the user's highest stat by +1 stage when it KOs a Pokemon",
+      "attacker": { "species": "Buzzwole", "level": 50, "ability": "Beast Boost" },
+      "defender": { "species": "Snorlax", "level": 50 },
+      "note": "Beast Boost: KO grants +1 to highest non-HP stat. Source: smogon/pokemon-showdown data/abilities.ts BeastBoost"
+    },
+    {
+      "id": "gen7-prankster-dark-type-immunity",
+      "type": "mechanic-documentation",
+      "description": "Dark-type Pokemon are immune to Prankster-boosted status moves in Gen 7+ (ERRATA)",
+      "attacker": { "species": "Klefki", "level": 50, "ability": "Prankster" },
+      "defender": { "species": "Tyranitar", "level": 50, "types": ["rock", "dark"] },
+      "move": "Thunder Wave",
+      "note": "Prankster-boosted moves targeting Dark-type Pokemon fail in Gen 7+. Source: smogon/pokemon-showdown data/abilities.ts Prankster"
+    },
+    {
+      "id": "gen7-confusion-self-hit-33-percent",
+      "type": "mechanic-documentation",
+      "description": "Confusion self-hit chance is 33% in Gen 7 (was 50% in Gen 1-6 — ERRATA #4)",
+      "attacker": { "species": "Snorlax", "level": 50, "volatile": "confusion" },
+      "expectedSelfHitChance": 0.3333,
+      "note": "Gen 7: confusion self-hit = 1/3 chance. Gen 1-6 was 1/2. Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #4"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "gen": 8,
+  "authority": "smogon/pokemon-showdown",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "dynamax-hp-level-0",
+      "kind": "dynamaxHPCheck",
+      "level": 0,
+      "expectedMultiplier": 1.5,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 0: 1.5× multiplier. ERRATA #19."
+    },
+    {
+      "id": "dynamax-hp-level-10",
+      "kind": "dynamaxHPCheck",
+      "level": 10,
+      "expectedMultiplier": 2.0,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 10: 2.0× multiplier. ERRATA #19."
+    },
+    {
+      "id": "dynamax-hp-level-5",
+      "kind": "dynamaxHPCheck",
+      "level": 5,
+      "expectedMultiplier": 1.75,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 5: 1.75× multiplier."
+    },
+    {
+      "id": "max-flare-power-90bp-fire",
+      "kind": "maxMovePowerCheck",
+      "sourceBP": 90,
+      "moveType": "fire",
+      "expectedPower": 130,
+      "source": "smogon/pokemon-showdown data/moves.ts ERRATA #20",
+      "note": "Max Flare (Fire) from 90 BP source = 130 power (higher power table). ERRATA #20."
+    },
+    {
+      "id": "max-knuckle-power-90bp-fighting",
+      "kind": "maxMovePowerCheck",
+      "sourceBP": 90,
+      "moveType": "fighting",
+      "expectedPower": 90,
+      "source": "smogon/pokemon-showdown data/moves.ts ERRATA #20",
+      "note": "Max Knuckle (Fighting) from 90 BP source = 90 power (lower power table). ERRATA #20."
+    },
+    {
+      "id": "max-flare-power-130plus-bp-fire",
+      "kind": "maxMovePowerCheck",
+      "sourceBP": 150,
+      "moveType": "fire",
+      "expectedPower": 150,
+      "source": "smogon/pokemon-showdown data/moves.ts ERRATA #20",
+      "note": "Max Flare from 130+ BP source caps at 150 power."
+    },
+    {
+      "id": "terrain-boost-gen8",
+      "kind": "terrainBoostCheck",
+      "terrain": "electric",
+      "gen8Multiplier": 1.3,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17",
+      "note": "Terrain boost changed from 1.5× (Gen 7) to 1.3× (Gen 8+). ERRATA #17."
+    },
+    {
+      "id": "grassy-terrain-boost-gen8",
+      "kind": "terrainBoostCheck",
+      "terrain": "grassy",
+      "gen8Multiplier": 1.3,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17",
+      "note": "Grassy Terrain boost is 1.3× in Gen 8+ (was 1.5× in Gen 7)."
+    },
+    {
+      "id": "body-press-base-power",
+      "kind": "movePowerCheck",
+      "moveId": "body-press",
+      "expectedBasePower": 80,
+      "source": "smogon/pokemon-showdown data/moves.ts ERRATA #22",
+      "note": "Body Press base power = 80 (NOT 130). Uses Defense stat for damage calc. ERRATA #22."
+    },
+    {
+      "id": "libero-protean-gen8-every-move",
+      "kind": "mechanic-documentation",
+      "mechanic": "Libero/Protean",
+      "gen8ActivationRule": "every-move",
+      "source": "smogon/pokemon-showdown data/abilities.ts ERRATA #23",
+      "note": "Libero/Protean Gen 8: activates on every move. Restricted to once-per-switch in Gen 9. ERRATA #23."
+    },
+    {
+      "id": "g-max-wildfire-no-weather",
+      "kind": "mechanic-documentation",
+      "mechanic": "G-Max Wildfire",
+      "setsWeather": false,
+      "residualDamageFraction": 0.0625,
+      "residualTurns": 4,
+      "source": "smogon/pokemon-showdown data/moves.ts ERRATA #21",
+      "note": "G-Max Wildfire: residual fire damage for 4 turns; does NOT set Sunny Day. ERRATA #21."
+    },
+    {
+      "id": "dynamax-duration",
+      "kind": "mechanic-documentation",
+      "mechanic": "Dynamax",
+      "durationTurns": 3,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "Dynamax lasts exactly 3 turns, then Pokemon automatically reverts."
+    }
+  ]
+}

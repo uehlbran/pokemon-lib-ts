@@ -1,0 +1,119 @@
+{
+  "gen": 9,
+  "authority": "smogon/pokemon-showdown",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "tera-stab-original-types-retained",
+      "kind": "mechanic-documentation",
+      "mechanic": "Tera STAB — original types",
+      "originalTypeSTABAfterTera": 1.5,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #30",
+      "note": "Original types retain 1.5× STAB after Terastallization. Fire/Flying Charizard with Fire Tera keeps 1.5× on Flying moves. ERRATA #30."
+    },
+    {
+      "id": "tera-stab-tera-type-not-original",
+      "kind": "mechanic-documentation",
+      "mechanic": "Tera STAB — Tera type (non-original)",
+      "teraTypeSTABWhenNotOriginal": 1.5,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "If Tera type differs from all original types, Tera type STAB = 1.5×."
+    },
+    {
+      "id": "tera-stab-tera-type-matches-original",
+      "kind": "mechanic-documentation",
+      "mechanic": "Tera STAB — Tera type (matches original)",
+      "teraTypeSTABWhenMatchesOriginal": 2.0,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "If Tera type matches an original type, Tera type STAB = 2.0×."
+    },
+    {
+      "id": "adaptability-tera-stab",
+      "kind": "mechanic-documentation",
+      "mechanic": "Adaptability + Tera STAB",
+      "adaptabilityBaseTypeSTAB": 2.0,
+      "adaptabilityTeraMatchSTAB": 2.25,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #26",
+      "note": "Adaptability with Tera: base type = 2.0×, Tera match = 2.25×. NOT 3×/4×. ERRATA #26."
+    },
+    {
+      "id": "libero-protean-gen9-once-per-switch",
+      "kind": "mechanic-documentation",
+      "mechanic": "Libero/Protean",
+      "gen9ActivationRule": "once-per-switch-in",
+      "source": "smogon/pokemon-showdown data/abilities.ts ERRATA #23",
+      "note": "Libero/Protean Gen 9: restricted to once per switch-in. Was every-move in Gen 8. ERRATA #23."
+    },
+    {
+      "id": "protosynthesis-speed-boost",
+      "kind": "mechanic-documentation",
+      "mechanic": "Protosynthesis",
+      "highestStatBoostIfSpeed": 1.5,
+      "highestStatBoostIfOther": 1.3,
+      "activatesIn": "sun",
+      "source": "smogon/pokemon-showdown data/abilities.ts ERRATA #28",
+      "note": "Protosynthesis: Speed gets 50% boost, other stats get 30% in Sun/Booster Energy. ERRATA #28."
+    },
+    {
+      "id": "quark-drive-boost",
+      "kind": "mechanic-documentation",
+      "mechanic": "Quark Drive",
+      "highestStatBoostIfSpeed": 1.5,
+      "highestStatBoostIfOther": 1.3,
+      "activatesIn": "electric-terrain",
+      "source": "smogon/pokemon-showdown data/abilities.ts ERRATA #28",
+      "note": "Quark Drive: same split as Protosynthesis but activates in Electric Terrain. ERRATA #28."
+    },
+    {
+      "id": "electric-terrain-boost-gen9",
+      "kind": "terrainBoostCheck",
+      "terrain": "electric",
+      "multiplier": 1.3,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17",
+      "note": "Electric Terrain boost is 1.3× in Gen 9 (same as Gen 8; was 1.5× in Gen 7). ERRATA #17."
+    },
+    {
+      "id": "grassy-terrain-boost-gen9",
+      "kind": "terrainBoostCheck",
+      "terrain": "grassy",
+      "multiplier": 1.3,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #17",
+      "note": "Grassy Terrain boost is 1.3× in Gen 9."
+    },
+    {
+      "id": "snow-no-chip-damage",
+      "kind": "mechanic-documentation",
+      "mechanic": "Snow weather",
+      "chipsNonIceTypes": false,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "Gen 9 Snow: no residual chip damage to non-Ice types (unlike Hail in Gen 2-8)."
+    },
+    {
+      "id": "snow-ice-defense-boost",
+      "kind": "mechanic-documentation",
+      "mechanic": "Snow weather — Ice Defense",
+      "iceTypeDefenseBoost": 1.5,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts",
+      "note": "Gen 9 Snow: Ice-type Pokemon gain +50% Defense."
+    },
+    {
+      "id": "salt-cure-residual-damage",
+      "kind": "mechanic-documentation",
+      "mechanic": "Salt Cure",
+      "defaultResidualFraction": 0.125,
+      "waterOrSteelResidualFraction": 0.25,
+      "source": "smogon/pokemon-showdown data/moves.ts SaltCure",
+      "note": "Salt Cure: 1/8 HP per turn normally; 1/4 HP for Water or Steel types."
+    },
+    {
+      "id": "stellar-tera-tera-blast",
+      "kind": "mechanic-documentation",
+      "mechanic": "Stellar Tera — Tera Blast",
+      "teraBlastBP": 100,
+      "afterUseEffect": "-1 Atk, -1 SpAtk",
+      "oneTimeBoostPerType": 2.0,
+      "source": "smogon/pokemon-showdown data/moves.ts",
+      "note": "Stellar Tera: one-time 2× boost per type; Tera Blast = 100 BP and drops user's Atk/SpA by 1."
+    }
+  ]
+}
