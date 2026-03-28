@@ -6,6 +6,7 @@ import {
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
 } from "../../../packages/core/src/constants/index.js";
+import { DataManager } from "../../../packages/core/src/data/data-manager.js";
 import type { NatureData } from "../../../packages/core/src/entities/nature.js";
 import type { PokemonInstance } from "../../../packages/core/src/entities/pokemon.js";
 import { createFriendship } from "../../../packages/core/src/logic/friendship-inputs.js";
@@ -104,20 +105,14 @@ function expectedGen3PlusStat(baseStat: number, isHp: boolean): number {
   return isHp ? raw + 50 + 10 : raw + 5;
 }
 
-type DataManagerFactory = () => {
-  getSpeciesByName: (name: string) => { id: number; baseStats: Record<string, number> };
-  getMove: (id: string) => { pp: number };
-  getNature: (id: string) => NatureData | null;
-};
-
-const GEN_DATA_FACTORIES: Record<number, DataManagerFactory> = {
-  3: createGen3DataManager as DataManagerFactory,
-  4: createGen4DataManager as DataManagerFactory,
-  5: createGen5DataManager as DataManagerFactory,
-  6: createGen6DataManager as DataManagerFactory,
-  7: createGen7DataManager as DataManagerFactory,
-  8: createGen8DataManager as DataManagerFactory,
-  9: createGen9DataManager as DataManagerFactory,
+const GEN_DATA_FACTORIES: Record<number, () => DataManager> = {
+  3: createGen3DataManager,
+  4: createGen4DataManager,
+  5: createGen5DataManager,
+  6: createGen6DataManager,
+  7: createGen7DataManager,
+  8: createGen8DataManager,
+  9: createGen9DataManager,
 };
 
 function runGen3PlusStatCheck(gen: number): string[] {
