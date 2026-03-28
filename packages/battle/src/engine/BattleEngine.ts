@@ -1273,8 +1273,10 @@ export class BattleEngine implements BattleEventEmitter {
   /**
    * Get the live battle state object.
    *
-   * The engine mutates this state in place during battle resolution. Consumers that
-   * need an immutable snapshot should clone or serialize the returned value.
+   * **Warning**: The returned object is a live reference, not a snapshot.
+   * The `Readonly` typing is shallow — nested properties remain mutable at
+   * runtime. Do NOT mutate the returned value. Consumers that need an
+   * immutable snapshot should use `structuredClone(engine.getState())`.
    */
   getState(): Readonly<BattleState> {
     return this.state;

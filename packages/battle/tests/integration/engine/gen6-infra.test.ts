@@ -364,16 +364,16 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.start();
 
     // Set grassy terrain on the state
-    engine.getState().terrain = {
+    (engine as any).state.terrain = {
       type: "grassy",
       turnsLeft: 5,
       source: CORE_TERRAIN_IDS.grassyTerrain,
     };
 
     // Reduce HP to simulate damage (engine may have set currentHp to calculatedStats.hp)
-    const state = engine.getState();
-    const p0 = state.sides[0].active[0];
-    const p1 = state.sides[1].active[0];
+    const internalState = (engine as any).state;
+    const p0 = internalState.sides[0].active[0];
+    const p1 = internalState.sides[1].active[0];
     if (p0) p0.pokemon.currentHp = 150;
     if (p1) p1.pokemon.currentHp = 150;
 
@@ -420,7 +420,7 @@ describe("grassy terrain heal end-of-turn", () => {
     engine.start();
 
     // Set grassy terrain — Pokemon is at full HP (200/200)
-    engine.getState().terrain = {
+    (engine as any).state.terrain = {
       type: "grassy",
       turnsLeft: 5,
       source: CORE_TERRAIN_IDS.grassyTerrain,
@@ -464,7 +464,7 @@ describe("grassy terrain heal end-of-turn", () => {
     const { engine, events } = createEngine({ ruleset });
     engine.start();
 
-    engine.getState().terrain = {
+    (engine as any).state.terrain = {
       type: "grassy",
       turnsLeft: 5,
       source: CORE_TERRAIN_IDS.grassyTerrain,
@@ -581,7 +581,7 @@ describe("terrain-setting from move effect results", () => {
     engine.start();
 
     // Pre-set terrain
-    engine.getState().terrain = {
+    (engine as any).state.terrain = {
       type: TERRAIN_IDS.electric,
       turnsLeft: 3,
       source: TERRAIN_IDS.electricTerrain,
