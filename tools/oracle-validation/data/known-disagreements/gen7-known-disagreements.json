@@ -1,1 +1,54 @@
-[]
+[
+  {
+    "id": "gen7:data:species:base:count",
+    "gen": 7,
+    "suite": "data",
+    "description": "Our species count is 810 vs oracle's 807. We include Necrozma-Dusk-Mane, Necrozma-Dawn-Wings, and Ultra Necrozma as separate entries for engine convenience (Ultra Burst gimmick). Oracle treats them as formes of Necrozma.",
+    "ourValue": 810,
+    "oracleValue": 807,
+    "resolution": "enhancement-deferred",
+    "source": "Battle-relevant forms stored as separate entries for direct lookup by the engine",
+    "sourceUrl": "https://bulbapedia.bulbagarden.net/wiki/Necrozma_(Pok%C3%A9mon)",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen7:data:species:necrozmaduskmane:exists",
+    "gen": 7,
+    "suite": "data",
+    "description": "Necrozma-Dusk-Mane exists in our data as a separate species entry. Oracle treats it as a forme of Necrozma (baseSpecies='Necrozma').",
+    "ourValue": true,
+    "oracleValue": false,
+    "resolution": "enhancement-deferred",
+    "source": "Ultra Burst gimmick requires separate species entries for form lookup",
+    "sourceUrl": "https://bulbapedia.bulbagarden.net/wiki/Necrozma_(Pok%C3%A9mon)",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen7:data:species:necrozmadawnwings:exists",
+    "gen": 7,
+    "suite": "data",
+    "description": "Necrozma-Dawn-Wings exists in our data as a separate species entry. Oracle treats it as a forme of Necrozma (baseSpecies='Necrozma').",
+    "ourValue": true,
+    "oracleValue": false,
+    "resolution": "enhancement-deferred",
+    "source": "Ultra Burst gimmick requires separate species entries for form lookup",
+    "sourceUrl": "https://bulbapedia.bulbagarden.net/wiki/Necrozma_(Pok%C3%A9mon)",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen7:data:species:ultranecrozma:exists",
+    "gen": 7,
+    "suite": "data",
+    "description": "Ultra Necrozma exists in our data as a separate species entry. Oracle treats it as a forme of Necrozma (baseSpecies='Necrozma').",
+    "ourValue": true,
+    "oracleValue": false,
+    "resolution": "enhancement-deferred",
+    "source": "Ultra Burst gimmick requires separate species entries for form lookup",
+    "sourceUrl": "https://bulbapedia.bulbagarden.net/wiki/Necrozma_(Pok%C3%A9mon)",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  }
+]
