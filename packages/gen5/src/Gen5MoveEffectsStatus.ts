@@ -427,7 +427,7 @@ function handleWorrySeed(ctx: MoveEffectContext): MoveEffectResult {
   const messages: string[] = [];
   if (ctx.defender.pokemon.status === CORE_STATUS_IDS.sleep) {
     ctx.defender.pokemon.status = null as never;
-    ctx.defender.volatileStatuses.delete("sleep-counter");
+    ctx.defender.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
     messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} woke up!`);
   }
 

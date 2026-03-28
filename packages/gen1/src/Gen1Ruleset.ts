@@ -1361,18 +1361,18 @@ export class Gen1Ruleset implements GenerationRuleset {
 
   processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
     // Gen 1: cannot act on the turn it wakes up
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // Wake up — but cannot act this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return false; // Cannot act on wake turn in Gen 1
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Just reached 0 — wake up but can't act this turn
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return false; // Cannot act on wake turn in Gen 1
     }
     return false; // Still sleeping
@@ -1731,13 +1731,13 @@ export class Gen1Ruleset implements GenerationRuleset {
     }
 
     // Preserve the sleep counter through the volatile clear
-    const sleepCounter = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepCounter = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
 
     pokemon.volatileStatuses.clear();
 
     // Restore sleep counter — sleep persists through switching
     if (sleepCounter) {
-      pokemon.volatileStatuses.set("sleep-counter", sleepCounter);
+      pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.sleepCounter, sleepCounter);
     }
 
     // Toxic counter reset: if the Pokemon has badly-poisoned status, revert to regular poison.

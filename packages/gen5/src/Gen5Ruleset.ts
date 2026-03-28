@@ -377,7 +377,7 @@ export class Gen5Ruleset extends BaseRuleset {
    */
   onSwitchIn(pokemon: ActivePokemon, _state: BattleState): void {
     if (pokemon.pokemon.status === CORE_STATUS_IDS.sleep) {
-      const sleepCounter = pokemon.volatileStatuses.get("sleep-counter");
+      const sleepCounter = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
       if (sleepCounter?.data) {
         const startTime = (sleepCounter.data as Record<string, unknown>).startTime;
         if (typeof startTime === "number") {
@@ -398,18 +398,18 @@ export class Gen5Ruleset extends BaseRuleset {
    *   "return false", allowing the Pokemon to act.
    */
   override processSleepTurn(pokemon: ActivePokemon, _state: BattleState): boolean {
-    const sleepState = pokemon.volatileStatuses.get("sleep-counter");
+    const sleepState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
     if (!sleepState || sleepState.turnsLeft <= 0) {
       // No counter found or already at 0 -- wake up and CAN act
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     sleepState.turnsLeft--;
     if (sleepState.turnsLeft <= 0) {
       // Counter just reached 0 -- wake up and CAN act
       pokemon.pokemon.status = null;
-      pokemon.volatileStatuses.delete("sleep-counter");
+      pokemon.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
       return true;
     }
     return false; // Still sleeping -- cannot act

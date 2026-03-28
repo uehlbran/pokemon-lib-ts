@@ -52,6 +52,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_GENDERS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
   CORE_SCREEN_IDS,
@@ -718,7 +719,11 @@ export function calculateGen7Damage(
 
   // 1. Status moves / power=0 -> no damage
   // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
-  if (effectiveCategory === "status" || move.power === null || move.power === 0) {
+  if (
+    effectiveCategory === CORE_MOVE_CATEGORIES.status ||
+    move.power === null ||
+    move.power === 0
+  ) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -1071,7 +1076,7 @@ export function calculateGen7Damage(
 
   // ---- Physical/Special determination ----
 
-  const isPhysical = effectiveCategory === "physical";
+  const isPhysical = effectiveCategory === CORE_MOVE_CATEGORIES.physical;
 
   // Get effective stats
   let attack = getAttackStat(
