@@ -56,7 +56,7 @@
     {
       "id": "gen1-fixed-damage-seismic-toss",
       "description": "Seismic Toss deals damage equal to attacker level",
-      "attacker": { "species": "Hitmonlee", "level": 50, "dvs": { "atk": 15 } },
+      "attacker": { "species": "Machamp", "level": 50, "dvs": { "atk": 15 } },
       "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
       "move": "Seismic Toss",
       "expected_damage": 50,
@@ -91,7 +91,7 @@
     {
       "id": "gen1-self-destruct-explosion-defense-halved",
       "description": "Explosion and Self-Destruct halve the target's Defense stat in the damage formula",
-      "attacker": { "species": "Gengar", "level": 50, "dvs": { "atk": 15 } },
+      "attacker": { "species": "Golem", "level": 50, "dvs": { "atk": 15 } },
       "defender": { "species": "Snorlax", "level": 50, "dvs": { "def": 15 } },
       "move": "Explosion",
       "note": "Defense is halved (floor) before damage calc. Source: pret/pokered engine/battle/core.asm CalcDamage ExplodeHalveDefense"
