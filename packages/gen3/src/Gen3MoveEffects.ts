@@ -37,6 +37,7 @@ import type {
   WeatherType,
 } from "@pokemon-lib-ts/core";
 import {
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -167,7 +168,10 @@ function applyMoveEffect(
       // Only apply the secondary-effect roll for damaging moves — status moves
       // (e.g., Swords Dance, Dragon Dance) have guaranteed primary effects
       // Source: pret/pokeemerald — secondary effect check only for damaging moves
-      if (move.category !== "status" && !rollEffectChance(effect.chance, rng, attacker)) {
+      if (
+        move.category !== CORE_MOVE_CATEGORIES.status &&
+        !rollEffectChance(effect.chance, rng, attacker)
+      ) {
         break;
       }
       for (const change of effect.changes) {
@@ -232,7 +236,10 @@ function applyMoveEffect(
     case "volatile-status": {
       // For damaging moves, roll the effect chance
       // For status moves (e.g., Focus Energy, Substitute), guaranteed
-      if (move.category !== "status" && !rollEffectChance(effect.chance, rng, attacker)) {
+      if (
+        move.category !== CORE_MOVE_CATEGORIES.status &&
+        !rollEffectChance(effect.chance, rng, attacker)
+      ) {
         break;
       }
       result.volatileInflicted = effect.status;
@@ -567,7 +574,10 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       // Source: pret/pokeemerald — Counter returns 2x physical damage
       // Source: Bulbapedia — "Counter deals damage equal to twice the damage dealt by the
       //   last physical move that hit the user"
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "physical") {
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.physical
+      ) {
         result.messages.push("But it failed!");
         return true;
       }
@@ -585,7 +595,10 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       // Source: pret/pokeemerald — Mirror Coat returns 2x special damage
       // Source: Bulbapedia — "Mirror Coat deals damage equal to twice the damage dealt by the
       //   last special move that hit the user"
-      if (attacker.lastDamageTaken <= 0 || attacker.lastDamageCategory !== "special") {
+      if (
+        attacker.lastDamageTaken <= 0 ||
+        attacker.lastDamageCategory !== CORE_MOVE_CATEGORIES.special
+      ) {
         result.messages.push("But it failed!");
         return true;
       }

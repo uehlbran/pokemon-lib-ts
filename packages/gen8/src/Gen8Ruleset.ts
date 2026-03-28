@@ -667,7 +667,7 @@ export class Gen8Ruleset extends BaseRuleset {
     if (
       defender.ability === "disguise" &&
       !defender.volatileStatuses.has("disguise-broken") &&
-      move.category !== "status"
+      move.category !== CORE_MOVE_CATEGORIES.status
     ) {
       // Mark Disguise as broken
       defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });

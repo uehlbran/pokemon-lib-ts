@@ -1,6 +1,7 @@
 import type { AbilityContext, AbilityResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
+  CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
   CORE_TYPE_IDS,
   CORE_WEATHER_IDS,
@@ -374,7 +375,7 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       //   onModifyAtk: this.modify(atk, 1.5)
       //   onSourceModifyAccuracy: if physical, chainModify([3277, 4096]) (~0.8x)
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
 
       return {
         activated: true,
@@ -392,7 +393,7 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Source: Showdown data/abilities.ts -- hugepower / purepower
       //   onModifyAtk: chainModify(2)
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
 
       return {
         activated: true,
@@ -409,7 +410,7 @@ export function handleGen5DamageCalcAbility(ctx: AbilityContext): AbilityResult 
       // Source: Showdown data/abilities.ts -- guts
       //   onModifyAtk: if pokemon.status, chainModify(1.5)
       if (!ctx.move) return NO_ACTIVATION;
-      if (ctx.move.category !== "physical") return NO_ACTIVATION;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_ACTIVATION;
       if (ctx.pokemon.pokemon.status === null) return NO_ACTIVATION;
 
       return {

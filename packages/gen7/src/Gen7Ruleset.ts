@@ -39,6 +39,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_CATEGORIES,
   CORE_STATUS_IDS,
   CORE_VOLATILE_IDS,
   getStatStageMultiplier,
@@ -411,7 +412,7 @@ export class Gen7Ruleset extends BaseRuleset {
       !bypassesDefenderAbility &&
       defender.ability === GEN7_ABILITY_IDS.disguise &&
       !defender.volatileStatuses.has(CORE_VOLATILE_IDS.disguiseBroken) &&
-      move.category !== "status"
+      move.category !== CORE_MOVE_CATEGORIES.status
     ) {
       // Mark Disguise as broken so it cannot activate again
       // Source: Showdown data/abilities.ts -- disguise: sets disguise-broken volatile on activation

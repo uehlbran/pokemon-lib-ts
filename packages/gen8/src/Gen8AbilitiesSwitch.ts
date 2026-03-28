@@ -9,6 +9,7 @@ import type {
 } from "@pokemon-lib-ts/core";
 import {
   CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
   CORE_SCREEN_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -1110,7 +1111,7 @@ function handleIceFaceOnHit(ctx: AbilityContext): AbilityResult {
   if (ctx.pokemon.pokemon.speciesId !== 875) return NO_EFFECT;
 
   // Only blocks physical moves
-  if (!ctx.move || ctx.move.category !== "physical") return NO_EFFECT;
+  if (!ctx.move || ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return NO_EFFECT;
 
   // Check if Ice Face is active (not broken)
   if (ctx.pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.iceFaceBroken)) return NO_EFFECT;

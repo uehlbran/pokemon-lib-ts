@@ -10,6 +10,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
+  CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -403,7 +404,7 @@ function handleSwitchIn(
             ? 160
             : highBpMoveIds.includes(move.id)
               ? 120
-              : (move.power ?? 0) === 0 && move.category !== "status"
+              : (move.power ?? 0) === 0 && move.category !== CORE_MOVE_CATEGORIES.status
                 ? 80
                 : (move.power ?? 0);
           if (power > strongestPower) {

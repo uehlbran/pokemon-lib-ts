@@ -119,7 +119,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
 
   // Only boosts status moves
   // Source: Showdown data/abilities.ts line 3341 -- move.category === 'Status'
-  if (ctx.move.category !== "status") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
 
   const name = getName(ctx);
   return {
@@ -314,7 +314,7 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
  */
 function handleWeakArmor(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category !== "physical") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return INACTIVE;
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {

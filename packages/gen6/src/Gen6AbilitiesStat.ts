@@ -111,7 +111,7 @@ function handlePriorityCheck(abilityId: string, ctx: AbilityContext): AbilityRes
       if (!ctx.move) return INACTIVE;
       // Only boosts status moves
       // Source: Showdown data/abilities.ts -- move.category === 'Status'
-      if (ctx.move.category !== "status") return INACTIVE;
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status) return INACTIVE;
       const name = getName(ctx);
       return {
         activated: true,
@@ -211,7 +211,7 @@ function handleBeforeMove(abilityId: string, ctx: AbilityContext): AbilityResult
         };
       }
 
-      if (ctx.move.category !== "status" && !isBladeForm) {
+      if (ctx.move.category !== CORE_MOVE_CATEGORIES.status && !isBladeForm) {
         // Shield -> Blade: add blade volatile
         return {
           activated: true,
@@ -432,7 +432,7 @@ function handleJustified(ctx: AbilityContext): AbilityResult {
  */
 function handleWeakArmor(ctx: AbilityContext): AbilityResult {
   if (!ctx.move) return INACTIVE;
-  if (ctx.move.category !== "physical") return INACTIVE;
+  if (ctx.move.category !== CORE_MOVE_CATEGORIES.physical) return INACTIVE;
 
   const name = getName(ctx);
   const defEffect: AbilityEffect = {

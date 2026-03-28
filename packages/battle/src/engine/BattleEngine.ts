@@ -2428,7 +2428,10 @@ export class BattleEngine implements BattleEventEmitter {
     // Damage calculation (for damaging moves)
     let damage = 0;
     let brokeSubstitute = false;
-    if (effectiveMoveData.category !== "status" && effectiveMoveData.power !== null) {
+    if (
+      effectiveMoveData.category !== CORE_MOVE_CATEGORIES.status &&
+      effectiveMoveData.power !== null
+    ) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
         move: effectiveMoveData,
@@ -3009,7 +3012,7 @@ export class BattleEngine implements BattleEventEmitter {
     let damage = 0;
     let brokeSubstitute = false;
     const defenderSelectedMove = this.getDefenderSelectedMove(defenderSide);
-    if (moveData.category !== "status" && moveData.power !== null) {
+    if (moveData.category !== CORE_MOVE_CATEGORIES.status && moveData.power !== null) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
         move: moveData,
