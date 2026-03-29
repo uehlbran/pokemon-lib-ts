@@ -147,13 +147,35 @@ function validateGen(gen: number): ValidationError[] {
 
   // ── For Gen 2: validate bulk priority scale (all normal moves should be 1) ──
   if (gen === 2) {
-    // Moves with no explicit override should have priority === GEN2_BASE_PRIORITY
-    const explicitOverrideIds = new Set(moveOverrides.map((o) => o.moveId));
+    // Only skip moves that have an explicit priority override (not overrides for other fields).
+    // Skipping all overridden moves would hide priority regressions on moves that have
+    // non-priority overrides (e.g., a future power override on a move with wrong priority).
+    const priorityOverrideIds = new Set(
+      moveOverrides.filter((o) => o.field === "priority").map((o) => o.moveId),
+    );
+    // Protect/Detect/Endure are explicitly at priority 3 — validate they remain at 3.
+    const expectedPriority3MoveIds = new Set(["protect", "detect", "endure"]);
     let normalMoveErrors = 0;
     for (const move of moves) {
-      if (explicitOverrideIds.has(move.id)) continue;
-      // Protect/Detect/Endure are at 3 — expected higher-than-base
-      if (move.priority === 3) continue;
+      if (priorityOverrideIds.has(move.id)) continue;
+      if (expectedPriority3MoveIds.has(move.id)) {
+        if (move.priority !== 3) {
+          normalMoveErrors++;
+          if (normalMoveErrors <= 5) {
+            errors.push({
+              gen,
+              kind: "move",
+              id: move.id,
+              field: "priority",
+              expected: 3,
+              actual: move.priority,
+              source:
+                "pret/pokecrystal data/moves/effects_priorities.asm — PROTECT/DETECT/ENDURE at 3",
+            });
+          }
+        }
+        continue;
+      }
       // Any other non-base priority is wrong
       if (move.priority !== GEN2_BASE_PRIORITY) {
         normalMoveErrors++;
