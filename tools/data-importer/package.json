@@ -6,7 +6,8 @@
     "test": "vitest run",
     "test:invariants": "vitest run tests/foundation-hardening.invariant.test.ts",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
-    "discover:diffs": "tsx src/pret-readers/discover-diffs.ts"
+    "discover:diffs": "tsx src/pret-readers/discover-diffs.ts",
+    "validate:pret": "tsx src/pret-overrides/validate-committed-data.ts"
   },
   "devDependencies": {
     "tsx": "^4.0.0"

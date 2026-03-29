@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - "tools/oracle-validation/**"
+      - "tools/data-importer/src/pret-overrides/**"
       - "packages/*/src/**"
       - "packages/*/data/**"
   pull_request:
     branches: [main]
     paths:
       - "tools/oracle-validation/**"
+      - "tools/data-importer/src/pret-overrides/**"
       - "packages/*/src/**"
       - "packages/*/data/**"
 
@@ -39,3 +41,16 @@ jobs:
           name: oracle-results
           path: tools/oracle-validation/results/fast-path.json
           retention-days: 7
+
+  pret-validate:
+    name: pret committed-data validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate pret overrides in committed data (Gen 1-4)
+        run: npx tsx tools/data-importer/src/pret-overrides/validate-committed-data.ts

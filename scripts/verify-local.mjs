@@ -48,6 +48,7 @@ await Promise.all([
   runStep("typecheck", ["run", "typecheck"]),
   runStep("contract typecheck", ["run", "typecheck:contracts"]),
   runStep("package boundaries", ["run", "ci:package-boundaries"]),
+  runStep("pret committed-data validation", ["run", "validate:pret"]),
 ]);
 
 // Phase 3: Changeset gate (last — depends on nothing but runs fast)
