@@ -20,4 +20,4 @@ Fix Gen 1-3 data to match pret/cartridge-accurate values.
 
 Both Steel resistances to Water and Electric were introduced in Gen 4, not Gen 3.
 
-Source: pret always wins for Gen 1-4 per project authority rules.
+Source: pret disassemblies are authoritative for Gen 1-3; decompiled sources where available for Gen 4.
