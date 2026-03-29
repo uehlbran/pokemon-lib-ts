@@ -455,8 +455,8 @@ describe("Gen 1 Mist enforcement — block foe-targeted stat drops", () => {
     const context = createMoveEffectContext({ move: growlMove, damage: 0 });
     // Act
     const result = ruleset.executeMoveEffect(context);
-    // Assert — should have the attack drop
-    expect(result.statChanges.length).toBeGreaterThan(0);
+    // Assert — Growl applies exactly 1 stat change: attack -1 on defender
+    expect(result.statChanges).toHaveLength(1);
     expect(result.statChanges[0]).toMatchObject({
       target: "defender",
       stat: CORE_STAT_IDS.attack,

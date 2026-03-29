@@ -66,8 +66,7 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     // Act / Assert
-    expect(typeof ruleset.name).toBe("string");
-    expect(ruleset.name.length).toBeGreaterThan(0);
+    expect(ruleset.name).toBe("Gen 1 (RBY)");
   });
 
   // --- Abilities ---
