@@ -240,10 +240,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry heals 10 HP
       expect(result.activated).toBe(true);
-      const healEffect = result.effects.find((e) => e.type === "heal");
-      expect(healEffect).toBeDefined();
-      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.berry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "heal",
+        target: "self",
+        value: ITEM_HEAL_AMOUNTS.berry,
+      });
     });
 
     it("given a Pokemon at 50% HP holding Berry, when end of turn triggers, then Berry is consumed", () => {
@@ -258,10 +262,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — consumed after healing
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.berry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.berry,
+      });
     });
 
     it("given a Pokemon above 50% HP holding Berry, when end of turn triggers, then no activation", () => {
@@ -294,9 +302,10 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — PRZCureBerry cures paralysis
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
 
     it("given a paralyzed Pokemon holding PRZCureBerry, when end of turn triggers, then PRZCureBerry is consumed", () => {
@@ -310,10 +319,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — consumed after curing
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.przCureBerry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.przCureBerry,
+      });
     });
 
     it("given a non-paralyzed Pokemon holding PRZCureBerry, when end of turn triggers, then no activation", () => {
@@ -361,10 +374,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals 30 HP
       expect(result.activated).toBe(true);
-      const healEffect = result.effects.find((e) => e.type === "heal");
-      expect(healEffect).toBeDefined();
-      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.goldBerry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "heal",
+        target: "self",
+        value: ITEM_HEAL_AMOUNTS.goldBerry,
+      });
     });
 
     it("given a Pokemon at 50% HP holding Gold Berry, when end of turn triggers, then Gold Berry is consumed", () => {
@@ -379,10 +396,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — consumed after healing
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.goldBerry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.goldBerry,
+      });
     });
 
     it("given a Pokemon above 50% HP holding Gold Berry, when end of turn triggers, then no activation", () => {
@@ -413,10 +434,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Gold Berry heals on crossing 50% threshold
       expect(result.activated).toBe(true);
-      const healEffect = result.effects.find((e) => e.type === "heal");
-      expect(healEffect).toBeDefined();
-      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.goldBerry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "heal",
+        target: "self",
+        value: ITEM_HEAL_AMOUNTS.goldBerry,
+      });
     });
 
     it("given Gold Berry and HP stays above 50% after damage, when damage taken triggers, then no activation", () => {
@@ -468,10 +493,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Bitter Berry cures confusion
       expect(result.activated).toBe(true);
-      const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
-      expect(volatileCure).toBeDefined();
-      expect(volatileCure?.value).toBe(VOLATILE_IDS.confusion);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "volatile-cure",
+        target: "self",
+        value: VOLATILE_IDS.confusion,
+      });
     });
 
     it("given a confused Pokemon holding Bitter Berry, when end of turn triggers, then Bitter Berry is consumed", () => {
@@ -485,10 +514,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — consumed after curing confusion
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.bitterBerry);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.bitterBerry,
+      });
     });
 
     it("given a non-confused Pokemon holding Bitter Berry, when end of turn triggers, then no activation", () => {
@@ -520,9 +553,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Miracle Berry cures any primary status
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
 
     it("given a paralyzed Pokemon holding Miracle Berry, when end of turn triggers, then cures paralysis", () => {
@@ -536,9 +569,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Miracle Berry cures paralysis
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
 
     it("given a sleeping Pokemon holding Miracle Berry, when end of turn triggers, then cures sleep", () => {
@@ -552,9 +585,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Miracle Berry cures sleep
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
 
     it("given a poisoned Pokemon holding Miracle Berry, when end of turn triggers, then cures poison", () => {
@@ -568,9 +601,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Miracle Berry cures poison
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
 
     it("given a Pokemon with no status holding Miracle Berry, when end of turn triggers, then no activation", () => {
@@ -598,10 +631,13 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — consumed after curing any status
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.miracleBerry);
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.miracleBerry,
+      });
     });
 
     it("given a confused Pokemon holding Miracle Berry with no primary status, when end of turn triggers, then cures confusion", () => {
@@ -616,10 +652,13 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Miracle Berry cures confusion when no primary status
       expect(result.activated).toBe(true);
-      const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
-      expect(volatileCure).toBeDefined();
-      expect(volatileCure?.value).toBe(VOLATILE_IDS.confusion);
+      expect(result.effects).toContainEqual({
+        type: "volatile-cure",
+        target: "self",
+        value: VOLATILE_IDS.confusion,
+      });
     });
 
     it("given a confused Pokemon holding Miracle Berry with primary status, when end of turn triggers, then cures both", () => {
@@ -634,15 +673,20 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Miracle Berry cures both primary and volatile when both present
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
-      const volatileCure = result.effects.find((e) => e.type === "volatile-cure");
-      expect(volatileCure).toBeDefined();
-      expect(volatileCure?.value).toBe(VOLATILE_IDS.confusion);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.miracleBerry);
+      expect(result.effects).toHaveLength(3);
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
+      expect(result.effects).toContainEqual({
+        type: "volatile-cure",
+        target: "self",
+        value: VOLATILE_IDS.confusion,
+      });
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.miracleBerry,
+      });
     });
   });
 
@@ -660,9 +704,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Ice Berry cures burn
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
   });
 
@@ -680,9 +724,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Mint Berry cures sleep
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
   });
 
@@ -700,9 +744,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Burnt Berry cures freeze
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
   });
 
@@ -720,9 +764,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — PSNCureBerry cures poison
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
 
     it("given a badly-poisoned Pokemon holding PSNCureBerry, when end of turn triggers, then cures badly-poisoned", () => {
@@ -736,9 +780,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — PSNCureBerry cures badly-poisoned too
       expect(result.activated).toBe(true);
-      const statusCure = result.effects.find((e) => e.type === "status-cure");
-      expect(statusCure).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "status-cure", target: "self" });
     });
   });
 
@@ -758,10 +802,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals 20 HP
       expect(result.activated).toBe(true);
-      const healEffect = result.effects.find((e) => e.type === "heal");
-      expect(healEffect).toBeDefined();
-      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.berryJuice);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "heal",
+        target: "self",
+        value: ITEM_HEAL_AMOUNTS.berryJuice,
+      });
     });
 
     it("given a Pokemon at 50% HP holding Berry Juice, when end of turn triggers, then is consumed", () => {
@@ -776,10 +824,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.endOfTurn, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — consumed after healing
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
-      expect(consumeEffect?.value).toBe(ITEM_IDS.berryJuice);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "consume",
+        target: "self",
+        value: ITEM_IDS.berryJuice,
+      });
     });
 
     it("given a Pokemon above 50% HP holding Berry Juice, when end of turn triggers, then no activation", () => {
@@ -817,10 +869,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:2119-2131 — Focus Band activates on roll < 30, leaves 1 HP
       expect(result.activated).toBe(true);
-      const surviveEffect = result.effects.find((e) => e.type === "survive");
-      expect(surviveEffect).toBeDefined();
-      expect(surviveEffect?.value).toBe(1);
+      expect(result.effects).toContainEqual({ type: "survive", target: "self", value: 1 });
     });
 
     it("given a Pokemon holding Focus Band and RNG roll >= 30, when damage would KO, then no activation", () => {
@@ -855,9 +906,9 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.onHit, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — King's Rock adds flinch on hit
       expect(result.activated).toBe(true);
-      const flinchEffect = result.effects.find((e) => e.type === CORE_VOLATILE_IDS.flinch);
-      expect(flinchEffect).toBeDefined();
+      expect(result.effects).toContainEqual({ type: "flinch", target: "opponent" });
     });
 
     it("given a Pokemon holding King's Rock and RNG fails, when hit triggers, then no activation", () => {
@@ -996,10 +1047,14 @@ describe("Gen 2 Held Items", () => {
       const result = applyGen2HeldItem(ITEM_TRIGGERS.onDamageTaken, context);
 
       // Assert
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm — Berry Juice heals on crossing 50% via damage
       expect(result.activated).toBe(true);
-      const healEffect = result.effects.find((e) => e.type === "heal");
-      expect(healEffect).toBeDefined();
-      expect(healEffect?.value).toBe(ITEM_HEAL_AMOUNTS.berryJuice);
+      expect(result.effects).toHaveLength(2);
+      expect(result.effects).toContainEqual({
+        type: "heal",
+        target: "self",
+        value: ITEM_HEAL_AMOUNTS.berryJuice,
+      });
     });
 
     it("given Berry Juice and HP stays above 50% after damage, when damage taken triggers, then no activation", () => {
