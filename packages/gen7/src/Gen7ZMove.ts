@@ -32,9 +32,38 @@ import { getSpeciesZMoves, getZCrystalType, isSpeciesZCrystal, isZCrystal } from
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
+ * Per-move Z-Move base power overrides.
+ *
+ * These moves have explicit zMove.basePower entries in Showdown data/moves.ts
+ * that differ from what the standard threshold table would compute. The overrides
+ * are authoritative: they reflect adjustments made in the game data for moves
+ * with variable power, fixed multi-hit, or special mechanics.
+ *
+ * Source: Showdown data/moves.ts — per-move zMove.basePower fields
+ * Verified via @pkmn/data oracle (compare-gimmicks.ts).
+ */
+const Z_MOVE_POWER_OVERRIDES: Readonly<Record<string, number>> = {
+  "core-enforcer": 140, // formula gives 180 (100 BP); Showdown override: 140
+  "double-hit": 140, // formula gives 100 (35 BP, fixed 2-hit); Showdown override: 140
+  "flying-press": 170, // formula gives 180 (100 BP); Showdown override: 170
+  "gear-grind": 180, // formula gives 100 (50 BP, fixed 2-hit); Showdown override: 180
+  hex: 160, // formula gives 120 (65 BP); Showdown override: 160 (reflects doubled power vs status)
+  "lands-wrath": 185, // formula gives 175 (90 BP); Showdown override: 185
+  "mega-drain": 120, // formula gives 100 (40 BP); Showdown override: 120
+  "multi-attack": 185, // formula gives 190 (120 BP in Showdown); Showdown override: 185
+  "power-trip": 160, // formula gives 100 (20 BP base, variable power); Showdown override: 160
+  "stored-power": 160, // formula gives 100 (20 BP base, variable power); Showdown override: 160
+  "thousand-arrows": 180, // formula gives 175 (90 BP); Showdown override: 180
+  "triple-kick": 120, // formula gives 100 (10 BP, fixed 3-hit); Showdown override: 120
+  "v-create": 220, // formula gives 200 (180 BP); Showdown override: 220
+  "weather-ball": 160, // formula gives 100 (50 BP base, variable power/type); Showdown override: 160
+};
+
+/**
  * Calculate the Z-Move base power for a damaging move.
  *
- * The power lookup uses Showdown's descending-threshold approach:
+ * Checks per-move overrides first (for moves with explicit zMove.basePower in
+ * Showdown data). Falls back to the standard descending-threshold table:
  *   basePower >= 140 -> 200
  *   basePower >= 130 -> 195
  *   basePower >= 120 -> 190
@@ -47,20 +76,30 @@ import { getSpeciesZMoves, getZCrystalType, isSpeciesZCrystal, isZCrystal } from
  *   else             -> 100
  *   no base power    -> 100
  *
- * Multi-hit moves: basePower *= 3 before lookup.
+ * Variable multi-hit moves (min != max range, e.g. Bullet Seed 2–5):
+ *   basePower *= 3 before the threshold lookup.
+ * Fixed multi-hit moves (scalar count, e.g. Double Kick always 2×):
+ *   NO multiplication — Showdown only multiplies for Array.isArray(multihit).
  *
  * Source: Showdown sim/dex-moves.ts:551-577 -- Z-Move power calculation
- * Source: Bulbapedia "Z-Move" -- power table
+ * Source: Showdown data/moves.ts -- per-move zMove.basePower overrides
  */
 export function getZMovePower(move: MoveData): number {
   // Status moves do not have Z-Move power
   if (move.category === CORE_MOVE_CATEGORIES.status) return 0;
 
+  // Per-move override: some moves have explicit zMove.basePower in Showdown data/moves.ts.
+  const override = Z_MOVE_POWER_OVERRIDES[move.id];
+  if (override !== undefined) return override;
+
   let basePower = move.power ?? 0;
 
-  // Multi-hit moves: multiply base power by 3 for the lookup
+  // Only variable multi-hit (min !== max range) multiplies basePower by 3.
+  // Fixed multi-hit moves (scalar multihit, min === max) do NOT multiply.
   // Source: Showdown sim/dex-moves.ts:554 -- `if (Array.isArray(data.multihit)) basePower *= 3;`
-  if (move.effect?.type === "multi-hit") {
+  // Array.isArray is true only for the [min, max] range form, not scalar fixed counts.
+  const effect = move.effect;
+  if (effect?.type === "multi-hit" && effect.min !== effect.max) {
     basePower *= 3;
   }
 
