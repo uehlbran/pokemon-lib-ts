@@ -103,17 +103,17 @@ See `.claude/rules/testing-rules.md` and `.claude/rules/test-integrity.md` for d
 
 | Package | Status | Tests | Open Bugs |
 |---------|--------|-------|-----------|
-| core | 100% | 342 | 0 |
-| battle | 100% (singles) | 596 | 0 |
-| gen1 | 100% | 800 | 1 (#530) |
-| gen2 | 100% | 757 | 0 |
-| gen3 | 100% | 847 | 1 (#141) |
-| gen4 | 100% | 1,225 | 0 |
-| gen5 | 100% | 1,225 | 0 |
-| gen6 | 100% | 1,135 | 0 |
-| gen7 | 100% | 1,144 | 0 |
-| gen8 | 100% | 1,208 | 0 |
-| gen9 | 100% | 1,053 | 0 |
+| core | 100% | 399 | 0 |
+| battle | 100% (singles) | 688 | 0 |
+| gen1 | 100% | 787 | 0 |
+| gen2 | 100% | 771 | 0 |
+| gen3 | 100% | 882 | 1 (#141) |
+| gen4 | 100% | 1,231 | 0 |
+| gen5 | 100% | 1,233 | 0 |
+| gen6 | 100% | 1,154 | 0 |
+| gen7 | 100% | 1,219 | 0 |
+| gen8 | 100% | 1,254 | 0 |
+| gen9 | 100% | 1,108 | 0 |
 
 Full per-gen details: `specs/reference/genN-status.md`
 
