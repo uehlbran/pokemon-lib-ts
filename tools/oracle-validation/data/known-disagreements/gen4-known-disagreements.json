@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "gen4:mechanics:move-priority:endure",
+    "gen": 4,
+    "suite": "mechanics",
+    "description": "Endure priority in Gen 4 is +3 per pokeplatinum (res/battle/moves/endure/data.json). @pkmn/data reports +4.",
+    "ourValue": 3,
+    "oracleValue": 4,
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokeplatinum res/battle/moves/endure/data.json \u2014 priority: 3",
+    "sourceUrl": "https://github.com/BluRosie/pokeplatinum/blob/main/res/battle/moves/endure/data.json",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
+  }
+]

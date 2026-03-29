@@ -94,8 +94,12 @@ export function runMechanicsSuite(
     const ourPriority = move.priority;
     const oraclePriority = oracleMove.priority ?? 0;
 
-    // Skip moves where both are 0 — not interesting
-    if (ourPriority === 0 && oraclePriority === 0) {
+    // Gen 2 uses a 1-based priority scale (BASE_PRIORITY=1 in pokecrystal).
+    // A "neutral" Gen 2 move has our priority=1 and oracle priority=0.
+    // Skip these normal moves — the scale difference is intentional and documented.
+    // Source: pret/pokecrystal data/moves/effects_priorities.asm
+    const basePriority = generation.gen === 2 ? 1 : 0;
+    if (ourPriority === basePriority && oraclePriority === 0) {
       continue;
     }
 
@@ -111,7 +115,7 @@ export function runMechanicsSuite(
   }
 
   notes.push(
-    `Gen ${generation.gen}: checked ${movePriorityChecked} move${movePriorityChecked === 1 ? "" : "s"} with non-zero priority`,
+    `Gen ${generation.gen}: checked ${movePriorityChecked} move${movePriorityChecked === 1 ? "" : "s"} with non-neutral priority`,
   );
 
   // ── 2. Ability Assignment (Gen 3+ only) ────────────────────────────────────
