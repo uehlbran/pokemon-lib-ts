@@ -88,6 +88,23 @@ describe("Gen 1 pret reader — base stats (pokered data/pokemon/base_stats/)", 
     expect(bulbasaur!.baseStats.specialAttack).toBe(65);
     expect(bulbasaur!.baseStats.specialDefense).toBe(65);
   });
+
+  it("given pokered base_stats, when parsing Bulbasaur, then types are grass and poison", () => {
+    // Source: pret/pokered data/pokemon/base_stats/bulbasaur.asm — db GRASS, POISON ; type
+    const data = readGen1Data(REPO_ROOT);
+    const bulbasaur = data.pokemon.find((p) => p.name === "bulbasaur");
+    expect(bulbasaur).toBeDefined();
+    expect(bulbasaur!.types).toContain("grass");
+    expect(bulbasaur!.types).toContain("poison");
+  });
+
+  it("given pokered base_stats, when parsing Charmander, then types are fire only", () => {
+    // Source: pret/pokered data/pokemon/base_stats/charmander.asm — db FIRE, FIRE ; type
+    const data = readGen1Data(REPO_ROOT);
+    const charmander = data.pokemon.find((p) => p.name === "charmander");
+    expect(charmander).toBeDefined();
+    expect(charmander!.types).toEqual(["fire"]);
+  });
 });
 
 describe("Gen 1 pret reader — type chart (pokered data/types/type_matchups.asm)", () => {
@@ -282,6 +299,23 @@ describe("Gen 2 pret reader — base stats (pokecrystal data/pokemon/base_stats/
     expect(bulbasaur!.baseStats.speed).toBe(45);
     expect(bulbasaur!.baseStats.specialAttack).toBe(65);
     expect(bulbasaur!.baseStats.specialDefense).toBe(65);
+  });
+
+  it("given pokecrystal base_stats, when parsing Bulbasaur, then types are grass and poison", () => {
+    // Source: pret/pokecrystal data/pokemon/base_stats/bulbasaur.asm — db GRASS, POISON ; type
+    const data = readGen2Data(REPO_ROOT);
+    const bulbasaur = data.pokemon.find((p) => p.name === "bulbasaur");
+    expect(bulbasaur).toBeDefined();
+    expect(bulbasaur!.types).toContain("grass");
+    expect(bulbasaur!.types).toContain("poison");
+  });
+
+  it("given pokecrystal base_stats, when parsing Cyndaquil, then types are fire only", () => {
+    // Source: pret/pokecrystal data/pokemon/base_stats/cyndaquil.asm — db FIRE, FIRE ; type
+    const data = readGen2Data(REPO_ROOT);
+    const cyndaquil = data.pokemon.find((p) => p.name === "cyndaquil");
+    expect(cyndaquil).toBeDefined();
+    expect(cyndaquil!.types).toEqual(["fire"]);
   });
 });
 
@@ -508,7 +542,7 @@ describe("Gen 3 pret reader — type chart (pokeemerald src/battle_main.c gTypeE
     expect(entry!.multiplier).toBe(0.5);
   });
 
-  it("given pokeemerald gTypeEffectiveness, when checking psychic vs dark, then multiplier is 0 (Psychic immune to Dark)", () => {
+  it("given pokeemerald gTypeEffectiveness, when checking psychic vs dark, then multiplier is 0 (Psychic moves have no effect on Dark)", () => {
     // Source: pret/pokeemerald src/battle_main.c gTypeEffectiveness[] — TYPE_PSYCHIC, TYPE_DARK, TYPE_MUL_NO_EFFECT
     const data = readGen3Data(REPO_ROOT);
     const entry = data.typeChart.find((e) => e.attacker === "psychic" && e.defender === "dark");

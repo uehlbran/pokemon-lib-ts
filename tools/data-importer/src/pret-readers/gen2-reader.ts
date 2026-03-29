@@ -133,11 +133,13 @@ function parseMoves(repoRoot: string): PretMoveData[] {
       priority = EFFECT_PRIORITY_MAP[effectConst] ?? BASE_PRIORITY;
     }
 
+    const rawPower = Number(powerStr);
+    const rawAccuracy = Number(accuracyStr);
     moves.push({
       id,
       priority,
-      power: Number(powerStr),
-      accuracy: Number(accuracyStr),
+      power: rawPower === 0 ? null : rawPower,
+      accuracy: rawAccuracy === 0 ? null : rawAccuracy,
       pp: Number(ppStr),
       type,
       source: `${sourceFile} — move ${asmName} line ${lineNumber}`,
@@ -217,8 +219,10 @@ function parseBaseStatsFile(filePath: string): PretPokemonData | null {
       }
     }
 
-    // Type line immediately follows the stats line.
-    if (statLineIdx >= 0 && i === statLineIdx + 1) {
+    // Type line is within 5 lines of the stats line (actual offset is +3:
+    // stats → comment `;   hp  atk...` → blank → `db TYPE1, TYPE2`).
+    // We scan a window to be robust against minor formatting variations.
+    if (statLineIdx >= 0 && types.length === 0 && i > statLineIdx && i <= statLineIdx + 5) {
       const typeMatch = /^db\s+([A-Z_]+)(?:\s*,\s*([A-Z_]+))?/.exec(line);
       if (typeMatch) {
         const raw1 = typeMatch[1] as string;

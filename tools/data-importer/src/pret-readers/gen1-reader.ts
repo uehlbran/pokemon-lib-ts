@@ -54,14 +54,21 @@ const MULTIPLIER_MAP: Readonly<Record<string, 0 | 0.5 | 2>> = {
  * Convert a pokered SCREAMING_SNAKE_CASE move name to a kebab-case ID.
  *
  * pokered uses all-caps names with underscores between words (e.g. FIRE_PUNCH,
- * QUICK_ATTACK). A handful omit underscores (e.g. THUNDERPUNCH, BUBBLEBEAM) —
- * we simply lowercase and replace underscores with hyphens, which matches the
- * canonical Showdown IDs for Gen 1 moves.
+ * QUICK_ATTACK). A handful omit underscores (e.g. THUNDERPUNCH, BUBBLEBEAM),
+ * and one uses a suffix to avoid an ASM keyword conflict (PSYCHIC_M → psychic).
+ * Known mismatches are explicitly mapped; the rest use simple lowercase+hyphen.
  *
  * Source: pret/pokered data/moves/moves.asm (first column of each move macro)
  */
+
+// Explicit overrides for ASM names that don't follow the simple transform.
+// Source: pret/pokered data/moves/moves.asm cross-referenced with Showdown IDs.
+const ASM_NAME_OVERRIDES: Readonly<Record<string, string>> = {
+  PSYCHIC_M: "psychic", // pokered avoids the PSYCHIC ASM keyword with _M suffix
+};
+
 function asmNameToKebab(asmName: string): string {
-  return asmName.toLowerCase().replace(/_/g, "-");
+  return ASM_NAME_OVERRIDES[asmName] ?? asmName.toLowerCase().replace(/_/g, "-");
 }
 
 /**
@@ -99,11 +106,13 @@ function parseMoves(repoRoot: string): PretMoveData[] {
     const type = TYPE_CONSTANT_MAP[typeConst] ?? typeConst.toLowerCase();
     const priority = GEN1_PRIORITY[id] ?? 0;
 
+    const rawPower = Number(powerStr);
+    const rawAccuracy = Number(accuracyStr);
     moves.push({
       id,
       priority,
-      power: Number(powerStr),
-      accuracy: Number(accuracyStr),
+      power: rawPower === 0 ? null : rawPower,
+      accuracy: rawAccuracy === 0 ? null : rawAccuracy,
       pp: Number(ppStr),
       type,
       source: `${sourceFile} — move ${asmName} line ${lineNumber}`,
@@ -183,8 +192,10 @@ function parseBaseStatsFile(filePath: string): PretPokemonData | null {
       }
     }
 
-    // Type line immediately follows the stats line.
-    if (statLineIdx >= 0 && i === statLineIdx + 1) {
+    // Type line is within 5 lines of the stats line (actual offset is +3:
+    // stats → comment `;   hp  atk...` → blank → `db TYPE1, TYPE2`).
+    // We scan a window to be robust against minor formatting variations.
+    if (statLineIdx >= 0 && types.length === 0 && i > statLineIdx && i <= statLineIdx + 5) {
       // Format: `db GRASS, POISON ; type` or `db NORMAL ; type`
       const typeMatch = /^db\s+([A-Z_]+)(?:\s*,\s*([A-Z_]+))?/.exec(line);
       if (typeMatch) {
