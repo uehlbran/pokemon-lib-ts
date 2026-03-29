@@ -434,6 +434,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — burn/poison damage = floor(maxHp/16), min 1
     // Assert: floor(160 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -456,6 +457,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.poison, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — burn/poison damage = floor(maxHp/16), min 1
     // Assert: floor(160 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -481,6 +483,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — toxic damage = floor(maxHp * counter / 16), min 1; counter increments each turn
     // Assert: floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -506,6 +509,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — toxic damage = floor(maxHp * counter / 16), min 1
     // Assert: floor(160 * 3 / 16) = floor(30) = 30
     expect(damage).toBe(30);
   });
@@ -528,6 +532,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — toxic damage = floor(maxHp * counter / 16), min 1
     // Assert: defaults to counter 1 -> floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -580,6 +585,7 @@ describe("Gen1Ruleset applyStatusDamage", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.burn, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — minimum damage is 1; max(1, floor(15/16)) = max(1, 0) = 1
     // Assert: max(1, floor(15 / 16)) = max(1, 0) = 1
     expect(damage).toBe(1);
   });
@@ -818,6 +824,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const ctx = createMoveEffectContextFixture({ move, damage: 100 });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
+    // Source: pokered engine/battle/move_effects/recoil.asm RecoilEffect_ — recoil = floor(damage * fraction), min 1
     // Assert: max(1, floor(100 * 0.25)) = 25
     expect(result.recoilDamage).toBe(25);
   });
@@ -830,6 +837,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const ctx = createMoveEffectContextFixture({ move, damage: 1 });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
+    // Source: pokered engine/battle/move_effects/recoil.asm RecoilEffect_ — recoil = floor(damage * fraction), min 1
     // Assert: max(1, floor(1 * 0.25)) = max(1, 0) = 1
     expect(result.recoilDamage).toBe(1);
   });
@@ -844,6 +852,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const ctx = createMoveEffectContextFixture({ move, damage: 80 });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
+    // Source: pokered engine/battle/move_effects/drain_hp.asm DrainHPEffect_ — heal = floor(damage / 2), min 1
     // Assert: max(1, floor(80 * 0.5)) = 40
     expect(result.healAmount).toBe(40);
   });
@@ -856,6 +865,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const ctx = createMoveEffectContextFixture({ move, damage: 1 });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
+    // Source: pokered engine/battle/move_effects/drain_hp.asm DrainHPEffect_ — heal = floor(damage / 2), min 1
     // Assert: max(1, floor(1 * 0.5)) = max(1, 0) = 1
     expect(result.healAmount).toBe(1);
   });
@@ -883,6 +893,7 @@ describe("Gen1Ruleset executeMoveEffect", () => {
     const ctx = createMoveEffectContextFixture({ attacker, move });
     // Act
     const result = ruleset.executeMoveEffect(ctx);
+    // Source: pokered engine/battle/move_effects/heal.asm HealEffect_ — Recover/Softboiled: srl b; rr c (divide maxHp by 2)
     // Assert: max(1, floor(200 * 0.5)) = 100
     expect(result.healAmount).toBe(100);
   });
@@ -1922,6 +1933,7 @@ describe("Gen1Ruleset checkFreezeThaw (Gen 1 quirk: permanent freeze)", () => {
       } as PokemonInstance,
     });
     const rng = new SeededRandom(42);
+    // Source: pokered engine/battle/core.asm .FrozenCheck — no natural thaw roll; frozen Pokemon simply cannot move; only opponent Fire-type move thaws
     // Act / Assert: Run 100 checks to confirm it never thaws
     for (let i = 0; i < 100; i++) {
       expect(ruleset.checkFreezeThaw(pokemon, rng)).toBe(false);
@@ -1937,6 +1949,7 @@ describe("Gen1Ruleset rollSleepTurns", () => {
   it("given Gen 1 ruleset, when rolling sleep turns, then returns value between 1 and 7", () => {
     // Arrange
     const rng = new SeededRandom(42);
+    // Source: pokered engine/battle/effects.asm SleepEffect .setSleepCounter — BattleRandom() & SLP_MASK (0b111), retry if 0; yields 1-7
     // Act / Assert
     for (let i = 0; i < 100; i++) {
       const turns = ruleset.rollSleepTurns(rng);
@@ -2015,6 +2028,7 @@ describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
     const state = makeBattleState();
     // Act
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed_DecreaseOwnHP — toxic damage = floor(maxHp * counter / 16), min 1
     // Assert: with counter=1 (default), damage = floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
   });
@@ -2563,6 +2577,7 @@ describe("Gen1Ruleset rollCritical", () => {
     const move = createScenarioMove({ category: MOVE_CATEGORIES.physical });
     const state = makeBattleState();
 
+    // Source: pokered engine/battle/core.asm CriticalHitTest — threshold = floor(baseSpeed/2) for normal moves; BattleRandom() × 8 mod 256 < threshold → crit
     // Act: Run many trials, crit rate should be roughly baseSpeed/512
     // Pikachu base speed = 90, so crit rate = floor(90/2)/256 = 45/256 ~ 17.6%
     let crits = 0;
@@ -2700,6 +2715,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
     // Act
     const result = ruleset.checkFullParalysis(pokemon, rng);
 
+    // Source: pokered engine/battle/core.asm CheckPlayerStatusConditions .ParalysisCheck — BattleRandom() < 63 (25*$ff/100) → paralyzed
     // Assert
     expect(result).toBe(true);
   });
@@ -2722,6 +2738,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
     // Act
     const result = ruleset.checkFullParalysis(pokemon, rng);
 
+    // Source: pokered engine/battle/core.asm CheckPlayerStatusConditions .ParalysisCheck — BattleRandom() < 63 → paralyzed; 63 is not < 63 → not paralyzed
     // Assert
     expect(result).toBe(false);
   });
@@ -2742,6 +2759,7 @@ describe("Gen1Ruleset checkFullParalysis (63/256 Gen 1 rate)", () => {
       if (ruleset.checkFullParalysis(pokemon, rng)) paralyzed++;
     }
 
+    // Source: pokered engine/battle/core.asm CheckPlayerStatusConditions .ParalysisCheck — BattleRandom() < 25*$ff/100 = 63 → fully paralyzed (63/256 ≈ 24.6%)
     // Assert — ~63/256 ≈ 24.6%, allow tolerance
     expect(paralyzed).toBeGreaterThan(180);
     expect(paralyzed).toBeLessThan(310);
@@ -2766,6 +2784,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
 
+    // Source: pokered engine/battle/core.asm CheckPlayerStatusConditions .WakeUp — on wake (counter=0), still jumps to ExecutePlayerMoveDone; cannot act on wake turn
     // Assert — Gen 1: cannot act on the wake turn (returns false even on wake)
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();
@@ -2804,6 +2823,7 @@ describe("Gen1Ruleset processSleepTurn (Gen 1: cannot act on wake turn)", () => 
     // Act
     const canAct = ruleset.processSleepTurn(pokemon, makeBattleState());
 
+    // Source: pokered engine/battle/core.asm CheckPlayerStatusConditions .WakeUp — on wake (counter=0), still jumps to ExecutePlayerMoveDone; cannot act on wake turn
     // Assert — Gen 1: wakes up but still cannot act this turn
     expect(canAct).toBe(false);
     expect(pokemon.pokemon.status).toBeNull();

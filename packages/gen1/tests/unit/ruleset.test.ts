@@ -164,6 +164,7 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     const rng = new SeededRandom(42);
+    // Source: pokered engine/battle/core.asm .FrozenCheck — no thaw roll in Gen 1; frozen Pokemon simply cannot move each turn
     // Act / Assert: In Gen 1, frozen Pokemon NEVER thaw naturally
     // They can only be thawed by a Fire-type move hitting them or items
     // Run many checks to verify it always returns false
@@ -179,6 +180,7 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     const rng = new SeededRandom(42);
+    // Source: pokered engine/battle/effects.asm SleepEffect .setSleepCounter — BattleRandom() & SLP_MASK (0b111), retry if 0; yields 1-7
     // Act / Assert: Gen 1 sleep lasts 1-7 turns
     const results = new Set<number>();
     for (let i = 0; i < 1000; i++) {
@@ -214,6 +216,7 @@ describe("Gen1Ruleset", () => {
     const ruleset = new Gen1Ruleset();
     // Act
     const multiplier = ruleset.getCritMultiplier();
+    // Source: pokered engine/battle/core.asm CriticalHitTest — on crit, `sla e ; double level` directly in damage formula; no separate multiplier step
     // Assert: Gen 1 implements crits by doubling the attacker's level in the damage formula
     // (effectiveLevel = level * 2), not by applying a flat 2x multiplier after the fact.
     // The BattleEngine does not call getCritMultiplier() for Gen 1 — the boost is internal.
@@ -236,6 +239,7 @@ describe("Gen1Ruleset", () => {
     const ruleset = new Gen1Ruleset();
     // Act
     const order = ruleset.getEndOfTurnOrder();
+    // Source: pokered engine/battle/core.asm HandlePoisonBurnLeechSeed — status damage then leech seed drain; disable countdown at end-of-turn block
     // Assert: Gen 1 has a simpler set of end-of-turn effects than later gens
     expect(order).toEqual([
       CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
@@ -298,6 +302,7 @@ describe("Gen1Ruleset", () => {
       const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 100);
+      // Source: pokered engine/battle/move_effects/recoil.asm RecoilEffect_ — Struggle: srl b; rr c (÷2); all other moves ÷4; min 1
       // Assert: floor(100 / 2) = 50
       expect(recoil).toBe(50);
     });
@@ -308,6 +313,7 @@ describe("Gen1Ruleset", () => {
       const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 1);
+      // Source: pokered engine/battle/move_effects/recoil.asm RecoilEffect_ — min recoil is 1 (`inc c` when result=0)
       // Assert: max(1, floor(1/2)) = max(1, 0) = 1
       expect(recoil).toBe(1);
     });
@@ -318,6 +324,7 @@ describe("Gen1Ruleset", () => {
       const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 0);
+      // Source: pokered engine/battle/move_effects/recoil.asm RecoilEffect_ — min recoil is 1 (`inc c` when result=0)
       // Assert: max(1, floor(0/2)) = max(1, 0) = 1
       expect(recoil).toBe(1);
     });
@@ -328,6 +335,7 @@ describe("Gen1Ruleset", () => {
       const mockAttacker = createOnFieldPokemon();
       // Act
       const recoil = ruleset.calculateStruggleRecoil(mockAttacker, 101);
+      // Source: pokered engine/battle/move_effects/recoil.asm RecoilEffect_ — Struggle: floor(damage/2)
       // Assert: floor(101 / 2) = 50
       expect(recoil).toBe(50);
     });
@@ -343,6 +351,7 @@ describe("Gen1Ruleset", () => {
       const mockAttacker = createOnFieldPokemon();
       // Act
       const count = ruleset.rollMultiHitCount(mockAttacker, rng);
+      // Source: pokered engine/battle/effects.asm TWO_TO_FIVE_ATTACKS_EFFECT — 3/8 for 2 hits, 3/8 for 3 hits, 1/8 for 4 hits, 1/8 for 5 hits
       // Assert: must be one of the values in the weighted array
       expect([2, 3, 4, 5]).toContain(count);
     });
@@ -369,6 +378,7 @@ describe("Gen1Ruleset", () => {
       for (let i = 0; i < 100; i++) {
         counts.add(ruleset.rollMultiHitCount(mockAttacker, rng));
       }
+      // Source: pokered engine/battle/effects.asm TWO_TO_FIVE_ATTACKS_EFFECT — 3/8 chance each for 2 and 3; weighted [2,2,2,3,3,3,4,5]
       // Assert: weighted array has 3 twos and 3 threes out of 8, so both should appear
       expect(counts.has(2)).toBe(true);
       expect(counts.has(3)).toBe(true);
