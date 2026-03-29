@@ -52,12 +52,13 @@ export const GEN1_SPECIES = {
     name: "charizard",
     displayName: "Charizard",
     types: ["fire", "flying"] as const,
+    // Source: pret/pokered data/pokemon/base_stats/charizard.asm — spc=85 (not 109 which is Gen 2+ SpAtk)
     baseStats: {
       hp: 78,
       attack: 84,
       defense: 78,
-      spAttack: 109,
-      spDefense: 109,
+      spAttack: 85,
+      spDefense: 85,
       speed: 100,
     },
   },

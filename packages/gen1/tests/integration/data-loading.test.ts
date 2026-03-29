@@ -55,12 +55,13 @@ describe("Gen 1 Data Integration", () => {
     expect(charizard.displayName).toBe("Charizard");
     expect(charizard.name).toBe("charizard");
     expect(charizard.types).toEqual([TYPE_IDS.fire, TYPE_IDS.flying]);
+    // Source: pret/pokered data/pokemon/base_stats/charizard.asm — spc=85 (not 109 which is Gen 2+ SpAtk)
     expect(charizard.baseStats).toEqual({
       hp: 78,
       attack: 84,
       defense: 78,
-      spAttack: 109,
-      spDefense: 109,
+      spAttack: 85,
+      spDefense: 85,
       speed: 100,
     });
     expect(charizard.generation).toBe(1);

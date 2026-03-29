@@ -60,11 +60,11 @@
         "hp": 153,
         "attack": 104,
         "defense": 98,
-        "special": 129,
+        "special": 105,
         "speed": 120
       },
-      "source": "specs/reference/gen1-ground-truth.md §1",
-      "note": "HP DV is derived from the other four DVs; Special is unified."
+      "source": "pret/pokered data/pokemon/base_stats/charizard.asm",
+      "note": "HP DV is derived from the other four DVs; Special is unified. Base Special=85 per pokered (not 109 — that is the Gen 2 SpAtk split value)."
     },
     {
       "id": "stats-charizard-l50-max-dv-max-stat-exp",
@@ -88,11 +88,11 @@
         "hp": 185,
         "attack": 136,
         "defense": 130,
-        "special": 161,
+        "special": 137,
         "speed": 152
       },
-      "source": "specs/reference/gen1-ground-truth.md §1",
-      "note": "Max Gen 1 stat-exp contribution is floor(ceil(sqrt(65535)) / 4) = 63."
+      "source": "pret/pokered data/pokemon/base_stats/charizard.asm",
+      "note": "Max Gen 1 stat-exp contribution is floor(ceil(sqrt(65535)) / 4) = 64. Base Special=85 per pokered."
     },
     {
       "id": "crit-mewtwo-normal",

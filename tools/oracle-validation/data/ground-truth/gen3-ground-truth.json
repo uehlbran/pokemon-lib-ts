@@ -80,18 +80,18 @@
       "kind": "typeChart",
       "attackerType": "electric",
       "defenderTypes": ["steel"],
-      "expected": 0.5,
+      "expected": 1,
       "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
-      "note": "Electric attacking Steel: 0.5x on Gen 3 cartridge. Oracle @pkmn/data incorrectly reports 1x."
+      "note": "Electric attacking Steel is neutral (1x) in Gen 3. The gTypeEffectiveness[] table in src/battle_main.c has no TYPE_ELECTRIC,TYPE_STEEL entry, meaning neutral. Water/Electric resistance against Steel was introduced in Gen 4."
     },
     {
       "id": "water-vs-steel-gen3",
       "kind": "typeChart",
       "attackerType": "water",
       "defenderTypes": ["steel"],
-      "expected": 0.5,
+      "expected": 1,
       "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
-      "note": "Water attacking Steel: 0.5x on Gen 3 cartridge. Oracle @pkmn/data incorrectly reports 1x."
+      "note": "Water attacking Steel is neutral (1x) in Gen 3. The gTypeEffectiveness[] table in src/battle_main.c has no TYPE_WATER,TYPE_STEEL entry, meaning neutral. Water/Electric resistance against Steel was introduced in Gen 4."
     },
     {
       "id": "ghost-vs-psychic-gen3",
