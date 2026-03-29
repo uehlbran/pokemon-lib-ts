@@ -1105,7 +1105,8 @@ describe("Gen 6 damage breakdown", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
-    expect(result.breakdown?.baseDamage).toBeGreaterThan(0);
+    // Source: Gen 6 base formula — levelFactor=floor(2*50/5)+2=22, baseDamage=floor(floor(22*80*100/100)/50)+2=37
+    expect(result.breakdown?.baseDamage).toBe(37);
     expect(result.breakdown?.critMultiplier).toBe(GEN6_CRIT_MULTIPLIER);
     expect(result.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     expect(result.breakdown?.typeMultiplier).toBe(2);

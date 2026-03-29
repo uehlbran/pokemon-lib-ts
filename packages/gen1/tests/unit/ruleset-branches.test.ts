@@ -2017,7 +2017,6 @@ describe("Gen1Ruleset applyStatusDamage (toxic escalation)", () => {
     const damage = ruleset.applyStatusDamage(pokemon, CORE_STATUS_IDS.badlyPoisoned, state);
     // Assert: with counter=1 (default), damage = floor(160 * 1 / 16) = 10
     expect(damage).toBe(10);
-    expect(damage).toBeGreaterThan(0);
   });
 });
 
@@ -2601,7 +2600,9 @@ describe("Gen1Ruleset calculateExpGain", () => {
     // Act
     const exp = ruleset.calculateExpGain(context);
     // Assert
-    expect(exp).toBeGreaterThan(0);
+    // Source: pret/pokeemerald src/battle_script_commands.c calculateExpGainClassic
+    //   exp = floor(floor(floor(64*25/7)/1)*1.5) = floor(floor(228)/1*1.5) = floor(342) = 342
+    expect(exp).toBe(342);
     expect(Number.isInteger(exp)).toBe(true);
   });
 
