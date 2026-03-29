@@ -423,7 +423,7 @@
     "type": "normal",
     "category": "physical",
     "power": 80,
-    "accuracy": 100,
+    "accuracy": 75,
     "pp": 10,
     "priority": 0,
     "target": "all-adjacent-foes",
@@ -532,7 +532,7 @@
   {
     "id": "gust",
     "displayName": "Gust",
-    "type": "flying",
+    "type": "normal",
     "category": "physical",
     "power": 40,
     "accuracy": 100,
@@ -601,7 +601,7 @@
     "type": "normal",
     "category": "status",
     "power": null,
-    "accuracy": 100,
+    "accuracy": 85,
     "pp": 20,
     "priority": 0,
     "target": "adjacent-foe",
@@ -946,7 +946,7 @@
   {
     "id": "sand-attack",
     "displayName": "Sand Attack",
-    "type": "ground",
+    "type": "normal",
     "category": "status",
     "power": null,
     "accuracy": 100,
@@ -2525,7 +2525,7 @@
     "category": "special",
     "power": 20,
     "accuracy": 100,
-    "pp": 25,
+    "pp": 20,
     "priority": 0,
     "target": "adjacent-foe",
     "flags": {
@@ -2561,7 +2561,7 @@
     "category": "special",
     "power": 40,
     "accuracy": 100,
-    "pp": 15,
+    "pp": 10,
     "priority": 0,
     "target": "adjacent-foe",
     "flags": {
