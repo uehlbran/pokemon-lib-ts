@@ -41,6 +41,23 @@ describe("runGroundTruthSuite", () => {
     });
     expect(result.notes).toContain("Authority: pret/pokecrystal");
   });
+
+  it("given Gen 3, when running the ground-truth suite, then all authority-backed cases pass", () => {
+    const gen3 = discoverImplementedGenerations(repoRoot).find(
+      (generation) => generation.gen === 3,
+    );
+    expect(gen3).toBeDefined();
+
+    const result = runGroundTruthSuite(gen3!, repoRoot);
+
+    expect(result).toMatchObject({
+      status: "pass",
+      suitePassed: true,
+      failed: 0,
+      failures: [],
+    });
+    expect(result.notes).toContain("Authority: pret/pokeemerald");
+  });
 });
 
 describe("loadGroundTruthDataset", () => {

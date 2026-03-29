@@ -205,28 +205,18 @@ interface LocalMove {
 }
 
 // ── Z-Move power table ────────────────────────────────────────────────────────
-// Source: smogon/pokemon-showdown sim/battle-actions.ts getZMovePower (ERRATA #15)
-// 11-range lookup table — NOT a linear formula.
-
-const Z_POWER_TABLE: ReadonlyArray<readonly [number, number, number]> = [
-  [1, 55, 100],
-  [60, 65, 120],
-  [70, 75, 140],
-  [80, 85, 160],
-  [90, 95, 175],
-  [100, 105, 180],
-  [110, 115, 185],
-  [120, 125, 190],
-  [130, 135, 195],
-  [140, Number.POSITIVE_INFINITY, 200],
-];
-
+// Source: smogon/pokemon-showdown sim/moves.ts getZMovePower (ERRATA #15)
+// Uses threshold-based logic: return power for the first threshold >= basePower.
 function getZMovePower(basePower: number): number {
-  for (const [min, max, power] of Z_POWER_TABLE) {
-    if (basePower >= min && basePower <= max) {
-      return power;
-    }
-  }
+  if (basePower <= 55) return 100;
+  if (basePower <= 65) return 120;
+  if (basePower <= 75) return 140;
+  if (basePower <= 85) return 160;
+  if (basePower <= 95) return 175;
+  if (basePower <= 105) return 180;
+  if (basePower <= 115) return 185;
+  if (basePower <= 125) return 190;
+  if (basePower <= 135) return 195;
   return 200;
 }
 
@@ -505,7 +495,7 @@ export function runGroundTruthSuite(
     `Authority: ${dataset.authority}`,
     `Dataset: tools/oracle-validation/data/ground-truth/gen${gen}-ground-truth.json`,
   ];
-  let skippedCases = 0;
+  let deferredCases = 0;
 
   for (const testCase of dataset.cases) {
     let failure: string | null = null;
@@ -514,7 +504,7 @@ export function runGroundTruthSuite(
       failure = evaluateTypeChartCase(testCase, typeChart);
     } else if (testCase.kind === "derivedStat") {
       if (gen !== 1) {
-        skippedCases += 1;
+        deferredCases += 1;
         continue;
       }
       if (gen1DataManager === null) {
@@ -523,7 +513,7 @@ export function runGroundTruthSuite(
       failure = evaluateDerivedStatCase(testCase, gen1DataManager);
     } else if (testCase.kind === "critRate") {
       if (gen !== 1) {
-        skippedCases += 1;
+        deferredCases += 1;
         continue;
       }
       failure = evaluateCritRateCase(testCase);
@@ -542,7 +532,7 @@ export function runGroundTruthSuite(
     } else {
       // mechanic-documentation, abilityCheck, moveRecoilCheck, statusSpeedCheck,
       // terrainBoostCheck, maxMovePowerCheck — deferred to engine/replay suite
-      skippedCases += 1;
+      deferredCases += 1;
       continue;
     }
 
@@ -551,8 +541,8 @@ export function runGroundTruthSuite(
     }
   }
 
-  if (skippedCases > 0) {
-    notes.push(`${skippedCases} documentation-only or engine-deferred case(s) skipped`);
+  if (deferredCases > 0) {
+    notes.push(`${deferredCases} documentation-only or engine-deferred case(s) skipped`);
   }
 
   if (gen === 1) {
