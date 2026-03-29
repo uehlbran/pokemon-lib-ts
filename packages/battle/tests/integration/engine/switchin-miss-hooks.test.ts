@@ -139,7 +139,7 @@ describe("Bug #483: onSwitchIn hook wiring", () => {
     expect(onSwitchInSpy).toHaveBeenCalledTimes(1);
     const [pokemon, state] = onSwitchInSpy.mock.calls[0];
     expect(pokemon.pokemon.uid).toBe("pikachu-1");
-    expect(state).not.toBeNull();
+    expect(state).toHaveProperty("sides");
   });
 
   it("given initial battle start, when both leads are sent out, then ruleset.onSwitchIn() is called for each lead", () => {
