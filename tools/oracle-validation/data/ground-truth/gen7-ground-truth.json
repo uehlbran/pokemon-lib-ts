@@ -49,6 +49,78 @@
       "note": "Fire Blast (110 BP) → 185 Z-power."
     },
     {
+      "id": "z-move-power-earthquake-100bp",
+      "kind": "zMoveCheck",
+      "moveId": "earthquake",
+      "sourceBP": 100,
+      "expectedZPower": 180,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Earthquake (100 BP) → 180 Z-power (≤105 threshold)."
+    },
+    {
+      "id": "z-move-power-double-edge-120bp",
+      "kind": "zMoveCheck",
+      "moveId": "double-edge",
+      "sourceBP": 120,
+      "expectedZPower": 190,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Double-Edge (120 BP) → 190 Z-power (≤125 threshold)."
+    },
+    {
+      "id": "z-move-power-aerial-ace-60bp",
+      "kind": "zMoveCheck",
+      "moveId": "aerial-ace",
+      "sourceBP": 60,
+      "expectedZPower": 120,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Aerial Ace (60 BP) → 120 Z-power (≤65 threshold)."
+    },
+    {
+      "id": "z-move-power-quick-attack-40bp",
+      "kind": "zMoveCheck",
+      "moveId": "quick-attack",
+      "sourceBP": 40,
+      "expectedZPower": 100,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Quick Attack (40 BP) → 100 Z-power (≤55 threshold)."
+    },
+    {
+      "id": "z-move-power-surf-90bp",
+      "kind": "zMoveCheck",
+      "moveId": "surf",
+      "sourceBP": 90,
+      "expectedZPower": 175,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Surf (90 BP in Gen 6+) → 175 Z-power (≤95 threshold)."
+    },
+    {
+      "id": "z-move-power-dark-pulse-80bp",
+      "kind": "zMoveCheck",
+      "moveId": "dark-pulse",
+      "sourceBP": 80,
+      "expectedZPower": 160,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Dark Pulse (80 BP) → 160 Z-power (≤85 threshold)."
+    },
+    {
+      "id": "z-move-power-rock-slide-75bp",
+      "kind": "zMoveCheck",
+      "moveId": "rock-slide",
+      "sourceBP": 75,
+      "expectedZPower": 140,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Rock Slide (75 BP) → 140 Z-power (≤75 threshold)."
+    },
+    {
+      "id": "z-move-power-hyper-beam-150bp",
+      "kind": "zMoveCheck",
+      "moveId": "hyper-beam",
+      "sourceBP": 150,
+      "expectedZPower": 200,
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts getZMovePower",
+      "note": "Hyper Beam (150 BP) → 200 Z-power (>135 threshold)."
+    },
+    {
       "id": "paralysis-speed-modifier-gen7",
       "kind": "statusSpeedCheck",
       "status": "paralysis",
@@ -122,6 +194,83 @@
       "appliesToGroundedOnly": true,
       "source": "smogon/pokemon-showdown sim/battle-actions.ts",
       "note": "Misty Terrain: halves Dragon-type damage vs grounded Pokemon only."
+    },
+    {
+      "id": "type-fairy-vs-dragon-gen7",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["dragon"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen7",
+      "note": "Fairy is super-effective vs Dragon (2x) in Gen 7 (same as Gen 6)."
+    },
+    {
+      "id": "type-steel-vs-fairy-gen7",
+      "kind": "typeChart",
+      "attackerType": "steel",
+      "defenderTypes": ["fairy"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen7",
+      "note": "Steel is super-effective vs Fairy (2x) in Gen 7."
+    },
+    {
+      "id": "type-fairy-vs-fighting-gen7",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["fighting"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen7",
+      "note": "Fairy is super-effective vs Fighting (2x) in Gen 7."
+    },
+    {
+      "id": "type-fighting-vs-dark-gen7",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen7",
+      "note": "Fighting is super-effective vs Dark (2x) in Gen 7."
+    },
+    {
+      "id": "type-dark-vs-ghost-gen7",
+      "kind": "typeChart",
+      "attackerType": "dark",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen7",
+      "note": "Dark is super-effective vs Ghost (2x) in Gen 7."
+    },
+    {
+      "id": "moongeist-beam-power-gen7",
+      "kind": "movePowerCheck",
+      "moveId": "moongeist-beam",
+      "expectedBasePower": 100,
+      "source": "Showdown data/moves.ts Gen7 — Moongeist Beam",
+      "note": "Moongeist Beam (introduced Gen 7) base power = 100. Special Ghost move."
+    },
+    {
+      "id": "sunsteel-strike-category-gen7",
+      "kind": "moveCategoryCheck",
+      "moveId": "sunsteel-strike",
+      "expectedCategory": "physical",
+      "source": "Showdown data/moves.ts Gen7 — Sunsteel Strike",
+      "note": "Sunsteel Strike (introduced Gen 7) is Physical Steel with base power 100."
+    },
+    {
+      "id": "photon-geyser-category-gen7",
+      "kind": "moveCategoryCheck",
+      "moveId": "photon-geyser",
+      "expectedCategory": "special",
+      "source": "Showdown data/moves.ts Gen7 — Photon Geyser",
+      "note": "Photon Geyser (introduced Gen 7) is Special Psychic with base power 100."
+    },
+    {
+      "id": "first-impression-priority-gen7",
+      "kind": "movePriorityCheck",
+      "moveId": "first-impression",
+      "expectedPriority": 2,
+      "source": "Showdown data/moves.ts Gen7 — First Impression",
+      "note": "First Impression (introduced Gen 7) has +2 priority. Bug type, physical, 90 BP."
     }
   ]
 }
