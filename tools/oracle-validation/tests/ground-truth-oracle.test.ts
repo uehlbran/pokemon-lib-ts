@@ -65,6 +65,6 @@ describe("loadGroundTruthDataset", () => {
     const dataset = loadGroundTruthDataset(repoRoot);
 
     expect(dataset.authority).toBe("pret/pokered");
-    expect(dataset.cases).toHaveLength(10);
+    expect(dataset.cases).toHaveLength(14); // updated: 4 movePriorityCheck cases added in fix/gen1-move-priorities (issue #1116)
   });
 });
