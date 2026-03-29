@@ -29,7 +29,8 @@ type SupportedSuite =
   | "smoke"
   | "fast"
   | "nightly"
-  | "all";
+  | "all"
+  | "compliance";
 const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "data",
   "stats",
@@ -44,6 +45,7 @@ const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "fast",
   "nightly",
   "all",
+  "compliance",
 ]);
 
 /**
@@ -89,8 +91,8 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
  * Expand composite suite aliases into concrete suite runs.
  */
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
-  // `all` and `nightly` both expand to the complete suite set
-  if (suites.includes("all") || suites.includes("nightly")) {
+  // `all`, `compliance`, and `nightly` all expand to the complete suite set
+  if (suites.includes("all") || suites.includes("compliance") || suites.includes("nightly")) {
     return [
       "data",
       "stats",

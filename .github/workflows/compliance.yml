@@ -26,6 +26,8 @@ jobs:
   oracle-fast:
     name: oracle (fast-path)
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,9 +49,9 @@ jobs:
             if (!fs.existsSync(resultsPath)) process.exit(0);
             const output = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
             const gens = output.generations ?? [];
-            let summary = '## Fast Compliance Check (data + stats + ground truth)\n\n';
-            summary += '| Gen | Data | Stats | GroundTruth | Damage | Mechanics |\n';
-            summary += '|-----|------|-------|-------------|--------|----------|\n';
+            let summary = '## Fast Compliance Check (data + stats + ground truth + damage + mechanics + terrain + gimmicks)\n\n';
+            summary += '| Gen | Data | Stats | GT | Damage | Mechanics | Terrain | Gimmicks |\n';
+            summary += '|-----|------|-------|----|--------|-----------|---------|----------|\n';
             for (const g of gens) {
               const s = g.suites;
               const icon = (suite) => {
@@ -58,7 +60,7 @@ jobs:
                 if (s[suite].status === 'skip') return '⬜';
                 return '❌';
               };
-              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' |\n';
+              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' |\n';
             }
             fs.writeFileSync('/tmp/compliance-comment.md', summary);
           "
@@ -77,9 +79,11 @@ jobs:
     name: oracle (full-path)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: |
-      github.event_name == 'schedule' ||
-      (github.event_name == 'pull_request' && contains(toJson(github.event.pull_request.labels.*.name), 'oracle:full'))
+    # Runs on schedule (nightly) OR on any PR that triggers this workflow
+    # (workflow-level path filter already ensures it only runs on relevant changes)
+    if: github.event_name == 'schedule' || github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -102,8 +106,8 @@ jobs:
             const output = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
             const gens = output.generations ?? [];
             let summary = '## Full Compliance Check (all suites)\n\n';
-            summary += '| Gen | Data | Damage | Mechanics | Terrain | Gimmicks | Replay | Trace | Smoke |\n';
-            summary += '|-----|------|--------|-----------|---------|----------|--------|-------|-------|\n';
+            summary += '| Gen | Data | Stats | GT | Damage | Mechanics | Terrain | Gimmicks | Replay | Trace | Smoke |\n';
+            summary += '|-----|------|-------|----|--------|-----------|---------|----------|--------|-------|-------|\n';
             for (const g of gens) {
               const s = g.suites;
               const icon = (suite) => {
@@ -112,7 +116,7 @@ jobs:
                 if (s[suite].status === 'skip') return '⬜';
                 return '❌';
               };
-              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' | ' + icon('replay') + ' | ' + icon('damageTrace') + ' | ' + icon('smoke') + ' |\n';
+              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' | ' + icon('replay') + ' | ' + icon('damageTrace') + ' | ' + icon('smoke') + ' |\n';
             }
             fs.writeFileSync('/tmp/compliance-full-comment.md', summary);
           "
