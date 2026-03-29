@@ -41,7 +41,8 @@
     "oracle:data": "tsx tools/oracle-validation/src/runner.ts --suite data",
     "oracle:stats": "tsx tools/oracle-validation/src/runner.ts --suite stats",
     "oracle:groundtruth": "tsx tools/oracle-validation/src/runner.ts --suite groundTruth",
-    "oracle:fast": "tsx tools/oracle-validation/src/runner.ts --suite fast"
+    "oracle:fast": "tsx tools/oracle-validation/src/runner.ts --suite fast",
+    "validate:pret": "tsx tools/data-importer/src/pret-overrides/validate-committed-data.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
