@@ -320,7 +320,6 @@ describe("Drizzle (Gen 6: 5-turn rain)", () => {
     const result = handleGen6SwitchAbility(TRIGGERS.onSwitchIn, ctx);
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect).toBeDefined();
     expect(weatherEffect?.weather).toBe(W.rain);
     // Gen 6 key change: 5 turns, not -1 (permanent)
     expect(weatherEffect?.weatherTurns).toBe(5);

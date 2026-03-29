@@ -260,8 +260,7 @@ describe("Gen5Ruleset sleep counter reset on switch-in (Gen5 unique mechanic)", 
     ruleset.onSwitchIn(pokemon, createSyntheticBattleState());
 
     const counter = pokemon.volatileStatuses.get(volatileIds.sleepCounter);
-    expect(counter).toBeDefined();
-    expect(counter!.turnsLeft).toBe(3);
+    expect(counter?.turnsLeft).toBe(3);
   });
 
   it("given a sleeping Pokemon with startTime=1 and turnsLeft=0, when onSwitchIn fires, then turnsLeft resets to 1", () => {
@@ -445,9 +444,8 @@ describe("Gen5 weather ability permanence (permanent weather, no countdown)", ()
 
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect).toBeDefined();
     // @ts-expect-error -- dynamic field
-    expect(weatherEffect!.weatherTurns).toBe(-1); // permanent weather in Gen 5
+    expect(weatherEffect?.weatherTurns).toBe(-1); // permanent weather in Gen 5
   });
 
   it("given Gen5Ruleset, when applyAbility is called with on-switch-in and sand-stream, then weatherTurns is -1 (permanent)", () => {
@@ -471,9 +469,8 @@ describe("Gen5 weather ability permanence (permanent weather, no countdown)", ()
 
     expect(result.activated).toBe(true);
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set");
-    expect(weatherEffect).toBeDefined();
     // @ts-expect-error -- dynamic field
-    expect(weatherEffect!.weatherTurns).toBe(-1); // permanent weather in Gen 5
+    expect(weatherEffect?.weatherTurns).toBe(-1); // permanent weather in Gen 5
   });
 });
 

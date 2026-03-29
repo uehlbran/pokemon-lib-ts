@@ -11,8 +11,6 @@ describe("runGroundTruthSuite", () => {
     const gen1 = discoverImplementedGenerations(repoRoot).find(
       (generation) => generation.gen === 1,
     );
-    expect(gen1).toBeDefined();
-
     const result = runGroundTruthSuite(gen1!, repoRoot);
 
     expect(result).toMatchObject({
@@ -29,8 +27,6 @@ describe("runGroundTruthSuite", () => {
     const gen2 = discoverImplementedGenerations(repoRoot).find(
       (generation) => generation.gen === 2,
     );
-    expect(gen2).toBeDefined();
-
     const result = runGroundTruthSuite(gen2!, repoRoot);
 
     expect(result).toMatchObject({
@@ -46,8 +42,6 @@ describe("runGroundTruthSuite", () => {
     const gen3 = discoverImplementedGenerations(repoRoot).find(
       (generation) => generation.gen === 3,
     );
-    expect(gen3).toBeDefined();
-
     const result = runGroundTruthSuite(gen3!, repoRoot);
 
     expect(result).toMatchObject({

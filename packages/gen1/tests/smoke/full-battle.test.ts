@@ -628,7 +628,6 @@ describe("Gen 1 Full Battle Integration", () => {
     // Assert
     const defenderTeam = engine.getTeam(1);
     const magikarp = defenderTeam[0];
-    expect(magikarp).toBeDefined();
     expect(magikarp?.currentHp).toBe(0);
   });
 
@@ -715,7 +714,6 @@ describe("Gen 1 Full Battle Integration", () => {
       const team = engine.getTeam(sideIdx);
       for (const pokemon of team) {
         const calculatedStats = pokemon.calculatedStats;
-        expect(calculatedStats).toBeDefined();
         const nickname = pokemon.nickname;
         if (nickname && expectedStats[nickname]) {
           const expected = expectedStats[nickname];

@@ -100,10 +100,9 @@ describe("Gen5Ruleset status conditions", () => {
       ruleset.onSwitchIn(pokemon, state);
 
       const resetCounter = pokemon.volatileStatuses.get(VOLATILES.sleepCounter);
-      expect(resetCounter).toBeDefined();
       // After reset, turnsLeft should be back to startTime
       // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- slp.onSwitchIn sets effectState.time = startTime
-      expect(resetCounter!.turnsLeft).toBe(initialTurns);
+      expect(resetCounter?.turnsLeft).toBe(initialTurns);
     });
 
     it("given sleeping pokemon in Gen5, when processSleepTurn fires and counter reaches 0, then can act on wake turn", () => {

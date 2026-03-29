@@ -3073,7 +3073,7 @@ describe("DamageResult structure", () => {
     expect(result.isCrit).toBe(false);
     expect(result.randomFactor).toBeGreaterThanOrEqual(0.85);
     expect(result.randomFactor).toBeLessThanOrEqual(1.0);
-    expect(result.breakdown).toBeDefined();
+    expect(result.breakdown).not.toBeUndefined();
     expect(result.effectiveType).toBe(TYPES.fire);
     expect(result.effectiveCategory).toBe(MOVE_CATEGORIES.physical);
   });
@@ -3087,7 +3087,7 @@ describe("DamageResult structure", () => {
     });
     const result = calculateGen9Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
+    expect(result.breakdown).not.toBeUndefined();
     const bd = result.breakdown!;
     expect(typeof bd.baseDamage).toBe("number");
     expect(typeof bd.weatherMultiplier).toBe("number");

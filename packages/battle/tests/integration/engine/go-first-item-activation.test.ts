@@ -151,11 +151,9 @@ describe("go-first item activation", () => {
     expect(moveStarts[0]).toMatchObject({ pokemon: "Blastoise" });
     expect(engine.getActive(0)?.pokemon.heldItem).toBeNull();
 
-    const itemConsumed = events.find(
-      (event) =>
-        event.type === "item-consumed" && "pokemon" in event && event.pokemon === "Blastoise",
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: "item-consumed", pokemon: "Blastoise" }),
     );
-    expect(itemConsumed).toBeDefined();
   });
 
   it("given a non-consuming go-first item, when turn order is resolved, then the item activates without being consumed", () => {
@@ -171,11 +169,9 @@ describe("go-first item activation", () => {
     expect(moveStarts[0]).toMatchObject({ pokemon: "Blastoise" });
     expect(engine.getActive(0)?.pokemon.heldItem).toBe(ITEM_IDS.quickClaw);
 
-    const itemActivated = events.find(
-      (event) =>
-        event.type === "item-activate" && "pokemon" in event && event.pokemon === "Blastoise",
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: "item-activate", pokemon: "Blastoise" }),
     );
-    expect(itemActivated).toBeDefined();
   });
 
   it("given no go-first item activation, when turn order is resolved, then the faster Pokemon acts first", () => {

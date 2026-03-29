@@ -480,13 +480,14 @@ describe("Bug #879 — Mystery Berry item consumption event", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    const itemConsumed = events.find((e) => e.type === "item-consumed");
-    expect(itemConsumed).toBeDefined();
-    if (itemConsumed?.type === "item-consumed") {
-      expect(itemConsumed.side).toBe(0);
-      expect(itemConsumed.pokemon).toBe("Charizard");
-      expect(itemConsumed.item).toBe(GEN2_ITEM_IDS.mysteryBerry);
-    }
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "item-consumed",
+        side: 0,
+        pokemon: "Charizard",
+        item: GEN2_ITEM_IDS.mysteryBerry,
+      }),
+    );
 
     const active = engine.state.sides[0].active[0];
     expect(active?.pokemon.heldItem).toBeNull();

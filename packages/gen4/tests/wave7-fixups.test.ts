@@ -393,9 +393,8 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     const moves = engine.getAvailableMoves(0);
     const flyMove = moves.find((m) => m.moveId === MOVES.fly);
 
-    expect(flyMove).toBeDefined();
-    expect(flyMove!.disabled).toBe(true);
-    expect(flyMove!.disabledReason).toBe("Blocked by Gravity");
+    expect(flyMove?.disabled).toBe(true);
+    expect(flyMove?.disabledReason).toBe("Blocked by Gravity");
   });
 
   it("given Gravity is active, when getAvailableMoves is called, then Bounce is disabled", () => {
@@ -408,9 +407,8 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     const moves = engine.getAvailableMoves(0);
     const bounceMove = moves.find((m) => m.moveId === MOVES.bounce);
 
-    expect(bounceMove).toBeDefined();
-    expect(bounceMove!.disabled).toBe(true);
-    expect(bounceMove!.disabledReason).toBe("Blocked by Gravity");
+    expect(bounceMove?.disabled).toBe(true);
+    expect(bounceMove?.disabledReason).toBe("Blocked by Gravity");
   });
 
   it("given Gravity is active, when getAvailableMoves is called, then non-gravity moves are NOT disabled", () => {
@@ -423,10 +421,8 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     const tackleMove = moves.find((m) => m.moveId === MOVES.tackle);
     const tboltMove = moves.find((m) => m.moveId === MOVES.thunderbolt);
 
-    expect(tackleMove).toBeDefined();
-    expect(tackleMove!.disabled).toBe(false);
-    expect(tboltMove).toBeDefined();
-    expect(tboltMove!.disabled).toBe(false);
+    expect(tackleMove?.disabled).toBe(false);
+    expect(tboltMove?.disabled).toBe(false);
   });
 
   it("given Gravity is NOT active, when getAvailableMoves is called, then Fly and Bounce are enabled", () => {
@@ -438,10 +434,8 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     const flyMove = moves.find((m) => m.moveId === MOVES.fly);
     const bounceMove = moves.find((m) => m.moveId === MOVES.bounce);
 
-    expect(flyMove).toBeDefined();
-    expect(flyMove!.disabled).toBe(false);
-    expect(bounceMove).toBeDefined();
-    expect(bounceMove!.disabled).toBe(false);
+    expect(flyMove?.disabled).toBe(false);
+    expect(bounceMove?.disabled).toBe(false);
   });
 });
 
@@ -547,8 +541,7 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
 
     // Tackle should be enabled
     const tackle = moves.find((m: any) => m.moveId === MOVES.tackle);
-    expect(tackle).toBeDefined();
-    expect(tackle!.disabled).toBe(false);
+    expect(tackle?.disabled).toBe(false);
 
     // All other moves should be disabled with "Locked by Encore" reason
     const others = moves.filter((m: any) => m.moveId !== MOVES.tackle);
@@ -571,8 +564,7 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
     const moves = engine.getAvailableMoves(0);
 
     const tbolt = moves.find((m: any) => m.moveId === MOVES.thunderbolt);
-    expect(tbolt).toBeDefined();
-    expect(tbolt!.disabled).toBe(false);
+    expect(tbolt?.disabled).toBe(false);
 
     const others = moves.filter((m: any) => m.moveId !== MOVES.thunderbolt);
     for (const move of others) {

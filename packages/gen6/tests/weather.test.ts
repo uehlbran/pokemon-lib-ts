@@ -254,8 +254,7 @@ describe("Gen6 sandstorm chip damage", () => {
     const results = applyGen6WeatherEffects(state);
 
     const normalResult = results.find((r) => r.side === 0);
-    expect(normalResult).toBeDefined();
-    expect(normalResult!.damage).toBe(10);
+    expect(normalResult?.damage).toBe(10);
   });
 
   it("given sandstorm active, when Fire-type with 320 HP takes end-of-turn tick, then takes 20 damage (floor(320/16))", () => {
@@ -269,8 +268,7 @@ describe("Gen6 sandstorm chip damage", () => {
     const results = applyGen6WeatherEffects(state);
 
     const fireResult = results.find((r) => r.side === 0);
-    expect(fireResult).toBeDefined();
-    expect(fireResult!.damage).toBe(20);
+    expect(fireResult?.damage).toBe(20);
   });
 
   it("given sandstorm active, when Rock-type pokemon takes end-of-turn tick, then takes no damage", () => {
@@ -325,8 +323,7 @@ describe("Gen6 hail chip damage", () => {
     const results = applyGen6WeatherEffects(state);
 
     const fireResult = results.find((r) => r.side === 0);
-    expect(fireResult).toBeDefined();
-    expect(fireResult!.damage).toBe(20);
+    expect(fireResult?.damage).toBe(20);
   });
 
   it("given hail active, when Normal-type with 160 HP takes end-of-turn tick, then takes 10 damage (floor(160/16))", () => {
@@ -340,8 +337,7 @@ describe("Gen6 hail chip damage", () => {
     const results = applyGen6WeatherEffects(state);
 
     const normalResult = results.find((r) => r.side === 0);
-    expect(normalResult).toBeDefined();
-    expect(normalResult!.damage).toBe(10);
+    expect(normalResult?.damage).toBe(10);
   });
 
   it("given hail active, when Ice-type takes end-of-turn tick, then takes no damage", () => {
@@ -443,8 +439,7 @@ describe("Gen6 weather minimum chip damage", () => {
     const results = applyGen6WeatherEffects(state);
 
     const result = results.find((r) => r.side === 0);
-    expect(result).toBeDefined();
-    expect(result!.damage).toBe(1);
+    expect(result?.damage).toBe(1);
   });
 
   it("given hail and non-immune pokemon with 15 HP max, when chip applied, then takes 1 damage (floor(15/16) = 0, min 1)", () => {
@@ -458,8 +453,7 @@ describe("Gen6 weather minimum chip damage", () => {
     const results = applyGen6WeatherEffects(state);
 
     const result = results.find((r) => r.side === 0);
-    expect(result).toBeDefined();
-    expect(result!.damage).toBe(1);
+    expect(result?.damage).toBe(1);
   });
 });
 
@@ -599,8 +593,7 @@ describe("Gen6 weather integration via ruleset", () => {
 
     expect(results.length).toBe(1);
     const fireResult = results.find((r) => r.side === 0);
-    expect(fireResult).toBeDefined();
-    expect(fireResult!.damage).toBe(10); // floor(160 / 16) = 10
+    expect(fireResult?.damage).toBe(10); // floor(160 / 16) = 10
   });
 
   it("given Gen6Ruleset, when applyWeatherEffects called with hail state, then returns chip results for non-Ice", () => {

@@ -91,7 +91,6 @@ describe("Gen 4 stat calculation — HP formula (issue #437)", () => {
     //           = 124 + 60 = 184
     const ruleset = createRuleset();
     const species = DATA_MANAGER.getSpecies(SPECIES.garchomp) as PokemonSpeciesData; // Garchomp #445
-    expect(species).toBeDefined();
     expect(species.baseStats.hp).toBe(108);
 
     const pokemon = createSyntheticPokemonInstance({
@@ -122,7 +121,6 @@ describe("Gen 4 stat calculation — HP formula (issue #437)", () => {
     // Source: Showdown calc — Blissey L100, 31 IVs, 0 EVs = 651 HP
     const ruleset = createRuleset();
     const species = DATA_MANAGER.getSpecies(SPECIES.blissey) as PokemonSpeciesData; // Blissey #242
-    expect(species).toBeDefined();
     expect(species.baseStats.hp).toBe(255);
 
     const pokemon = createSyntheticPokemonInstance({
@@ -191,7 +189,6 @@ describe("Gen 4 stat calculation — non-HP boosting nature (issue #437)", () =>
     // Source: Showdown calc — Tyranitar L50, 31 Atk IV, 252 Atk EVs, Adamant = 204 Atk
     const ruleset = createRuleset();
     const species = DATA_MANAGER.getSpecies(SPECIES.tyranitar) as PokemonSpeciesData; // Tyranitar #248
-    expect(species).toBeDefined();
     expect(species.baseStats.attack).toBe(134);
 
     const pokemon = createSyntheticPokemonInstance({
@@ -278,7 +275,6 @@ describe("Gen 4 stat calculation — L100 (issue #437)", () => {
     // Source: Showdown calc — Salamence L100, 31 Atk IV, 252 Atk EVs, Adamant = 405 Atk
     const ruleset = createRuleset();
     const species = DATA_MANAGER.getSpecies(SPECIES.salamence) as PokemonSpeciesData; // Salamence #373
-    expect(species).toBeDefined();
     expect(species.baseStats.attack).toBe(135);
 
     const pokemon = createSyntheticPokemonInstance({
@@ -339,7 +335,6 @@ describe("Gen 4 stat calculation — Speed (issue #437)", () => {
     // Source: Showdown calc — Starmie L50, 31 Spe IV, 0 Spe EVs, Timid = 148 Speed
     const ruleset = createRuleset();
     const species = DATA_MANAGER.getSpecies(SPECIES.starmie) as PokemonSpeciesData; // Starmie #121
-    expect(species).toBeDefined();
     expect(species.baseStats.speed).toBe(115);
 
     const pokemon = createSyntheticPokemonInstance({

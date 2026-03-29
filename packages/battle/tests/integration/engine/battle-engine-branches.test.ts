@@ -301,13 +301,9 @@ describe("BattleEngine — branch coverage", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Assert
-      const subEnd = events.find(
-        (e) =>
-          e.type === "volatile-end" &&
-          "volatile" in e &&
-          e.volatile === CORE_VOLATILE_IDS.substitute,
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "volatile-end", volatile: CORE_VOLATILE_IDS.substitute }),
       );
-      expect(subEnd).toBeDefined();
       expect(engine.state.sides[1].active[0]?.substituteHp).toBe(0);
     });
   });
@@ -640,8 +636,7 @@ describe("BattleEngine — branch coverage", () => {
       const attacker = engine.state.sides[0].active[0];
       expect(attacker?.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
       const sleepCounter = attacker?.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
-      expect(sleepCounter).toBeDefined();
-      expect(sleepCounter!.turnsLeft).toBe(2);
+      expect(sleepCounter?.turnsLeft).toBe(2);
       // The key assertion: startTime must equal the turnsLeft value at infliction time
       // Source: Showdown data/mods/gen5/conditions.ts — slp.onSwitchIn uses effectState.startTime
       const startTime = (sleepCounter!.data as Record<string, unknown>)?.startTime;

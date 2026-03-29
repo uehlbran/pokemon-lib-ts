@@ -505,7 +505,6 @@ describe("Bug #266: Destiny Bond cleared when user makes a different move", () =
 
     const result = executeGen4MoveEffect(context);
 
-    expect(result.volatilesToClear).toBeDefined();
     expect(result.volatilesToClear).toContainEqual({
       target: "attacker",
       volatile: VOLATILES.destinyBond,

@@ -120,7 +120,7 @@ describe("two-turn move engine infrastructure", () => {
       const { engine, events } = createEngine({ ruleset, team1 });
       engine.start();
       const defenderStartHp = engine.getActive(1)?.pokemon.currentHp;
-      expect(defenderStartHp).toBeDefined();
+      expect(defenderStartHp).not.toBeUndefined();
 
       // Act: submit moves for both sides
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -199,7 +199,7 @@ describe("two-turn move engine infrastructure", () => {
       const { engine, events } = createEngine({ ruleset, team1 });
       engine.start();
       const defenderStartHp = engine.getActive(1)?.pokemon.currentHp;
-      expect(defenderStartHp).toBeDefined();
+      expect(defenderStartHp).not.toBeUndefined();
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
@@ -245,8 +245,7 @@ describe("two-turn move engine infrastructure", () => {
 
       // Assert: the forced move (index 0) should not be disabled
       const forcedMove = moves.find((m) => m.index === 0);
-      expect(forcedMove).toBeDefined();
-      expect(forcedMove!.disabled).toBe(false);
+      expect(forcedMove?.disabled).toBe(false);
 
       // Assert: all other moves should be disabled with reason "Locked into move"
       const otherMoves = moves.filter((m) => m.index !== 0);

@@ -130,9 +130,7 @@ describe("gimmick activation hook in executeMove", () => {
 
     // Assert
     expect(activateSpy).toHaveBeenCalledTimes(1);
-    const megaEvent = events.find((e) => e.type === "mega-evolve");
-    expect(megaEvent).toBeDefined();
-    expect(megaEvent).toEqual({
+    expect(events).toContainEqual({
       type: "mega-evolve",
       side: 0,
       pokemon: "Charizard",
@@ -394,11 +392,10 @@ describe("grassy terrain heal end-of-turn", () => {
     const charizardHeal = healEvents.find(
       (e) => e.type === "heal" && (e as { pokemon: string }).pokemon === "Charizard",
     );
-    expect(charizardHeal).toBeDefined();
-    if (charizardHeal && charizardHeal.type === "heal") {
-      expect(charizardHeal.amount).toBe(12);
-      expect(charizardHeal.source).toBe(CORE_TERRAIN_IDS.grassyTerrain);
-    }
+    expect(charizardHeal?.type === "heal" && charizardHeal.amount).toBe(12);
+    expect(charizardHeal?.type === "heal" && charizardHeal.source).toBe(
+      CORE_TERRAIN_IDS.grassyTerrain,
+    );
   });
 
   it("given grassy terrain is active and Pokemon is at full HP, when end of turn runs with healAmount, then no heal event is emitted (no overheal)", () => {
@@ -548,9 +545,7 @@ describe("terrain-setting from move effect results", () => {
       source: TERRAIN_IDS.grassyTerrain,
     });
 
-    const terrainEvent = events.find((e) => e.type === "terrain-set");
-    expect(terrainEvent).toBeDefined();
-    expect(terrainEvent).toEqual({
+    expect(events).toContainEqual({
       type: "terrain-set",
       terrain: TERRAIN_IDS.grassy,
       source: TERRAIN_IDS.grassyTerrain,

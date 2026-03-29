@@ -225,7 +225,6 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     // Assert — side 1 should have 1 Spikes layer
     const side1Hazards = engine.getState().sides[1].hazards;
     const spikes = side1Hazards.find((h) => h.type === CORE_HAZARD_IDS.spikes);
-    expect(spikes).toBeDefined();
     expect(spikes?.layers).toBe(1);
 
     // The hazard-set event should report layer 1
@@ -327,7 +326,6 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     const toxicSpikes = engine
       .getState()
       .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.toxicSpikes);
-    expect(toxicSpikes).toBeDefined();
     expect(toxicSpikes?.layers).toBe(1);
   });
 
@@ -426,7 +424,6 @@ describe("Stealth Rock — single-layer hazard unaffected by layering bug", () =
     const stealthRock = engine
       .getState()
       .sides[1].hazards.find((h) => h.type === CORE_HAZARD_IDS.stealthRock);
-    expect(stealthRock).toBeDefined();
     expect(stealthRock?.layers).toBe(1);
   });
 

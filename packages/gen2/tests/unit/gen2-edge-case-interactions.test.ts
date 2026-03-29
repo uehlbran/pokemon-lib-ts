@@ -386,7 +386,6 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     const state = createBattleState(attacker, defender);
     const context = createMoveEffectContext({ attacker, defender, move: futureSightMove, state });
     const result = ruleset.executeMoveEffect(context);
-    expect(result.futureAttack).toBeDefined();
     expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
     expect(result.futureAttack?.turnsLeft).toBe(2);
     expect(result.messages).toEqual(["The Pokemon foresaw an attack!"]);
@@ -408,7 +407,6 @@ describe("Gen 2 Future Sight typeless behavior", () => {
     });
     const result = ruleset.executeMoveEffect(context);
     // Future Sight schedules even vs Dark-type
-    expect(result.futureAttack).toBeDefined();
     expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
     expect(result.messages).toEqual(["The Pokemon foresaw an attack!"]);
   });

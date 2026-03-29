@@ -105,11 +105,10 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Assert
       const healEvent = events.find((e) => e.type === "heal") as HealEvent | undefined;
-      expect(healEvent).toBeDefined();
       // Source: Potion heals 20 HP. Starting HP was 103, so after heal = 123.
-      expect(healEvent!.amount).toBe(20);
-      expect(healEvent!.currentHp).toBe(123);
-      expect(healEvent!.source).toBe(CORE_ITEM_IDS.potion);
+      expect(healEvent?.amount).toBe(20);
+      expect(healEvent?.currentHp).toBe(123);
+      expect(healEvent?.source).toBe(CORE_ITEM_IDS.potion);
     });
 
     it("given a Potion used on a full-HP pokemon, when item action submitted, then no heal event emitted", () => {
@@ -177,8 +176,7 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Assert
       const cureEvent = events.find((e) => e.type === "status-cure") as StatusCureEvent | undefined;
-      expect(cureEvent).toBeDefined();
-      expect(cureEvent!.status).toBe(CORE_STATUS_IDS.poison);
+      expect(cureEvent?.status).toBe(CORE_STATUS_IDS.poison);
 
       // Verify the pokemon's status was actually cleared
       const active = engine.state.sides[0].active[0];
@@ -232,11 +230,10 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Assert
       const statEvent = events.find((e) => e.type === "stat-change") as StatChangeEvent | undefined;
-      expect(statEvent).toBeDefined();
-      expect(statEvent!.stat).toBe(CORE_STAT_IDS.attack);
-      expect(statEvent!.stages).toBe(2);
+      expect(statEvent?.stat).toBe(CORE_STAT_IDS.attack);
+      expect(statEvent?.stages).toBe(2);
       // Source: starting stage 0 + 2 = 2
-      expect(statEvent!.currentStage).toBe(2);
+      expect(statEvent?.currentStage).toBe(2);
 
       // Verify the stat stage was actually applied
       const active = engine.state.sides[0].active[0];
@@ -286,10 +283,9 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Assert
       const healEvent = events.find((e) => e.type === "heal") as HealEvent | undefined;
-      expect(healEvent).toBeDefined();
       // Source: Revive restores half max HP
-      expect(healEvent!.amount).toBe(halfHp);
-      expect(healEvent!.currentHp).toBe(halfHp);
+      expect(healEvent?.amount).toBe(halfHp);
+      expect(healEvent?.currentHp).toBe(halfHp);
 
       // Verify the fainted pokemon now has HP
       expect(faintedMon.currentHp).toBe(halfHp);
@@ -340,10 +336,9 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Assert
       const healEvent = events.find((e) => e.type === "heal") as HealEvent | undefined;
-      expect(healEvent).toBeDefined();
       // Source: Max Revive restores full HP
-      expect(healEvent!.amount).toBe(faintedMaxHp);
-      expect(healEvent!.currentHp).toBe(faintedMaxHp);
+      expect(healEvent?.amount).toBe(faintedMaxHp);
+      expect(healEvent?.currentHp).toBe(faintedMaxHp);
 
       // Verify the fainted pokemon now has full HP
       expect(faintedMon.currentHp).toBe(faintedMaxHp);
@@ -479,12 +474,10 @@ describe("BattleEngine - ItemAction bag item usage", () => {
 
       // Assert — both heal and status cure should be present
       const healEvent = events.find((e) => e.type === "heal") as HealEvent | undefined;
-      expect(healEvent).toBeDefined();
-      expect(healEvent!.amount).toBe(50);
+      expect(healEvent?.amount).toBe(50);
 
       const cureEvent = events.find((e) => e.type === "status-cure") as StatusCureEvent | undefined;
-      expect(cureEvent).toBeDefined();
-      expect(cureEvent!.status).toBe(CORE_STATUS_IDS.poison);
+      expect(cureEvent?.status).toBe(CORE_STATUS_IDS.poison);
 
       // Verify state was mutated — after heal, HP = 103 + 50 = 153 (= maxHp, capped).
       // Then the configured damage leaves the pokemon at maxHp - configuredDamage.

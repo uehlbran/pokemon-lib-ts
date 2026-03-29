@@ -360,9 +360,8 @@ describe("Gen 5 integration: sandstorm/hail chip = 1/16 max HP", () => {
     const results = applyGen5WeatherEffects(state);
 
     const chipResult = results.find((r) => r.side === 0);
-    expect(chipResult).toBeDefined();
     // floor(160 / 16) = 10
-    expect(chipResult!.damage).toBe(10);
+    expect(chipResult?.damage).toBe(10);
   });
 
   it("given non-immune Pokemon with 320 max HP in hail, when applyGen5WeatherEffects fires, then takes 20 damage (floor(320/16))", () => {
@@ -387,9 +386,8 @@ describe("Gen 5 integration: sandstorm/hail chip = 1/16 max HP", () => {
     const results = applyGen5WeatherEffects(state);
 
     const chipResult = results.find((r) => r.side === 0);
-    expect(chipResult).toBeDefined();
     // floor(320 / 16) = 20
-    expect(chipResult!.damage).toBe(20);
+    expect(chipResult?.damage).toBe(20);
   });
 });
 
@@ -441,8 +439,7 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set") as
       | { effectType: string; weatherTurns: number }
       | undefined;
-    expect(weatherEffect).toBeDefined();
-    expect(weatherEffect!.weatherTurns).toBe(-1);
+    expect(weatherEffect?.weatherTurns).toBe(-1);
   });
 
   it("given a Pokemon with Drought, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1 (indefinite)", () => {
@@ -468,8 +465,7 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set") as
       | { effectType: string; weatherTurns: number }
       | undefined;
-    expect(weatherEffect).toBeDefined();
-    expect(weatherEffect!.weatherTurns).toBe(-1);
+    expect(weatherEffect?.weatherTurns).toBe(-1);
   });
 
   it("given a Pokemon with Sand Stream, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1", () => {
@@ -494,8 +490,7 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set") as
       | { effectType: string; weatherTurns: number }
       | undefined;
-    expect(weatherEffect).toBeDefined();
-    expect(weatherEffect!.weatherTurns).toBe(-1);
+    expect(weatherEffect?.weatherTurns).toBe(-1);
   });
 
   it("given a Pokemon with Snow Warning, when handleGen5SwitchAbility fires on-switch-in, then weatherTurns is -1", () => {
@@ -521,8 +516,7 @@ describe("Gen 5 integration: ability weather is indefinite", () => {
     const weatherEffect = result.effects.find((e) => e.effectType === "weather-set") as
       | { effectType: string; weatherTurns: number }
       | undefined;
-    expect(weatherEffect).toBeDefined();
-    expect(weatherEffect!.weatherTurns).toBe(-1);
+    expect(weatherEffect?.weatherTurns).toBe(-1);
   });
 });
 

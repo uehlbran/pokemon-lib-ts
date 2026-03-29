@@ -524,9 +524,8 @@ describe("processAbilityResult: companion volatile initialization after status i
     expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.badlyPoisoned);
     expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.toxicCounter)).toBe(true);
     const toxicCounter = charizard!.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
-    expect(toxicCounter).toBeDefined();
-    expect(toxicCounter!.turnsLeft).toBe(-1);
-    expect(toxicCounter!.data).toEqual({ counter: 1 });
+    expect(toxicCounter?.turnsLeft).toBe(-1);
+    expect(toxicCounter?.data).toEqual({ counter: 1 });
   });
 
   it("given ability inflicts sleep on opponent, when processAbilityResult runs, then target has sleep-counter volatile with turnsLeft > 0", () => {
@@ -563,10 +562,9 @@ describe("processAbilityResult: companion volatile initialization after status i
     expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.sleep);
     expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.sleepCounter)).toBe(true);
     const sleepCounter = charizard!.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
-    expect(sleepCounter).toBeDefined();
     // MockRuleset.rollSleepTurns returns rng.int(1, 3), so turnsLeft is 1-3
-    expect(sleepCounter!.turnsLeft).toBeGreaterThanOrEqual(1);
-    expect(sleepCounter!.turnsLeft).toBeLessThanOrEqual(3);
+    expect(sleepCounter?.turnsLeft).toBeGreaterThanOrEqual(1);
+    expect(sleepCounter?.turnsLeft).toBeLessThanOrEqual(3);
     // Verify startTime is stored (needed for Gen 5 sleep counter reset on switch-in)
     // Source: Showdown data/mods/gen5/conditions.ts -- slp.onSwitchIn reads effectState.startTime
     const startTime = (sleepCounter!.data as Record<string, unknown>)?.startTime;
@@ -610,8 +608,7 @@ describe("processAbilityResult: companion volatile initialization after status i
     expect(charizard!.pokemon.status).toBe(CORE_STATUS_IDS.freeze);
     expect(charizard!.volatileStatuses.has(CORE_VOLATILE_IDS.justFrozen)).toBe(true);
     const justFrozen = charizard!.volatileStatuses.get(CORE_VOLATILE_IDS.justFrozen);
-    expect(justFrozen).toBeDefined();
-    expect(justFrozen!.turnsLeft).toBe(1);
+    expect(justFrozen?.turnsLeft).toBe(1);
   });
 });
 

@@ -868,7 +868,6 @@ describe("Gen 6 Items -- King's Rock and Razor Fang flinch", () => {
         }),
       ),
     ).find((result) => result.activated);
-    expect(activatingResult).toBeDefined();
     expect(activatingResult?.effects).toContainEqual({ type: "flinch", target: "opponent" });
   });
 
@@ -885,7 +884,6 @@ describe("Gen 6 Items -- King's Rock and Razor Fang flinch", () => {
         }),
       ),
     ).find((result) => result.activated);
-    expect(activatingResult).toBeDefined();
     expect(activatingResult?.effects).toContainEqual({ type: "flinch", target: "opponent" });
   });
 });
@@ -910,7 +908,6 @@ describe("Gen 6 Items -- Metronome before-move", () => {
     expect(result.activated).toBe(false);
     // Verify volatile was set
     const vol = pokemon.volatileStatuses.get(metronomeCountVolatileId);
-    expect(vol).toBeDefined();
     expect(vol?.data?.moveId).toBe(moveIds.flamethrower);
     expect(vol?.data?.count).toBe(1);
   });

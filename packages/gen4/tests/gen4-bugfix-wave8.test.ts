@@ -464,8 +464,7 @@ describe("#261 Trick Room toggle deactivation", () => {
     };
 
     const result = executeGen4MoveEffect(context);
-    expect(result.trickRoomSet).toBeDefined();
-    expect(result.trickRoomSet!.turnsLeft).toBe(0);
+    expect(result.trickRoomSet?.turnsLeft).toBe(0);
   });
 
   it("given Trick Room is inactive, when using Trick Room, then result.trickRoomSet.turnsLeft is 5", () => {
@@ -486,8 +485,7 @@ describe("#261 Trick Room toggle deactivation", () => {
     };
 
     const result = executeGen4MoveEffect(context);
-    expect(result.trickRoomSet).toBeDefined();
-    expect(result.trickRoomSet!.turnsLeft).toBe(5);
+    expect(result.trickRoomSet?.turnsLeft).toBe(5);
   });
 });
 
@@ -703,9 +701,8 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
     };
 
     const result = executeGen4MoveEffect(context);
-    expect(result.futureAttack).toBeDefined();
-    expect(result.futureAttack!.moveId).toBe(MOVES.futureSight);
-    expect(result.futureAttack!.turnsLeft).toBe(3);
+    expect(result.futureAttack?.moveId).toBe(MOVES.futureSight);
+    expect(result.futureAttack?.turnsLeft).toBe(3);
   });
 });
 

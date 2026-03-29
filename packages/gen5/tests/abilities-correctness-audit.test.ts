@@ -598,7 +598,6 @@ describe("Defiant -- +2 Attack when opponent lowers any stat", () => {
         (e) =>
           e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && e.stat === STAT_IDS.attack,
       );
-      expect(atkBoost).toBeDefined();
       expect(atkBoost?.stages).toBe(2);
     },
   );
@@ -888,8 +887,7 @@ describe("Unburden -- REGRESSION #541: stolen item does not trigger Unburden vol
 
       // Sitrus Berry triggers and consumes
       expect(result.activated).toBe(true);
-      const consumeEffect = result.effects.find((e) => e.type === "consume");
-      expect(consumeEffect).toBeDefined();
+      expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
       // Unburden volatile must be set after consumption
       expect(ctx.pokemon.volatileStatuses.has(VOLATILE_IDS.unburden)).toBe(true);
     },
@@ -1077,7 +1075,6 @@ describe("Rocky Helmet -- 1/6 attacker HP on contact moves", () => {
 
       expect(result.activated).toBe(true);
       const chipEffect = result.effects.find((e) => e.type === "chip-damage");
-      expect(chipEffect).toBeDefined();
       expect(chipEffect?.target).toBe("opponent");
       // Recoil = Math.floor(maxHp / 6) = Math.floor(200 / 6) = 33
       // Source: Gen5Items.ts -- Rocky Helmet: Math.floor(maxHp / 6)
@@ -1111,7 +1108,7 @@ describe("Air Balloon -- pops when holder takes damage from any move", () => {
     const result = applyGen5HeldItem(itemTriggerIds.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.find((e) => e.type === "consume")).toBeDefined();
+    expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
     expect(result.messages[0]).toContain("Air Balloon");
   });
 
@@ -1162,7 +1159,7 @@ describe("Red Card and Eject Button -- activate on damage taken", () => {
     const result = applyGen5HeldItem(itemTriggerIds.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.find((e) => e.type === "consume")).toBeDefined();
+    expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
     expect(result.messages[0]).toContain("Red Card");
   });
 
@@ -1172,7 +1169,7 @@ describe("Red Card and Eject Button -- activate on damage taken", () => {
     const result = applyGen5HeldItem(itemTriggerIds.onDamageTaken, ctx);
 
     expect(result.activated).toBe(true);
-    expect(result.effects.find((e) => e.type === "consume")).toBeDefined();
+    expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
     expect(result.messages[0]).toContain("Eject Button");
   });
 

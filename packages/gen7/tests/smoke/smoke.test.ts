@@ -23,7 +23,7 @@ describe("Gen7Ruleset", () => {
   describe("instantiation", () => {
     it("given Gen7Ruleset class, when instantiated with empty DataManager, then succeeds without error", () => {
       const ruleset = createTestRuleset();
-      expect(ruleset).toBeDefined();
+      expect(ruleset).not.toBeNull();
     });
   });
 

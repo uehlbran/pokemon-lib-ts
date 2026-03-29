@@ -123,8 +123,7 @@ describe("#468 — Uproar end-of-turn handler", () => {
 
     // After the turn, uproar turnsLeft should have decremented from 2 to 1
     const uproarData = blastoise.volatileStatuses.get(CORE_VOLATILE_IDS.uproar as VolatileStatus);
-    expect(uproarData).toBeDefined();
-    expect(uproarData!.turnsLeft).toBe(1);
+    expect(uproarData?.turnsLeft).toBe(1);
   });
 
   it("given an active Pokemon with uproar volatile (turnsLeft=1), when end-of-turn processes, then uproar volatile is removed", () => {

@@ -247,7 +247,7 @@ function expectSpreadPenaltyMatchesSingleTarget(
   singleTargetResult: ReturnType<typeof calculateGen7Damage>,
 ): void {
   const singleBaseDamage = singleTargetResult.breakdown?.baseDamage;
-  expect(singleBaseDamage).toBeDefined();
+  expect(singleBaseDamage).toBeGreaterThan(0);
 
   expect(spreadResult.effectiveness).toBe(singleTargetResult.effectiveness);
   expect(spreadResult.breakdown).toEqual(

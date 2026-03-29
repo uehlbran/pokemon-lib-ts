@@ -406,15 +406,13 @@ describe("Integration: Spectral Thief", () => {
         event.type === "damage" && event.side === 1,
     );
 
-    expect(boostedDamage).toBeDefined();
-    expect(baselineDamage).toBeDefined();
     // Spectral Thief steals the target's +2 Attack before the same-hit damage calculation.
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
     expect(boostedBattle.engine.state.sides[0].active[0]?.statStages.attack).toBe(2);
     // The stolen positive boost is cleared from the target, so its raw stage returns to 0.
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- hitStepStealBoosts
     expect(boostedDefender.statStages.attack).toBe(0);
-    expect(boostedDamage!.amount).toBeGreaterThan(baselineDamage!.amount);
+    expect(boostedDamage?.amount).toBeGreaterThan(baselineDamage?.amount as number);
 
     const statChangeEvents = boostedBattle.events.filter((event) => event.type === "stat-change");
     expect(statChangeEvents).toEqual(

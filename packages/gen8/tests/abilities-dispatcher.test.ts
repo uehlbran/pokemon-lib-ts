@@ -383,8 +383,7 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
     const healEffect = result.effects.find(
       (e: any) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.heal,
     );
-    expect(healEffect).toBeDefined();
-    expect((healEffect as any).value).toBe(100);
+    expect((healEffect as any)?.value).toBe(100);
   });
 
   it("given handleGen8FieldAbility with on-before-move trigger and libero, when called, then delegates to switch handler", () => {

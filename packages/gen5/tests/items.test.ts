@@ -620,12 +620,10 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
-    const cureEffect = result.effects.find(
-      (e) => e.type === "volatile-cure" && e.value === CORE_VOLATILE_IDS.infatuation,
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: "volatile-cure", value: CORE_VOLATILE_IDS.infatuation }),
     );
-    expect(cureEffect).toBeDefined();
-    const consumeEffect = result.effects.find((e) => e.type === "consume");
-    expect(consumeEffect).toBeDefined();
+    expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
   });
 
   it("given a taunted Pokemon holding Mental Herb, when end-of-turn triggers, then it cures taunt (Gen 5 expansion)", () => {
@@ -637,10 +635,9 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
-    const cureEffect = result.effects.find(
-      (e) => e.type === "volatile-cure" && e.value === VOLATILE_IDS.taunt,
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: "volatile-cure", value: VOLATILE_IDS.taunt }),
     );
-    expect(cureEffect).toBeDefined();
   });
 
   it("given a Pokemon with Encore and Disable holding Mental Herb, when end-of-turn triggers, then it cures both volatiles", () => {
@@ -652,14 +649,12 @@ describe("Gen 5 Items -- Mental Herb (expanded)", () => {
     const ctx = createItemContext({ pokemon });
     const result = applyGen5HeldItem(ITEM_TRIGGER_IDS.endOfTurn, ctx);
     expect(result.activated).toBe(true);
-    const encoreCure = result.effects.find(
-      (e) => e.type === "volatile-cure" && e.value === MOVE_IDS.encore,
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: "volatile-cure", value: MOVE_IDS.encore }),
     );
-    const disableCure = result.effects.find(
-      (e) => e.type === "volatile-cure" && e.value === MOVE_IDS.disable,
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: "volatile-cure", value: MOVE_IDS.disable }),
     );
-    expect(encoreCure).toBeDefined();
-    expect(disableCure).toBeDefined();
   });
 
   it("given a healthy Pokemon holding Mental Herb, when end-of-turn triggers, then it does not activate", () => {
@@ -1191,12 +1186,14 @@ describe("Gen 5 Items -- Red Card", () => {
     const ctx = createItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
-    const forceSwitch = result.effects.find(
-      (e) => e.type === ABILITY_IDS.none && e.target === "opponent" && e.value === "force-switch",
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({
+        type: ABILITY_IDS.none,
+        target: "opponent",
+        value: "force-switch",
+      }),
     );
-    expect(forceSwitch).toBeDefined();
-    const consume = result.effects.find((e) => e.type === "consume");
-    expect(consume).toBeDefined();
+    expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
   });
 
   it("given a defender with Red Card taking 0 damage, when on-damage-taken triggers, then it does not activate", () => {
@@ -1224,12 +1221,10 @@ describe("Gen 5 Items -- Eject Button", () => {
     const ctx = createItemContext({ pokemon, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
     expect(result.activated).toBe(true);
-    const forceSwitch = result.effects.find(
-      (e) => e.type === ABILITY_IDS.none && e.target === "self" && e.value === "force-switch",
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: ABILITY_IDS.none, target: "self", value: "force-switch" }),
     );
-    expect(forceSwitch).toBeDefined();
-    const consume = result.effects.find((e) => e.type === "consume");
-    expect(consume).toBeDefined();
+    expect(result.effects).toContainEqual(expect.objectContaining({ type: "consume" }));
   });
 
   it("given a defender with Eject Button taking 0 damage, when on-damage-taken triggers, then it does not activate", () => {

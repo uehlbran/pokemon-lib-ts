@@ -579,8 +579,6 @@ describe("parseReplay", () => {
     expect(result.turns.length).toBe(expectedMinimalTurnCount);
     const turn1 = result.turns.find((t) => t.turnNumber === 1);
     const turn2 = result.turns.find((t) => t.turnNumber === 2);
-    expect(turn1).toBeDefined();
-    expect(turn2).toBeDefined();
     expect(turn1?.turnNumber).toBe(1);
     expect(turn2?.turnNumber).toBe(2);
   });
@@ -701,7 +699,6 @@ describe("parseReplay", () => {
     // Assert
     // Turn 0 should exist with the pre-battle switches
     const turn0 = result.turns.find((t) => t.turnNumber === 0);
-    expect(turn0).toBeDefined();
     expect(turn0?.events.some((e) => e.type === "switch")).toBe(true);
   });
 
@@ -757,7 +754,6 @@ describe("parseReplay", () => {
     const tieEvent = allEvents.find((e) => e.type === "tie");
 
     // Assert
-    expect(tieEvent).toBeDefined();
     expect(tieEvent?.type).toBe("tie");
     const ev = tieEvent as Extract<ShowdownEvent, { type: "tie" }>;
     expect(ev.players[0]).toBe("AlicePlayer");
