@@ -1996,8 +1996,9 @@ export class Gen1Ruleset implements GenerationRuleset {
       type: CORE_TYPE_IDS.normal,
       category: "physical",
       power: 50,
-      accuracy: null,
-      pp: 1,
+      // Source: pret/pokered data/moves/moves.asm line 178 — accuracy 100, pp 10
+      accuracy: 100,
+      pp: 10,
       priority: 0,
       target: "adjacent-foe",
       flags: {

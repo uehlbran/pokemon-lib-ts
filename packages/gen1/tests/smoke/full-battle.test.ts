@@ -351,31 +351,31 @@ describe("Gen 1 Full Battle Integration", () => {
         expect(typeof evt.source).toBe("string");
         expect(evt.currentHp).toBeGreaterThanOrEqual(0);
         // Source: pret/pokered — damage formula with Gen 1 roll range 217-255.
-        // Charizard L50 (spAttack=129) uses Flamethrower (Fire BP=95, special) vs
+        // Charizard Gen 1 unified Special=85 (pokered spc=85; @pkmn had 109 which is Gen 2+ SpAtk).
+        // Charizard L50 (spAttack=105) uses Flamethrower (Fire BP=95, special) vs
         // Blastoise L50 (spDefense=105). Fire is Special in Gen 1.
         // Charizard is Fire type → STAB. Fire vs Water = 0.5x.
-        //   levelFactor=22; inner=floor(22*95*129)/105=floor(269940)/105=floor(2571)=2571
-        //   baseDamage=floor(2571/50)+2=51+2=53; STAB: floor(53*1.5)=79
-        //   0.5x resist: floor(79*5/10)=39
-        //   min(roll=217): floor(39*217/255)=floor(33.16)=33
-        //   max(roll=255): floor(39*255/255)=39
+        //   levelFactor=22; inner=floor(22*95*105)/105=floor(219450)/105=floor(2090)=2090
+        //   baseDamage=floor(2090/50)+2=41+2=43; STAB: floor(43*1.5)=64
+        //   0.5x resist: floor(64*5/10)=32
+        //   min(roll=217): floor(32*217/255)=floor(27.21)=27
+        //   max(roll=255): floor(32*255/255)=32
         // Blastoise L50 (spAttack=105) uses Water Gun (Water BP=40, special) vs
-        // Charizard L50 (spDefense=129). Water is Special. Blastoise is Water → STAB.
+        // Charizard L50 (spDefense=105). Water is Special. Blastoise is Water → STAB.
         // Water vs Fire = 2x, Water vs Flying = 1x → combined 2x.
-        //   levelFactor=22; inner=floor(22*40*105)/129=floor(92400)/129=floor(716.27)=716
-        //   baseDamage=floor(716/50)+2=14+2=16; STAB: floor(16*1.5)=24
-        //   2x (Water vs Fire): floor(24*20/10)=48; 1x (Water vs Flying): 48
-        //   min(roll=217): floor(48*217/255)=floor(40.84)=40
-        //   max(roll=255): floor(48*255/255)=48
-        // Seed 42 actual: Flamethrower deals 34, Water Gun deals 47 (within computed ranges).
+        //   levelFactor=22; inner=floor(22*40*105)/105=floor(92400)/105=floor(880)=880
+        //   baseDamage=floor(880/50)+2=17+2=19; STAB: floor(19*1.5)=28
+        //   2x (Water vs Fire): floor(28*20/10)=56; 1x (Water vs Flying): 56
+        //   min(roll=217): floor(56*217/255)=floor(47.65)=47
+        //   max(roll=255): floor(56*255/255)=56
         // Assert damage is in the valid Gen 1 range for these specific Pokemon/moves:
         if (evt.source === GEN1_MOVE_IDS.flamethrower) {
-          expect(evt.amount).toBeGreaterThanOrEqual(33); // min roll=217
-          expect(evt.amount).toBeLessThanOrEqual(39); // max roll=255
+          expect(evt.amount).toBeGreaterThanOrEqual(27); // min roll=217
+          expect(evt.amount).toBeLessThanOrEqual(32); // max roll=255
           expect(evt.maxHp).toBe(154); // Blastoise L50 max DVs: floor(((79+15)*2)*50/100)+60 = 154
         } else if (evt.source === GEN1_MOVE_IDS.waterGun) {
-          expect(evt.amount).toBeGreaterThanOrEqual(40); // min roll=217
-          expect(evt.amount).toBeLessThanOrEqual(48); // max roll=255
+          expect(evt.amount).toBeGreaterThanOrEqual(47); // min roll=217
+          expect(evt.amount).toBeLessThanOrEqual(56); // max roll=255
           expect(evt.maxHp).toBe(153); // Charizard L50 max DVs: floor(((78+15)*2)*50/100)+60 = 153
         }
       }
@@ -685,9 +685,10 @@ describe("Gen 1 Full Battle Integration", () => {
     //         floor(((base+dv)*2)*50/100)+60 for HP.
     // In Gen 1 the Special stat is unified: spAttack and spDefense use the same base value.
     // Data is sourced from packages/gen1/data/pokemon.json (Gen 1 data from Showdown).
-    // Charizard (speciesId=6): base HP=78, Atk=84, Def=78, Spc=109, Spe=100, DV=15
+    // Charizard (speciesId=6): base HP=78, Atk=84, Def=78, Spc=85, Spe=100, DV=15
+    // (pokered spc=85; @pkmn had 109 which is the Gen 2+ SpAtk value after the Special split)
     //   hp: floor((78+15)*2*50/100)+60=93+60=153, atk: floor((84+15)*2*50/100)+5=99+5=104
-    //   def: floor((78+15)*2*50/100)+5=93+5=98, spc: floor((109+15)*2*50/100)+5=124+5=129
+    //   def: floor((78+15)*2*50/100)+5=93+5=98, spc: floor((85+15)*2*50/100)+5=100+5=105
     //   spe: floor((100+15)*2*50/100)+5=115+5=120
     // Blastoise (speciesId=9): base HP=79, Atk=83, Def=100, Spc=85, Spe=78, DV=15
     //   hp: floor((79+15)*2*50/100)+60=94+60=154, atk: floor((83+15)*2*50/100)+5=98+5=103
@@ -702,7 +703,7 @@ describe("Gen 1 Full Battle Integration", () => {
     // Snorlax (speciesId=143): base HP=160, Atk=110, Def=65, Spc=65, Spe=30, DV=15
     //   hp=235, atk=130, def=85, spc=85, spe=50
     const expectedStats: Record<string, Record<string, number>> = {
-      Charizard: { hp: 153, attack: 104, defense: 98, spAttack: 129, spDefense: 129, speed: 120 },
+      Charizard: { hp: 153, attack: 104, defense: 98, spAttack: 105, spDefense: 105, speed: 120 },
       Blastoise: { hp: 154, attack: 103, defense: 120, spAttack: 105, spDefense: 105, speed: 98 },
       Venusaur: { hp: 155, attack: 102, defense: 103, spAttack: 120, spDefense: 120, speed: 100 },
       Alakazam: { hp: 130, attack: 70, defense: 65, spAttack: 155, spDefense: 155, speed: 140 },

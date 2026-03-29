@@ -150,22 +150,26 @@ describe("Gen 2 Type Chart", () => {
       expect(effectiveness).toBe(2);
     });
 
-    it("given water attacking steel, when checking effectiveness, then returns 0.5x", () => {
+    it("given water attacking steel, when checking effectiveness, then returns neutral (1x)", () => {
+      // Source: pret/pokecrystal data/types/type_matchups.asm — no Water,STEEL entry; neutral in Gen 2.
+      // Water→Steel resistance was NOT introduced until Gen 4.
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.water, CORE_TYPE_IDS.steel);
       // Assert
-      expect(effectiveness).toBe(0.5);
+      expect(effectiveness).toBe(1);
     });
 
-    it("given electric attacking steel, when checking effectiveness, then returns 0.5x", () => {
+    it("given electric attacking steel, when checking effectiveness, then returns neutral (1x)", () => {
+      // Source: pret/pokecrystal data/types/type_matchups.asm — no ELECTRIC,STEEL entry; neutral in Gen 2.
+      // Electric→Steel resistance was NOT introduced until Gen 4.
       // Arrange
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.electric, CORE_TYPE_IDS.steel);
       // Assert
-      expect(effectiveness).toBe(0.5);
+      expect(effectiveness).toBe(1);
     });
 
     it("given grass attacking steel, when checking effectiveness, then returns 0.5x", () => {

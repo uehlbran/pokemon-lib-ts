@@ -33,18 +33,20 @@ describe("Gen 3 DataManager — data loading", () => {
     expect(Object.keys(chart).length).toBe(17);
   });
 
-  it("given gen3 type chart, when checking Steel vs Water, then Steel resists Water (0.5x)", () => {
-    // Source: pret/pokeemerald type chart — Steel resists Water in Gen 3 (removed Gen 6)
+  it("given gen3 type chart, when checking Water vs Steel, then neutral (1x)", () => {
+    // Source: pret/pokeemerald src/battle_main.c gTypeEffectiveness[] — no TYPE_WATER,TYPE_STEEL entry.
+    // Water→Steel resistance was NOT present in Gen 3; introduced in Gen 4.
     const dm = createGen3DataManager();
     const chart = dm.getTypeChart();
-    expect(chart.water?.steel).toBe(0.5);
+    expect(chart.water?.steel).toBe(1);
   });
 
-  it("given gen3 type chart, when checking Steel vs Electric, then Steel resists Electric (0.5x)", () => {
-    // Source: pret/pokeemerald type chart — Steel resists Electric in Gen 3 (removed Gen 6)
+  it("given gen3 type chart, when checking Electric vs Steel, then neutral (1x)", () => {
+    // Source: pret/pokeemerald src/battle_main.c gTypeEffectiveness[] — no TYPE_ELECTRIC,TYPE_STEEL entry.
+    // Electric→Steel resistance was NOT present in Gen 3; introduced in Gen 4.
     const dm = createGen3DataManager();
     const chart = dm.getTypeChart();
-    expect(chart.electric?.steel).toBe(0.5);
+    expect(chart.electric?.steel).toBe(1);
   });
 
   it("given gen3 data, when looking up Blaziken, then base Speed is 80", () => {

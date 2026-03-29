@@ -22,7 +22,7 @@ export interface MoveOverride {
 
 export interface PokemonOverride {
   readonly target: "pokemon";
-  /** Pokemon name as it appears in our committed data (e.g., "Bulbasaur") */
+  /** Pokemon name as it appears in our committed data (e.g., "charizard") */
   readonly name: string;
   readonly field:
     | "baseStats.hp"

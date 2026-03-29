@@ -30,18 +30,16 @@ describe("Gen 3 type chart", () => {
     expect(GEN3_TYPES).toContain(TYPE_IDS.dark);
   });
 
-  it("given gen3 type chart, when Water attacks Steel, then effectiveness is 0.5x", () => {
-    // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
-    // Water → Steel = NOT_VERY_EFFECTIVE (0.5x) — Steel resisted Water in Gen 3
-    // This resistance was REMOVED in Gen 6
-    expect(GEN3_TYPE_CHART.water?.steel).toBe(0.5);
+  it("given gen3 type chart, when Water attacks Steel, then effectiveness is neutral (1x)", () => {
+    // Source: pret/pokeemerald src/battle_main.c gTypeEffectiveness[] — no TYPE_WATER,TYPE_STEEL entry.
+    // Water→Steel resistance was NOT present in Gen 3; introduced in Gen 4.
+    expect(GEN3_TYPE_CHART.water?.steel).toBe(1);
   });
 
-  it("given gen3 type chart, when Electric attacks Steel, then effectiveness is 0.5x", () => {
-    // Source: pret/pokeemerald src/data/battle/type_effectiveness.h
-    // Electric → Steel = NOT_VERY_EFFECTIVE (0.5x) — Steel resisted Electric in Gen 3
-    // This resistance was REMOVED in Gen 6
-    expect(GEN3_TYPE_CHART.electric?.steel).toBe(0.5);
+  it("given gen3 type chart, when Electric attacks Steel, then effectiveness is neutral (1x)", () => {
+    // Source: pret/pokeemerald src/battle_main.c gTypeEffectiveness[] — no TYPE_ELECTRIC,TYPE_STEEL entry.
+    // Electric→Steel resistance was NOT present in Gen 3; introduced in Gen 4.
+    expect(GEN3_TYPE_CHART.electric?.steel).toBe(1);
   });
 
   it("given gen3 type chart, when Ghost attacks Ghost, then effectiveness is 2x", () => {

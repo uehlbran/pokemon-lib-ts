@@ -189,15 +189,16 @@ describe("BaseRuleset", () => {
       // HP = floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = floor(9350/100) + 60 = 93 + 60 = 153
       expect(stats.hp).toBe(153);
       // Source: Gen 3+ stat formula — non-HP stats, plus Adamant nature (+10% Attack, -10% SpAttack)
+      // Uses Gen 3 Charizard: spAttack=109, spDefense=85 (Gen 3 split; Gen 1 had unified spc=85)
       // Attack = floor(((2*84 + 31 + 0) * 50) / 100) + 5 = 104; floor(104 * 1.1) = 114
       // Defense = floor(((2*78 + 31 + 0) * 50) / 100) + 5 = 98
       // SpAttack = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129; floor(129 * 0.9) = 116
-      // SpDefense = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129
+      // SpDefense = floor(((2*85 + 31 + 0) * 50) / 100) + 5 = 105 (neutral nature)
       // Speed = floor(((2*100 + 31 + 0) * 50) / 100) + 5 = 120
       expect(stats.attack).toBe(114);
       expect(stats.defense).toBe(98);
       expect(stats.spAttack).toBe(116);
-      expect(stats.spDefense).toBe(129);
+      expect(stats.spDefense).toBe(105);
       expect(stats.speed).toBe(120);
     });
 
@@ -210,11 +211,13 @@ describe("BaseRuleset", () => {
 
       // Assert
       // Source: Gen 3+ stat formula with level 100 and Adamant nature
+      // SpAttack base=109: floor((218+31)*1+5) * 0.9 = floor(254*0.9) = floor(228.6) = 228
+      // SpDefense base=85: floor((170+31)*1+5) * 1.0 = 206 (neutral nature; Gen 3 split)
       expect(stats.hp).toBe(297);
       expect(stats.attack).toBe(224);
       expect(stats.defense).toBe(192);
       expect(stats.spAttack).toBe(228);
-      expect(stats.spDefense).toBe(254);
+      expect(stats.spDefense).toBe(206);
       expect(stats.speed).toBe(236);
     });
 

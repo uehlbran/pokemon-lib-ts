@@ -32,8 +32,9 @@ const GEN1_VALID_TYPES = new Set([
 const GEN1_EXCLUDED_TYPES = [CORE_TYPE_IDS.dark, CORE_TYPE_IDS.steel, CORE_TYPE_IDS.fairy];
 // Source: National Dex before Gen 2 additions contains exactly 151 species.
 const GEN1_POKEMON_COUNT = 151;
-// Source: Red/Blue/Yellow Charizard base Special is 109 before the Special split.
-const CHARIZARD_GEN1_SPECIAL = 109;
+// Source: pret/pokered data/pokemon/base_stats/charizard.asm — db 78, 84, 78, 100, 85 (spc=85)
+// Note: @pkmn/data returns 109 (the Gen 2+ SpAtk value after the split). Pret wins: Gen 1 Special=85.
+const CHARIZARD_GEN1_SPECIAL = 85;
 // Source: Gen 1 move list contains 165 moves, including Sharpen after the data fix.
 const GEN1_MOVE_COUNT = 165;
 const GEN1_TYPE_COUNT = GEN1_VALID_TYPES.size;
@@ -90,14 +91,14 @@ describe("Gen 1 Pokemon Data Validation", () => {
     expect(mismatches).toEqual([]);
   });
 
-  it("given Charizard, when checking base stats, then has correct Gen 1 Special of 109", () => {
+  it("given Charizard, when checking base stats, then has correct Gen 1 Special of 85", () => {
     // Arrange
     const dm = createGen1DataManager();
 
     // Act
     const charizard = dm.getSpecies(GEN1_SPECIES_IDS.charizard);
 
-    // Assert: Charizard's Gen 1 Special stat is 109 (not 85 from later gen split)
+    // Assert: Gen 1 unified Special=85 per pokered; 109 is the Gen 2+ SpAtk value
     expect(charizard.baseStats.spAttack).toBe(CHARIZARD_GEN1_SPECIAL);
     expect(charizard.baseStats.spDefense).toBe(CHARIZARD_GEN1_SPECIAL);
   });

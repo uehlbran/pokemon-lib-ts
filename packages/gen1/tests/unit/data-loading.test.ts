@@ -105,6 +105,8 @@ describe("Gen 1 Data Loading", () => {
   });
 
   it("given Gen 1 data, when loading Charizard, then has correct types and base stats", () => {
+    // Source: pret/pokered data/pokemon/base_stats/charizard.asm — db 78, 84, 78, 100, 85 (hp, atk, def, spd, spc=85)
+    // Note: @pkmn/data returns spa=109 for Gen 1 (the Gen 2+ SpAtk value). Pret wins: Gen 1 Special=85.
     // Arrange
     const dm = createGen1DataManager();
     // Act
@@ -116,8 +118,8 @@ describe("Gen 1 Data Loading", () => {
       hp: 78,
       attack: 84,
       defense: 78,
-      spAttack: 109,
-      spDefense: 109, // Same as spAttack in Gen 1 (unified Special)
+      spAttack: 85, // Gen 1 unified Special=85 (pokered line: db 78,84,78,100,85)
+      spDefense: 85, // Same as spAttack in Gen 1 (unified Special)
       speed: 100,
     });
   });
@@ -594,6 +596,20 @@ describe("Gen 1 Data Loading", () => {
     const dm = createGen1DataManager();
     const whirlwind = dm.getMove(GEN1_MOVE_IDS.whirlwind);
     expect(whirlwind.accuracy).toBe(85);
+  });
+
+  it("given Gen 1 move data, when loading Struggle, then PP is 10", () => {
+    // Source: pret/pokered data/moves/moves.asm line 178 — move STRUGGLE, pp 10
+    const dm = createGen1DataManager();
+    const struggle = dm.getMove(GEN1_MOVE_IDS.struggle);
+    expect(struggle.pp).toBe(10);
+  });
+
+  it("given Gen 1 move data, when loading Struggle, then accuracy is 100", () => {
+    // Source: pret/pokered data/moves/moves.asm line 178 — move STRUGGLE, accuracy 100
+    const dm = createGen1DataManager();
+    const struggle = dm.getMove(GEN1_MOVE_IDS.struggle);
+    expect(struggle.accuracy).toBe(100);
   });
 
   // --- Data Manager State ---

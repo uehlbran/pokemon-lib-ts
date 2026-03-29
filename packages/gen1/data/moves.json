@@ -5733,8 +5733,8 @@
     "type": "normal",
     "category": "physical",
     "power": 50,
-    "accuracy": null,
-    "pp": 1,
+    "accuracy": 100,
+    "pp": 10,
     "priority": 0,
     "target": "adjacent-foe",
     "flags": {

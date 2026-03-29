@@ -2488,7 +2488,8 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
 
   it("given all four badges with Charizard, when calculateStats is called, then all combat stats are boosted", () => {
     // Source: pret/pokered engine/battle/core.asm — full badge boost verification
-    // Charizard L50, DVs=15, StatEXP=0, base stats: Atk=84, Def=78, Spe=100, SpAtk=109
+    // Charizard L50, DVs=15, StatEXP=0, base stats: Atk=84, Def=78, Spe=100, Spc=85
+    // (pokered data/pokemon/base_stats/charizard.asm — spc=85, not 109 which is Gen 2+ SpAtk)
     const rulesetAllBadges = new Gen1Ruleset({
       badgeBoosts: { boulder: true, thunder: true, soul: true, volcano: true },
     });
@@ -2529,7 +2530,7 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
     //   Attack = floor(((84+15)*2+0)*50/100) + 5 = floor(99*100/100) + 5 = 99 + 5 = 104
     //   Defense = floor(((78+15)*2+0)*50/100) + 5 = floor(93*100/100) + 5 = 93 + 5 = 98
     //   Speed = floor(((100+15)*2+0)*50/100) + 5 = floor(115*100/100) + 5 = 115 + 5 = 120
-    //   Special = floor(((109+15)*2+0)*50/100) + 5 = floor(124*100/100) + 5 = 124 + 5 = 129
+    //   Special = floor(((85+15)*2+0)*50/100) + 5 = floor(100*100/100) + 5 = 100 + 5 = 105
 
     // With all badges:
     //   Attack: floor(104 * 9/8) = floor(117) = 117
@@ -2538,10 +2539,10 @@ describe("Gen1Ruleset constructor badgeBoosts option", () => {
     expect(stats.defense).toBe(110);
     //   Speed: floor(120 * 9/8) = floor(135) = 135
     expect(stats.speed).toBe(135);
-    //   SpAttack: floor(129 * 9/8) = floor(145.125) = 145
-    expect(stats.spAttack).toBe(145);
-    //   SpDefense: floor(129 * 9/8) = floor(145.125) = 145
-    expect(stats.spDefense).toBe(145);
+    //   SpAttack: floor(105 * 9/8) = floor(118.125) = 118
+    expect(stats.spAttack).toBe(118);
+    //   SpDefense: floor(105 * 9/8) = floor(118.125) = 118
+    expect(stats.spDefense).toBe(118);
     //   HP: unchanged (badges never boost HP)
     expect(stats.hp).toBe(153);
   });

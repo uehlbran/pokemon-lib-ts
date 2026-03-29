@@ -66,6 +66,20 @@ interface CommittedMove {
   category: "physical" | "special" | "status";
 }
 
+interface CommittedPokemon {
+  name: string;
+  displayName: string;
+  baseStats: {
+    hp: number;
+    attack: number;
+    defense: number;
+    spAttack: number;
+    spDefense: number;
+    speed: number;
+  };
+  types: string[];
+}
+
 // ---------------------------------------------------------------------------
 // Gen 2 base priority constant
 // ---------------------------------------------------------------------------
@@ -94,27 +108,75 @@ function loadCommittedMoves(gen: number): CommittedMove[] {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as CommittedMove[];
 }
 
+function loadCommittedPokemon(gen: number): CommittedPokemon[] {
+  const filePath = path.join(repoRoot, `packages/gen${gen}/data/pokemon.json`);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Committed pokemon not found: ${filePath}`);
+  }
+  return JSON.parse(fs.readFileSync(filePath, "utf8")) as CommittedPokemon[];
+}
+
+function getNestedValue(obj: Record<string, unknown>, dotPath: string): unknown {
+  const parts = dotPath.split(".");
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current == null || typeof current !== "object") return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
 function validateGen(gen: number): ValidationError[] {
   const overrides = getOverridesForGen(gen);
   const errors: ValidationError[] = [];
 
-  // Pokemon overrides are not yet validated by this script.
-  // Fail loudly if any exist so they are not silently skipped.
+  // Validate Pokemon overrides against committed pokemon.json
   const pokemonOverrides = overrides.filter((o): o is PokemonOverride => o.target === "pokemon");
   if (pokemonOverrides.length > 0) {
-    for (const o of pokemonOverrides) {
-      console.error(
-        `  [ERROR] Gen ${gen} has a PokemonOverride for "${o.name}" (.${o.field}) that this validator does not yet check. Add pokemon.json validation or remove the override.`,
-      );
+    let allPokemon: CommittedPokemon[] | null = null;
+    try {
+      allPokemon = loadCommittedPokemon(gen);
+    } catch (err) {
+      console.error(`  [ERROR] Could not load pokemon for Gen ${gen}:`, err);
       errors.push({
         gen,
         kind: "pokemon",
-        id: o.name,
-        field: o.field,
-        expected: o.value,
-        actual: "NOT VALIDATED",
-        source: o.source,
+        id: "N/A",
+        field: "N/A",
+        expected: "file exists",
+        actual: "missing",
+        source: "",
       });
+    }
+    if (allPokemon !== null) {
+      const pokemonByName = new Map(allPokemon.map((p) => [p.name.toLowerCase(), p]));
+      for (const o of pokemonOverrides) {
+        const species = pokemonByName.get(o.name.toLowerCase());
+        if (!species) {
+          errors.push({
+            gen,
+            kind: "pokemon",
+            id: o.name,
+            field: o.field,
+            expected: o.value,
+            actual: "NOT FOUND",
+            source: o.source,
+          });
+          continue;
+        }
+        const actualValue = getNestedValue(species as unknown as Record<string, unknown>, o.field);
+        if (JSON.stringify(actualValue) !== JSON.stringify(o.value)) {
+          errors.push({
+            gen,
+            kind: "pokemon",
+            id: o.name,
+            field: o.field,
+            expected: o.value,
+            actual: actualValue,
+            source: o.source,
+          });
+        }
+      }
     }
   }
 
