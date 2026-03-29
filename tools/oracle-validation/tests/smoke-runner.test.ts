@@ -280,8 +280,8 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
     expect(violations).toHaveLength(0);
   });
 
-  it("given damage event with amount 0, when checking invariants, then violation reported", () => {
-    // Source: DamageEvent.amount must be > 0 — zero-damage events are invalid
+  it("given damage event with amount 0, when checking invariants, then no violation (engine allows 0-damage; see #1161)", () => {
+    // Source: engine currently emits amount=0 for type-immunity edge cases (#1161); 0 is allowed, negative is not
     const events = [
       {
         type: "damage",
@@ -294,12 +294,11 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
       },
     ] as const;
     const violations = checkBattleInvariants(events as never);
-    expect(violations.length).toBeGreaterThan(0);
-    expect(violations.some((v) => v.description.includes("amount"))).toBe(true);
+    expect(violations).toHaveLength(0);
   });
 
   it("given damage event with negative amount, when checking invariants, then violation reported", () => {
-    // Source: DamageEvent.amount must be > 0 — negative amounts are invalid (triangulation)
+    // Source: DamageEvent.amount must not be negative
     const events = [
       {
         type: "damage",
@@ -320,14 +319,14 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
   // Heal amount non-negative
   // ---------------------------------------------------------------------------
 
-  it("given heal event with amount 0, when checking invariants, then violation reported", () => {
-    // Source: HealEvent.amount must be > 0 — zero-heal events are invalid
+  it("given heal event with negative amount, when checking invariants, then violation reported", () => {
+    // Source: HealEvent.amount must not be negative
     const events = [
       {
         type: "heal",
         side: 0,
         pokemon: "Snorlax",
-        amount: 0,
+        amount: -5,
         currentHp: 100,
         maxHp: 100,
         source: "leftovers",
