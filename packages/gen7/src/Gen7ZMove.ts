@@ -55,34 +55,36 @@ const Z_MOVE_POWER_OVERRIDES: Readonly<Record<string, number>> = {
   "thousand-arrows": 180, // formula gives 175 (90 BP); Showdown override: 180
   "triple-kick": 120, // formula gives 100 (10 BP, fixed 3-hit); Showdown override: 120
   "v-create": 220, // formula gives 200 (180 BP); Showdown override: 220
-  // ── Variable-BP moves (power: null) — formula gives 100; Showdown overrides ─
+  // ── Variable-power / special-case moves — formula gives wrong value; Showdown overrides ─
+  // Moves with power: null (null-BP) compute basePower=0, so formula returns 100.
+  // power-trip, stored-power, weather-ball have stored BP but use basePowerCallback in Showdown.
   // Source: Showdown data/moves.ts — per-move zMove.basePower fields
   // Source: @pkmn/data oracle (compare-gimmicks.ts buildZMovePowerChecks)
-  "crush-grip": 190, // variable power (HP-scaled); Showdown override: 190
-  "electro-ball": 160, // variable power (speed-ratio); Showdown override: 160
-  endeavor: 160, // variable power (HP-delta); Showdown override: 160
-  "final-gambit": 180, // variable power (user HP); Showdown override: 180
-  fissure: 180, // OHKO; Showdown override: 180
-  flail: 160, // variable power (low HP); Showdown override: 160
-  frustration: 160, // variable power (low friendship); Showdown override: 160
-  "grass-knot": 160, // variable power (target weight); Showdown override: 160
-  guillotine: 180, // OHKO; Showdown override: 180
-  "gyro-ball": 160, // variable power (speed ratio); Showdown override: 160
-  "heat-crash": 160, // variable power (weight ratio); Showdown override: 160
-  "heavy-slam": 160, // variable power (weight ratio); Showdown override: 160
-  "horn-drill": 180, // OHKO; Showdown override: 180
-  "low-kick": 160, // variable power (target weight); Showdown override: 160
-  magnitude: 140, // variable power (random magnitude); Showdown override: 140
-  "natural-gift": 160, // variable power (berry type); Showdown override: 160
-  punishment: 160, // variable power (target boosts); Showdown override: 160
-  "power-trip": 160, // variable power (user boosts); Showdown override: 160
-  return: 160, // variable power (high friendship); Showdown override: 160
-  reversal: 160, // variable power (low HP); Showdown override: 160
-  "sheer-cold": 180, // OHKO; Showdown override: 180
-  "stored-power": 160, // variable power (user boosts); Showdown override: 160
-  "trump-card": 160, // variable power (remaining PP); Showdown override: 160
-  "weather-ball": 160, // variable power/type (weather); Showdown override: 160
-  "wring-out": 190, // variable power (HP-scaled); Showdown override: 190
+  "crush-grip": 190, // null BP (HP-scaled); Showdown override: 190
+  "electro-ball": 160, // null BP (speed-ratio); Showdown override: 160
+  endeavor: 160, // null BP (HP-delta); Showdown override: 160
+  "final-gambit": 180, // null BP (user HP); Showdown override: 180
+  fissure: 180, // null BP (OHKO); Showdown override: 180
+  flail: 160, // null BP (low HP); Showdown override: 160
+  frustration: 160, // null BP (low friendship); Showdown override: 160
+  "grass-knot": 160, // null BP (target weight); Showdown override: 160
+  guillotine: 180, // null BP (OHKO); Showdown override: 180
+  "gyro-ball": 160, // null BP (speed ratio); Showdown override: 160
+  "heat-crash": 160, // null BP (weight ratio); Showdown override: 160
+  "heavy-slam": 160, // null BP (weight ratio); Showdown override: 160
+  "horn-drill": 180, // null BP (OHKO); Showdown override: 180
+  "low-kick": 160, // null BP (target weight); Showdown override: 160
+  magnitude: 140, // null BP (random magnitude); Showdown override: 140
+  "natural-gift": 160, // null BP (berry type); Showdown override: 160
+  punishment: 160, // null BP (target boosts); Showdown override: 160
+  "power-trip": 160, // 20 BP stored, basePowerCallback (user boosts); formula gives 100; Showdown override: 160
+  return: 160, // null BP (high friendship); Showdown override: 160
+  reversal: 160, // null BP (low HP); Showdown override: 160
+  "sheer-cold": 180, // null BP (OHKO); Showdown override: 180
+  "stored-power": 160, // 20 BP stored, basePowerCallback (user boosts); formula gives 100; Showdown override: 160
+  "trump-card": 160, // null BP (remaining PP); Showdown override: 160
+  "weather-ball": 160, // 50 BP stored, basePowerCallback (weather type); formula gives 100; Showdown override: 160
+  "wring-out": 190, // null BP (HP-scaled); Showdown override: 190
 };
 
 /**
