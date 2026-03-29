@@ -466,9 +466,15 @@ export function handleCustomEffect(
     case "whirlwind":
     case "roar": {
       // Force the opponent to switch to a random party member.
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Whirlwind
-      // In Gen 2, Whirlwind/Roar work (unlike Gen 1 where they always fail in trainer battles).
-      // These are -1 priority in Gen 2 data. No ability checks needed (Gen 2 has no abilities).
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_ForceSwitch
+      //   Lines 5008-5010: ld a, [wEnemyGoesFirst]; and a; jr z, .switch_fail
+      //   Fails if wEnemyGoesFirst == 0 (user moved first this turn).
+      // Go-last guard: if the defender has NOT yet moved this turn, the user went first
+      // and the move should fail. This is the Gen 2 phazing go-last mechanic.
+      if (!defender.movedThisTurn) {
+        result.messages.push("But it failed!");
+        break;
+      }
       result.switchOut = true;
       result.forcedSwitch = true;
       break;

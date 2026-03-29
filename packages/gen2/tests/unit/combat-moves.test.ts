@@ -716,13 +716,16 @@ describe("Gen 2 Combat Moves", () => {
   // =========================================================================
 
   describe("Whirlwind/Roar", () => {
-    it("given Whirlwind is used, when executeMoveEffect is called, then sets switchOut and forcedSwitch", () => {
+    it("given Whirlwind is used and defender already moved this turn, when executeMoveEffect is called, then sets switchOut and forcedSwitch", () => {
       // Arrange
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Whirlwind
-      // In Gen 2, Whirlwind forces the opponent to switch to a random party member.
-      // The forcedSwitch flag tells the engine that the DEFENDER is forced to switch.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_ForceSwitch lines 5008-5010
+      //   ld a, [wEnemyGoesFirst] ; nonzero = enemy went first (user is slower)
+      //   and a
+      //   jr z, .switch_fail      ; fail if wEnemyGoesFirst == 0 (user went first)
+      // Whirlwind succeeds when the defender (enemy) has already moved this turn.
       const attacker = createMockActive();
       const defender = createMockActive();
+      defender.movedThisTurn = true; // defender went first → user is slower → should succeed
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       // Act
@@ -740,12 +743,13 @@ describe("Gen 2 Combat Moves", () => {
       expect(result.forcedSwitch).toBe(true);
     });
 
-    it("given Roar is used, when executeMoveEffect is called, then sets switchOut and forcedSwitch", () => {
+    it("given Roar is used and defender already moved this turn, when executeMoveEffect is called, then sets switchOut and forcedSwitch", () => {
       // Arrange
-      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_Whirlwind
-      // Roar has the same phazing effect as Whirlwind.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_ForceSwitch lines 5008-5010
+      // Roar succeeds when the defender has already moved (user went second).
       const attacker = createMockActive();
       const defender = createMockActive();
+      defender.movedThisTurn = true; // defender went first → user is slower → should succeed
       const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
 
       // Act
@@ -761,6 +765,60 @@ describe("Gen 2 Combat Moves", () => {
       // Assert
       expect(result.switchOut).toBe(true);
       expect(result.forcedSwitch).toBe(true);
+    });
+
+    it("given Whirlwind is used and user moved first this turn, when executeMoveEffect is called, then fails", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_ForceSwitch lines 5008-5010
+      //   ld a, [wEnemyGoesFirst] ; 0 = player went first (user is faster than enemy)
+      //   and a
+      //   jr z, .switch_fail      ; jump to fail because user went first
+      // Whirlwind fails when the user is faster and moved first this turn.
+      // This is the go-last mechanic introduced in Gen 2.
+      const attacker = createMockActive();
+      const defender = createMockActive();
+      // defender.movedThisTurn defaults to false → user went first
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move: WHIRLWIND_MOVE,
+        damage: 0,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.switchOut).toBe(false);
+      expect(result.forcedSwitch).toBeUndefined();
+      expect(result.messages).toContain("But it failed!");
+    });
+
+    it("given Roar is used and user moved first this turn, when executeMoveEffect is called, then fails", () => {
+      // Arrange
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm BattleCommand_ForceSwitch lines 5008-5010
+      // Roar fails when the user is faster and moved first this turn (go-last mechanic).
+      const attacker = createMockActive();
+      const defender = createMockActive();
+      // defender.movedThisTurn defaults to false → user went first
+      const state = createMockState(createMockSide(0, attacker), createMockSide(1, defender));
+
+      // Act
+      const result = ruleset.executeMoveEffect({
+        attacker,
+        defender,
+        move: ROAR_MOVE,
+        damage: 0,
+        state,
+        rng: new SeededRandom(42),
+      });
+
+      // Assert
+      expect(result.switchOut).toBe(false);
+      expect(result.forcedSwitch).toBeUndefined();
+      expect(result.messages).toContain("But it failed!");
     });
   });
 
