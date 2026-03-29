@@ -133,6 +133,38 @@
       "expected": 0.99609375,
       "source": "specs/reference/gen1-ground-truth.md §4",
       "note": "High-crit moves clamp to 255/256 at sufficiently high base Speed."
+    },
+    {
+      "id": "move-priority-counter",
+      "kind": "movePriorityCheck",
+      "moveId": "counter",
+      "expectedPriority": -1,
+      "source": "pret/pokered engine/battle/core.asm — Counter turn-order check (hardcoded move ID comparison, acts last)",
+      "note": "Counter acts last in Gen 1."
+    },
+    {
+      "id": "move-priority-bide",
+      "kind": "movePriorityCheck",
+      "moveId": "bide",
+      "expectedPriority": 0,
+      "source": "pret/pokered data/moves/moves.asm BIDE_EFFECT",
+      "note": "Bide has no priority encoding in Gen 1 (normal order)."
+    },
+    {
+      "id": "move-priority-roar",
+      "kind": "movePriorityCheck",
+      "moveId": "roar",
+      "expectedPriority": 0,
+      "source": "pret/pokered data/moves/moves.asm SWITCH_AND_TELEPORT_EFFECT",
+      "note": "Roar has no speed override in Gen 1 (simply fails vs trainers)."
+    },
+    {
+      "id": "move-priority-whirlwind",
+      "kind": "movePriorityCheck",
+      "moveId": "whirlwind",
+      "expectedPriority": 0,
+      "source": "pret/pokered data/moves/moves.asm SWITCH_AND_TELEPORT_EFFECT",
+      "note": "Whirlwind has no speed override in Gen 1 (simply fails vs trainers)."
     }
   ]
 }

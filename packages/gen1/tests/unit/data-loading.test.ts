@@ -426,6 +426,46 @@ describe("Gen 1 Data Loading", () => {
     expect(counter.priority).toBeLessThan(0);
   });
 
+  it("given gen1 move data, when Counter priority is read, then it should be -1", () => {
+    // Arrange
+    const dm = createGen1DataManager();
+    // Act
+    const counter = dm.getMove(GEN1_MOVE_IDS.counter);
+    // Assert
+    // Source: pret/pokered engine/battle/core.asm — Counter turn-order check (hardcoded move ID comparison, acts last)
+    expect(counter.priority).toBe(-1);
+  });
+
+  it("given gen1 move data, when Bide priority is read, then it should be 0", () => {
+    // Arrange
+    const dm = createGen1DataManager();
+    // Act
+    const bide = dm.getMove(GEN1_MOVE_IDS.bide);
+    // Assert
+    // Source: pret/pokered data/moves/moves.asm — BIDE_EFFECT macro has no priority field (normal order)
+    expect(bide.priority).toBe(0);
+  });
+
+  it("given gen1 move data, when Roar priority is read, then it should be 0", () => {
+    // Arrange
+    const dm = createGen1DataManager();
+    // Act
+    const roar = dm.getMove(GEN1_MOVE_IDS.roar);
+    // Assert
+    // Source: pret/pokered data/moves/moves.asm — SWITCH_AND_TELEPORT_EFFECT macro has no priority field (normal order)
+    expect(roar.priority).toBe(0);
+  });
+
+  it("given gen1 move data, when Whirlwind priority is read, then it should be 0", () => {
+    // Arrange
+    const dm = createGen1DataManager();
+    // Act
+    const whirlwind = dm.getMove(GEN1_MOVE_IDS.whirlwind);
+    // Assert
+    // Source: pret/pokered data/moves/moves.asm — SWITCH_AND_TELEPORT_EFFECT macro has no priority field (normal order)
+    expect(whirlwind.priority).toBe(0);
+  });
+
   it("given Gen 1 data, when loading Hyper Beam, then has recharge flag", () => {
     // Arrange
     const dm = createGen1DataManager();
