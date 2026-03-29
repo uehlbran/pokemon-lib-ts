@@ -549,6 +549,53 @@ describe("Gen 1 Data Loading", () => {
     expect(moveIds).toEqual(GEN1_CHARIZARD_LEVEL_UP_MOVES);
   });
 
+  // --- Pret cartridge-accurate move data (Gen 1) ---
+
+  it("given Gen 1 move data, when loading Gust, then type is normal (not flying)", () => {
+    // In Gen 1, Gust is a Normal-type move. The Flying typing was introduced in Gen 2.
+    // Source: pret/pokered data/moves/moves.asm line 29 — move GUST, type NORMAL
+    const dm = createGen1DataManager();
+    const gust = dm.getMove(GEN1_MOVE_IDS.gust);
+    expect(gust.type).toBe(typeIds.normal);
+  });
+
+  it("given Gen 1 move data, when loading Sand Attack, then type is normal (not ground)", () => {
+    // In Gen 1, Sand Attack is a Normal-type move. The Ground typing was introduced in Gen 2.
+    // Source: pret/pokered data/moves/moves.asm line 41 — move SAND_ATTACK, type NORMAL
+    const dm = createGen1DataManager();
+    const sandAttack = dm.getMove(GEN1_MOVE_IDS.sandAttack);
+    expect(sandAttack.type).toBe(typeIds.normal);
+  });
+
+  it("given Gen 1 move data, when loading Absorb, then PP is 20", () => {
+    // Source: pret/pokered data/moves/moves.asm line 84 — move ABSORB, pp 20
+    const dm = createGen1DataManager();
+    const absorb = dm.getMove(GEN1_MOVE_IDS.absorb);
+    expect(absorb.pp).toBe(20);
+  });
+
+  it("given Gen 1 move data, when loading Mega Drain, then PP is 10", () => {
+    // Source: pret/pokered data/moves/moves.asm line 85 — move MEGA_DRAIN, pp 10
+    const dm = createGen1DataManager();
+    const megaDrain = dm.getMove(GEN1_MOVE_IDS.megaDrain);
+    expect(megaDrain.pp).toBe(10);
+  });
+
+  it("given Gen 1 move data, when loading Razor Wind, then accuracy is 75", () => {
+    // Source: pret/pokered data/moves/moves.asm line 26 — move RAZOR_WIND, accuracy 75
+    const dm = createGen1DataManager();
+    const razorWind = dm.getMove(GEN1_MOVE_IDS.razorWind);
+    expect(razorWind.accuracy).toBe(75);
+  });
+
+  it("given Gen 1 move data, when loading Whirlwind, then accuracy is 85", () => {
+    // In Gen 1, Whirlwind has 85% accuracy and can miss.
+    // Source: pret/pokered data/moves/moves.asm line 31 — move WHIRLWIND, accuracy 85
+    const dm = createGen1DataManager();
+    const whirlwind = dm.getMove(GEN1_MOVE_IDS.whirlwind);
+    expect(whirlwind.accuracy).toBe(85);
+  });
+
   // --- Data Manager State ---
 
   it("given Gen 1 data manager, when created, then reports as loaded", () => {
