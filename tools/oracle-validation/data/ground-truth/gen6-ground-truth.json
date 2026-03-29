@@ -35,9 +35,9 @@
       "kind": "typeChart",
       "attackerType": "steel",
       "defenderTypes": ["fairy"],
-      "expected": 0.5,
+      "expected": 2,
       "source": "Showdown sim/battle-actions.ts Gen6 type chart — ERRATA #11",
-      "note": "Steel is not very effective vs Fairy (0.5x). Steel resists Fairy."
+      "note": "Steel-type moves are super-effective against Fairy-type Pokemon (2x) in Gen 6. Note: 'Steel resists Fairy' means Fairy→Steel=0.5x (the reverse direction), NOT Steel→Fairy=0.5x."
     },
     {
       "id": "type-dragon-vs-fairy-gen6",
