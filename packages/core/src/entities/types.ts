@@ -1,8 +1,13 @@
 /**
- * All 18 Pokemon types (as of Gen 6+).
+ * All 18 Pokemon types (as of Gen 6+), plus the special "unknown" sentinel.
  * Gen 1 had 15 (no Dark, Steel, Fairy).
  * Gen 2 added Dark and Steel.
  * Gen 6 added Fairy.
+ * "unknown" represents TYPE_MYSTERY/CURSE_TYPE used exclusively by Curse in Gen 2-4.
+ *   - Gen 2 (pokecrystal): CURSE_TYPE = 19 (constants/type_constants.asm)
+ *   - Gen 3 (pokeemerald): TYPE_MYSTERY = 9 (include/constants/pokemon.h)
+ *   - Gen 4 (pokeplatinum): TYPE_MYSTERY = 9 (include/constants/pokemon.h)
+ * It is a move type only — no Pokemon has "unknown" as a species type.
  * Generation plugins in the battle library filter this list as needed.
  */
 export type PokemonType =
@@ -23,7 +28,15 @@ export type PokemonType =
   | "dragon"
   | "dark"
   | "steel"
-  | "fairy";
+  | "fairy"
+  | "unknown"; // TYPE_MYSTERY/CURSE_TYPE (Gen 2-4 only, move type sentinel)
+
+/**
+ * Types valid as a Pokemon species type (excludes move-only sentinels like "unknown").
+ * Use this for species.types, mega types, and regional form types.
+ * No Pokemon in any generation has "unknown" as a species type.
+ */
+export type SpeciesType = Exclude<PokemonType, "unknown">;
 
 /** Number of types per generation — used by battle gen plugins to validate data */
 export const TYPES_BY_GEN: Record<number, readonly PokemonType[]> = {

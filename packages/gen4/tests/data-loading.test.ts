@@ -1,6 +1,6 @@
 import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { GEN4_SPECIES_IDS } from "../src";
+import { GEN4_MOVE_IDS, GEN4_SPECIES_IDS } from "../src";
 import { createGen4DataManager } from "../src/data";
 
 describe("Gen 4 DataManager -- data loading", () => {
@@ -69,5 +69,17 @@ describe("Gen 4 DataManager -- data loading", () => {
     const dm = createGen4DataManager();
     const lucario = dm.getSpecies(GEN4_SPECIES_IDS.lucario);
     expect(lucario.types).toEqual([CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.steel]);
+  });
+
+  it("given Curse in Gen 4 move data, when loaded by move id, then its type is unknown (TYPE_MYSTERY)", () => {
+    // Arrange
+    const dm = createGen4DataManager();
+    // Act
+    const curse = dm.getMove(GEN4_MOVE_IDS.curse);
+    // Assert
+    // Source: pret/pokeplatinum include/constants/pokemon.h — TYPE_MYSTERY = 9
+    // Curse uses TYPE_MYSTERY in Gen 4. Starting in Gen 5, Curse is correctly Ghost type.
+    expect(curse.id).toBe(GEN4_MOVE_IDS.curse);
+    expect(curse.type).toBe(CORE_TYPE_IDS.unknown);
   });
 });

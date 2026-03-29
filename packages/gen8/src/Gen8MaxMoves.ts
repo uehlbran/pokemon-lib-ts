@@ -59,7 +59,9 @@ export type MaxMoveEffect =
  *
  * Source: Showdown sim/battle-actions.ts lines 9-29 -- MAX_MOVES table
  */
-const MAX_MOVE_NAMES: Readonly<Record<PokemonType, string>> = {
+// "unknown" (TYPE_MYSTERY) is a move-type sentinel for Curse in Gen 2-4 only.
+// No Dynamax move exists for "unknown" type since Curse is "ghost" from Gen 5+.
+const MAX_MOVE_NAMES: Readonly<Partial<Record<PokemonType, string>>> = {
   [CORE_TYPE_IDS.normal]: "Max Strike",
   [CORE_TYPE_IDS.fire]: "Max Flare",
   [CORE_TYPE_IDS.water]: "Max Geyser",
@@ -171,7 +173,7 @@ const MAX_MOVE_EFFECTS: Readonly<Record<string, MaxMoveEffect>> = {
  */
 export function getMaxMoveName(moveType: PokemonType, isStatus: boolean): string {
   if (isStatus) return "Max Guard";
-  return MAX_MOVE_NAMES[moveType];
+  return MAX_MOVE_NAMES[moveType] ?? "Max Strike";
 }
 
 /**

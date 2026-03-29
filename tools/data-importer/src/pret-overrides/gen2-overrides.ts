@@ -93,4 +93,15 @@ export const gen2Overrides: readonly PretOverride[] = [
     source:
       "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_VITAL_THROW priority 0 (1-based scale)",
   },
+
+  // ── Curse type correction ──────────────────────────────────────────────────
+  {
+    target: "move",
+    moveId: "curse",
+    field: "type",
+    value: "unknown",
+    showdownValue: "ghost",
+    source:
+      "pret/pokecrystal constants/type_constants.asm — CURSE_TYPE EQU 19; data/moves/moves.asm — Curse uses CURSE_TYPE not TYPE_GHOST",
+  },
 ];

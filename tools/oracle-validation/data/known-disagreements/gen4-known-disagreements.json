@@ -7,9 +7,22 @@
     "ourValue": 3,
     "oracleValue": 4,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokeplatinum res/battle/moves/endure/data.json \u2014 priority: 3",
+    "source": "pret/pokeplatinum res/battle/moves/endure/data.json — priority: 3",
     "sourceUrl": "https://github.com/BluRosie/pokeplatinum/blob/main/res/battle/moves/endure/data.json",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen4:move:curse:type",
+    "gen": 4,
+    "suite": "moves",
+    "description": "Curse type is TYPE_MYSTERY=9 in pokeplatinum, not Ghost. @pkmn/data reports ghost.",
+    "ourValue": "unknown",
+    "oracleValue": "ghost",
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokeplatinum include/constants/pokemon.h — TYPE_MYSTERY = 9; move Curse uses TYPE_MYSTERY",
+    "sourceUrl": "https://github.com/pret/pokeplatinum",
+    "oracleVersion": "@pkmn/data",
+    "addedDate": "2026-03-29"
   }
 ]

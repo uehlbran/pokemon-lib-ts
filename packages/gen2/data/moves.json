@@ -1431,7 +1431,7 @@
   {
     "id": "curse",
     "displayName": "Curse",
-    "type": "ghost",
+    "type": "unknown",
     "category": "status",
     "power": null,
     "accuracy": null,

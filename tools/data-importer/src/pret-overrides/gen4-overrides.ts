@@ -17,4 +17,15 @@ export const gen4Overrides: readonly PretOverride[] = [
     showdownValue: 4,
     source: "pret/pokeplatinum res/battle/moves/endure/data.json — priority: 3",
   },
+
+  // Curse type: pokeplatinum uses TYPE_MYSTERY (value 9), not TYPE_GHOST
+  {
+    target: "move",
+    moveId: "curse",
+    field: "type",
+    value: "unknown",
+    showdownValue: "ghost",
+    source:
+      "pret/pokeplatinum include/constants/pokemon.h — TYPE_MYSTERY = 9; move Curse uses TYPE_MYSTERY not TYPE_GHOST",
+  },
 ];
