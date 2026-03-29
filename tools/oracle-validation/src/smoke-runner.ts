@@ -251,7 +251,7 @@ const VALID_WEATHER_TYPES = new Set([
 const VALID_TERRAIN_TYPES = new Set(["electric", "grassy", "psychic", "misty"]);
 
 export interface SmokeInvariantViolation {
-  battleIndex: number;
+  eventIndex: number;
   description: string;
 }
 
@@ -267,19 +267,19 @@ export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInva
       const e = event as DamageEvent;
       if (e.currentHp < 0) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP went negative (${e.currentHp}) in damage event`,
         });
       }
       if (e.maxHp > 0 && e.currentHp > e.maxHp) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in damage event`,
         });
       }
       if (e.amount <= 0) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} damage amount must be positive, got ${e.amount}`,
         });
       }
@@ -287,21 +287,27 @@ export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInva
       const e = event as HealEvent;
       if (e.currentHp < 0) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP went negative (${e.currentHp}) in heal event`,
         });
       }
       if (e.maxHp > 0 && e.currentHp > e.maxHp) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in heal event`,
+        });
+      }
+      if (e.amount <= 0) {
+        violations.push({
+          eventIndex: i,
+          description: `${e.side}:${e.pokemon} heal amount must be positive, got ${e.amount}`,
         });
       }
     } else if (event.type === BATTLE_EVENT_TYPES.turnStart) {
       const e = event as TurnStartEvent;
       if (e.turnNumber <= lastTurnNumber) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `turn number did not increase: got ${e.turnNumber} after ${lastTurnNumber}`,
         });
       }
@@ -310,7 +316,7 @@ export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInva
       const e = event as StatusInflictEvent;
       if (!VALID_PRIMARY_STATUSES.has(e.status)) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `invalid status "${e.status}" applied to ${e.side}:${e.pokemon}`,
         });
       }
@@ -318,7 +324,7 @@ export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInva
       const e = event as WeatherSetEvent;
       if (!VALID_WEATHER_TYPES.has(e.weather)) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `invalid weather "${e.weather}" set from ${e.source}`,
         });
       }
@@ -326,7 +332,7 @@ export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInva
       const e = event as TerrainSetEvent;
       if (!VALID_TERRAIN_TYPES.has(e.terrain)) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `invalid terrain "${e.terrain}" set from ${e.source}`,
         });
       }

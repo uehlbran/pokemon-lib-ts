@@ -184,6 +184,18 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
     expect(violations.some((v) => v.description.includes("turn"))).toBe(true);
   });
 
+  it("given duplicate turn number (1,2,2), when checking invariants, then violation reported", () => {
+    // Source: turn number must strictly increase — duplicate emits are invalid
+    const events = [
+      { type: "turn-start", turnNumber: 1 },
+      { type: "turn-start", turnNumber: 2 },
+      { type: "turn-start", turnNumber: 2 },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("turn"))).toBe(true);
+  });
+
   // ---------------------------------------------------------------------------
   // Status validity
   // ---------------------------------------------------------------------------
@@ -279,6 +291,46 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
         currentHp: 100,
         maxHp: 100,
         source: "tackle",
+      },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("amount"))).toBe(true);
+  });
+
+  it("given damage event with negative amount, when checking invariants, then violation reported", () => {
+    // Source: DamageEvent.amount must be > 0 — negative amounts are invalid (triangulation)
+    const events = [
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Pikachu",
+        amount: -10,
+        currentHp: 100,
+        maxHp: 100,
+        source: "tackle",
+      },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("amount"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Heal amount non-negative
+  // ---------------------------------------------------------------------------
+
+  it("given heal event with amount 0, when checking invariants, then violation reported", () => {
+    // Source: HealEvent.amount must be > 0 — zero-heal events are invalid
+    const events = [
+      {
+        type: "heal",
+        side: 0,
+        pokemon: "Snorlax",
+        amount: 0,
+        currentHp: 100,
+        maxHp: 100,
+        source: "leftovers",
       },
     ] as const;
     const violations = checkBattleInvariants(events as never);
