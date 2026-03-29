@@ -37,9 +37,9 @@
       "defenderSpecies": "aggron",
       "defenderTypes": ["steel", "rock"],
       "hazardType": "rock",
-      "expectedFraction": 0.03125,
-      "source": "specs/reference/gen4-status.md",
-      "note": "Aggron is 0.25x resistant to Rock (Steel resists, Rock is neutral to self in Gen 4); Stealth Rock deals 1/8 × 0.25 = 1/32 max HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage"
+      "expectedFraction": 0.0625,
+      "source": "pret/pokeplatinum src/battle/battle_lib.c line 2489 — TYPE_ROCK, TYPE_STEEL, NOT_VERY_EFF",
+      "note": "Aggron (Steel/Rock) vs Rock: Steel resists Rock (0.5x, line 2489), Rock is neutral to Rock (1x, no entry). Combined: 0.5x. Stealth Rock deals 1/8 × 0.5 = 1/16. Note: prior value 0.03125 was incorrect (implied 0.25x which would require BOTH types to resist)."
     },
     {
       "id": "physical-special-split-crunch",
@@ -133,13 +133,13 @@
       "note": "Struggle recoil = floor(max_hp / 4) in Gen 3+. Source: pret/pokeplatinum src/battle/battle_script.c StruggleEffect"
     },
     {
-      "id": "type-effectiveness-steel-vs-ghost",
+      "id": "type-effectiveness-ghost-vs-steel",
       "kind": "typeChart",
-      "attackerType": "steel",
-      "defenderTypes": ["ghost"],
+      "attackerType": "ghost",
+      "defenderTypes": ["steel"],
       "expected": 0.5,
-      "source": "specs/reference/gen4-status.md",
-      "note": "Steel resists Ghost in Gen 4. Source: pret/pokeplatinum src/data/battle/type_chart.c"
+      "source": "pret/pokeplatinum src/battle/battle_lib.c line 2493 — TYPE_GHOST, TYPE_STEEL, NOT_VERY_EFF",
+      "note": "Ghost-type moves are not very effective against Steel-type Pokemon in Gen 4 (0.5x). 'Steel resists Ghost' means Ghost→Steel=0.5x, NOT Steel→Ghost=0.5x. Steel attacking Ghost has no type chart entry = 1x neutral."
     }
   ]
 }
