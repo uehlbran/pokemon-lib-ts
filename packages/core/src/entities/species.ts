@@ -1,7 +1,7 @@
 import type { ExperienceGroupIdentifier } from "./experience";
 import type { Gender } from "./gender";
 import type { StatBlock } from "./stats";
-import type { Generation, PokemonType } from "./types";
+import type { Generation, PokemonType, SpeciesType } from "./types";
 
 export interface PokemonSpeciesData {
   /** National Pokedex number */
@@ -13,8 +13,8 @@ export interface PokemonSpeciesData {
   /** Display name (e.g., "Charizard") */
   readonly displayName: string;
 
-  /** One or two types */
-  readonly types: readonly [PokemonType] | readonly [PokemonType, PokemonType];
+  /** One or two types — species types only (never "unknown") */
+  readonly types: readonly [SpeciesType] | readonly [SpeciesType, SpeciesType];
 
   /** Base stats (Gen 3+ model with SpAtk/SpDef split) */
   readonly baseStats: StatBlock;
@@ -175,8 +175,8 @@ export interface MegaEvolutionData {
   /** Required held Mega Stone item ID */
   readonly item: string;
 
-  /** Types in Mega form */
-  readonly types: readonly [PokemonType] | readonly [PokemonType, PokemonType];
+  /** Types in Mega form — species types only (never "unknown") */
+  readonly types: readonly [SpeciesType] | readonly [SpeciesType, SpeciesType];
 
   /** Base stats in Mega form */
   readonly baseStats: StatBlock;
@@ -213,8 +213,8 @@ export interface RegionalFormData {
    */
   readonly formSpeciesId: number;
 
-  /** Types of the regional form */
-  readonly types: readonly [PokemonType] | readonly [PokemonType, PokemonType];
+  /** Types of the regional form — species types only (never "unknown") */
+  readonly types: readonly [SpeciesType] | readonly [SpeciesType, SpeciesType];
 
   /** Base stats of the regional form */
   readonly baseStats: StatBlock;

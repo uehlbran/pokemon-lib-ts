@@ -1,5 +1,6 @@
+import { CORE_TYPE_IDS } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import { createGen3DataManager } from "../../src/data";
+import { createGen3DataManager, GEN3_MOVE_IDS } from "../../src";
 
 describe("Gen 3 DataManager — data loading", () => {
   it("given gen3 data files, when loading DataManager, then loads 386 Pokemon", () => {
@@ -54,5 +55,17 @@ describe("Gen 3 DataManager — data loading", () => {
     const dm = createGen3DataManager();
     const blaziken = dm.getSpeciesByName("blaziken");
     expect(blaziken.baseStats.speed).toBe(80);
+  });
+
+  it("given Curse in Gen 3 move data, when loaded by move id, then its type is unknown (TYPE_MYSTERY)", () => {
+    // Arrange
+    const dm = createGen3DataManager();
+    // Act
+    const curse = dm.getMove(GEN3_MOVE_IDS.curse);
+    // Assert
+    // Source: pret/pokeemerald include/constants/pokemon.h — TYPE_MYSTERY = 9
+    //         src/data/battle_moves.h — Curse .type = TYPE_MYSTERY (not TYPE_GHOST)
+    expect(curse.id).toBe(GEN3_MOVE_IDS.curse);
+    expect(curse.type).toBe(CORE_TYPE_IDS.unknown);
   });
 });

@@ -14,8 +14,12 @@ import type { PokemonType } from "./types";
  *
  * The core library provides the full Gen 6+ chart.
  * Battle library gen plugins can provide their own charts.
+ *
+ * Sparse chart: entries missing from the outer or inner map default to 1.0 (neutral).
+ * This allows "unknown" (TYPE_MYSTERY/CURSE_TYPE used by Curse in Gen 2-4) to be
+ * a valid PokemonType without requiring every chart to carry its row and column.
  */
-export type TypeChart = Record<PokemonType, Record<PokemonType, number>>;
+export type TypeChart = Partial<Record<PokemonType, Partial<Record<PokemonType, number>>>>;
 
 /**
  * Broader lookup shape used by damage-calculation helpers and synthetic tests.

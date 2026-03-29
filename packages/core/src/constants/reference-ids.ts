@@ -474,6 +474,11 @@ export const CORE_TYPE_IDS = {
   rock: "rock",
   steel: "steel",
   water: "water",
+  // Move-type-only sentinel: TYPE_MYSTERY/CURSE_TYPE used by Curse in Gen 2-4.
+  // No Pokemon has "unknown" as a species type.
+  // Source: pret/pokecrystal constants/type_constants.asm — CURSE_TYPE EQU 19
+  //         pret/pokeemerald include/constants/pokemon.h — TYPE_MYSTERY = 9
+  unknown: "unknown",
 } as const;
 
 export const CORE_STAT_IDS = {

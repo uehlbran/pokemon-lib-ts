@@ -67,6 +67,19 @@ describe("Gen 2 Data Loading", () => {
       expect(bite.power).toBe(60);
     });
 
+    it("given Curse in Gen 2 move data, when loaded by move id, then its type is unknown (TYPE_MYSTERY / CURSE_TYPE)", () => {
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const curse = dm.getMove(GEN2_MOVE_IDS.curse);
+      // Assert
+      // Source: pret/pokecrystal constants/type_constants.asm — CURSE_TYPE EQU 19
+      // Curse uses CURSE_TYPE (not TYPE_GHOST) in Gen 2. The type determines Curse's
+      // behavior (Ghost-type user vs. non-Ghost user) based on the user's type, not the move's.
+      expect(curse.id).toBe(GEN2_MOVE_IDS.curse);
+      expect(curse.type).toBe(CORE_TYPE_IDS.unknown);
+    });
+
     it("given the Gen 2 type chart, when loaded, then it exposes the 17 pre-Fairy types", () => {
       // Arrange
       const dm = createGen2DataManager();

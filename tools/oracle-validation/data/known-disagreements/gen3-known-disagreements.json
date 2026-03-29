@@ -7,9 +7,22 @@
     "ourValue": 3,
     "oracleValue": 4,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokeemerald src/data/battle_moves.h \u2014 endure: .priority = 3",
+    "source": "pret/pokeemerald src/data/battle_moves.h — endure: .priority = 3",
     "sourceUrl": "https://github.com/pret/pokeemerald/blob/master/src/data/battle_moves.h",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen3:move:curse:type",
+    "gen": 3,
+    "suite": "moves",
+    "description": "Curse type is TYPE_MYSTERY=9 in pokeemerald, not Ghost. @pkmn/data reports ghost.",
+    "ourValue": "unknown",
+    "oracleValue": "ghost",
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokeemerald include/constants/pokemon.h — TYPE_MYSTERY = 9; src/data/battle_moves.h",
+    "sourceUrl": "https://github.com/pret/pokeemerald/blob/master/include/constants/pokemon.h",
+    "oracleVersion": "@pkmn/data",
+    "addedDate": "2026-03-29"
   }
 ]

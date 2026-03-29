@@ -47,6 +47,14 @@ describe("Gen8MaxMoves", () => {
       expect(getMaxMoveName(CORE_TYPE_IDS.psychic, true)).toBe("Max Guard");
     });
 
+    it("given unknown type (TYPE_MYSTERY sentinel) damage move, when getting Max Move name, then falls back to Max Strike", () => {
+      // Source: Gen8MaxMoves.ts -- "unknown" has no MAX_MOVE_NAMES entry; falls back to ?? "Max Strike"
+      // "unknown" (TYPE_MYSTERY) only exists in Gen 2-4 for Curse and cannot reach Gen 8 in normal
+      // operation. The fallback guards against defensive exhaustiveness.
+      const result = getMaxMoveName(CORE_TYPE_IDS.unknown, false);
+      expect(result).toBe("Max Strike");
+    });
+
     it("given all 18 types, when getting Max Move name for damage moves, then returns unique names", () => {
       // Source: core/entities/types.ts -- Gen 8 uses the full 18-type chart
       const types = TYPES_BY_GEN[8];

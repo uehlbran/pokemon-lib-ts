@@ -189,7 +189,7 @@
     "ourValue": 3,
     "oracleValue": 2,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_PROTECT priority 3",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT priority 3",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -202,7 +202,7 @@
     "ourValue": 3,
     "oracleValue": 2,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_PROTECT priority 3; data/moves/moves.asm \u2014 DETECT uses EFFECT_PROTECT",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT priority 3; data/moves/moves.asm — DETECT uses EFFECT_PROTECT",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -215,7 +215,7 @@
     "ourValue": 3,
     "oracleValue": 2,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_ENDURE priority 3",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_ENDURE priority 3",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -228,7 +228,7 @@
     "ourValue": 2,
     "oracleValue": 1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_QUICK_ATTACK priority 2",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -241,7 +241,7 @@
     "ourValue": 2,
     "oracleValue": 1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_QUICK_ATTACK priority 2; data/moves/moves.asm \u2014 Mach Punch uses EFFECT_QUICK_ATTACK",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2; data/moves/moves.asm — Mach Punch uses EFFECT_QUICK_ATTACK",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -254,7 +254,7 @@
     "ourValue": 2,
     "oracleValue": 1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_QUICK_ATTACK priority 2; data/moves/moves.asm \u2014 Extreme Speed uses EFFECT_QUICK_ATTACK",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2; data/moves/moves.asm — Extreme Speed uses EFFECT_QUICK_ATTACK",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -267,7 +267,7 @@
     "ourValue": 0,
     "oracleValue": -1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_FORCE_SWITCH priority 0 (1-based scale)",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_FORCE_SWITCH priority 0 (1-based scale)",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -280,7 +280,7 @@
     "ourValue": 0,
     "oracleValue": -1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_FORCE_SWITCH priority 0 (1-based scale)",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_FORCE_SWITCH priority 0 (1-based scale)",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -293,7 +293,7 @@
     "ourValue": 0,
     "oracleValue": -1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_COUNTER priority 0 (1-based scale)",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_COUNTER priority 0 (1-based scale)",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -306,7 +306,7 @@
     "ourValue": 0,
     "oracleValue": -1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_MIRROR_COAT priority 0 (1-based scale)",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_MIRROR_COAT priority 0 (1-based scale)",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
@@ -319,9 +319,22 @@
     "ourValue": 0,
     "oracleValue": -1,
     "resolution": "cartridge-accurate",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_VITAL_THROW priority 0 (1-based scale)",
+    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_VITAL_THROW priority 0 (1-based scale)",
     "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-28"
+  },
+  {
+    "id": "gen2:move:curse:type",
+    "gen": 2,
+    "suite": "moves",
+    "description": "Curse type is TYPE_MYSTERY (CURSE_TYPE=19) in pokecrystal, not Ghost. @pkmn/data reports ghost.",
+    "ourValue": "unknown",
+    "oracleValue": "ghost",
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokecrystal constants/type_constants.asm — CURSE_TYPE EQU 19; data/moves/moves.asm",
+    "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/constants/type_constants.asm",
+    "oracleVersion": "@pkmn/data",
+    "addedDate": "2026-03-29"
   }
 ]
