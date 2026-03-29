@@ -27,6 +27,9 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_WEATHER_IDS,
   createDvs,
   createEvs,
   createIvs,
@@ -228,31 +231,18 @@ export function generateMinimalTeam(
   return team;
 }
 
-const VALID_PRIMARY_STATUSES = new Set([
-  "burn",
-  "poison",
-  "badly-poisoned",
-  "paralysis",
-  "sleep",
-  "freeze",
+const VALID_PRIMARY_STATUSES = new Set(Object.values(CORE_STATUS_IDS));
+const VALID_WEATHER_TYPES = new Set(Object.values(CORE_WEATHER_IDS));
+const VALID_TERRAIN_TYPES = new Set([
+  CORE_TERRAIN_IDS.electric,
+  CORE_TERRAIN_IDS.grassy,
+  CORE_TERRAIN_IDS.misty,
+  CORE_TERRAIN_IDS.psychic,
 ]);
-
-const VALID_WEATHER_TYPES = new Set([
-  "rain",
-  "sun",
-  "sand",
-  "snow",
-  "hail",
-  "harsh-sun",
-  "heavy-rain",
-  "strong-winds",
-]);
-
-const VALID_TERRAIN_TYPES = new Set(["electric", "grassy", "psychic", "misty"]);
 
 export interface SmokeInvariantViolation {
-  eventIndex: number;
-  description: string;
+  readonly eventIndex: number;
+  readonly description: string;
 }
 
 export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInvariantViolation[] {
