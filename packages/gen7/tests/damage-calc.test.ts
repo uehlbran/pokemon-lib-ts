@@ -247,7 +247,8 @@ function expectSpreadPenaltyMatchesSingleTarget(
   singleTargetResult: ReturnType<typeof calculateGen7Damage>,
 ): void {
   const singleBaseDamage = singleTargetResult.breakdown?.baseDamage;
-  expect(singleBaseDamage).not.toBeUndefined();
+  // Source: Gen 7 base formula floor((2*50/5+2)*100*100/100/50)+2 = 46 for default fixtures (atk=100,def=100,power=100,lv50)
+  expect(singleBaseDamage).toBe(46);
 
   expect(spreadResult.effectiveness).toBe(singleTargetResult.effectiveness);
   expect(spreadResult.breakdown).toEqual(
