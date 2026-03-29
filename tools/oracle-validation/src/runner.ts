@@ -27,7 +27,8 @@ type SupportedSuite =
   | "replay"
   | "damageTrace"
   | "smoke"
-  | "fast";
+  | "fast"
+  | "nightly";
 const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "data",
   "stats",
@@ -40,6 +41,7 @@ const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "damageTrace",
   "smoke",
   "fast",
+  "nightly",
 ]);
 
 /**
@@ -85,7 +87,12 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
  * Expand composite suite aliases into concrete suite runs.
  */
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
+  if (suites.includes("nightly")) {
+    // Full suite — all fast suites plus long-running replay/trace/smoke
+    return ["data", "stats", "groundTruth", "damage", "mechanics", "terrain", "gimmicks", "replay", "damageTrace", "smoke"];
+  }
   if (suites.includes("fast")) {
+    // Fast gate — structural checks only, no live battle simulation
     return ["data", "stats", "groundTruth", "damage", "mechanics", "terrain", "gimmicks"];
   }
 

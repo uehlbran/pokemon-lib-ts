@@ -13,7 +13,7 @@
  * Our damage calc is cartridge-accurate; Showdown deviates for competitive balance.
  */
 import type { BattleEvent, DamageEvent, GenerationRuleset, HealEvent, TurnStartEvent } from "@pokemon-lib-ts/battle";
-import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES, BATTLE_PHASE_IDS, BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { DataManager } from "@pokemon-lib-ts/core";
 import type { Generation } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_SLOTS, CORE_ITEM_IDS, CORE_NATURE_IDS, MAX_DV, MAX_IV, SeededRandom, createDvs, createEvs, createIvs, createStatExp } from "@pokemon-lib-ts/core";
@@ -150,17 +150,17 @@ function extractTurnTraces(events: readonly BattleEvent[]): TurnTrace[] {
   let hpEventsThisTurn: Array<{ key: string; currentHp: number; maxHp: number }> = [];
 
   for (const event of events) {
-    if (event.type === "turn-start") {
+    if (event.type === BATTLE_EVENT_TYPES.turnStart) {
       const e = event as TurnStartEvent;
       if (currentTurn > 0) {
         traces.push({ turnNumber: currentTurn, hpEvents: hpEventsThisTurn });
         hpEventsThisTurn = [];
       }
       currentTurn = e.turnNumber;
-    } else if (event.type === "damage") {
+    } else if (event.type === BATTLE_EVENT_TYPES.damage) {
       const e = event as DamageEvent;
       hpEventsThisTurn.push({ key: `${e.side}:${e.pokemon}`, currentHp: e.currentHp, maxHp: e.maxHp });
-    } else if (event.type === "heal") {
+    } else if (event.type === BATTLE_EVENT_TYPES.heal) {
       const e = event as HealEvent;
       hpEventsThisTurn.push({ key: `${e.side}:${e.pokemon}`, currentHp: e.currentHp, maxHp: e.maxHp });
     }
@@ -181,6 +181,11 @@ function validateTraceInvariants(traces: TurnTrace[]): string[] {
       if (ev.currentHp < 0) {
         failures.push(
           `Turn ${trace.turnNumber}: ${ev.key} HP went negative (${ev.currentHp}/${ev.maxHp})`,
+        );
+      }
+      if (ev.maxHp > 0 && ev.currentHp > ev.maxHp) {
+        failures.push(
+          `Turn ${trace.turnNumber}: ${ev.key} HP exceeded max (${ev.currentHp}/${ev.maxHp})`,
         );
       }
     }
@@ -226,19 +231,20 @@ export function runDamageTraceSuite(generation: ImplementedGeneration): SuiteRes
         let turnCount = 0;
         while (!engine.isEnded() && turnCount < MAX_TURNS) {
           const phase = engine.getPhase();
-          if (phase === "action-select") {
+          if (phase === BATTLE_PHASE_IDS.actionSelect) {
             const state = engine.getState();
             const action0 = ai.chooseAction(0, state, ruleset, aiRng, engine.getAvailableMoves(0));
             const action1 = ai.chooseAction(1, state, ruleset, aiRng, engine.getAvailableMoves(1));
             engine.submitAction(0, action0);
             engine.submitAction(1, action1);
             turnCount++;
-          } else if (phase === "switch-prompt") {
+          } else if (phase === BATTLE_PHASE_IDS.switchPrompt) {
+            // No HP guard — self-switch moves (U-turn, Volt Switch, Baton Pass) put the
+            // engine into switch-prompt with the user's active Pokemon still alive.
             for (const sideIdx of [0, 1] as const) {
-              const active = engine.getActive(sideIdx);
-              if (active && active.pokemon.currentHp <= 0) {
-                const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
-                if (sw !== null) engine.submitSwitch(sideIdx, sw);
+              const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
+              if (sw !== null) {
+                try { engine.submitSwitch(sideIdx, sw); } catch { /* side doesn't need a switch */ }
               }
             }
           } else {

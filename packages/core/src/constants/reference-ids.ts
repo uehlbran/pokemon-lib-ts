@@ -595,3 +595,19 @@ export const CORE_WEATHER_IDS = {
   strongWinds: "strong-winds",
   sun: "sun",
 } as const;
+
+/**
+ * Generation number constants.
+ * Use these instead of raw numeric literals when comparing or specifying a generation.
+ */
+export const GEN_NUMBERS = {
+  gen1: 1,
+  gen2: 2,
+  gen3: 3,
+  gen4: 4,
+  gen5: 5,
+  gen6: 6,
+  gen7: 7,
+  gen8: 8,
+  gen9: 9,
+} as const;

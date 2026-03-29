@@ -1,5 +1,5 @@
 import type { GenerationRuleset } from "@pokemon-lib-ts/battle";
-import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
+import { BATTLE_PHASE_IDS, BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { DataManager } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { createGen1DataManager, Gen1Ruleset } from "@pokemon-lib-ts/gen1";
@@ -109,21 +109,20 @@ export function runBattle(config: BattleRunConfig): BattleReport {
     while (!engine.isEnded() && turnCount < config.maxTurns) {
       const phase = engine.getPhase();
 
-      if (phase === "action-select") {
+      if (phase === BATTLE_PHASE_IDS.actionSelect) {
         const state = engine.getState();
         const action0 = ai.chooseAction(0, state, ruleset, aiRng, engine.getAvailableMoves(0));
         const action1 = ai.chooseAction(1, state, ruleset, aiRng, engine.getAvailableMoves(1));
         engine.submitAction(0, action0);
         engine.submitAction(1, action1);
         turnCount++;
-      } else if (phase === "switch-prompt") {
+      } else if (phase === BATTLE_PHASE_IDS.switchPrompt) {
+        // No HP guard — self-switch moves (U-turn, Volt Switch, Baton Pass) put the
+        // engine into switch-prompt with the user's active Pokemon still alive.
         for (const sideIdx of [0, 1] as const) {
-          const active = engine.getActive(sideIdx);
-          if (active && active.pokemon.currentHp <= 0) {
-            const switchTarget = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
-            if (switchTarget !== null) {
-              engine.submitSwitch(sideIdx, switchTarget);
-            }
+          const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
+          if (sw !== null) {
+            try { engine.submitSwitch(sideIdx, sw); } catch { /* side doesn't need a switch */ }
           }
         }
       } else {

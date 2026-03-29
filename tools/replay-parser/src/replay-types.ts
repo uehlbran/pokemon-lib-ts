@@ -1,3 +1,49 @@
+/**
+ * Showdown protocol status codes used in replay log lines.
+ * Use these instead of raw string literals when comparing status in replay data.
+ * These are Showdown's internal shorthands, distinct from our CORE_STATUS_IDS.
+ */
+export const SHOWDOWN_STATUS_CODES = {
+  burn: "brn",
+  freeze: "frz",
+  paralysis: "par",
+  poison: "psn",
+  badlyPoisoned: "tox",
+  sleep: "slp",
+} as const;
+export type ShowdownStatusCode = (typeof SHOWDOWN_STATUS_CODES)[keyof typeof SHOWDOWN_STATUS_CODES];
+
+/**
+ * Showdown protocol event type discriminants.
+ * Use these instead of raw string literals when comparing `event.type` on ShowdownEvent.
+ */
+export const SHOWDOWN_EVENT_TYPES = {
+  switch: "switch",
+  move: "move",
+  damage: "damage",
+  heal: "heal",
+  crit: "crit",
+  supereffective: "supereffective",
+  resisted: "resisted",
+  immune: "immune",
+  status: "status",
+  curestatus: "curestatus",
+  boost: "boost",
+  unboost: "unboost",
+  miss: "miss",
+  fail: "fail",
+  cant: "cant",
+  faint: "faint",
+  win: "win",
+  tie: "tie",
+  turn: "turn",
+  hitcount: "hitcount",
+  start: "start",
+  end: "end",
+  unknown: "unknown",
+} as const;
+export type ShowdownEventType = (typeof SHOWDOWN_EVENT_TYPES)[keyof typeof SHOWDOWN_EVENT_TYPES];
+
 // Raw API response from replay.pokemonshowdown.com/{id}.json
 export interface ShowdownReplayJson {
   readonly id: string;

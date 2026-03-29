@@ -7,7 +7,7 @@
  * Delegates to the shared battle simulation infrastructure.
  */
 import type { BattleEvent, DamageEvent, GenerationRuleset, HealEvent } from "@pokemon-lib-ts/battle";
-import { BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES, BATTLE_PHASE_IDS, BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
 import type { DataManager, Generation } from "@pokemon-lib-ts/core";
 import { CORE_ABILITY_SLOTS, CORE_ITEM_IDS, CORE_NATURE_IDS, MAX_DV, MAX_IV, SeededRandom, createDvs, createEvs, createIvs, createStatExp } from "@pokemon-lib-ts/core";
 import { createGen1DataManager, Gen1Ruleset } from "@pokemon-lib-ts/gen1";
@@ -144,7 +144,7 @@ function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInvariantVi
     const event = events[i];
     if (!event) continue;
 
-    if (event.type === "damage") {
+    if (event.type === BATTLE_EVENT_TYPES.damage) {
       const e = event as DamageEvent;
       if (e.currentHp < 0) {
         violations.push({
@@ -152,12 +152,24 @@ function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInvariantVi
           description: `${e.side}:${e.pokemon} HP went negative (${e.currentHp}) in damage event`,
         });
       }
-    } else if (event.type === "heal") {
+      if (e.maxHp > 0 && e.currentHp > e.maxHp) {
+        violations.push({
+          battleIndex: i,
+          description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in damage event`,
+        });
+      }
+    } else if (event.type === BATTLE_EVENT_TYPES.heal) {
       const e = event as HealEvent;
       if (e.currentHp < 0) {
         violations.push({
           battleIndex: i,
           description: `${e.side}:${e.pokemon} HP went negative (${e.currentHp}) in heal event`,
+        });
+      }
+      if (e.maxHp > 0 && e.currentHp > e.maxHp) {
+        violations.push({
+          battleIndex: i,
+          description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in heal event`,
         });
       }
     }
@@ -210,26 +222,20 @@ export function runSmokeSuite(generation: ImplementedGeneration): SuiteResult {
         let turnCount = 0;
         while (!engine.isEnded() && turnCount < MAX_TURNS) {
           const phase = engine.getPhase();
-          if (phase === "action-select") {
+          if (phase === BATTLE_PHASE_IDS.actionSelect) {
             const state = engine.getState();
             const action0 = ai.chooseAction(0, state, ruleset, aiRng, engine.getAvailableMoves(0));
             const action1 = ai.chooseAction(1, state, ruleset, aiRng, engine.getAvailableMoves(1));
             engine.submitAction(0, action0);
             engine.submitAction(1, action1);
             turnCount++;
-          } else if (phase === "switch-prompt") {
+          } else if (phase === BATTLE_PHASE_IDS.switchPrompt) {
+            // No HP guard — self-switch moves (U-turn, Volt Switch, Baton Pass) put the
+            // engine into switch-prompt with the user's active Pokemon still alive.
             for (const sideIdx of [0, 1] as const) {
-              const active = engine.getActive(sideIdx);
-              if (active && active.pokemon.currentHp <= 0) {
-                const switchTarget = ai.chooseSwitchIn(
-                  sideIdx,
-                  engine.getState(),
-                  ruleset,
-                  aiRng,
-                );
-                if (switchTarget !== null) {
-                  engine.submitSwitch(sideIdx, switchTarget);
-                }
+              const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
+              if (sw !== null) {
+                try { engine.submitSwitch(sideIdx, sw); } catch { /* side doesn't need a switch */ }
               }
             }
           } else {
