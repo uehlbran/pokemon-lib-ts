@@ -59,8 +59,8 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
       const value = argv[index + 1];
       if (!value) throw new Error("Missing value after --gen");
       gen = Number.parseInt(value, 10);
-      if (!Number.isInteger(gen) || gen < 0) {
-        throw new Error(`Invalid --gen value "${value}". Expected a non-negative integer.`);
+      if (!Number.isInteger(gen) || gen < 1 || gen > 9) {
+        throw new Error(`Invalid --gen value "${value}". Expected an integer between 1 and 9.`);
       }
       index += 1;
     }
@@ -90,6 +90,16 @@ async function main(): Promise<void> {
   const generations = discoverImplementedGenerations(repoRoot).filter(
     (candidate: ImplementedGeneration) => (gen !== undefined ? candidate.gen === gen : true),
   );
+
+  if (generations.length === 0) {
+    console.error(
+      gen !== undefined
+        ? `No implemented generation matches --gen ${gen}. Check packages/gen${gen}/ exists.`
+        : "No implemented generations discovered. Check the packages/ directory.",
+    );
+    process.exitCode = 1;
+    return;
+  }
 
   const generationResults: GenerationResult[] = generations.map(
     (generation: ImplementedGeneration) => {
