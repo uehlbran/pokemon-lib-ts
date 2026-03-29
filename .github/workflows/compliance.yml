@@ -1,0 +1,41 @@
+name: Compliance Oracle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/oracle-validation/**"
+      - "packages/*/src/**"
+      - "packages/*/data/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/oracle-validation/**"
+      - "packages/*/src/**"
+      - "packages/*/data/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  oracle-fast:
+    name: oracle (fast-path)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Run oracle fast-path
+        run: npm run oracle:fast
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-results
+          path: tools/oracle-validation/results/fast-path.json
+          retention-days: 7

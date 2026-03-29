@@ -136,6 +136,14 @@ async function main(): Promise<void> {
   mkdirSync(resultsDir, { recursive: true });
   writeFileSync(join(resultsDir, "fast-path.json"), JSON.stringify(output, null, 2));
   console.log(formatRunnerOutput(output));
+
+  // Exit non-zero if any suite has actual failures (stale disagreements also count)
+  const hasFailures = output.generations.some(
+    (g) => Object.values(g.suites).some((s) => s.failed > 0) || g.staleDisagreements.length > 0,
+  );
+  if (hasFailures) {
+    process.exitCode = 1;
+  }
 }
 
 void main();
