@@ -2,64 +2,43 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "Ahsan-219",
-    "mf saint"
-  ],
+  "players": ["Ahsan-219", "mf saint"],
   "teams": [
     [
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "hurricane",
-          "all-out-pummeling",
-          "taunt"
-        ],
+        "knownMoves": ["hurricane", "all-out-pummeling", "taunt"],
         "nickname": "Tornadus"
       },
       {
         "species": "Tangrowth",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "hidden-power",
-          "giga-drain"
-        ],
+        "knownMoves": ["knock-off", "hidden-power", "giga-drain"],
         "nickname": "Tangrowth"
       },
       {
         "species": "Mamoswine",
         "level": 100,
-        "knownMoves": [
-          "ice-shard"
-        ],
+        "knownMoves": ["ice-shard"],
         "nickname": "Mamoswine"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "protect"
-        ],
+        "knownMoves": ["stealth-rock", "protect"],
         "nickname": "Jirachi"
       },
       {
         "species": "Magmortar",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "overheat"
-        ],
+        "knownMoves": ["toxic", "overheat"],
         "nickname": "Magmortar"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psychic"
-        ],
+        "knownMoves": ["psychic"],
         "nickname": "Alakazam"
       },
       {
@@ -73,39 +52,25 @@
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "healing-wish"
-        ],
+        "knownMoves": ["u-turn", "healing-wish"],
         "nickname": "Jirachi"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "bug-buzz",
-          "quiver-dance",
-          "hidden-power",
-          "fire-blast",
-          "z-quiver-dance"
-        ],
+        "knownMoves": ["bug-buzz", "quiver-dance", "hidden-power", "fire-blast", "z-quiver-dance"],
         "nickname": "Volcarona"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "defog",
-          "u-turn"
-        ],
+        "knownMoves": ["defog", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Tapu Fini",
         "level": 100,
-        "knownMoves": [
-          "moonblast"
-        ],
+        "knownMoves": ["moonblast"],
         "nickname": "Tapu Fini"
       },
       {
@@ -117,10 +82,7 @@
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "knock-off"
-        ],
+        "knownMoves": ["stealth-rock", "knock-off"],
         "nickname": "Ferrothorn"
       }
     ]

@@ -2,69 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "lepton",
-    "LettuceLeaf07"
-  ],
+  "players": ["lepton", "LettuceLeaf07"],
   "teams": [
     [
       {
         "species": "Tangela",
         "level": 100,
-        "knownMoves": [
-          "sludge-bomb",
-          "knock-off",
-          "giga-drain"
-        ],
+        "knownMoves": ["sludge-bomb", "knock-off", "giga-drain"],
         "nickname": "Tangela"
       },
       {
         "species": "Vullaby",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn",
-          "defog"
-        ],
+        "knownMoves": ["knock-off", "u-turn", "defog"],
         "nickname": "Vullaby"
       },
       {
         "species": "Electabuzz",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss",
-          "volt-switch",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["seismic-toss", "volt-switch", "rest", "sleep-talk"],
         "nickname": "Electabuzz"
       },
       {
         "species": "Gastly",
         "level": 100,
-        "knownMoves": [
-          "sludge-bomb",
-          "shadow-ball"
-        ],
+        "knownMoves": ["sludge-bomb", "shadow-ball"],
         "nickname": "Gastly"
       },
       {
         "species": "Wartortle",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "shell-smash"
-        ],
+        "knownMoves": ["surf", "shell-smash"],
         "nickname": "Wartortle"
       },
       {
         "species": "Piloswine",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "icicle-crash",
-          "high-horsepower"
-        ],
+        "knownMoves": ["stealth-rock", "icicle-crash", "high-horsepower"],
         "nickname": "Piloswine"
       }
     ],
@@ -72,58 +46,37 @@
       {
         "species": "Tangela",
         "level": 100,
-        "knownMoves": [
-          "sludge-bomb",
-          "thief"
-        ],
+        "knownMoves": ["sludge-bomb", "thief"],
         "nickname": "Tangela"
       },
       {
         "species": "Vullaby",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "roost",
-          "brave-bird"
-        ],
+        "knownMoves": ["knock-off", "roost", "brave-bird"],
         "nickname": "Vullaby"
       },
       {
         "species": "Electabuzz",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Electabuzz"
       },
       {
         "species": "Piloswine",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "high-horsepower",
-          "icicle-crash",
-          "ice-shard"
-        ],
+        "knownMoves": ["stealth-rock", "high-horsepower", "icicle-crash", "ice-shard"],
         "nickname": "Piloswine"
       },
       {
         "species": "Hattrem",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "psychic"
-        ],
+        "knownMoves": ["stealth-rock", "psychic"],
         "nickname": "Hattrem"
       },
       {
         "species": "Corsola-Galar",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "shadow-ball",
-          "strength-sap"
-        ],
+        "knownMoves": ["calm-mind", "shadow-ball", "strength-sap"],
         "nickname": "Corsola"
       }
     ]

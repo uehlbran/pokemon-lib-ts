@@ -2,72 +2,43 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "Lady Bug",
-    "tizio potente ao"
-  ],
+  "players": ["Lady Bug", "tizio potente ao"],
   "teams": [
     [
       {
         "species": "Hippowdon",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "slack-off",
-          "toxic",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "slack-off", "toxic", "earthquake"],
         "nickname": "Hippowdon"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "reflect",
-          "dragon-pulse",
-          "recover"
-        ],
+        "knownMoves": ["thunder-wave", "reflect", "dragon-pulse", "recover"],
         "nickname": "Latias"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "seismic-toss",
-          "soft-boiled"
-        ],
+        "knownMoves": ["knock-off", "seismic-toss", "soft-boiled"],
         "nickname": "Clefable"
       },
       {
         "species": "Magnezone",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "thunderbolt"],
         "nickname": "Magnezone"
       },
       {
         "species": "Bronzong",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "hidden-power",
-          "protect"
-        ],
+        "knownMoves": ["earthquake", "hidden-power", "protect"],
         "nickname": "Bronzong"
       },
       {
         "species": "Gliscor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "earthquake",
-          "ice-fang",
-          "roost"
-        ],
+        "knownMoves": ["swords-dance", "earthquake", "ice-fang", "roost"],
         "nickname": "Gliscor"
       }
     ],
@@ -75,53 +46,31 @@
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "waterfall",
-          "thunder-wave",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["waterfall", "thunder-wave", "rest", "sleep-talk"],
         "nickname": "Gyarados"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "recover",
-          "grass-knot",
-          "hidden-power"
-        ],
+        "knownMoves": ["stealth-rock", "recover", "grass-knot", "hidden-power"],
         "nickname": "Celebi"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "wish",
-          "body-slam",
-          "u-turn",
-          "iron-head"
-        ],
+        "knownMoves": ["wish", "body-slam", "u-turn", "iron-head"],
         "nickname": "Jirachi"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "crunch",
-          "pursuit"
-        ],
+        "knownMoves": ["crunch", "pursuit"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Donphan",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "protect",
-          "rapid-spin"
-        ],
+        "knownMoves": ["knock-off", "protect", "rapid-spin"],
         "nickname": "Donphan"
       }
     ]

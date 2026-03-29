@@ -2,54 +2,37 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "supraxd",
-    "MooN.9967"
-  ],
+  "players": ["supraxd", "MooN.9967"],
   "teams": [
     [
       {
         "species": "Araquanid",
         "level": 100,
-        "knownMoves": [
-          "sticky-web"
-        ],
+        "knownMoves": ["sticky-web"],
         "nickname": "Araquanid"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "substitute"
-        ],
+        "knownMoves": ["dragon-dance", "substitute"],
         "nickname": "Gyarados"
       },
       {
         "species": "Victini",
         "level": 100,
-        "knownMoves": [
-          "z-celebrate",
-          "stored-power",
-          "searing-shot",
-          "focus-blast"
-        ],
+        "knownMoves": ["z-celebrate", "stored-power", "searing-shot", "focus-blast"],
         "nickname": "Victini"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "glare"
-        ],
+        "knownMoves": ["glare"],
         "nickname": "Serperior"
       },
       {
         "species": "Tapu Lele",
         "level": 100,
-        "knownMoves": [
-          "hidden-power"
-        ],
+        "knownMoves": ["hidden-power"],
         "nickname": "Tapu Lele"
       }
     ],
@@ -57,35 +40,25 @@
       {
         "species": "Beedrill",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "poison-jab",
-          "u-turn"
-        ],
+        "knownMoves": ["knock-off", "poison-jab", "u-turn"],
         "nickname": "Beedrill"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "power-whip"
-        ],
+        "knownMoves": ["power-whip"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Gliscor",
         "level": 100,
-        "knownMoves": [
-          "defog"
-        ],
+        "knownMoves": ["defog"],
         "nickname": "Gliscor"
       },
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Tapu Koko"
       },
       {
@@ -97,10 +70,7 @@
       {
         "species": "Greninja",
         "level": 100,
-        "knownMoves": [
-          "water-shuriken",
-          "u-turn"
-        ],
+        "knownMoves": ["water-shuriken", "u-turn"],
         "nickname": "Greninja"
       },
       {

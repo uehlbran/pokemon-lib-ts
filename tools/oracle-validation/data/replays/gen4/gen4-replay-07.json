@@ -2,20 +2,13 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "TheBruce",
-    "autumn912"
-  ],
+  "players": ["TheBruce", "autumn912"],
   "teams": [
     [
       {
         "species": "Empoleon",
         "level": 100,
-        "knownMoves": [
-          "grass-knot",
-          "stealth-rock",
-          "hydro-pump"
-        ],
+        "knownMoves": ["grass-knot", "stealth-rock", "hydro-pump"],
         "nickname": "Empoleon"
       },
       {
@@ -27,20 +20,13 @@
       {
         "species": "Bronzong",
         "level": 100,
-        "knownMoves": [
-          "trick-room",
-          "earthquake",
-          "explosion"
-        ],
+        "knownMoves": ["trick-room", "earthquake", "explosion"],
         "nickname": "Bronzong"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin",
-          "hydro-pump"
-        ],
+        "knownMoves": ["rapid-spin", "hydro-pump"],
         "nickname": "Starmie"
       }
     ],
@@ -48,35 +34,25 @@
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "hydro-pump"
-        ],
+        "knownMoves": ["stealth-rock", "hydro-pump"],
         "nickname": "Swampert"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "trick"
-        ],
+        "knownMoves": ["trick"],
         "nickname": "Latias"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "iron-head"
-        ],
+        "knownMoves": ["iron-head"],
         "nickname": "Jirachi"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "trick",
-          "earthquake"
-        ],
+        "knownMoves": ["trick", "earthquake"],
         "nickname": "Metagross"
       }
     ]

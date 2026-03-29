@@ -2,62 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "megastaruniverse",
-    "Shainzow"
-  ],
+  "players": ["megastaruniverse", "Shainzow"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "u-turn"
-        ],
+        "knownMoves": ["stealth-rock", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Dragapult"
       },
       {
         "species": "Keldeo-Resolute",
         "level": 100,
-        "knownMoves": [
-          "scald"
-        ],
+        "knownMoves": ["scald"],
         "nickname": "Keldeo"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn",
-          "heat-wave"
-        ],
+        "knownMoves": ["knock-off", "u-turn", "heat-wave"],
         "nickname": "Tornadus"
       },
       {
         "species": "Tapu Lele",
         "level": 100,
-        "knownMoves": [
-          "moonblast",
-          "psyshock"
-        ],
+        "knownMoves": ["moonblast", "psyshock"],
         "nickname": "Tapu Lele"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "earth-power"
-        ],
+        "knownMoves": ["earth-power"],
         "nickname": "Heatran"
       }
     ],
@@ -65,54 +46,37 @@
       {
         "species": "Urshifu-Rapid-Strike",
         "level": 100,
-        "knownMoves": [
-          "surging-strikes",
-          "thunder-punch"
-        ],
+        "knownMoves": ["surging-strikes", "thunder-punch"],
         "nickname": "Urshifu"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "knock-off",
-          "leech-seed"
-        ],
+        "knownMoves": ["thunder-wave", "knock-off", "leech-seed"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Landorus"
       },
       {
         "species": "Rillaboom",
         "level": 100,
-        "knownMoves": [
-          "superpower",
-          "grassy-glide"
-        ],
+        "knownMoves": ["superpower", "grassy-glide"],
         "nickname": "Rillaboom"
       },
       {
         "species": "Tapu Lele",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "psychic"
-        ],
+        "knownMoves": ["thunderbolt", "psychic"],
         "nickname": "Tapu Lele"
       },
       {
         "species": "Blacephalon",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Blacephalon"
       }
     ]

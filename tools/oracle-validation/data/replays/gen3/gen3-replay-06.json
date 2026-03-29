@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Vlad von carstein",
-    "io ricordo"
-  ],
+  "players": ["Vlad von carstein", "io ricordo"],
   "teams": [
     [
       {
@@ -17,9 +14,7 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance"
-        ],
+        "knownMoves": ["dragon-dance"],
         "nickname": "Tyranitar"
       }
     ],
@@ -27,17 +22,13 @@
       {
         "species": "Houndoom",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "OmDum"
       },
       {
         "species": "Hitmontop",
         "level": 100,
-        "knownMoves": [
-          "mach-punch"
-        ],
+        "knownMoves": ["mach-punch"],
         "nickname": "Michael Jackson"
       }
     ]

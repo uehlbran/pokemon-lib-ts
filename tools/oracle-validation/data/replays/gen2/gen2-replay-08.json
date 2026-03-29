@@ -2,61 +2,37 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "drogba in shenhua",
-    "Vileman"
-  ],
+  "players": ["drogba in shenhua", "Vileman"],
   "teams": [
     [
       {
         "species": "Forretress",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "spikes"
-        ],
+        "knownMoves": ["toxic", "spikes"],
         "nickname": "桐树林最终兵器"
       },
       {
         "species": "Umbreon",
         "level": 100,
-        "knownMoves": [
-          "mean-look",
-          "growl",
-          "rest",
-          "toxic"
-        ],
+        "knownMoves": ["mean-look", "growl", "rest", "toxic"],
         "nickname": "谁月下追韩信来着"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "light-screen",
-          "heal-bell",
-          "flamethrower"
-        ],
+        "knownMoves": ["light-screen", "heal-bell", "flamethrower"],
         "nickname": "傻了吧爷有光墙"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "curse",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["toxic", "curse", "rest", "sleep-talk"],
         "nickname": "噌噌一噌噌"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "rest",
-          "surf"
-        ],
+        "knownMoves": ["reflect", "rest", "surf"],
         "nickname": "同意了"
       }
     ],
@@ -64,60 +40,37 @@
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "clamp",
-          "screech",
-          "spikes",
-          "explosion"
-        ],
+        "knownMoves": ["clamp", "screech", "spikes", "explosion"],
         "nickname": "Waters of Nazareth"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "rest",
-          "self-destruct"
-        ],
+        "knownMoves": ["body-slam", "rest", "self-destruct"],
         "nickname": "Neverender"
       },
       {
         "species": "Forretress",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin",
-          "explosion"
-        ],
+        "knownMoves": ["rapid-spin", "explosion"],
         "nickname": "Chorus"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "whirlwind",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "whirlwind", "thunderbolt"],
         "nickname": "Let There Be Light"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "explosion"
-        ],
+        "knownMoves": ["thunderbolt", "explosion"],
         "nickname": "Phantom"
       },
       {
         "species": "Marowak",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "rock-slide",
-          "fire-blast"
-        ],
+        "knownMoves": ["earthquake", "rock-slide", "fire-blast"],
         "nickname": "New Lands"
       }
     ]

@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "ryuzakiriver",
-    "mHuuhf"
-  ],
+  "players": ["ryuzakiriver", "mHuuhf"],
   "teams": [
     [
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "roar"
-        ],
+        "knownMoves": ["roar"],
         "nickname": "Jolteon"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "earthquake",
-          "body-slam"
-        ],
+        "knownMoves": ["curse", "earthquake", "body-slam"],
         "nickname": "Snorlax"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "hypnosis",
-          "ice-punch",
-          "shadow-ball"
-        ],
+        "knownMoves": ["hypnosis", "ice-punch", "shadow-ball"],
         "nickname": "Gengar"
       },
       {
         "species": "Machamp",
         "level": 100,
-        "knownMoves": [
-          "cross-chop",
-          "rock-slide",
-          "rest",
-          "curse"
-        ],
+        "knownMoves": ["cross-chop", "rock-slide", "rest", "curse"],
         "nickname": "Machamp"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psychic"
-        ],
+        "knownMoves": ["psychic"],
         "nickname": "Alakazam"
       },
       {
         "species": "Marowak",
         "level": 100,
-        "knownMoves": [
-          "rock-slide",
-          "earthquake"
-        ],
+        "knownMoves": ["rock-slide", "earthquake"],
         "nickname": "Marowak"
       }
     ],
@@ -69,20 +46,13 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "double-edge"
-        ],
+        "knownMoves": ["curse", "double-edge"],
         "nickname": "Snorlax"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "spikes",
-          "surf"
-        ],
+        "knownMoves": ["toxic", "spikes", "surf"],
         "nickname": "Cloyster"
       },
       {
@@ -94,20 +64,13 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunderbolt", "hidden-power"],
         "nickname": "Zapdos"
       },
       {
         "species": "Donphan",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "toxic",
-          "protect"
-        ],
+        "knownMoves": ["earthquake", "toxic", "protect"],
         "nickname": "Donphan"
       }
     ]

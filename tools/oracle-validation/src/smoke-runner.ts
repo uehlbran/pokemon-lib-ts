@@ -6,10 +6,31 @@
  *
  * Delegates to the shared battle simulation infrastructure.
  */
-import type { BattleEvent, DamageEvent, GenerationRuleset, HealEvent } from "@pokemon-lib-ts/battle";
-import { BATTLE_EVENT_TYPES, BATTLE_PHASE_IDS, BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
+import type {
+  BattleEvent,
+  DamageEvent,
+  GenerationRuleset,
+  HealEvent,
+} from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_EVENT_TYPES,
+  BATTLE_PHASE_IDS,
+  BattleEngine,
+  RandomAI,
+} from "@pokemon-lib-ts/battle";
 import type { DataManager, Generation } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_SLOTS, CORE_ITEM_IDS, CORE_NATURE_IDS, MAX_DV, MAX_IV, SeededRandom, createDvs, createEvs, createIvs, createStatExp } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  createDvs,
+  createEvs,
+  createIvs,
+  createStatExp,
+  MAX_DV,
+  MAX_IV,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { createGen1DataManager, Gen1Ruleset } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager, Gen2Ruleset } from "@pokemon-lib-ts/gen2";
 import { createGen3DataManager, Gen3Ruleset } from "@pokemon-lib-ts/gen3";
@@ -63,7 +84,12 @@ function createRuleset(gen: number): GenerationRuleset {
   return (factories[gen] ?? (() => new Gen1Ruleset()))();
 }
 
-function generateMinimalTeam(gen: number, dataManager: DataManager, rng: SeededRandom, uidPrefix: string) {
+function generateMinimalTeam(
+  gen: number,
+  dataManager: DataManager,
+  rng: SeededRandom,
+  uidPrefix: string,
+) {
   const allSpecies = dataManager.getAllSpecies();
   const shuffled = rng.shuffle([...allSpecies]);
   const team = [];
@@ -91,8 +117,21 @@ function generateMinimalTeam(gen: number, dataManager: DataManager, rng: SeededR
 
     const ivs =
       gen <= 2
-        ? createDvs({ attack: MAX_DV, defense: MAX_DV, speed: MAX_DV, spAttack: MAX_DV, spDefense: MAX_DV })
-        : createIvs({ hp: MAX_IV, attack: MAX_IV, defense: MAX_IV, spAttack: MAX_IV, spDefense: MAX_IV, speed: MAX_IV });
+        ? createDvs({
+            attack: MAX_DV,
+            defense: MAX_DV,
+            speed: MAX_DV,
+            spAttack: MAX_DV,
+            spDefense: MAX_DV,
+          })
+        : createIvs({
+            hp: MAX_IV,
+            attack: MAX_IV,
+            defense: MAX_IV,
+            spAttack: MAX_IV,
+            spDefense: MAX_IV,
+            speed: MAX_IV,
+          });
     const evs = gen <= 2 ? createStatExp() : createEvs();
 
     const abilitySlot = CORE_ABILITY_SLOTS.normal1;
@@ -100,7 +139,12 @@ function generateMinimalTeam(gen: number, dataManager: DataManager, rng: SeededR
     if (gen >= 3) {
       const candidate = species.abilities.normal[0] ?? "";
       if (!candidate) continue;
-      try { dataManager.getAbility(candidate); ability = candidate; } catch { continue; }
+      try {
+        dataManager.getAbility(candidate);
+        ability = candidate;
+      } catch {
+        continue;
+      }
     }
 
     team.push({
@@ -235,7 +279,11 @@ export function runSmokeSuite(generation: ImplementedGeneration): SuiteResult {
             for (const sideIdx of [0, 1] as const) {
               const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
               if (sw !== null) {
-                try { engine.submitSwitch(sideIdx, sw); } catch { /* side doesn't need a switch */ }
+                try {
+                  engine.submitSwitch(sideIdx, sw);
+                } catch {
+                  /* side doesn't need a switch */
+                }
               }
             }
           } else {
@@ -276,9 +324,7 @@ export function runSmokeSuite(generation: ImplementedGeneration): SuiteResult {
     };
   }
 
-  const notes = [
-    `${SMOKE_BATTLES_PER_GEN} battles run, ${crashed} crashed, ${timedOut} timed out`,
-  ];
+  const notes = [`${SMOKE_BATTLES_PER_GEN} battles run, ${crashed} crashed, ${timedOut} timed out`];
 
   if (failures.length > 0) {
     return {

@@ -2,55 +2,37 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "MI_S1999",
-    "BEMON_G5"
-  ],
+  "players": ["MI_S1999", "BEMON_G5"],
   "teams": [
     [
       {
         "species": "Togekiss",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "Togekiss"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "waterfall",
-          "dragon-dance"
-        ],
+        "knownMoves": ["waterfall", "dragon-dance"],
         "nickname": "GambÃ³n"
       },
       {
         "species": "Lucario",
         "level": 100,
-        "knownMoves": [
-          "close-combat",
-          "extreme-speed"
-        ],
+        "knownMoves": ["close-combat", "extreme-speed"],
         "nickname": "Spartan"
       },
       {
         "species": "Gastrodon",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "recover",
-          "ice-beam",
-          "surf"
-        ],
+        "knownMoves": ["earthquake", "recover", "ice-beam", "surf"],
         "nickname": "Es Perma"
       },
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "flare-blitz"
-        ],
+        "knownMoves": ["flare-blitz"],
         "nickname": "Infernape"
       },
       {
@@ -64,49 +46,31 @@
       {
         "species": "Crobat",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Boca tÃºnel"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "bug-bite",
-          "swords-dance",
-          "aerial-ace"
-        ],
+        "knownMoves": ["bug-bite", "swords-dance", "aerial-ace"],
         "nickname": "Genos"
       },
       {
         "species": "Gallade",
         "level": 100,
-        "knownMoves": [
-          "drain-punch",
-          "bulk-up"
-        ],
+        "knownMoves": ["drain-punch", "bulk-up"],
         "nickname": "GALLADE jr"
       },
       {
         "species": "Gastrodon-East",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "recover",
-          "earthquake"
-        ],
+        "knownMoves": ["surf", "recover", "earthquake"],
         "nickname": "Limako"
       },
       {
         "species": "Feraligatr",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "waterfall",
-          "aqua-jet",
-          "return"
-        ],
+        "knownMoves": ["swords-dance", "waterfall", "aqua-jet", "return"],
         "nickname": "STIFENWOLF"
       }
     ]

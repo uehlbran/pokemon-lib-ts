@@ -2,69 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Fakes",
-    "gorgie"
-  ],
+  "players": ["Fakes", "gorgie"],
   "teams": [
     [
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "spikes"
-        ],
+        "knownMoves": ["toxic", "spikes"],
         "nickname": "Cloyster"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "hidden-power"],
         "nickname": "Raikou"
       },
       {
         "species": "Machamp",
         "level": 100,
-        "knownMoves": [
-          "cross-chop",
-          "curse",
-          "rock-slide",
-          "hidden-power"
-        ],
+        "knownMoves": ["cross-chop", "curse", "rock-slide", "hidden-power"],
         "nickname": "Machamp"
       },
       {
         "species": "Rhydon",
         "level": 100,
-        "knownMoves": [
-          "roar",
-          "rock-slide",
-          "earthquake",
-          "curse"
-        ],
+        "knownMoves": ["roar", "rock-slide", "earthquake", "curse"],
         "nickname": "Rhydon"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest"
-        ],
+        "knownMoves": ["thunder", "rest"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "thunder",
-          "self-destruct"
-        ],
+        "knownMoves": ["double-edge", "thunder", "self-destruct"],
         "nickname": "Snorlax"
       }
     ],
@@ -72,65 +46,37 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "lick",
-          "rest",
-          "belly-drum"
-        ],
+        "knownMoves": ["lick", "rest", "belly-drum"],
         "nickname": "Snorlax"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "rapid-spin",
-          "surf",
-          "recover"
-        ],
+        "knownMoves": ["psychic", "rapid-spin", "surf", "recover"],
         "nickname": "Starmie"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "heal-bell",
-          "soft-boiled",
-          "ice-beam"
-        ],
+        "knownMoves": ["heal-bell", "soft-boiled", "ice-beam"],
         "nickname": "Blissey"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "rest",
-          "sleep-talk",
-          "haze"
-        ],
+        "knownMoves": ["reflect", "rest", "sleep-talk", "haze"],
         "nickname": "Dragonite"
       },
       {
         "species": "Umbreon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "baton-pass",
-          "pursuit",
-          "rest"
-        ],
+        "knownMoves": ["growth", "baton-pass", "pursuit", "rest"],
         "nickname": "Umbreon"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "steel-wing",
-          "curse",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["steel-wing", "curse", "rest", "sleep-talk"],
         "nickname": "Skarmory"
       }
     ]

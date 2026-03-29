@@ -2,31 +2,19 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "Infi.EXE",
-    "FlowerboyWOLF"
-  ],
+  "players": ["Infi.EXE", "FlowerboyWOLF"],
   "teams": [
     [
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "stealth-rock",
-          "stone-edge"
-        ],
+        "knownMoves": ["taunt", "stealth-rock", "stone-edge"],
         "nickname": "Aerodactyl"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "thunder-wave",
-          "dragon-dance",
-          "waterfall"
-        ],
+        "knownMoves": ["substitute", "thunder-wave", "dragon-dance", "waterfall"],
         "nickname": "Gyarados"
       }
     ],
@@ -34,18 +22,13 @@
       {
         "species": "Azelf",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Azelf"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "waterfall",
-          "dragon-dance"
-        ],
+        "knownMoves": ["waterfall", "dragon-dance"],
         "nickname": "Gyarados"
       },
       {
@@ -57,26 +40,19 @@
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "iron-head"
-        ],
+        "knownMoves": ["iron-head"],
         "nickname": "Jirachi"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "surf"
-        ],
+        "knownMoves": ["calm-mind", "surf"],
         "nickname": "Suicune"
       },
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "mach-punch"
-        ],
+        "knownMoves": ["mach-punch"],
         "nickname": "Infernape"
       }
     ]

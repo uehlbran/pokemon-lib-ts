@@ -2,63 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "SHEER COLD VISIONS",
-    "ChrisPBacon"
-  ],
+  "players": ["SHEER COLD VISIONS", "ChrisPBacon"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "defog",
-          "knock-off",
-          "earthquake"
-        ],
+        "knownMoves": ["defog", "knock-off", "earthquake"],
         "nickname": "Landorus"
       },
       {
         "species": "Slowking-Galar",
         "level": 100,
-        "knownMoves": [
-          "future-sight",
-          "scald"
-        ],
+        "knownMoves": ["future-sight", "scald"],
         "nickname": "Slowking"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "recover"
-        ],
+        "knownMoves": ["knock-off", "recover"],
         "nickname": "Toxapex"
       },
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "ice-shard"
-        ],
+        "knownMoves": ["knock-off", "ice-shard"],
         "nickname": "Weavile"
       },
       {
         "species": "Corviknight",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Corviknight"
       },
       {
         "species": "Blacephalon",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Blacephalon"
       }
     ],
@@ -66,55 +46,37 @@
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "hydro-pump"
-        ],
+        "knownMoves": ["volt-switch", "hydro-pump"],
         "nickname": "Rotom"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "earth-power",
-          "magma-storm"
-        ],
+        "knownMoves": ["stealth-rock", "earth-power", "magma-storm"],
         "nickname": "Heatran"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "draco-meteor",
-          "u-turn"
-        ],
+        "knownMoves": ["shadow-ball", "draco-meteor", "u-turn"],
         "nickname": "Dragapult"
       },
       {
         "species": "Rillaboom",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Rillaboom"
       },
       {
         "species": "Blacephalon",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "overheat"
-        ],
+        "knownMoves": ["shadow-ball", "overheat"],
         "nickname": "Blacephalon"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Landorus"
       }
     ]

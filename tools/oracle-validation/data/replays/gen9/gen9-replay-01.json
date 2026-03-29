@@ -2,63 +2,43 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "chusei20",
-    "ho3nConfirm3d"
-  ],
+  "players": ["chusei20", "ho3nConfirm3d"],
   "teams": [
     [
       {
         "species": "Glimmora",
         "level": 100,
-        "knownMoves": [
-          "mortal-spin"
-        ],
+        "knownMoves": ["mortal-spin"],
         "nickname": "Glimmora"
       },
       {
         "species": "Ting-Lu",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "spikes",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "spikes", "earthquake"],
         "nickname": "Ting-Lu"
       },
       {
         "species": "Kyurem",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "earth-power",
-          "freeze-dry",
-          "protect"
-        ],
+        "knownMoves": ["substitute", "earth-power", "freeze-dry", "protect"],
         "nickname": "Kyurem"
       },
       {
         "species": "Raging Bolt",
         "level": 100,
-        "knownMoves": [
-          "dragon-pulse"
-        ],
+        "knownMoves": ["dragon-pulse"],
         "nickname": "Raging Bolt"
       },
       {
         "species": "Iron Valiant",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Iron Valiant"
       },
       {
         "species": "Moltres",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Moltres"
       }
     ],
@@ -66,40 +46,25 @@
       {
         "species": "Darkrai",
         "level": 100,
-        "knownMoves": [
-          "dark-pulse",
-          "trick",
-          "ice-beam"
-        ],
+        "knownMoves": ["dark-pulse", "trick", "ice-beam"],
         "nickname": "Darkrai"
       },
       {
         "species": "Garganacl",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "salt-cure",
-          "protect"
-        ],
+        "knownMoves": ["stealth-rock", "salt-cure", "protect"],
         "nickname": "Garganacl"
       },
       {
         "species": "Pecharunt",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "recover",
-          "parting-shot"
-        ],
+        "knownMoves": ["toxic", "recover", "parting-shot"],
         "nickname": "Pecharunt"
       },
       {
         "species": "Alomomola",
         "level": 100,
-        "knownMoves": [
-          "flip-turn",
-          "mirror-coat"
-        ],
+        "knownMoves": ["flip-turn", "mirror-coat"],
         "nickname": "Alomomola"
       },
       {
@@ -111,9 +76,7 @@
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin"
-        ],
+        "knownMoves": ["rapid-spin"],
         "nickname": "Great Tusk"
       }
     ]

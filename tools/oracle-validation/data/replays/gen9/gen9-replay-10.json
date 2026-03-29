@@ -2,54 +2,37 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "pink spoon",
-    "sukana09"
-  ],
+  "players": ["pink spoon", "sukana09"],
   "teams": [
     [
       {
         "species": "Bruxish",
         "level": 100,
-        "knownMoves": [
-          "flip-turn",
-          "wave-crash"
-        ],
+        "knownMoves": ["flip-turn", "wave-crash"],
         "nickname": "Bruxish"
       },
       {
         "species": "Iron Treads",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "stealth-rock"
-        ],
+        "knownMoves": ["knock-off", "stealth-rock"],
         "nickname": "Iron Treads"
       },
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Pelipper"
       },
       {
         "species": "Raging Bolt",
         "level": 100,
-        "knownMoves": [
-          "weather-ball"
-        ],
+        "knownMoves": ["weather-ball"],
         "nickname": "Raging Bolt"
       },
       {
         "species": "Overqwil",
         "level": 100,
-        "knownMoves": [
-          "liquidation",
-          "gunk-shot",
-          "crunch"
-        ],
+        "knownMoves": ["liquidation", "gunk-shot", "crunch"],
         "nickname": "Overqwil"
       }
     ],
@@ -57,17 +40,13 @@
       {
         "species": "Darkrai",
         "level": 100,
-        "knownMoves": [
-          "dark-pulse"
-        ],
+        "knownMoves": ["dark-pulse"],
         "nickname": "Void"
       },
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Great Tusk"
       },
       {
@@ -79,20 +58,13 @@
       {
         "species": "Ceruledge",
         "level": 100,
-        "knownMoves": [
-          "poltergeist",
-          "close-combat"
-        ],
+        "knownMoves": ["poltergeist", "close-combat"],
         "nickname": "Ceruledge"
       },
       {
         "species": "Raging Bolt",
         "level": 100,
-        "knownMoves": [
-          "dragon-pulse",
-          "calm-mind",
-          "thunderclap"
-        ],
+        "knownMoves": ["dragon-pulse", "calm-mind", "thunderclap"],
         "nickname": "Raging Bolt"
       },
       {

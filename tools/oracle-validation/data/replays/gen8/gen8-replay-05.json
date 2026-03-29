@@ -2,65 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "whocanunravelme",
-    "Gold D Joseph"
-  ],
+  "players": ["whocanunravelme", "Gold D Joseph"],
   "teams": [
     [
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "protect",
-          "scald",
-          "calm-mind"
-        ],
+        "knownMoves": ["substitute", "protect", "scald", "calm-mind"],
         "nickname": "Suicune"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "scald",
-          "recover"
-        ],
+        "knownMoves": ["scald", "recover"],
         "nickname": "Toxapex"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "moonblast"
-        ],
+        "knownMoves": ["moonblast"],
         "nickname": "Clefable"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "leech-seed"
-        ],
+        "knownMoves": ["leech-seed"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Hippowdon",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "toxic"
-        ],
+        "knownMoves": ["stealth-rock", "toxic"],
         "nickname": "Hippowdon"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "hurricane",
-          "heat-wave",
-          "nasty-plot"
-        ],
+        "knownMoves": ["hurricane", "heat-wave", "nasty-plot"],
         "nickname": "Tornadus"
       }
     ],
@@ -68,60 +46,37 @@
       {
         "species": "Conkeldurr",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "drain-punch",
-          "thunder-punch"
-        ],
+        "knownMoves": ["knock-off", "drain-punch", "thunder-punch"],
         "nickname": "Conkeldurr"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "heat-crash"
-        ],
+        "knownMoves": ["curse", "heat-crash"],
         "nickname": "Snorlax"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "power-up-punch",
-          "ice-punch",
-          "earthquake"
-        ],
+        "knownMoves": ["power-up-punch", "ice-punch", "earthquake"],
         "nickname": "Dragonite"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "destiny-bond"
-        ],
+        "knownMoves": ["shadow-ball", "destiny-bond"],
         "nickname": "Gengar"
       },
       {
         "species": "Entei",
         "level": 100,
-        "knownMoves": [
-          "crunch",
-          "stomping-tantrum",
-          "sacred-fire",
-          "extreme-speed"
-        ],
+        "knownMoves": ["crunch", "stomping-tantrum", "sacred-fire", "extreme-speed"],
         "nickname": "Entei"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "scald",
-          "calm-mind",
-          "mirror-coat"
-        ],
+        "knownMoves": ["scald", "calm-mind", "mirror-coat"],
         "nickname": "Suicune"
       }
     ]

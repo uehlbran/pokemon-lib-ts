@@ -2,21 +2,13 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Max OKLM",
-    "Qwerttyyyy"
-  ],
+  "players": ["Max OKLM", "Qwerttyyyy"],
   "teams": [
     [
       {
         "species": "Froslass",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "spikes",
-          "destiny-bond",
-          "ice-beam"
-        ],
+        "knownMoves": ["taunt", "spikes", "destiny-bond", "ice-beam"],
         "nickname": "Froslass"
       }
     ],
@@ -24,10 +16,7 @@
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "thunder-punch",
-          "mach-punch"
-        ],
+        "knownMoves": ["thunder-punch", "mach-punch"],
         "nickname": "Infernape"
       },
       {
@@ -39,9 +28,7 @@
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "fire-fang"
-        ],
+        "knownMoves": ["fire-fang"],
         "nickname": "Aerodactyl"
       }
     ]

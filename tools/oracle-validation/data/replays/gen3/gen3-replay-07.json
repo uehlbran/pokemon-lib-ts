@@ -2,67 +2,43 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Naryar",
-    "Bad_english_4_ever"
-  ],
+  "players": ["Naryar", "Bad_english_4_ever"],
   "teams": [
     [
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "baton-pass",
-          "wish"
-        ],
+        "knownMoves": ["surf", "baton-pass", "wish"],
         "nickname": "Vaporeon"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "toxic",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunderbolt", "toxic", "hidden-power"],
         "nickname": "Zapdos"
       },
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "explosion"
-        ],
+        "knownMoves": ["earthquake", "explosion"],
         "nickname": "Claydol"
       },
       {
         "species": "Rhydon",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "rock-slide"
-        ],
+        "knownMoves": ["earthquake", "rock-slide"],
         "nickname": "Rhydon"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Blissey"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "dragon-dance",
-          "hidden-power",
-          "earthquake"
-        ],
+        "knownMoves": ["taunt", "dragon-dance", "hidden-power", "earthquake"],
         "nickname": "Gyarados"
       }
     ],
@@ -70,57 +46,37 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "rock-slide"
-        ],
+        "knownMoves": ["rock-slide"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "hidden-power",
-          "earthquake"
-        ],
+        "knownMoves": ["dragon-dance", "hidden-power", "earthquake"],
         "nickname": "Gyarados"
       },
       {
         "species": "Heracross",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "megahorn"
-        ],
+        "knownMoves": ["substitute", "megahorn"],
         "nickname": "Heracross"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "aromatherapy",
-          "seismic-toss"
-        ],
+        "knownMoves": ["thunder-wave", "aromatherapy", "seismic-toss"],
         "nickname": "Blissey"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "giga-drain",
-          "taunt"
-        ],
+        "knownMoves": ["giga-drain", "taunt"],
         "nickname": "Gengar"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "protect",
-          "hydro-pump"
-        ],
+        "knownMoves": ["toxic", "protect", "hydro-pump"],
         "nickname": "Swampert"
       }
     ]

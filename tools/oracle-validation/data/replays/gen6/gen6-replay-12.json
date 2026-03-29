@@ -2,46 +2,31 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "Hhoottddoogg",
-    "jkjkjlkjkjkjlkjlkj"
-  ],
+  "players": ["Hhoottddoogg", "jkjkjlkjkjkjlkjlkj"],
   "teams": [
     [
       {
         "species": "Aron",
         "level": 1,
-        "knownMoves": [
-          "endeavor",
-          "sandstorm",
-          "struggle"
-        ],
+        "knownMoves": ["endeavor", "sandstorm", "struggle"],
         "nickname": "Aron"
       },
       {
         "species": "Druddigon",
         "level": 100,
-        "knownMoves": [
-          "dragon-tail",
-          "glare"
-        ],
+        "knownMoves": ["dragon-tail", "glare"],
         "nickname": "Druddigon"
       },
       {
         "species": "Kecleon",
         "level": 100,
-        "knownMoves": [
-          "shadow-sneak",
-          "sucker-punch"
-        ],
+        "knownMoves": ["shadow-sneak", "sucker-punch"],
         "nickname": "Kecleon"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "leech-seed"
-        ],
+        "knownMoves": ["leech-seed"],
         "nickname": "Serperior"
       },
       {
@@ -53,12 +38,7 @@
       {
         "species": "Hawlucha",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "swords-dance",
-          "drain-punch",
-          "acrobatics"
-        ],
+        "knownMoves": ["substitute", "swords-dance", "drain-punch", "acrobatics"],
         "nickname": "Hawlucha"
       }
     ],
@@ -66,39 +46,25 @@
       {
         "species": "Mew",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "roost",
-          "will-o-wisp",
-          "stealth-rock"
-        ],
+        "knownMoves": ["taunt", "roost", "will-o-wisp", "stealth-rock"],
         "nickname": "do u have"
       },
       {
         "species": "Bisharp",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Bisexual"
       },
       {
         "species": "Chandelure",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "trick",
-          "fire-blast"
-        ],
+        "knownMoves": ["shadow-ball", "trick", "fire-blast"],
         "nickname": "Chandelure"
       },
       {
         "species": "Lopunny",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "return"
-        ],
+        "knownMoves": ["fake-out", "return"],
         "nickname": "Lopunny"
       },
       {
@@ -110,9 +76,7 @@
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch"
-        ],
+        "knownMoves": ["volt-switch"],
         "nickname": "Rotom"
       },
       {

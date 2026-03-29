@@ -2,67 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "24karatsoul",
-    "Eden_ST"
-  ],
+  "players": ["24karatsoul", "Eden_ST"],
   "teams": [
     [
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "substitute",
-          "psychic",
-          "ice-beam"
-        ],
+        "knownMoves": ["lovely-kiss", "substitute", "psychic", "ice-beam"],
         "nickname": "Jynx"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thief",
-          "explosion"
-        ],
+        "knownMoves": ["thief", "explosion"],
         "nickname": "Gengar"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "baton-pass",
-          "surf",
-          "acid-armor"
-        ],
+        "knownMoves": ["baton-pass", "surf", "acid-armor"],
         "nickname": "Vaporeon"
       },
       {
         "species": "Miltank",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Miltank"
       },
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "baton-pass"
-        ],
+        "knownMoves": ["growth", "baton-pass"],
         "nickname": "Espeon"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "whirlwind",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "whirlwind", "hidden-power"],
         "nickname": "Zapdos"
       }
     ],
@@ -70,49 +46,31 @@
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "toxic",
-          "explosion"
-        ],
+        "knownMoves": ["spikes", "toxic", "explosion"],
         "nickname": "Vongola"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "sleep-talk",
-          "rest",
-          "double-edge",
-          "curse"
-        ],
+        "knownMoves": ["sleep-talk", "rest", "double-edge", "curse"],
         "nickname": "Panzarotto"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "roar",
-          "pursuit"
-        ],
+        "knownMoves": ["earthquake", "roar", "pursuit"],
         "nickname": "Roccocò"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder"
-        ],
+        "knownMoves": ["thunder"],
         "nickname": "Cacciatora"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "dynamic-punch"
-        ],
+        "knownMoves": ["thunder", "dynamic-punch"],
         "nickname": "Melograno"
       },
       {

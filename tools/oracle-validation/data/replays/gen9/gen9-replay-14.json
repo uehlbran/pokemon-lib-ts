@@ -2,21 +2,13 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "mn3xd",
-    "Zoak89"
-  ],
+  "players": ["mn3xd", "Zoak89"],
   "teams": [
     [
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "headlong-rush",
-          "rapid-spin",
-          "ice-spinner",
-          "stealth-rock"
-        ],
+        "knownMoves": ["headlong-rush", "rapid-spin", "ice-spinner", "stealth-rock"],
         "nickname": "Uvogin"
       },
       {
@@ -28,18 +20,13 @@
       {
         "species": "Ogerpon-Wellspring",
         "level": 100,
-        "knownMoves": [
-          "ivy-cudgel",
-          "quick-attack"
-        ],
+        "knownMoves": ["ivy-cudgel", "quick-attack"],
         "nickname": "Bisky"
       },
       {
         "species": "Lucario",
         "level": 100,
-        "knownMoves": [
-          "extreme-speed"
-        ],
+        "knownMoves": ["extreme-speed"],
         "nickname": "Leorio"
       }
     ],
@@ -47,21 +34,13 @@
       {
         "species": "Deoxys-Speed",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "stealth-rock",
-          "spikes"
-        ],
+        "knownMoves": ["taunt", "stealth-rock", "spikes"],
         "nickname": "Deoxys"
       },
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "bulk-up",
-          "rapid-spin",
-          "headlong-rush"
-        ],
+        "knownMoves": ["bulk-up", "rapid-spin", "headlong-rush"],
         "nickname": "Great Tusk"
       }
     ]

@@ -89,7 +89,18 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   if (suites.includes("nightly")) {
     // Full suite — all fast suites plus long-running replay/trace/smoke
-    return ["data", "stats", "groundTruth", "damage", "mechanics", "terrain", "gimmicks", "replay", "damageTrace", "smoke"];
+    return [
+      "data",
+      "stats",
+      "groundTruth",
+      "damage",
+      "mechanics",
+      "terrain",
+      "gimmicks",
+      "replay",
+      "damageTrace",
+      "smoke",
+    ];
   }
   if (suites.includes("fast")) {
     // Fast gate — structural checks only, no live battle simulation

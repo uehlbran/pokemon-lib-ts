@@ -2,18 +2,13 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "AmygdalanResponse",
-    "potayo"
-  ],
+  "players": ["AmygdalanResponse", "potayo"],
   "teams": [
     [
       {
         "species": "Iron Treads",
         "level": 100,
-        "knownMoves": [
-          "earth-power"
-        ],
+        "knownMoves": ["earth-power"],
         "nickname": "Iron Treads"
       },
       {
@@ -25,9 +20,7 @@
       {
         "species": "Kingambit",
         "level": 100,
-        "knownMoves": [
-          "sucker-punch"
-        ],
+        "knownMoves": ["sucker-punch"],
         "nickname": "Kingambit"
       }
     ],
@@ -35,10 +28,7 @@
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "tera-blast",
-          "volt-switch"
-        ],
+        "knownMoves": ["tera-blast", "volt-switch"],
         "nickname": "Jolteon"
       },
       {

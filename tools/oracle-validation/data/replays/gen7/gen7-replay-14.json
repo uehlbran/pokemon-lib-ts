@@ -2,36 +2,25 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "twave spammer",
-    "MYAN909"
-  ],
+  "players": ["twave spammer", "MYAN909"],
   "teams": [
     [
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "smart-strike"
-        ],
+        "knownMoves": ["smart-strike"],
         "nickname": "Kartana"
       },
       {
         "species": "Greninja",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "dark-pulse"
-        ],
+        "knownMoves": ["u-turn", "dark-pulse"],
         "nickname": "Greninja"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "earthquake"],
         "nickname": "Excadrill"
       },
       {
@@ -43,17 +32,13 @@
       {
         "species": "Tapu Bulu",
         "level": 100,
-        "knownMoves": [
-          "stone-edge"
-        ],
+        "knownMoves": ["stone-edge"],
         "nickname": "Tapu Bulu"
       },
       {
         "species": "Kyurem-Black",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Kyurem"
       }
     ],
@@ -61,26 +46,19 @@
       {
         "species": "Togekiss",
         "level": 100,
-        "knownMoves": [
-          "aura-sphere"
-        ],
+        "knownMoves": ["aura-sphere"],
         "nickname": "Togekiss"
       },
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "leaf-blade"
-        ],
+        "knownMoves": ["swords-dance", "leaf-blade"],
         "nickname": "Kartana"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "defog"
-        ],
+        "knownMoves": ["defog"],
         "nickname": "Rotom"
       },
       {
@@ -92,18 +70,13 @@
       {
         "species": "Charizard",
         "level": 100,
-        "knownMoves": [
-          "belly-drum",
-          "fire-punch"
-        ],
+        "knownMoves": ["belly-drum", "fire-punch"],
         "nickname": "Charizard"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "rock-slide"
-        ],
+        "knownMoves": ["rock-slide"],
         "nickname": "Landorus"
       }
     ]

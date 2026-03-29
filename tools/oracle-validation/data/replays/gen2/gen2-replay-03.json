@@ -2,72 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "WOODRUSH",
-    "Smimr"
-  ],
+  "players": ["WOODRUSH", "Smimr"],
   "teams": [
     [
       {
         "species": "Electabuzz",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest",
-          "sleep-talk",
-          "pursuit"
-        ],
+        "knownMoves": ["thunder", "rest", "sleep-talk", "pursuit"],
         "nickname": "JOULE"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump",
-          "recover",
-          "psychic"
-        ],
+        "knownMoves": ["hydro-pump", "recover", "psychic"],
         "nickname": "POLARIS"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "sleep-talk",
-          "rest"
-        ],
+        "knownMoves": ["curse", "sleep-talk", "rest"],
         "nickname": "DOZER"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "rock-slide",
-          "roar",
-          "earthquake",
-          "fire-blast"
-        ],
+        "knownMoves": ["rock-slide", "roar", "earthquake", "fire-blast"],
         "nickname": "BANE"
       },
       {
         "species": "Forretress",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "defense-curl",
-          "toxic"
-        ],
+        "knownMoves": ["spikes", "defense-curl", "toxic"],
         "nickname": "LOCKHEED"
       },
       {
         "species": "Victreebel",
         "level": 100,
-        "knownMoves": [
-          "sludge-bomb",
-          "encore",
-          "synthesis"
-        ],
+        "knownMoves": ["sludge-bomb", "encore", "synthesis"],
         "nickname": "PIKE"
       }
     ],
@@ -75,62 +46,37 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest",
-          "sleep-talk",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "rest", "sleep-talk", "hidden-power"],
         "nickname": "Zapdos"
       },
       {
         "species": "Steelix",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "curse"
-        ],
+        "knownMoves": ["earthquake", "curse"],
         "nickname": "Steelix"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder",
-          "psychic",
-          "giga-drain"
-        ],
+        "knownMoves": ["sleep-powder", "psychic", "giga-drain"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "explosion"
-        ],
+        "knownMoves": ["toxic", "explosion"],
         "nickname": "Cloyster"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "earthquake",
-          "double-edge",
-          "rest"
-        ],
+        "knownMoves": ["curse", "earthquake", "double-edge", "rest"],
         "nickname": "Snorlax"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "rest",
-          "sleep-talk",
-          "growth"
-        ],
+        "knownMoves": ["surf", "rest", "sleep-talk", "growth"],
         "nickname": "Vaporeon"
       }
     ]

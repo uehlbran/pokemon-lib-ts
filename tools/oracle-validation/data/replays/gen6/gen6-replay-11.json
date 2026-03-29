@@ -2,18 +2,13 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "brownman4life",
-    "tndnttndnt"
-  ],
+  "players": ["brownman4life", "tndnttndnt"],
   "teams": [
     [
       {
         "species": "Smeargle",
         "level": 100,
-        "knownMoves": [
-          "sticky-web"
-        ],
+        "knownMoves": ["sticky-web"],
         "nickname": "Dead Ass"
       },
       {
@@ -25,40 +20,25 @@
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "Dr Corneilious"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "aerial-ace",
-          "bullet-punch",
-          "swords-dance",
-          "bug-bite"
-        ],
+        "knownMoves": ["aerial-ace", "bullet-punch", "swords-dance", "bug-bite"],
         "nickname": "Buzz"
       },
       {
         "species": "Krookodile",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "fire-fang"
-        ],
+        "knownMoves": ["knock-off", "fire-fang"],
         "nickname": "Croc"
       },
       {
         "species": "Omastar",
         "level": 100,
-        "knownMoves": [
-          "shell-smash",
-          "ancient-power",
-          "hidden-power",
-          "surf"
-        ],
+        "knownMoves": ["shell-smash", "ancient-power", "hidden-power", "surf"],
         "nickname": "Omastar"
       },
       {
@@ -72,55 +52,37 @@
       {
         "species": "Cobalion",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "close-combat",
-          "volt-switch"
-        ],
+        "knownMoves": ["taunt", "close-combat", "volt-switch"],
         "nickname": "Cobalion"
       },
       {
         "species": "Slowbro",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Slowbro"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "knock-off"
-        ],
+        "knownMoves": ["u-turn", "knock-off"],
         "nickname": "Tornadus"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "u-turn"
-        ],
+        "knownMoves": ["stealth-rock", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss"
-        ],
+        "knownMoves": ["seismic-toss"],
         "nickname": "Chansey"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "soft-boiled",
-          "moonblast"
-        ],
+        "knownMoves": ["calm-mind", "soft-boiled", "moonblast"],
         "nickname": "Clefable"
       }
     ]

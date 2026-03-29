@@ -2,69 +2,43 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "blablatr",
-    "fraaaxn"
-  ],
+  "players": ["blablatr", "fraaaxn"],
   "teams": [
     [
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Excadrill"
       },
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "reflect",
-          "light-screen",
-          "wild-charge"
-        ],
+        "knownMoves": ["taunt", "reflect", "light-screen", "wild-charge"],
         "nickname": "Tapu Koko"
       },
       {
         "species": "Hawlucha",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "swords-dance",
-          "high-jump-kick",
-          "acrobatics"
-        ],
+        "knownMoves": ["substitute", "swords-dance", "high-jump-kick", "acrobatics"],
         "nickname": "Hawlucha"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "earthquake"
-        ],
+        "knownMoves": ["dragon-dance", "earthquake"],
         "nickname": "Gyarados"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "quiver-dance",
-          "hidden-power"
-        ],
+        "knownMoves": ["flamethrower", "quiver-dance", "hidden-power"],
         "nickname": "Volcarona"
       },
       {
         "species": "Magearna",
         "level": 100,
-        "knownMoves": [
-          "shift-gear",
-          "ice-beam",
-          "calm-mind"
-        ],
+        "knownMoves": ["shift-gear", "ice-beam", "calm-mind"],
         "nickname": "Magearna"
       }
     ],
@@ -72,58 +46,37 @@
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "power-whip",
-          "leech-seed",
-          "spikes",
-          "gyro-ball"
-        ],
+        "knownMoves": ["power-whip", "leech-seed", "spikes", "gyro-ball"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "defog"
-        ],
+        "knownMoves": ["defog"],
         "nickname": "Landorus"
       },
       {
         "species": "Kommo-o",
         "level": 100,
-        "knownMoves": [
-          "roar",
-          "drain-punch",
-          "stealth-rock"
-        ],
+        "knownMoves": ["roar", "drain-punch", "stealth-rock"],
         "nickname": "Kommo-o"
       },
       {
         "species": "Mawile",
         "level": 100,
-        "knownMoves": [
-          "thunder-punch",
-          "sucker-punch"
-        ],
+        "knownMoves": ["thunder-punch", "sucker-punch"],
         "nickname": "Mawile"
       },
       {
         "species": "Cresselia",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "moonlight",
-          "psyshock",
-          "ice-beam"
-        ],
+        "knownMoves": ["calm-mind", "moonlight", "psyshock", "ice-beam"],
         "nickname": "Cresselia"
       },
       {
         "species": "Greninja",
         "level": 100,
-        "knownMoves": [
-          "hydro-vortex"
-        ],
+        "knownMoves": ["hydro-vortex"],
         "nickname": "Greninja"
       }
     ]

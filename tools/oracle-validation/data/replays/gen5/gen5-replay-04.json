@@ -2,37 +2,25 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Max OKLM",
-    "zts602600"
-  ],
+  "players": ["Max OKLM", "zts602600"],
   "teams": [
     [
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "bullet-seed"
-        ],
+        "knownMoves": ["bullet-seed"],
         "nickname": "Breloom"
       },
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "light-screen",
-          "psychic",
-          "reflect"
-        ],
+        "knownMoves": ["toxic", "light-screen", "psychic", "reflect"],
         "nickname": "Espeon"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance"
-        ],
+        "knownMoves": ["dragon-dance"],
         "nickname": "Tyranitar"
       }
     ],
@@ -46,18 +34,13 @@
       {
         "species": "Tangrowth",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "earthquake"
-        ],
+        "knownMoves": ["toxic", "earthquake"],
         "nickname": "Tangrowth"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "surf"
-        ],
+        "knownMoves": ["surf"],
         "nickname": "Latias"
       }
     ]

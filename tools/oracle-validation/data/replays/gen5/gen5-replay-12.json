@@ -2,46 +2,31 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "BWLT2 Chef",
-    "laotianprince"
-  ],
+  "players": ["BWLT2 Chef", "laotianprince"],
   "teams": [
     [
       {
         "species": "Keldeo-Resolute",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "secret-sword"
-        ],
+        "knownMoves": ["surf", "secret-sword"],
         "nickname": "Keldeo"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "earthquake",
-          "hidden-power"
-        ],
+        "knownMoves": ["u-turn", "earthquake", "hidden-power"],
         "nickname": "Landorus"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump",
-          "hidden-power"
-        ],
+        "knownMoves": ["hydro-pump", "hidden-power"],
         "nickname": "Starmie"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Jirachi"
       },
       {
@@ -53,9 +38,7 @@
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "dragon-pulse"
-        ],
+        "knownMoves": ["dragon-pulse"],
         "nickname": "Latios"
       }
     ],
@@ -69,43 +52,31 @@
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Starmie"
       },
       {
         "species": "Salamence",
         "level": 100,
-        "knownMoves": [
-          "dragon-claw",
-          "outrage"
-        ],
+        "knownMoves": ["dragon-claw", "outrage"],
         "nickname": "Salamence"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "grass-knot"
-        ],
+        "knownMoves": ["grass-knot"],
         "nickname": "Jirachi"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "surf"
-        ],
+        "knownMoves": ["surf"],
         "nickname": "Latios"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "bullet-punch"
-        ],
+        "knownMoves": ["swords-dance", "bullet-punch"],
         "nickname": "Scizor"
       }
     ]

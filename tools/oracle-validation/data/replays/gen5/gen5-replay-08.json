@@ -2,29 +2,19 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "BWLT2 Oathkeeper",
-    "BWLT2 MeEsSm"
-  ],
+  "players": ["BWLT2 Oathkeeper", "BWLT2 MeEsSm"],
   "teams": [
     [
       {
         "species": "Thundurus-Therian",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "nasty-plot",
-          "thunder"
-        ],
+        "knownMoves": ["hidden-power", "nasty-plot", "thunder"],
         "nickname": "Nrvnsqr"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "spikes"
-        ],
+        "knownMoves": ["stealth-rock", "spikes"],
         "nickname": "Roa"
       },
       {
@@ -36,28 +26,19 @@
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Satsujinki"
       },
       {
         "species": "Keldeo",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump"
-        ],
+        "knownMoves": ["hydro-pump"],
         "nickname": "Ciel"
       },
       {
         "species": "Tentacruel",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "scald",
-          "protect",
-          "rapid-spin"
-        ],
+        "knownMoves": ["toxic", "scald", "protect", "rapid-spin"],
         "nickname": "Tentacruel"
       }
     ],
@@ -65,45 +46,31 @@
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "taunt"
-        ],
+        "knownMoves": ["stealth-rock", "taunt"],
         "nickname": "Skarmory"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "draco-meteor"
-        ],
+        "knownMoves": ["draco-meteor"],
         "nickname": "Latios"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "psyshock"
-        ],
+        "knownMoves": ["hidden-power", "psyshock"],
         "nickname": "Alakazam"
       },
       {
         "species": "Jellicent",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "recover"
-        ],
+        "knownMoves": ["will-o-wisp", "recover"],
         "nickname": "Jellicent"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "outrage"
-        ],
+        "knownMoves": ["earthquake", "outrage"],
         "nickname": "Garchomp"
       }
     ]

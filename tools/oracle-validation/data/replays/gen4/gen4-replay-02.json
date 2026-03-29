@@ -2,64 +2,43 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "MI_S1999",
-    "BEMON_G5"
-  ],
+  "players": ["MI_S1999", "BEMON_G5"],
   "teams": [
     [
       {
         "species": "Togekiss",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "grass-knot"
-        ],
+        "knownMoves": ["flamethrower", "grass-knot"],
         "nickname": "Togekiss"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "GambÃ³n"
       },
       {
         "species": "Lucario",
         "level": 100,
-        "knownMoves": [
-          "thunder-punch",
-          "extreme-speed"
-        ],
+        "knownMoves": ["thunder-punch", "extreme-speed"],
         "nickname": "Spartan"
       },
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "flare-blitz",
-          "close-combat"
-        ],
+        "knownMoves": ["flare-blitz", "close-combat"],
         "nickname": "Infernape"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "crunch"
-        ],
+        "knownMoves": ["ice-punch", "crunch"],
         "nickname": "Leonidas"
       },
       {
         "species": "Gastrodon",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "surf",
-          "recover"
-        ],
+        "knownMoves": ["ice-beam", "surf", "recover"],
         "nickname": "Es Perma"
       }
     ],
@@ -67,54 +46,37 @@
       {
         "species": "Crobat",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Boca tÃºnel"
       },
       {
         "species": "Feraligatr",
         "level": 100,
-        "knownMoves": [
-          "waterfall",
-          "swords-dance",
-          "aqua-jet"
-        ],
+        "knownMoves": ["waterfall", "swords-dance", "aqua-jet"],
         "nickname": "STIFENWOLF"
       },
       {
         "species": "Gallade",
         "level": 100,
-        "knownMoves": [
-          "bulk-up",
-          "shadow-sneak"
-        ],
+        "knownMoves": ["bulk-up", "shadow-sneak"],
         "nickname": "GALLADE jr"
       },
       {
         "species": "Gastrodon-East",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "ice-beam"
-        ],
+        "knownMoves": ["surf", "ice-beam"],
         "nickname": "Limako"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "bug-bite"
-        ],
+        "knownMoves": ["swords-dance", "bug-bite"],
         "nickname": "Genos"
       },
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "fire-blast"
-        ],
+        "knownMoves": ["fire-blast"],
         "nickname": "Makko"
       }
     ]

@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "Acetylaldehyde",
-    "Ban Manaphy"
-  ],
+  "players": ["Acetylaldehyde", "Ban Manaphy"],
   "teams": [
     [
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "psychic"
-        ],
+        "knownMoves": ["thunder-wave", "psychic"],
         "nickname": "Alakazam"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "blizzard",
-          "crabhammer",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "blizzard", "crabhammer", "thunderbolt"],
         "nickname": "Starmie"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "explosion"
-        ],
+        "knownMoves": ["psychic", "explosion"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "crabhammer",
-          "clamp",
-          "explosion"
-        ],
+        "knownMoves": ["crabhammer", "clamp", "explosion"],
         "nickname": "Cloyster"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "explosion"
-        ],
+        "knownMoves": ["thunderbolt", "explosion"],
         "nickname": "Jolteon"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "slash"
-        ],
+        "knownMoves": ["slash"],
         "nickname": "Tauros"
       }
     ],
@@ -69,36 +46,25 @@
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "explosion"
-        ],
+        "knownMoves": ["thunder-wave", "explosion"],
         "nickname": "Jolteon"
       },
       {
         "species": "Lapras",
         "level": 100,
-        "knownMoves": [
-          "blizzard",
-          "thunderbolt"
-        ],
+        "knownMoves": ["blizzard", "thunderbolt"],
         "nickname": "Lapras"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder"
-        ],
+        "knownMoves": ["sleep-powder"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Articuno",
         "level": 100,
-        "knownMoves": [
-          "blizzard",
-          "agility"
-        ],
+        "knownMoves": ["blizzard", "agility"],
         "nickname": "Articuno"
       },
       {
@@ -110,9 +76,7 @@
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "slash"
-        ],
+        "knownMoves": ["slash"],
         "nickname": "Tauros"
       }
     ]

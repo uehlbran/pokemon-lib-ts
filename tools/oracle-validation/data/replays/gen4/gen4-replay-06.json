@@ -2,36 +2,25 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "Ransom_II_Regal",
-    "autumn912"
-  ],
+  "players": ["Ransom_II_Regal", "autumn912"],
   "teams": [
     [
       {
         "species": "Scyther",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Scyther"
       },
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "protect"
-        ],
+        "knownMoves": ["protect"],
         "nickname": "Breloom"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["surf", "rest", "sleep-talk"],
         "nickname": "Suicune"
       },
       {
@@ -43,9 +32,7 @@
       {
         "species": "Rotom-Mow",
         "level": 100,
-        "knownMoves": [
-          "leaf-storm"
-        ],
+        "knownMoves": ["leaf-storm"],
         "nickname": "Rotom"
       }
     ],
@@ -53,20 +40,13 @@
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "ice-beam"
-        ],
+        "knownMoves": ["stealth-rock", "ice-beam"],
         "nickname": "Swampert"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "psychic",
-          "iron-head"
-        ],
+        "knownMoves": ["thunder", "psychic", "iron-head"],
         "nickname": "Jirachi"
       },
       {

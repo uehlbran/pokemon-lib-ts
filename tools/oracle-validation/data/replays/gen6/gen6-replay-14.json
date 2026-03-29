@@ -2,53 +2,37 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "merlin8",
-    "otumed"
-  ],
+  "players": ["merlin8", "otumed"],
   "teams": [
     [
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin"
-        ],
+        "knownMoves": ["rapid-spin"],
         "nickname": "Excadrill"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "will-o-wisp",
-          "trick"
-        ],
+        "knownMoves": ["volt-switch", "will-o-wisp", "trick"],
         "nickname": "Rotom"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "pursuit",
-          "bullet-punch"
-        ],
+        "knownMoves": ["pursuit", "bullet-punch"],
         "nickname": "Metagross"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "glare"
-        ],
+        "knownMoves": ["glare"],
         "nickname": "Serperior"
       },
       {
         "species": "Volcanion",
         "level": 100,
-        "knownMoves": [
-          "steam-eruption"
-        ],
+        "knownMoves": ["steam-eruption"],
         "nickname": "Volcanion"
       },
       {
@@ -60,10 +44,7 @@
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn"
-        ],
+        "knownMoves": ["knock-off", "u-turn"],
         "nickname": "Tornadus"
       }
     ],
@@ -71,55 +52,37 @@
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "toxic",
-          "earthquake",
-          "rock-tomb"
-        ],
+        "knownMoves": ["stealth-rock", "toxic", "earthquake", "rock-tomb"],
         "nickname": "Garchomp"
       },
       {
         "species": "Gardevoir",
         "level": 100,
-        "knownMoves": [
-          "hyper-voice"
-        ],
+        "knownMoves": ["hyper-voice"],
         "nickname": "Gardevoir"
       },
       {
         "species": "Thundurus",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "focus-blast",
-          "thunder-wave"
-        ],
+        "knownMoves": ["volt-switch", "focus-blast", "thunder-wave"],
         "nickname": "Thundurus"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "giga-drain"
-        ],
+        "knownMoves": ["flamethrower", "giga-drain"],
         "nickname": "Volcarona"
       },
       {
         "species": "Bisharp",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Bisharp"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Latias"
       }
     ]

@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "green_lewis",
-    "JacPot"
-  ],
+  "players": ["green_lewis", "JacPot"],
   "teams": [
     [
       {
@@ -17,11 +14,7 @@
       {
         "species": "Lilligant",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "hidden-power",
-          "sleep-powder"
-        ],
+        "knownMoves": ["quiver-dance", "hidden-power", "sleep-powder"],
         "nickname": "Lilligant"
       }
     ],
@@ -29,9 +22,7 @@
       {
         "species": "Poliwrath",
         "level": 100,
-        "knownMoves": [
-          "waterfall"
-        ],
+        "knownMoves": ["waterfall"],
         "nickname": "Poliwrath"
       },
       {
@@ -43,9 +34,7 @@
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "iron-head"
-        ],
+        "knownMoves": ["iron-head"],
         "nickname": "Aerodactyl"
       }
     ]

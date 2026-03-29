@@ -2,61 +2,43 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "starstone",
-    "soaringhawk"
-  ],
+  "players": ["starstone", "soaringhawk"],
   "teams": [
     [
       {
         "species": "Medicham",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "rock-slide"
-        ],
+        "knownMoves": ["fake-out", "rock-slide"],
         "nickname": "Medicham"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "seismic-toss"
-        ],
+        "knownMoves": ["thunder-wave", "seismic-toss"],
         "nickname": "Blissey"
       },
       {
         "species": "Forretress",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Forretress"
       },
       {
         "species": "Dugtrio",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Dugtrio"
       },
       {
         "species": "Salamence",
         "level": 100,
-        "knownMoves": [
-          "dragon-claw"
-        ],
+        "knownMoves": ["dragon-claw"],
         "nickname": "Salamence"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "return"
-        ],
+        "knownMoves": ["curse", "return"],
         "nickname": "Snorlax"
       }
     ],
@@ -64,57 +46,37 @@
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "destiny-bond",
-          "fire-punch",
-          "ice-punch"
-        ],
+        "knownMoves": ["destiny-bond", "fire-punch", "ice-punch"],
         "nickname": "Mechamaru"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "return",
-          "self-destruct"
-        ],
+        "knownMoves": ["return", "self-destruct"],
         "nickname": "Mr.Rotondo"
       },
       {
         "species": "Regirock",
         "level": 100,
-        "knownMoves": [
-          "superpower",
-          "earthquake"
-        ],
+        "knownMoves": ["superpower", "earthquake"],
         "nickname": "UN:UN:UN:"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "meteor-mash"
-        ],
+        "knownMoves": ["meteor-mash"],
         "nickname": "Gayrados"
       },
       {
         "species": "Salamence",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "rock-slide"
-        ],
+        "knownMoves": ["dragon-dance", "rock-slide"],
         "nickname": "Dr.Mence"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "rest",
-          "sleep-talk",
-          "surf"
-        ],
+        "knownMoves": ["calm-mind", "rest", "sleep-talk", "surf"],
         "nickname": "Cobainune"
       }
     ]

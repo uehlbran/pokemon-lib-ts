@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Naryar",
-    "adv advocate"
-  ],
+  "players": ["Naryar", "adv advocate"],
   "teams": [
     [
       {
         "species": "Machamp",
         "level": 100,
-        "knownMoves": [
-          "bulk-up"
-        ],
+        "knownMoves": ["bulk-up"],
         "nickname": "Macha(d)mp"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "giga-drain"
-        ],
+        "knownMoves": ["leech-seed", "giga-drain"],
         "nickname": "parasite"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "calm-mind",
-          "hidden-power",
-          "thunderbolt"
-        ],
+        "knownMoves": ["substitute", "calm-mind", "hidden-power", "thunderbolt"],
         "nickname": "blissey go away"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "thief",
-          "spikes",
-          "toxic"
-        ],
+        "knownMoves": ["thief", "spikes", "toxic"],
         "nickname": "covetous"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "taunt",
-          "thunder-wave"
-        ],
+        "knownMoves": ["hidden-power", "taunt", "thunder-wave"],
         "nickname": "no dd ?"
       },
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "multipurpose"
       }
     ],
@@ -69,60 +46,37 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "earthquake"
-        ],
+        "knownMoves": ["double-edge", "earthquake"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "hypnosis"
-        ],
+        "knownMoves": ["hypnosis"],
         "nickname": "Gengar"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump",
-          "calm-mind",
-          "ice-beam"
-        ],
+        "knownMoves": ["hydro-pump", "calm-mind", "ice-beam"],
         "nickname": "Suicune"
       },
       {
         "species": "Registeel",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss",
-          "thunder-wave",
-          "explosion"
-        ],
+        "knownMoves": ["seismic-toss", "thunder-wave", "explosion"],
         "nickname": "Registeel"
       },
       {
         "species": "Salamence",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "fire-blast",
-          "rock-slide",
-          "brick-break"
-        ],
+        "knownMoves": ["dragon-dance", "fire-blast", "rock-slide", "brick-break"],
         "nickname": "Salamence"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "substitute",
-          "endeavor",
-          "hydro-pump"
-        ],
+        "knownMoves": ["ice-beam", "substitute", "endeavor", "hydro-pump"],
         "nickname": "Swampert"
       }
     ]

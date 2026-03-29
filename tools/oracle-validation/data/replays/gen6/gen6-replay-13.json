@@ -2,47 +2,31 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "MrGarrels",
-    "otumed"
-  ],
+  "players": ["MrGarrels", "otumed"],
   "teams": [
     [
       {
         "species": "Hoopa",
         "level": 100,
-        "knownMoves": [
-          "trick",
-          "focus-blast",
-          "hyperspace-hole"
-        ],
+        "knownMoves": ["trick", "focus-blast", "hyperspace-hole"],
         "nickname": "Hoopa"
       },
       {
         "species": "Azumarill",
         "level": 100,
-        "knownMoves": [
-          "belly-drum",
-          "aqua-jet"
-        ],
+        "knownMoves": ["belly-drum", "aqua-jet"],
         "nickname": "Azumarill"
       },
       {
         "species": "Shuckle",
         "level": 100,
-        "knownMoves": [
-          "encore",
-          "sticky-web"
-        ],
+        "knownMoves": ["encore", "sticky-web"],
         "nickname": "Shuckle"
       },
       {
         "species": "Bisharp",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "sucker-punch"
-        ],
+        "knownMoves": ["swords-dance", "sucker-punch"],
         "nickname": "Bisharp"
       }
     ],
@@ -50,17 +34,13 @@
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "Volcarona"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Latias"
       },
       {
@@ -72,10 +52,7 @@
       {
         "species": "Gardevoir",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "hyper-voice"
-        ],
+        "knownMoves": ["taunt", "hyper-voice"],
         "nickname": "Gardevoir"
       },
       {
@@ -93,9 +70,7 @@
       {
         "species": "Thundurus",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Thundurus"
       }
     ]

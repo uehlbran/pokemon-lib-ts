@@ -2,58 +2,37 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "nanox'3",
-    "The_lioncats"
-  ],
+  "players": ["nanox'3", "The_lioncats"],
   "teams": [
     [
       {
         "species": "Abomasnow",
         "level": 100,
-        "knownMoves": [
-          "blizzard",
-          "leech-seed",
-          "protect"
-        ],
+        "knownMoves": ["blizzard", "leech-seed", "protect"],
         "nickname": "Abomasnow"
       },
       {
         "species": "Walrein",
         "level": 100,
-        "knownMoves": [
-          "stockpile",
-          "ice-beam",
-          "protect",
-          "surf"
-        ],
+        "knownMoves": ["stockpile", "ice-beam", "protect", "surf"],
         "nickname": "Walrein"
       },
       {
         "species": "Sandslash-Alola",
         "level": 100,
-        "knownMoves": [
-          "iron-head",
-          "earthquake"
-        ],
+        "knownMoves": ["iron-head", "earthquake"],
         "nickname": "Sandslash"
       },
       {
         "species": "Vanilluxe",
         "level": 100,
-        "knownMoves": [
-          "light-screen"
-        ],
+        "knownMoves": ["light-screen"],
         "nickname": "Vanilluxe"
       },
       {
         "species": "Glalie",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "secret-power",
-          "double-edge"
-        ],
+        "knownMoves": ["substitute", "secret-power", "double-edge"],
         "nickname": "Glalie"
       }
     ],
@@ -61,40 +40,25 @@
       {
         "species": "Gardevoir",
         "level": 100,
-        "knownMoves": [
-          "psyshock",
-          "draining-kiss"
-        ],
+        "knownMoves": ["psyshock", "draining-kiss"],
         "nickname": "Gardevoir"
       },
       {
         "species": "Florges-White",
         "level": 100,
-        "knownMoves": [
-          "giga-drain",
-          "moonblast"
-        ],
+        "knownMoves": ["giga-drain", "moonblast"],
         "nickname": "Florges"
       },
       {
         "species": "Sylveon",
         "level": 100,
-        "knownMoves": [
-          "draining-kiss",
-          "psyshock",
-          "iron-tail"
-        ],
+        "knownMoves": ["draining-kiss", "psyshock", "iron-tail"],
         "nickname": "Sylveon"
       },
       {
         "species": "Mimikyu",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "giga-drain",
-          "play-rough",
-          "shadow-claw"
-        ],
+        "knownMoves": ["shadow-ball", "giga-drain", "play-rough", "shadow-claw"],
         "nickname": "Mimikyu"
       },
       {
@@ -112,10 +76,7 @@
       {
         "species": "Primarina",
         "level": 100,
-        "knownMoves": [
-          "moonblast",
-          "liquidation"
-        ],
+        "knownMoves": ["moonblast", "liquidation"],
         "nickname": "Primarina"
       }
     ]

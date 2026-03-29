@@ -2,63 +2,43 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "mrnegigeneration3k",
-    "Max OKLM"
-  ],
+  "players": ["mrnegigeneration3k", "Max OKLM"],
   "teams": [
     [
       {
         "species": "Terrakion",
         "level": 100,
-        "knownMoves": [
-          "stone-edge"
-        ],
+        "knownMoves": ["stone-edge"],
         "nickname": "Terrakion"
       },
       {
         "species": "Keldeo",
         "level": 100,
-        "knownMoves": [
-          "icy-wind",
-          "calm-mind",
-          "hydro-pump"
-        ],
+        "knownMoves": ["icy-wind", "calm-mind", "hydro-pump"],
         "nickname": "Keldeo"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "bullet-punch"
-        ],
+        "knownMoves": ["swords-dance", "bullet-punch"],
         "nickname": "Scizor"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "draco-meteor"
-        ],
+        "knownMoves": ["draco-meteor"],
         "nickname": "Latios"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "bug-buzz",
-          "fire-blast"
-        ],
+        "knownMoves": ["quiver-dance", "bug-buzz", "fire-blast"],
         "nickname": "Volcarona"
       }
     ],
@@ -66,21 +46,13 @@
       {
         "species": "Froslass",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "spikes",
-          "destiny-bond"
-        ],
+        "knownMoves": ["taunt", "spikes", "destiny-bond"],
         "nickname": "Froslass"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "extreme-speed",
-          "earthquake"
-        ],
+        "knownMoves": ["dragon-dance", "extreme-speed", "earthquake"],
         "nickname": "Dragonite"
       },
       {
@@ -92,10 +64,7 @@
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "hydro-pump"
-        ],
+        "knownMoves": ["thunderbolt", "hydro-pump"],
         "nickname": "Starmie"
       },
       {
@@ -107,9 +76,7 @@
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "low-sweep"
-        ],
+        "knownMoves": ["low-sweep"],
         "nickname": "Breloom"
       }
     ]

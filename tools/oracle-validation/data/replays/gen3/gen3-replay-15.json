@@ -2,45 +2,31 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Eggydillo",
-    "darkrainydog"
-  ],
+  "players": ["Eggydillo", "darkrainydog"],
   "teams": [
     [
       {
         "species": "Dunsparce",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "calm-mind"
-        ],
+        "knownMoves": ["ice-beam", "calm-mind"],
         "nickname": "Dunsparce"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "thunderbolt",
-          "ice-punch"
-        ],
+        "knownMoves": ["will-o-wisp", "thunderbolt", "ice-punch"],
         "nickname": "Gengar"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "focus-punch"
-        ],
+        "knownMoves": ["focus-punch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Blissey"
       },
       {
@@ -60,40 +46,25 @@
       {
         "species": "Marowak",
         "level": 100,
-        "knownMoves": [
-          "bonemerang",
-          "rock-slide",
-          "protect"
-        ],
+        "knownMoves": ["bonemerang", "rock-slide", "protect"],
         "nickname": "Marowak"
       },
       {
         "species": "Kangaskhan",
         "level": 100,
-        "knownMoves": [
-          "rest",
-          "crush-claw",
-          "shadow-ball"
-        ],
+        "knownMoves": ["rest", "crush-claw", "shadow-ball"],
         "nickname": "Kangaskhan"
       },
       {
         "species": "Ludicolo",
         "level": 100,
-        "knownMoves": [
-          "razor-leaf",
-          "rain-dance",
-          "hydro-pump"
-        ],
+        "knownMoves": ["razor-leaf", "rain-dance", "hydro-pump"],
         "nickname": "Ludicolo"
       },
       {
         "species": "Swellow",
         "level": 100,
-        "knownMoves": [
-          "focus-energy",
-          "baton-pass"
-        ],
+        "knownMoves": ["focus-energy", "baton-pass"],
         "nickname": "Swellow"
       }
     ]

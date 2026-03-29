@@ -2,49 +2,31 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Fakes",
-    "gorgie"
-  ],
+  "players": ["Fakes", "gorgie"],
   "teams": [
     [
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "clamp",
-          "screech",
-          "explosion"
-        ],
+        "knownMoves": ["spikes", "clamp", "screech", "explosion"],
         "nickname": "Cloyster"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "sleep-talk",
-          "rest",
-          "earthquake"
-        ],
+        "knownMoves": ["double-edge", "sleep-talk", "rest", "earthquake"],
         "nickname": "Snorlax"
       },
       {
         "species": "Steelix",
         "level": 100,
-        "knownMoves": [
-          "roar",
-          "explosion"
-        ],
+        "knownMoves": ["roar", "explosion"],
         "nickname": "Steelix"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Starmie"
       },
       {
@@ -64,57 +46,37 @@
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "ice-beam"
-        ],
+        "knownMoves": ["substitute", "ice-beam"],
         "nickname": "Jynx"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "surf",
-          "explosion"
-        ],
+        "knownMoves": ["spikes", "surf", "explosion"],
         "nickname": "Cloyster"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder"
-        ],
+        "knownMoves": ["thunder"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "rest",
-          "sleep-talk",
-          "earthquake"
-        ],
+        "knownMoves": ["double-edge", "rest", "sleep-talk", "earthquake"],
         "nickname": "Snorlax"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "explosion"
-        ],
+        "knownMoves": ["explosion"],
         "nickname": "Gengar"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "thunderbolt",
-          "baton-pass"
-        ],
+        "knownMoves": ["growth", "thunderbolt", "baton-pass"],
         "nickname": "Jolteon"
       }
     ]

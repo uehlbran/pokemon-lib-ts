@@ -2,56 +2,37 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "GuduleLebrave",
-    "li therians"
-  ],
+  "players": ["GuduleLebrave", "li therians"],
   "teams": [
     [
       {
         "species": "Araquanid",
         "level": 100,
-        "knownMoves": [
-          "sticky-web",
-          "surf",
-          "scary-face",
-          "ice-beam"
-        ],
+        "knownMoves": ["sticky-web", "surf", "scary-face", "ice-beam"],
         "nickname": "Araquanid"
       },
       {
         "species": "Enamorus",
         "level": 100,
-        "knownMoves": [
-          "moonblast"
-        ],
+        "knownMoves": ["moonblast"],
         "nickname": "Enamorus"
       },
       {
         "species": "Gholdengo",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "nasty-plot",
-          "make-it-rain"
-        ],
+        "knownMoves": ["shadow-ball", "nasty-plot", "make-it-rain"],
         "nickname": "Gholdengo"
       },
       {
         "species": "Glimmora",
         "level": 100,
-        "knownMoves": [
-          "power-gem"
-        ],
+        "knownMoves": ["power-gem"],
         "nickname": "Glimmora"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "gravity"
-        ],
+        "knownMoves": ["earthquake", "gravity"],
         "nickname": "Landorus"
       }
     ],
@@ -59,39 +40,25 @@
       {
         "species": "Ribombee",
         "level": 100,
-        "knownMoves": [
-          "stun-spore",
-          "sticky-web",
-          "skill-swap"
-        ],
+        "knownMoves": ["stun-spore", "sticky-web", "skill-swap"],
         "nickname": "Ribombee"
       },
       {
         "species": "Ting-Lu",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "whirlwind",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "whirlwind", "earthquake"],
         "nickname": "Ting-Lu"
       },
       {
         "species": "Ogerpon-Wellspring",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "taunt",
-          "ivy-cudgel"
-        ],
+        "knownMoves": ["u-turn", "taunt", "ivy-cudgel"],
         "nickname": "Ogerpon"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance"
-        ],
+        "knownMoves": ["dragon-dance"],
         "nickname": "Dragonite"
       },
       {
@@ -103,9 +70,7 @@
       {
         "species": "Gholdengo",
         "level": 100,
-        "knownMoves": [
-          "make-it-rain"
-        ],
+        "knownMoves": ["make-it-rain"],
         "nickname": "Gholdengo"
       }
     ]

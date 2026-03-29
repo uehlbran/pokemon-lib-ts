@@ -2,53 +2,37 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Dat_Boi012555",
-    "Lowelogaming"
-  ],
+  "players": ["Dat_Boi012555", "Lowelogaming"],
   "teams": [
     [
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "rock-slide"
-        ],
+        "knownMoves": ["dragon-dance", "rock-slide"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "roar"
-        ],
+        "knownMoves": ["spikes", "roar"],
         "nickname": "Skarmory"
       },
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Claydol"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "thunderbolt"
-        ],
+        "knownMoves": ["calm-mind", "thunderbolt"],
         "nickname": "Blissey"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "meteor-mash"
-        ],
+        "knownMoves": ["meteor-mash"],
         "nickname": "Metagross"
       },
       {
@@ -62,49 +46,31 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "roar",
-          "baton-pass"
-        ],
+        "knownMoves": ["substitute", "roar", "baton-pass"],
         "nickname": "Zapdos"
       },
       {
         "species": "Dugtrio",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Dugtrio"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "rapid-spin",
-          "recover"
-        ],
+        "knownMoves": ["thunder-wave", "rapid-spin", "recover"],
         "nickname": "Starmie"
       },
       {
         "species": "Magneton",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "protect"
-        ],
+        "knownMoves": ["thunderbolt", "protect"],
         "nickname": "Magneton"
       },
       {
         "species": "Heracross",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "brick-break",
-          "megahorn",
-          "swords-dance"
-        ],
+        "knownMoves": ["substitute", "brick-break", "megahorn", "swords-dance"],
         "nickname": "Heracross"
       }
     ]

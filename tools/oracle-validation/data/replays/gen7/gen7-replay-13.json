@@ -2,47 +2,31 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "ALEFTKJ",
-    "MooN.9967"
-  ],
+  "players": ["ALEFTKJ", "MooN.9967"],
   "teams": [
     [
       {
         "species": "Lopunny",
         "level": 100,
-        "knownMoves": [
-          "return",
-          "drain-punch",
-          "quick-attack"
-        ],
+        "knownMoves": ["return", "drain-punch", "quick-attack"],
         "nickname": "Lopunny"
       },
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "leaf-blade",
-          "smart-strike",
-          "sacred-sword"
-        ],
+        "knownMoves": ["swords-dance", "leaf-blade", "smart-strike", "sacred-sword"],
         "nickname": "Kartana"
       },
       {
         "species": "Milotic",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Milotic"
       },
       {
         "species": "Arcanine",
         "level": 100,
-        "knownMoves": [
-          "flare-blitz"
-        ],
+        "knownMoves": ["flare-blitz"],
         "nickname": "Arcanine"
       },
       {
@@ -60,12 +44,7 @@
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "icicle-crash",
-          "subzero-slammer",
-          "ice-shard"
-        ],
+        "knownMoves": ["fake-out", "icicle-crash", "subzero-slammer", "ice-shard"],
         "nickname": "Weavile"
       }
     ],
@@ -73,35 +52,25 @@
       {
         "species": "Beedrill",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "drill-run"
-        ],
+        "knownMoves": ["u-turn", "drill-run"],
         "nickname": "Beedrill"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "leech-seed"
-        ],
+        "knownMoves": ["leech-seed"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Gliscor",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "earthquake"
-        ],
+        "knownMoves": ["toxic", "earthquake"],
         "nickname": "Gliscor"
       },
       {
         "species": "Blacephalon",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "Blacephalon"
       },
       {
@@ -113,17 +82,13 @@
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Tapu Koko"
       },
       {
         "species": "Greninja",
         "level": 100,
-        "knownMoves": [
-          "water-shuriken"
-        ],
+        "knownMoves": ["water-shuriken"],
         "nickname": "Greninja"
       }
     ]

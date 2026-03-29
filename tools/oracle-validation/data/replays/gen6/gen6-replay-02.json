@@ -2,68 +2,43 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "matttt0009",
-    "B3313"
-  ],
+  "players": ["matttt0009", "B3313"],
   "teams": [
     [
       {
         "species": "Manectric",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "flamethrower",
-          "hidden-power"
-        ],
+        "knownMoves": ["volt-switch", "flamethrower", "hidden-power"],
         "nickname": "Manectric"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss",
-          "soft-boiled",
-          "thunder-wave"
-        ],
+        "knownMoves": ["seismic-toss", "soft-boiled", "thunder-wave"],
         "nickname": "Chansey"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Skarmory"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "magma-storm",
-          "taunt",
-          "flash-cannon",
-          "stealth-rock"
-        ],
+        "knownMoves": ["magma-storm", "taunt", "flash-cannon", "stealth-rock"],
         "nickname": "Heatran"
       },
       {
         "species": "Tangrowth",
         "level": 100,
-        "knownMoves": [
-          "giga-drain",
-          "knock-off",
-          "toxic"
-        ],
+        "knownMoves": ["giga-drain", "knock-off", "toxic"],
         "nickname": "Tangrowth"
       },
       {
         "species": "Gastrodon",
         "level": 100,
-        "knownMoves": [
-          "scald",
-          "clear-smog"
-        ],
+        "knownMoves": ["scald", "clear-smog"],
         "nickname": "Gastrodon"
       },
       {
@@ -77,22 +52,13 @@
       {
         "species": "Ampharos",
         "level": 100,
-        "knownMoves": [
-          "dragon-pulse",
-          "volt-switch",
-          "focus-blast",
-          "thunderbolt"
-        ],
+        "knownMoves": ["dragon-pulse", "volt-switch", "focus-blast", "thunderbolt"],
         "nickname": "Ampharos"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin",
-          "swords-dance",
-          "iron-head"
-        ],
+        "knownMoves": ["rapid-spin", "swords-dance", "iron-head"],
         "nickname": "Excadrill"
       },
       {
@@ -104,23 +70,13 @@
       {
         "species": "Keldeo",
         "level": 100,
-        "knownMoves": [
-          "secret-sword",
-          "scald",
-          "calm-mind",
-          "taunt"
-        ],
+        "knownMoves": ["secret-sword", "scald", "calm-mind", "taunt"],
         "nickname": "Keldeo"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "thunder-wave",
-          "soft-boiled",
-          "moonblast"
-        ],
+        "knownMoves": ["stealth-rock", "thunder-wave", "soft-boiled", "moonblast"],
         "nickname": "Clefable"
       },
       {
@@ -132,10 +88,7 @@
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "ice-shard",
-          "knock-off"
-        ],
+        "knownMoves": ["ice-shard", "knock-off"],
         "nickname": "Weavile"
       }
     ]

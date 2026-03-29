@@ -2,54 +2,37 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "Ivanpmd",
-    "swag_serotoninYT"
-  ],
+  "players": ["Ivanpmd", "swag_serotoninYT"],
   "teams": [
     [
       {
         "species": "Ting-Lu",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "earthquake"],
         "nickname": "Ting-Lu"
       },
       {
         "species": "Pecharunt",
         "level": 100,
-        "knownMoves": [
-          "malignant-chain",
-          "parting-shot"
-        ],
+        "knownMoves": ["malignant-chain", "parting-shot"],
         "nickname": "Pecharunt"
       },
       {
         "species": "Hydrapple",
         "level": 100,
-        "knownMoves": [
-          "nasty-plot"
-        ],
+        "knownMoves": ["nasty-plot"],
         "nickname": "Hydrapple"
       },
       {
         "species": "Kingambit",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "iron-head"
-        ],
+        "knownMoves": ["swords-dance", "iron-head"],
         "nickname": "Kingambit"
       },
       {
         "species": "Zamazenta",
         "level": 100,
-        "knownMoves": [
-          "close-combat",
-          "crunch"
-        ],
+        "knownMoves": ["close-combat", "crunch"],
         "nickname": "Zamazenta"
       }
     ],
@@ -57,54 +40,37 @@
       {
         "species": "Masquerain",
         "level": 100,
-        "knownMoves": [
-          "sticky-web",
-          "stun-spore",
-          "ice-beam",
-          "bug-buzz"
-        ],
+        "knownMoves": ["sticky-web", "stun-spore", "ice-beam", "bug-buzz"],
         "nickname": "Masquerain"
       },
       {
         "species": "Quaquaval",
         "level": 100,
-        "knownMoves": [
-          "aqua-step",
-          "rapid-spin"
-        ],
+        "knownMoves": ["aqua-step", "rapid-spin"],
         "nickname": "Quaquaval"
       },
       {
         "species": "Orthworm",
         "level": 100,
-        "knownMoves": [
-          "body-press",
-          "stealth-rock"
-        ],
+        "knownMoves": ["body-press", "stealth-rock"],
         "nickname": "Orthworm"
       },
       {
         "species": "Gholdengo",
         "level": 100,
-        "knownMoves": [
-          "nasty-plot"
-        ],
+        "knownMoves": ["nasty-plot"],
         "nickname": "Gholdengo"
       },
       {
         "species": "Sandy Shocks",
         "level": 100,
-        "knownMoves": [
-          "earth-power"
-        ],
+        "knownMoves": ["earth-power"],
         "nickname": "Sandy Shocks"
       },
       {
         "species": "Chandelure",
         "level": 100,
-        "knownMoves": [
-          "energy-ball"
-        ],
+        "knownMoves": ["energy-ball"],
         "nickname": "Chandelure"
       }
     ]

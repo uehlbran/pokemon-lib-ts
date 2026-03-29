@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "Pideous",
-    "gilbert arenas"
-  ],
+  "players": ["Pideous", "gilbert arenas"],
   "teams": [
     [
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "brave-bird",
-          "spikes"
-        ],
+        "knownMoves": ["brave-bird", "spikes"],
         "nickname": "The Plan"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "crunch"
-        ],
+        "knownMoves": ["ice-punch", "crunch"],
         "nickname": "Broken Chairs"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "wish",
-          "protect",
-          "roar",
-          "surf"
-        ],
+        "knownMoves": ["wish", "protect", "roar", "surf"],
         "nickname": "Time Trap"
       },
       {
         "species": "Rotom-Frost",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "pain-split",
-          "shadow-ball"
-        ],
+        "knownMoves": ["will-o-wisp", "pain-split", "shadow-ball"],
         "nickname": "Bad Light"
       },
       {
         "species": "Nidoqueen",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "earthquake"],
         "nickname": "Carry The Zero"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "You Were Right"
       }
     ],
@@ -69,21 +46,13 @@
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "fire-blast",
-          "superpower"
-        ],
+        "knownMoves": ["fire-blast", "superpower"],
         "nickname": "Dragonite"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "hidden-power",
-          "grass-knot",
-          "explosion"
-        ],
+        "knownMoves": ["stealth-rock", "hidden-power", "grass-knot", "explosion"],
         "nickname": "Metagross"
       },
       {
@@ -95,21 +64,13 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "crunch"
-        ],
+        "knownMoves": ["ice-beam", "crunch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "psychic",
-          "hidden-power",
-          "thunderbolt"
-        ],
+        "knownMoves": ["calm-mind", "psychic", "hidden-power", "thunderbolt"],
         "nickname": "Jirachi"
       }
     ]

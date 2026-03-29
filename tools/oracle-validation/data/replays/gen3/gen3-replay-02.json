@@ -2,67 +2,43 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "magic kaminari",
-    "Tardnation"
-  ],
+  "players": ["magic kaminari", "Tardnation"],
   "teams": [
     [
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "focus-punch"
-        ],
+        "knownMoves": ["focus-punch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "taunt",
-          "thunderbolt"
-        ],
+        "knownMoves": ["ice-punch", "taunt", "thunderbolt"],
         "nickname": "Trader"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin",
-          "recover",
-          "psychic"
-        ],
+        "knownMoves": ["rapid-spin", "recover", "psychic"],
         "nickname": "Starmie"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "roar",
-          "protect"
-        ],
+        "knownMoves": ["spikes", "roar", "protect"],
         "nickname": "Skarmory"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "thunder-wave",
-          "seismic-toss",
-          "soft-boiled"
-        ],
+        "knownMoves": ["ice-beam", "thunder-wave", "seismic-toss", "soft-boiled"],
         "nickname": "Blissey"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Swampert"
       }
     ],
@@ -70,60 +46,37 @@
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Cloyster"
       },
       {
         "species": "Dugtrio",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "hidden-power",
-          "body-slam"
-        ],
+        "knownMoves": ["earthquake", "hidden-power", "body-slam"],
         "nickname": "Dugtrio"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss",
-          "aromatherapy",
-          "soft-boiled",
-          "toxic"
-        ],
+        "knownMoves": ["seismic-toss", "aromatherapy", "soft-boiled", "toxic"],
         "nickname": "Blissey"
       },
       {
         "species": "Lanturn",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "thunder-wave",
-          "confuse-ray",
-          "ice-beam"
-        ],
+        "knownMoves": ["thunderbolt", "thunder-wave", "confuse-ray", "ice-beam"],
         "nickname": "Lanturn"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "hidden-power"
-        ],
+        "knownMoves": ["dragon-dance", "hidden-power"],
         "nickname": "Gyarados"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "agility",
-          "meteor-mash",
-          "explosion"
-        ],
+        "knownMoves": ["agility", "meteor-mash", "explosion"],
         "nickname": "Metagross"
       }
     ]

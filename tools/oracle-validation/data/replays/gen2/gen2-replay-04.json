@@ -2,37 +2,25 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "ElementalPunches",
-    "Blo0dRouge"
-  ],
+  "players": ["ElementalPunches", "Blo0dRouge"],
   "teams": [
     [
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Gengar"
       },
       {
         "species": "Umbreon",
         "level": 100,
-        "knownMoves": [
-          "charm",
-          "rest"
-        ],
+        "knownMoves": ["charm", "rest"],
         "nickname": "Umbreon"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "double-edge",
-          "earthquake"
-        ],
+        "knownMoves": ["curse", "double-edge", "earthquake"],
         "nickname": "Snorlax"
       }
     ],
@@ -40,28 +28,19 @@
       {
         "species": "Crobat",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Crobat"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "explosion"
-        ],
+        "knownMoves": ["explosion"],
         "nickname": "Gengar"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "agility",
-          "hidden-power",
-          "baton-pass"
-        ],
+        "knownMoves": ["swords-dance", "agility", "hidden-power", "baton-pass"],
         "nickname": "Scizor"
       }
     ]

@@ -2,37 +2,25 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Dunbaraj",
-    "Peciuka"
-  ],
+  "players": ["Dunbaraj", "Peciuka"],
   "teams": [
     [
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Cloyster"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "curse"
-        ],
+        "knownMoves": ["body-slam", "curse"],
         "nickname": "Snorlax"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "whirlwind",
-          "thunder"
-        ],
+        "knownMoves": ["reflect", "whirlwind", "thunder"],
         "nickname": "Zapdos"
       },
       {
@@ -44,21 +32,13 @@
       {
         "species": "Ariados",
         "level": 100,
-        "knownMoves": [
-          "agility",
-          "baton-pass"
-        ],
+        "knownMoves": ["agility", "baton-pass"],
         "nickname": "Ariados"
       },
       {
         "species": "Marowak",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "substitute",
-          "earthquake",
-          "rock-slide"
-        ],
+        "knownMoves": ["swords-dance", "substitute", "earthquake", "rock-slide"],
         "nickname": "Marowak"
       }
     ],
@@ -66,51 +46,31 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "reflect"
-        ],
+        "knownMoves": ["thunderbolt", "reflect"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "belly-drum",
-          "rest",
-          "earthquake",
-          "body-slam"
-        ],
+        "knownMoves": ["belly-drum", "rest", "earthquake", "body-slam"],
         "nickname": "Snorlax"
       },
       {
         "species": "Misdreavus",
         "level": 100,
-        "knownMoves": [
-          "confuse-ray",
-          "mean-look",
-          "perish-song",
-          "protect"
-        ],
+        "knownMoves": ["confuse-ray", "mean-look", "perish-song", "protect"],
         "nickname": "Misdreavus"
       },
       {
         "species": "Miltank",
         "level": 100,
-        "knownMoves": [
-          "heal-bell",
-          "body-slam",
-          "growl"
-        ],
+        "knownMoves": ["heal-bell", "body-slam", "growl"],
         "nickname": "Miltank"
       },
       {
         "species": "Marowak",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "earthquake"
-        ],
+        "knownMoves": ["swords-dance", "earthquake"],
         "nickname": "Marowak"
       },
       {

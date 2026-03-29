@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "FwSosa",
-    "AmygdalanResponse"
-  ],
+  "players": ["FwSosa", "AmygdalanResponse"],
   "teams": [
     [
       {
@@ -17,47 +14,31 @@
       {
         "species": "Iron Valiant",
         "level": 100,
-        "knownMoves": [
-          "close-combat"
-        ],
+        "knownMoves": ["close-combat"],
         "nickname": "Iron Valiant"
       },
       {
         "species": "Deoxys-Speed",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "light-screen",
-          "taunt"
-        ],
+        "knownMoves": ["reflect", "light-screen", "taunt"],
         "nickname": "Deoxys"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "extreme-speed"
-        ],
+        "knownMoves": ["dragon-dance", "extreme-speed"],
         "nickname": "Dragonite"
       },
       {
         "species": "Ceruledge",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "shadow-sneak"
-        ],
+        "knownMoves": ["swords-dance", "shadow-sneak"],
         "nickname": "Ceruledge"
       },
       {
         "species": "Kingambit",
         "level": 100,
-        "knownMoves": [
-          "low-kick",
-          "swords-dance",
-          "sucker-punch"
-        ],
+        "knownMoves": ["low-kick", "swords-dance", "sucker-punch"],
         "nickname": "Kingambit"
       }
     ],
@@ -65,45 +46,31 @@
       {
         "species": "Iron Treads",
         "level": 100,
-        "knownMoves": [
-          "earth-power",
-          "steel-beam"
-        ],
+        "knownMoves": ["earth-power", "steel-beam"],
         "nickname": "Iron Treads"
       },
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "weather-ball"
-        ],
+        "knownMoves": ["u-turn", "weather-ball"],
         "nickname": "Pelipper"
       },
       {
         "species": "Overqwil",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "crunch",
-          "gunk-shot"
-        ],
+        "knownMoves": ["swords-dance", "crunch", "gunk-shot"],
         "nickname": "Overqwil"
       },
       {
         "species": "Barraskewda",
         "level": 100,
-        "knownMoves": [
-          "flip-turn"
-        ],
+        "knownMoves": ["flip-turn"],
         "nickname": "Barraskewda"
       },
       {
         "species": "Kingambit",
         "level": 100,
-        "knownMoves": [
-          "kowtow-cleave"
-        ],
+        "knownMoves": ["kowtow-cleave"],
         "nickname": "Kingambit"
       }
     ]

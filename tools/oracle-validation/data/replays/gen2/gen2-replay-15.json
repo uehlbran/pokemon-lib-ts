@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Fakes",
-    "gorgie"
-  ],
+  "players": ["Fakes", "gorgie"],
   "teams": [
     [
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "thief",
-          "psychic"
-        ],
+        "knownMoves": ["thief", "psychic"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Golem",
         "level": 100,
-        "knownMoves": [
-          "roar",
-          "rapid-spin",
-          "earthquake"
-        ],
+        "knownMoves": ["roar", "rapid-spin", "earthquake"],
         "nickname": "Golem"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Cloyster"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "thunder",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["hidden-power", "thunder", "rest", "sleep-talk"],
         "nickname": "Raikou"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge"
-        ],
+        "knownMoves": ["double-edge"],
         "nickname": "Snorlax"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["surf", "rest", "sleep-talk"],
         "nickname": "Vaporeon"
       }
     ],
@@ -69,60 +46,37 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "sleep-talk",
-          "rest",
-          "earthquake"
-        ],
+        "knownMoves": ["double-edge", "sleep-talk", "rest", "earthquake"],
         "nickname": "Snorlax"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "submission",
-          "explosion"
-        ],
+        "knownMoves": ["ice-punch", "submission", "explosion"],
         "nickname": "Gengar"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Cloyster"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "hidden-power",
-          "thunderbolt"
-        ],
+        "knownMoves": ["reflect", "hidden-power", "thunderbolt"],
         "nickname": "Zapdos"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "recover",
-          "toxic"
-        ],
+        "knownMoves": ["psychic", "recover", "toxic"],
         "nickname": "Alakazam"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "thunderbolt",
-          "growth"
-        ],
+        "knownMoves": ["substitute", "thunderbolt", "growth"],
         "nickname": "Jolteon"
       }
     ]

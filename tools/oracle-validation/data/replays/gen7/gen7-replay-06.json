@@ -2,64 +2,43 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "anakinchsn1",
-    "BrianAliano"
-  ],
+  "players": ["anakinchsn1", "BrianAliano"],
   "teams": [
     [
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "supersonic-skystrike",
-          "knock-off",
-          "u-turn"
-        ],
+        "knownMoves": ["supersonic-skystrike", "knock-off", "u-turn"],
         "nickname": "Tornadus"
       },
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Pelipper"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "ice-punch"
-        ],
+        "knownMoves": ["earthquake", "ice-punch"],
         "nickname": "Swampert"
       },
       {
         "species": "Crawdaunt",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Crawdaunt"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "protect",
-          "stealth-rock",
-          "gyro-ball"
-        ],
+        "knownMoves": ["leech-seed", "protect", "stealth-rock", "gyro-ball"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "leaf-blade"
-        ],
+        "knownMoves": ["leaf-blade"],
         "nickname": "Kartana"
       }
     ],
@@ -67,39 +46,25 @@
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "recover",
-          "scald"
-        ],
+        "knownMoves": ["toxic", "recover", "scald"],
         "nickname": "Toxapex"
       },
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "hurricane",
-          "scald"
-        ],
+        "knownMoves": ["hurricane", "scald"],
         "nickname": "Pelipper"
       },
       {
         "species": "Tapu Fini",
         "level": 100,
-        "knownMoves": [
-          "nature's-madness"
-        ],
+        "knownMoves": ["nature's-madness"],
         "nickname": "Tapu Fini"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "hydro-pump",
-          "pain-split",
-          "will-o-wisp"
-        ],
+        "knownMoves": ["volt-switch", "hydro-pump", "pain-split", "will-o-wisp"],
         "nickname": "Rotom"
       },
       {

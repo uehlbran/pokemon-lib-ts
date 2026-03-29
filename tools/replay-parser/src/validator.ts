@@ -49,11 +49,15 @@ function getDataManager(generation: number): DataManager {
  */
 function getStatusImmuneTypes(statusId: string, generation: number): string[] {
   if (statusId === SHOWDOWN_STATUS_CODES.burn) return [CORE_TYPE_IDS.fire];
-  if (statusId === SHOWDOWN_STATUS_CODES.poison || statusId === SHOWDOWN_STATUS_CODES.badlyPoisoned) {
+  if (
+    statusId === SHOWDOWN_STATUS_CODES.poison ||
+    statusId === SHOWDOWN_STATUS_CODES.badlyPoisoned
+  ) {
     return [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel];
   }
   if (statusId === SHOWDOWN_STATUS_CODES.freeze && generation >= 2) return [CORE_TYPE_IDS.ice];
-  if (statusId === SHOWDOWN_STATUS_CODES.paralysis && generation >= 6) return [CORE_TYPE_IDS.electric];
+  if (statusId === SHOWDOWN_STATUS_CODES.paralysis && generation >= 6)
+    return [CORE_TYPE_IDS.electric];
   return [];
 }
 
@@ -93,7 +97,11 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
         const moveEvent = event;
 
         // Look ahead up to 3 events for an effectiveness marker
-        let effectivenessType: typeof SHOWDOWN_EVENT_TYPES.supereffective | typeof SHOWDOWN_EVENT_TYPES.resisted | typeof SHOWDOWN_EVENT_TYPES.immune | null = null;
+        let effectivenessType:
+          | typeof SHOWDOWN_EVENT_TYPES.supereffective
+          | typeof SHOWDOWN_EVENT_TYPES.resisted
+          | typeof SHOWDOWN_EVENT_TYPES.immune
+          | null = null;
         for (let j = i + 1; j < Math.min(i + 4, events.length); j++) {
           const next = events[j];
           if (!next) continue;

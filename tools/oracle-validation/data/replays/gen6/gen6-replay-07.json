@@ -2,69 +2,43 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "LeBomboclats",
-    "cloud and book"
-  ],
+  "players": ["LeBomboclats", "cloud and book"],
   "teams": [
     [
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "discharge"
-        ],
+        "knownMoves": ["discharge"],
         "nickname": "Zapdos"
       },
       {
         "species": "Cresselia",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "ice-beam",
-          "moonlight",
-          "lunar-dance"
-        ],
+        "knownMoves": ["thunder-wave", "ice-beam", "moonlight", "lunar-dance"],
         "nickname": "Cresselia"
       },
       {
         "species": "Kyurem",
         "level": 100,
-        "knownMoves": [
-          "earth-power",
-          "substitute",
-          "roost"
-        ],
+        "knownMoves": ["earth-power", "substitute", "roost"],
         "nickname": "Kyurem"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "rapid-spin"
-        ],
+        "knownMoves": ["stealth-rock", "rapid-spin"],
         "nickname": "Excadrill"
       },
       {
         "species": "Volcanion",
         "level": 100,
-        "knownMoves": [
-          "steam-eruption",
-          "roar",
-          "flamethrower"
-        ],
+        "knownMoves": ["steam-eruption", "roar", "flamethrower"],
         "nickname": "Volcanion"
       },
       {
         "species": "Lopunny",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "high-jump-kick",
-          "quick-attack",
-          "return"
-        ],
+        "knownMoves": ["fake-out", "high-jump-kick", "quick-attack", "return"],
         "nickname": "Lopunny"
       }
     ],
@@ -72,32 +46,19 @@
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "stealth-rock",
-          "earthquake"
-        ],
+        "knownMoves": ["toxic", "stealth-rock", "earthquake"],
         "nickname": "Garchomp"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "heat-wave",
-          "defog",
-          "roost"
-        ],
+        "knownMoves": ["volt-switch", "heat-wave", "defog", "roost"],
         "nickname": "Zapdos"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "roost",
-          "bullet-punch"
-        ],
+        "knownMoves": ["u-turn", "roost", "bullet-punch"],
         "nickname": "Scizor"
       },
       {
@@ -109,28 +70,19 @@
       {
         "species": "Victini",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "v-create"
-        ],
+        "knownMoves": ["u-turn", "v-create"],
         "nickname": "Victini"
       },
       {
         "species": "Manaphy",
         "level": 100,
-        "knownMoves": [
-          "rain-dance",
-          "tail-glow",
-          "ice-beam"
-        ],
+        "knownMoves": ["rain-dance", "tail-glow", "ice-beam"],
         "nickname": "Manaphy"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "glare"
-        ],
+        "knownMoves": ["glare"],
         "nickname": "Serperior"
       }
     ]

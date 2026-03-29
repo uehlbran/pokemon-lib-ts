@@ -2,20 +2,13 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "Oooppplllop",
-    "anakinchsn1"
-  ],
+  "players": ["Oooppplllop", "anakinchsn1"],
   "teams": [
     [
       {
         "species": "Mew",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "stealth-rock",
-          "ice-beam"
-        ],
+        "knownMoves": ["taunt", "stealth-rock", "ice-beam"],
         "nickname": "Mew"
       },
       {
@@ -39,9 +32,7 @@
       {
         "species": "Charizard",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance"
-        ],
+        "knownMoves": ["dragon-dance"],
         "nickname": "Charizard"
       }
     ],
@@ -49,20 +40,13 @@
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "power-up-punch",
-          "waterfall",
-          "ice-punch",
-          "earthquake"
-        ],
+        "knownMoves": ["power-up-punch", "waterfall", "ice-punch", "earthquake"],
         "nickname": "Swampert"
       },
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Pelipper"
       }
     ]

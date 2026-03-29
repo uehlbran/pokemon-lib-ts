@@ -2,64 +2,43 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "rby sd sweep",
-    "genderfluid icon"
-  ],
+  "players": ["rby sd sweep", "genderfluid icon"],
   "teams": [
     [
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "thunderbolt"],
         "nickname": "Jolteon"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "recover",
-          "thunder-wave",
-          "psychic",
-          "thunderbolt"
-        ],
+        "knownMoves": ["recover", "thunder-wave", "psychic", "thunderbolt"],
         "nickname": "Starmie"
       },
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "lovely-kiss",
-          "blizzard"
-        ],
+        "knownMoves": ["body-slam", "lovely-kiss", "blizzard"],
         "nickname": "Jynx"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "explosion"
-        ],
+        "knownMoves": ["explosion"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "self-destruct"
-        ],
+        "knownMoves": ["self-destruct"],
         "nickname": "Snorlax"
       }
     ],
@@ -67,40 +46,25 @@
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "blizzard"
-        ],
+        "knownMoves": ["lovely-kiss", "blizzard"],
         "nickname": "The Thin Ice"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "reflect",
-          "seismic-toss"
-        ],
+        "knownMoves": ["thunder-wave", "reflect", "seismic-toss"],
         "nickname": "Melody Lane"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "psychic",
-          "body-slam"
-        ],
+        "knownMoves": ["thunder-wave", "psychic", "body-slam"],
         "nickname": "Mr. Pink"
       },
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "wing-attack",
-          "hyper-beam",
-          "substitute"
-        ],
+        "knownMoves": ["wing-attack", "hyper-beam", "substitute"],
         "nickname": "THRAK"
       },
       {
@@ -112,10 +76,7 @@
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "hyper-beam"
-        ],
+        "knownMoves": ["body-slam", "hyper-beam"],
         "nickname": "Breathe(IntheAir)"
       }
     ]

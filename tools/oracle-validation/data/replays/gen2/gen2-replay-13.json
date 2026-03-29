@@ -2,21 +2,13 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Fakes",
-    "gorgie"
-  ],
+  "players": ["Fakes", "gorgie"],
   "teams": [
     [
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "whirlwind",
-          "hidden-power",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "whirlwind", "hidden-power", "thunderbolt"],
         "nickname": "Zapdos"
       },
       {
@@ -28,37 +20,25 @@
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Cloyster"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thief",
-          "ice-punch",
-          "psychic"
-        ],
+        "knownMoves": ["thief", "ice-punch", "psychic"],
         "nickname": "Gengar"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "double-edge",
-          "self-destruct"
-        ],
+        "knownMoves": ["lovely-kiss", "double-edge", "self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "growth"
-        ],
+        "knownMoves": ["growth"],
         "nickname": "Vaporeon"
       }
     ],
@@ -66,59 +46,37 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "reflect"
-        ],
+        "knownMoves": ["thunderbolt", "reflect"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "rest",
-          "sleep-talk",
-          "earthquake"
-        ],
+        "knownMoves": ["double-edge", "rest", "sleep-talk", "earthquake"],
         "nickname": "Snorlax"
       },
       {
         "species": "Forretress",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "explosion"
-        ],
+        "knownMoves": ["spikes", "explosion"],
         "nickname": "Forretress"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "hypnosis",
-          "explosion"
-        ],
+        "knownMoves": ["hypnosis", "explosion"],
         "nickname": "Gengar"
       },
       {
         "species": "Marowak",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "rest",
-          "sleep-talk",
-          "rock-slide"
-        ],
+        "knownMoves": ["earthquake", "rest", "sleep-talk", "rock-slide"],
         "nickname": "Marowak"
       },
       {
         "species": "Houndoom",
         "level": 100,
-        "knownMoves": [
-          "pursuit",
-          "flamethrower"
-        ],
+        "knownMoves": ["pursuit", "flamethrower"],
         "nickname": "Houndoom"
       }
     ]
@@ -5513,10 +5471,7 @@
         },
         {
           "type": "tie",
-          "players": [
-            "Fakes",
-            "gorgie"
-          ]
+          "players": ["Fakes", "gorgie"]
         }
       ]
     }

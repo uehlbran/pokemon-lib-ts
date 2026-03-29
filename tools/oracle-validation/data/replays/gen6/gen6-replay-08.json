@@ -2,41 +2,25 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "White Atoq",
-    "larperial"
-  ],
+  "players": ["White Atoq", "larperial"],
   "teams": [
     [
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump",
-          "volt-switch",
-          "will-o-wisp"
-        ],
+        "knownMoves": ["hydro-pump", "volt-switch", "will-o-wisp"],
         "nickname": "Rotom"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "stealth-rock",
-          "u-turn"
-        ],
+        "knownMoves": ["knock-off", "stealth-rock", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "soft-boiled",
-          "knock-off",
-          "moonblast"
-        ],
+        "knownMoves": ["thunder-wave", "soft-boiled", "knock-off", "moonblast"],
         "nickname": "Clefable"
       },
       {
@@ -56,41 +40,25 @@
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "moonblast",
-          "soft-boiled"
-        ],
+        "knownMoves": ["moonblast", "soft-boiled"],
         "nickname": "Clefable"
       },
       {
         "species": "Keldeo",
         "level": 100,
-        "knownMoves": [
-          "scald",
-          "substitute",
-          "calm-mind"
-        ],
+        "knownMoves": ["scald", "substitute", "calm-mind"],
         "nickname": "fraud alert"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "heat-wave",
-          "volt-switch",
-          "roost"
-        ],
+        "knownMoves": ["heat-wave", "volt-switch", "roost"],
         "nickname": "Zapdos"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "toxic",
-          "stealth-rock",
-          "dragon-tail"
-        ],
+        "knownMoves": ["earthquake", "toxic", "stealth-rock", "dragon-tail"],
         "nickname": "Garchomp"
       }
     ]

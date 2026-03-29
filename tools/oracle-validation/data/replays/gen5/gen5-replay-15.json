@@ -2,27 +2,19 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Max OKLM",
-    "BWLT2 Oathkeeper"
-  ],
+  "players": ["Max OKLM", "BWLT2 Oathkeeper"],
   "teams": [
     [
       {
         "species": "Froslass",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Froslass"
       },
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "low-sweep"
-        ],
+        "knownMoves": ["swords-dance", "low-sweep"],
         "nickname": "Breloom"
       },
       {
@@ -34,10 +26,7 @@
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "bug-buzz"
-        ],
+        "knownMoves": ["quiver-dance", "bug-buzz"],
         "nickname": "Volcarona"
       },
       {
@@ -49,11 +38,7 @@
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "extreme-speed",
-          "outrage"
-        ],
+        "knownMoves": ["dragon-dance", "extreme-speed", "outrage"],
         "nickname": "Dragonite"
       }
     ],
@@ -61,36 +46,25 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "crunch"
-        ],
+        "knownMoves": ["crunch"],
         "nickname": "Jelly Stone"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Aretinini"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "iron-head"
-        ],
+        "knownMoves": ["iron-head"],
         "nickname": "Tonelico"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psych-up",
-          "psyshock",
-          "focus-blast",
-          "hidden-power"
-        ],
+        "knownMoves": ["psych-up", "psyshock", "focus-blast", "hidden-power"],
         "nickname": "Zip Zap Zop"
       },
       {

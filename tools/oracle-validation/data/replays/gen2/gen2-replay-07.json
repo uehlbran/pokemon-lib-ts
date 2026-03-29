@@ -2,67 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Vileman",
-    "drogba in shenhua"
-  ],
+  "players": ["Vileman", "drogba in shenhua"],
   "teams": [
     [
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "surf",
-          "rapid-spin",
-          "rest"
-        ],
+        "knownMoves": ["spikes", "surf", "rapid-spin", "rest"],
         "nickname": "Waters of Nazareth"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest",
-          "sleep-talk",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "rest", "sleep-talk", "hidden-power"],
         "nickname": "Brianvision"
       },
       {
         "species": "Miltank",
         "level": 100,
-        "knownMoves": [
-          "heal-bell"
-        ],
+        "knownMoves": ["heal-bell"],
         "nickname": "The Party"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Valentine"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "double-edge",
-          "rest"
-        ],
+        "knownMoves": ["double-edge", "rest"],
         "nickname": "Neverender"
       },
       {
         "species": "Meganium",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "body-slam",
-          "earthquake"
-        ],
+        "knownMoves": ["swords-dance", "body-slam", "earthquake"],
         "nickname": "DVNO"
       }
     ],
@@ -70,59 +46,37 @@
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "spikes",
-          "surf",
-          "explosion"
-        ],
+        "knownMoves": ["toxic", "spikes", "surf", "explosion"],
         "nickname": "Cloyster"
       },
       {
         "species": "Steelix",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "explosion"
-        ],
+        "knownMoves": ["curse", "explosion"],
         "nickname": "Steelix"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder"
-        ],
+        "knownMoves": ["thunder"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "lovely-kiss",
-          "frustration"
-        ],
+        "knownMoves": ["earthquake", "lovely-kiss", "frustration"],
         "nickname": "Snorlax"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["thunder", "rest", "sleep-talk"],
         "nickname": "Raikou"
       },
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "baton-pass",
-          "psychic"
-        ],
+        "knownMoves": ["growth", "baton-pass", "psychic"],
         "nickname": "Espeon"
       }
     ]

@@ -101,7 +101,10 @@ function getDataManager(gen: number): DataManager {
  */
 function getStatusImmuneTypes(statusId: string, gen: number): string[] {
   if (statusId === SHOWDOWN_STATUS_CODES.burn) return [CORE_TYPE_IDS.fire];
-  if (statusId === SHOWDOWN_STATUS_CODES.poison || statusId === SHOWDOWN_STATUS_CODES.badlyPoisoned) {
+  if (
+    statusId === SHOWDOWN_STATUS_CODES.poison ||
+    statusId === SHOWDOWN_STATUS_CODES.badlyPoisoned
+  ) {
     return [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel];
   }
   if (statusId === SHOWDOWN_STATUS_CODES.freeze && gen >= 2) return [CORE_TYPE_IDS.ice];
@@ -115,9 +118,22 @@ interface ParsedTurn {
 }
 
 type ParsedEvent =
-  | { type: "move"; moveId: string; moveName: string; targetIdent: { side: number; nickname: string } | null }
-  | { type: "damage"; ident: { side: number; nickname: string }; hp: { current: number; max: number } }
-  | { type: "heal"; ident: { side: number; nickname: string }; hp: { current: number; max: number } }
+  | {
+      type: "move";
+      moveId: string;
+      moveName: string;
+      targetIdent: { side: number; nickname: string } | null;
+    }
+  | {
+      type: "damage";
+      ident: { side: number; nickname: string };
+      hp: { current: number; max: number };
+    }
+  | {
+      type: "heal";
+      ident: { side: number; nickname: string };
+      hp: { current: number; max: number };
+    }
   | { type: "supereffective" | "resisted" | "immune" }
   | { type: "status"; ident: { side: number; nickname: string }; statusId: string }
   | { type: string };
@@ -138,8 +154,8 @@ interface ParsedReplay {
 }
 
 interface ReplayValidationResult {
-  hardFailures: string[];   // HP/status failures — block pass
-  typeNotes: string[];      // Type-effectiveness discrepancies — advisory only
+  hardFailures: string[]; // HP/status failures — block pass
+  typeNotes: string[]; // Type-effectiveness discrepancies — advisory only
 }
 
 function resolvePokemon(
@@ -169,8 +185,15 @@ function validateReplayStructure(replay: ParsedReplay): ReplayValidationResult {
       // -----------------------------------------------------------------------
       // HP invariant: HP must not go below 0 or above max
       // -----------------------------------------------------------------------
-      if ((event.type === PARSED_EVENT_TYPES.damage || event.type === PARSED_EVENT_TYPES.heal) && "hp" in event) {
-        const hpEvent = event as { type: string; ident: { side: number; nickname: string }; hp: { current: number; max: number } };
+      if (
+        (event.type === PARSED_EVENT_TYPES.damage || event.type === PARSED_EVENT_TYPES.heal) &&
+        "hp" in event
+      ) {
+        const hpEvent = event as {
+          type: string;
+          ident: { side: number; nickname: string };
+          hp: { current: number; max: number };
+        };
         const { current, max } = hpEvent.hp;
 
         if (current < 0) {
@@ -193,20 +216,35 @@ function validateReplayStructure(replay: ParsedReplay): ReplayValidationResult {
       // because Forme changes, Tera, and abilities can cause legitimate disagreements.
       // -----------------------------------------------------------------------
       if (event.type === PARSED_EVENT_TYPES.move && "targetIdent" in event) {
-        const moveEvent = event as { type: "move"; moveId: string; moveName: string; targetIdent: { side: number; nickname: string } | null };
+        const moveEvent = event as {
+          type: "move";
+          moveId: string;
+          moveName: string;
+          targetIdent: { side: number; nickname: string } | null;
+        };
         if (moveEvent.targetIdent === null) continue;
 
         // Skip moves with variable type (Hidden Power type depends on IVs/DVs)
         if (VARIABLE_TYPE_MOVES.has(moveEvent.moveId)) continue;
 
-        let effectivenessType: typeof PARSED_EVENT_TYPES.supereffective | typeof PARSED_EVENT_TYPES.resisted | null = null;
+        let effectivenessType:
+          | typeof PARSED_EVENT_TYPES.supereffective
+          | typeof PARSED_EVENT_TYPES.resisted
+          | null = null;
         for (let j = i + 1; j < Math.min(i + 4, events.length); j++) {
           const next = events[j];
           if (!next) continue;
-          if (next.type === PARSED_EVENT_TYPES.supereffective) { effectivenessType = PARSED_EVENT_TYPES.supereffective; break; }
-          if (next.type === PARSED_EVENT_TYPES.resisted) { effectivenessType = PARSED_EVENT_TYPES.resisted; break; }
+          if (next.type === PARSED_EVENT_TYPES.supereffective) {
+            effectivenessType = PARSED_EVENT_TYPES.supereffective;
+            break;
+          }
+          if (next.type === PARSED_EVENT_TYPES.resisted) {
+            effectivenessType = PARSED_EVENT_TYPES.resisted;
+            break;
+          }
           // Skip immune — often ability-based, not type-chart-based
-          if (next.type === PARSED_EVENT_TYPES.immune || next.type === PARSED_EVENT_TYPES.move) break;
+          if (next.type === PARSED_EVENT_TYPES.immune || next.type === PARSED_EVENT_TYPES.move)
+            break;
         }
 
         if (effectivenessType === null) continue;
@@ -245,12 +283,12 @@ function validateReplayStructure(replay: ParsedReplay): ReplayValidationResult {
         if (effectivenessType === PARSED_EVENT_TYPES.supereffective && multiplier < 2) {
           typeNotes.push(
             `Turn ${turn.turnNumber}: "${moveEvent.moveName}" super-effective ` +
-            `vs ${targetPokemon.species} (${targetTypes.join("/")}), chart gives ×${multiplier} — may be ability/forme/tera`,
+              `vs ${targetPokemon.species} (${targetTypes.join("/")}), chart gives ×${multiplier} — may be ability/forme/tera`,
           );
         } else if (effectivenessType === PARSED_EVENT_TYPES.resisted && multiplier > 0.5) {
           typeNotes.push(
             `Turn ${turn.turnNumber}: "${moveEvent.moveName}" resisted ` +
-            `vs ${targetPokemon.species} (${targetTypes.join("/")}), chart gives ×${multiplier} — may be ability/forme/tera`,
+              `vs ${targetPokemon.species} (${targetTypes.join("/")}), chart gives ×${multiplier} — may be ability/forme/tera`,
           );
         }
       }
@@ -259,7 +297,11 @@ function validateReplayStructure(replay: ParsedReplay): ReplayValidationResult {
       // Status legality: status not applied to immune types (type-based only)
       // -----------------------------------------------------------------------
       if (event.type === PARSED_EVENT_TYPES.status && "statusId" in event) {
-        const statusEvent = event as { type: "status"; ident: { side: number; nickname: string }; statusId: string };
+        const statusEvent = event as {
+          type: "status";
+          ident: { side: number; nickname: string };
+          statusId: string;
+        };
         const immuneTypes = getStatusImmuneTypes(statusEvent.statusId, gen);
         if (immuneTypes.length === 0) continue;
 
@@ -281,7 +323,7 @@ function validateReplayStructure(replay: ParsedReplay): ReplayValidationResult {
         if (speciesTypes.some((t) => immuneTypes.includes(t))) {
           hardFailures.push(
             `Turn ${turn.turnNumber}: ${afflicted.species} (${speciesTypes.join("/")}) ` +
-            `received "${statusEvent.statusId}" but is type-immune (gen ${gen})`,
+              `received "${statusEvent.statusId}" but is type-immune (gen ${gen})`,
           );
         }
       }
@@ -339,7 +381,9 @@ export function runReplaySuite(generation: ImplementedGeneration, repoRoot: stri
     try {
       replay = JSON.parse(readFileSync(filePath, "utf-8")) as ParsedReplay;
     } catch (err) {
-      hardFailures.push(`${file}: failed to parse — ${err instanceof Error ? err.message : String(err)}`);
+      hardFailures.push(
+        `${file}: failed to parse — ${err instanceof Error ? err.message : String(err)}`,
+      );
       continue;
     }
 
@@ -354,7 +398,9 @@ export function runReplaySuite(generation: ImplementedGeneration, repoRoot: stri
 
   notes.push(`${replayFiles.length} replays validated (Gen ${gen})`);
   if (allTypeNotes.length > 0) {
-    notes.push(`${allTypeNotes.length} type-effectiveness advisory notes (ability/forme/tera effects not tracked)`);
+    notes.push(
+      `${allTypeNotes.length} type-effectiveness advisory notes (ability/forme/tera effects not tracked)`,
+    );
   }
 
   if (hardFailures.length > 0) {

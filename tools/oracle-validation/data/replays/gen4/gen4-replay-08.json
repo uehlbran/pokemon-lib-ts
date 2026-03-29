@@ -2,49 +2,31 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "Infi.EXE",
-    "underspear"
-  ],
+  "players": ["Infi.EXE", "underspear"],
   "teams": [
     [
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "stealth-rock",
-          "earth-power",
-          "stone-edge"
-        ],
+        "knownMoves": ["taunt", "stealth-rock", "earth-power", "stone-edge"],
         "nickname": "Aerodactyl"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "thunder-wave",
-          "dragon-dance",
-          "waterfall"
-        ],
+        "knownMoves": ["substitute", "thunder-wave", "dragon-dance", "waterfall"],
         "nickname": "Gyarados"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Gengar"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "meteor-mash"
-        ],
+        "knownMoves": ["ice-punch", "meteor-mash"],
         "nickname": "Metagross"
       }
     ],
@@ -52,44 +34,31 @@
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "overheat",
-          "explosion"
-        ],
+        "knownMoves": ["overheat", "explosion"],
         "nickname": "Heatran"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "hidden-power"
-        ],
+        "knownMoves": ["ice-beam", "hidden-power"],
         "nickname": "Suicune"
       },
       {
         "species": "Flygon",
         "level": 100,
-        "knownMoves": [
-          "thunder-punch",
-          "outrage"
-        ],
+        "knownMoves": ["thunder-punch", "outrage"],
         "nickname": "Flygon"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp"
-        ],
+        "knownMoves": ["will-o-wisp"],
         "nickname": "Gengar"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "meteor-mash"
-        ],
+        "knownMoves": ["meteor-mash"],
         "nickname": "Metagross"
       },
       {

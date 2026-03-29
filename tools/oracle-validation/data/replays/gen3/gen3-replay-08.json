@@ -2,44 +2,31 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "p_bodied",
-    "SlNGULARlTY"
-  ],
+  "players": ["p_bodied", "SlNGULARlTY"],
   "teams": [
     [
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "ice-punch"
-        ],
+        "knownMoves": ["calm-mind", "ice-punch"],
         "nickname": "Jirachi"
       },
       {
         "species": "Dugtrio",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Dugtrio"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "baton-pass"
-        ],
+        "knownMoves": ["baton-pass"],
         "nickname": "Celebi"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "surf"
-        ],
+        "knownMoves": ["calm-mind", "surf"],
         "nickname": "Suicune"
       }
     ],
@@ -47,37 +34,25 @@
       {
         "species": "Magneton",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "substitute",
-          "thunderbolt",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder-wave", "substitute", "thunderbolt", "hidden-power"],
         "nickname": "Magneto"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp"
-        ],
+        "knownMoves": ["will-o-wisp"],
         "nickname": "Yami"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "body-slam"
-        ],
+        "knownMoves": ["ice-punch", "body-slam"],
         "nickname": "Orion"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Kyusenbo"
       }
     ]

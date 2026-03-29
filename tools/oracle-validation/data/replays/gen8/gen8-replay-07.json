@@ -2,64 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "blooclipse",
-    "soupsaregood"
-  ],
+  "players": ["blooclipse", "soupsaregood"],
   "teams": [
     [
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "defog",
-          "thunder-wave"
-        ],
+        "knownMoves": ["volt-switch", "defog", "thunder-wave"],
         "nickname": "doUfeelmestill?"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "magma-storm",
-          "taunt",
-          "earth-power"
-        ],
+        "knownMoves": ["toxic", "magma-storm", "taunt", "earth-power"],
         "nickname": "DYING BREED"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "stealth-rock"
-        ],
+        "knownMoves": ["u-turn", "stealth-rock"],
         "nickname": "surroundedby"
       },
       {
         "species": "Rillaboom",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "LASTONESeVER"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "DON'TCALLITeVEN"
       },
       {
         "species": "Blacephalon",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "justlikelasttime.."
       }
     ],
@@ -67,55 +46,37 @@
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "protect",
-          "leech-seed"
-        ],
+        "knownMoves": ["toxic", "protect", "leech-seed"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "toxic",
-          "seismic-toss"
-        ],
+        "knownMoves": ["stealth-rock", "toxic", "seismic-toss"],
         "nickname": "Blissey"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "recover",
-          "baneful-bunker"
-        ],
+        "knownMoves": ["knock-off", "recover", "baneful-bunker"],
         "nickname": "Toxapex"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Dragapult"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "air-slash"
-        ],
+        "knownMoves": ["air-slash"],
         "nickname": "Tornadus"
       }
     ]

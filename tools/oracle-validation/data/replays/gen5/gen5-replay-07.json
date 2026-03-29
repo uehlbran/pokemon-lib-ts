@@ -2,19 +2,13 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Mascabar999",
-    "whoistayston"
-  ],
+  "players": ["Mascabar999", "whoistayston"],
   "teams": [
     [
       {
         "species": "Politoed",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "scald"
-        ],
+        "knownMoves": ["toxic", "scald"],
         "nickname": "Politoed"
       },
       {
@@ -26,36 +20,25 @@
       {
         "species": "Thundurus-Therian",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "grass-knot"
-        ],
+        "knownMoves": ["thunder", "grass-knot"],
         "nickname": "Thundurus"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "body-slam"
-        ],
+        "knownMoves": ["protect", "body-slam"],
         "nickname": "Jirachi"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "dragon-pulse"
-        ],
+        "knownMoves": ["calm-mind", "dragon-pulse"],
         "nickname": "Latios"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin"
-        ],
+        "knownMoves": ["rapid-spin"],
         "nickname": "Starmie"
       }
     ],
@@ -63,56 +46,37 @@
       {
         "species": "Uxie",
         "level": 100,
-        "knownMoves": [
-          "magic-coat",
-          "toxic",
-          "stealth-rock",
-          "trick-room"
-        ],
+        "knownMoves": ["magic-coat", "toxic", "stealth-rock", "trick-room"],
         "nickname": "Uxie"
       },
       {
         "species": "Azumarill",
         "level": 100,
-        "knownMoves": [
-          "belly-drum",
-          "return",
-          "waterfall"
-        ],
+        "knownMoves": ["belly-drum", "return", "waterfall"],
         "nickname": "Azumarill"
       },
       {
         "species": "Reuniclus",
         "level": 100,
-        "knownMoves": [
-          "trick-room",
-          "psychic"
-        ],
+        "knownMoves": ["trick-room", "psychic"],
         "nickname": "Reuniclus"
       },
       {
         "species": "Slowbro",
         "level": 100,
-        "knownMoves": [
-          "trick-room",
-          "scald"
-        ],
+        "knownMoves": ["trick-room", "scald"],
         "nickname": "Slowbro"
       },
       {
         "species": "Chandelure",
         "level": 100,
-        "knownMoves": [
-          "energy-ball"
-        ],
+        "knownMoves": ["energy-ball"],
         "nickname": "Chandelure"
       },
       {
         "species": "Rhyperior",
         "level": 100,
-        "knownMoves": [
-          "ice-punch"
-        ],
+        "knownMoves": ["ice-punch"],
         "nickname": "Rhyperior"
       }
     ]

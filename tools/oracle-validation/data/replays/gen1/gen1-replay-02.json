@@ -2,65 +2,43 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "genderfluid icon",
-    "lubbu"
-  ],
+  "players": ["genderfluid icon", "lubbu"],
   "teams": [
     [
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss"
-        ],
+        "knownMoves": ["lovely-kiss"],
         "nickname": "The Thin Ice"
       },
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "wing-attack",
-          "fire-blast"
-        ],
+        "knownMoves": ["substitute", "wing-attack", "fire-blast"],
         "nickname": "THRAK!"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "seismic-toss",
-          "soft-boiled"
-        ],
+        "knownMoves": ["thunder-wave", "seismic-toss", "soft-boiled"],
         "nickname": "Melody Lane"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "earthquake",
-          "rest"
-        ],
+        "knownMoves": ["body-slam", "earthquake", "rest"],
         "nickname": "Pigs on the Wing"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "psychic"
-        ],
+        "knownMoves": ["thunder-wave", "psychic"],
         "nickname": "Mr. Pink"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Breathe(IntheAir)"
       }
     ],
@@ -68,61 +46,37 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "ice-beam",
-          "amnesia",
-          "fire-blast"
-        ],
+        "knownMoves": ["surf", "ice-beam", "amnesia", "fire-blast"],
         "nickname": "Snorlax"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "surf",
-          "recover",
-          "blizzard"
-        ],
+        "knownMoves": ["psychic", "surf", "recover", "blizzard"],
         "nickname": "Starmie"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "hyper-beam"
-        ],
+        "knownMoves": ["body-slam", "hyper-beam"],
         "nickname": "Tauros"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "pin-missile",
-          "toxic"
-        ],
+        "knownMoves": ["pin-missile", "toxic"],
         "nickname": "Jolteon"
       },
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "lovely-kiss",
-          "ice-beam",
-          "toxic"
-        ],
+        "knownMoves": ["psychic", "lovely-kiss", "ice-beam", "toxic"],
         "nickname": "Jynx"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "counter",
-          "recover"
-        ],
+        "knownMoves": ["counter", "recover"],
         "nickname": "Alakazam"
       }
     ]

@@ -2,65 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "drogba in shenhua",
-    "Vileman"
-  ],
+  "players": ["drogba in shenhua", "Vileman"],
   "teams": [
     [
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "thunder",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["hidden-power", "thunder", "rest", "sleep-talk"],
         "nickname": "Zapdos"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder"
-        ],
+        "knownMoves": ["sleep-powder"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Steelix",
         "level": 100,
-        "knownMoves": [
-          "roar",
-          "explosion"
-        ],
+        "knownMoves": ["roar", "explosion"],
         "nickname": "Steelix"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Cloyster"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "double-edge"
-        ],
+        "knownMoves": ["curse", "double-edge"],
         "nickname": "Snorlax"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["growth", "rest", "sleep-talk"],
         "nickname": "Vaporeon"
       }
     ],
@@ -68,38 +46,25 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "lovely-kiss",
-          "double-edge"
-        ],
+        "knownMoves": ["curse", "lovely-kiss", "double-edge"],
         "nickname": "Neverender"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "hidden-power",
-          "sleep-talk",
-          "rest"
-        ],
+        "knownMoves": ["thunder", "hidden-power", "sleep-talk", "rest"],
         "nickname": "Let There Be Light"
       },
       {
         "species": "Golem",
         "level": 100,
-        "knownMoves": [
-          "explosion"
-        ],
+        "knownMoves": ["explosion"],
         "nickname": "Stop"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Brianvision"
       }
     ]

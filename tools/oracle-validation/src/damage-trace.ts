@@ -12,11 +12,32 @@
  * pret disassemblies (Gen 1-3) reveal differences from Showdown's implementation.
  * Our damage calc is cartridge-accurate; Showdown deviates for competitive balance.
  */
-import type { BattleEvent, DamageEvent, GenerationRuleset, HealEvent, TurnStartEvent } from "@pokemon-lib-ts/battle";
-import { BATTLE_EVENT_TYPES, BATTLE_PHASE_IDS, BattleEngine, RandomAI } from "@pokemon-lib-ts/battle";
-import type { DataManager } from "@pokemon-lib-ts/core";
-import type { Generation } from "@pokemon-lib-ts/core";
-import { CORE_ABILITY_SLOTS, CORE_ITEM_IDS, CORE_NATURE_IDS, MAX_DV, MAX_IV, SeededRandom, createDvs, createEvs, createIvs, createStatExp } from "@pokemon-lib-ts/core";
+import type {
+  BattleEvent,
+  DamageEvent,
+  GenerationRuleset,
+  HealEvent,
+  TurnStartEvent,
+} from "@pokemon-lib-ts/battle";
+import {
+  BATTLE_EVENT_TYPES,
+  BATTLE_PHASE_IDS,
+  BattleEngine,
+  RandomAI,
+} from "@pokemon-lib-ts/battle";
+import type { DataManager, Generation } from "@pokemon-lib-ts/core";
+import {
+  CORE_ABILITY_SLOTS,
+  CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
+  createDvs,
+  createEvs,
+  createIvs,
+  createStatExp,
+  MAX_DV,
+  MAX_IV,
+  SeededRandom,
+} from "@pokemon-lib-ts/core";
 import { createGen1DataManager, Gen1Ruleset } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager, Gen2Ruleset } from "@pokemon-lib-ts/gen2";
 import { createGen3DataManager, Gen3Ruleset } from "@pokemon-lib-ts/gen3";
@@ -97,8 +118,21 @@ function generateTeam(gen: number, dataManager: DataManager, rng: SeededRandom, 
 
     const ivs =
       gen <= 2
-        ? createDvs({ attack: MAX_DV, defense: MAX_DV, speed: MAX_DV, spAttack: MAX_DV, spDefense: MAX_DV })
-        : createIvs({ hp: MAX_IV, attack: MAX_IV, defense: MAX_IV, spAttack: MAX_IV, spDefense: MAX_IV, speed: MAX_IV });
+        ? createDvs({
+            attack: MAX_DV,
+            defense: MAX_DV,
+            speed: MAX_DV,
+            spAttack: MAX_DV,
+            spDefense: MAX_DV,
+          })
+        : createIvs({
+            hp: MAX_IV,
+            attack: MAX_IV,
+            defense: MAX_IV,
+            spAttack: MAX_IV,
+            spDefense: MAX_IV,
+            speed: MAX_IV,
+          });
     const evs = gen <= 2 ? createStatExp() : createEvs();
 
     const abilitySlot = CORE_ABILITY_SLOTS.normal1;
@@ -106,7 +140,12 @@ function generateTeam(gen: number, dataManager: DataManager, rng: SeededRandom, 
     if (gen >= 3) {
       const candidate = species.abilities.normal[0] ?? "";
       if (!candidate) continue;
-      try { dataManager.getAbility(candidate); ability = candidate; } catch { continue; }
+      try {
+        dataManager.getAbility(candidate);
+        ability = candidate;
+      } catch {
+        continue;
+      }
     }
 
     team.push({
@@ -159,10 +198,18 @@ function extractTurnTraces(events: readonly BattleEvent[]): TurnTrace[] {
       currentTurn = e.turnNumber;
     } else if (event.type === BATTLE_EVENT_TYPES.damage) {
       const e = event as DamageEvent;
-      hpEventsThisTurn.push({ key: `${e.side}:${e.pokemon}`, currentHp: e.currentHp, maxHp: e.maxHp });
+      hpEventsThisTurn.push({
+        key: `${e.side}:${e.pokemon}`,
+        currentHp: e.currentHp,
+        maxHp: e.maxHp,
+      });
     } else if (event.type === BATTLE_EVENT_TYPES.heal) {
       const e = event as HealEvent;
-      hpEventsThisTurn.push({ key: `${e.side}:${e.pokemon}`, currentHp: e.currentHp, maxHp: e.maxHp });
+      hpEventsThisTurn.push({
+        key: `${e.side}:${e.pokemon}`,
+        currentHp: e.currentHp,
+        maxHp: e.maxHp,
+      });
     }
   }
 
@@ -218,7 +265,12 @@ export function runDamageTraceSuite(generation: ImplementedGeneration): SuiteRes
       try {
         const ruleset = createRuleset(gen);
         const engine = new BattleEngine(
-          { generation: gen as Generation, format: "singles", teams: [team1, team2], seed: seed + 500 },
+          {
+            generation: gen as Generation,
+            format: "singles",
+            teams: [team1, team2],
+            seed: seed + 500,
+          },
           ruleset,
           dataManager,
         );
@@ -244,7 +296,11 @@ export function runDamageTraceSuite(generation: ImplementedGeneration): SuiteRes
             for (const sideIdx of [0, 1] as const) {
               const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
               if (sw !== null) {
-                try { engine.submitSwitch(sideIdx, sw); } catch { /* side doesn't need a switch */ }
+                try {
+                  engine.submitSwitch(sideIdx, sw);
+                } catch {
+                  /* side doesn't need a switch */
+                }
               }
             }
           } else {
@@ -260,9 +316,7 @@ export function runDamageTraceSuite(generation: ImplementedGeneration): SuiteRes
           failures.push(`Gen${gen} trace ${i} seed=${seed}: ${f}`);
         }
 
-        notes.push(
-          `Trace ${i}: ${turnCount} turns, ${traces.length} turn traces extracted`,
-        );
+        notes.push(`Trace ${i}: ${turnCount} turns, ${traces.length} turn traces extracted`);
       } catch (err) {
         failures.push(
           `Gen${gen} trace ${i} seed=${seed}: ${err instanceof Error ? err.message : String(err)}`,

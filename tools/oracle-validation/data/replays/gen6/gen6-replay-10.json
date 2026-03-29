@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "killoooooon",
-    "vanis_511"
-  ],
+  "players": ["killoooooon", "vanis_511"],
   "teams": [
     [
       {
@@ -17,9 +14,7 @@
       {
         "species": "Roserade",
         "level": 100,
-        "knownMoves": [
-          "toxic-spikes"
-        ],
+        "knownMoves": ["toxic-spikes"],
         "nickname": "Roserade"
       },
       {
@@ -33,19 +28,13 @@
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "dragon-pulse"
-        ],
+        "knownMoves": ["dragon-pulse"],
         "nickname": "gigi"
       },
       {
         "species": "Scolipede",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "earthquake",
-          "megahorn"
-        ],
+        "knownMoves": ["swords-dance", "earthquake", "megahorn"],
         "nickname": "bibi"
       }
     ]

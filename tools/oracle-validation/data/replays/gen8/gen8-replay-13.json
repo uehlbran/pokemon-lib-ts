@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "PokemonGT7",
-    "Imtryingtolosehaha"
-  ],
+  "players": ["PokemonGT7", "Imtryingtolosehaha"],
   "teams": [
     [
       {
@@ -17,20 +14,13 @@
       {
         "species": "Slurpuff",
         "level": 100,
-        "knownMoves": [
-          "belly-drum",
-          "play-rough",
-          "facade",
-          "drain-punch"
-        ],
+        "knownMoves": ["belly-drum", "play-rough", "facade", "drain-punch"],
         "nickname": "Slurpuff"
       },
       {
         "species": "Barbaracle",
         "level": 100,
-        "knownMoves": [
-          "shell-smash"
-        ],
+        "knownMoves": ["shell-smash"],
         "nickname": "Dddddsaf Legacy"
       },
       {
@@ -50,38 +40,25 @@
       {
         "species": "Barraskewda",
         "level": 100,
-        "knownMoves": [
-          "fishious-rend"
-        ],
+        "knownMoves": ["fishious-rend"],
         "nickname": "Barraskewda"
       },
       {
         "species": "Toxicroak",
         "level": 100,
-        "knownMoves": [
-          "baneful-bunker",
-          "mach-punch"
-        ],
+        "knownMoves": ["baneful-bunker", "mach-punch"],
         "nickname": "Toxicroak"
       },
       {
         "species": "Mandibuzz",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "sucker-punch"
-        ],
+        "knownMoves": ["protect", "sucker-punch"],
         "nickname": "Mandibuzz"
       },
       {
         "species": "Mamoswine",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "thousand-arrows",
-          "ice-shard",
-          "glacial-lance"
-        ],
+        "knownMoves": ["protect", "thousand-arrows", "ice-shard", "glacial-lance"],
         "nickname": "Mamoswine"
       }
     ]

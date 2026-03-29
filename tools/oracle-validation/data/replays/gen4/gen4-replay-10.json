@@ -2,56 +2,37 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "NovaAeos",
-    "Possumjuice"
-  ],
+  "players": ["NovaAeos", "Possumjuice"],
   "teams": [
     [
       {
         "species": "Azelf",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "explosion"
-        ],
+        "knownMoves": ["stealth-rock", "explosion"],
         "nickname": "Azelf"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "overheat",
-          "explosion"
-        ],
+        "knownMoves": ["overheat", "explosion"],
         "nickname": "Heatran"
       },
       {
         "species": "Lucario",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "close-combat"
-        ],
+        "knownMoves": ["swords-dance", "close-combat"],
         "nickname": "Lucario"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "taunt",
-          "bounce",
-          "waterfall"
-        ],
+        "knownMoves": ["dragon-dance", "taunt", "bounce", "waterfall"],
         "nickname": "Gyarados"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "surf"
-        ],
+        "knownMoves": ["surf"],
         "nickname": "Latias"
       }
     ],
@@ -59,34 +40,25 @@
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "bullet-punch"
-        ],
+        "knownMoves": ["bullet-punch"],
         "nickname": "Incizior"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "roar"
-        ],
+        "knownMoves": ["stealth-rock", "roar"],
         "nickname": "Swaxolotl"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Stymphalian"
       },
       {
         "species": "Tentacruel",
         "level": 100,
-        "knownMoves": [
-          "sludge-bomb"
-        ],
+        "knownMoves": ["sludge-bomb"],
         "nickname": "Venomara"
       },
       {
@@ -98,9 +70,7 @@
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "grass-knot"
-        ],
+        "knownMoves": ["grass-knot"],
         "nickname": "Sun Wukong"
       }
     ]

@@ -2,63 +2,43 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "flepflepflep",
-    "autumn912"
-  ],
+  "players": ["flepflepflep", "autumn912"],
   "teams": [
     [
       {
         "species": "Azelf",
         "level": 100,
-        "knownMoves": [
-          "taunt",
-          "stealth-rock",
-          "explosion"
-        ],
+        "knownMoves": ["taunt", "stealth-rock", "explosion"],
         "nickname": "Azelf"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "trick",
-          "earthquake"
-        ],
+        "knownMoves": ["trick", "earthquake"],
         "nickname": "Metagross"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "focus-blast"
-        ],
+        "knownMoves": ["shadow-ball", "focus-blast"],
         "nickname": "Gengar"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance"
-        ],
+        "knownMoves": ["dragon-dance"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "draco-meteor"
-        ],
+        "knownMoves": ["surf", "draco-meteor"],
         "nickname": "Latias"
       },
       {
         "species": "Lucario",
         "level": 100,
-        "knownMoves": [
-          "bullet-punch"
-        ],
+        "knownMoves": ["bullet-punch"],
         "nickname": "Lucario"
       }
     ],
@@ -66,44 +46,31 @@
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump"
-        ],
+        "knownMoves": ["hydro-pump"],
         "nickname": "Swampert"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "trick",
-          "earthquake",
-          "explosion"
-        ],
+        "knownMoves": ["trick", "earthquake", "explosion"],
         "nickname": "Metagross"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "crunch",
-          "superpower"
-        ],
+        "knownMoves": ["crunch", "superpower"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Latias"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "focus-blast"
-        ],
+        "knownMoves": ["focus-blast"],
         "nickname": "Gengar"
       }
     ]

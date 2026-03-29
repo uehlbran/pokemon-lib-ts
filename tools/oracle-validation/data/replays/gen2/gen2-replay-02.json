@@ -2,67 +2,43 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "DJSen",
-    "Capitao General ll"
-  ],
+  "players": ["DJSen", "Capitao General ll"],
   "teams": [
     [
       {
         "species": "Misdreavus",
         "level": 100,
-        "knownMoves": [
-          "thief",
-          "perish-song",
-          "pain-split"
-        ],
+        "knownMoves": ["thief", "perish-song", "pain-split"],
         "nickname": "Misdreavus"
       },
       {
         "species": "Forretress",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "explosion"
-        ],
+        "knownMoves": ["spikes", "explosion"],
         "nickname": "Forretress"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "seismic-toss",
-          "soft-boiled"
-        ],
+        "knownMoves": ["thunder-wave", "seismic-toss", "soft-boiled"],
         "nickname": "Blissey"
       },
       {
         "species": "Azumarill",
         "level": 100,
-        "knownMoves": [
-          "perish-song"
-        ],
+        "knownMoves": ["perish-song"],
         "nickname": "Azumarill"
       },
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "lovely-kiss",
-          "ice-beam",
-          "psychic"
-        ],
+        "knownMoves": ["substitute", "lovely-kiss", "ice-beam", "psychic"],
         "nickname": "Jynx"
       },
       {
         "species": "Golem",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "substitute"
-        ],
+        "knownMoves": ["curse", "substitute"],
         "nickname": "Golem"
       }
     ],
@@ -70,60 +46,37 @@
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "hidden-power",
-          "fire-blast",
-          "body-slam"
-        ],
+        "knownMoves": ["substitute", "hidden-power", "fire-blast", "body-slam"],
         "nickname": "RBY King"
       },
       {
         "species": "Machamp",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "encore",
-          "cross-chop",
-          "hidden-power"
-        ],
+        "knownMoves": ["protect", "encore", "cross-chop", "hidden-power"],
         "nickname": "BIIRL"
       },
       {
         "species": "Raichu",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "dynamic-punch"
-        ],
+        "knownMoves": ["thunder", "dynamic-punch"],
         "nickname": "Mascot"
       },
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "sleep-talk",
-          "rest",
-          "psychic"
-        ],
+        "knownMoves": ["growth", "sleep-talk", "rest", "psychic"],
         "nickname": "Spy on"
       },
       {
         "species": "Venusaur",
         "level": 100,
-        "knownMoves": [
-          "razor-leaf"
-        ],
+        "knownMoves": ["razor-leaf"],
         "nickname": "BulbAssault"
       },
       {
         "species": "Steelix",
         "level": 100,
-        "knownMoves": [
-          "curse",
-          "earthquake"
-        ],
+        "knownMoves": ["curse", "earthquake"],
         "nickname": "AAAHNIX"
       }
     ]

@@ -2,37 +2,25 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Zorroduweb",
-    "BWLT2 MeEsSm"
-  ],
+  "players": ["Zorroduweb", "BWLT2 MeEsSm"],
   "teams": [
     [
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "bullet-seed"
-        ],
+        "knownMoves": ["bullet-seed"],
         "nickname": "Breloom"
       },
       {
         "species": "Sableye",
         "level": 100,
-        "knownMoves": [
-          "confuse-ray",
-          "will-o-wisp",
-          "night-shade"
-        ],
+        "knownMoves": ["confuse-ray", "will-o-wisp", "night-shade"],
         "nickname": "Sableye"
       },
       {
         "species": "Machamp",
         "level": 100,
-        "knownMoves": [
-          "dynamic-punch",
-          "ice-punch"
-        ],
+        "knownMoves": ["dynamic-punch", "ice-punch"],
         "nickname": "Machamp"
       },
       {
@@ -44,11 +32,7 @@
       {
         "species": "Gorebyss",
         "level": 100,
-        "knownMoves": [
-          "shell-smash",
-          "ice-beam",
-          "surf"
-        ],
+        "knownMoves": ["shell-smash", "ice-beam", "surf"],
         "nickname": "Gorebyss"
       }
     ],
@@ -56,35 +40,25 @@
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "spikes"
-        ],
+        "knownMoves": ["stealth-rock", "spikes"],
         "nickname": "Skarmory"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Alakazam"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "outrage"
-        ],
+        "knownMoves": ["outrage"],
         "nickname": "Garchomp"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "draco-meteor",
-          "dragon-pulse"
-        ],
+        "knownMoves": ["draco-meteor", "dragon-pulse"],
         "nickname": "Latios"
       },
       {

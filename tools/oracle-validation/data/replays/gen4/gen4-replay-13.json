@@ -2,20 +2,13 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "Vileman",
-    "Lady Bug"
-  ],
+  "players": ["Vileman", "Lady Bug"],
   "teams": [
     [
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "stone-edge",
-          "taunt",
-          "stealth-rock"
-        ],
+        "knownMoves": ["stone-edge", "taunt", "stealth-rock"],
         "nickname": "Aerodactyl"
       }
     ],
@@ -29,10 +22,7 @@
       {
         "species": "Donphan",
         "level": 100,
-        "knownMoves": [
-          "ice-shard",
-          "rapid-spin"
-        ],
+        "knownMoves": ["ice-shard", "rapid-spin"],
         "nickname": "Donphan"
       }
     ]

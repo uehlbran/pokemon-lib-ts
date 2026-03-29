@@ -2,57 +2,37 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "Luleser",
-    "rugzv"
-  ],
+  "players": ["Luleser", "rugzv"],
   "teams": [
     [
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn",
-          "bullet-punch"
-        ],
+        "knownMoves": ["knock-off", "u-turn", "bullet-punch"],
         "nickname": "Scizor"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "light-screen"
-        ],
+        "knownMoves": ["will-o-wisp", "light-screen"],
         "nickname": "Rotom"
       },
       {
         "species": "Walking Wake",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "scald",
-          "dragon-pulse"
-        ],
+        "knownMoves": ["flamethrower", "scald", "dragon-pulse"],
         "nickname": "Walking Wake"
       },
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "rapid-spin",
-          "close-combat"
-        ],
+        "knownMoves": ["earthquake", "rapid-spin", "close-combat"],
         "nickname": "Great Tusk"
       },
       {
         "species": "Moltres",
         "level": 100,
-        "knownMoves": [
-          "scorching-sands"
-        ],
+        "knownMoves": ["scorching-sands"],
         "nickname": "Moltres"
       },
       {
@@ -66,53 +46,37 @@
       {
         "species": "Clodsire",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "toxic",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "toxic", "earthquake"],
         "nickname": "Clodsire"
       },
       {
         "species": "Skeledirge",
         "level": 100,
-        "knownMoves": [
-          "slack-off"
-        ],
+        "knownMoves": ["slack-off"],
         "nickname": "Skeledirge"
       },
       {
         "species": "Alomomola",
         "level": 100,
-        "knownMoves": [
-          "flip-turn",
-          "mirror-coat"
-        ],
+        "knownMoves": ["flip-turn", "mirror-coat"],
         "nickname": "Alomomola"
       },
       {
         "species": "Enamorus",
         "level": 100,
-        "knownMoves": [
-          "superpower"
-        ],
+        "knownMoves": ["superpower"],
         "nickname": "Enamorus"
       },
       {
         "species": "Meowscarada",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "flower-trick"
-        ],
+        "knownMoves": ["knock-off", "flower-trick"],
         "nickname": "Meowscarada"
       },
       {
         "species": "Reuniclus",
         "level": 100,
-        "knownMoves": [
-          "psychic-noise"
-        ],
+        "knownMoves": ["psychic-noise"],
         "nickname": "Reuniclus"
       }
     ]

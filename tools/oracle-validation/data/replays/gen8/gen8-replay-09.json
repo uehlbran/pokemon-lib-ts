@@ -2,72 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "Sacri",
-    "stratdkt"
-  ],
+  "players": ["Sacri", "stratdkt"],
   "teams": [
     [
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "hurricane",
-          "knock-off",
-          "taunt",
-          "u-turn"
-        ],
+        "knownMoves": ["hurricane", "knock-off", "taunt", "u-turn"],
         "nickname": "Tornadus"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "rock-blast",
-          "stealth-rock",
-          "thunder-wave",
-          "earthquake"
-        ],
+        "knownMoves": ["rock-blast", "stealth-rock", "thunder-wave", "earthquake"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "iron-head",
-          "rapid-spin"
-        ],
+        "knownMoves": ["iron-head", "rapid-spin"],
         "nickname": "Excadrill"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "calm-mind",
-          "soft-boiled",
-          "moonblast"
-        ],
+        "knownMoves": ["thunder", "calm-mind", "soft-boiled", "moonblast"],
         "nickname": "Clefable"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "hydro-pump"
-        ],
+        "knownMoves": ["volt-switch", "hydro-pump"],
         "nickname": "Rotom"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "spikes",
-          "gyro-ball",
-          "leech-seed"
-        ],
+        "knownMoves": ["knock-off", "spikes", "gyro-ball", "leech-seed"],
         "nickname": "Ferrothorn"
       }
     ],
@@ -75,58 +46,37 @@
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn",
-          "defog"
-        ],
+        "knownMoves": ["knock-off", "u-turn", "defog"],
         "nickname": "Tornadus"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "moonblast",
-          "soft-boiled",
-          "stealth-rock"
-        ],
+        "knownMoves": ["moonblast", "soft-boiled", "stealth-rock"],
         "nickname": "Clefable"
       },
       {
         "species": "Gastrodon-East",
         "level": 100,
-        "knownMoves": [
-          "scald",
-          "clear-smog",
-          "recover",
-          "toxic"
-        ],
+        "knownMoves": ["scald", "clear-smog", "recover", "toxic"],
         "nickname": "Gastrodon"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "magma-storm",
-          "protect"
-        ],
+        "knownMoves": ["magma-storm", "protect"],
         "nickname": "Heatran"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "body-press"
-        ],
+        "knownMoves": ["spikes", "body-press"],
         "nickname": "Skarmory"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Dragapult"
       }
     ]

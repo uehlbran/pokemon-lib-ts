@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "MI_S1999",
-    "BEMON_G5"
-  ],
+  "players": ["MI_S1999", "BEMON_G5"],
   "teams": [
     [
       {
@@ -17,35 +14,25 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "rock-slide"
-        ],
+        "knownMoves": ["rock-slide"],
         "nickname": "Leonidas"
       },
       {
         "species": "Lucario",
         "level": 100,
-        "knownMoves": [
-          "close-combat"
-        ],
+        "knownMoves": ["close-combat"],
         "nickname": "Spartan"
       },
       {
         "species": "Gastrodon",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "recover",
-          "earthquake"
-        ],
+        "knownMoves": ["surf", "recover", "earthquake"],
         "nickname": "Es Perma"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "waterfall"
-        ],
+        "knownMoves": ["waterfall"],
         "nickname": "GambÃ³n"
       },
       {
@@ -59,38 +46,25 @@
       {
         "species": "Crobat",
         "level": 100,
-        "knownMoves": [
-          "brave-bird",
-          "u-turn"
-        ],
+        "knownMoves": ["brave-bird", "u-turn"],
         "nickname": "Boca tÃºnel"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance"
-        ],
+        "knownMoves": ["swords-dance"],
         "nickname": "Genos"
       },
       {
         "species": "Gallade",
         "level": 100,
-        "knownMoves": [
-          "drain-punch",
-          "bulk-up",
-          "thunder-punch"
-        ],
+        "knownMoves": ["drain-punch", "bulk-up", "thunder-punch"],
         "nickname": "GALLADE jr"
       },
       {
         "species": "Feraligatr",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "waterfall",
-          "aqua-jet"
-        ],
+        "knownMoves": ["swords-dance", "waterfall", "aqua-jet"],
         "nickname": "STIFENWOLF"
       }
     ]

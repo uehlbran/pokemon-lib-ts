@@ -2,68 +2,43 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "Acetylaldehyde",
-    "Ban Manaphy"
-  ],
+  "players": ["Acetylaldehyde", "Ban Manaphy"],
   "teams": [
     [
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "super-fang",
-          "recover"
-        ],
+        "knownMoves": ["thunder-wave", "super-fang", "recover"],
         "nickname": "Chansey"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "recover",
-          "thunder-wave"
-        ],
+        "knownMoves": ["recover", "thunder-wave"],
         "nickname": "Starmie"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder",
-          "razor-leaf"
-        ],
+        "knownMoves": ["sleep-powder", "razor-leaf"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "slash",
-          "explosion"
-        ],
+        "knownMoves": ["slash", "explosion"],
         "nickname": "Tauros"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "thunder-wave",
-          "explosion"
-        ],
+        "knownMoves": ["thunderbolt", "thunder-wave", "explosion"],
         "nickname": "Jolteon"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "recover",
-          "swords-dance",
-          "earthquake",
-          "hyper-beam"
-        ],
+        "knownMoves": ["recover", "swords-dance", "earthquake", "hyper-beam"],
         "nickname": "Snorlax"
       }
     ],
@@ -71,59 +46,37 @@
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "sing",
-          "super-fang",
-          "thunder-wave",
-          "explosion"
-        ],
+        "knownMoves": ["sing", "super-fang", "thunder-wave", "explosion"],
         "nickname": "Clefable"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "razor-leaf",
-          "reflect"
-        ],
+        "knownMoves": ["razor-leaf", "reflect"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Lapras",
         "level": 100,
-        "knownMoves": [
-          "blizzard",
-          "crabhammer",
-          "sing",
-          "thunderbolt"
-        ],
+        "knownMoves": ["blizzard", "crabhammer", "sing", "thunderbolt"],
         "nickname": "Lapras"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "super-fang"
-        ],
+        "knownMoves": ["super-fang"],
         "nickname": "Jolteon"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "slash",
-          "glare"
-        ],
+        "knownMoves": ["slash", "glare"],
         "nickname": "Tauros"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "crabhammer",
-          "blizzard",
-          "thunderbolt"
-        ],
+        "knownMoves": ["crabhammer", "blizzard", "thunderbolt"],
         "nickname": "Starmie"
       }
     ]

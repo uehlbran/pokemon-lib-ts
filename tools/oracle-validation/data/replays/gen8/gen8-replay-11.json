@@ -2,65 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "megastaruniverse",
-    "merlinmorgana"
-  ],
+  "players": ["megastaruniverse", "merlinmorgana"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "toxic"
-        ],
+        "knownMoves": ["stealth-rock", "toxic"],
         "nickname": "Landorus"
       },
       {
         "species": "Keldeo-Resolute",
         "level": 100,
-        "knownMoves": [
-          "scald"
-        ],
+        "knownMoves": ["scald"],
         "nickname": "Keldeo"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "magma-storm",
-          "earth-power",
-          "taunt",
-          "heavy-slam"
-        ],
+        "knownMoves": ["magma-storm", "earth-power", "taunt", "heavy-slam"],
         "nickname": "Heatran"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "knock-off",
-          "heat-wave"
-        ],
+        "knownMoves": ["u-turn", "knock-off", "heat-wave"],
         "nickname": "Tornadus"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Dragapult"
       },
       {
         "species": "Tapu Lele",
         "level": 100,
-        "knownMoves": [
-          "moonblast",
-          "psyshock"
-        ],
+        "knownMoves": ["moonblast", "psyshock"],
         "nickname": "Tapu Lele"
       }
     ],
@@ -68,48 +46,31 @@
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "defog",
-          "u-turn",
-          "earthquake"
-        ],
+        "knownMoves": ["knock-off", "defog", "u-turn", "earthquake"],
         "nickname": "Landorus"
       },
       {
         "species": "Hydreigon",
         "level": 100,
-        "knownMoves": [
-          "dark-pulse",
-          "draco-meteor",
-          "earth-power",
-          "flash-cannon"
-        ],
+        "knownMoves": ["dark-pulse", "draco-meteor", "earth-power", "flash-cannon"],
         "nickname": "Hydreigon"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Toxapex"
       },
       {
         "species": "Tapu Lele",
         "level": 100,
-        "knownMoves": [
-          "moonblast"
-        ],
+        "knownMoves": ["moonblast"],
         "nickname": "Tapu Lele"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "magma-storm"
-        ],
+        "knownMoves": ["stealth-rock", "magma-storm"],
         "nickname": "Heatran"
       },
       {

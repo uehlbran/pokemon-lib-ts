@@ -5,8 +5,8 @@ export {
   BASE_TYPE_BOOST_ITEMS,
   BASE_TYPE_RESIST_BERRIES,
 } from "./damage-calc-shared";
-export { CORE_MECHANIC_MULTIPLIERS, TYPE_EFFECTIVENESS_MULTIPLIERS } from "./mechanics";
 export type { TypeEffectivenessMultiplier } from "./mechanics";
+export { CORE_MECHANIC_MULTIPLIERS, TYPE_EFFECTIVENESS_MULTIPLIERS } from "./mechanics";
 export { ALL_NATURES, NATURES_BY_ID } from "./natures";
 export {
   CORE_ABILITY_IDS,
@@ -16,7 +16,6 @@ export {
   CORE_FIXED_POINT,
   CORE_GENDERS,
   CORE_GIMMICK_IDS,
-  GEN_NUMBERS,
   CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
@@ -37,5 +36,6 @@ export {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   CORE_Z_MOVE_EFFECT_IDS,
+  GEN_NUMBERS,
 } from "./reference-ids";
 export { GEN6_TYPE_CHART } from "./type-chart-data";

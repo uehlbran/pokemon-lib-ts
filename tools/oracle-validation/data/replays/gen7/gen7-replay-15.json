@@ -2,29 +2,19 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "Raton Colorao",
-    "green_lewis"
-  ],
+  "players": ["Raton Colorao", "green_lewis"],
   "teams": [
     [
       {
         "species": "Venomoth",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "psychic"
-        ],
+        "knownMoves": ["quiver-dance", "psychic"],
         "nickname": "Polilla"
       },
       {
         "species": "Lapras",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "ice-shard",
-          "drill-run"
-        ],
+        "knownMoves": ["dragon-dance", "ice-shard", "drill-run"],
         "nickname": "LaConcha"
       },
       {
@@ -38,28 +28,19 @@
       {
         "species": "Torkoal",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "overheat",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "overheat", "earthquake"],
         "nickname": "Torkoal"
       },
       {
         "species": "Lilligant",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder",
-          "quiver-dance"
-        ],
+        "knownMoves": ["sleep-powder", "quiver-dance"],
         "nickname": "Lilligant"
       },
       {
         "species": "Tapu Lele",
         "level": 100,
-        "knownMoves": [
-          "psychic"
-        ],
+        "knownMoves": ["psychic"],
         "nickname": "Tapu Lele"
       }
     ]

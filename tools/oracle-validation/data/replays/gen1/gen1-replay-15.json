@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "BeeOrSomething",
-    "Isza"
-  ],
+  "players": ["BeeOrSomething", "Isza"],
   "teams": [
     [
       {
@@ -17,49 +14,31 @@
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder",
-          "stun-spore",
-          "psychic"
-        ],
+        "knownMoves": ["sleep-powder", "stun-spore", "psychic"],
         "nickname": "Kin Priest"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss",
-          "thunder-wave",
-          "psychic"
-        ],
+        "knownMoves": ["seismic-toss", "thunder-wave", "psychic"],
         "nickname": "Knowledge Demon"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "counter",
-          "earthquake",
-          "body-slam",
-          "self-destruct"
-        ],
+        "knownMoves": ["counter", "earthquake", "body-slam", "self-destruct"],
         "nickname": "The Insatiable"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Ceremonial Beast"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "agility",
-          "thunderbolt"
-        ],
+        "knownMoves": ["agility", "thunderbolt"],
         "nickname": "Doormaker"
       }
     ],
@@ -67,56 +46,37 @@
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "hypnosis",
-          "night-shade"
-        ],
+        "knownMoves": ["hypnosis", "night-shade"],
         "nickname": "Gengar"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "stun-spore"
-        ],
+        "knownMoves": ["psychic", "stun-spore"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "blizzard"
-        ],
+        "knownMoves": ["thunder-wave", "blizzard"],
         "nickname": "Starmie"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "reflect",
-          "rest",
-          "hyper-beam"
-        ],
+        "knownMoves": ["body-slam", "reflect", "rest", "hyper-beam"],
         "nickname": "Snorlax"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "soft-boiled"
-        ],
+        "knownMoves": ["thunder-wave", "soft-boiled"],
         "nickname": "Chansey"
       }
     ]

@@ -2,46 +2,31 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "zts602600",
-    "tryingtohavefunalt"
-  ],
+  "players": ["zts602600", "tryingtohavefunalt"],
   "teams": [
     [
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "ice-beam",
-          "surf",
-          "draco-meteor"
-        ],
+        "knownMoves": ["psychic", "ice-beam", "surf", "draco-meteor"],
         "nickname": "Latias"
       },
       {
         "species": "Thundurus-Therian",
         "level": 100,
-        "knownMoves": [
-          "hidden-power"
-        ],
+        "knownMoves": ["hidden-power"],
         "nickname": "Thundurus"
       },
       {
         "species": "Tangrowth",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "toxic"
-        ],
+        "knownMoves": ["leech-seed", "toxic"],
         "nickname": "Tangrowth"
       },
       {
         "species": "Keldeo-Resolute",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump"
-        ],
+        "knownMoves": ["hydro-pump"],
         "nickname": "Keldeo"
       }
     ],
@@ -49,17 +34,13 @@
       {
         "species": "Terrakion",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Terrakion"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "pursuit"
-        ],
+        "knownMoves": ["pursuit"],
         "nickname": "Scizor"
       },
       {
@@ -71,11 +52,7 @@
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "dragon-claw",
-          "swords-dance",
-          "earthquake"
-        ],
+        "knownMoves": ["dragon-claw", "swords-dance", "earthquake"],
         "nickname": "Garchomp"
       }
     ]

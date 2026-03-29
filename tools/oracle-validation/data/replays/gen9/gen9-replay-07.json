@@ -2,63 +2,43 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "xaldyn512",
-    "SlimyTime"
-  ],
+  "players": ["xaldyn512", "SlimyTime"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "earth-power",
-          "stealth-rock",
-          "u-turn"
-        ],
+        "knownMoves": ["earth-power", "stealth-rock", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Kingambit",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "sucker-punch",
-          "kowtow-cleave"
-        ],
+        "knownMoves": ["swords-dance", "sucker-punch", "kowtow-cleave"],
         "nickname": "Kingambit"
       },
       {
         "species": "Rillaboom",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn"
-        ],
+        "knownMoves": ["knock-off", "u-turn"],
         "nickname": "Rillaboom"
       },
       {
         "species": "Iron Moth",
         "level": 100,
-        "knownMoves": [
-          "fiery-dance"
-        ],
+        "knownMoves": ["fiery-dance"],
         "nickname": "Iron Moth"
       },
       {
         "species": "Hawlucha",
         "level": 100,
-        "knownMoves": [
-          "encore"
-        ],
+        "knownMoves": ["encore"],
         "nickname": "El Contrabandista"
       },
       {
         "species": "Gardevoir",
         "level": 100,
-        "knownMoves": [
-          "calm-mind"
-        ],
+        "knownMoves": ["calm-mind"],
         "nickname": "Rhapsodie"
       }
     ],
@@ -66,56 +46,37 @@
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "hex",
-          "dragon-darts"
-        ],
+        "knownMoves": ["will-o-wisp", "hex", "dragon-darts"],
         "nickname": "Dragapult"
       },
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Great Tusk"
       },
       {
         "species": "Alomomola",
         "level": 100,
-        "knownMoves": [
-          "flip-turn",
-          "scald",
-          "protect",
-          "wish"
-        ],
+        "knownMoves": ["flip-turn", "scald", "protect", "wish"],
         "nickname": "Alomomola"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "protect"
-        ],
+        "knownMoves": ["protect"],
         "nickname": "Heatran"
       },
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "ice-shard"
-        ],
+        "knownMoves": ["knock-off", "ice-shard"],
         "nickname": "Weavile"
       },
       {
         "species": "Cresselia",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "moonlight"
-        ],
+        "knownMoves": ["calm-mind", "moonlight"],
         "nickname": "Cresselia"
       }
     ]

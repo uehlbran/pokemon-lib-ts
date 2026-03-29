@@ -2,49 +2,31 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "MeanMeanManz",
-    "Anaximines"
-  ],
+  "players": ["MeanMeanManz", "Anaximines"],
   "teams": [
     [
       {
         "species": "Smeargle",
         "level": 100,
-        "knownMoves": [
-          "spore",
-          "spikes",
-          "will-o-wisp",
-          "explosion"
-        ],
+        "knownMoves": ["spore", "spikes", "will-o-wisp", "explosion"],
         "nickname": "Smeargle"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "giga-drain"
-        ],
+        "knownMoves": ["giga-drain"],
         "nickname": "Gengar"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "double-edge",
-          "rock-slide"
-        ],
+        "knownMoves": ["dragon-dance", "double-edge", "rock-slide"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "rock-slide",
-          "double-edge"
-        ],
+        "knownMoves": ["substitute", "rock-slide", "double-edge"],
         "nickname": "Aerodactyl"
       }
     ],
@@ -58,39 +40,25 @@
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "rapid-spin"
-        ],
+        "knownMoves": ["toxic", "rapid-spin"],
         "nickname": "Claydol"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "drill-peck",
-          "protect",
-          "roar"
-        ],
+        "knownMoves": ["spikes", "drill-peck", "protect", "roar"],
         "nickname": "Skarmory"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "leech-seed"
-        ],
+        "knownMoves": ["calm-mind", "leech-seed"],
         "nickname": "Celebi"
       },
       {
         "species": "Milotic",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "surf"
-        ],
+        "knownMoves": ["toxic", "surf"],
         "nickname": "Milotic"
       },
       {

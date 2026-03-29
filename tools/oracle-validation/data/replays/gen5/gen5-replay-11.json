@@ -2,64 +2,43 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Max OKLM",
-    "clippoo"
-  ],
+  "players": ["Max OKLM", "clippoo"],
   "teams": [
     [
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "light-screen",
-          "reflect"
-        ],
+        "knownMoves": ["light-screen", "reflect"],
         "nickname": "Espeon"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "giga-drain",
-          "fire-blast"
-        ],
+        "knownMoves": ["quiver-dance", "giga-drain", "fire-blast"],
         "nickname": "Volcarona"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "ice-beam"
-        ],
+        "knownMoves": ["thunderbolt", "ice-beam"],
         "nickname": "Starmie"
       },
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "rock-tomb",
-          "mach-punch"
-        ],
+        "knownMoves": ["rock-tomb", "mach-punch"],
         "nickname": "Breloom"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "crunch"
-        ],
+        "knownMoves": ["crunch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "outrage"
-        ],
+        "knownMoves": ["dragon-dance", "outrage"],
         "nickname": "Dragonite"
       }
     ],
@@ -67,30 +46,19 @@
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "volt-switch"
-        ],
+        "knownMoves": ["volt-switch"],
         "nickname": "Rotom"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "pursuit",
-          "quick-attack",
-          "bullet-punch"
-        ],
+        "knownMoves": ["u-turn", "pursuit", "quick-attack", "bullet-punch"],
         "nickname": "Scizor"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "waterfall",
-          "bounce",
-          "toxic"
-        ],
+        "knownMoves": ["waterfall", "bounce", "toxic"],
         "nickname": "Gyarados"
       },
       {
@@ -102,18 +70,13 @@
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Starmie"
       },
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "close-combat",
-          "overheat"
-        ],
+        "knownMoves": ["close-combat", "overheat"],
         "nickname": "Infernape"
       }
     ]

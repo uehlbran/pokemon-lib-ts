@@ -2,20 +2,13 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Fakes",
-    "gorgie"
-  ],
+  "players": ["Fakes", "gorgie"],
   "teams": [
     [
       {
         "species": "Nidoking",
         "level": 100,
-        "knownMoves": [
-          "thief",
-          "ice-beam",
-          "earthquake"
-        ],
+        "knownMoves": ["thief", "ice-beam", "earthquake"],
         "nickname": "Nidoking"
       },
       {
@@ -27,41 +20,25 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest",
-          "sleep-talk",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "rest", "sleep-talk", "hidden-power"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "earthquake"
-        ],
+        "knownMoves": ["body-slam", "earthquake"],
         "nickname": "Snorlax"
       },
       {
         "species": "Tentacruel",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "swords-dance",
-          "hydro-pump",
-          "sludge-bomb"
-        ],
+        "knownMoves": ["substitute", "swords-dance", "hydro-pump", "sludge-bomb"],
         "nickname": "Tentacruel"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "giga-drain"
-        ],
+        "knownMoves": ["psychic", "giga-drain"],
         "nickname": "Exeggutor"
       }
     ],
@@ -69,60 +46,37 @@
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "spikes",
-          "explosion"
-        ],
+        "knownMoves": ["surf", "spikes", "explosion"],
         "nickname": "Cloyster"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest",
-          "sleep-talk",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "rest", "sleep-talk", "hidden-power"],
         "nickname": "Raikou"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "self-destruct"
-        ],
+        "knownMoves": ["lovely-kiss", "self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "thief"
-        ],
+        "knownMoves": ["thunderbolt", "thief"],
         "nickname": "Gengar"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "hidden-power",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "hidden-power", "thunderbolt"],
         "nickname": "Zapdos"
       },
       {
         "species": "Vaporeon",
         "level": 100,
-        "knownMoves": [
-          "growth",
-          "substitute",
-          "hydro-pump"
-        ],
+        "knownMoves": ["growth", "substitute", "hydro-pump"],
         "nickname": "Vaporeon"
       }
     ]

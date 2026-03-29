@@ -2,28 +2,19 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "rby sd sweep",
-    "rbysd dsybr"
-  ],
+  "players": ["rby sd sweep", "rbysd dsybr"],
   "teams": [
     [
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Alakazam"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "thunder-wave",
-          "recover"
-        ],
+        "knownMoves": ["thunderbolt", "thunder-wave", "recover"],
         "nickname": "Starmie"
       },
       {
@@ -35,29 +26,19 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "self-destruct"
-        ],
+        "knownMoves": ["body-slam", "self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder",
-          "rest",
-          "psychic"
-        ],
+        "knownMoves": ["sleep-powder", "rest", "psychic"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "rest"
-        ],
+        "knownMoves": ["body-slam", "rest"],
         "nickname": "Tauros"
       }
     ],
@@ -65,57 +46,37 @@
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "blizzard",
-          "psychic"
-        ],
+        "knownMoves": ["lovely-kiss", "blizzard", "psychic"],
         "nickname": "Jynx"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "seismic-toss"
-        ],
+        "knownMoves": ["thunder-wave", "seismic-toss"],
         "nickname": "Chansey"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "blizzard"
-        ],
+        "knownMoves": ["body-slam", "blizzard"],
         "nickname": "Tauros"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "blizzard",
-          "psychic",
-          "recover"
-        ],
+        "knownMoves": ["blizzard", "psychic", "recover"],
         "nickname": "Starmie"
       },
       {
         "species": "Rhydon",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "body-slam"
-        ],
+        "knownMoves": ["earthquake", "body-slam"],
         "nickname": "Rhydon"
       },
       {
         "species": "Cloyster",
         "level": 100,
-        "knownMoves": [
-          "blizzard",
-          "explosion"
-        ],
+        "knownMoves": ["blizzard", "explosion"],
         "nickname": "Cloyster"
       }
     ]

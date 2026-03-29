@@ -2,39 +2,25 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "megastaruniverse",
-    "floppania"
-  ],
+  "players": ["megastaruniverse", "floppania"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "toxic",
-          "earthquake",
-          "u-turn"
-        ],
+        "knownMoves": ["stealth-rock", "toxic", "earthquake", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "u-turn"
-        ],
+        "knownMoves": ["knock-off", "u-turn"],
         "nickname": "Tornadus"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "heavy-slam",
-          "earth-power"
-        ],
+        "knownMoves": ["heavy-slam", "earth-power"],
         "nickname": "Heatran"
       },
       {
@@ -48,44 +34,31 @@
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Landorus"
       },
       {
         "species": "Tapu Fini",
         "level": 100,
-        "knownMoves": [
-          "defog",
-          "taunt",
-          "surf"
-        ],
+        "knownMoves": ["defog", "taunt", "surf"],
         "nickname": "Tapu Fini"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "leech-seed"
-        ],
+        "knownMoves": ["leech-seed"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "moonblast"
-        ],
+        "knownMoves": ["calm-mind", "moonblast"],
         "nickname": "Clefable"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "earth-power"
-        ],
+        "knownMoves": ["earth-power"],
         "nickname": "Heatran"
       }
     ]

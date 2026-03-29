@@ -2,20 +2,13 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "BWLT1 Raiza",
-    "BWLT2 MARTH"
-  ],
+  "players": ["BWLT1 Raiza", "BWLT2 MARTH"],
   "teams": [
     [
       {
         "species": "Uxie",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "rain-dance",
-          "u-turn"
-        ],
+        "knownMoves": ["stealth-rock", "rain-dance", "u-turn"],
         "nickname": "Uxie"
       },
       {
@@ -29,11 +22,7 @@
       {
         "species": "Thundurus-Therian",
         "level": 100,
-        "knownMoves": [
-          "nasty-plot",
-          "agility",
-          "thunder"
-        ],
+        "knownMoves": ["nasty-plot", "agility", "thunder"],
         "nickname": "Thundurus"
       }
     ]

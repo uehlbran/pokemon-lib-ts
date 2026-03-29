@@ -2,38 +2,25 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "your ear",
-    "Jayboyah"
-  ],
+  "players": ["your ear", "Jayboyah"],
   "teams": [
     [
       {
         "species": "Magneton",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "thunder-wave",
-          "thunderbolt",
-          "hidden-power"
-        ],
+        "knownMoves": ["substitute", "thunder-wave", "thunderbolt", "hidden-power"],
         "nickname": "Magneton"
       },
       {
         "species": "Medicham",
         "level": 100,
-        "knownMoves": [
-          "brick-break"
-        ],
+        "knownMoves": ["brick-break"],
         "nickname": "Medicham"
       },
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "rock-slide"
-        ],
+        "knownMoves": ["substitute", "rock-slide"],
         "nickname": "Aerodactyl"
       },
       {
@@ -47,41 +34,31 @@
       {
         "species": "Glalie",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Glalie"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "roar"
-        ],
+        "knownMoves": ["roar"],
         "nickname": "Jolteon"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Swampert"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Gengar"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance"
-        ],
+        "knownMoves": ["dragon-dance"],
         "nickname": "Tyranitar"
       }
     ]

@@ -2,45 +2,31 @@
   "id": "",
   "format": "[Gen 2] OU",
   "generation": 2,
-  "players": [
-    "Fakes",
-    "gorgie"
-  ],
+  "players": ["Fakes", "gorgie"],
   "teams": [
     [
       {
         "species": "Smeargle",
         "level": 100,
-        "knownMoves": [
-          "spikes"
-        ],
+        "knownMoves": ["spikes"],
         "nickname": "Smeargle"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "hidden-power"
-        ],
+        "knownMoves": ["thunder", "hidden-power"],
         "nickname": "Zapdos"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "curse"
-        ],
+        "knownMoves": ["body-slam", "curse"],
         "nickname": "Snorlax"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "explosion"
-        ],
+        "knownMoves": ["psychic", "explosion"],
         "nickname": "Exeggutor"
       },
       {
@@ -52,11 +38,7 @@
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "dynamic-punch",
-          "thunder"
-        ],
+        "knownMoves": ["ice-punch", "dynamic-punch", "thunder"],
         "nickname": "Gengar"
       }
     ],
@@ -64,55 +46,37 @@
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "frustration"
-        ],
+        "knownMoves": ["frustration"],
         "nickname": "Snorlax"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "steel-wing",
-          "rest",
-          "sleep-talk",
-          "curse"
-        ],
+        "knownMoves": ["steel-wing", "rest", "sleep-talk", "curse"],
         "nickname": "Skarmory"
       },
       {
         "species": "Jolteon",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "rest"
-        ],
+        "knownMoves": ["thunder", "rest"],
         "nickname": "Jolteon"
       },
       {
         "species": "Umbreon",
         "level": 100,
-        "knownMoves": [
-          "pursuit"
-        ],
+        "knownMoves": ["pursuit"],
         "nickname": "Umbreon"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "recover"
-        ],
+        "knownMoves": ["thunder-wave", "recover"],
         "nickname": "Starmie"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "rest"
-        ],
+        "knownMoves": ["reflect", "rest"],
         "nickname": "Dragonite"
       }
     ]

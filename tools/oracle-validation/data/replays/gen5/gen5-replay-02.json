@@ -2,46 +2,31 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Qwerttyyyy",
-    "Max OKLM"
-  ],
+  "players": ["Qwerttyyyy", "Max OKLM"],
   "teams": [
     [
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "psyshock"
-        ],
+        "knownMoves": ["psyshock"],
         "nickname": "Espeon"
       },
       {
         "species": "Haxorus",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "earthquake",
-          "dual-chop"
-        ],
+        "knownMoves": ["dragon-dance", "earthquake", "dual-chop"],
         "nickname": "Haxorus"
       },
       {
         "species": "Infernape",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "mach-punch"
-        ],
+        "knownMoves": ["swords-dance", "mach-punch"],
         "nickname": "Infernape"
       },
       {
         "species": "Froslass",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "protect"
-        ],
+        "knownMoves": ["hidden-power", "protect"],
         "nickname": "Froslass"
       },
       {
@@ -53,10 +38,7 @@
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "fly",
-          "fire-fang"
-        ],
+        "knownMoves": ["fly", "fire-fang"],
         "nickname": "Aerodactyl"
       }
     ],
@@ -64,45 +46,31 @@
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "reflect",
-          "light-screen",
-          "psychic"
-        ],
+        "knownMoves": ["reflect", "light-screen", "psychic"],
         "nickname": "Espeon"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "crunch"
-        ],
+        "knownMoves": ["dragon-dance", "crunch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "extreme-speed"
-        ],
+        "knownMoves": ["extreme-speed"],
         "nickname": "Dragonite"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump",
-          "ice-beam"
-        ],
+        "knownMoves": ["hydro-pump", "ice-beam"],
         "nickname": "Starmie"
       },
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "mach-punch"
-        ],
+        "knownMoves": ["mach-punch"],
         "nickname": "Breloom"
       },
       {

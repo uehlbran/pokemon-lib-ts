@@ -2,69 +2,43 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "RBYSD_Blue",
-    "rby sd sweep"
-  ],
+  "players": ["RBYSD_Blue", "rby sd sweep"],
   "teams": [
     [
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "blizzard",
-          "psychic"
-        ],
+        "knownMoves": ["lovely-kiss", "blizzard", "psychic"],
         "nickname": "Jynx"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "psychic",
-          "seismic-toss",
-          "recover"
-        ],
+        "knownMoves": ["thunder-wave", "psychic", "seismic-toss", "recover"],
         "nickname": "Alakazam"
       },
       {
         "species": "Rhydon",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "earthquake"
-        ],
+        "knownMoves": ["body-slam", "earthquake"],
         "nickname": "Rhydon"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "sleep-powder",
-          "mega-drain",
-          "explosion"
-        ],
+        "knownMoves": ["psychic", "sleep-powder", "mega-drain", "explosion"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Slowbro",
         "level": 100,
-        "knownMoves": [
-          "amnesia",
-          "surf",
-          "rest"
-        ],
+        "knownMoves": ["amnesia", "surf", "rest"],
         "nickname": "Slowbro"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       }
     ],
@@ -72,57 +46,37 @@
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Alakazam"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "recover",
-          "psychic",
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunder-wave", "recover", "psychic", "thunderbolt"],
         "nickname": "Starmie"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "rest"
-        ],
+        "knownMoves": ["body-slam", "rest"],
         "nickname": "Snorlax"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "rest",
-          "sleep-powder"
-        ],
+        "knownMoves": ["psychic", "rest", "sleep-powder"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Rhydon",
         "level": 100,
-        "knownMoves": [
-          "rock-slide",
-          "substitute",
-          "earthquake"
-        ],
+        "knownMoves": ["rock-slide", "substitute", "earthquake"],
         "nickname": "Rhydon"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       }
     ]

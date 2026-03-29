@@ -2,27 +2,19 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Voiryn",
-    "Max OKLM"
-  ],
+  "players": ["Voiryn", "Max OKLM"],
   "teams": [
     [
       {
         "species": "Gastrodon",
         "level": 100,
-        "knownMoves": [
-          "counter",
-          "scald"
-        ],
+        "knownMoves": ["counter", "scald"],
         "nickname": "Gastrodon"
       },
       {
         "species": "Victini",
         "level": 100,
-        "knownMoves": [
-          "v-create"
-        ],
+        "knownMoves": ["v-create"],
         "nickname": "Bonkai"
       },
       {
@@ -36,19 +28,13 @@
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "light-screen"
-        ],
+        "knownMoves": ["light-screen"],
         "nickname": "Espeon"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "crunch",
-          "fire-punch"
-        ],
+        "knownMoves": ["dragon-dance", "crunch", "fire-punch"],
         "nickname": "Tyranitar"
       }
     ]

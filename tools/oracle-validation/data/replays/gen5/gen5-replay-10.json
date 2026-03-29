@@ -2,29 +2,19 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "BWLT2 MeEsSm",
-    "SammyHeavenly"
-  ],
+  "players": ["BWLT2 MeEsSm", "SammyHeavenly"],
   "teams": [
     [
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Skarmory"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "outrage",
-          "earthquake",
-          "fire-fang"
-        ],
+        "knownMoves": ["swords-dance", "outrage", "earthquake", "fire-fang"],
         "nickname": "Garchomp"
       },
       {
@@ -36,25 +26,19 @@
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "pursuit"
-        ],
+        "knownMoves": ["pursuit"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "surf"
-        ],
+        "knownMoves": ["surf"],
         "nickname": "Latios"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Alakazam"
       }
     ],
@@ -62,54 +46,37 @@
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "volt-switch"
-        ],
+        "knownMoves": ["will-o-wisp", "volt-switch"],
         "nickname": "Rotom"
       },
       {
         "species": "Terrakion",
         "level": 100,
-        "knownMoves": [
-          "close-combat"
-        ],
+        "knownMoves": ["close-combat"],
         "nickname": "Terrakion"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "swords-dance",
-          "iron-head",
-          "rapid-spin"
-        ],
+        "knownMoves": ["earthquake", "swords-dance", "iron-head", "rapid-spin"],
         "nickname": "Excadrill"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "baton-pass",
-          "psychic"
-        ],
+        "knownMoves": ["baton-pass", "psychic"],
         "nickname": "Celebi"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "crunch"
-        ],
+        "knownMoves": ["crunch"],
         "nickname": "Tyranitar"
       }
     ]

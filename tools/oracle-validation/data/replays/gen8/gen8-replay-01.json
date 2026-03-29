@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "astamix",
-    "appollo999"
-  ],
+  "players": ["astamix", "appollo999"],
   "teams": [
     [
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "thunderbolt"
-        ],
+        "knownMoves": ["volt-switch", "thunderbolt"],
         "nickname": "Faísca"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "spikes"
-        ],
+        "knownMoves": ["thunder-wave", "spikes"],
         "nickname": "Panela depressão"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "heal-bell",
-          "soft-boiled"
-        ],
+        "knownMoves": ["heal-bell", "soft-boiled"],
         "nickname": "Sakura"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "u-turn",
-          "stone-edge",
-          "earthquake"
-        ],
+        "knownMoves": ["stealth-rock", "u-turn", "stone-edge", "earthquake"],
         "nickname": "Bri.psmisc23"
       },
       {
         "species": "Conkeldurr",
         "level": 100,
-        "knownMoves": [
-          "drain-punch"
-        ],
+        "knownMoves": ["drain-punch"],
         "nickname": "Pedreiro"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "giga-drain",
-          "fiery-dance"
-        ],
+        "knownMoves": ["quiver-dance", "giga-drain", "fiery-dance"],
         "nickname": "Radiaça absoluta"
       }
     ],
@@ -69,61 +46,37 @@
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "swords-dance",
-          "u-turn",
-          "bullet-punch"
-        ],
+        "knownMoves": ["knock-off", "swords-dance", "u-turn", "bullet-punch"],
         "nickname": "Scizor"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "heat-wave",
-          "u-turn",
-          "defog"
-        ],
+        "knownMoves": ["heat-wave", "u-turn", "defog"],
         "nickname": "Tornadus"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "volt-switch",
-          "pain-split",
-          "hydro-pump"
-        ],
+        "knownMoves": ["will-o-wisp", "volt-switch", "pain-split", "hydro-pump"],
         "nickname": "Rotom"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "baneful-bunker",
-          "haze",
-          "scald"
-        ],
+        "knownMoves": ["toxic", "baneful-bunker", "haze", "scald"],
         "nickname": "Toxapex"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "magma-storm",
-          "earth-power"
-        ],
+        "knownMoves": ["magma-storm", "earth-power"],
         "nickname": "Heatran"
       },
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "leaf-blade"
-        ],
+        "knownMoves": ["leaf-blade"],
         "nickname": "Kartana"
       }
     ]

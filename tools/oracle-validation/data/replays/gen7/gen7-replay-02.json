@@ -2,60 +2,43 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "Prathya",
-    "Indralok"
-  ],
+  "players": ["Prathya", "Indralok"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "explosion"
-        ],
+        "knownMoves": ["stealth-rock", "explosion"],
         "nickname": "Landorus"
       },
       {
         "species": "Magearna",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Magearna"
       },
       {
         "species": "Mawile",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "knock-off"
-        ],
+        "knownMoves": ["swords-dance", "knock-off"],
         "nickname": "Mawile"
       },
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "volt-switch"
-        ],
+        "knownMoves": ["volt-switch"],
         "nickname": "Tapu Koko"
       },
       {
         "species": "Hawlucha",
         "level": 100,
-        "knownMoves": [
-          "swords-dance"
-        ],
+        "knownMoves": ["swords-dance"],
         "nickname": "Hawlucha"
       },
       {
         "species": "Greninja",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump"
-        ],
+        "knownMoves": ["hydro-pump"],
         "nickname": "Greninja"
       }
     ],
@@ -63,43 +46,31 @@
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Latias"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "soft-boiled"
-        ],
+        "knownMoves": ["stealth-rock", "soft-boiled"],
         "nickname": "Chansey"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "counter"
-        ],
+        "knownMoves": ["counter"],
         "nickname": "Skarmory"
       },
       {
         "species": "Diggersby",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "breakneck-blitz"
-        ],
+        "knownMoves": ["earthquake", "breakneck-blitz"],
         "nickname": "Diggersby"
       },
       {
         "species": "Muk-Alola",
         "level": 100,
-        "knownMoves": [
-          "gunk-shot"
-        ],
+        "knownMoves": ["gunk-shot"],
         "nickname": "Muk"
       },
       {

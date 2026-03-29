@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "leanne8928921",
-    "NAAATTTHHH"
-  ],
+  "players": ["leanne8928921", "NAAATTTHHH"],
   "teams": [
     [
       {
@@ -17,49 +14,31 @@
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "wish",
-          "ice-beam",
-          "moonblast"
-        ],
+        "knownMoves": ["stealth-rock", "wish", "ice-beam", "moonblast"],
         "nickname": "Clefable"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "crunch",
-          "ice-punch"
-        ],
+        "knownMoves": ["dragon-dance", "crunch", "ice-punch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Scizor"
       },
       {
         "species": "Volcanion",
         "level": 100,
-        "knownMoves": [
-          "steam-eruption",
-          "sludge-bomb"
-        ],
+        "knownMoves": ["steam-eruption", "sludge-bomb"],
         "nickname": "Volcanion"
       },
       {
         "species": "Talonflame",
         "level": 100,
-        "knownMoves": [
-          "roost",
-          "swords-dance",
-          "brave-bird"
-        ],
+        "knownMoves": ["roost", "swords-dance", "brave-bird"],
         "nickname": "Talonflame"
       }
     ],
@@ -67,59 +46,37 @@
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "outrage",
-          "stone-edge"
-        ],
+        "knownMoves": ["outrage", "stone-edge"],
         "nickname": "Garchomp"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "stealth-rock",
-          "magma-storm",
-          "protect"
-        ],
+        "knownMoves": ["toxic", "stealth-rock", "magma-storm", "protect"],
         "nickname": "Heatran"
       },
       {
         "species": "Tangrowth",
         "level": 100,
-        "knownMoves": [
-          "giga-drain"
-        ],
+        "knownMoves": ["giga-drain"],
         "nickname": "Tangrowth"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "pain-split",
-          "volt-switch",
-          "hydro-pump"
-        ],
+        "knownMoves": ["pain-split", "volt-switch", "hydro-pump"],
         "nickname": "Rotom"
       },
       {
         "species": "Charizard",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "roost"
-        ],
+        "knownMoves": ["flamethrower", "roost"],
         "nickname": "Charizard"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "volt-switch",
-          "roost",
-          "heat-wave"
-        ],
+        "knownMoves": ["toxic", "volt-switch", "roost", "heat-wave"],
         "nickname": "Zapdos"
       }
     ]

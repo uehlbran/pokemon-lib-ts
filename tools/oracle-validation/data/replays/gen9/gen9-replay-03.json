@@ -2,60 +2,37 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "BarronCosimo",
-    "roddyj"
-  ],
+  "players": ["BarronCosimo", "roddyj"],
   "teams": [
     [
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "outrage",
-          "earthquake",
-          "extreme-speed"
-        ],
+        "knownMoves": ["outrage", "earthquake", "extreme-speed"],
         "nickname": "Dragonite"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "agility",
-          "calm-mind",
-          "aura-sphere",
-          "stored-power"
-        ],
+        "knownMoves": ["agility", "calm-mind", "aura-sphere", "stored-power"],
         "nickname": "Latios"
       },
       {
         "species": "Iron Valiant",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "moonblast"
-        ],
+        "knownMoves": ["knock-off", "moonblast"],
         "nickname": "Iron Valiant"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "bullet-punch",
-          "knock-off"
-        ],
+        "knownMoves": ["swords-dance", "bullet-punch", "knock-off"],
         "nickname": "Scizor"
       },
       {
         "species": "Zamazenta",
         "level": 100,
-        "knownMoves": [
-          "roar",
-          "body-press",
-          "iron-defense"
-        ],
+        "knownMoves": ["roar", "body-press", "iron-defense"],
         "nickname": "Zamazenta"
       }
     ],
@@ -63,58 +40,37 @@
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "glare",
-          "leech-seed",
-          "substitute"
-        ],
+        "knownMoves": ["glare", "leech-seed", "substitute"],
         "nickname": "Serperior"
       },
       {
         "species": "Weezing-Galar",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "strange-steam"
-        ],
+        "knownMoves": ["will-o-wisp", "strange-steam"],
         "nickname": "Weezing"
       },
       {
         "species": "Raikou",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "light-screen",
-          "volt-switch"
-        ],
+        "knownMoves": ["thunder-wave", "light-screen", "volt-switch"],
         "nickname": "Raikou"
       },
       {
         "species": "Incineroar",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "parting-shot"
-        ],
+        "knownMoves": ["knock-off", "parting-shot"],
         "nickname": "Incineroar"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "substitute",
-          "waterfall"
-        ],
+        "knownMoves": ["dragon-dance", "substitute", "waterfall"],
         "nickname": "Gyarados"
       },
       {
         "species": "Kyurem",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "icicle-spear"
-        ],
+        "knownMoves": ["dragon-dance", "icicle-spear"],
         "nickname": "Kyurem"
       }
     ]

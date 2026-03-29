@@ -2,47 +2,31 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Booru",
-    "theramtor"
-  ],
+  "players": ["Booru", "theramtor"],
   "teams": [
     [
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "rock-slide"
-        ],
+        "knownMoves": ["rock-slide"],
         "nickname": "Warned you."
       },
       {
         "species": "Magneton",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "protect",
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunderbolt", "protect", "thunder-wave"],
         "nickname": "Magneton"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "rest",
-          "hidden-power"
-        ],
+        "knownMoves": ["calm-mind", "rest", "hidden-power"],
         "nickname": "Don't send blissey"
       },
       {
         "species": "Flygon",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "hidden-power"
-        ],
+        "knownMoves": ["protect", "hidden-power"],
         "nickname": "FlyGoingHome"
       }
     ],
@@ -50,46 +34,31 @@
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Skarmory"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "fire-punch",
-          "giga-drain",
-          "ice-punch"
-        ],
+        "knownMoves": ["fire-punch", "giga-drain", "ice-punch"],
         "nickname": "Gengar"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "leech-seed"
-        ],
+        "knownMoves": ["leech-seed"],
         "nickname": "Celebi"
       },
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "psychic"
-        ],
+        "knownMoves": ["psychic"],
         "nickname": "Claydol"
       },
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "calm-mind",
-          "substitute",
-          "surf",
-          "protect"
-        ],
+        "knownMoves": ["calm-mind", "substitute", "surf", "protect"],
         "nickname": "Suicune"
       }
     ]

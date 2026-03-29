@@ -2,29 +2,19 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "io ricordo",
-    "lunathiccc"
-  ],
+  "players": ["io ricordo", "lunathiccc"],
   "teams": [
     [
       {
         "species": "Houndoom",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "pursuit",
-          "hidden-power"
-        ],
+        "knownMoves": ["flamethrower", "pursuit", "hidden-power"],
         "nickname": "OmDum"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "ice-punch"
-        ],
+        "knownMoves": ["will-o-wisp", "ice-punch"],
         "nickname": "Lady Gaga"
       },
       {
@@ -38,34 +28,25 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Freeman"
       },
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "shadow-ball"
-        ],
+        "knownMoves": ["earthquake", "shadow-ball"],
         "nickname": "Claydol"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "pursuit"
-        ],
+        "knownMoves": ["pursuit"],
         "nickname": "Brush your Teeth"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "calm-mind"
-        ],
+        "knownMoves": ["calm-mind"],
         "nickname": "Jirachi"
       },
       {

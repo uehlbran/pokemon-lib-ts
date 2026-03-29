@@ -2,28 +2,19 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "Ryan99s",
-    "Pyrax69"
-  ],
+  "players": ["Ryan99s", "Pyrax69"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "u-turn"
-        ],
+        "knownMoves": ["stealth-rock", "u-turn"],
         "nickname": "Landorus"
       },
       {
         "species": "Corviknight",
         "level": 100,
-        "knownMoves": [
-          "iron-defense",
-          "protect"
-        ],
+        "knownMoves": ["iron-defense", "protect"],
         "nickname": "Corviknight"
       },
       {
@@ -37,12 +28,7 @@
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "sacred-sword",
-          "knock-off",
-          "leaf-blade"
-        ],
+        "knownMoves": ["swords-dance", "sacred-sword", "knock-off", "leaf-blade"],
         "nickname": "Kartana"
       }
     ]

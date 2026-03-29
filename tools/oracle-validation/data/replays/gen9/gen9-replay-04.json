@@ -2,50 +2,31 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "GenericEdgeLrd",
-    "Phantome1264"
-  ],
+  "players": ["GenericEdgeLrd", "Phantome1264"],
   "teams": [
     [
       {
         "species": "Gliscor",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "u-turn",
-          "protect",
-          "earthquake"
-        ],
+        "knownMoves": ["toxic", "u-turn", "protect", "earthquake"],
         "nickname": "Gliscor"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "leaf-storm",
-          "glare"
-        ],
+        "knownMoves": ["substitute", "leaf-storm", "glare"],
         "nickname": "Serperior"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "flip-turn"
-        ],
+        "knownMoves": ["flip-turn"],
         "nickname": "Latios"
       },
       {
         "species": "Kingambit",
         "level": 100,
-        "knownMoves": [
-          "iron-head",
-          "sucker-punch",
-          "swords-dance",
-          "kowtow-cleave"
-        ],
+        "knownMoves": ["iron-head", "sucker-punch", "swords-dance", "kowtow-cleave"],
         "nickname": "Kingambit"
       },
       {
@@ -57,11 +38,7 @@
       {
         "species": "Quaquaval",
         "level": 100,
-        "knownMoves": [
-          "aqua-step",
-          "rapid-spin",
-          "close-combat"
-        ],
+        "knownMoves": ["aqua-step", "rapid-spin", "close-combat"],
         "nickname": "Quaquaval"
       }
     ],
@@ -69,55 +46,37 @@
       {
         "species": "Alomomola",
         "level": 100,
-        "knownMoves": [
-          "scald",
-          "flip-turn",
-          "protect",
-          "wish"
-        ],
+        "knownMoves": ["scald", "flip-turn", "protect", "wish"],
         "nickname": "Alomomola"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "hurricane"
-        ],
+        "knownMoves": ["hurricane"],
         "nickname": "Zapdos"
       },
       {
         "species": "Rillaboom",
         "level": 100,
-        "knownMoves": [
-          "grassy-glide",
-          "wood-hammer"
-        ],
+        "knownMoves": ["grassy-glide", "wood-hammer"],
         "nickname": "Rillaboom"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "moonblast",
-          "wish"
-        ],
+        "knownMoves": ["stealth-rock", "moonblast", "wish"],
         "nickname": "Clefable"
       },
       {
         "species": "Ting-Lu",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Ting-Lu"
       },
       {
         "species": "Weezing-Galar",
         "level": 100,
-        "knownMoves": [
-          "strange-steam"
-        ],
+        "knownMoves": ["strange-steam"],
         "nickname": "Weezing"
       }
     ]

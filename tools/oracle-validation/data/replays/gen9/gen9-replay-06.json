@@ -2,20 +2,13 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "20fpsaftereffects",
-    "CN007"
-  ],
+  "players": ["20fpsaftereffects", "CN007"],
   "teams": [
     [
       {
         "species": "Iron Treads",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "earthquake",
-          "volt-switch"
-        ],
+        "knownMoves": ["stealth-rock", "earthquake", "volt-switch"],
         "nickname": "Iron Treads"
       },
       {
@@ -27,39 +20,25 @@
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "hex",
-          "dragon-darts"
-        ],
+        "knownMoves": ["u-turn", "hex", "dragon-darts"],
         "nickname": "Dragapult"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "leaf-storm",
-          "glare"
-        ],
+        "knownMoves": ["leaf-storm", "glare"],
         "nickname": "Serperior"
       },
       {
         "species": "Moltres",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "u-turn",
-          "roost",
-          "will-o-wisp"
-        ],
+        "knownMoves": ["flamethrower", "u-turn", "roost", "will-o-wisp"],
         "nickname": "Moltres"
       },
       {
         "species": "Alomomola",
         "level": 100,
-        "knownMoves": [
-          "tickle"
-        ],
+        "knownMoves": ["tickle"],
         "nickname": "Alomomola"
       }
     ],
@@ -67,58 +46,37 @@
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "body-press",
-          "whirlwind"
-        ],
+        "knownMoves": ["spikes", "body-press", "whirlwind"],
         "nickname": "Skarmory"
       },
       {
         "species": "Clodsire",
         "level": 100,
-        "knownMoves": [
-          "poison-jab",
-          "counter"
-        ],
+        "knownMoves": ["poison-jab", "counter"],
         "nickname": "Clodsire"
       },
       {
         "species": "Ludicolo",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump"
-        ],
+        "knownMoves": ["hydro-pump"],
         "nickname": "Ludicolo"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "discharge",
-          "thunder-wave",
-          "thunder",
-          "acrobatics"
-        ],
+        "knownMoves": ["discharge", "thunder-wave", "thunder", "acrobatics"],
         "nickname": "Zapdos"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "knock-off"
-        ],
+        "knownMoves": ["swords-dance", "knock-off"],
         "nickname": "Scizor"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "stone-edge",
-          "hammer-arm",
-          "liquidation"
-        ],
+        "knownMoves": ["stone-edge", "hammer-arm", "liquidation"],
         "nickname": "Swampert"
       }
     ]

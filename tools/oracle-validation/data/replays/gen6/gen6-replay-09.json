@@ -2,37 +2,25 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "White Atoq",
-    "larperial"
-  ],
+  "players": ["White Atoq", "larperial"],
   "teams": [
     [
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "stone-edge",
-          "stealth-rock"
-        ],
+        "knownMoves": ["stone-edge", "stealth-rock"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Keldeo",
         "level": 100,
-        "knownMoves": [
-          "secret-sword",
-          "scald"
-        ],
+        "knownMoves": ["secret-sword", "scald"],
         "nickname": "Keldeo"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "hidden-power"
-        ],
+        "knownMoves": ["psychic", "hidden-power"],
         "nickname": "Alakazam"
       },
       {
@@ -44,17 +32,13 @@
       {
         "species": "Talonflame",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Talonflame"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "rock-slide"
-        ],
+        "knownMoves": ["rock-slide"],
         "nickname": "Excadrill"
       }
     ],
@@ -62,27 +46,19 @@
       {
         "species": "Volcanion",
         "level": 100,
-        "knownMoves": [
-          "steam-eruption",
-          "toxic"
-        ],
+        "knownMoves": ["steam-eruption", "toxic"],
         "nickname": "Volcanion"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "hurricane"
-        ],
+        "knownMoves": ["u-turn", "hurricane"],
         "nickname": "Tornadus"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "stone-edge"
-        ],
+        "knownMoves": ["stone-edge"],
         "nickname": "Garchomp"
       },
       {
@@ -94,11 +70,7 @@
       {
         "species": "Lopunny",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "return",
-          "high-jump-kick"
-        ],
+        "knownMoves": ["fake-out", "return", "high-jump-kick"],
         "nickname": "Lopunny"
       },
       {

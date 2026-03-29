@@ -2,28 +2,19 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "robjr",
-    "brandonlee1"
-  ],
+  "players": ["robjr", "brandonlee1"],
   "teams": [
     [
       {
         "species": "Kommo-o",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "drain-punch"
-        ],
+        "knownMoves": ["stealth-rock", "drain-punch"],
         "nickname": "Kommo-o"
       },
       {
         "species": "Celesteela",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "explosion"
-        ],
+        "knownMoves": ["earthquake", "explosion"],
         "nickname": "Celesteela"
       },
       {
@@ -35,29 +26,19 @@
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin",
-          "earthquake",
-          "iron-head",
-          "corkscrew-crash"
-        ],
+        "knownMoves": ["rapid-spin", "earthquake", "iron-head", "corkscrew-crash"],
         "nickname": "Excadrill"
       },
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "dazzling-gleam"
-        ],
+        "knownMoves": ["thunderbolt", "dazzling-gleam"],
         "nickname": "Tapu Koko"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "fire-punch"
-        ],
+        "knownMoves": ["fire-punch"],
         "nickname": "Tyranitar"
       }
     ],
@@ -65,36 +46,25 @@
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "toxic-spikes",
-          "scald"
-        ],
+        "knownMoves": ["toxic-spikes", "scald"],
         "nickname": "Toxapex"
       },
       {
         "species": "Kartana",
         "level": 100,
-        "knownMoves": [
-          "leaf-blade"
-        ],
+        "knownMoves": ["leaf-blade"],
         "nickname": "Kartana"
       },
       {
         "species": "Celesteela",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "heavy-slam"
-        ],
+        "knownMoves": ["flamethrower", "heavy-slam"],
         "nickname": "Celesteela"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "corkscrew-crash"
-        ],
+        "knownMoves": ["earthquake", "corkscrew-crash"],
         "nickname": "Excadrill"
       },
       {
@@ -106,9 +76,7 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "heat-wave"
-        ],
+        "knownMoves": ["heat-wave"],
         "nickname": "Zapdos"
       }
     ]

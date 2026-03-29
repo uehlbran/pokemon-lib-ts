@@ -2,65 +2,43 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "AlphaDreams",
-    "autumn912"
-  ],
+  "players": ["AlphaDreams", "autumn912"],
   "teams": [
     [
       {
         "species": "Azelf",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "explosion"
-        ],
+        "knownMoves": ["stealth-rock", "explosion"],
         "nickname": "Azelf"
       },
       {
         "species": "Ambipom",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "u-turn",
-          "knock-off"
-        ],
+        "knownMoves": ["fake-out", "u-turn", "knock-off"],
         "nickname": "Ambipom"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "rest",
-          "sleep-talk"
-        ],
+        "knownMoves": ["will-o-wisp", "rest", "sleep-talk"],
         "nickname": "Rotom"
       },
       {
         "species": "Roserade",
         "level": 100,
-        "knownMoves": [
-          "giga-drain"
-        ],
+        "knownMoves": ["giga-drain"],
         "nickname": "Roserade"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "bullet-punch",
-          "u-turn"
-        ],
+        "knownMoves": ["bullet-punch", "u-turn"],
         "nickname": "Scizor"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "pursuit"
-        ],
+        "knownMoves": ["earthquake", "pursuit"],
         "nickname": "Tyranitar"
       }
     ],
@@ -68,54 +46,37 @@
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "hydro-pump"
-        ],
+        "knownMoves": ["hydro-pump"],
         "nickname": "Swampert"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "trick",
-          "earthquake",
-          "explosion"
-        ],
+        "knownMoves": ["trick", "earthquake", "explosion"],
         "nickname": "Metagross"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "fire-blast",
-          "crunch"
-        ],
+        "knownMoves": ["fire-blast", "crunch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "psychic",
-          "iron-head"
-        ],
+        "knownMoves": ["thunder", "psychic", "iron-head"],
         "nickname": "Jirachi"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Gengar"
       },
       {
         "species": "Latias",
         "level": 100,
-        "knownMoves": [
-          "trick"
-        ],
+        "knownMoves": ["trick"],
         "nickname": "Latias"
       }
     ]

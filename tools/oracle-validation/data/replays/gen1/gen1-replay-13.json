@@ -2,29 +2,19 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "BeeOrSomething",
-    "Isza"
-  ],
+  "players": ["BeeOrSomething", "Isza"],
   "teams": [
     [
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Spear Of Longinus"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "sing",
-          "soft-boiled",
-          "seismic-toss",
-          "thunder-wave"
-        ],
+        "knownMoves": ["sing", "soft-boiled", "seismic-toss", "thunder-wave"],
         "nickname": "Terminal Dogma"
       },
       {
@@ -36,28 +26,19 @@
       {
         "species": "Rhydon",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "earthquake",
-          "substitute"
-        ],
+        "knownMoves": ["body-slam", "earthquake", "substitute"],
         "nickname": "Black Moon"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Dead Sea Scrolls"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "sleep-powder"
-        ],
+        "knownMoves": ["psychic", "sleep-powder"],
         "nickname": "Tree Of Life"
       }
     ],
@@ -65,56 +46,37 @@
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "thunder-wave"
-        ],
+        "knownMoves": ["psychic", "thunder-wave"],
         "nickname": "Alakazam"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "counter",
-          "self-destruct"
-        ],
+        "knownMoves": ["counter", "self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "drill-peck"
-        ],
+        "knownMoves": ["thunderbolt", "drill-peck"],
         "nickname": "Zapdos"
       },
       {
         "species": "Slowbro",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "amnesia",
-          "rest"
-        ],
+        "knownMoves": ["surf", "amnesia", "rest"],
         "nickname": "Slowbro"
       },
       {
         "species": "Victreebel",
         "level": 100,
-        "knownMoves": [
-          "razor-leaf",
-          "wrap",
-          "sleep-powder"
-        ],
+        "knownMoves": ["razor-leaf", "wrap", "sleep-powder"],
         "nickname": "Victreebel"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       }
     ]

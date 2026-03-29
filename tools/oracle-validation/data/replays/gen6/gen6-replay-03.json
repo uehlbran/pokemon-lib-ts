@@ -2,35 +2,25 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "uruyuri",
-    "leanne8928921"
-  ],
+  "players": ["uruyuri", "leanne8928921"],
   "teams": [
     [
       {
         "species": "Galvantula",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Galvantula"
       },
       {
         "species": "Quagsire",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "scald"
-        ],
+        "knownMoves": ["earthquake", "scald"],
         "nickname": "Quagsire"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "toxic"
-        ],
+        "knownMoves": ["toxic"],
         "nickname": "Chansey"
       },
       {
@@ -44,35 +34,25 @@
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Heatran"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "trick"
-        ],
+        "knownMoves": ["trick"],
         "nickname": "Gengar"
       },
       {
         "species": "Rotom-Wash",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "volt-switch"
-        ],
+        "knownMoves": ["will-o-wisp", "volt-switch"],
         "nickname": "Rotom"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "bullet-punch"
-        ],
+        "knownMoves": ["swords-dance", "bullet-punch"],
         "nickname": "Scizor"
       }
     ]

@@ -2,48 +2,31 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "ALEFTKJ",
-    "caldruki"
-  ],
+  "players": ["ALEFTKJ", "caldruki"],
   "teams": [
     [
       {
         "species": "Milotic",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "ice-beam"
-        ],
+        "knownMoves": ["surf", "ice-beam"],
         "nickname": "Milotic"
       },
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "fake-out",
-          "subzero-slammer",
-          "ice-shard",
-          "knock-off"
-        ],
+        "knownMoves": ["fake-out", "subzero-slammer", "ice-shard", "knock-off"],
         "nickname": "Weavile"
       },
       {
         "species": "Arcanine",
         "level": 100,
-        "knownMoves": [
-          "extreme-speed"
-        ],
+        "knownMoves": ["extreme-speed"],
         "nickname": "Arcanine"
       },
       {
         "species": "Lopunny",
         "level": 100,
-        "knownMoves": [
-          "drain-punch",
-          "return",
-          "quick-attack"
-        ],
+        "knownMoves": ["drain-punch", "return", "quick-attack"],
         "nickname": "Lopunny"
       }
     ],
@@ -51,51 +34,37 @@
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "BE GONE SPIK"
       },
       {
         "species": "Kommo-o",
         "level": 100,
-        "knownMoves": [
-          "clangorous-soulblaze",
-          "close-combat"
-        ],
+        "knownMoves": ["clangorous-soulblaze", "close-combat"],
         "nickname": "Clingy clang"
       },
       {
         "species": "Hawlucha",
         "level": 100,
-        "knownMoves": [
-          "swords-dance"
-        ],
+        "knownMoves": ["swords-dance"],
         "nickname": "Goatucha"
       },
       {
         "species": "Gardevoir",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "hyper-voice"
-        ],
+        "knownMoves": ["will-o-wisp", "hyper-voice"],
         "nickname": "Sylvia"
       },
       {
         "species": "Greninja",
         "level": 100,
-        "knownMoves": [
-          "surf"
-        ],
+        "knownMoves": ["surf"],
         "nickname": "Second hand"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance"
-        ],
+        "knownMoves": ["quiver-dance"],
         "nickname": "Moth"
       }
     ]

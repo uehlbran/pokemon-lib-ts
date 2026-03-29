@@ -2,18 +2,13 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "firecharmander004",
-    "BarronCosimo"
-  ],
+  "players": ["firecharmander004", "BarronCosimo"],
   "teams": [
     [
       {
         "species": "Torkoal",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp"
-        ],
+        "knownMoves": ["will-o-wisp"],
         "nickname": "Torkoal"
       },
       {
@@ -25,26 +20,19 @@
       {
         "species": "Walking Wake",
         "level": 100,
-        "knownMoves": [
-          "draco-meteor",
-          "hydro-steam"
-        ],
+        "knownMoves": ["draco-meteor", "hydro-steam"],
         "nickname": "Walking Wake"
       },
       {
         "species": "Hatterene",
         "level": 100,
-        "knownMoves": [
-          "nuzzle"
-        ],
+        "knownMoves": ["nuzzle"],
         "nickname": "Hatterene"
       },
       {
         "species": "Slither Wing",
         "level": 100,
-        "knownMoves": [
-          "flare-blitz"
-        ],
+        "knownMoves": ["flare-blitz"],
         "nickname": "Slither Wing"
       }
     ],
@@ -52,36 +40,25 @@
       {
         "species": "Dragonite",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "outrage"
-        ],
+        "knownMoves": ["earthquake", "outrage"],
         "nickname": "Dragonite"
       },
       {
         "species": "Iron Valiant",
         "level": 100,
-        "knownMoves": [
-          "moonblast"
-        ],
+        "knownMoves": ["moonblast"],
         "nickname": "Iron Valiant"
       },
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "headlong-rush"
-        ],
+        "knownMoves": ["headlong-rush"],
         "nickname": "Great Tusk"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "agility",
-          "calm-mind",
-          "stored-power"
-        ],
+        "knownMoves": ["agility", "calm-mind", "stored-power"],
         "nickname": "Latios"
       }
     ]

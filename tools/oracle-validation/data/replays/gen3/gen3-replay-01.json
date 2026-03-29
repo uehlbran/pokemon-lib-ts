@@ -2,69 +2,43 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "ddiverdown",
-    "fire eyes2"
-  ],
+  "players": ["ddiverdown", "fire eyes2"],
   "teams": [
     [
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "roar",
-          "protect"
-        ],
+        "knownMoves": ["spikes", "roar", "protect"],
         "nickname": "Airmure"
       },
       {
         "species": "Moltres",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "protect",
-          "toxic",
-          "rest"
-        ],
+        "knownMoves": ["flamethrower", "protect", "toxic", "rest"],
         "nickname": "Sulfura"
       },
       {
         "species": "Flygon",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "protect",
-          "earthquake"
-        ],
+        "knownMoves": ["toxic", "protect", "earthquake"],
         "nickname": "Libégon"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "aromatherapy",
-          "soft-boiled",
-          "ice-beam"
-        ],
+        "knownMoves": ["aromatherapy", "soft-boiled", "ice-beam"],
         "nickname": "Leuphorie"
       },
       {
         "species": "Misdreavus",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "perish-song",
-          "rest"
-        ],
+        "knownMoves": ["thunderbolt", "perish-song", "rest"],
         "nickname": "Feuforêve"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "roar"
-        ],
+        "knownMoves": ["roar"],
         "nickname": "Electhor"
       }
     ],
@@ -72,58 +46,37 @@
       {
         "species": "Aerodactyl",
         "level": 100,
-        "knownMoves": [
-          "rock-slide",
-          "double-edge",
-          "hidden-power"
-        ],
+        "knownMoves": ["rock-slide", "double-edge", "hidden-power"],
         "nickname": "Aerodactyl"
       },
       {
         "species": "Magneton",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Magneton"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "refresh",
-          "surf",
-          "toxic"
-        ],
+        "knownMoves": ["refresh", "surf", "toxic"],
         "nickname": "Swampert"
       },
       {
         "species": "Celebi",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "baton-pass",
-          "recover",
-          "hidden-power"
-        ],
+        "knownMoves": ["leech-seed", "baton-pass", "recover", "hidden-power"],
         "nickname": "Celebi"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "pursuit",
-          "ice-beam"
-        ],
+        "knownMoves": ["pursuit", "ice-beam"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "spikes",
-          "protect"
-        ],
+        "knownMoves": ["spikes", "protect"],
         "nickname": "Skarmory"
       }
     ]

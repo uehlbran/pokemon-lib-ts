@@ -2,49 +2,31 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "tenacitas",
-    "absol believer"
-  ],
+  "players": ["tenacitas", "absol believer"],
   "teams": [
     [
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "heat-wave",
-          "roost"
-        ],
+        "knownMoves": ["volt-switch", "heat-wave", "roost"],
         "nickname": "Zapdos"
       },
       {
         "species": "Slowbro",
         "level": 100,
-        "knownMoves": [
-          "psyshock",
-          "calm-mind",
-          "slack-off",
-          "scald"
-        ],
+        "knownMoves": ["psyshock", "calm-mind", "slack-off", "scald"],
         "nickname": "Slowbro"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "defog",
-          "stealth-rock"
-        ],
+        "knownMoves": ["defog", "stealth-rock"],
         "nickname": "Skarmory"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "shadow-ball"
-        ],
+        "knownMoves": ["psychic", "shadow-ball"],
         "nickname": "Alakazam"
       },
       {
@@ -56,9 +38,7 @@
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "outrage"
-        ],
+        "knownMoves": ["outrage"],
         "nickname": "Garchomp"
       }
     ],
@@ -66,60 +46,37 @@
       {
         "species": "Kyurem",
         "level": 100,
-        "knownMoves": [
-          "substitute",
-          "earth-power",
-          "ice-beam",
-          "roost"
-        ],
+        "knownMoves": ["substitute", "earth-power", "ice-beam", "roost"],
         "nickname": "Coldplay"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "rapid-spin"
-        ],
+        "knownMoves": ["stealth-rock", "rapid-spin"],
         "nickname": "NYSNC"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "thunder-wave",
-          "spikes",
-          "power-whip"
-        ],
+        "knownMoves": ["leech-seed", "thunder-wave", "spikes", "power-whip"],
         "nickname": "Travis Scott"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "knock-off"
-        ],
+        "knownMoves": ["u-turn", "knock-off"],
         "nickname": "folklore"
       },
       {
         "species": "Absol",
         "level": 100,
-        "knownMoves": [
-          "fire-blast",
-          "stealth-rock"
-        ],
+        "knownMoves": ["fire-blast", "stealth-rock"],
         "nickname": "(Don't Fear)"
       },
       {
         "species": "Jellicent",
         "level": 100,
-        "knownMoves": [
-          "will-o-wisp",
-          "scald",
-          "recover"
-        ],
+        "knownMoves": ["will-o-wisp", "scald", "recover"],
         "nickname": "Address Unknown"
       },
       {

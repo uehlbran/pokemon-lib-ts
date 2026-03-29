@@ -2,57 +2,37 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "Raise your zongers",
-    "FT Morgan"
-  ],
+  "players": ["Raise your zongers", "FT Morgan"],
   "teams": [
     [
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "swords-dance",
-          "explosion"
-        ],
+        "knownMoves": ["stealth-rock", "swords-dance", "explosion"],
         "nickname": "Landorus"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "magma-storm"
-        ],
+        "knownMoves": ["toxic", "magma-storm"],
         "nickname": "Heatran"
       },
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "roost",
-          "hurricane",
-          "volt-switch"
-        ],
+        "knownMoves": ["roost", "hurricane", "volt-switch"],
         "nickname": "Zapdos"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball"
-        ],
+        "knownMoves": ["shadow-ball"],
         "nickname": "Dragapult"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "toxic",
-          "recover"
-        ],
+        "knownMoves": ["knock-off", "toxic", "recover"],
         "nickname": "Toxapex"
       }
     ],
@@ -60,54 +40,37 @@
       {
         "species": "Melmetal",
         "level": 100,
-        "knownMoves": [
-          "thunder-punch",
-          "protect",
-          "earthquake"
-        ],
+        "knownMoves": ["thunder-punch", "protect", "earthquake"],
         "nickname": "A"
       },
       {
         "species": "Slowbro",
         "level": 100,
-        "knownMoves": [
-          "future-sight"
-        ],
+        "knownMoves": ["future-sight"],
         "nickname": "Kilometer"
       },
       {
         "species": "Urshifu-Rapid-Strike",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "On"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Earth"
       },
       {
         "species": "Tapu Koko",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "toxic"
-        ],
+        "knownMoves": ["volt-switch", "toxic"],
         "nickname": "What"
       },
       {
         "species": "Dragapult",
         "level": 100,
-        "knownMoves": [
-          "shadow-ball",
-          "u-turn",
-          "draco-meteor"
-        ],
+        "knownMoves": ["shadow-ball", "u-turn", "draco-meteor"],
         "nickname": "Is"
       }
     ]

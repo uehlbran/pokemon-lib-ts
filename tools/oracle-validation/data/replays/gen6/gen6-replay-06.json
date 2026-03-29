@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "A Balanced Diet",
-    "pranjal singh"
-  ],
+  "players": ["A Balanced Diet", "pranjal singh"],
   "teams": [
     [
       {
@@ -17,29 +14,19 @@
       {
         "species": "Tangrowth",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "leech-seed",
-          "hidden-power"
-        ],
+        "knownMoves": ["knock-off", "leech-seed", "hidden-power"],
         "nickname": "Tangrowth"
       },
       {
         "species": "Dragalge",
         "level": 100,
-        "knownMoves": [
-          "draco-meteor",
-          "sludge-wave"
-        ],
+        "knownMoves": ["draco-meteor", "sludge-wave"],
         "nickname": "Dragalge"
       },
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "ice-shard"
-        ],
+        "knownMoves": ["knock-off", "ice-shard"],
         "nickname": "Weavile"
       },
       {
@@ -51,9 +38,7 @@
       {
         "species": "Diancie",
         "level": 100,
-        "knownMoves": [
-          "protect"
-        ],
+        "knownMoves": ["protect"],
         "nickname": "Diancie"
       },
       {
@@ -67,40 +52,25 @@
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "light-screen",
-          "reflect"
-        ],
+        "knownMoves": ["light-screen", "reflect"],
         "nickname": "Serperior"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "bug-buzz",
-          "giga-drain"
-        ],
+        "knownMoves": ["quiver-dance", "bug-buzz", "giga-drain"],
         "nickname": "Volcarona"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "rock-tomb"
-        ],
+        "knownMoves": ["stealth-rock", "rock-tomb"],
         "nickname": "Landorus"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "superpower",
-          "bullet-punch",
-          "bug-bite"
-        ],
+        "knownMoves": ["swords-dance", "superpower", "bullet-punch", "bug-bite"],
         "nickname": "Scizor"
       }
     ]

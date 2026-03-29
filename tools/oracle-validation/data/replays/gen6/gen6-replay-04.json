@@ -2,62 +2,43 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "leanne8928921",
-    "Hhoottddoogg"
-  ],
+  "players": ["leanne8928921", "Hhoottddoogg"],
   "teams": [
     [
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "bullet-seed",
-          "spore",
-          "mach-punch"
-        ],
+        "knownMoves": ["bullet-seed", "spore", "mach-punch"],
         "nickname": "Breloom"
       },
       {
         "species": "Clefable",
         "level": 100,
-        "knownMoves": [
-          "moonblast"
-        ],
+        "knownMoves": ["moonblast"],
         "nickname": "Clefable"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "psyshock"
-        ],
+        "knownMoves": ["psyshock"],
         "nickname": "Starmie"
       },
       {
         "species": "Victini",
         "level": 100,
-        "knownMoves": [
-          "v-create"
-        ],
+        "knownMoves": ["v-create"],
         "nickname": "Victini"
       },
       {
         "species": "Hippowdon",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock",
-          "whirlwind",
-          "slack-off"
-        ],
+        "knownMoves": ["stealth-rock", "whirlwind", "slack-off"],
         "nickname": "Hippowdon"
       },
       {
         "species": "Manectric",
         "level": 100,
-        "knownMoves": [
-          "volt-switch"
-        ],
+        "knownMoves": ["volt-switch"],
         "nickname": "Manectric"
       },
       {
@@ -77,46 +58,31 @@
       {
         "species": "Druddigon",
         "level": 100,
-        "knownMoves": [
-          "glare",
-          "iron-head"
-        ],
+        "knownMoves": ["glare", "iron-head"],
         "nickname": "Druddigon"
       },
       {
         "species": "Serperior",
         "level": 100,
-        "knownMoves": [
-          "leaf-storm"
-        ],
+        "knownMoves": ["leaf-storm"],
         "nickname": "Serperior"
       },
       {
         "species": "Crobat",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "roost",
-          "defog"
-        ],
+        "knownMoves": ["toxic", "roost", "defog"],
         "nickname": "Crobat"
       },
       {
         "species": "Kecleon",
         "level": 100,
-        "knownMoves": [
-          "power-up-punch",
-          "return",
-          "sucker-punch"
-        ],
+        "knownMoves": ["power-up-punch", "return", "sucker-punch"],
         "nickname": "Kecleon"
       },
       {
         "species": "Hawlucha",
         "level": 100,
-        "knownMoves": [
-          "swords-dance"
-        ],
+        "knownMoves": ["swords-dance"],
         "nickname": "Hawlucha"
       }
     ]

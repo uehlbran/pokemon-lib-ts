@@ -122,7 +122,11 @@ export function runBattle(config: BattleRunConfig): BattleReport {
         for (const sideIdx of [0, 1] as const) {
           const sw = ai.chooseSwitchIn(sideIdx, engine.getState(), ruleset, aiRng);
           if (sw !== null) {
-            try { engine.submitSwitch(sideIdx, sw); } catch { /* side doesn't need a switch */ }
+            try {
+              engine.submitSwitch(sideIdx, sw);
+            } catch {
+              /* side doesn't need a switch */
+            }
           }
         }
       } else {

@@ -2,26 +2,19 @@
   "id": "",
   "format": "[Gen 4] OU",
   "generation": 4,
-  "players": [
-    "frindswindler",
-    "ProleTwink"
-  ],
+  "players": ["frindswindler", "ProleTwink"],
   "teams": [
     [
       {
         "species": "Azelf",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Azelf"
       },
       {
         "species": "Rotom-Heat",
         "level": 100,
-        "knownMoves": [
-          "trick"
-        ],
+        "knownMoves": ["trick"],
         "nickname": "Rotom"
       },
       {
@@ -39,19 +32,13 @@
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Jirachi"
       },
       {
         "species": "Gyarados",
         "level": 100,
-        "knownMoves": [
-          "waterfall",
-          "dragon-dance",
-          "bounce"
-        ],
+        "knownMoves": ["waterfall", "dragon-dance", "bounce"],
         "nickname": "Gyarados"
       }
     ],
@@ -59,43 +46,31 @@
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "seed-bomb"
-        ],
+        "knownMoves": ["seed-bomb"],
         "nickname": "Breloom"
       },
       {
         "species": "Jirachi",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "iron-head",
-          "body-slam"
-        ],
+        "knownMoves": ["protect", "iron-head", "body-slam"],
         "nickname": "Jirachi"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "crunch"
-        ],
+        "knownMoves": ["crunch"],
         "nickname": "Tyranitar"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "Heatran"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "ice-punch"
-        ],
+        "knownMoves": ["ice-punch"],
         "nickname": "Swampert"
       }
     ]

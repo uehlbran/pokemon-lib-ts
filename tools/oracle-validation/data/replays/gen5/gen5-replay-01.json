@@ -2,43 +2,31 @@
   "id": "",
   "format": "[Gen 5] OU",
   "generation": 5,
-  "players": [
-    "Voiryn",
-    "Max OKLM"
-  ],
+  "players": ["Voiryn", "Max OKLM"],
   "teams": [
     [
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "volt-switch",
-          "thunderbolt"
-        ],
+        "knownMoves": ["volt-switch", "thunderbolt"],
         "nickname": "Zapdos"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "seismic-toss"
-        ],
+        "knownMoves": ["seismic-toss"],
         "nickname": "Chansey"
       },
       {
         "species": "Ninetales",
         "level": 100,
-        "knownMoves": [
-          "flamethrower"
-        ],
+        "knownMoves": ["flamethrower"],
         "nickname": "Ninetales"
       },
       {
         "species": "Gastrodon",
         "level": 100,
-        "knownMoves": [
-          "scald"
-        ],
+        "knownMoves": ["scald"],
         "nickname": "Gastrodon"
       }
     ],
@@ -46,26 +34,19 @@
       {
         "species": "Espeon",
         "level": 100,
-        "knownMoves": [
-          "light-screen"
-        ],
+        "knownMoves": ["light-screen"],
         "nickname": "Espeon"
       },
       {
         "species": "Breloom",
         "level": 100,
-        "knownMoves": [
-          "swords-dance"
-        ],
+        "knownMoves": ["swords-dance"],
         "nickname": "Breloom"
       },
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "dragon-dance",
-          "crunch"
-        ],
+        "knownMoves": ["dragon-dance", "crunch"],
         "nickname": "Tyranitar"
       }
     ]

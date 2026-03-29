@@ -2,50 +2,37 @@
   "id": "",
   "format": "[Gen 7] OU",
   "generation": 7,
-  "players": [
-    "Leanne28272722",
-    "ThOmKs"
-  ],
+  "players": ["Leanne28272722", "ThOmKs"],
   "teams": [
     [
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Pelipper"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "stealth-rock"
-        ],
+        "knownMoves": ["stealth-rock"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Crawdaunt",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Crawdaunt"
       },
       {
         "species": "Tornadus-Therian",
         "level": 100,
-        "knownMoves": [
-          "hurricane"
-        ],
+        "knownMoves": ["hurricane"],
         "nickname": "Tornadus"
       },
       {
         "species": "Swampert",
         "level": 100,
-        "knownMoves": [
-          "waterfall"
-        ],
+        "knownMoves": ["waterfall"],
         "nickname": "Swampert"
       }
     ],
@@ -59,42 +46,31 @@
       {
         "species": "Zapdos",
         "level": 100,
-        "knownMoves": [
-          "volt-switch"
-        ],
+        "knownMoves": ["volt-switch"],
         "nickname": "Zapdos"
       },
       {
         "species": "Chandelure",
         "level": 100,
-        "knownMoves": [
-          "fire-blast"
-        ],
+        "knownMoves": ["fire-blast"],
         "nickname": "Chandelure"
       },
       {
         "species": "Empoleon",
         "level": 100,
-        "knownMoves": [
-          "defog"
-        ],
+        "knownMoves": ["defog"],
         "nickname": "Empoleon"
       },
       {
         "species": "Medicham",
         "level": 100,
-        "knownMoves": [
-          "high-jump-kick"
-        ],
+        "knownMoves": ["high-jump-kick"],
         "nickname": "Medicham"
       },
       {
         "species": "Scizor",
         "level": 100,
-        "knownMoves": [
-          "bullet-punch",
-          "swords-dance"
-        ],
+        "knownMoves": ["bullet-punch", "swords-dance"],
         "nickname": "Scizor"
       }
     ]

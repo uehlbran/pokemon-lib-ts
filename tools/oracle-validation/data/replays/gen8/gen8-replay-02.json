@@ -2,66 +2,43 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "wooperdadude",
-    "chefbezos69"
-  ],
+  "players": ["wooperdadude", "chefbezos69"],
   "teams": [
     [
       {
         "species": "Slowking-Galar",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "fire-blast",
-          "trick"
-        ],
+        "knownMoves": ["ice-beam", "fire-blast", "trick"],
         "nickname": "Nagleria"
       },
       {
         "species": "Malamar",
         "level": 100,
-        "knownMoves": [
-          "psycho-cut",
-          "superpower",
-          "lash-out"
-        ],
+        "knownMoves": ["psycho-cut", "superpower", "lash-out"],
         "nickname": "Impulse"
       },
       {
         "species": "Xatu",
         "level": 100,
-        "knownMoves": [
-          "psychic"
-        ],
+        "knownMoves": ["psychic"],
         "nickname": "Distant"
       },
       {
         "species": "Latios",
         "level": 100,
-        "knownMoves": [
-          "thunder",
-          "draco-meteor",
-          "toxic"
-        ],
+        "knownMoves": ["thunder", "draco-meteor", "toxic"],
         "nickname": "Arcane"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "explosion"
-        ],
+        "knownMoves": ["psychic", "explosion"],
         "nickname": "Astral"
       },
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "fire-punch",
-          "psychic"
-        ],
+        "knownMoves": ["fire-punch", "psychic"],
         "nickname": "Hex"
       }
     ],
@@ -69,56 +46,37 @@
       {
         "species": "Cottonee",
         "level": 1,
-        "knownMoves": [
-          "leech-seed",
-          "substitute",
-          "taunt"
-        ],
+        "knownMoves": ["leech-seed", "substitute", "taunt"],
         "nickname": "FLOOF"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "THICC"
       },
       {
         "species": "Rillaboom",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "grassy-glide"
-        ],
+        "knownMoves": ["leech-seed", "grassy-glide"],
         "nickname": "SKRILLA"
       },
       {
         "species": "Aron",
         "level": 1,
-        "knownMoves": [
-          "endeavor"
-        ],
+        "knownMoves": ["endeavor"],
         "nickname": "HARD"
       },
       {
         "species": "Blaziken",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "close-combat"
-        ],
+        "knownMoves": ["protect", "close-combat"],
         "nickname": "GOON"
       },
       {
         "species": "Whimsicott",
         "level": 100,
-        "knownMoves": [
-          "leech-seed",
-          "substitute",
-          "toxic",
-          "encore"
-        ],
+        "knownMoves": ["leech-seed", "substitute", "toxic", "encore"],
         "nickname": "SAUCE"
       }
     ]

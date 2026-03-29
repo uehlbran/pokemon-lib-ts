@@ -2,29 +2,19 @@
   "id": "",
   "format": "[Gen 8] OU",
   "generation": 8,
-  "players": [
-    "CrownOFF",
-    "LaughingCamelzz"
-  ],
+  "players": ["CrownOFF", "LaughingCamelzz"],
   "teams": [
     [
       {
         "species": "Ninetales-Alola",
         "level": 100,
-        "knownMoves": [
-          "freeze-dry",
-          "hypnosis",
-          "aurora-veil"
-        ],
+        "knownMoves": ["freeze-dry", "hypnosis", "aurora-veil"],
         "nickname": "Ninetales"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "quiver-dance",
-          "bug-buzz"
-        ],
+        "knownMoves": ["quiver-dance", "bug-buzz"],
         "nickname": "Volcarona"
       }
     ],
@@ -32,26 +22,19 @@
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Pelipper"
       },
       {
         "species": "Ferrothorn",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "leech-seed"
-        ],
+        "knownMoves": ["knock-off", "leech-seed"],
         "nickname": "Ferrothorn"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "swords-dance"
-        ],
+        "knownMoves": ["swords-dance"],
         "nickname": "Garchomp"
       },
       {

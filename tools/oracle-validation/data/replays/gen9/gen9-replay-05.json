@@ -2,28 +2,19 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "eggdog00",
-    "kopv18"
-  ],
+  "players": ["eggdog00", "kopv18"],
   "teams": [
     [
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "toxic-spikes",
-          "toxic"
-        ],
+        "knownMoves": ["toxic-spikes", "toxic"],
         "nickname": "Toxapex"
       },
       {
         "species": "Talonflame",
         "level": 100,
-        "knownMoves": [
-          "flamethrower",
-          "defog"
-        ],
+        "knownMoves": ["flamethrower", "defog"],
         "nickname": "Talonflame"
       },
       {
@@ -35,21 +26,13 @@
       {
         "species": "Mandibuzz",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "roost",
-          "foul-play"
-        ],
+        "knownMoves": ["toxic", "roost", "foul-play"],
         "nickname": "Mandibuzz"
       },
       {
         "species": "Gliscor",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "spikes",
-          "knock-off"
-        ],
+        "knownMoves": ["protect", "spikes", "knock-off"],
         "nickname": "Gliscor"
       },
       {
@@ -63,45 +46,31 @@
       {
         "species": "Pelipper",
         "level": 100,
-        "knownMoves": [
-          "u-turn",
-          "surf"
-        ],
+        "knownMoves": ["u-turn", "surf"],
         "nickname": "Pelipper"
       },
       {
         "species": "Iron Treads",
         "level": 100,
-        "knownMoves": [
-          "rapid-spin",
-          "stealth-rock"
-        ],
+        "knownMoves": ["rapid-spin", "stealth-rock"],
         "nickname": "Iron Treads"
       },
       {
         "species": "Raging Bolt",
         "level": 100,
-        "knownMoves": [
-          "thunder"
-        ],
+        "knownMoves": ["thunder"],
         "nickname": "Raging Bolt"
       },
       {
         "species": "Ogerpon-Wellspring",
         "level": 100,
-        "knownMoves": [
-          "power-whip",
-          "u-turn",
-          "ivy-cudgel"
-        ],
+        "knownMoves": ["power-whip", "u-turn", "ivy-cudgel"],
         "nickname": "Ogerpon"
       },
       {
         "species": "Barraskewda",
         "level": 100,
-        "knownMoves": [
-          "flip-turn"
-        ],
+        "knownMoves": ["flip-turn"],
         "nickname": "Barraskewda"
       }
     ]

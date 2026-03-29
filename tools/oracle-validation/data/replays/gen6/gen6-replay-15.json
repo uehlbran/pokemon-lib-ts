@@ -2,37 +2,25 @@
   "id": "",
   "format": "[Gen 6] OU",
   "generation": 6,
-  "players": [
-    "SirRainbowBidoof",
-    "imissmemor"
-  ],
+  "players": ["SirRainbowBidoof", "imissmemor"],
   "teams": [
     [
       {
         "species": "Diancie",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "diamond-storm",
-          "moonblast"
-        ],
+        "knownMoves": ["thunder-wave", "diamond-storm", "moonblast"],
         "nickname": "Diancie"
       },
       {
         "species": "Volcarona",
         "level": 100,
-        "knownMoves": [
-          "bug-buzz",
-          "giga-drain"
-        ],
+        "knownMoves": ["bug-buzz", "giga-drain"],
         "nickname": "Volcarona"
       },
       {
         "species": "Bisharp",
         "level": 100,
-        "knownMoves": [
-          "knock-off"
-        ],
+        "knownMoves": ["knock-off"],
         "nickname": "Bisharp"
       },
       {
@@ -44,19 +32,13 @@
       {
         "species": "Thundurus",
         "level": 100,
-        "knownMoves": [
-          "focus-blast",
-          "thunder-wave",
-          "volt-switch"
-        ],
+        "knownMoves": ["focus-blast", "thunder-wave", "volt-switch"],
         "nickname": "Thundurus"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "outrage"
-        ],
+        "knownMoves": ["outrage"],
         "nickname": "Garchomp"
       }
     ],
@@ -64,52 +46,37 @@
       {
         "species": "Thundurus-Therian",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave"
-        ],
+        "knownMoves": ["thunder-wave"],
         "nickname": "Thundurus"
       },
       {
         "species": "Hippowdon",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "stealth-rock"
-        ],
+        "knownMoves": ["earthquake", "stealth-rock"],
         "nickname": "Hippowdon"
       },
       {
         "species": "Garchomp",
         "level": 100,
-        "knownMoves": [
-          "dragon-tail"
-        ],
+        "knownMoves": ["dragon-tail"],
         "nickname": "Garchomp"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "iron-head",
-          "earth-power"
-        ],
+        "knownMoves": ["iron-head", "earth-power"],
         "nickname": "Excadrill"
       },
       {
         "species": "Weavile",
         "level": 100,
-        "knownMoves": [
-          "icicle-crash"
-        ],
+        "knownMoves": ["icicle-crash"],
         "nickname": "Weavile"
       },
       {
         "species": "Volcanion",
         "level": 100,
-        "knownMoves": [
-          "protect",
-          "flamethrower"
-        ],
+        "knownMoves": ["protect", "flamethrower"],
         "nickname": "Volcanion"
       }
     ]

@@ -2,63 +2,43 @@
   "id": "",
   "format": "[Gen 9] OU",
   "generation": 9,
-  "players": [
-    "ALVinsoul",
-    "pfelyx1"
-  ],
+  "players": ["ALVinsoul", "pfelyx1"],
   "teams": [
     [
       {
         "species": "Tyranitar",
         "level": 100,
-        "knownMoves": [
-          "ice-punch",
-          "knock-off"
-        ],
+        "knownMoves": ["ice-punch", "knock-off"],
         "nickname": "Godzilla"
       },
       {
         "species": "Garganacl",
         "level": 100,
-        "knownMoves": [
-          "salt-cure",
-          "protect",
-          "recover",
-          "stealth-rock"
-        ],
+        "knownMoves": ["salt-cure", "protect", "recover", "stealth-rock"],
         "nickname": "Donkey Kong"
       },
       {
         "species": "Heatran",
         "level": 100,
-        "knownMoves": [
-          "magma-storm"
-        ],
+        "knownMoves": ["magma-storm"],
         "nickname": "Goyito"
       },
       {
         "species": "Landorus-Therian",
         "level": 100,
-        "knownMoves": [
-          "u-turn"
-        ],
+        "knownMoves": ["u-turn"],
         "nickname": "Chestherian"
       },
       {
         "species": "Great Tusk",
         "level": 100,
-        "knownMoves": [
-          "close-combat"
-        ],
+        "knownMoves": ["close-combat"],
         "nickname": "Unga Bunga"
       },
       {
         "species": "Excadrill",
         "level": 100,
-        "knownMoves": [
-          "swords-dance",
-          "earthquake"
-        ],
+        "knownMoves": ["swords-dance", "earthquake"],
         "nickname": "Gaara"
       }
     ],
@@ -66,56 +46,37 @@
       {
         "species": "Meowscarada",
         "level": 100,
-        "knownMoves": [
-          "flower-trick"
-        ],
+        "knownMoves": ["flower-trick"],
         "nickname": "Meowscarada"
       },
       {
         "species": "Alomomola",
         "level": 100,
-        "knownMoves": [
-          "flip-turn",
-          "wish",
-          "protect"
-        ],
+        "knownMoves": ["flip-turn", "wish", "protect"],
         "nickname": "Alomomola"
       },
       {
         "species": "Gholdengo",
         "level": 100,
-        "knownMoves": [
-          "make-it-rain",
-          "trick",
-          "focus-blast"
-        ],
+        "knownMoves": ["make-it-rain", "trick", "focus-blast"],
         "nickname": "Gholdengo"
       },
       {
         "species": "Gliscor",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "protect",
-          "swords-dance",
-          "facade"
-        ],
+        "knownMoves": ["earthquake", "protect", "swords-dance", "facade"],
         "nickname": "Gliscor"
       },
       {
         "species": "Corviknight",
         "level": 100,
-        "knownMoves": [
-          "brave-bird"
-        ],
+        "knownMoves": ["brave-bird"],
         "nickname": "Corviknight"
       },
       {
         "species": "Toxapex",
         "level": 100,
-        "knownMoves": [
-          "baneful-bunker"
-        ],
+        "knownMoves": ["baneful-bunker"],
         "nickname": "Toxapex"
       }
     ]

@@ -2,10 +2,7 @@
   "id": "",
   "format": "[Gen 3] OU",
   "generation": 3,
-  "players": [
-    "Ernst Kirchsteiger",
-    "stebone33"
-  ],
+  "players": ["Ernst Kirchsteiger", "stebone33"],
   "teams": [
     [
       {
@@ -17,44 +14,31 @@
       {
         "species": "Suicune",
         "level": 100,
-        "knownMoves": [
-          "surf",
-          "calm-mind",
-          "rest"
-        ],
+        "knownMoves": ["surf", "calm-mind", "rest"],
         "nickname": "Suicune"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "self-destruct"
-        ],
+        "knownMoves": ["self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Metagross",
         "level": 100,
-        "knownMoves": [
-          "meteor-mash"
-        ],
+        "knownMoves": ["meteor-mash"],
         "nickname": "Metagross"
       },
       {
         "species": "Salamence",
         "level": 100,
-        "knownMoves": [
-          "hidden-power",
-          "dragon-dance"
-        ],
+        "knownMoves": ["hidden-power", "dragon-dance"],
         "nickname": "Salamence"
       },
       {
         "species": "Magneton",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt"
-        ],
+        "knownMoves": ["thunderbolt"],
         "nickname": "Magneton"
       }
     ],
@@ -62,53 +46,37 @@
       {
         "species": "Dugtrio",
         "level": 100,
-        "knownMoves": [
-          "earthquake"
-        ],
+        "knownMoves": ["earthquake"],
         "nickname": "Dugtrio"
       },
       {
         "species": "Milotic",
         "level": 100,
-        "knownMoves": [
-          "toxic",
-          "surf",
-          "recover"
-        ],
+        "knownMoves": ["toxic", "surf", "recover"],
         "nickname": "Milotic"
       },
       {
         "species": "Armaldo",
         "level": 100,
-        "knownMoves": [
-          "knock-off",
-          "seismic-toss"
-        ],
+        "knownMoves": ["knock-off", "seismic-toss"],
         "nickname": "Armaldo"
       },
       {
         "species": "Claydol",
         "level": 100,
-        "knownMoves": [
-          "earthquake",
-          "psychic"
-        ],
+        "knownMoves": ["earthquake", "psychic"],
         "nickname": "Claydol"
       },
       {
         "species": "Blissey",
         "level": 100,
-        "knownMoves": [
-          "ice-beam"
-        ],
+        "knownMoves": ["ice-beam"],
         "nickname": "Blissey"
       },
       {
         "species": "Skarmory",
         "level": 100,
-        "knownMoves": [
-          "protect"
-        ],
+        "knownMoves": ["protect"],
         "nickname": "Skarmory"
       }
     ]

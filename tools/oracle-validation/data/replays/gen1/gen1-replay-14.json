@@ -2,65 +2,43 @@
   "id": "",
   "format": "[Gen 1] OU",
   "generation": 1,
-  "players": [
-    "violet river",
-    "dangerk1d"
-  ],
+  "players": ["violet river", "dangerk1d"],
   "teams": [
     [
       {
         "species": "Alakazam",
         "level": 100,
-        "knownMoves": [
-          "thunder-wave",
-          "psychic"
-        ],
+        "knownMoves": ["thunder-wave", "psychic"],
         "nickname": "Alakazam"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "soft-boiled",
-          "ice-beam"
-        ],
+        "knownMoves": ["thunderbolt", "soft-boiled", "ice-beam"],
         "nickname": "Chansey"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "sleep-powder",
-          "psychic",
-          "explosion"
-        ],
+        "knownMoves": ["sleep-powder", "psychic", "explosion"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "body-slam",
-          "self-destruct"
-        ],
+        "knownMoves": ["body-slam", "self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       },
       {
         "species": "Gengar",
         "level": 100,
-        "knownMoves": [
-          "thunderbolt",
-          "hypnosis"
-        ],
+        "knownMoves": ["thunderbolt", "hypnosis"],
         "nickname": "Gengar"
       }
     ],
@@ -68,58 +46,37 @@
       {
         "species": "Jynx",
         "level": 100,
-        "knownMoves": [
-          "lovely-kiss",
-          "blizzard",
-          "rest",
-          "psychic"
-        ],
+        "knownMoves": ["lovely-kiss", "blizzard", "rest", "psychic"],
         "nickname": "Jynx"
       },
       {
         "species": "Chansey",
         "level": 100,
-        "knownMoves": [
-          "ice-beam",
-          "soft-boiled"
-        ],
+        "knownMoves": ["ice-beam", "soft-boiled"],
         "nickname": "Chansey"
       },
       {
         "species": "Exeggutor",
         "level": 100,
-        "knownMoves": [
-          "stun-spore",
-          "psychic"
-        ],
+        "knownMoves": ["stun-spore", "psychic"],
         "nickname": "Exeggutor"
       },
       {
         "species": "Snorlax",
         "level": 100,
-        "knownMoves": [
-          "counter",
-          "body-slam",
-          "earthquake",
-          "self-destruct"
-        ],
+        "knownMoves": ["counter", "body-slam", "earthquake", "self-destruct"],
         "nickname": "Snorlax"
       },
       {
         "species": "Tauros",
         "level": 100,
-        "knownMoves": [
-          "body-slam"
-        ],
+        "knownMoves": ["body-slam"],
         "nickname": "Tauros"
       },
       {
         "species": "Starmie",
         "level": 100,
-        "knownMoves": [
-          "psychic",
-          "thunder-wave"
-        ],
+        "knownMoves": ["psychic", "thunder-wave"],
         "nickname": "Starmie"
       }
     ]
