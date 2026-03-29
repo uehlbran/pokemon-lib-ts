@@ -9,8 +9,10 @@ export interface TeamGeneratorOptions {
   uidPrefix: string;
 }
 
+export type SupportedGeneration = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
 export interface BattleRunConfig {
-  generation: 1 | 2;
+  generation: SupportedGeneration;
   seed: number;
   teamSize: number;
   maxTurns: number;
@@ -18,7 +20,7 @@ export interface BattleRunConfig {
 
 export interface BattleReport {
   seed: number;
-  generation: 1 | 2;
+  generation: SupportedGeneration;
   winner: 0 | 1 | null;
   turnCount: number;
   events: readonly BattleEvent[];

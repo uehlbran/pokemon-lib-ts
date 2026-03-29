@@ -10,8 +10,12 @@ export {
   BATTLE_ITEM_EFFECT_VALUES,
 } from "./constants/effect-protocol";
 export {
+  BATTLE_EVENT_TYPES,
   BATTLE_GIMMICK_IDS,
+  BATTLE_PHASE_IDS,
   BATTLE_SOURCE_IDS,
+  type BattleEventType,
+  type BattlePhaseId,
   type BattleSourceId,
 } from "./constants/reference-ids";
 // Context

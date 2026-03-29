@@ -1,29 +1,65 @@
 import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
+import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
+import { createGen3DataManager } from "@pokemon-lib-ts/gen3";
+import { createGen4DataManager } from "@pokemon-lib-ts/gen4";
+import { createGen5DataManager } from "@pokemon-lib-ts/gen5";
+import { createGen6DataManager } from "@pokemon-lib-ts/gen6";
+import { createGen7DataManager } from "@pokemon-lib-ts/gen7";
+import { createGen8DataManager } from "@pokemon-lib-ts/gen8";
+import { createGen9DataManager } from "@pokemon-lib-ts/gen9";
 import type {
   ParsedReplay,
   ReconstructedPokemon,
   ValidationMismatch,
   ValidationResult,
 } from "./replay-types.js";
+import { SHOWDOWN_EVENT_TYPES, SHOWDOWN_STATUS_CODES } from "./replay-types.js";
 
-// Cache the data manager (expensive to create)
-let cachedDm: DataManager | null = null;
-function getDataManager(): DataManager {
-  if (!cachedDm) cachedDm = createGen1DataManager();
-  return cachedDm;
+// Cache data managers by generation (expensive to create)
+const _dataManagerCache = new Map<number, DataManager>();
+
+function getDataManager(generation: number): DataManager {
+  if (_dataManagerCache.has(generation)) {
+    return _dataManagerCache.get(generation) as DataManager;
+  }
+  const creators: Record<number, () => DataManager> = {
+    1: createGen1DataManager,
+    2: createGen2DataManager,
+    3: createGen3DataManager,
+    4: createGen4DataManager,
+    5: createGen5DataManager,
+    6: createGen6DataManager,
+    7: createGen7DataManager,
+    8: createGen8DataManager,
+    9: createGen9DataManager,
+  };
+  const create = creators[generation] ?? createGen1DataManager;
+  const dm = create();
+  _dataManagerCache.set(generation, dm);
+  return dm;
 }
 
-/** Status IDs that are immune to each status condition (Gen 1 rules).
- * Note: Electric paralysis immunity and Ice freeze immunity were introduced
- * in later generations (Gen 6+ and Gen 2+ respectively), NOT Gen 1.
+/**
+ * Status types that are immune to each status condition, by generation.
+ * - Gen 2+: Ice types cannot be frozen (Source: Bulbapedia "Freeze")
+ * - Gen 6+: Electric types cannot be paralyzed (Source: Bulbapedia "Paralysis")
+ * - All gens: Fire types cannot be burned, Poison types cannot be poisoned/badly poisoned
  */
-const STATUS_IMMUNE_TYPES: Record<string, string[]> = {
-  brn: ["fire"],
-  psn: ["poison"],
-  tox: ["poison"],
-};
+function getStatusImmuneTypes(statusId: string, generation: number): string[] {
+  if (statusId === SHOWDOWN_STATUS_CODES.burn) return [CORE_TYPE_IDS.fire];
+  if (
+    statusId === SHOWDOWN_STATUS_CODES.poison ||
+    statusId === SHOWDOWN_STATUS_CODES.badlyPoisoned
+  ) {
+    return [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel];
+  }
+  if (statusId === SHOWDOWN_STATUS_CODES.freeze && generation >= 2) return [CORE_TYPE_IDS.ice];
+  if (statusId === SHOWDOWN_STATUS_CODES.paralysis && generation >= 6)
+    return [CORE_TYPE_IDS.electric];
+  return [];
+}
 
 /**
  * Resolve a nickname to a ReconstructedPokemon using side (0 = p1, 1 = p2).
@@ -40,7 +76,8 @@ function resolvePokemon(
 }
 
 export function validateReplay(replay: ParsedReplay): ValidationResult {
-  const dm = getDataManager();
+  const generation = replay.generation > 0 ? replay.generation : 1;
+  const dm = getDataManager(generation);
   const typeChart = dm.getTypeChart();
   const mismatches: ValidationMismatch[] = [];
   let passed = 0;
@@ -56,24 +93,28 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
       // Type effectiveness validation
       // When we see a move event, look ahead for an effectiveness event
       // -----------------------------------------------------------------------
-      if (event.type === "move" && event.targetIdent !== null) {
+      if (event.type === SHOWDOWN_EVENT_TYPES.move && event.targetIdent !== null) {
         const moveEvent = event;
 
         // Look ahead up to 3 events for an effectiveness marker
-        let effectivenessType: "supereffective" | "resisted" | "immune" | null = null;
+        let effectivenessType:
+          | typeof SHOWDOWN_EVENT_TYPES.supereffective
+          | typeof SHOWDOWN_EVENT_TYPES.resisted
+          | typeof SHOWDOWN_EVENT_TYPES.immune
+          | null = null;
         for (let j = i + 1; j < Math.min(i + 4, events.length); j++) {
           const next = events[j];
           if (!next) continue;
           if (
-            next.type === "supereffective" ||
-            next.type === "resisted" ||
-            next.type === "immune"
+            next.type === SHOWDOWN_EVENT_TYPES.supereffective ||
+            next.type === SHOWDOWN_EVENT_TYPES.resisted ||
+            next.type === SHOWDOWN_EVENT_TYPES.immune
           ) {
             effectivenessType = next.type;
             break;
           }
           // Stop scanning if we hit another move event (new action sequence)
-          if (next.type === "move") break;
+          if (next.type === SHOWDOWN_EVENT_TYPES.move) break;
         }
 
         // Only validate if we found an effectiveness marker
@@ -138,15 +179,15 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
 
           // Compare Showdown's claim to our calculation
           let mismatchMessage: string | null = null;
-          if (effectivenessType === "supereffective" && multiplier < 2) {
+          if (effectivenessType === SHOWDOWN_EVENT_TYPES.supereffective && multiplier < 2) {
             mismatchMessage =
               `Showdown says "${moveEvent.moveName}" is super-effective vs ${targetPokemon.species} ` +
               `(${targetTypes.join("/")}), but our chart gives ×${multiplier}`;
-          } else if (effectivenessType === "resisted" && multiplier > 0.5) {
+          } else if (effectivenessType === SHOWDOWN_EVENT_TYPES.resisted && multiplier > 0.5) {
             mismatchMessage =
               `Showdown says "${moveEvent.moveName}" is resisted vs ${targetPokemon.species} ` +
               `(${targetTypes.join("/")}), but our chart gives ×${multiplier}`;
-          } else if (effectivenessType === "immune" && multiplier !== 0) {
+          } else if (effectivenessType === SHOWDOWN_EVENT_TYPES.immune && multiplier !== 0) {
             mismatchMessage =
               `Showdown says "${moveEvent.moveName}" is immune vs ${targetPokemon.species} ` +
               `(${targetTypes.join("/")}), but our chart gives ×${multiplier}`;
@@ -168,12 +209,12 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
       // -----------------------------------------------------------------------
       // Status legality validation
       // -----------------------------------------------------------------------
-      if (event.type === "status") {
+      if (event.type === SHOWDOWN_EVENT_TYPES.status) {
         const statusEvent = event;
-        const immuneTypes = STATUS_IMMUNE_TYPES[statusEvent.statusId];
+        const immuneTypes = getStatusImmuneTypes(statusEvent.statusId, generation);
 
         // Only validate if we know the immunity rule for this status
-        if (immuneTypes !== undefined) {
+        if (immuneTypes.length > 0) {
           const afflictedNickname = statusEvent.ident.nickname;
           const afflictedPokemon = resolvePokemon(
             afflictedNickname,
