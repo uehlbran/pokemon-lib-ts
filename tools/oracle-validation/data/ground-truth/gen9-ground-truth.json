@@ -114,6 +114,169 @@
       "oneTimeBoostPerType": 2.0,
       "source": "smogon/pokemon-showdown data/moves.ts",
       "note": "Stellar Tera: one-time 2× boost per type; Tera Blast = 100 BP and drops user's Atk/SpA by 1."
+    },
+    {
+      "id": "type-fairy-vs-dragon-gen9",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["dragon"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Fairy is super-effective vs Dragon (2x) in Gen 9."
+    },
+    {
+      "id": "type-steel-vs-fairy-gen9",
+      "kind": "typeChart",
+      "attackerType": "steel",
+      "defenderTypes": ["fairy"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Steel is super-effective vs Fairy (2x) in Gen 9."
+    },
+    {
+      "id": "type-dragon-vs-fairy-gen9",
+      "kind": "typeChart",
+      "attackerType": "dragon",
+      "defenderTypes": ["fairy"],
+      "expected": 0,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Dragon moves have no effect on Fairy-type Pokemon (0x) in Gen 9."
+    },
+    {
+      "id": "type-poison-vs-fairy-gen9",
+      "kind": "typeChart",
+      "attackerType": "poison",
+      "defenderTypes": ["fairy"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Poison is super-effective vs Fairy (2x) in Gen 9."
+    },
+    {
+      "id": "type-fighting-vs-dark-gen9",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Fighting is super-effective vs Dark (2x) in Gen 9."
+    },
+    {
+      "id": "type-water-vs-fire-gen9",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["fire"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Water is super-effective vs Fire (2x) in Gen 9."
+    },
+    {
+      "id": "type-fire-vs-grass-gen9",
+      "kind": "typeChart",
+      "attackerType": "fire",
+      "defenderTypes": ["grass"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Fire is super-effective vs Grass (2x) in Gen 9."
+    },
+    {
+      "id": "type-fighting-vs-ghost-gen9",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["ghost"],
+      "expected": 0,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Fighting moves have no effect on Ghost-type Pokemon (0x) in Gen 9."
+    },
+    {
+      "id": "type-ghost-vs-ghost-gen9",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Ghost is super-effective vs Ghost (2x) in Gen 9."
+    },
+    {
+      "id": "type-dark-vs-ghost-gen9",
+      "kind": "typeChart",
+      "attackerType": "dark",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen9",
+      "note": "Dark is super-effective vs Ghost (2x) in Gen 9."
+    },
+    {
+      "id": "collision-course-category-gen9",
+      "kind": "moveCategoryCheck",
+      "moveId": "collision-course",
+      "expectedCategory": "physical",
+      "source": "Showdown data/moves.ts Gen9 — Collision Course",
+      "note": "Collision Course (introduced Gen 9) is a Physical Fighting move with base power 100."
+    },
+    {
+      "id": "electro-drift-category-gen9",
+      "kind": "moveCategoryCheck",
+      "moveId": "electro-drift",
+      "expectedCategory": "special",
+      "source": "Showdown data/moves.ts Gen9 — Electro Drift",
+      "note": "Electro Drift (introduced Gen 9) is a Special Electric move with base power 100."
+    },
+    {
+      "id": "axe-kick-base-power-gen9",
+      "kind": "movePowerCheck",
+      "moveId": "axe-kick",
+      "expectedBasePower": 120,
+      "source": "Showdown data/moves.ts Gen9 — Axe Kick",
+      "note": "Axe Kick (introduced Gen 9) base power = 120. Physical Fighting move."
+    },
+    {
+      "id": "wave-crash-base-power-gen9",
+      "kind": "movePowerCheck",
+      "moveId": "wave-crash",
+      "expectedBasePower": 120,
+      "source": "Showdown data/moves.ts Gen9 — Wave Crash",
+      "note": "Wave Crash (introduced Gen 9) base power = 120. Physical Water move with recoil."
+    },
+    {
+      "id": "tera-blast-base-power-gen9",
+      "kind": "movePowerCheck",
+      "moveId": "tera-blast",
+      "expectedBasePower": 80,
+      "source": "Showdown data/moves.ts Gen9 — Tera Blast",
+      "note": "Tera Blast (introduced Gen 9) base power = 80. Type changes to Tera type when Terastallized."
+    },
+    {
+      "id": "stealth-rock-charizard-gen9",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "charizard",
+      "defenderTypes": ["fire", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen9 — StealthRockDamage",
+      "note": "Charizard (Fire/Flying) is 4x weak to Rock. Stealth Rock deals 1/8 × 4 = 1/2 max HP."
+    },
+    {
+      "id": "stealth-rock-blastoise-gen9",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "blastoise",
+      "defenderTypes": ["water"],
+      "hazardType": "rock",
+      "expectedFraction": 0.125,
+      "source": "Showdown sim/battle-actions.ts Gen9 — StealthRockDamage",
+      "note": "Blastoise (Water) is neutral to Rock. Stealth Rock deals 1/8 max HP."
+    },
+    {
+      "id": "stealth-rock-ninetales-gen9",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "ninetales",
+      "defenderTypes": ["fire"],
+      "hazardType": "rock",
+      "expectedFraction": 0.25,
+      "source": "Showdown sim/battle-actions.ts Gen9 — StealthRockDamage",
+      "note": "Ninetales (Fire): Rock vs Fire = 2x. 1/8 × 2 = 1/4 max HP."
     }
   ]
 }

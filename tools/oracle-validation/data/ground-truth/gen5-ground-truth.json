@@ -50,6 +50,28 @@
       "note": "Blastoise is neutral to Rock; Stealth Rock deals 1/8 max HP."
     },
     {
+      "id": "stealth-rock-ninetales-gen5",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "ninetales",
+      "defenderTypes": ["fire"],
+      "hazardType": "rock",
+      "expectedFraction": 0.25,
+      "source": "Showdown sim/battle-actions.ts Gen5 — StealthRockDamage",
+      "note": "Ninetales (Fire): Rock vs Fire = 2x. 1/8 × 2 = 1/4 max HP."
+    },
+    {
+      "id": "stealth-rock-dragonite-gen5",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "dragonite",
+      "defenderTypes": ["dragon", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.25,
+      "source": "Showdown sim/battle-actions.ts Gen5 — StealthRockDamage",
+      "note": "Dragonite (Dragon/Flying): Rock vs Dragon = 1x, Rock vs Flying = 2x. Combined 2x. 1/8 × 2 = 1/4 max HP."
+    },
+    {
       "id": "sheer-force-life-orb-suppression-gen5",
       "kind": "mechanic-documentation",
       "description": "Sheer Force suppresses Life Orb recoil when the used move is boosted by Sheer Force",
@@ -92,6 +114,167 @@
       "expectedSuccessRates": [1.0, 0.5, 0.25, 0.125],
       "source": "Showdown sim/battle-actions.ts Gen5 — ProtectCheck",
       "note": "Gen 5 Protect uses halving. Gen 6 changed this to tripling reduction (ERRATA #9)."
+    },
+    {
+      "id": "quick-attack-priority-gen5",
+      "kind": "movePriorityCheck",
+      "moveId": "quick-attack",
+      "expectedPriority": 1,
+      "source": "Showdown sim/battle-actions.ts Gen5 — move priority table",
+      "note": "Quick Attack has +1 priority in Gen 5."
+    },
+    {
+      "id": "mach-punch-priority-gen5",
+      "kind": "movePriorityCheck",
+      "moveId": "mach-punch",
+      "expectedPriority": 1,
+      "source": "Showdown sim/battle-actions.ts Gen5 — move priority table",
+      "note": "Mach Punch has +1 priority in Gen 5."
+    },
+    {
+      "id": "trick-room-priority-gen5",
+      "kind": "movePriorityCheck",
+      "moveId": "trick-room",
+      "expectedPriority": -7,
+      "source": "Showdown sim/battle-actions.ts Gen5 — move priority table",
+      "note": "Trick Room has -7 priority in Gen 5, same as Gen 4."
+    },
+    {
+      "id": "scald-category-gen5",
+      "kind": "moveCategoryCheck",
+      "moveId": "scald",
+      "expectedCategory": "special",
+      "source": "Showdown data/moves.ts Gen5 — Scald",
+      "note": "Scald (introduced Gen 5) is a Special Water move with base power 80."
+    },
+    {
+      "id": "volt-switch-category-gen5",
+      "kind": "moveCategoryCheck",
+      "moveId": "volt-switch",
+      "expectedCategory": "special",
+      "source": "Showdown data/moves.ts Gen5 — Volt Switch",
+      "note": "Volt Switch (introduced Gen 5) is a Special Electric move with base power 70."
+    },
+    {
+      "id": "wild-charge-category-gen5",
+      "kind": "moveCategoryCheck",
+      "moveId": "wild-charge",
+      "expectedCategory": "physical",
+      "source": "Showdown data/moves.ts Gen5 — Wild Charge",
+      "note": "Wild Charge (introduced Gen 5) is a Physical Electric move with base power 90."
+    },
+    {
+      "id": "scald-base-power-gen5",
+      "kind": "movePowerCheck",
+      "moveId": "scald",
+      "expectedBasePower": 80,
+      "source": "Showdown data/moves.ts Gen5 — Scald",
+      "note": "Scald base power = 80 in Gen 5. Unchanged in later gens."
+    },
+    {
+      "id": "thunderbolt-base-power-gen5",
+      "kind": "movePowerCheck",
+      "moveId": "thunderbolt",
+      "expectedBasePower": 95,
+      "source": "Showdown data/moves.ts Gen5 — Thunderbolt",
+      "note": "Thunderbolt base power = 95 in Gen 5. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "flamethrower-base-power-gen5",
+      "kind": "movePowerCheck",
+      "moveId": "flamethrower",
+      "expectedBasePower": 95,
+      "source": "Showdown data/moves.ts Gen5 — Flamethrower",
+      "note": "Flamethrower base power = 95 in Gen 5. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "drain-punch-base-power-gen5",
+      "kind": "movePowerCheck",
+      "moveId": "drain-punch",
+      "expectedBasePower": 75,
+      "source": "Showdown data/moves.ts Gen5 — Drain Punch",
+      "note": "Drain Punch base power was raised to 75 in Gen 5 (was 60 in Gen 4)."
+    },
+    {
+      "id": "water-vs-fire-gen5",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["fire"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Water is super-effective vs Fire (2x) in Gen 5."
+    },
+    {
+      "id": "fire-vs-grass-gen5",
+      "kind": "typeChart",
+      "attackerType": "fire",
+      "defenderTypes": ["grass"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Fire is super-effective vs Grass (2x) in Gen 5."
+    },
+    {
+      "id": "grass-vs-water-gen5",
+      "kind": "typeChart",
+      "attackerType": "grass",
+      "defenderTypes": ["water"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Grass is super-effective vs Water (2x) in Gen 5."
+    },
+    {
+      "id": "rock-vs-flying-gen5",
+      "kind": "typeChart",
+      "attackerType": "rock",
+      "defenderTypes": ["flying"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Rock is super-effective vs Flying (2x) in Gen 5."
+    },
+    {
+      "id": "fighting-vs-dark-gen5",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Fighting is super-effective vs Dark (2x) in Gen 5."
+    },
+    {
+      "id": "dark-vs-ghost-gen5",
+      "kind": "typeChart",
+      "attackerType": "dark",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Dark is super-effective vs Ghost (2x) in Gen 5."
+    },
+    {
+      "id": "ghost-vs-ghost-gen5",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Ghost is super-effective vs Ghost (2x) in Gen 5."
+    },
+    {
+      "id": "steel-vs-ice-gen5",
+      "kind": "typeChart",
+      "attackerType": "steel",
+      "defenderTypes": ["ice"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Steel is super-effective vs Ice (2x) in Gen 5."
+    },
+    {
+      "id": "fighting-vs-ghost-gen5",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["ghost"],
+      "expected": 0,
+      "source": "Showdown data/typechart.ts Gen5",
+      "note": "Fighting moves have no effect on Ghost-type Pokemon (0x) in Gen 5."
     }
   ]
 }

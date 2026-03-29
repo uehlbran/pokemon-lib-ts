@@ -85,11 +85,110 @@
       "note": "Water attacking Steel is neutral (1x) in Gen 2. The type_matchups.asm table has no WATER,STEEL entry, meaning neutral. Water/Electric resistance against Steel was introduced in Gen 4."
     },
     {
+      "id": "fire-vs-steel-gen2",
+      "kind": "typeChart",
+      "attackerType": "fire",
+      "defenderTypes": ["steel"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Fire is super-effective vs Steel (2x) in Gen 2."
+    },
+    {
+      "id": "ground-vs-steel-gen2",
+      "kind": "typeChart",
+      "attackerType": "ground",
+      "defenderTypes": ["steel"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Ground is super-effective vs Steel (2x) in Gen 2."
+    },
+    {
+      "id": "fighting-vs-steel-gen2",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["steel"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Fighting is super-effective vs Steel (2x) in Gen 2."
+    },
+    {
+      "id": "normal-vs-ghost-gen2",
+      "kind": "typeChart",
+      "attackerType": "normal",
+      "defenderTypes": ["ghost"],
+      "expected": 0,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Normal moves are immune to Ghost-type Pokemon (0x)."
+    },
+    {
+      "id": "ghost-vs-normal-gen2",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["normal"],
+      "expected": 0,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Ghost moves have no effect on Normal-type Pokemon (0x) in Gen 2."
+    },
+    {
+      "id": "fighting-vs-dark-gen2",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Fighting is super-effective vs Dark (2x) in Gen 2."
+    },
+    {
+      "id": "bug-vs-dark-gen2",
+      "kind": "typeChart",
+      "attackerType": "bug",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Bug is super-effective vs Dark (2x) in Gen 2."
+    },
+    {
+      "id": "rock-vs-flying-gen2",
+      "kind": "typeChart",
+      "attackerType": "rock",
+      "defenderTypes": ["flying"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Rock is super-effective vs Flying (2x)."
+    },
+    {
+      "id": "water-vs-fire-gen2",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["fire"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Water is super-effective vs Fire (2x)."
+    },
+    {
+      "id": "fire-vs-grass-gen2",
+      "kind": "typeChart",
+      "attackerType": "fire",
+      "defenderTypes": ["grass"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Fire is super-effective vs Grass (2x)."
+    },
+    {
+      "id": "ground-vs-electric-gen2",
+      "kind": "typeChart",
+      "attackerType": "ground",
+      "defenderTypes": ["electric"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Ground is super-effective vs Electric (2x)."
+    },
+    {
       "id": "protect-priority-gen2-cartridge",
       "kind": "movePriorityCheck",
       "moveId": "protect",
       "expectedPriority": 3,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_PROTECT priority 3",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT priority 3",
       "note": "Protect has +3 priority on Gen 2 cartridge. Oracle @pkmn/data reports +2 following Showdown's simplified model."
     },
     {
@@ -97,7 +196,7 @@
       "kind": "movePriorityCheck",
       "moveId": "detect",
       "expectedPriority": 3,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_PROTECT used for Detect",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT used for Detect",
       "note": "Detect shares EFFECT_PROTECT in Gen 2, so priority is +3 on cartridge. Oracle reports +2."
     },
     {
@@ -105,7 +204,7 @@
       "kind": "movePriorityCheck",
       "moveId": "endure",
       "expectedPriority": 3,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_ENDURE priority 3",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_ENDURE priority 3",
       "note": "Endure has +3 priority on Gen 2 cartridge. Oracle @pkmn/data reports +2."
     },
     {
@@ -113,7 +212,7 @@
       "kind": "movePriorityCheck",
       "moveId": "roar",
       "expectedPriority": 0,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_FORCE_SWITCH priority 0 (1-based scale; BASE_PRIORITY=1)",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_FORCE_SWITCH priority 0 (1-based scale; BASE_PRIORITY=1)",
       "note": "Roar uses go-last mechanic in Gen 2 (EFFECT_FORCE_SWITCH). Source: pret/pokecrystal effects_priorities.asm + Showdown gen2 mod."
     },
     {
@@ -121,8 +220,80 @@
       "kind": "movePriorityCheck",
       "moveId": "whirlwind",
       "expectedPriority": 0,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_FORCE_SWITCH priority 0 (1-based scale; BASE_PRIORITY=1)",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_FORCE_SWITCH priority 0 (1-based scale; BASE_PRIORITY=1)",
       "note": "Whirlwind uses go-last mechanic in Gen 2 (EFFECT_FORCE_SWITCH). Source: pret/pokecrystal effects_priorities.asm + Showdown gen2 mod."
+    },
+    {
+      "id": "quick-attack-priority-gen2",
+      "kind": "movePriorityCheck",
+      "moveId": "quick-attack",
+      "expectedPriority": 2,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2",
+      "note": "Quick Attack has +2 priority on Gen 2 cartridge (stored as 3 in 1-based system, -1 offset = 2 effective)."
+    },
+    {
+      "id": "mach-punch-priority-gen2",
+      "kind": "movePriorityCheck",
+      "moveId": "mach-punch",
+      "expectedPriority": 2,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2",
+      "note": "Mach Punch shares EFFECT_QUICK_ATTACK in Gen 2, so priority is +2."
+    },
+    {
+      "id": "extreme-speed-priority-gen2",
+      "kind": "movePriorityCheck",
+      "moveId": "extreme-speed",
+      "expectedPriority": 2,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2",
+      "note": "Extreme Speed has +2 priority in Gen 2 (same bracket as Quick Attack). Gen 3 lowered to +1."
+    },
+    {
+      "id": "crunch-category-gen2",
+      "kind": "moveCategoryCheck",
+      "moveId": "crunch",
+      "expectedCategory": "special",
+      "source": "pret/pokecrystal data/moves/moves.asm — type-based split: Dark = Special in Gen 1-3",
+      "note": "Crunch is Special in Gen 2 (Dark type, type-based split). Became Physical in Gen 4."
+    },
+    {
+      "id": "shadow-ball-category-gen2",
+      "kind": "moveCategoryCheck",
+      "moveId": "shadow-ball",
+      "expectedCategory": "physical",
+      "source": "pret/pokecrystal data/moves/moves.asm — type-based split: Ghost = Physical in Gen 1-3",
+      "note": "Shadow Ball is Physical in Gen 2 (Ghost type, type-based split). Became Special in Gen 4."
+    },
+    {
+      "id": "surf-base-power-gen2",
+      "kind": "movePowerCheck",
+      "moveId": "surf",
+      "expectedBasePower": 95,
+      "source": "pret/pokecrystal data/moves/moves.asm",
+      "note": "Surf base power = 95 in Gen 2. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "thunderbolt-base-power-gen2",
+      "kind": "movePowerCheck",
+      "moveId": "thunderbolt",
+      "expectedBasePower": 95,
+      "source": "pret/pokecrystal data/moves/moves.asm",
+      "note": "Thunderbolt base power = 95 in Gen 2. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "flamethrower-base-power-gen2",
+      "kind": "movePowerCheck",
+      "moveId": "flamethrower",
+      "expectedBasePower": 95,
+      "source": "pret/pokecrystal data/moves/moves.asm",
+      "note": "Flamethrower base power = 95 in Gen 2. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "crunch-base-power-gen2",
+      "kind": "movePowerCheck",
+      "moveId": "crunch",
+      "expectedBasePower": 80,
+      "source": "pret/pokecrystal data/moves/moves.asm",
+      "note": "Crunch base power = 80 in Gen 2. Unchanged through all generations."
     }
   ]
 }

@@ -8,7 +8,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "crunch",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Dark = Special in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
       "note": "Crunch is Special in Gen 3 (Dark type). Gen 4 introduced per-move categories, making Crunch Physical."
     },
     {
@@ -16,7 +16,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "shadow-ball",
       "expectedCategory": "physical",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Ghost = Physical in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ghost = Physical in Gen 1-3",
       "note": "Shadow Ball is Physical in Gen 3 (Ghost type). Gen 4 changed it to Special."
     },
     {
@@ -24,7 +24,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "flamethrower",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Fire = Special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Fire = Special",
       "note": "Flamethrower is Special in Gen 3 (Fire type). Unchanged in Gen 4+."
     },
     {
@@ -32,7 +32,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "earthquake",
       "expectedCategory": "physical",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Ground = Physical",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ground = Physical",
       "note": "Earthquake is Physical in Gen 3 (Ground type). Unchanged in Gen 4+."
     },
     {
@@ -40,7 +40,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "pursuit",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Dark = Special in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
       "note": "Pursuit is Special in Gen 3 (Dark type, type-based split). Became Physical in Gen 4."
     },
     {
@@ -48,8 +48,40 @@
       "kind": "moveCategoryCheck",
       "moveId": "knock-off",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Dark = Special in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
       "note": "Knock Off is Special in Gen 3 (Dark type, type-based split). Base power 20, no item boost (that was Gen 6)."
+    },
+    {
+      "id": "type-split-thunderbolt-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "thunderbolt",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Electric = Special",
+      "note": "Thunderbolt is Special in Gen 3 (Electric type). Unchanged in Gen 4+."
+    },
+    {
+      "id": "type-split-body-slam-physical-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "body-slam",
+      "expectedCategory": "physical",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Normal = Physical",
+      "note": "Body Slam is Physical in Gen 3 (Normal type, type-based split)."
+    },
+    {
+      "id": "type-split-ice-beam-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "ice-beam",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ice = Special",
+      "note": "Ice Beam is Special in Gen 3 (Ice type). Unchanged in Gen 4+."
+    },
+    {
+      "id": "type-split-dragon-claw-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "dragon-claw",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dragon = Special",
+      "note": "Dragon Claw is Special in Gen 3 (Dragon type, type-based split). Became Physical in Gen 4."
     },
     {
       "id": "knock-off-base-power-gen3",
@@ -58,6 +90,46 @@
       "expectedBasePower": 20,
       "source": "pret/pokeemerald src/data/battle/moves_info.c",
       "note": "Knock Off base power = 20 in Gen 3. The 1.5x damage boost when target holds an item was introduced in Gen 6 (ERRATA #25)."
+    },
+    {
+      "id": "flamethrower-base-power-gen3",
+      "kind": "movePowerCheck",
+      "moveId": "flamethrower",
+      "expectedBasePower": 95,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Flamethrower base power = 95 in Gen 3. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "surf-base-power-gen3",
+      "kind": "movePowerCheck",
+      "moveId": "surf",
+      "expectedBasePower": 95,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Surf base power = 95 in Gen 3. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "thunderbolt-base-power-gen3",
+      "kind": "movePowerCheck",
+      "moveId": "thunderbolt",
+      "expectedBasePower": 95,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Thunderbolt base power = 95 in Gen 3. Reduced to 90 in Gen 6."
+    },
+    {
+      "id": "aerial-ace-base-power-gen3",
+      "kind": "movePowerCheck",
+      "moveId": "aerial-ace",
+      "expectedBasePower": 60,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Aerial Ace base power = 60 in Gen 3. Unchanged in all later gens."
+    },
+    {
+      "id": "dragon-claw-base-power-gen3",
+      "kind": "movePowerCheck",
+      "moveId": "dragon-claw",
+      "expectedBasePower": 80,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Dragon Claw base power = 80 in Gen 3. Unchanged in later gens."
     },
     {
       "id": "extreme-speed-priority-gen3",
@@ -74,6 +146,38 @@
       "expectedPriority": 3,
       "source": "pret/pokeemerald src/data/battle/moves_info.c",
       "note": "Protect has +3 priority in Gen 3 (same as Gen 2 cartridge)."
+    },
+    {
+      "id": "quick-attack-priority-gen3",
+      "kind": "movePriorityCheck",
+      "moveId": "quick-attack",
+      "expectedPriority": 1,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Quick Attack has +1 priority in Gen 3 (Gen 2 cartridge used +2 in 1-based scale)."
+    },
+    {
+      "id": "mach-punch-priority-gen3",
+      "kind": "movePriorityCheck",
+      "moveId": "mach-punch",
+      "expectedPriority": 1,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Mach Punch has +1 priority in Gen 3."
+    },
+    {
+      "id": "counter-priority-gen3",
+      "kind": "movePriorityCheck",
+      "moveId": "counter",
+      "expectedPriority": -5,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Counter has -5 priority in Gen 3. Mirror Coat also uses -5."
+    },
+    {
+      "id": "mirror-coat-priority-gen3",
+      "kind": "movePriorityCheck",
+      "moveId": "mirror-coat",
+      "expectedPriority": -5,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Mirror Coat has -5 priority in Gen 3."
     },
     {
       "id": "electric-vs-steel-gen3",
@@ -103,11 +207,74 @@
       "note": "Ghost is 2x super-effective vs Psychic in Gen 3 (Gen 1 bug was fixed in Gen 2)."
     },
     {
+      "id": "fire-vs-steel-gen3",
+      "kind": "typeChart",
+      "attackerType": "fire",
+      "defenderTypes": ["steel"],
+      "expected": 2,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Fire is super-effective vs Steel (2x) in Gen 3."
+    },
+    {
+      "id": "ground-vs-steel-gen3",
+      "kind": "typeChart",
+      "attackerType": "ground",
+      "defenderTypes": ["steel"],
+      "expected": 2,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Ground is super-effective vs Steel (2x) in Gen 3."
+    },
+    {
+      "id": "psychic-vs-dark-gen3",
+      "kind": "typeChart",
+      "attackerType": "psychic",
+      "defenderTypes": ["dark"],
+      "expected": 0,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Psychic moves have no effect on Dark-type Pokemon (0x) in Gen 3."
+    },
+    {
+      "id": "fighting-vs-dark-gen3",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Fighting is super-effective vs Dark (2x) in Gen 3."
+    },
+    {
+      "id": "bug-vs-dark-gen3",
+      "kind": "typeChart",
+      "attackerType": "bug",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Bug is super-effective vs Dark (2x) in Gen 3."
+    },
+    {
+      "id": "normal-vs-ghost-gen3",
+      "kind": "typeChart",
+      "attackerType": "normal",
+      "defenderTypes": ["ghost"],
+      "expected": 0,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Normal moves have no effect on Ghost-type Pokemon (0x) in Gen 3."
+    },
+    {
+      "id": "rock-vs-flying-gen3",
+      "kind": "typeChart",
+      "attackerType": "rock",
+      "defenderTypes": ["flying"],
+      "expected": 2,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Rock is super-effective vs Flying (2x) in Gen 3."
+    },
+    {
       "id": "endure-priority-gen3-cartridge",
       "kind": "movePriorityCheck",
       "moveId": "endure",
       "expectedPriority": 3,
-      "source": "pret/pokeemerald src/data/battle_moves.h \u2014 endure: .priority = 3",
+      "source": "pret/pokeemerald src/data/battle_moves.h — endure: .priority = 3",
       "note": "Endure has +3 priority in Gen 3 per pokeemerald. @pkmn/data reports +4 (Showdown approximation). Pret wins."
     }
   ]

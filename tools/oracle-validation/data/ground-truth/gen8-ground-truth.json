@@ -31,6 +31,51 @@
       "note": "Dynamax HP at level 5: 1.75× multiplier."
     },
     {
+      "id": "dynamax-hp-level-1",
+      "kind": "dynamaxHPCheck",
+      "level": 1,
+      "expectedMultiplier": 1.55,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 1: 1.5 + 1×0.05 = 1.55×."
+    },
+    {
+      "id": "dynamax-hp-level-2",
+      "kind": "dynamaxHPCheck",
+      "level": 2,
+      "expectedMultiplier": 1.6,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 2: 1.5 + 2×0.05 = 1.60×."
+    },
+    {
+      "id": "dynamax-hp-level-3",
+      "kind": "dynamaxHPCheck",
+      "level": 3,
+      "expectedMultiplier": 1.65,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 3: 1.5 + 3×0.05 = 1.65×."
+    },
+    {
+      "id": "dynamax-hp-level-7",
+      "kind": "dynamaxHPCheck",
+      "level": 7,
+      "expectedMultiplier": 1.85,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 7: 1.5 + 7×0.05 = 1.85×."
+    },
+    {
+      "id": "dynamax-hp-level-9",
+      "kind": "dynamaxHPCheck",
+      "level": 9,
+      "expectedMultiplier": 1.95,
+      "formula": "floor(baseMaxHP * (1.5 + level * 0.05))",
+      "source": "smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19",
+      "note": "Dynamax HP at level 9: 1.5 + 9×0.05 = 1.95×."
+    },
+    {
       "id": "max-flare-power-90bp-fire",
       "kind": "maxMovePowerCheck",
       "sourceBP": 90,
@@ -106,6 +151,124 @@
       "durationTurns": 3,
       "source": "smogon/pokemon-showdown sim/battle-actions.ts",
       "note": "Dynamax lasts exactly 3 turns, then Pokemon automatically reverts."
+    },
+    {
+      "id": "flip-turn-category-gen8",
+      "kind": "moveCategoryCheck",
+      "moveId": "flip-turn",
+      "expectedCategory": "physical",
+      "source": "Showdown data/moves.ts Gen8 — Flip Turn",
+      "note": "Flip Turn (introduced Gen 8) is a Physical Water move with base power 60."
+    },
+    {
+      "id": "flip-turn-base-power-gen8",
+      "kind": "movePowerCheck",
+      "moveId": "flip-turn",
+      "expectedBasePower": 60,
+      "source": "Showdown data/moves.ts Gen8 — Flip Turn",
+      "note": "Flip Turn base power = 60 in Gen 8. Physical Water U-turn variant."
+    },
+    {
+      "id": "spirit-break-category-gen8",
+      "kind": "moveCategoryCheck",
+      "moveId": "spirit-break",
+      "expectedCategory": "physical",
+      "source": "Showdown data/moves.ts Gen8 — Spirit Break",
+      "note": "Spirit Break (introduced Gen 8) is a Physical Fairy move with base power 75."
+    },
+    {
+      "id": "surging-strikes-base-power-gen8",
+      "kind": "movePowerCheck",
+      "moveId": "surging-strikes",
+      "expectedBasePower": 25,
+      "source": "Showdown data/moves.ts Gen8 — Surging Strikes",
+      "note": "Surging Strikes base power = 25 per hit (3 hits, always critical). Physical Water move."
+    },
+    {
+      "id": "steel-beam-base-power-gen8",
+      "kind": "movePowerCheck",
+      "moveId": "steel-beam",
+      "expectedBasePower": 140,
+      "source": "Showdown data/moves.ts Gen8 — Steel Beam",
+      "note": "Steel Beam base power = 140. Special Steel move that halves the user's HP."
+    },
+    {
+      "id": "type-fairy-vs-dragon-gen8",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["dragon"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen8",
+      "note": "Fairy is super-effective vs Dragon (2x) in Gen 8."
+    },
+    {
+      "id": "type-steel-vs-fairy-gen8",
+      "kind": "typeChart",
+      "attackerType": "steel",
+      "defenderTypes": ["fairy"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen8",
+      "note": "Steel is super-effective vs Fairy (2x) in Gen 8."
+    },
+    {
+      "id": "type-fighting-vs-dark-gen8",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["dark"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen8",
+      "note": "Fighting is super-effective vs Dark (2x) in Gen 8."
+    },
+    {
+      "id": "type-ghost-vs-ghost-gen8",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen8",
+      "note": "Ghost is super-effective vs Ghost (2x) in Gen 8."
+    },
+    {
+      "id": "type-water-vs-fire-gen8",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["fire"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen8",
+      "note": "Water is super-effective vs Fire (2x) in Gen 8."
+    },
+    {
+      "id": "stealth-rock-charizard-gen8",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "charizard",
+      "defenderTypes": ["fire", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen8 — StealthRockDamage",
+      "note": "Charizard (Fire/Flying) is 4x weak to Rock. Stealth Rock deals 1/8 × 4 = 1/2 max HP."
+    },
+    {
+      "id": "stealth-rock-dragonite-gen8",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "dragonite",
+      "defenderTypes": ["dragon", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.25,
+      "source": "Showdown sim/battle-actions.ts Gen8 — StealthRockDamage",
+      "note": "Dragonite (Dragon/Flying): Rock vs Flying = 2x, Rock vs Dragon = 1x. Combined 2x. 1/8 × 2 = 1/4 max HP."
+    },
+    {
+      "id": "stealth-rock-blastoise-gen8",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "blastoise",
+      "defenderTypes": ["water"],
+      "hazardType": "rock",
+      "expectedFraction": 0.125,
+      "source": "Showdown sim/battle-actions.ts Gen8 — StealthRockDamage",
+      "note": "Blastoise (Water) is neutral to Rock. Stealth Rock deals 1/8 max HP."
     }
   ]
 }

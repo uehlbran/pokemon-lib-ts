@@ -58,6 +58,69 @@
       "note": "Poison is super-effective vs Fairy (2x)."
     },
     {
+      "id": "type-fairy-vs-fighting-gen6",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["fighting"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Fairy is super-effective vs Fighting (2x) in Gen 6."
+    },
+    {
+      "id": "type-fairy-vs-steel-gen6",
+      "kind": "typeChart",
+      "attackerType": "fairy",
+      "defenderTypes": ["steel"],
+      "expected": 0.5,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Fairy is not very effective vs Steel (0.5x) in Gen 6."
+    },
+    {
+      "id": "type-water-vs-fire-gen6",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["fire"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Water is super-effective vs Fire (2x) in Gen 6."
+    },
+    {
+      "id": "type-dark-vs-fighting-gen6",
+      "kind": "typeChart",
+      "attackerType": "dark",
+      "defenderTypes": ["fighting"],
+      "expected": 0.5,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Dark is not very effective vs Fighting (0.5x) in Gen 6."
+    },
+    {
+      "id": "type-ice-vs-dragon-gen6",
+      "kind": "typeChart",
+      "attackerType": "ice",
+      "defenderTypes": ["dragon"],
+      "expected": 2,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Ice is super-effective vs Dragon (2x) in Gen 6."
+    },
+    {
+      "id": "type-fighting-vs-ghost-gen6",
+      "kind": "typeChart",
+      "attackerType": "fighting",
+      "defenderTypes": ["ghost"],
+      "expected": 0,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Fighting moves have no effect on Ghost-type Pokemon (0x) in Gen 6."
+    },
+    {
+      "id": "type-ground-vs-flying-gen6",
+      "kind": "typeChart",
+      "attackerType": "ground",
+      "defenderTypes": ["flying"],
+      "expected": 0,
+      "source": "Showdown data/typechart.ts Gen6",
+      "note": "Ground moves have no effect on Flying-type Pokemon (0x) in Gen 6."
+    },
+    {
       "id": "knock-off-item-boost-gen6",
       "kind": "mechanic-documentation",
       "description": "Knock Off deals 1.5x damage when the target is holding an item (introduced in Gen 6 — ERRATA #25)",
@@ -65,6 +128,14 @@
       "expectedBoostWhenHoldingItem": 1.5,
       "source": "Showdown sim/battle-actions.ts Gen6 — KnockOff boost ERRATA #25",
       "note": "Knock Off 1.5x damage boost is Gen 6+. Gen 4-5 had base power 20 with no conditional boost."
+    },
+    {
+      "id": "knock-off-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "knock-off",
+      "expectedBasePower": 65,
+      "source": "Showdown data/moves.ts Gen6 — ERRATA #25",
+      "note": "Knock Off base power was raised to 65 in Gen 6 (was 20 in Gen 1-5)."
     },
     {
       "id": "parental-bond-second-hit-fraction-gen6",
@@ -118,6 +189,92 @@
       "expectedSuccessRates": [1.0, 0.333, 0.111, 0.037],
       "source": "Showdown sim/battle-actions.ts Gen6 — ProtectCheck ERRATA #9",
       "note": "Gen 6 changed from Gen 5's halving to tripling reduction (ERRATA #9)."
+    },
+    {
+      "id": "moonblast-category-gen6",
+      "kind": "moveCategoryCheck",
+      "moveId": "moonblast",
+      "expectedCategory": "special",
+      "source": "Showdown data/moves.ts Gen6 — Moonblast",
+      "note": "Moonblast (introduced Gen 6) is a Special Fairy move with base power 95."
+    },
+    {
+      "id": "play-rough-category-gen6",
+      "kind": "moveCategoryCheck",
+      "moveId": "play-rough",
+      "expectedCategory": "physical",
+      "source": "Showdown data/moves.ts Gen6 — Play Rough",
+      "note": "Play Rough (introduced Gen 6) is a Physical Fairy move with base power 90."
+    },
+    {
+      "id": "moonblast-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "moonblast",
+      "expectedBasePower": 95,
+      "source": "Showdown data/moves.ts Gen6 — Moonblast",
+      "note": "Moonblast base power = 95 in Gen 6. Unchanged in later gens."
+    },
+    {
+      "id": "dazzling-gleam-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "dazzling-gleam",
+      "expectedBasePower": 80,
+      "source": "Showdown data/moves.ts Gen6 — Dazzling Gleam",
+      "note": "Dazzling Gleam (introduced Gen 6) base power = 80. Special Fairy move."
+    },
+    {
+      "id": "thunderbolt-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "thunderbolt",
+      "expectedBasePower": 90,
+      "source": "Showdown data/moves.ts Gen6 — Thunderbolt power reduction ERRATA",
+      "note": "Thunderbolt reduced from 95 to 90 base power in Gen 6."
+    },
+    {
+      "id": "flamethrower-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "flamethrower",
+      "expectedBasePower": 90,
+      "source": "Showdown data/moves.ts Gen6 — Flamethrower power reduction",
+      "note": "Flamethrower reduced from 95 to 90 base power in Gen 6."
+    },
+    {
+      "id": "surf-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "surf",
+      "expectedBasePower": 90,
+      "source": "Showdown data/moves.ts Gen6 — Surf power reduction",
+      "note": "Surf reduced from 95 to 90 base power in Gen 6."
+    },
+    {
+      "id": "fire-blast-base-power-gen6",
+      "kind": "movePowerCheck",
+      "moveId": "fire-blast",
+      "expectedBasePower": 110,
+      "source": "Showdown data/moves.ts Gen6 — Fire Blast power reduction",
+      "note": "Fire Blast reduced from 120 to 110 base power in Gen 6."
+    },
+    {
+      "id": "stealth-rock-charizard-gen6",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "charizard",
+      "defenderTypes": ["fire", "flying"],
+      "hazardType": "rock",
+      "expectedFraction": 0.5,
+      "source": "Showdown sim/battle-actions.ts Gen6 — StealthRockDamage",
+      "note": "Charizard is 4x weak to Rock (fire 2x, flying 2x). Stealth Rock deals 1/8 × 4 = 1/2 max HP."
+    },
+    {
+      "id": "stealth-rock-blastoise-gen6",
+      "kind": "hazardDamage",
+      "hazard": "stealth-rock",
+      "defenderSpecies": "blastoise",
+      "defenderTypes": ["water"],
+      "hazardType": "rock",
+      "expectedFraction": 0.125,
+      "source": "Showdown sim/battle-actions.ts Gen6 — StealthRockDamage",
+      "note": "Blastoise (Water) is neutral to Rock. Stealth Rock deals 1/8 max HP."
     }
   ]
 }
