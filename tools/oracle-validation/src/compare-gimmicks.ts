@@ -33,9 +33,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
-// Import our actual Gen 7 Z-Move power function to test it against oracle.
-// This is intentionally a source-level import (not public API) — same pattern as compare-damage.ts.
 import { getZMovePower } from "../../../packages/gen7/src/Gen7ZMove.js";
+// Import our actual Gen 7/8 gimmick functions to test against oracle.
+// Source-level imports (not public API) — same pattern as compare-damage.ts.
+import { getDynamaxMaxHp } from "../../../packages/gen8/src/Gen8Dynamax.js";
 import {
   type KnownDisagreement,
   type OracleCheck,
@@ -158,37 +159,43 @@ function buildZMovePowerChecks(
 // ── Dynamax HP formula (Gen 8) ────────────────────────────────────────────────
 
 /**
- * Validate Dynamax HP multiplier formula at key dynamax levels.
+ * Validate getDynamaxMaxHp() output at key dynamax levels.
  *
- * Formula: 1.5 + dynamaxLevel × 0.05
+ * Uses a fixed base HP fixture (341 = Blissey at level 50) to exercise the floor()
+ * behaviour and confirm the formula matches the Showdown reference implementation.
+ *
  * ERRATA #19: floor(baseMaxHP × (1.5 + dynamaxLevel × 0.05))
- * Source: smogon/pokemon-showdown sim/battle-actions.ts getDynamaxHP
+ * Source: smogon/pokemon-showdown data/conditions.ts lines 771-774
  */
 function buildDynamaxHPChecks(
   generation: ImplementedGeneration,
   oracleChecks: OracleCheck[],
   notes: string[],
 ): void {
+  // 341 = Blissey's max HP at level 50 (good floor() test case).
+  // Source: Bulbapedia "Blissey (Pokémon)" — base HP 255, level 50 stat ≈ 341
+  const BASE_HP_FIXTURE = 341;
+
   const checkLevels = [
-    { level: 0, expectedMultiplier: 1.5 },
-    { level: 5, expectedMultiplier: 1.75 },
-    { level: 10, expectedMultiplier: 2.0 },
+    { level: 0, expectedMaxHp: Math.floor(BASE_HP_FIXTURE * 1.5) }, // 511
+    { level: 5, expectedMaxHp: Math.floor(BASE_HP_FIXTURE * 1.75) }, // 596
+    { level: 10, expectedMaxHp: Math.floor(BASE_HP_FIXTURE * 2.0) }, // 682
   ] as const;
 
-  for (const { level, expectedMultiplier } of checkLevels) {
-    const actualMultiplier = 1.5 + level * 0.05;
+  for (const { level, expectedMaxHp } of checkLevels) {
+    const actualMaxHp = getDynamaxMaxHp(BASE_HP_FIXTURE, level);
 
     oracleChecks.push({
       id: `gen${generation.gen}:${GIMMICKS_SUITE_NAME}:dynamax-hp-level${level}`,
       suite: GIMMICKS_SUITE_NAME,
-      description: `Gen ${generation.gen} Dynamax HP multiplier at level ${level} = ${expectedMultiplier}× (ERRATA #19)`,
-      ourValue: Math.round(actualMultiplier * 1000) / 1000,
-      oracleValue: expectedMultiplier,
+      description: `Gen ${generation.gen} getDynamaxMaxHp(${BASE_HP_FIXTURE}, ${level}) = ${expectedMaxHp} (ERRATA #19)`,
+      ourValue: actualMaxHp,
+      oracleValue: expectedMaxHp,
     });
   }
 
   notes.push(
-    `Gen ${generation.gen}: validated Dynamax HP multiplier at levels 0/5/10 against Showdown formula (ERRATA #19)`,
+    `Gen ${generation.gen}: validated getDynamaxMaxHp() at levels 0/5/10 against Showdown formula (ERRATA #19)`,
   );
 }
 

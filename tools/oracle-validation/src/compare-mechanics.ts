@@ -256,7 +256,6 @@ export function runMechanicsSuite(
   // Source: Showdown data/moves.ts recoil property
   // Source: Bulbapedia "Recoil"
 
-  const RECOIL_TOLERANCE = 0.01;
   let recoilChecked = 0;
 
   for (const move of localMoves) {
@@ -276,20 +275,16 @@ export function runMechanicsSuite(
     const oracleRecoil = oracleMove.recoil;
     const oracleFraction = oracleRecoil[0] / oracleRecoil[1];
 
-    // Store rounded values to avoid floating point noise in OracleCheck
-    const ourRounded = Math.round(recoilEffect.amount * 1000) / 1000;
-    const oracleRounded = Math.round(oracleFraction * 1000) / 1000;
-
-    // Only create a check if values differ enough to matter (beyond tolerance)
-    if (Math.abs(recoilEffect.amount - oracleFraction) > RECOIL_TOLERANCE) {
-      oracleChecks.push({
-        id: buildCheckId(generation, "recoil-amount", moveId),
-        suite: MECHANICS_SUITE_NAME,
-        description: `Move ${move.id} recoil fraction matches @pkmn/data`,
-        ourValue: ourRounded,
-        oracleValue: oracleRounded,
-      });
-    }
+    // Round to 3 decimal places to avoid floating-point noise in OracleCheck output.
+    // resolveOracleChecks handles the actual pass/fail comparison — always push so
+    // stale known-disagreements can be detected.
+    oracleChecks.push({
+      id: buildCheckId(generation, "recoil-amount", moveId),
+      suite: MECHANICS_SUITE_NAME,
+      description: `Move ${move.id} recoil fraction matches @pkmn/data`,
+      ourValue: Math.round(recoilEffect.amount * 1000) / 1000,
+      oracleValue: Math.round(oracleFraction * 1000) / 1000,
+    });
 
     recoilChecked += 1;
   }
@@ -305,7 +300,6 @@ export function runMechanicsSuite(
   // Source: Showdown data/moves.ts drain property
   // Source: Bulbapedia "Draining move"
 
-  const DRAIN_TOLERANCE = 0.01;
   let drainChecked = 0;
 
   for (const move of localMoves) {
@@ -325,18 +319,16 @@ export function runMechanicsSuite(
     const oracleDrain = oracleMove.drain;
     const oracleFraction = oracleDrain[0] / oracleDrain[1];
 
-    const ourRounded = Math.round(drainEffect.amount * 1000) / 1000;
-    const oracleRounded = Math.round(oracleFraction * 1000) / 1000;
-
-    if (Math.abs(drainEffect.amount - oracleFraction) > DRAIN_TOLERANCE) {
-      oracleChecks.push({
-        id: buildCheckId(generation, "drain-amount", moveId),
-        suite: MECHANICS_SUITE_NAME,
-        description: `Move ${move.id} drain fraction matches @pkmn/data`,
-        ourValue: ourRounded,
-        oracleValue: oracleRounded,
-      });
-    }
+    // Round to 3 decimal places to avoid floating-point noise in OracleCheck output.
+    // resolveOracleChecks handles the actual pass/fail comparison — always push so
+    // stale known-disagreements can be detected.
+    oracleChecks.push({
+      id: buildCheckId(generation, "drain-amount", moveId),
+      suite: MECHANICS_SUITE_NAME,
+      description: `Move ${move.id} drain fraction matches @pkmn/data`,
+      ourValue: Math.round(drainEffect.amount * 1000) / 1000,
+      oracleValue: Math.round(oracleFraction * 1000) / 1000,
+    });
 
     drainChecked += 1;
   }

@@ -207,6 +207,11 @@ interface LocalMove {
 // ── Z-Move power table ────────────────────────────────────────────────────────
 // Source: smogon/pokemon-showdown sim/moves.ts getZMovePower (ERRATA #15)
 // Uses threshold-based logic: return power for the first threshold >= basePower.
+//
+// NOTE: This function tests the raw threshold table only (ground-truth cases use basePower
+// scalars, not move IDs). Per-move overrides (14 moves with explicit Showdown zMove.basePower)
+// are validated by the live gimmicks oracle in compare-gimmicks.ts which calls the actual
+// Gen7ZMove.getZMovePower() implementation. See GitHub issue #1153 for full migration plan.
 function getZMovePower(basePower: number): number {
   if (basePower <= 55) return 100;
   if (basePower <= 65) return 120;
