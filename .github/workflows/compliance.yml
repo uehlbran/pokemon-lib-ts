@@ -38,6 +38,7 @@ jobs:
         run: npm run oracle:fast
       - name: Post fast compliance summary
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         run: |
           node -e "
             const fs = require('fs');
@@ -91,6 +92,7 @@ jobs:
         run: npm run compliance
       - name: Post full compliance summary
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         run: |
           node -e "
             const fs = require('fs');
