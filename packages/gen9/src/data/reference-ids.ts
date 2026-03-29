@@ -1089,7 +1089,7 @@ export const GEN9_ABILITY_IDS = {
   megaLauncher: "mega-launcher",
   merciless: "merciless",
   mimicry: "mimicry",
-  mindSEye: "mind's-eye",
+  mindsEye: "minds-eye",
   minus: "minus",
   mirrorArmor: "mirror-armor",
   mistySurge: "misty-surge",

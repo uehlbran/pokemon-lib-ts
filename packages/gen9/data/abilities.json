@@ -1287,7 +1287,7 @@
     "copyable": true
   },
   {
-    "id": "mind's-eye",
+    "id": "minds-eye",
     "displayName": "Mind's Eye",
     "description": "Fighting, Normal moves hit Ghost. Accuracy can't be lowered, ignores evasiveness.",
     "triggers": ["passive-modifier"],
