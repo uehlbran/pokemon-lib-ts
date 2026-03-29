@@ -276,11 +276,11 @@ describe("Z-Move Power Table", () => {
     expect(getZMovePower(move)).toBe(200);
   });
 
-  it("given a 180 BP move (V-Create), when calculating Z-Move power, then returns 200", () => {
-    // Source: Showdown sim/dex-moves.ts:558 -- basePower >= 140 -> 200
-    // Source: specs/battle/08-gen7.md -- "V-Create (180 power) -> Z-V-Create (200 power)"
+  it("given V-Create (180 BP), when calculating Z-Move power, then returns 220 (explicit Showdown override)", () => {
+    // Source: Showdown data/moves.ts -- vcreate: zMove: { basePower: 220 }
+    // V-Create has an explicit zMove.basePower override; the standard formula (>=140 -> 200) does NOT apply.
     const move = createCanonicalMove(MOVE_IDS.vCreate);
-    expect(getZMovePower(move)).toBe(200);
+    expect(getZMovePower(move)).toBe(220);
   });
 
   it("given a 0 BP move (no base power), when calculating Z-Move power, then returns 100", () => {

@@ -5,7 +5,7 @@ import { runGimmicksSuite } from "../src/compare-gimmicks.js";
 import { loadDisagreementRegistrySummary } from "../src/disagreement-registry.js";
 import { discoverImplementedGenerations } from "../src/gen-discovery.js";
 
-describe("Gimmicks Documentation Suite", () => {
+describe("Gimmicks Oracle Suite", () => {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const generations = discoverImplementedGenerations(repoRoot);
 
@@ -44,8 +44,17 @@ describe("Gimmicks Documentation Suite", () => {
         expect(result.status).toBe("pass");
         expect(result.suitePassed).toBe(true);
         expect(result.notes.length).toBeGreaterThan(0);
-        // Documentation suite produces no oracle comparisons
-        expect(result.oracleChecks).toHaveLength(0);
+        // Gen 7: validates Z-Move power for all damaging moves (hundreds of checks).
+        // Gen 8: validates getDynamaxMaxHp() at levels 0/5/10 (3 checks).
+        // Gen 6 and Gen 9: documentation notes only (no live comparisons for Mega/Tera).
+        if (gen.gen === 7 || gen.gen === 8) {
+          expect(
+            result.oracleChecks.length,
+            `Gen ${gen.gen}: expected live oracle checks but got 0`,
+          ).toBeGreaterThan(0);
+        } else {
+          expect(result.oracleChecks).toHaveLength(0);
+        }
       });
     }
   }

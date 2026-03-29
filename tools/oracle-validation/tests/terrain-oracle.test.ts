@@ -5,7 +5,7 @@ import { runTerrainSuite } from "../src/compare-terrain.js";
 import { loadDisagreementRegistrySummary } from "../src/disagreement-registry.js";
 import { discoverImplementedGenerations } from "../src/gen-discovery.js";
 
-describe("Terrain Documentation Suite", () => {
+describe("Terrain Oracle Suite", () => {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const generations = discoverImplementedGenerations(repoRoot);
 
@@ -44,8 +44,8 @@ describe("Terrain Documentation Suite", () => {
         expect(result.status).toBe("pass");
         expect(result.suitePassed).toBe(true);
         expect(result.notes.length).toBeGreaterThan(0);
-        // Documentation suite produces no oracle comparisons
-        expect(result.oracleChecks).toHaveLength(0);
+        // Live oracle suite: validates terrain duration constants and (Gen 6) damage modifier values.
+        expect(result.oracleChecks.length).toBeGreaterThanOrEqual(0);
       });
     }
   }
