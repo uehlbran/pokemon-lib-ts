@@ -12,7 +12,7 @@ Run the oracle validation suite and report results.
 Parse the arguments (if any):
 - `gen:<N>` — filter to a specific generation (e.g. `gen:4`)
 - `suite:<name>` — filter to a specific suite (e.g. `suite:groundTruth`)
-- `--fast` or no args — run all suites (default)
+- no args — run all suites (default fast-path; runner defaults to the "fast" suite alias)
 
 ## Step 2: Build the command
 
