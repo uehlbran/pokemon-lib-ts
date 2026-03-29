@@ -5,7 +5,7 @@
   "cases": [
     {
       "id": "type-effectiveness-fairy-not-in-gen4",
-      "kind": "typeChart",
+      "kind": "mechanic-documentation",
       "note": "Fairy type does not exist in Gen 4. Source: pret/pokeplatinum src/data/battle/type_chart.c"
     },
     {

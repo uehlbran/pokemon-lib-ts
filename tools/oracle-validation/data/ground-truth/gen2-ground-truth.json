@@ -1,0 +1,112 @@
+{
+  "gen": 2,
+  "authority": "pret/pokecrystal",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "ghost-vs-psychic-gen2-fixed",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["psychic"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Gen 2 fixed the Gen 1 Ghost vs Psychic bug (0x). Ghost is now 2x super-effective vs Psychic."
+    },
+    {
+      "id": "ice-vs-fire-gen2",
+      "kind": "typeChart",
+      "attackerType": "ice",
+      "defenderTypes": ["fire"],
+      "expected": 0.5,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Ice attacking Fire: 0.5x in Gen 2 (changed from Gen 1's 1x neutral)."
+    },
+    {
+      "id": "poison-vs-bug-gen2",
+      "kind": "typeChart",
+      "attackerType": "poison",
+      "defenderTypes": ["bug"],
+      "expected": 1,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Poison attacking Bug: neutral (1x) in Gen 2. Was 2x super-effective in Gen 1."
+    },
+    {
+      "id": "bug-vs-poison-gen2",
+      "kind": "typeChart",
+      "attackerType": "bug",
+      "defenderTypes": ["poison"],
+      "expected": 0.5,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Bug attacking Poison: 0.5x in Gen 2. Was 2x super-effective in Gen 1."
+    },
+    {
+      "id": "dark-vs-psychic-gen2",
+      "kind": "typeChart",
+      "attackerType": "dark",
+      "defenderTypes": ["psychic"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Dark type introduced in Gen 2; super-effective vs Psychic (2x)."
+    },
+    {
+      "id": "psychic-vs-dark-gen2",
+      "kind": "typeChart",
+      "attackerType": "psychic",
+      "defenderTypes": ["dark"],
+      "expected": 0,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Dark type is immune to Psychic moves (0x). Introduced in Gen 2."
+    },
+    {
+      "id": "dark-vs-ghost-gen2",
+      "kind": "typeChart",
+      "attackerType": "dark",
+      "defenderTypes": ["ghost"],
+      "expected": 2,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Dark is super-effective vs Ghost (2x). Introduced in Gen 2."
+    },
+    {
+      "id": "electric-vs-steel-gen2",
+      "kind": "typeChart",
+      "attackerType": "electric",
+      "defenderTypes": ["steel"],
+      "expected": 0.5,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Electric attacking Steel: 0.5x on Gen 2 cartridge (oracle @pkmn/data incorrectly reports 1x)."
+    },
+    {
+      "id": "water-vs-steel-gen2",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["steel"],
+      "expected": 0.5,
+      "source": "pret/pokecrystal data/type_effectiveness.asm",
+      "note": "Water attacking Steel: 0.5x on Gen 2 cartridge (oracle @pkmn/data incorrectly reports 1x)."
+    },
+    {
+      "id": "protect-priority-gen2-cartridge",
+      "kind": "movePriorityCheck",
+      "moveId": "protect",
+      "expectedPriority": 3,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT priority 3",
+      "note": "Protect has +3 priority on Gen 2 cartridge. Oracle @pkmn/data reports +2 following Showdown's simplified model."
+    },
+    {
+      "id": "detect-priority-gen2-cartridge",
+      "kind": "movePriorityCheck",
+      "moveId": "detect",
+      "expectedPriority": 3,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT used for Detect",
+      "note": "Detect shares EFFECT_PROTECT in Gen 2, so priority is +3 on cartridge. Oracle reports +2."
+    },
+    {
+      "id": "endure-priority-gen2-cartridge",
+      "kind": "movePriorityCheck",
+      "moveId": "endure",
+      "expectedPriority": 3,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_ENDURE priority 3",
+      "note": "Endure has +3 priority on Gen 2 cartridge. Oracle @pkmn/data reports +2."
+    }
+  ]
+}

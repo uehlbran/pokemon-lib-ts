@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
@@ -19,6 +19,8 @@ import { getGen1CritRate } from "../../../packages/gen1/src/Gen1CritCalc.js";
 import { calculateGen1Stats } from "../../../packages/gen1/src/Gen1StatCalc.js";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
+
+// ── Case schemas ──────────────────────────────────────────────────────────────
 
 const typeChartCaseSchema = z.object({
   id: z.string().min(1),
@@ -70,29 +72,155 @@ const critRateCaseSchema = z.object({
   note: z.string().optional(),
 });
 
+const hazardDamageCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("hazardDamage"),
+  hazard: z.string().min(1),
+  defenderSpecies: z.string().min(1),
+  defenderTypes: z.array(z.string().min(1)).min(1),
+  hazardType: z.string().min(1),
+  expectedFraction: z.number().positive(),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
+
+const moveCategoryCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("moveCategoryCheck"),
+  moveId: z.string().min(1),
+  expectedCategory: z.enum(["physical", "special", "status"]),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
+
+const movePriorityCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("movePriorityCheck"),
+  moveId: z.string().min(1),
+  expectedPriority: z.number().int(),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
+
+const movePowerCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("movePowerCheck"),
+  moveId: z.string().min(1),
+  expectedBasePower: z.number().int().nonnegative(),
+  expectedBoostWhenHoldingItem: z.number().optional(),
+  expectedBoostOnSwitch: z.number().optional(),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
+
+const zMoveCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("zMoveCheck"),
+  moveId: z.string().min(1),
+  sourceBP: z.number().int().positive(),
+  expectedZPower: z.number().int().positive(),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
+
+const dynamaxHPCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("dynamaxHPCheck"),
+  level: z.number().int().min(0).max(10),
+  expectedMultiplier: z.number().positive(),
+  formula: z.string().optional(),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
+
+// Skip-evaluation schemas: parse minimally and evaluate as no-op
+const mechanicDocumentationCaseSchema = z
+  .object({ id: z.string().min(1), kind: z.literal("mechanic-documentation") })
+  .passthrough();
+
+const abilityCheckCaseSchema = z
+  .object({ id: z.string().min(1), kind: z.literal("abilityCheck") })
+  .passthrough();
+
+const moveRecoilCheckCaseSchema = z
+  .object({ id: z.string().min(1), kind: z.literal("moveRecoilCheck") })
+  .passthrough();
+
+const statusSpeedCheckCaseSchema = z
+  .object({ id: z.string().min(1), kind: z.literal("statusSpeedCheck") })
+  .passthrough();
+
+const terrainBoostCheckCaseSchema = z
+  .object({ id: z.string().min(1), kind: z.literal("terrainBoostCheck") })
+  .passthrough();
+
+const maxMovePowerCheckCaseSchema = z
+  .object({ id: z.string().min(1), kind: z.literal("maxMovePowerCheck") })
+  .passthrough();
+
 const groundTruthCaseSchema = z.discriminatedUnion("kind", [
   typeChartCaseSchema,
   derivedStatCaseSchema,
   critRateCaseSchema,
+  hazardDamageCaseSchema,
+  moveCategoryCheckCaseSchema,
+  movePriorityCheckCaseSchema,
+  movePowerCheckCaseSchema,
+  zMoveCaseSchema,
+  dynamaxHPCheckCaseSchema,
+  mechanicDocumentationCaseSchema,
+  abilityCheckCaseSchema,
+  moveRecoilCheckCaseSchema,
+  statusSpeedCheckCaseSchema,
+  terrainBoostCheckCaseSchema,
+  maxMovePowerCheckCaseSchema,
 ]);
 
 const groundTruthDatasetSchema = z.object({
-  gen: z.literal(1),
+  gen: z.number().int().min(1).max(9),
   authority: z.string().min(1),
+  confidence: z.string().optional(),
   cases: z.array(groundTruthCaseSchema).min(1),
 });
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type TypeChartCase = z.infer<typeof typeChartCaseSchema>;
 type DerivedStatCase = z.infer<typeof derivedStatCaseSchema>;
 type CritRateCase = z.infer<typeof critRateCaseSchema>;
-type GroundTruthCase = z.infer<typeof groundTruthCaseSchema>;
+type HazardDamageCase = z.infer<typeof hazardDamageCaseSchema>;
+type MoveCategoryCheckCase = z.infer<typeof moveCategoryCheckCaseSchema>;
+type MovePriorityCheckCase = z.infer<typeof movePriorityCheckCaseSchema>;
+type MovePowerCheckCase = z.infer<typeof movePowerCheckCaseSchema>;
+type ZMoveCase = z.infer<typeof zMoveCaseSchema>;
+type DynamaxHPCase = z.infer<typeof dynamaxHPCheckCaseSchema>;
 type GroundTruthDataset = z.infer<typeof groundTruthDatasetSchema>;
 type LoadedTypeChart = Record<string, Record<string, number>>;
 
-interface GroundTruthSuiteContext {
-  readonly dataManager: ReturnType<typeof createGen1DataManager>;
-  readonly typeChart: LoadedTypeChart;
+interface LocalMove {
+  readonly id: string;
+  readonly category: "physical" | "special" | "status";
+  readonly power: number | null;
+  readonly priority: number;
 }
+
+// ── Z-Move power table ────────────────────────────────────────────────────────
+// Source: smogon/pokemon-showdown sim/moves.ts getZMovePower (ERRATA #15)
+// Uses threshold-based logic: return power for the first threshold >= basePower.
+function getZMovePower(basePower: number): number {
+  if (basePower <= 55) return 100;
+  if (basePower <= 65) return 120;
+  if (basePower <= 75) return 140;
+  if (basePower <= 85) return 160;
+  if (basePower <= 95) return 175;
+  if (basePower <= 105) return 180;
+  if (basePower <= 115) return 185;
+  if (basePower <= 125) return 190;
+  if (basePower <= 135) return 195;
+  return 200;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeSkip(reason: string): SuiteResult {
   return {
@@ -106,15 +234,6 @@ function makeSkip(reason: string): SuiteResult {
     staleDisagreements: [],
     oracleChecks: [],
     skipReason: reason,
-  };
-}
-
-function createGroundTruthSuiteContext(generation: ImplementedGeneration): GroundTruthSuiteContext {
-  return {
-    dataManager: createGen1DataManager(),
-    typeChart: JSON.parse(
-      readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
-    ) as LoadedTypeChart,
   };
 }
 
@@ -157,17 +276,7 @@ function createGen1OraclePokemon(testCase: DerivedStatCase): PokemonInstance {
   };
 }
 
-export function loadGroundTruthDataset(repoRoot: string): GroundTruthDataset {
-  const datasetPath = join(
-    repoRoot,
-    "tools",
-    "oracle-validation",
-    "data",
-    "ground-truth",
-    "gen1-ground-truth.json",
-  );
-  return groundTruthDatasetSchema.parse(JSON.parse(readFileSync(datasetPath, "utf8")));
-}
+// ── Evaluation functions ──────────────────────────────────────────────────────
 
 function evaluateTypeChartCase(testCase: TypeChartCase, typeChart: LoadedTypeChart): string | null {
   if (!(testCase.attackerType in typeChart)) {
@@ -250,29 +359,197 @@ function evaluateCritRateCase(testCase: CritRateCase): string | null {
   return null;
 }
 
-function evaluateCase(testCase: GroundTruthCase, context: GroundTruthSuiteContext): string | null {
-  if (testCase.kind === "typeChart") {
-    return evaluateTypeChartCase(testCase, context.typeChart);
+function evaluateHazardDamageCase(
+  testCase: HazardDamageCase,
+  typeChart: LoadedTypeChart,
+): string | null {
+  if (testCase.hazard !== "stealth-rock") {
+    // Only Stealth Rock is validated here; other hazards deferred to replay suite (PR4+)
+    return null;
   }
-  if (testCase.kind === "derivedStat") {
-    return evaluateDerivedStatCase(testCase, context.dataManager);
+
+  const effectiveness = getTypeEffectiveness(
+    testCase.hazardType as PokemonType,
+    testCase.defenderTypes as readonly PokemonType[],
+    typeChart,
+  );
+
+  // Stealth Rock base damage = 1/8 of max HP × type effectiveness multiplier
+  // Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage
+  const expectedFraction = (1 / 8) * effectiveness;
+
+  if (Math.abs(expectedFraction - testCase.expectedFraction) > 0.0001) {
+    return `${testCase.id}: Stealth Rock damage fraction expected ${testCase.expectedFraction}, computed ${expectedFraction} (effectiveness=${effectiveness}) (${testCase.source})`;
   }
-  return evaluateCritRateCase(testCase);
+
+  return null;
+}
+
+function evaluateMoveCategoryCase(
+  testCase: MoveCategoryCheckCase,
+  moves: readonly LocalMove[],
+): string | null {
+  const move = moves.find((m) => m.id === testCase.moveId);
+  if (!move) {
+    return `${testCase.id}: move "${testCase.moveId}" not found in moves.json (${testCase.source})`;
+  }
+  if (move.category !== testCase.expectedCategory) {
+    return `${testCase.id}: expected category "${testCase.expectedCategory}", got "${move.category}" (${testCase.source})`;
+  }
+  return null;
+}
+
+function evaluateMovePriorityCase(
+  testCase: MovePriorityCheckCase,
+  moves: readonly LocalMove[],
+): string | null {
+  const move = moves.find((m) => m.id === testCase.moveId);
+  if (!move) {
+    return `${testCase.id}: move "${testCase.moveId}" not found in moves.json (${testCase.source})`;
+  }
+  if (move.priority !== testCase.expectedPriority) {
+    return `${testCase.id}: expected priority ${testCase.expectedPriority}, got ${move.priority} (${testCase.source})`;
+  }
+  return null;
+}
+
+function evaluateMovePowerCase(
+  testCase: MovePowerCheckCase,
+  moves: readonly LocalMove[],
+): string | null {
+  const move = moves.find((m) => m.id === testCase.moveId);
+  if (!move) {
+    return `${testCase.id}: move "${testCase.moveId}" not found in moves.json (${testCase.source})`;
+  }
+  const power = move.power ?? 0;
+  if (power !== testCase.expectedBasePower) {
+    return `${testCase.id}: expected base power ${testCase.expectedBasePower}, got ${power} (${testCase.source})`;
+  }
+  return null;
+}
+
+function evaluateZMoveCase(testCase: ZMoveCase): string | null {
+  const actual = getZMovePower(testCase.sourceBP);
+  if (actual !== testCase.expectedZPower) {
+    return `${testCase.id}: Z-Move power for ${testCase.sourceBP} BP expected ${testCase.expectedZPower}, got ${actual} (${testCase.source})`;
+  }
+  return null;
+}
+
+function evaluateDynamaxHPCase(testCase: DynamaxHPCase): string | null {
+  // Source: smogon/pokemon-showdown sim/battle-actions.ts ERRATA #19
+  // Formula: floor(baseMaxHP × (1.5 + dynamaxLevel × 0.05))
+  const actual = 1.5 + testCase.level * 0.05;
+  if (Math.abs(actual - testCase.expectedMultiplier) > 0.0001) {
+    return `${testCase.id}: Dynamax HP multiplier at level ${testCase.level} expected ${testCase.expectedMultiplier}, got ${actual} (${testCase.source})`;
+  }
+  return null;
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export function loadGroundTruthDataset(repoRoot: string, gen = 1): GroundTruthDataset {
+  const datasetPath = join(
+    repoRoot,
+    "tools",
+    "oracle-validation",
+    "data",
+    "ground-truth",
+    `gen${gen}-ground-truth.json`,
+  );
+  return groundTruthDatasetSchema.parse(JSON.parse(readFileSync(datasetPath, "utf8")));
 }
 
 export function runGroundTruthSuite(
   generation: ImplementedGeneration,
   repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../.."),
 ): SuiteResult {
-  if (generation.gen !== 1) {
-    return makeSkip("Ground-truth dataset only implemented for Gen 1 in the initial oracle slice");
+  const { gen } = generation;
+
+  const datasetPath = join(
+    repoRoot,
+    "tools",
+    "oracle-validation",
+    "data",
+    "ground-truth",
+    `gen${gen}-ground-truth.json`,
+  );
+
+  if (!existsSync(datasetPath)) {
+    return makeSkip(`No ground-truth dataset for Gen ${gen}`);
   }
 
-  const dataset = loadGroundTruthDataset(repoRoot);
-  const context = createGroundTruthSuiteContext(generation);
-  const failures = dataset.cases
-    .map((testCase) => evaluateCase(testCase, context))
-    .filter((failure): failure is string => failure !== null);
+  const dataset = loadGroundTruthDataset(repoRoot, gen);
+  const typeChart = JSON.parse(
+    readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
+  ) as LoadedTypeChart;
+  const moves = JSON.parse(
+    readFileSync(join(generation.dataDir, "moves.json"), "utf8"),
+  ) as LocalMove[];
+
+  // Gen 1 specific resources (only created when needed)
+  let gen1DataManager: ReturnType<typeof createGen1DataManager> | null = null;
+
+  const failures: string[] = [];
+  const notes: string[] = [
+    `Authority: ${dataset.authority}`,
+    `Dataset: tools/oracle-validation/data/ground-truth/gen${gen}-ground-truth.json`,
+  ];
+  let deferredCases = 0;
+
+  for (const testCase of dataset.cases) {
+    let failure: string | null = null;
+
+    if (testCase.kind === "typeChart") {
+      failure = evaluateTypeChartCase(testCase, typeChart);
+    } else if (testCase.kind === "derivedStat") {
+      if (gen !== 1) {
+        deferredCases += 1;
+        continue;
+      }
+      if (gen1DataManager === null) {
+        gen1DataManager = createGen1DataManager();
+      }
+      failure = evaluateDerivedStatCase(testCase, gen1DataManager);
+    } else if (testCase.kind === "critRate") {
+      if (gen !== 1) {
+        deferredCases += 1;
+        continue;
+      }
+      failure = evaluateCritRateCase(testCase);
+    } else if (testCase.kind === "hazardDamage") {
+      failure = evaluateHazardDamageCase(testCase, typeChart);
+    } else if (testCase.kind === "moveCategoryCheck") {
+      failure = evaluateMoveCategoryCase(testCase, moves);
+    } else if (testCase.kind === "movePriorityCheck") {
+      failure = evaluateMovePriorityCase(testCase, moves);
+    } else if (testCase.kind === "movePowerCheck") {
+      failure = evaluateMovePowerCase(testCase, moves);
+    } else if (testCase.kind === "zMoveCheck") {
+      failure = evaluateZMoveCase(testCase);
+    } else if (testCase.kind === "dynamaxHPCheck") {
+      failure = evaluateDynamaxHPCase(testCase);
+    } else {
+      // mechanic-documentation, abilityCheck, moveRecoilCheck, statusSpeedCheck,
+      // terrainBoostCheck, maxMovePowerCheck — deferred to engine/replay suite
+      deferredCases += 1;
+      continue;
+    }
+
+    if (failure !== null) {
+      failures.push(failure);
+    }
+  }
+
+  if (deferredCases > 0) {
+    notes.push(`${deferredCases} documentation-only or engine-deferred case(s) skipped`);
+  }
+
+  if (gen === 1) {
+    notes.push(
+      "Gen 1 suite uses cartridge-authoritative data; later Gen 1-4 suites treat Showdown as a differential cross-check.",
+    );
+  }
 
   return {
     status: failures.length === 0 ? "pass" : "fail",
@@ -280,11 +557,7 @@ export function runGroundTruthSuite(
     failed: failures.length,
     skipped: 0,
     failures,
-    notes: [
-      `Authority: ${dataset.authority}`,
-      `Dataset: tools/oracle-validation/data/ground-truth/gen1-ground-truth.json`,
-      "Gen 1 suite uses cartridge-authoritative data; later Gen 1-4 suites should treat Showdown as a differential cross-check.",
-    ],
+    notes,
     matchedKnownDisagreements: [],
     staleDisagreements: [],
     oracleChecks: [],

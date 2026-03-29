@@ -1,0 +1,106 @@
+{
+  "gen": 3,
+  "authority": "pret/pokeemerald",
+  "confidence": "high-75-percent-c",
+  "cases": [
+    {
+      "id": "type-split-crunch-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "crunch",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
+      "note": "Crunch is Special in Gen 3 (Dark type). Gen 4 introduced per-move categories, making Crunch Physical."
+    },
+    {
+      "id": "type-split-shadow-ball-physical-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "shadow-ball",
+      "expectedCategory": "physical",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ghost = Physical in Gen 1-3",
+      "note": "Shadow Ball is Physical in Gen 3 (Ghost type). Gen 4 changed it to Special."
+    },
+    {
+      "id": "type-split-flamethrower-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "flamethrower",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Fire = Special",
+      "note": "Flamethrower is Special in Gen 3 (Fire type). Unchanged in Gen 4+."
+    },
+    {
+      "id": "type-split-earthquake-physical-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "earthquake",
+      "expectedCategory": "physical",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ground = Physical",
+      "note": "Earthquake is Physical in Gen 3 (Ground type). Unchanged in Gen 4+."
+    },
+    {
+      "id": "type-split-pursuit-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "pursuit",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
+      "note": "Pursuit is Special in Gen 3 (Dark type, type-based split). Became Physical in Gen 4."
+    },
+    {
+      "id": "type-split-knock-off-special-gen3",
+      "kind": "moveCategoryCheck",
+      "moveId": "knock-off",
+      "expectedCategory": "special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
+      "note": "Knock Off is Special in Gen 3 (Dark type, type-based split). Base power 20, no item boost (that was Gen 6)."
+    },
+    {
+      "id": "knock-off-base-power-gen3",
+      "kind": "movePowerCheck",
+      "moveId": "knock-off",
+      "expectedBasePower": 20,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Knock Off base power = 20 in Gen 3. The 1.5x damage boost when target holds an item was introduced in Gen 6 (ERRATA #25)."
+    },
+    {
+      "id": "extreme-speed-priority-gen3",
+      "kind": "movePriorityCheck",
+      "moveId": "extreme-speed",
+      "expectedPriority": 1,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Extreme Speed has +1 priority in Gen 3. Gen 5 raised it to +2 (ERRATA #7)."
+    },
+    {
+      "id": "protect-priority-gen3",
+      "kind": "movePriorityCheck",
+      "moveId": "protect",
+      "expectedPriority": 3,
+      "source": "pret/pokeemerald src/data/battle/moves_info.c",
+      "note": "Protect has +3 priority in Gen 3 (same as Gen 2 cartridge)."
+    },
+    {
+      "id": "electric-vs-steel-gen3",
+      "kind": "typeChart",
+      "attackerType": "electric",
+      "defenderTypes": ["steel"],
+      "expected": 0.5,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Electric attacking Steel: 0.5x on Gen 3 cartridge. Oracle @pkmn/data incorrectly reports 1x."
+    },
+    {
+      "id": "water-vs-steel-gen3",
+      "kind": "typeChart",
+      "attackerType": "water",
+      "defenderTypes": ["steel"],
+      "expected": 0.5,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Water attacking Steel: 0.5x on Gen 3 cartridge. Oracle @pkmn/data incorrectly reports 1x."
+    },
+    {
+      "id": "ghost-vs-psychic-gen3",
+      "kind": "typeChart",
+      "attackerType": "ghost",
+      "defenderTypes": ["psychic"],
+      "expected": 2,
+      "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
+      "note": "Ghost is 2x super-effective vs Psychic in Gen 3 (Gen 1 bug was fixed in Gen 2)."
+    }
+  ]
+}
