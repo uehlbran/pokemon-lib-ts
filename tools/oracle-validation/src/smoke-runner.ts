@@ -11,6 +11,10 @@ import type {
   DamageEvent,
   GenerationRuleset,
   HealEvent,
+  StatusInflictEvent,
+  TerrainSetEvent,
+  TurnStartEvent,
+  WeatherSetEvent,
 } from "@pokemon-lib-ts/battle";
 import {
   BATTLE_EVENT_TYPES,
@@ -23,6 +27,9 @@ import {
   CORE_ABILITY_SLOTS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
+  CORE_STATUS_IDS,
+  CORE_TERRAIN_IDS,
+  CORE_WEATHER_IDS,
   createDvs,
   createEvs,
   createIvs,
@@ -43,7 +50,7 @@ import { createGen9DataManager, Gen9Ruleset } from "@pokemon-lib-ts/gen9";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
-const SMOKE_BATTLES_PER_GEN = 200;
+const SMOKE_BATTLES_PER_GEN = 500;
 const TEAM_SIZE = 6;
 const MAX_TURNS = 200;
 const BASE_SEED = 0xbabe_cafe;
@@ -224,13 +231,23 @@ export function generateMinimalTeam(
   return team;
 }
 
-interface SmokeInvariantViolation {
-  battleIndex: number;
-  description: string;
+const VALID_PRIMARY_STATUSES = new Set(Object.values(CORE_STATUS_IDS));
+const VALID_WEATHER_TYPES = new Set(Object.values(CORE_WEATHER_IDS));
+const VALID_TERRAIN_TYPES = new Set([
+  CORE_TERRAIN_IDS.electric,
+  CORE_TERRAIN_IDS.grassy,
+  CORE_TERRAIN_IDS.misty,
+  CORE_TERRAIN_IDS.psychic,
+]);
+
+export interface SmokeInvariantViolation {
+  readonly eventIndex: number;
+  readonly description: string;
 }
 
-function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInvariantViolation[] {
+export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInvariantViolation[] {
   const violations: SmokeInvariantViolation[] = [];
+  let lastTurnNumber = 0;
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
@@ -240,28 +257,73 @@ function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInvariantVi
       const e = event as DamageEvent;
       if (e.currentHp < 0) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP went negative (${e.currentHp}) in damage event`,
         });
       }
       if (e.maxHp > 0 && e.currentHp > e.maxHp) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in damage event`,
+        });
+      }
+      if (e.amount < 0) {
+        violations.push({
+          eventIndex: i,
+          description: `${e.side}:${e.pokemon} damage amount must not be negative, got ${e.amount}`,
         });
       }
     } else if (event.type === BATTLE_EVENT_TYPES.heal) {
       const e = event as HealEvent;
       if (e.currentHp < 0) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP went negative (${e.currentHp}) in heal event`,
         });
       }
       if (e.maxHp > 0 && e.currentHp > e.maxHp) {
         violations.push({
-          battleIndex: i,
+          eventIndex: i,
           description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in heal event`,
+        });
+      }
+      if (e.amount < 0) {
+        violations.push({
+          eventIndex: i,
+          description: `${e.side}:${e.pokemon} heal amount must not be negative, got ${e.amount}`,
+        });
+      }
+    } else if (event.type === BATTLE_EVENT_TYPES.turnStart) {
+      const e = event as TurnStartEvent;
+      if (e.turnNumber <= lastTurnNumber) {
+        violations.push({
+          eventIndex: i,
+          description: `turn number did not increase: got ${e.turnNumber} after ${lastTurnNumber}`,
+        });
+      }
+      lastTurnNumber = e.turnNumber;
+    } else if (event.type === BATTLE_EVENT_TYPES.statusInflict) {
+      const e = event as StatusInflictEvent;
+      if (!VALID_PRIMARY_STATUSES.has(e.status)) {
+        violations.push({
+          eventIndex: i,
+          description: `invalid status "${e.status}" applied to ${e.side}:${e.pokemon}`,
+        });
+      }
+    } else if (event.type === BATTLE_EVENT_TYPES.weatherSet) {
+      const e = event as WeatherSetEvent;
+      if (!VALID_WEATHER_TYPES.has(e.weather)) {
+        violations.push({
+          eventIndex: i,
+          description: `invalid weather "${e.weather}" set from ${e.source}`,
+        });
+      }
+    } else if (event.type === BATTLE_EVENT_TYPES.terrainSet) {
+      const e = event as TerrainSetEvent;
+      if (!VALID_TERRAIN_TYPES.has(e.terrain)) {
+        violations.push({
+          eventIndex: i,
+          description: `invalid terrain "${e.terrain}" set from ${e.source}`,
         });
       }
     }

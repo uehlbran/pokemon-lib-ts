@@ -10,7 +10,7 @@ import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen3DataManager } from "@pokemon-lib-ts/gen3";
 import { createGen9DataManager } from "@pokemon-lib-ts/gen9";
 import { describe, expect, it } from "vitest";
-import { generateMinimalTeam } from "../src/smoke-runner.js";
+import { checkBattleInvariants, generateMinimalTeam } from "../src/smoke-runner.js";
 
 const gen1DataManager = createGen1DataManager();
 const gen3DataManager = createGen3DataManager();
@@ -144,5 +144,196 @@ describe("smoke-runner generateMinimalTeam — realistic team diversity", () => 
     for (const member of team) {
       expect(member.ability).toBe("");
     }
+  });
+});
+
+describe("smoke-runner checkBattleInvariants — invariant detection", () => {
+  // ---------------------------------------------------------------------------
+  // Baseline: no violations for empty event stream
+  // ---------------------------------------------------------------------------
+
+  it("given an empty event stream, when checking invariants, then no violations", () => {
+    const violations = checkBattleInvariants([]);
+    expect(violations).toHaveLength(0);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Turn number monotonicity
+  // ---------------------------------------------------------------------------
+
+  it("given turn events in order 1,2,3, when checking invariants, then no violations", () => {
+    // Source: turns always increment by 1
+    const events = [
+      { type: "turn-start", turnNumber: 1 },
+      { type: "turn-start", turnNumber: 2 },
+      { type: "turn-start", turnNumber: 3 },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("given turn events out of order (3,2), when checking invariants, then violation reported", () => {
+    // Source: turn number must never go backwards
+    const events = [
+      { type: "turn-start", turnNumber: 1 },
+      { type: "turn-start", turnNumber: 3 },
+      { type: "turn-start", turnNumber: 2 },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("turn"))).toBe(true);
+  });
+
+  it("given duplicate turn number (1,2,2), when checking invariants, then violation reported", () => {
+    // Source: turn number must strictly increase — duplicate emits are invalid
+    const events = [
+      { type: "turn-start", turnNumber: 1 },
+      { type: "turn-start", turnNumber: 2 },
+      { type: "turn-start", turnNumber: 2 },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("turn"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Status validity
+  // ---------------------------------------------------------------------------
+
+  it("given status-inflict event with valid status burn, when checking invariants, then no violations", () => {
+    // Source: PrimaryStatus union values from core/entities/status.ts
+    const events = [
+      { type: "status-inflict", side: 0, pokemon: "Charizard", status: "burn" },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("given status-inflict event with invalid status 'frozen', when checking invariants, then violation reported", () => {
+    // Source: 'frozen' is not a valid PrimaryStatus — the correct value is 'freeze'
+    const events = [
+      { type: "status-inflict", side: 0, pokemon: "Pikachu", status: "frozen" },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("status"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Weather validity
+  // ---------------------------------------------------------------------------
+
+  it("given weather-set event with valid weather 'rain', when checking invariants, then no violations", () => {
+    // Source: WeatherType from core/entities/weather.ts
+    const events = [{ type: "weather-set", weather: "rain", source: "rain-dance" }] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("given weather-set event with invalid weather 'fog', when checking invariants, then violation reported", () => {
+    // Source: 'fog' is not a valid WeatherType in the engine
+    const events = [{ type: "weather-set", weather: "fog", source: "some-move" }] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("weather"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Terrain validity
+  // ---------------------------------------------------------------------------
+
+  it("given terrain-set event with valid terrain 'electric', when checking invariants, then no violations", () => {
+    // Source: TerrainType from core/entities/weather.ts
+    const events = [
+      { type: "terrain-set", terrain: "electric", source: "electric-terrain" },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("given terrain-set event with invalid terrain 'fairy', when checking invariants, then violation reported", () => {
+    // Source: 'fairy' is not a valid TerrainType — the valid types are electric/grassy/psychic/misty
+    const events = [{ type: "terrain-set", terrain: "fairy", source: "some-move" }] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("terrain"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Damage amount non-negative
+  // ---------------------------------------------------------------------------
+
+  it("given damage event with positive amount, when checking invariants, then no violations", () => {
+    // Source: DamageEvent.amount is documented as 'always a positive integer'
+    const events = [
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Pikachu",
+        amount: 45,
+        currentHp: 55,
+        maxHp: 100,
+        source: "thunderbolt",
+      },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("given damage event with amount 0, when checking invariants, then no violation (engine allows 0-damage; see #1161)", () => {
+    // Source: engine currently emits amount=0 for type-immunity edge cases (#1161); 0 is allowed, negative is not
+    const events = [
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Pikachu",
+        amount: 0,
+        currentHp: 100,
+        maxHp: 100,
+        source: "tackle",
+      },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("given damage event with negative amount, when checking invariants, then violation reported", () => {
+    // Source: DamageEvent.amount must not be negative
+    const events = [
+      {
+        type: "damage",
+        side: 0,
+        pokemon: "Pikachu",
+        amount: -10,
+        currentHp: 100,
+        maxHp: 100,
+        source: "tackle",
+      },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("amount"))).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Heal amount non-negative
+  // ---------------------------------------------------------------------------
+
+  it("given heal event with negative amount, when checking invariants, then violation reported", () => {
+    // Source: HealEvent.amount must not be negative
+    const events = [
+      {
+        type: "heal",
+        side: 0,
+        pokemon: "Snorlax",
+        amount: -5,
+        currentHp: 100,
+        maxHp: 100,
+        source: "leftovers",
+      },
+    ] as const;
+    const violations = checkBattleInvariants(events as never);
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.some((v) => v.description.includes("amount"))).toBe(true);
   });
 });
