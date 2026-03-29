@@ -8,7 +8,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "crunch",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Dark = Special in Gen 1-3",
       "note": "Crunch is Special in Gen 3 (Dark type). Gen 4 introduced per-move categories, making Crunch Physical."
     },
     {
@@ -16,7 +16,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "shadow-ball",
       "expectedCategory": "physical",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ghost = Physical in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Ghost = Physical in Gen 1-3",
       "note": "Shadow Ball is Physical in Gen 3 (Ghost type). Gen 4 changed it to Special."
     },
     {
@@ -24,7 +24,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "flamethrower",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Fire = Special",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Fire = Special",
       "note": "Flamethrower is Special in Gen 3 (Fire type). Unchanged in Gen 4+."
     },
     {
@@ -32,7 +32,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "earthquake",
       "expectedCategory": "physical",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Ground = Physical",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Ground = Physical",
       "note": "Earthquake is Physical in Gen 3 (Ground type). Unchanged in Gen 4+."
     },
     {
@@ -40,7 +40,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "pursuit",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Dark = Special in Gen 1-3",
       "note": "Pursuit is Special in Gen 3 (Dark type, type-based split). Became Physical in Gen 4."
     },
     {
@@ -48,7 +48,7 @@
       "kind": "moveCategoryCheck",
       "moveId": "knock-off",
       "expectedCategory": "special",
-      "source": "pret/pokeemerald src/data/battle/moves_info.c — type-based split: Dark = Special in Gen 1-3",
+      "source": "pret/pokeemerald src/data/battle/moves_info.c \u2014 type-based split: Dark = Special in Gen 1-3",
       "note": "Knock Off is Special in Gen 3 (Dark type, type-based split). Base power 20, no item boost (that was Gen 6)."
     },
     {
@@ -101,6 +101,14 @@
       "expected": 2,
       "source": "pret/pokeemerald src/battle_main.c gTypeEffectiveness",
       "note": "Ghost is 2x super-effective vs Psychic in Gen 3 (Gen 1 bug was fixed in Gen 2)."
+    },
+    {
+      "id": "endure-priority-gen3-cartridge",
+      "kind": "movePriorityCheck",
+      "moveId": "endure",
+      "expectedPriority": 3,
+      "source": "pret/pokeemerald src/data/battle_moves.h \u2014 endure: .priority = 3",
+      "note": "Endure has +3 priority in Gen 3 per pokeemerald. @pkmn/data reports +4 (Showdown approximation). Pret wins."
     }
   ]
 }

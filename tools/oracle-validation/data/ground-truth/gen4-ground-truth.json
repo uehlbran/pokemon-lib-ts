@@ -17,7 +17,7 @@
       "hazardType": "rock",
       "expectedFraction": 0.5,
       "source": "specs/reference/gen4-status.md",
-      "note": "Charizard is 4x weak to Rock; Stealth Rock deals 1/8 × 4 = 1/2 max HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage"
+      "note": "Charizard is 4x weak to Rock; Stealth Rock deals 1/8 \u00d7 4 = 1/2 max HP. Source: pret/pokeplatinum src/battle/battle_script.c StealthRockDamage"
     },
     {
       "id": "stealth-rock-vs-blastoise",
@@ -38,8 +38,8 @@
       "defenderTypes": ["steel", "rock"],
       "hazardType": "rock",
       "expectedFraction": 0.0625,
-      "source": "pret/pokeplatinum src/battle/battle_lib.c line 2489 — TYPE_ROCK, TYPE_STEEL, NOT_VERY_EFF",
-      "note": "Aggron (Steel/Rock) vs Rock: Steel resists Rock (0.5x, line 2489), Rock is neutral to Rock (1x, no entry). Combined: 0.5x. Stealth Rock deals 1/8 × 0.5 = 1/16. Note: prior value 0.03125 was incorrect (implied 0.25x which would require BOTH types to resist)."
+      "source": "pret/pokeplatinum src/battle/battle_lib.c line 2489 \u2014 TYPE_ROCK, TYPE_STEEL, NOT_VERY_EFF",
+      "note": "Aggron (Steel/Rock) vs Rock: Steel resists Rock (0.5x, line 2489), Rock is neutral to Rock (1x, no entry). Combined: 0.5x. Stealth Rock deals 1/8 \u00d7 0.5 = 1/16. Note: prior value 0.03125 was incorrect (implied 0.25x which would require BOTH types to resist)."
     },
     {
       "id": "physical-special-split-crunch",
@@ -86,7 +86,7 @@
       "kind": "movePriorityCheck",
       "moveId": "trick-room",
       "expectedPriority": -7,
-      "source": "specs/reference/gen4-status.md §ERRATA #7",
+      "source": "specs/reference/gen4-status.md \u00a7ERRATA #7",
       "note": "Trick Room has -7 priority (moves within Trick Room in reverse speed order). Source: pret/pokeplatinum src/data/battle/moves_info.c"
     },
     {
@@ -94,7 +94,7 @@
       "kind": "movePriorityCheck",
       "moveId": "feint",
       "expectedPriority": 2,
-      "source": "specs/reference/gen4-status.md §ERRATA #7",
+      "source": "specs/reference/gen4-status.md \u00a7ERRATA #7",
       "note": "Feint has +2 priority in Gen 4 (introduced in Gen 4). Source: pret/pokeplatinum src/data/battle/moves_info.c"
     },
     {
@@ -103,7 +103,7 @@
       "moveId": "knock-off",
       "expectedBasePower": 20,
       "expectedBoostWhenHoldingItem": 1.0,
-      "source": "specs/reference/gen4-status.md §ERRATA #25",
+      "source": "specs/reference/gen4-status.md \u00a7ERRATA #25",
       "note": "Knock Off does NOT get 1.5x boost in Gen 4; that was introduced in Gen 6. Source: pret/pokeplatinum src/data/battle/moves_info.c"
     },
     {
@@ -138,8 +138,16 @@
       "attackerType": "ghost",
       "defenderTypes": ["steel"],
       "expected": 0.5,
-      "source": "pret/pokeplatinum src/battle/battle_lib.c line 2493 — TYPE_GHOST, TYPE_STEEL, NOT_VERY_EFF",
-      "note": "Ghost-type moves are not very effective against Steel-type Pokemon in Gen 4 (0.5x). 'Steel resists Ghost' means Ghost→Steel=0.5x, NOT Steel→Ghost=0.5x. Steel attacking Ghost has no type chart entry = 1x neutral."
+      "source": "pret/pokeplatinum src/battle/battle_lib.c line 2493 \u2014 TYPE_GHOST, TYPE_STEEL, NOT_VERY_EFF",
+      "note": "Ghost-type moves are not very effective against Steel-type Pokemon in Gen 4 (0.5x). 'Steel resists Ghost' means Ghost\u2192Steel=0.5x, NOT Steel\u2192Ghost=0.5x. Steel attacking Ghost has no type chart entry = 1x neutral."
+    },
+    {
+      "id": "endure-priority-gen4-cartridge",
+      "kind": "movePriorityCheck",
+      "moveId": "endure",
+      "expectedPriority": 3,
+      "source": "pret/pokeplatinum res/battle/moves/endure/data.json \u2014 priority: 3",
+      "note": "Endure has +3 priority in Gen 4 per pokeplatinum. @pkmn/data reports +4 (Showdown approximation). Pret wins."
     }
   ]
 }

@@ -24,5 +24,18 @@
     "sourceUrl": "https://github.com/pret/pokeemerald/blob/master/src/battle_main.c",
     "oracleVersion": "@pkmn/data@0.10.7",
     "addedDate": "2026-03-27"
+  },
+  {
+    "id": "gen3:mechanics:move-priority:endure",
+    "gen": 3,
+    "suite": "mechanics",
+    "description": "Endure priority in Gen 3 is +3 per pokeemerald (battle_moves.h). @pkmn/data reports +4.",
+    "ourValue": 3,
+    "oracleValue": 4,
+    "resolution": "cartridge-accurate",
+    "source": "pret/pokeemerald src/data/battle_moves.h \u2014 endure: .priority = 3",
+    "sourceUrl": "https://github.com/pret/pokeemerald/blob/master/src/data/battle_moves.h",
+    "oracleVersion": "@pkmn/data@0.10.7",
+    "addedDate": "2026-03-28"
   }
 ]

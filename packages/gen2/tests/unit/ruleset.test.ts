@@ -1043,7 +1043,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       const rng = new SeededRandom(42);
-      // quick-attack has priority +1 (Showdown-compatible scale), tackle has priority 0
+      // quick-attack has priority +2 (raw pokecrystal scale, BASE_PRIORITY=1), tackle has priority 1
       const active0 = createOnFieldPokemonFixture({
         speed: 50,
         moves: [createMoveSlotFixture(quickAttack)],
@@ -1064,7 +1064,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-      // Assert: quick-attack (priority +1) goes before tackle (priority 0)
+      // Assert: quick-attack (priority +2) goes before tackle (priority +1)
       expect(sorted[0].side).toBe(0);
       expect(sorted[1].side).toBe(1);
     });
@@ -1241,7 +1241,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
-      // Assert: it returns both actions with default priority 0
+      // Assert: it returns both actions with default priority (BASE_PRIORITY=1)
       expect(sorted.length).toBe(2);
     });
 
@@ -2930,44 +2930,48 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(3);
     });
 
-    it("given Gen 2 ruleset, when getting Quick Attack move priority, then returns +1", () => {
-      // Source: gen2-ground-truth.md §9 — Quick Attack: +1 (Showdown-compatible scale)
+    it("given Gen 2 ruleset, when getting Quick Attack move priority, then returns +2", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2
+      // Gen 2 uses a 1-based scale (BASE_PRIORITY=1). Quick Attack has raw pret value 2.
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove(GEN2_MOVE_IDS.quickAttack).priority;
       // Assert
-      expect(priority).toBe(1);
+      expect(priority).toBe(2);
     });
 
-    it("given Gen 2 ruleset, when getting Vital Throw move priority, then returns -1", () => {
-      // Source: gen2-ground-truth.md §9 — Vital Throw: -1, never misses, goes last
+    it("given Gen 2 ruleset, when getting Vital Throw move priority, then returns 0", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_VITAL_THROW priority 0
+      // Gen 2 uses a 1-based scale (BASE_PRIORITY=1). Vital Throw goes last with raw pret value 0.
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove(GEN2_MOVE_IDS.vitalThrow).priority;
       // Assert
-      expect(priority).toBe(-1);
+      expect(priority).toBe(0);
     });
 
-    it("given Gen 2 ruleset, when getting Counter move priority, then returns -1", () => {
-      // Source: gen2-ground-truth.md §9 — Counter: -1 (Showdown-compatible scale)
+    it("given Gen 2 ruleset, when getting Counter move priority, then returns 0", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_COUNTER priority 0
+      // Gen 2 uses a 1-based scale (BASE_PRIORITY=1). Counter goes last with raw pret value 0.
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove(GEN2_MOVE_IDS.counter).priority;
       // Assert
-      expect(priority).toBe(-1);
+      expect(priority).toBe(0);
     });
 
-    it("given Gen 2 ruleset, when getting Mirror Coat move priority, then returns -1", () => {
-      // Source: gen2-ground-truth.md §9 — Mirror Coat: -1 (Showdown-compatible scale)
+    it("given Gen 2 ruleset, when getting Mirror Coat move priority, then returns 0", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_MIRROR_COAT priority 0
+      // Gen 2 uses a 1-based scale (BASE_PRIORITY=1). Mirror Coat goes last with raw pret value 0.
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove(GEN2_MOVE_IDS.mirrorCoat).priority;
       // Assert
-      expect(priority).toBe(-1);
+      expect(priority).toBe(0);
     });
 
     it("given Gen 2 ruleset, when getting Endure move priority, then returns +3", () => {
@@ -2980,42 +2984,42 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(3);
     });
 
-    it("given Gen 2 ruleset, when getting Mach Punch move priority, then returns +1", () => {
-      // Source: gen2-ground-truth.md §9 — Mach Punch: +1 (Showdown-compatible scale)
+    it("given Gen 2 ruleset, when getting Mach Punch move priority, then returns +2", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2
+      // Mach Punch shares EFFECT_QUICK_ATTACK in Gen 2. Raw pret value is 2 on the 1-based scale.
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove(GEN2_MOVE_IDS.machPunch).priority;
       // Assert
-      expect(priority).toBe(1);
+      expect(priority).toBe(2);
     });
 
-    it("given Gen 2 ruleset, when getting ExtremeSpeed move priority, then returns +1", () => {
-      // Source: gen2-ground-truth.md §9 — ExtremeSpeed: +1 (Showdown-compatible scale)
+    it("given Gen 2 ruleset, when getting ExtremeSpeed move priority, then returns +2", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_QUICK_ATTACK priority 2
+      // ExtremeSpeed shares EFFECT_QUICK_ATTACK in Gen 2. Raw pret value is 2 on the 1-based scale.
       // Arrange
       const dm = createGen2DataManager();
       // Act
       const priority = dm.getMove(GEN2_MOVE_IDS.extremeSpeed).priority;
       // Assert
-      expect(priority).toBe(1);
+      expect(priority).toBe(2);
     });
 
-    it("given Gen 2 ruleset, when getting Roar move priority, then returns -1", () => {
-      // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
-      // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
-      // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — roar: { priority: -1 }
+    it("given Gen 2 ruleset, when getting Roar move priority, then returns 0", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm
+      // EFFECT_FORCE_SWITCH is explicitly assigned priority 0 in effects_priorities.asm (below BASE_PRIORITY=1 on the 1-based scale).
       const dm = createGen2DataManager();
       const move = dm.getMove(GEN2_MOVE_IDS.roar);
-      expect(move?.priority).toBe(-1);
+      expect(move?.priority).toBe(0);
     });
 
-    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -1", () => {
-      // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
-      // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
-      // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — whirlwind: { priority: -1 }
+    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns 0", () => {
+      // Source: pret/pokecrystal data/moves/effects_priorities.asm
+      // EFFECT_FORCE_SWITCH is explicitly assigned priority 0 in effects_priorities.asm (below BASE_PRIORITY=1 on the 1-based scale).
       const dm = createGen2DataManager();
       const move = dm.getMove(GEN2_MOVE_IDS.whirlwind);
-      expect(move?.priority).toBe(-1);
+      expect(move?.priority).toBe(0);
     });
   });
 });

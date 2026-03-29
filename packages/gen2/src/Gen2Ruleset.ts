@@ -225,17 +225,21 @@ export class Gen2Ruleset implements GenerationRuleset {
         const moveSlotB = activeB.pokemon.moves[actionB.moveIndex];
         if (!moveSlotA || !moveSlotB) return 0;
 
-        let priorityA = 0;
-        let priorityB = 0;
+        // Gen 2 uses a 1-based priority scale (BASE_PRIORITY=1 in pokecrystal).
+        // Normal moves have priority 1, not 0.
+        // Source: pret/pokecrystal data/moves/effects_priorities.asm
+        const GEN2_BASE_PRIORITY = 1;
+        let priorityA = GEN2_BASE_PRIORITY;
+        let priorityB = GEN2_BASE_PRIORITY;
         try {
           priorityA = this.dataManager.getMove(moveSlotA.moveId).priority;
         } catch {
-          // Move not found, use 0 priority
+          // Move not found, use BASE_PRIORITY
         }
         try {
           priorityB = this.dataManager.getMove(moveSlotB.moveId).priority;
         } catch {
-          // Move not found, use 0 priority
+          // Move not found, use BASE_PRIORITY
         }
 
         // Higher priority goes first

@@ -478,23 +478,23 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
 // #252: Whirlwind/Roar priority
 // =========================================================================
 
-describe("#252 — Whirlwind/Roar should have priority -1 in Gen 2 (not the Gen 3+ -6 value)", () => {
-  it("given Gen 2 moves.json, when loading Whirlwind, then priority is -1", () => {
-    // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
-    // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
-    // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — whirlwind: { priority: -1 }
+describe("#252 — Whirlwind/Roar should have priority 0 in Gen 2 (raw pokecrystal scale)", () => {
+  it("given Gen 2 moves.json, when loading Whirlwind, then priority is 0", () => {
+    // Source: pret/pokecrystal data/moves/effects_priorities.asm
+    // EFFECT_FORCE_SWITCH is explicitly assigned priority 0 in effects_priorities.asm (below BASE_PRIORITY=1 on the 1-based scale).
+    // Pret always wins for Gen 1-4: raw pokecrystal value is 0 on its 1-based scale.
     const dm = createGen2DataManager();
     const move = dm.getMove(MOVE_IDS.whirlwind);
-    expect(move.priority).toBe(-1);
+    expect(move.priority).toBe(0);
   });
 
-  it("given Gen 2 moves.json, when loading Roar, then priority is -1", () => {
-    // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
-    // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
-    // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — roar: { priority: -1 }
+  it("given Gen 2 moves.json, when loading Roar, then priority is 0", () => {
+    // Source: pret/pokecrystal data/moves/effects_priorities.asm
+    // EFFECT_FORCE_SWITCH is explicitly assigned priority 0 in effects_priorities.asm (below BASE_PRIORITY=1 on the 1-based scale).
+    // Pret always wins for Gen 1-4: raw pokecrystal value is 0 on its 1-based scale.
     const dm = createGen2DataManager();
     const move = dm.getMove(MOVE_IDS.roar);
-    expect(move.priority).toBe(-1);
+    expect(move.priority).toBe(0);
   });
 });
 

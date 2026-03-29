@@ -4309,7 +4309,7 @@
     "power": null,
     "accuracy": null,
     "pp": 10,
-    "priority": 4,
+    "priority": 3,
     "target": "self",
     "flags": {
       "contact": false,

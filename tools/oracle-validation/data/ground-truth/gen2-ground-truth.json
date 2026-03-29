@@ -89,7 +89,7 @@
       "kind": "movePriorityCheck",
       "moveId": "protect",
       "expectedPriority": 3,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT priority 3",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_PROTECT priority 3",
       "note": "Protect has +3 priority on Gen 2 cartridge. Oracle @pkmn/data reports +2 following Showdown's simplified model."
     },
     {
@@ -97,7 +97,7 @@
       "kind": "movePriorityCheck",
       "moveId": "detect",
       "expectedPriority": 3,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_PROTECT used for Detect",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_PROTECT used for Detect",
       "note": "Detect shares EFFECT_PROTECT in Gen 2, so priority is +3 on cartridge. Oracle reports +2."
     },
     {
@@ -105,23 +105,23 @@
       "kind": "movePriorityCheck",
       "moveId": "endure",
       "expectedPriority": 3,
-      "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_ENDURE priority 3",
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_ENDURE priority 3",
       "note": "Endure has +3 priority on Gen 2 cartridge. Oracle @pkmn/data reports +2."
     },
     {
       "id": "move-priority-roar",
       "kind": "movePriorityCheck",
       "moveId": "roar",
-      "expectedPriority": -1,
-      "source": "Showdown references/pokemon-showdown/data/mods/gen2/moves.ts — roar priority: -1",
+      "expectedPriority": 0,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_FORCE_SWITCH priority 0 (1-based scale; BASE_PRIORITY=1)",
       "note": "Roar uses go-last mechanic in Gen 2 (EFFECT_FORCE_SWITCH). Source: pret/pokecrystal effects_priorities.asm + Showdown gen2 mod."
     },
     {
       "id": "move-priority-whirlwind",
       "kind": "movePriorityCheck",
       "moveId": "whirlwind",
-      "expectedPriority": -1,
-      "source": "Showdown references/pokemon-showdown/data/mods/gen2/moves.ts — whirlwind priority: -1",
+      "expectedPriority": 0,
+      "source": "pret/pokecrystal data/moves/effects_priorities.asm \u2014 EFFECT_FORCE_SWITCH priority 0 (1-based scale; BASE_PRIORITY=1)",
       "note": "Whirlwind uses go-last mechanic in Gen 2 (EFFECT_FORCE_SWITCH). Source: pret/pokecrystal effects_priorities.asm + Showdown gen2 mod."
     }
   ]

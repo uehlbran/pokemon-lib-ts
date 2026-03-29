@@ -16,6 +16,13 @@ import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
 import { CORE_MOVE_EFFECT_TARGETS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
 import { normalizeImportedGrowthRate } from "./growth-rate";
+import {
+  applyMoveOverrides,
+  applyPokemonOverrides,
+  getOverridesForGen,
+  type ImportedMove,
+  type ImportedPokemon,
+} from "./pret-overrides/index";
 
 // ---------------------------------------------------------------------------
 // Local interfaces for typed casts
@@ -1367,8 +1374,11 @@ async function main() {
   );
   console.log(`  Wrote type-chart.json (${Object.keys(typeChart).length} types)\n`);
 
-  // Build moves (sync, fast)
-  const moves = buildMovesData();
+  // Build moves (sync, fast). buildMovesData returns object[] — cast to the shared ImportedMove
+  // shape that apply-overrides.ts exports, which is structurally compatible.
+  const pretOverrides = getOverridesForGen(GEN_NUM);
+  const rawMoves = buildMovesData() as ImportedMove[];
+  const moves = GEN_NUM <= 4 ? applyMoveOverrides(GEN_NUM, rawMoves, pretOverrides) : rawMoves;
   fs.writeFileSync(path.join(OUTPUT_DIR, "moves.json"), `${JSON.stringify(moves, null, 2)}\n`);
   console.log(`  Wrote moves.json (${moves.length} moves)\n`);
 
@@ -1377,8 +1387,10 @@ async function main() {
   fs.writeFileSync(path.join(OUTPUT_DIR, "items.json"), `${JSON.stringify(items, null, 2)}\n`);
   console.log(`  Wrote items.json (${items.length} items)\n`);
 
-  // Build pokemon (async — fetches from PokeAPI)
-  const pokemon = await buildPokemonData();
+  // Build pokemon (async — fetches from PokeAPI). Same cast pattern as moves above.
+  const rawPokemon = (await buildPokemonData()) as ImportedPokemon[];
+  const pokemon =
+    GEN_NUM <= 4 ? applyPokemonOverrides(GEN_NUM, rawPokemon, pretOverrides) : rawPokemon;
   fs.writeFileSync(path.join(OUTPUT_DIR, "pokemon.json"), `${JSON.stringify(pokemon, null, 2)}\n`);
   console.log(`  Wrote pokemon.json (${pokemon.length} Pokemon)\n`);
 
